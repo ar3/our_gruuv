@@ -14,8 +14,8 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
   
   let(:maap_snapshot1) do
     create(:maap_snapshot,
-      employee: employee,
-      created_by: maap_manager,
+      employee_teammate: employee,
+      creator_teammate: maap_manager,
       company: organization,
       change_type: 'assignment_management',
       reason: 'Assignment updates',
@@ -26,8 +26,8 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
   
   let(:maap_snapshot2) do
     create(:maap_snapshot,
-      employee: employee,
-      created_by: maap_manager,
+      employee_teammate: employee,
+      creator_teammate: maap_manager,
       company: organization,
       change_type: 'position_tenure',
       reason: 'Position change',
@@ -95,8 +95,8 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     
     it 'displays custom reasons correctly' do
       custom_snapshot = create(:maap_snapshot,
-                               employee: employee,
-                               created_by: maap_manager,
+                               employee_teammate: employee,
+                               creator_teammate: maap_manager,
                                company: organization,
                                change_type: 'bulk_check_in_finalization',
                                reason: 'Q4 2024 Performance Review',

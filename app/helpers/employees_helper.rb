@@ -39,7 +39,10 @@ module EmployeesHelper
   def find_previous_snapshot(snapshot, person, organization)
     return nil unless snapshot&.created_at
     
-    MaapSnapshot.for_employee(person)
+    teammate = person.teammates.find_by(organization: organization)
+    return nil unless teammate
+    
+    MaapSnapshot.for_employee_teammate(teammate)
                 .for_company(organization)
                 .where('created_at < ?', snapshot.created_at)
                 .order(created_at: :desc)

@@ -456,8 +456,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       if changes_made
         request_info = build_request_info
         snapshot = MaapSnapshot.build_for_employee(
-          employee: @teammate.person,
-          created_by: current_person,
+          employee_teammate: @teammate,
+          creator_teammate: current_teammate,
           change_type: 'assignment_management',
           reason: 'Check-in Bypass',
           request_info: request_info

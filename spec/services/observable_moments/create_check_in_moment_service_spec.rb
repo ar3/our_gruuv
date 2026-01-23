@@ -4,7 +4,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
   let(:company) { create(:organization, :company) }
   let(:teammate) { create(:teammate, organization: company) }
   let(:finalized_by_person) { create(:person) }
-  let!(:finalizer_teammate) { create(:teammate, organization: company, person: finalized_by_person, type: 'CompanyTeammate') }
+  let!(:finalizer_teammate) { create(:company_teammate, organization: company, person: finalized_by_person) }
   let(:finalized_by) { CompanyTeammate.find(finalizer_teammate.id) }
   
   describe '.call for PositionCheckIn' do

@@ -324,7 +324,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
       let(:person) { create(:person) }
 
       context 'when teammate relationship exists' do
-        let!(:existing_teammate) { create(:teammate, person: person, organization: organization, type: 'CompanyTeammate') }
+        let!(:existing_teammate) { create(:company_teammate, person: person, organization: organization) }
 
         it 'returns existing teammate' do
           result = processor.send(:ensure_teammate_relationship, person, organization)
@@ -353,12 +353,12 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
 
     describe '#create_employment_tenure' do
       let(:person) { create(:person, first_name: 'John', last_name: 'Doe') }
-      let!(:teammate) { create(:teammate, person: person, organization: organization, type: 'CompanyTeammate') }
+      let!(:teammate) { create(:company_teammate, person: person, organization: organization) }
       let!(:position_type) { create(:position_type, organization: organization, external_title: 'Software Engineer') }
       let!(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
       let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
       let!(:manager) { create(:person, first_name: 'Jane', last_name: 'Smith') }
-      let!(:manager_teammate) { create(:teammate, person: manager, organization: organization, type: 'CompanyTeammate') }
+      let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
       let(:employee_data) do
         {
           'start_date' => Date.parse('2024-01-15'),
@@ -397,7 +397,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
 
     describe '#update_employee_information' do
       let(:person) { create(:person, first_name: 'John', last_name: 'Doe') }
-      let!(:teammate) { create(:teammate, person: person, organization: organization, type: 'CompanyTeammate') }
+      let!(:teammate) { create(:company_teammate, person: person, organization: organization) }
       let(:employee_data) do
         {
           'start_date' => Date.parse('2024-01-15')

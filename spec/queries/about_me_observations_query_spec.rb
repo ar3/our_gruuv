@@ -3,11 +3,11 @@ require 'rails_helper'
 RSpec.describe AboutMeObservationsQuery, type: :query do
   let(:organization) { create(:organization, :company) }
   let(:teammate_person) { create(:person) }
-  let(:teammate) { create(:teammate, person: teammate_person, organization: organization, type: 'CompanyTeammate') }
+  let(:teammate) { create(:company_teammate, person: teammate_person, organization: organization) }
   let(:other_person) { create(:person) }
-  let(:other_teammate) { create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate') }
+  let(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
   let(:third_person) { create(:person) }
-  let(:third_teammate) { create(:teammate, person: third_person, organization: organization, type: 'CompanyTeammate') }
+  let(:third_teammate) { create(:company_teammate, person: third_person, organization: organization) }
 
   let(:query) { described_class.new(teammate, organization) }
 
@@ -176,9 +176,9 @@ RSpec.describe AboutMeObservationsQuery, type: :query do
 
       it 'only includes observations from the correct organization' do
         other_org = create(:organization, :company)
-        other_org_teammate = create(:teammate, person: teammate_person, organization: other_org, type: 'CompanyTeammate')
+        other_org_teammate = create(:company_teammate, person: teammate_person, organization: other_org)
         other_org_person = create(:person)
-        other_org_observee = create(:teammate, person: other_org_person, organization: other_org, type: 'CompanyTeammate')
+        other_org_observee = create(:company_teammate, person: other_org_person, organization: other_org)
 
         correct_org = create(:observation,
                               observer: teammate_person,
@@ -398,8 +398,8 @@ RSpec.describe AboutMeObservationsQuery, type: :query do
       it 'only includes observations from the correct organization' do
         other_org = create(:organization, :company)
         other_org_person = create(:person)
-        other_org_teammate = create(:teammate, person: teammate_person, organization: other_org, type: 'CompanyTeammate')
-        other_org_observer = create(:teammate, person: other_org_person, organization: other_org, type: 'CompanyTeammate')
+        other_org_teammate = create(:company_teammate, person: teammate_person, organization: other_org)
+        other_org_observer = create(:company_teammate, person: other_org_person, organization: other_org)
 
         correct_org = create(:observation,
                               observer: other_person,

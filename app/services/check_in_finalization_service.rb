@@ -120,8 +120,8 @@ class CheckInFinalizationService
     reason = @maap_snapshot_reason.presence || "Check-in finalization for #{@teammate.person.display_name}"
     
     MaapSnapshot.create!(
-      employee: @teammate.person,
-      created_by: @finalized_by.person,
+      employee_company_teammate: @teammate,
+      creator_company_teammate: @finalized_by,
       company: @teammate.organization,
       change_type: determine_change_type(results),
       reason: reason,

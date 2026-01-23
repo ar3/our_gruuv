@@ -175,7 +175,7 @@ RSpec.describe Organizations::PromptsController, type: :controller do
 
       before do
         # Remove any existing CompanyTeammate for this person in the organization
-        person.teammates.where(organization: organization, type: 'CompanyTeammate').destroy_all
+        person.teammates.where(organization: organization).destroy_all
         # Sign in as team teammate (not CompanyTeammate)
         session[:current_company_teammate_id] = team_teammate.id
       end

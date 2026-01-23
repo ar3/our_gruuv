@@ -19,13 +19,15 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
   end
   
   let!(:assignment_check_in) do
+    manager_ct = CompanyTeammate.find(manager_teammate.id) # Ensure it's a CompanyTeammate instance
     create(:assignment_check_in,
            teammate: employee_teammate,
            assignment: assignment,
            employee_rating: 'meeting',
            manager_rating: 'exceeding',
            employee_completed_at: 1.day.ago,
-           manager_completed_at: 1.day.ago)
+           manager_completed_at: 1.day.ago,
+           manager_completed_by_teammate: manager_ct)
   end
 
   before do
@@ -78,13 +80,15 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
 
       context 'when position check-in is ready for finalization' do
         let!(:ready_position_check_in) do
+          manager_ct = CompanyTeammate.find(manager_teammate.id) # Ensure it's a CompanyTeammate instance
           create(:position_check_in,
             teammate: employee_teammate,
             employment_tenure: employment_tenure,
             employee_rating: 1,
             manager_rating: 2,
             employee_completed_at: 1.day.ago,
-            manager_completed_at: 1.day.ago)
+            manager_completed_at: 1.day.ago,
+            manager_completed_by_teammate: manager_ct)
         end
 
         it 'loads ready position check-in' do
@@ -97,6 +101,7 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
 
       context 'when position check-in has been finalized' do
         let!(:finalized_position_check_in) do
+          manager_ct = CompanyTeammate.find(manager_teammate.id) # Ensure it's a CompanyTeammate instance
           create(:position_check_in,
             teammate: employee_teammate,
             employment_tenure: employment_tenure,
@@ -104,9 +109,10 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
             manager_rating: 2,
             employee_completed_at: 2.days.ago,
             manager_completed_at: 2.days.ago,
+            manager_completed_by_teammate: manager_ct,
             official_check_in_completed_at: 1.day.ago,
             official_rating: 2,
-            finalized_by: manager)
+            finalized_by_teammate: manager_ct)
         end
 
         it 'does NOT load finalized position check-in in ready_for_finalization' do
@@ -138,6 +144,7 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
 
       context 'when both ready and finalized position check-ins exist' do
         let!(:finalized_position_check_in) do
+          manager_ct = CompanyTeammate.find(manager_teammate.id) # Ensure it's a CompanyTeammate instance
           create(:position_check_in,
             teammate: employee_teammate,
             employment_tenure: employment_tenure,
@@ -145,19 +152,22 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
             manager_rating: 2,
             employee_completed_at: 3.days.ago,
             manager_completed_at: 3.days.ago,
+            manager_completed_by_teammate: manager_ct,
             official_check_in_completed_at: 2.days.ago,
             official_rating: 2,
-            finalized_by: manager)
+            finalized_by_teammate: manager_ct)
         end
 
         let!(:ready_position_check_in) do
+          manager_ct = CompanyTeammate.find(manager_teammate.id) # Ensure it's a CompanyTeammate instance
           create(:position_check_in,
             teammate: employee_teammate,
             employment_tenure: employment_tenure,
             employee_rating: 1,
             manager_rating: 2,
             employee_completed_at: 1.day.ago,
-            manager_completed_at: 1.day.ago)
+            manager_completed_at: 1.day.ago,
+            manager_completed_by_teammate: manager_ct)
         end
 
         it 'only loads ready check-in, not finalized one' do
@@ -208,7 +218,9 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
         expect(CheckInFinalizationService).to have_received(:new)
         # Verify arguments - compare by ID for STI types
         expect(captured_args[:kwargs][:teammate].id).to eq(employee_teammate.id)
-        expect(captured_args[:kwargs][:finalized_by]).to eq(manager)
+        # finalized_by is a CompanyTeammate, not a Person
+        expect(captured_args[:kwargs][:finalized_by]).to be_a(CompanyTeammate)
+        expect(captured_args[:kwargs][:finalized_by].person).to eq(manager)
         expect(captured_args[:kwargs][:finalization_params]).to be_a(ActionController::Parameters)
         expect(captured_args[:kwargs][:finalization_params][:assignment_check_ins]).to be_present
         expect(captured_args[:kwargs][:request_info]).to be_a(Hash)

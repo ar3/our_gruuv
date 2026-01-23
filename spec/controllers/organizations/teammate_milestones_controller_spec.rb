@@ -287,7 +287,7 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
       observable_moment = ObservableMoments::BaseObservableMomentService.call(
         momentable: teammate_milestone,
         company: organization,
-        created_by: person,
+        creator_teammate: person,
         primary_potential_observer: teammate,
         moment_type: 'ability_milestone',
         occurred_at: Time.current

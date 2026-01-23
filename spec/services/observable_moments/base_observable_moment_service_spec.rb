@@ -11,7 +11,7 @@ RSpec.describe ObservableMoments::BaseObservableMomentService do
       result = ObservableMoments::BaseObservableMomentService.call(
         momentable: employment_tenure,
         company: company,
-        created_by: created_by,
+        creator_company_teammate: creator_teammate,
         primary_potential_observer: primary_observer,
         moment_type: :new_hire,
         occurred_at: Time.current,
@@ -32,7 +32,7 @@ RSpec.describe ObservableMoments::BaseObservableMomentService do
       result = ObservableMoments::BaseObservableMomentService.call(
         momentable: nil,
         company: company,
-        created_by: created_by,
+        creator_company_teammate: creator_teammate,
         primary_potential_observer: primary_observer,
         moment_type: :new_hire
       )
@@ -46,7 +46,7 @@ RSpec.describe ObservableMoments::BaseObservableMomentService do
         ObservableMoments::BaseObservableMomentService.call(
           momentable: nil,
           company: company,
-          created_by: created_by,
+          creator_company_teammate: creator_teammate,
           primary_potential_observer: primary_observer,
           moment_type: :new_hire
         )

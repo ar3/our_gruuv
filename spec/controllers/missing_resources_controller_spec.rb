@@ -54,7 +54,7 @@ RSpec.describe MissingResourcesController, type: :controller do
     context 'when user is logged in with organization' do
       let(:person) { create(:person) }
       let(:organization) { create(:organization) }
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization) }
 
       before do
         allow(controller).to receive(:current_person).and_return(person)

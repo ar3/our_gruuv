@@ -4,8 +4,8 @@ RSpec.describe MaapChangeExecutionService do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
-  let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
-  let(:person_teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+  let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
+  let(:person_teammate) { create(:company_teammate, person: person, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:service) { described_class.new(maap_snapshot: maap_snapshot, current_user: current_user) }
 
@@ -19,8 +19,8 @@ RSpec.describe MaapChangeExecutionService do
       let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
-               employee: person,
-               created_by: manager,
+               employee_teammate: person,
+               creator_teammate: manager,
                company: organization,
                change_type: 'assignment_management',
                maap_data: maap_data)
@@ -333,7 +333,7 @@ RSpec.describe MaapChangeExecutionService do
 
       context 'when admin bypass is enabled' do
         let(:admin_person) { create(:person, og_admin: true) }
-        let(:admin_teammate) { CompanyTeammate.create!(person: admin_person, organization: organization) }
+        let(:admin_teammate) { create(:company_teammate, person: admin_person, organization: organization) }
         let(:current_user) { admin_teammate }
         let(:check_in) do
           create(:assignment_check_in,
@@ -374,8 +374,8 @@ RSpec.describe MaapChangeExecutionService do
       let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
-               employee: person,
-               created_by: manager,
+               employee_teammate: person,
+               creator_teammate: manager,
                company: organization,
                change_type: 'assignment_management',
                maap_data: {
@@ -402,8 +402,8 @@ RSpec.describe MaapChangeExecutionService do
       let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
-               employee: person,
-               created_by: manager,
+               employee_teammate: person,
+               creator_teammate: manager,
                company: organization,
                change_type: 'assignment_management',
                maap_data: { 'assignments' => [{ 'id' => 99999 }] }) # Non-existent assignment

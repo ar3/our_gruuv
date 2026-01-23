@@ -17,7 +17,7 @@
   %td
     = format_time_in_user_timezone(snapshot.created_at, format: "%Y-%m-%d %I:%M %p")
   %td
-    = snapshot.created_by&.display_name || "System"
+    = snapshot.creator_company_teammate&.person&.display_name || "System"
   %td
     = truncate(snapshot.reason, length: 50)
   - unless show_checkbox

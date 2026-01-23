@@ -4,8 +4,8 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
   let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:direct_report) { create(:person) }
-  let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
-  let(:direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: direct_report, organization: organization) }
+  let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
+  let(:direct_report_teammate) { create(:company_teammate, person: direct_report, organization: organization) }
 
   before do
     # Reload as CompanyTeammate instances before using them

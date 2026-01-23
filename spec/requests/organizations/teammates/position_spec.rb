@@ -3,17 +3,17 @@ require 'rails_helper'
 RSpec.describe 'Organizations::Teammates::Position', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: true) }
   let(:employee_person) { create(:person) }
-  let(:employee_teammate) { create(:teammate, type: 'CompanyTeammate', person: employee_person, organization: organization) }
+  let(:employee_teammate) { create(:company_teammate, person: employee_person, organization: organization) }
   let(:manager) { create(:person) }
   let(:manager_teammate) do
-    teammate = create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization)
+    teammate = create(:company_teammate, person: manager, organization: organization)
     # Ensure it's actually a CompanyTeammate instance
     CompanyTeammate.find(teammate.id)
   end
   let(:new_manager) { create(:person) }
-  let(:new_manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: new_manager, organization: organization) }
+  let(:new_manager_teammate) { create(:company_teammate, person: new_manager, organization: organization) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
   let(:new_position_type) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'New Position Type') }
@@ -124,9 +124,9 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       manager3 = create(:person, first_name: 'Charlie', last_name: 'Beta')
       
       # Create teammates for managers
-      manager1_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: manager1, organization: organization).id)
-      manager2_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: manager2, organization: organization).id)
-      manager3_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: manager3, organization: organization).id)
+      manager1_teammate = CompanyTeammate.find(create(:company_teammate, person: manager1, organization: organization).id)
+      manager2_teammate = CompanyTeammate.find(create(:company_teammate, person: manager2, organization: organization).id)
+      manager3_teammate = CompanyTeammate.find(create(:company_teammate, person: manager3, organization: organization).id)
       
       # Create active employment tenures for managers (so they are active teammates)
       create(:employment_tenure, teammate: manager1_teammate, company: organization, position: position, started_at: 1.year.ago)
@@ -135,23 +135,23 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       
       # Create active employment tenures where these people are managers
       # Use different employees to avoid overlapping tenures
-      other_employee1 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
-      other_employee2 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
-      other_employee3 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      other_employee1 = create(:company_teammate, person: create(:person), organization: organization)
+      other_employee2 = create(:company_teammate, person: create(:person), organization: organization)
+      other_employee3 = create(:company_teammate, person: create(:person), organization: organization)
       create(:employment_tenure, teammate: other_employee1, company: organization, position: position, manager_teammate: manager1_teammate, started_at: 6.months.ago)
       create(:employment_tenure, teammate: other_employee2, company: organization, position: position, manager_teammate: manager2_teammate, started_at: 5.months.ago)
       create(:employment_tenure, teammate: other_employee3, company: organization, position: position, manager_teammate: manager3_teammate, started_at: 4.months.ago)
       
       # Create an inactive manager (should not appear)
       inactive_manager = create(:person, first_name: 'Inactive', last_name: 'Manager')
-      inactive_manager_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: inactive_manager, organization: organization).id)
+      inactive_manager_teammate = CompanyTeammate.find(create(:company_teammate, person: inactive_manager, organization: organization).id)
       create(:employment_tenure, teammate: inactive_manager_teammate, company: organization, position: position, started_at: 2.years.ago, ended_at: 1.year.ago)
-      other_employee4 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      other_employee4 = create(:company_teammate, person: create(:person), organization: organization)
       create(:employment_tenure, teammate: other_employee4, company: organization, position: position, manager_teammate: inactive_manager_teammate, started_at: 3.months.ago, ended_at: 1.month.ago)
       
       # Create a manager who is not an active teammate (should not appear)
       non_teammate_manager = create(:person, first_name: 'Non', last_name: 'Teammate')
-      other_employee5 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      other_employee5 = create(:company_teammate, person: create(:person), organization: organization)
       # Note: non_teammate_manager doesn't have a teammate, so they won't appear in managers list
       create(:employment_tenure, teammate: other_employee5, company: organization, position: position, started_at: 2.months.ago)
       
@@ -174,14 +174,14 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     it 'loads all active employees excluding managers and current person' do
       # Create a non-manager employee
       non_manager_person = create(:person, first_name: 'NonManager', last_name: 'Employee')
-      non_manager_teammate = create(:teammate, type: 'CompanyTeammate', person: non_manager_person, organization: organization)
+      non_manager_teammate = create(:company_teammate, person: non_manager_person, organization: organization)
       create(:employment_tenure, teammate: non_manager_teammate, company: organization, position: position, started_at: 3.months.ago)
       
       # Create another manager (already tested above, but needed for this test)
       manager1 = create(:person, first_name: 'Alice', last_name: 'Zebra')
-      manager1_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: manager1, organization: organization).id)
+      manager1_teammate = CompanyTeammate.find(create(:company_teammate, person: manager1, organization: organization).id)
       create(:employment_tenure, teammate: manager1_teammate, company: organization, position: position, started_at: 1.year.ago)
-      other_employee = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      other_employee = create(:company_teammate, person: create(:person), organization: organization)
       create(:employment_tenure, teammate: other_employee, company: organization, position: position, manager_teammate: manager1_teammate, started_at: 6.months.ago)
       
       get organization_teammate_position_path(organization, employee_teammate)
@@ -203,7 +203,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     before { current_tenure }
 
     context 'when user has can_manage_employment permission' do
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: true) }
 
       it 'authorizes with can_manage_employment permission' do
         new_manager_teammate
@@ -301,7 +301,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         
         snapshot = MaapSnapshot.last
         expect(snapshot.change_type).to eq('position_tenure')
-        expect(snapshot.employee).to eq(employee_person)
+        expect(snapshot.employee_company_teammate).to eq(employee_person)
         expect(snapshot.reason).to eq('Manager change')
       end
 
@@ -382,7 +382,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     end
 
     context 'when user does not have can_manage_employment permission' do
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: false) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: false) }
       
       # Create employment tenure for the teammate so they have an org, but without permission
       let!(:teammate_employment_tenure) do
@@ -415,10 +415,10 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
   end
 
   describe 'POST /organizations/:id/teammates/:id/position/create_employment' do
-    let(:teammate_without_employment) { create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization) }
+    let(:teammate_without_employment) { create(:company_teammate, person: create(:person), organization: organization) }
     
     context 'when user has can_manage_employment permission' do
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: true) }
 
       context 'starting new employment (no previous tenures)' do
         it 'creates a new employment tenure' do
@@ -556,7 +556,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     end
 
     context 'when user does not have can_manage_employment permission' do
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: false) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: false) }
       
       # Create employment tenure for the teammate so they have an org, but without permission
       let!(:teammate_employment_tenure) do
@@ -588,7 +588,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     before { current_tenure }
 
     context 'when user has can_manage_employment permission' do
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: true) }
 
       it 'returns http success' do
         termination_date = Date.current + 1.week
@@ -624,7 +624,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     end
 
     context 'when user does not have can_manage_employment permission' do
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: false) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: false) }
       
       let!(:teammate_employment_tenure) do
         pos = position
@@ -655,7 +655,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     end
 
     context 'when user has can_manage_employment permission' do
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: true) }
 
       it 'terminates employment and updates last_terminated_at' do
         termination_date = Date.current + 1.week
@@ -683,7 +683,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         
         snapshot = MaapSnapshot.last
         expect(snapshot.change_type).to eq('position_tenure')
-        expect(snapshot.employee).to eq(employee_person)
+        expect(snapshot.employee_company_teammate).to eq(employee_person)
         expect(snapshot.effective_date).to eq(termination_date)
         expect(snapshot.reason).to eq('Voluntary resignation')
       end
@@ -725,7 +725,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     end
 
     context 'when user does not have can_manage_employment permission' do
-      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: false) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: false) }
       
       let!(:teammate_employment_tenure) do
         pos = position

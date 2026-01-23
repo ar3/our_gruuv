@@ -10,7 +10,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
   let(:assignment) { create(:assignment, company: organization, title: 'Frontend Development') }
   let(:aspiration) { create(:aspiration, organization: organization, name: 'Technical Skills') }
 
-  let(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization, can_manage_employment: true) }
+  let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, can_manage_employment: true) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:employment_tenure) do
     mt = CompanyTeammate.find(manager_teammate.id) # Ensure it's a CompanyTeammate instance
@@ -479,7 +479,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes abilities where employee has milestone attainments' do
-        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 2)
         
@@ -507,7 +507,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes abilities with both milestones and assignment requirements' do
-        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_both, certifying_teammate: certifier_teammate, milestone_level: 1)
         assignment_with_ability = create(:assignment, company: organization, title: 'Test Assignment')
@@ -524,7 +524,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'deduplicates abilities that appear in both milestone and assignment lists' do
-        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_both, certifying_teammate: certifier_teammate, milestone_level: 2)
         assignment_with_ability = create(:assignment, company: organization, title: 'Test Assignment')
@@ -541,7 +541,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'only includes abilities from organization hierarchy' do
-        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone_outside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_outside_hierarchy, certifying_teammate: certifier_teammate, milestone_level: 1)
         milestone_inside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 1)
@@ -557,7 +557,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       it 'includes abilities from departments within the organization hierarchy' do
         department = create(:organization, type: 'Department', parent: organization, name: 'Engineering Department')
         ability_in_department = create(:ability, name: 'Department Ability', organization: department)
-        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_in_department, certifying_teammate: certifier_teammate, milestone_level: 2)
         
@@ -573,7 +573,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         ability_a = create(:ability, name: 'A Ability', organization: organization)
         ability_m = create(:ability, name: 'M Ability', organization: organization)
         
-        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         create(:teammate_milestone, teammate: employee_teammate, ability: ability_z, certifying_teammate: certifier_teammate, milestone_level: 1)
         create(:teammate_milestone, teammate: employee_teammate, ability: ability_a, certifying_teammate: certifier_teammate, milestone_level: 1)
@@ -587,7 +587,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes all milestone attainments for each ability' do
-        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone1 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 1, attained_at: 6.months.ago)
         milestone2 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 3, attained_at: 1.month.ago)
@@ -916,6 +916,158 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
           expect(latest_finalized.official_rating).to eq(2)
           expect(latest_finalized.shared_notes).to eq('Great work overall')
         end
+      end
+    end
+  end
+
+  describe 'GET #show' do
+    context 'as non-direct-manager viewer (should behave as manager)' do
+      let(:other_teammate) { create(:person, full_name: 'Other Teammate') }
+      let(:other_teammate_ct) { create(:company_teammate, person: other_teammate, organization: organization) }
+      let(:other_employment) do
+        other_teammate_ct.update!(first_employed_at: 1.year.ago)
+        create(:employment_tenure, teammate: other_teammate_ct, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
+      end
+
+      before do
+        other_employment
+        sign_in_as_teammate(other_teammate, organization)
+      end
+
+      it 'sets view_mode to :manager (not :readonly)' do
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        expect(assigns(:view_mode)).to eq(:manager)
+        expect(assigns(:view_mode)).not_to eq(:readonly)
+      end
+
+      it 'allows viewing check-ins' do
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        expect(response).to be_successful
+        expect(assigns(:position_check_in)).to be_present
+      end
+    end
+  end
+
+  describe 'PATCH #update' do
+    context 'as non-direct-manager viewer (should behave as manager)' do
+      let(:other_teammate) { create(:person, full_name: 'Other Teammate') }
+      let(:other_teammate_ct) { create(:company_teammate, person: other_teammate, organization: organization) }
+      let(:other_employment) do
+        other_teammate_ct.update!(first_employed_at: 1.year.ago)
+        create(:employment_tenure, teammate: other_teammate_ct, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
+      end
+
+      before do
+        other_employment
+        sign_in_as_teammate(other_teammate, organization)
+      end
+
+      it 'updates position check-in with manager fields' do
+        position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          position_check_in: {
+            manager_rating: 2,
+            manager_private_notes: 'Outstanding work from non-direct-manager',
+            status: 'complete'
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        expect(flash[:notice]).to eq('Check-ins saved successfully.')
+        
+        position_check_in.reload
+        expect(position_check_in.manager_rating).to eq(2)
+        expect(position_check_in.manager_private_notes).to eq('Outstanding work from non-direct-manager')
+        expect(position_check_in.manager_completed?).to be true
+        expect(position_check_in.manager_completed_by_teammate).to eq(other_teammate_ct)
+      end
+
+      it 'updates assignment check-ins with manager fields' do
+        assignment_check_in = create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          assignment_check_ins: {
+            assignment_check_in.id => {
+              assignment_id: assignment.id,
+              manager_rating: 'meeting',
+              manager_private_notes: 'Good progress from non-direct-manager',
+              status: 'complete'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        
+        assignment_check_in.reload
+        expect(assignment_check_in.manager_rating).to eq('meeting')
+        expect(assignment_check_in.manager_private_notes).to eq('Good progress from non-direct-manager')
+        expect(assignment_check_in.manager_completed?).to be true
+        expect(assignment_check_in.manager_completed_by_teammate).to eq(other_teammate_ct)
+      end
+
+      it 'updates aspiration check-ins with manager fields' do
+        aspiration_check_in = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          aspiration_check_ins: {
+            aspiration_check_in.id => {
+              aspiration_id: aspiration.id,
+              manager_rating: 'exceeding',
+              manager_private_notes: 'Excellent growth from non-direct-manager',
+              status: 'complete'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        
+        aspiration_check_in.reload
+        expect(aspiration_check_in.manager_rating).to eq('exceeding')
+        expect(aspiration_check_in.manager_private_notes).to eq('Excellent growth from non-direct-manager')
+        expect(aspiration_check_in.manager_completed?).to be true
+        expect(aspiration_check_in.manager_completed_by_teammate).to eq(other_teammate_ct)
+      end
+
+      it 'does not allow updating employee fields' do
+        # Create check-in with employee fields explicitly set to nil to test that they don't get updated
+        assignment_check_in = create(:assignment_check_in, 
+          teammate: employee.teammates.first, 
+          assignment: assignment,
+          employee_rating: nil,
+          employee_private_notes: nil
+        )
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          assignment_check_ins: {
+            assignment_check_in.id => {
+              assignment_id: assignment.id,
+              employee_rating: 'exceeding',
+              employee_private_notes: 'Should not be updated',
+              manager_rating: 'meeting',
+              manager_private_notes: 'This should work',
+              status: 'complete'
+            }
+          }
+        }
+
+        assignment_check_in.reload
+        # Employee fields should not be updated (not permitted when view_mode is :manager)
+        expect(assignment_check_in.employee_rating).to be_nil
+        expect(assignment_check_in.employee_private_notes).to be_nil
+        # Manager fields should be updated
+        expect(assignment_check_in.manager_rating).to eq('meeting')
+        expect(assignment_check_in.manager_private_notes).to eq('This should work')
       end
     end
   end

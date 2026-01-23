@@ -4,6 +4,8 @@ FactoryBot.define do
     association :organization
     type { 'CompanyTeammate' }
     
+    factory :company_teammate, class: 'CompanyTeammate'
+    
     # Default to no permissions
     can_manage_employment { false }
     can_manage_maap { false }

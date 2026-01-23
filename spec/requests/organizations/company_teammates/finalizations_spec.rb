@@ -8,8 +8,8 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
   let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
   
-  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
-  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, can_manage_employment: true) }
+  let!(:employee_teammate) { create(:company_teammate, person: employee, organization: organization) }
   
   let!(:employment_tenure) do
     create(:employment_tenure,
@@ -62,8 +62,8 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
 
         # Verify snapshot was created
         expect(snapshot).to be_present
-        expect(snapshot.employee).to eq(employee)
-        expect(snapshot.created_by).to eq(manager)
+        expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+        expect(snapshot.creator_company_teammate).to eq(manager_teammate)
 
         # Verify snapshot's position rating matches submitted rating
         snapshot_rating = snapshot.maap_data['position']['rated_position']['official_position_rating']
@@ -129,7 +129,7 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
         # Verify bidirectional relationship
         expect(position_check_in.maap_snapshot).to eq(snapshot)
         expect(position_check_in.maap_snapshot_id).to be_present
-        expect(position_check_in.maap_snapshot.employee).to eq(employee)
+        expect(position_check_in.maap_snapshot.employee_company_teammate).to eq(employee_teammate)
       end
     end
 
@@ -194,8 +194,8 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
           }.to change(MaapSnapshot, :count).by(1)
 
           snapshot = MaapSnapshot.last
-          expect(snapshot.employee).to eq(employee)
-          expect(snapshot.created_by).to eq(manager)
+          expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+          expect(snapshot.creator_company_teammate).to eq(manager_teammate)
           expect(snapshot.change_type).to eq('assignment_management')
         end
 

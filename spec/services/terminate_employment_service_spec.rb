@@ -3,15 +3,15 @@ require 'rails_helper'
 RSpec.describe TerminateEmploymentService, type: :service do
   let(:company) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: company, first_employed_at: 1.year.ago) }
+  let(:teammate) { create(:company_teammate, person: person, organization: company, first_employed_at: 1.year.ago) }
   let(:manager) { create(:person) }
-  let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: company) }
+  let(:manager_teammate) { create(:company_teammate, person: manager, organization: company) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
   let(:seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 1.month) }
-  let(:created_by) { create(:person) }
+  let(:created_by) { manager_teammate }
   
   let(:current_tenure) do
     EmploymentTenure.create!(
@@ -81,7 +81,7 @@ RSpec.describe TerminateEmploymentService, type: :service do
 
         snapshot = MaapSnapshot.last
         expect(snapshot.change_type).to eq('position_tenure')
-        expect(snapshot.employee).to eq(person)
+        expect(snapshot.employee_company_teammate).to eq(teammate)
         expect(snapshot.company_id).to eq(company.id)
         expect(snapshot.effective_date).to eq(termination_date)
         expect(snapshot.reason).to eq('Employment termination')
@@ -173,6 +173,7 @@ RSpec.describe TerminateEmploymentService, type: :service do
           created_by: created_by
         )
 
+        puts "DEBUG: result.ok?=#{result.ok?}, error=#{result.error}" unless result.ok?
         expect(result.ok?).to be true
         expect(dept_teammate.reload.last_terminated_at).to eq(termination_date)
       end

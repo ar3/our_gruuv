@@ -2,7 +2,8 @@ class MaapChangeExecutionService
   def initialize(maap_snapshot:, current_user:)
     @maap_snapshot = maap_snapshot
     @current_user = current_user
-    @person = maap_snapshot&.employee
+    @teammate = maap_snapshot&.employee_company_teammate
+    @person = @teammate&.person
   end
 
   def execute!

@@ -6,8 +6,8 @@ RSpec.describe CheckInFinalizationService, type: :service do
   let(:employee) { create(:person) }
   let(:assignment) { create(:assignment, company: organization) }
   
-  let!(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
-  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
+  let!(:employee_teammate) { create(:company_teammate, person: employee, organization: organization) }
   
   let!(:assignment_tenure) do
     create(:assignment_tenure,
@@ -359,8 +359,8 @@ RSpec.describe CheckInFinalizationService, type: :service do
           
           # Verify snapshot is created
           expect(snapshot).to be_present
-          expect(snapshot.employee).to eq(employee)
-          expect(snapshot.created_by).to eq(manager)
+          expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+          expect(snapshot.creator_company_teammate).to eq(manager_teammate)
           
           # Verify snapshot position data structure
           expect(snapshot.maap_data['position']).to be_present

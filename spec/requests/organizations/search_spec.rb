@@ -98,7 +98,7 @@ RSpec.describe 'Organizations::Search', type: :request do
 
       context 'with people in search results' do
         let(:searchable_person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john.doe@example.com') }
-        let(:searchable_teammate) { create(:teammate, person: searchable_person, organization: organization, type: 'CompanyTeammate') }
+        let(:searchable_teammate) { create(:company_teammate, person: searchable_person, organization: organization) }
 
         before do
           # Create active employment for the searchable person
@@ -124,7 +124,7 @@ RSpec.describe 'Organizations::Search', type: :request do
           get organization_search_path(organization, q: 'John')
           expect(assigns(:results)[:people]).to include(searchable_person)
           # Verify the person has a teammate in the organization
-          found_teammate = searchable_person.teammates.find_by(organization: organization, type: 'CompanyTeammate')
+          found_teammate = searchable_person.teammates.find_by(organization: organization)
           expect(found_teammate.id).to eq(searchable_teammate.id)
           expect(found_teammate).to be_a(CompanyTeammate)
         end

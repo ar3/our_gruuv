@@ -6,9 +6,9 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
   let(:direct_report) { create(:person) }
   let(:non_direct_report) { create(:person) }
   
-  let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
-  let!(:direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: direct_report, organization: organization) }
-  let!(:non_direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: non_direct_report, organization: organization) }
+  let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
+  let!(:direct_report_teammate) { create(:company_teammate, person: direct_report, organization: organization) }
+  let!(:non_direct_report_teammate) { create(:company_teammate, person: non_direct_report, organization: organization) }
 
   before do
     # Set first_employed_at so teammates pass the 'active' status filter

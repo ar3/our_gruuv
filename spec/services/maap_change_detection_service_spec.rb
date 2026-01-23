@@ -15,8 +15,8 @@ RSpec.describe MaapChangeDetectionService do
       before do
         # Create previous snapshot with the baseline state (standard format)
         previous_snapshot.update!(
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           reason: 'Previous state',
@@ -42,8 +42,8 @@ RSpec.describe MaapChangeDetectionService do
         
         # Set up the exact scenario from MaapSnapshot 122 (proposed state)
         snapshot.update!(
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           reason: 'Assignment updates',
@@ -123,8 +123,8 @@ RSpec.describe MaapChangeDetectionService do
     
     before do
       previous_snapshot.update!(
-        employee: person,
-        created_by: manager,
+        employee_teammate: person,
+        creator_teammate: manager,
         company: organization,
         change_type: 'aspiration_management',
         reason: 'Previous state',
@@ -142,8 +142,8 @@ RSpec.describe MaapChangeDetectionService do
       )
       
       snapshot.update!(
-        employee: person,
-        created_by: manager,
+        employee_teammate: person,
+        creator_teammate: manager,
         company: organization,
         change_type: 'aspiration_management',
         reason: 'Aspiration updates',

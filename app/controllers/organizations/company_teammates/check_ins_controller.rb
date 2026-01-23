@@ -75,12 +75,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     if current_person == @teammate.person
       @view_mode = :employee
       Rails.logger.debug "Setting view_mode to :employee"
-    elsif current_manager == current_person
+    else
+      # All non-employee viewers (including non-direct-managers) behave as managers
       @view_mode = :manager
       Rails.logger.debug "Setting view_mode to :manager"
-    else
-      @view_mode = :readonly
-      Rails.logger.debug "Setting view_mode to :readonly"
     end
     Rails.logger.debug "Final view_mode: #{@view_mode}"
     Rails.logger.debug "=== END DEBUG ===\n"
@@ -228,14 +226,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
           completion_service.complete_employee_side!
         elsif @view_mode == :manager
           completion_service.complete_manager_side!(completed_by: current_company_teammate)
-        elsif @view_mode == :readonly
-          # For readonly, determine which side to complete based on what fields are present
-          if attrs[:employee_rating].present? || attrs[:employee_private_notes].present?
-            completion_service.complete_employee_side!
-          end
-          if attrs[:manager_rating].present? || attrs[:manager_private_notes].present?
-            completion_service.complete_manager_side!(completed_by: current_company_teammate)
-          end
         end
 
         # Trigger notification if completion was detected
@@ -256,10 +246,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         if @view_mode == :employee
           check_in.uncomplete_employee_side!
         elsif @view_mode == :manager
-          check_in.uncomplete_manager_side!
-        elsif @view_mode == :readonly
-          # For readonly, uncomplete both sides
-          check_in.uncomplete_employee_side!
           check_in.uncomplete_manager_side!
         end
       end
@@ -290,14 +276,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
           completion_service.complete_employee_side!
         elsif @view_mode == :manager
           completion_service.complete_manager_side!(completed_by: current_company_teammate)
-        elsif @view_mode == :readonly
-          # For readonly, determine which side to complete based on what fields are present
-          if attrs[:employee_rating].present? || attrs[:employee_private_notes].present?
-            completion_service.complete_employee_side!
-          end
-          if attrs[:manager_rating].present? || attrs[:manager_private_notes].present?
-            completion_service.complete_manager_side!(completed_by: current_company_teammate)
-          end
         end
 
         # Trigger notification if completion was detected
@@ -318,10 +296,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         if @view_mode == :employee
           check_in.uncomplete_employee_side!
         elsif @view_mode == :manager
-          check_in.uncomplete_manager_side!
-        elsif @view_mode == :readonly
-          # For readonly, uncomplete both sides
-          check_in.uncomplete_employee_side!
           check_in.uncomplete_manager_side!
         end
       end
@@ -395,9 +369,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         permitted_params[check_in_id] = attrs.permit(:assignment_id, :employee_rating, :actual_energy_percentage, :employee_personal_alignment, :employee_private_notes, :status)
       elsif @view_mode == :manager
         permitted_params[check_in_id] = attrs.permit(:assignment_id, :manager_rating, :manager_private_notes, :status)
-      elsif @view_mode == :readonly
-        # For readonly, permit all fields
-        permitted_params[check_in_id] = attrs.permit(:assignment_id, :employee_rating, :actual_energy_percentage, :employee_personal_alignment, :employee_private_notes, :manager_rating, :manager_private_notes, :status)
       end
     end
     
@@ -414,9 +385,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         permitted_params[check_in_id] = attrs.permit(:aspiration_id, :employee_rating, :employee_private_notes, :status)
       elsif @view_mode == :manager
         permitted_params[check_in_id] = attrs.permit(:aspiration_id, :manager_rating, :manager_private_notes, :status)
-      elsif @view_mode == :readonly
-        # For readonly, permit all fields
-        permitted_params[check_in_id] = attrs.permit(:aspiration_id, :employee_rating, :employee_private_notes, :manager_rating, :manager_private_notes, :status)
       end
     end
     

@@ -222,7 +222,7 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
   describe 'root_company handling' do
     let(:root_company) { create(:organization, :company) }
     let(:team) { create(:organization, :team, parent: root_company) }
-    let!(:root_company_teammate) { create(:teammate, person: person, organization: root_company, type: 'CompanyTeammate', can_manage_prompts: true) }
+    let!(:root_company_teammate) { create(:company_teammate, person: person, organization: root_company, can_manage_prompts: true) }
     let!(:root_template) { create(:prompt_template, company: root_company) }
 
     before do

@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'About Me Page', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization, type: 'CompanyTeammate') }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization) }
 
   before do
     create(:employment_tenure, teammate: teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
@@ -39,7 +39,7 @@ RSpec.describe 'About Me Page', type: :request do
 
     context 'when user does not have view_check_ins permission' do
       let(:other_person) { create(:person) }
-      let(:other_teammate) { create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate') }
+      let(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
 
       before do
         create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
@@ -286,9 +286,9 @@ RSpec.describe 'About Me Page', type: :request do
 
   describe 'Observations section' do
     let(:other_person) { create(:person) }
-    let(:other_teammate) { create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate') }
+    let(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
     let(:third_person) { create(:person) }
-    let(:third_teammate) { create(:teammate, person: third_person, organization: organization, type: 'CompanyTeammate') }
+    let(:third_teammate) { create(:company_teammate, person: third_person, organization: organization) }
 
     context 'when teammate is only observer' do
       let!(:observation_given) do
@@ -575,7 +575,7 @@ RSpec.describe 'About Me Page', type: :request do
 
       it 'shows green indicator when 1+ given and 1+ received' do
         other_person = create(:person)
-        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        other_teammate = create(:company_teammate, person: other_person, organization: organization)
         
         observation_given = build(:observation,
                                  observer: person,
@@ -603,7 +603,7 @@ RSpec.describe 'About Me Page', type: :request do
 
       it 'shows green indicator when 2+ observations given' do
         other_person = create(:person)
-        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        other_teammate = create(:company_teammate, person: other_person, organization: organization)
         
         observation_given1 = build(:observation,
                                   observer: person,
@@ -631,7 +631,7 @@ RSpec.describe 'About Me Page', type: :request do
 
       it 'shows yellow indicator when 1 observation given and 0 received' do
         other_person = create(:person)
-        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        other_teammate = create(:company_teammate, person: other_person, organization: organization)
         
         observation_given = build(:observation,
                                  observer: person,
@@ -649,7 +649,7 @@ RSpec.describe 'About Me Page', type: :request do
 
       it 'shows yellow indicator when 0 given but some received' do
         other_person = create(:person)
-        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        other_teammate = create(:company_teammate, person: other_person, organization: organization)
         
         observation_received = build(:observation,
                                     observer: other_person,
@@ -667,7 +667,7 @@ RSpec.describe 'About Me Page', type: :request do
 
       it 'shows collapsed text with given and received counts' do
         other_person = create(:person)
-        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        other_teammate = create(:company_teammate, person: other_person, organization: organization)
         
         observation_given = build(:observation,
                                  observer: person,
@@ -1107,7 +1107,7 @@ RSpec.describe 'About Me Page', type: :request do
 
     context 'when viewing someone else\'s page' do
       let(:other_person) { create(:person) }
-      let(:other_teammate) { create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate') }
+      let(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
 
       before do
         create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)

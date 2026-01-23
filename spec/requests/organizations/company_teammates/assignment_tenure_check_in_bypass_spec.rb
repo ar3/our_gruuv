@@ -6,8 +6,8 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
   
-  let!(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager, organization: organization, can_manage_employment: true, type: 'CompanyTeammate').id) }
-  let!(:employee_teammate) { CompanyTeammate.find(create(:teammate, person: employee, organization: organization, type: 'CompanyTeammate').id) }
+  let!(:manager_teammate) { CompanyTeammate.find(create(:company_teammate, person: manager, organization: organization, can_manage_employment: true).id) }
+  let!(:employee_teammate) { CompanyTeammate.find(create(:company_teammate, person: employee, organization: organization).id) }
   
   let!(:employment_tenure) do
     create(:employment_tenure,
@@ -178,7 +178,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
       context 'with manage_employment permission' do
         let!(:admin_user) { create(:person) }
         let!(:admin_teammate) do
-          CompanyTeammate.find(create(:teammate, person: admin_user, organization: organization, can_manage_employment: true, type: 'CompanyTeammate').id)
+          CompanyTeammate.find(create(:company_teammate, person: admin_user, organization: organization, can_manage_employment: true).id)
         end
 
         before do
@@ -196,7 +196,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
 
       context 'without manage_employment permission' do
         let!(:regular_user) { create(:person) }
-        let!(:regular_teammate) { CompanyTeammate.find(create(:teammate, person: regular_user, organization: organization, can_manage_employment: false, type: 'CompanyTeammate').id) }
+        let!(:regular_teammate) { CompanyTeammate.find(create(:company_teammate, person: regular_user, organization: organization, can_manage_employment: false).id) }
 
         before do
           create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
@@ -320,8 +320,8 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         }.to change(MaapSnapshot, :count).by(1)
         
         snapshot = MaapSnapshot.last
-        expect(snapshot.employee).to eq(employee)
-        expect(snapshot.created_by).to eq(manager)
+        expect(snapshot.employee_company_teammate).to eq(employee)
+        expect(snapshot.creator_company_teammate).to eq(manager)
         expect(snapshot.change_type).to eq('assignment_management')
         expect(snapshot.reason).to eq('Check-in Bypass')
         expect(snapshot.manager_request_info).to include('ip_address', 'user_agent', 'timestamp')
@@ -422,7 +422,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
       context 'with manage_employment permission' do
         let!(:admin_user) { create(:person) }
         let!(:admin_teammate) do
-          CompanyTeammate.find(create(:teammate, person: admin_user, organization: organization, can_manage_employment: true, type: 'CompanyTeammate').id)
+          CompanyTeammate.find(create(:company_teammate, person: admin_user, organization: organization, can_manage_employment: true).id)
         end
         let!(:admin_assignment) { create(:assignment, company: organization, title: 'Admin Assignment') }
 
@@ -448,7 +448,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
 
       context 'without manage_employment permission' do
         let!(:regular_user) { create(:person) }
-        let!(:regular_teammate) { CompanyTeammate.find(create(:teammate, person: regular_user, organization: organization, can_manage_employment: false, type: 'CompanyTeammate').id) }
+        let!(:regular_teammate) { CompanyTeammate.find(create(:company_teammate, person: regular_user, organization: organization, can_manage_employment: false).id) }
         let!(:regular_assignment) { create(:assignment, company: organization, title: 'Regular Assignment') }
 
         before do

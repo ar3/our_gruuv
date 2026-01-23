@@ -4,7 +4,7 @@ RSpec.describe Organizations::CompanyTeammates::OneOnOneLinksController, type: :
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person, full_name: 'Manager Person') }
   let(:employee) { create(:person, full_name: 'Employee Person') }
-  let(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization, can_manage_employment: true) }
+  let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, can_manage_employment: true) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:position_type) { create(:position_type, organization: organization) }
   let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }

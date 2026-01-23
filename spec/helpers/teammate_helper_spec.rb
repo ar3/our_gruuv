@@ -365,7 +365,7 @@ RSpec.describe TeammateHelper, type: :helper do
     it 'returns correct display name for manager_teammate_id' do
       manager = create(:person, first_name: 'John', last_name: 'Doe')
       organization = create(:organization)
-      manager_teammate = create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization)
+      manager_teammate = create(:company_teammate, person: manager, organization: organization)
       expect(helper.filter_display_name('manager_teammate_id', manager_teammate.id.to_s)).to eq('John Doe')
     end
 
@@ -402,7 +402,7 @@ RSpec.describe TeammateHelper, type: :helper do
     before do
       manager = create(:person)
       organization = create(:organization)
-      manager_teammate = create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization)
+      manager_teammate = create(:company_teammate, person: manager, organization: organization)
       allow(helper).to receive(:params).and_return({ controller: 'organizations/employees', action: 'index', manager_teammate_id: manager_teammate.id.to_s, status: 'active' })
       allow(helper).to receive(:organization_employees_path).with(organization, { status: 'active' }).and_return('/test/path')
     end
@@ -412,7 +412,7 @@ RSpec.describe TeammateHelper, type: :helper do
       helper.instance_variable_set(:@organization, organization)
       manager = create(:person)
       organization = create(:organization)
-      manager_teammate = create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization)
+      manager_teammate = create(:company_teammate, person: manager, organization: organization)
       result = helper.clear_filter_url('manager_teammate_id', manager_teammate.id.to_s)
       expect(result).to eq('/test/path')
     end

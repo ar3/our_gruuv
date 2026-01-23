@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Organizations::People Show', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:person_teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization) }
+  let(:person_teammate) { create(:company_teammate, person: person, organization: organization) }
   let(:manager) { create(:person) }
   let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
 

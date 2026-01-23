@@ -424,7 +424,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       let(:person_with_multiple_teammates) { create(:person) }
       let(:department) { create(:organization, :department, parent: company) }
       let(:team) { create(:organization, :team, parent: company) }
-      let!(:company_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: company, type: 'CompanyTeammate') }
+      let!(:company_teammate) { create(:company_teammate, person: person_with_multiple_teammates, organization: company) }
       let!(:department_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: department, type: 'DepartmentTeammate') }
       let!(:team_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: team, type: 'TeamTeammate') }
       

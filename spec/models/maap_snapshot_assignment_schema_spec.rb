@@ -4,7 +4,7 @@ RSpec.describe 'MaapSnapshot Assignment Schema with Rated Assignment' do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   
   describe 'assignment schema structure' do
@@ -31,7 +31,7 @@ RSpec.describe 'MaapSnapshot Assignment Schema with Rated Assignment' do
       end
       
       it 'includes rated_assignment with data from closed tenure' do
-        maap_data = MaapSnapshot.build_maap_data_for_employee(person, organization)
+        maap_data = MaapSnapshot.build_maap_data_for_teammate(teammate)
         assignments_data = maap_data[:assignments] || maap_data['assignments']
         
         expect(assignments_data).to be_an(Array)
@@ -75,7 +75,7 @@ RSpec.describe 'MaapSnapshot Assignment Schema with Rated Assignment' do
       end
       
       it 'includes rated_assignment as empty hash' do
-        maap_data = MaapSnapshot.build_maap_data_for_employee(person, organization)
+        maap_data = MaapSnapshot.build_maap_data_for_teammate(teammate)
         assignments_data = maap_data[:assignments] || maap_data['assignments']
         assignment_data = assignments_data.find { |a| (a[:assignment_id] || a['assignment_id']) == assignment.id }
         
@@ -121,7 +121,7 @@ RSpec.describe 'MaapSnapshot Assignment Schema with Rated Assignment' do
       end
       
       it 'uses the most recent closed tenure (by ended_at DESC)' do
-        maap_data = MaapSnapshot.build_maap_data_for_employee(person, organization)
+        maap_data = MaapSnapshot.build_maap_data_for_teammate(teammate)
         assignments_data = maap_data[:assignments] || maap_data['assignments']
         assignment_data = assignments_data.find { |a| (a[:assignment_id] || a['assignment_id']) == assignment.id }
         rated_assignment = assignment_data[:rated_assignment] || assignment_data['rated_assignment']

@@ -2,7 +2,7 @@ module MaapData
   class BulkCheckInFinalizationProcessor
     def initialize(maap_snapshot)
       @maap_snapshot = maap_snapshot
-      @employee = maap_snapshot.employee
+      @teammate = maap_snapshot.employee_company_teammate
       @company = maap_snapshot.company
       @form_params = maap_snapshot.form_params
     end
@@ -27,12 +27,12 @@ module MaapData
     def build_position_data
       # For bulk check-in finalization, we typically don't change employment
       # Return current active employment tenure data
-      teammate = @employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first
-      active_employment = teammate&.employment_tenures&.active&.first
+      return nil unless @teammate
+      active_employment = @teammate.employment_tenures.active.first
       return nil unless active_employment
 
       # Find most recent closed employment tenure
-      previous_closed_tenure = teammate.employment_tenures
+      previous_closed_tenure = @teammate.employment_tenures
         .for_company(@company)
         .inactive
         .order(ended_at: :desc)
@@ -62,13 +62,12 @@ module MaapData
     end
 
     def build_assignments_data
-      # Get all assignments where the person has active tenure, filtered by company
-      teammate = @employee.teammates.find_by(organization: @company)
-      return [] unless teammate
+      # Get all assignments where the teammate has active tenure, filtered by company
+      return [] unless @teammate
       
-      teammate.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: @company }).map do |active_tenure|
+      @teammate.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: @company }).map do |active_tenure|
         # Find most recent closed assignment tenure for this assignment
-        previous_closed_tenure = teammate.assignment_tenures
+        previous_closed_tenure = @teammate.assignment_tenures
           .where(assignment: active_tenure.assignment)
           .where.not(ended_at: nil)
           .order(ended_at: :desc)
@@ -144,9 +143,8 @@ module MaapData
       
       if should_complete
         official_check_in['official_check_in_completed_at'] = Time.current.iso8601
-        if @maap_snapshot.created_by
-          company_teammate = CompanyTeammate.find_by(person_id: @maap_snapshot.created_by_id, organization_id: @company.id)
-          official_check_in['finalized_by_teammate_id'] = company_teammate&.id
+        if @maap_snapshot.creator_company_teammate
+          official_check_in['finalized_by_teammate_id'] = @maap_snapshot.creator_company_teammate.id
         else
           official_check_in['finalized_by_teammate_id'] = nil
         end
@@ -170,9 +168,8 @@ module MaapData
       
       if should_complete
         manager_check_in['manager_completed_at'] = Time.current.iso8601
-        if @maap_snapshot.created_by
-          company_teammate = CompanyTeammate.find_by(person_id: @maap_snapshot.created_by_id, organization_id: @company.id)
-          manager_check_in['manager_completed_by_teammate_id'] = company_teammate&.id
+        if @maap_snapshot.creator_company_teammate
+          manager_check_in['manager_completed_by_teammate_id'] = @maap_snapshot.creator_company_teammate.id
         else
           manager_check_in['manager_completed_by_teammate_id'] = nil
         end
@@ -185,11 +182,10 @@ module MaapData
     end
 
     def build_abilities_data
-      # Get all person milestones for abilities in this company
-      teammate = @employee.teammates.find_by(organization: @company)
-      return [] unless teammate
+      # Get all teammate milestones for abilities in this company
+      return [] unless @teammate
       
-      milestones = teammate.teammate_milestones.includes(:ability)
+      milestones = @teammate.teammate_milestones.includes(:ability)
                .joins(:ability)
                .where(abilities: { organization: @company })
       
@@ -199,21 +195,20 @@ module MaapData
         {
           ability_id: milestone.ability_id,
           milestone_level: milestone.milestone_level,
-          certified_by_id: milestone.certified_by_id,
+          certifying_teammate_id: milestone.certifying_teammate_id,
           attained_at: milestone.attained_at
         }
       end
     end
 
     def build_aspirations_data
-      teammate = @employee.teammates.find_by(organization: @company)
-      return [] unless teammate
+      return [] unless @teammate
       
       aspirations = @company.aspirations
       
       aspirations.map do |aspiration|
         # Get the last finalized aspiration_check_in for this teammate and aspiration
-        finalized_check_in = AspirationCheckIn.latest_finalized_for(teammate, aspiration)
+        finalized_check_in = AspirationCheckIn.latest_finalized_for(@teammate, aspiration)
         
         {
           aspiration_id: aspiration.id,

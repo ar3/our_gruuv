@@ -20,8 +20,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:position2) { create(:position, position_type: position_type2, position_level: position_level2) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'position_tenure',
           created_at: 2.days.ago,
@@ -41,8 +41,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'position_tenure',
           created_at: 1.day.ago,
@@ -94,8 +94,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:assignment) { create(:assignment, company: organization) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 2.days.ago,
@@ -115,8 +115,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 1.day.ago,
@@ -162,8 +162,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'milestone_management',
           created_at: 2.days.ago,
@@ -184,8 +184,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'milestone_management',
           created_at: 1.day.ago,
@@ -230,8 +230,8 @@ RSpec.describe EmployeesHelper, type: :helper do
     context 'with no changes' do
       let(:previous_snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'exploration',
           created_at: 2.days.ago,
@@ -245,8 +245,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'exploration',
           created_at: 1.day.ago,
@@ -284,7 +284,7 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:snapshot) do
         # Use exploration trait which allows empty maap_data
         create(:maap_snapshot, :exploration,
-          created_by: manager,
+          creator_teammate: manager,
           company: organization
         )
       end
@@ -302,8 +302,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:assignment) { create(:assignment, company: organization) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 2.days.ago,
@@ -323,8 +323,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 1.day.ago,
@@ -365,8 +365,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       it 'uses explicitly provided previous_snapshot when given' do
         # Create a different snapshot that would be found if we didn't pass one
         other_snapshot = create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 1.5.days.ago,  # Between previous_snapshot and snapshot
@@ -408,8 +408,8 @@ RSpec.describe EmployeesHelper, type: :helper do
         
         # Create a snapshot with no previous snapshots
         first_snapshot = create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 5.days.ago,  # Before previous_snapshot
@@ -451,8 +451,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:aspiration) { create(:aspiration, organization: organization, name: 'Be Kind') }
       let(:previous_snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'aspiration_management',
           created_at: 2.days.ago,
@@ -471,8 +471,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'aspiration_management',
           created_at: 1.day.ago,
@@ -519,8 +519,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:position1) { create(:position, position_type: position_type1, position_level: position_level1) }
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'position_tenure',
           created_at: 1.day.ago,
@@ -574,8 +574,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:position1) { create(:position, position_type: position_type1, position_level: position_level1) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'position_tenure',
           created_at: 2.days.ago,
@@ -603,8 +603,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'position_tenure',
           created_at: 1.day.ago,
@@ -664,8 +664,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:assignment) { create(:assignment, company: organization) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 2.days.ago,
@@ -691,8 +691,8 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       let(:snapshot) do
         create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 1.day.ago,
@@ -748,8 +748,8 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     let(:previous_snapshot) do
       create(:maap_snapshot,
-        employee: person,
-        created_by: manager,
+        employee_teammate: person,
+        creator_teammate: manager,
         company: organization,
         change_type: 'position_tenure',
         created_at: 2.days.ago,
@@ -789,8 +789,8 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     let(:snapshot) do
       create(:maap_snapshot,
-        employee: person,
-        created_by: manager,
+        employee_teammate: person,
+        creator_teammate: manager,
         company: organization,
         change_type: 'position_tenure',
         created_at: 1.day.ago,
@@ -912,8 +912,8 @@ RSpec.describe EmployeesHelper, type: :helper do
 
       it 'handles empty data gracefully' do
         empty_snapshot = create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'exploration',
           created_at: 1.day.ago,
@@ -936,8 +936,8 @@ RSpec.describe EmployeesHelper, type: :helper do
 
       it 'handles nil/empty rated_position data' do
         snapshot_no_rated = create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'position_tenure',
           created_at: 1.day.ago,
@@ -968,8 +968,8 @@ RSpec.describe EmployeesHelper, type: :helper do
 
       it 'handles nil/empty rated_assignment data' do
         snapshot_no_rated_assignment = create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 1.day.ago,
@@ -1003,8 +1003,8 @@ RSpec.describe EmployeesHelper, type: :helper do
         assignment2 = create(:assignment, company: organization)
         
         snapshot_multiple = create(:maap_snapshot,
-          employee: person,
-          created_by: manager,
+          employee_teammate: person,
+          creator_teammate: manager,
           company: organization,
           change_type: 'assignment_management',
           created_at: 1.day.ago,

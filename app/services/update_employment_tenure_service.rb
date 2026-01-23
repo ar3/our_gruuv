@@ -94,9 +94,11 @@ class UpdateEmploymentTenureService
         updated_tenure = @current_tenure
       end
       
-      # Create maap_snapshot if needed
-      if needs_snapshot
+      # Create maap_snapshot if needed (only for CompanyTeammates)
+      if needs_snapshot && teammate.is_a?(CompanyTeammate)
         create_maap_snapshot(updated_tenure)
+      elsif needs_snapshot
+        Rails.logger.debug "DEBUG: Skipping snapshot creation, teammate class: #{teammate.class.name}"
       end
       
       Result.ok(updated_tenure)
@@ -194,10 +196,7 @@ class UpdateEmploymentTenureService
       Date.current
     end
     
-    maap_data = MaapSnapshot.build_maap_data_for_employee(
-      teammate.person,
-      current_tenure.company
-    )
+    maap_data = MaapSnapshot.build_maap_data_for_teammate(teammate)
     
     # Add employment_tenure data for position_tenure change_type
     maap_data['employment_tenure'] = {
@@ -210,8 +209,8 @@ class UpdateEmploymentTenureService
     }
     
     MaapSnapshot.create!(
-      employee: teammate.person,
-      created_by: created_by,
+      employee_company_teammate: teammate,
+      creator_company_teammate: created_by,
       company: current_tenure.company,
       change_type: 'position_tenure',
       reason: params[:reason] || 'Position tenure update',

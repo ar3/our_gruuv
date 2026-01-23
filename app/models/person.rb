@@ -6,7 +6,7 @@ class Person < ApplicationRecord
   # Associations
   has_many :person_identities, dependent: :destroy
   has_many :observations, foreign_key: :observer_id, dependent: :destroy
-  has_many :maap_snapshots, foreign_key: :employee_id, dependent: :destroy
+  # has_many :maap_snapshots, foreign_key: :employee_id, dependent: :destroy # DEPRECATED: Now through teammates
   has_many :page_visits, dependent: :destroy
   has_one :user_preference, dependent: :destroy
 

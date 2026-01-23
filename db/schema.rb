@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_18_221119) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_23_152653) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -498,11 +498,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_18_221119) do
     t.jsonb "form_params"
     t.datetime "employee_acknowledged_at"
     t.jsonb "employee_acknowledgement_request_info", default: {}
+    t.bigint "employee_company_teammate_id"
+    t.bigint "creator_company_teammate_id"
     t.index ["change_type"], name: "index_maap_snapshots_on_change_type"
     t.index ["company_id"], name: "index_maap_snapshots_on_company_id"
     t.index ["created_by_id"], name: "index_maap_snapshots_on_created_by_id"
+    t.index ["creator_company_teammate_id"], name: "index_maap_snapshots_on_creator_company_teammate_id"
     t.index ["effective_date"], name: "index_maap_snapshots_on_effective_date"
     t.index ["employee_acknowledged_at"], name: "index_maap_snapshots_on_employee_acknowledged_at"
+    t.index ["employee_company_teammate_id"], name: "index_maap_snapshots_on_employee_company_teammate_id"
     t.index ["employee_id"], name: "index_maap_snapshots_on_employee_id"
     t.index ["maap_data"], name: "index_maap_snapshots_on_maap_data", using: :gin
     t.index ["manager_request_info"], name: "index_maap_snapshots_on_manager_request_info", using: :gin
@@ -1094,8 +1098,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_18_221119) do
   add_foreign_key "incoming_webhooks", "organizations"
   add_foreign_key "interest_submissions", "people"
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
-  add_foreign_key "maap_snapshots", "people", column: "created_by_id"
-  add_foreign_key "maap_snapshots", "people", column: "employee_id"
+  add_foreign_key "maap_snapshots", "teammates", column: "creator_company_teammate_id"
+  add_foreign_key "maap_snapshots", "teammates", column: "employee_company_teammate_id"
   add_foreign_key "missing_resource_requests", "missing_resources"
   add_foreign_key "missing_resource_requests", "people"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"

@@ -6,13 +6,11 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
   def show
     @person = @teammate.person
     # Determine view mode
-    current_manager = @teammate.current_manager
+    # All non-employee viewers (including non-direct-managers) behave as managers
     if current_person == @teammate.person
       @view_mode = :employee
-    elsif current_manager == current_person
-      @view_mode = :manager
     else
-      @view_mode = :readonly
+      @view_mode = :manager
     end
     
     # Load ALL check-ins for display (ready for finalization + incomplete ones)

@@ -42,7 +42,7 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
       employee_completed_at: Time.current,
       manager_rating: 'meeting',
       manager_completed_at: Time.current,
-      manager_completed_by: manager_person
+      manager_completed_by_teammate: manager_teammate
     )
     check_in
   end
@@ -86,8 +86,8 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
       snapshot = MaapSnapshot.last
       expect(snapshot).to be_present
       expect(snapshot.reason).to eq("Check-in finalization for #{employee_person.display_name}")
-      expect(snapshot.employee).to eq(employee_person)
-      expect(snapshot.created_by).to eq(manager_person)
+      expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+      expect(snapshot.creator_company_teammate).to eq(manager_teammate)
       
       # Verify check-in was finalized
       expect(check_in.reload.official_check_in_completed_at).to be_present
@@ -97,8 +97,8 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
   describe 'Reason appears on audit page' do
     let!(:snapshot) do
       create(:maap_snapshot,
-             employee: employee_person,
-             created_by: manager_person,
+             employee_company_teammate: employee_teammate,
+             creator_company_teammate: manager_teammate,
              company: company,
              change_type: 'assignment_management',
              reason: "Check-in finalization for #{employee_person.display_name}",

@@ -423,7 +423,7 @@ RSpec.describe PositionCheckIn, type: :model do
       )
       
       expect(finalized_check_in.maap_snapshot).to eq(snapshot)
-      expect(finalized_check_in.maap_snapshot.employee).to eq(person)
+      expect(finalized_check_in.maap_snapshot.employee_company_teammate).to eq(person)
     end
 
     it 'maintains rating consistency when snapshot is linked' do

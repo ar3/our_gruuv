@@ -281,7 +281,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       
       it 'displays disabled check-in button with warning icon for users who cannot edit' do
         other_person = create(:person)
-        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        other_teammate = create(:company_teammate, person: other_person, organization: organization)
         # Create a goal that the current user can view but not edit
         # Use 'everyone_in_company' privacy level which allows viewing by everyone in company
         # but editing only by creator/owner
@@ -723,7 +723,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
     
     it 'does not show start button for draft goals when user cannot edit' do
       other_person = create(:person)
-      other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+      other_teammate = create(:company_teammate, person: other_person, organization: organization)
       draft_goal = create(:goal,
         creator: other_teammate,
         owner: other_teammate,
@@ -782,7 +782,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
     
     it 'does not show start button for draft goals when user cannot edit' do
       other_person = create(:person)
-      other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+      other_teammate = create(:company_teammate, person: other_person, organization: organization)
       draft_goal = create(:goal,
         creator: other_teammate,
         owner: other_teammate,

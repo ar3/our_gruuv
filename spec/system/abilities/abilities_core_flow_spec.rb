@@ -67,7 +67,7 @@ RSpec.describe 'Abilities Core Flow', type: :system do
         description: 'Ability to lead teams',
         milestone_1_description: 'Basic leadership',
         milestone_2_description: 'Team leadership',
-        created_by: person,
+        creator_teammate: person,
         updated_by: person
       )
     end

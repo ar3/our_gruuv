@@ -42,7 +42,7 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
       employee_completed_at: Time.current,
       manager_rating: 'meeting',
       manager_completed_at: Time.current,
-      manager_completed_by: manager_person
+      manager_completed_by_teammate: manager_teammate
     )
     check_in
   end
@@ -94,8 +94,8 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
       snapshot = MaapSnapshot.last
       expect(snapshot).to be_present
       expect(snapshot.reason).to eq('Q4 2024 Performance Review')
-      expect(snapshot.employee).to eq(employee_person)
-      expect(snapshot.created_by).to eq(manager_person)
+      expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+      expect(snapshot.creator_company_teammate).to eq(manager_teammate)
       
       # Verify check-in was finalized
       expect(check_in.reload.official_check_in_completed_at).to be_present
@@ -106,8 +106,8 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
     let(:custom_reason) { 'Q4 2024 Performance Review' }
     let!(:snapshot) do
       create(:maap_snapshot,
-             employee: employee_person,
-             created_by: manager_person,
+             employee_company_teammate: employee_teammate,
+             creator_company_teammate: manager_teammate,
              company: company,
              change_type: 'assignment_management',
              reason: custom_reason,
@@ -148,15 +148,15 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
         employee_completed_at: Time.current,
         manager_rating: 'exceeding',
         manager_completed_at: Time.current,
-        manager_completed_by: manager_person
+        manager_completed_by_teammate: manager_teammate
       )
       check_in
     end
 
     let!(:snapshot1) do
       create(:maap_snapshot,
-             employee: employee_person,
-             created_by: manager_person,
+             employee_company_teammate: employee_teammate,
+             creator_company_teammate: manager_teammate,
              company: company,
              change_type: 'assignment_management',
              reason: 'Q4 2024 Performance Review',
@@ -165,8 +165,8 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
 
     let!(:snapshot2) do
       create(:maap_snapshot,
-             employee: employee_person,
-             created_by: manager_person,
+             employee_company_teammate: employee_teammate,
+             creator_company_teammate: manager_teammate,
              company: company,
              change_type: 'assignment_management',
              reason: 'Annual Check-in',

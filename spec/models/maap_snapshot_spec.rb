@@ -1,10 +1,9 @@
 require 'rails_helper'
 
 RSpec.describe MaapSnapshot, type: :model do
-  let!(:employee) { create(:person) }
-  let!(:employee_teammate) { create(:teammate, person: employee, organization: company) }
-  let!(:created_by) { create(:person) }
   let!(:company) { create(:organization) }
+  let!(:employee_teammate) { create(:company_teammate, organization: company) }
+  let!(:creator_teammate) { create(:company_teammate, organization: company) }
   
   before do
     # Set up employment tenure for the employee
@@ -38,14 +37,14 @@ RSpec.describe MaapSnapshot, type: :model do
   end
   
   describe 'associations' do
-    it 'belongs to employee (optional)' do
-      snapshot = create(:maap_snapshot, employee: employee)
-      expect(snapshot.employee).to eq(employee)
+    it 'belongs to employee_company_teammate (optional)' do
+      snapshot = create(:maap_snapshot, employee_company_teammate: employee_teammate)
+      expect(snapshot.employee_company_teammate).to eq(employee_teammate)
     end
     
-    it 'belongs to created_by (optional)' do
-      snapshot = create(:maap_snapshot, created_by: created_by)
-      expect(snapshot.created_by).to eq(created_by)
+    it 'belongs to creator_company_teammate (optional)' do
+      snapshot = create(:maap_snapshot, creator_company_teammate: creator_teammate)
+      expect(snapshot.creator_company_teammate).to eq(creator_teammate)
     end
     
     it 'belongs to company' do
@@ -105,15 +104,15 @@ RSpec.describe MaapSnapshot, type: :model do
     describe '.build_for_employee' do
       it 'creates a snapshot for an employee' do
         snapshot = MaapSnapshot.build_for_employee(
-          employee: employee,
-          created_by: created_by,
+          employee_teammate: employee_teammate,
+          creator_teammate: creator_teammate,
           change_type: 'assignment_management',
           reason: 'Test snapshot',
           request_info: { ip_address: '127.0.0.1' }
         )
         
-        expect(snapshot.employee).to eq(employee)
-        expect(snapshot.created_by).to eq(created_by)
+        expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+        expect(snapshot.creator_company_teammate).to eq(creator_teammate)
         expect(snapshot.company.id).to eq(company.id)
         expect(snapshot.change_type).to eq('assignment_management')
         expect(snapshot.reason).to eq('Test snapshot')
@@ -124,14 +123,14 @@ RSpec.describe MaapSnapshot, type: :model do
     describe '.build_exploration' do
       it 'creates an exploration snapshot' do
         snapshot = MaapSnapshot.build_exploration(
-          created_by: created_by,
+          creator_teammate: creator_teammate,
           company: company,
           reason: 'Test exploration',
           request_info: { ip_address: '127.0.0.1' }
         )
         
-        expect(snapshot.employee).to be_nil
-        expect(snapshot.created_by).to eq(created_by)
+        expect(snapshot.employee_company_teammate).to be_nil
+        expect(snapshot.creator_company_teammate).to eq(creator_teammate)
         expect(snapshot.company).to eq(company)
         expect(snapshot.change_type).to eq('exploration')
         expect(snapshot.reason).to eq('Test exploration')
@@ -150,15 +149,15 @@ RSpec.describe MaapSnapshot, type: :model do
         }
         
         snapshot = MaapSnapshot.build_for_employee_with_changes(
-          employee: employee,
-          created_by: created_by,
+          employee_teammate: employee_teammate,
+          creator_teammate: creator_teammate,
           change_type: 'assignment_management',
           reason: 'Test snapshot with changes',
           form_params: form_params
         )
         
-        expect(snapshot.employee).to eq(employee)
-        expect(snapshot.created_by).to eq(created_by)
+        expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+        expect(snapshot.creator_company_teammate).to eq(creator_teammate)
         expect(snapshot.company.id).to eq(company.id)
         expect(snapshot.company.name).to eq(company.name)
         expect(snapshot.change_type).to eq('assignment_management')
@@ -184,8 +183,8 @@ RSpec.describe MaapSnapshot, type: :model do
         }
         
         snapshot = MaapSnapshot.build_for_employee_with_changes(
-          employee: employee,
-          created_by: created_by,
+          employee_teammate: employee_teammate,
+          creator_teammate: creator_teammate,
           change_type: 'assignment_management',
           reason: 'Proposed change',
           form_params: form_params
@@ -203,15 +202,15 @@ RSpec.describe MaapSnapshot, type: :model do
     describe '.build_for_employee with position_tenure change_type' do
       it 'creates a snapshot for position tenure changes' do
         snapshot = MaapSnapshot.build_for_employee(
-          employee: employee,
-          created_by: created_by,
+          employee_teammate: employee_teammate,
+          creator_teammate: creator_teammate,
           change_type: 'position_tenure',
           reason: 'Position change',
           request_info: { ip_address: '127.0.0.1' }
         )
         
-        expect(snapshot.employee).to eq(employee)
-        expect(snapshot.created_by).to eq(created_by)
+        expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+        expect(snapshot.creator_company_teammate).to eq(creator_teammate)
         expect(snapshot.company.id).to eq(company.id)
         expect(snapshot.change_type).to eq('position_tenure')
         expect(snapshot.reason).to eq('Position change')

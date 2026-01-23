@@ -4,15 +4,15 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization) }
   let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, employment_type: 'full_time', official_position_rating: 2) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:assignment_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 50, official_rating: 'meeting') }
   let(:ability) { create(:ability, organization: organization) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
   let(:milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: manager_teammate, attained_at: Date.current) }
   let(:aspiration) { create(:aspiration, organization: organization) }
-  let(:aspiration_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_rating: 'exceeding', official_check_in_completed_at: Time.current) }
+  let(:aspiration_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_rating: 'exceeding', official_check_in_completed_at: Time.current, finalized_by_teammate: manager_teammate) }
 
   before do
     employment_tenure
@@ -23,7 +23,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
 
   describe 'standard schema format' do
     it 'build_maap_data_for_employee produces standard format' do
-      maap_data = MaapSnapshot.build_maap_data_for_employee(person, organization)
+      maap_data = MaapSnapshot.build_maap_data_for_teammate(teammate)
       
       # Check top-level keys (convert symbols to strings for comparison)
       expect(maap_data.keys.map(&:to_s)).to match_array(%w[position assignments abilities aspirations])
@@ -133,7 +133,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
     end
 
     it 'BulkCheckInFinalizationProcessor produces standard format' do
-      snapshot = create(:maap_snapshot, employee: person, company: organization, form_params: {})
+      snapshot = create(:maap_snapshot, employee_company_teammate: teammate, company: organization, form_params: {})
       processor = MaapData::BulkCheckInFinalizationProcessor.new(snapshot)
       
       maap_data = processor.process
@@ -169,7 +169,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
         expect(ability_data).to include(
           :ability_id,
           :milestone_level,
-          :certified_by_id,
+          :certifying_teammate_id,
           :attained_at
         )
       end
@@ -187,7 +187,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
 
     it 'all snapshot creation methods produce identical schema structure' do
       # Get data from different methods
-      method1_data = MaapSnapshot.build_maap_data_for_employee(person, organization)
+      method1_data = MaapSnapshot.build_maap_data_for_teammate(teammate)
       service = CheckInFinalizationService.new(teammate: teammate, finalization_params: {}, finalized_by: manager)
       method2_data = service.send(:build_ratings_data, {})
       
@@ -234,8 +234,8 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
       
       # Build snapshot with form_params
       snapshot = MaapSnapshot.build_for_employee_with_changes(
-        employee: person,
-        created_by: manager,
+        employee_teammate: teammate,
+        creator_teammate: manager_teammate,
         change_type: 'assignment_management',
         reason: 'Test DB state vs form_params',
         form_params: form_params
@@ -284,7 +284,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
       )
       
       # Create snapshot after DB changes (simulating post-execution)
-      maap_data = MaapSnapshot.build_maap_data_for_employee(person, organization)
+      maap_data = MaapSnapshot.build_maap_data_for_teammate(teammate)
       
       # maap_data should reflect the new DB state (handle symbol keys)
       assignments_data = maap_data[:assignments] || maap_data['assignments'] || []

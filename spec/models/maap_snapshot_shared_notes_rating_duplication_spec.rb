@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe MaapSnapshot, type: :model do
   let(:organization) { create(:organization) }
   let(:employee) { create(:person) }
-  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let(:employee_teammate) { create(:company_teammate, person: employee, organization: organization) }
   let(:assignment1) { create(:assignment, company: organization, title: 'Employee Growth Plan Champion') }
   let(:assignment2) { create(:assignment, company: organization, title: 'Quarterly Conversation Coordinator') }
   let(:assignment3) { create(:assignment, company: organization, title: 'Lifeline Interview Facilitator') }
@@ -38,8 +38,8 @@ RSpec.describe MaapSnapshot, type: :model do
 
         # Create MAAP snapshot
         snapshot = MaapSnapshot.build_for_employee_with_changes(
-          employee: employee,
-          created_by: employee,
+          employee_teammate: employee_teammate,
+          creator_teammate: employee_teammate,
           change_type: 'bulk_check_in_finalization',
           reason: 'Testing shared notes and rating duplication',
           form_params: form_params

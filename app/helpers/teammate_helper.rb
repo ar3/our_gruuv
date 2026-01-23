@@ -329,7 +329,10 @@ module TeammateHelper
   end
 
   def pending_acknowledgements_count(person, organization)
-    MaapSnapshot.for_employee(person)
+    teammate = person.teammates.find_by(organization: organization)
+    return 0 unless teammate
+    
+    MaapSnapshot.for_employee_teammate(teammate)
                 .for_company(organization)
                 .where.not(effective_date: nil)
                 .where(employee_acknowledged_at: nil)
@@ -443,7 +446,10 @@ module TeammateHelper
 
   def acknowledgement_summary_by_type(person, organization)
     # MaapSnapshots don't have explicit type fields, so we'll infer from change_type
-    snapshots = MaapSnapshot.for_employee(person)
+    teammate = person.teammates.find_by(organization: organization)
+    return {} unless teammate
+    
+    snapshots = MaapSnapshot.for_employee_teammate(teammate)
                             .for_company(organization)
                             .where.not(effective_date: nil)
                             .where(employee_acknowledged_at: nil)

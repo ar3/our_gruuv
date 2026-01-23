@@ -26,8 +26,8 @@ class TerminateEmploymentService
       termination_date_value = parsed_date.is_a?(Date) ? parsed_date : parsed_date.to_date
       @teammate.update!(last_terminated_at: termination_date_value)
       
-      # Create MAAP snapshot
-      create_maap_snapshot(parsed_date)
+      # Create MAAP snapshot (only for CompanyTeammates)
+      create_maap_snapshot(parsed_date) if @teammate.is_a?(CompanyTeammate)
       
       Result.ok(@current_tenure)
     end
@@ -63,10 +63,7 @@ class TerminateEmploymentService
   end
 
   def create_maap_snapshot(effective_date)
-    maap_data = MaapSnapshot.build_maap_data_for_employee(
-      teammate.person,
-      current_tenure.company
-    )
+    maap_data = MaapSnapshot.build_maap_data_for_teammate(teammate)
     
     # Add employment_tenure data for position_tenure change_type
     maap_data['employment_tenure'] = {
@@ -79,8 +76,8 @@ class TerminateEmploymentService
     }
     
     MaapSnapshot.create!(
-      employee: teammate.person,
-      created_by: created_by,
+      employee_company_teammate: teammate,
+      creator_company_teammate: created_by,
       company: current_tenure.company,
       change_type: 'position_tenure',
       reason: reason || 'Employment termination',

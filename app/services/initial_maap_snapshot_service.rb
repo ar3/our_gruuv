@@ -9,7 +9,7 @@ class InitialMaapSnapshotService
 
   def create_initial_snapshot
     # Check if snapshot already exists (idempotency)
-    existing_snapshot = @person.maap_snapshots.first
+    existing_snapshot = MaapSnapshot.for_employee_teammate(@company_teammate).first
     return { success: true, snapshot: existing_snapshot, message: 'Initial snapshot already exists' } if existing_snapshot
 
     # Validate prerequisites
@@ -23,13 +23,13 @@ class InitialMaapSnapshotService
     # Build maap_data with custom assignments
     maap_data = build_initial_maap_data(active_tenure, position)
 
-    # Find or create OG Automation person
-    og_automation = find_or_create_og_automation
+    # Find or create OG Automation teammate
+    og_automation_teammate = find_or_create_og_automation_teammate
 
     # Create the snapshot
     snapshot = MaapSnapshot.create!(
-      employee: @person,
-      created_by: og_automation,
+      employee_company_teammate: @company_teammate,
+      creator_company_teammate: og_automation_teammate,
       company: @organization,
       change_type: 'assignment_management',
       reason: 'Initial expectation',
@@ -46,7 +46,7 @@ class InitialMaapSnapshotService
 
   def validate_prerequisites
     # Check 1: No existing MAAP snapshots
-    if @person.maap_snapshots.exists?
+    if MaapSnapshot.for_employee_teammate(@company_teammate).exists?
       return { success: false, message: 'Company teammate already has MAAP snapshots' }
     end
 
@@ -85,7 +85,7 @@ class InitialMaapSnapshotService
 
   def build_initial_maap_data(active_tenure, position)
     # Build base maap_data using existing method
-    base_data = MaapSnapshot.build_maap_data_for_employee(@person, @organization)
+    base_data = MaapSnapshot.build_maap_data_for_teammate(@company_teammate)
 
     # Override assignments with only required position assignments
     required_assignments = position.required_assignments.includes(:assignment)
@@ -102,52 +102,65 @@ class InitialMaapSnapshotService
     base_data
   end
 
-  def find_or_create_og_automation
+  def find_or_create_og_automation_teammate
     # Try to find existing OG Automation person by id first
-    og_automation = Person.find_by(id: -1)
-    return og_automation if og_automation
-
-    # Try to find by email as fallback
-    og_automation = Person.find_by(email: 'automation@og.local')
-    if og_automation && og_automation.id != -1
-      # Update existing person's id to -1
-      Person.connection.execute(
-        "UPDATE people SET id = -1 WHERE id = #{og_automation.id}"
-      )
-      # Reset the sequence if needed (PostgreSQL specific)
-      max_id = Person.where('id > 0').maximum(:id) || 0
-      Person.connection.execute(
-        "SELECT setval('people_id_seq', #{max_id})"
-      )
-      return Person.find(-1)
+    og_automation_person = Person.find_by(id: -1)
+    
+    unless og_automation_person
+      # Try to find by email as fallback
+      og_automation_person = Person.find_by(email: 'automation@og.local')
+      if og_automation_person && og_automation_person.id != -1
+        # Update existing person's id to -1
+        Person.connection.execute(
+          "UPDATE people SET id = -1 WHERE id = #{og_automation_person.id}"
+        )
+        # Reset the sequence if needed (PostgreSQL specific)
+        max_id = Person.where('id > 0').maximum(:id) || 0
+        Person.connection.execute(
+          "SELECT setval('people_id_seq', #{max_id})"
+        )
+        og_automation_person = Person.find(-1)
+      end
     end
 
-    # Create new person - we'll set id after creation
-    Person.transaction do
-      # Create person with auto-generated id
-      og_automation = Person.create!(
-        first_name: 'OG',
-        last_name: 'Automation',
-        email: 'automation@og.local'
-      )
+    unless og_automation_person
+      # Create new person - we'll set id after creation
+      Person.transaction do
+        # Create person with auto-generated id
+        og_automation_person = Person.create!(
+          first_name: 'OG',
+          last_name: 'Automation',
+          email: 'automation@og.local'
+        )
+        
+        # Update the id to -1
+        Person.connection.execute(
+          "UPDATE people SET id = -1 WHERE id = #{og_automation_person.id}"
+        )
+        
+        # Reset sequence to continue from max positive id
+        max_id = Person.where('id > 0').maximum(:id) || 0
+        Person.connection.execute(
+          "SELECT setval('people_id_seq', #{max_id})"
+        )
+      end
       
-      # Update the id to -1
-      Person.connection.execute(
-        "UPDATE people SET id = -1 WHERE id = #{og_automation.id}"
-      )
-      
-      # Reset sequence to continue from max positive id
-      max_id = Person.where('id > 0').maximum(:id) || 0
-      Person.connection.execute(
-        "SELECT setval('people_id_seq', #{max_id})"
-      )
+      # Return the person with id = -1
+      og_automation_person = Person.find(-1)
     end
     
-    # Return the person with id = -1
-    Person.find(-1)
+    # Now find or create the CompanyTeammate for this person in this organization
+    CompanyTeammate.find_or_create_by!(
+      person: og_automation_person,
+      organization: @organization
+    )
   rescue ActiveRecord::RecordNotUnique, PG::UniqueViolation, ActiveRecord::RecordNotFound
     # If another process created it during our transaction, find it
-    Person.find_by(id: -1) || Person.find_by(email: 'automation@og.local')
+    og_person = Person.find_by(id: -1) || Person.find_by(email: 'automation@og.local')
+    CompanyTeammate.find_or_create_by!(
+      person: og_person,
+      organization: @organization
+    )
   end
 end
 

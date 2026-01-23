@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'MaapSnapshot CheckInData Format Bug', type: :model do
   let(:organization) { create(:organization) }
   let(:employee) { create(:person) }
-  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let(:employee_teammate) { create(:company_teammate, person: employee, organization: organization) }
   
   # Create assignments with the exact IDs from snapshot 110
   let(:emp_growth_assignment) { create(:assignment, company: organization, title: 'Employee Growth Plan Champion', id: 80) }
@@ -20,11 +20,14 @@ RSpec.describe 'MaapSnapshot CheckInData Format Bug', type: :model do
     create(:assignment_tenure, teammate: employee_teammate, assignment: lifeline_assignment, anticipated_energy_percentage: 20)
     
     # Set up check-ins with existing data (ready for finalization)
+    manager_teammate = create(:company_teammate, organization: organization, can_manage_employment: true)
+    
     @emp_growth_check_in = create(:assignment_check_in, 
            teammate: employee_teammate, 
            assignment: emp_growth_assignment, 
            employee_completed_at: Time.current, 
            manager_completed_at: Time.current,
+           manager_completed_by_teammate: manager_teammate,
            shared_notes: 'Existing emp growth notes',
            official_rating: 'exceeding')
            
@@ -33,6 +36,7 @@ RSpec.describe 'MaapSnapshot CheckInData Format Bug', type: :model do
            assignment: quarterly_assignment, 
            employee_completed_at: Time.current, 
            manager_completed_at: Time.current,
+           manager_completed_by_teammate: manager_teammate,
            shared_notes: 'Existing quarterly notes',
            official_rating: 'exceeding')
            
@@ -41,6 +45,7 @@ RSpec.describe 'MaapSnapshot CheckInData Format Bug', type: :model do
            assignment: lifeline_assignment, 
            employee_completed_at: Time.current, 
            manager_completed_at: Time.current,
+           manager_completed_by_teammate: manager_teammate,
            shared_notes: 'Existing lifeline notes',
            official_rating: 'exceeding')
   end
@@ -68,8 +73,8 @@ RSpec.describe 'MaapSnapshot CheckInData Format Bug', type: :model do
 
         # Create a snapshot
         snapshot = MaapSnapshot.build_for_employee_with_changes(
-          employee: employee,
-          created_by: employee,
+          employee_teammate: employee_teammate,
+          creator_teammate: employee_teammate,
           change_type: 'bulk_check_in_finalization',
           reason: 'Testing check_in_data format',
           form_params: form_params

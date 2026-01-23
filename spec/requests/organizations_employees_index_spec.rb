@@ -77,7 +77,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       manager2 = create(:person)
       manager2_teammate = CompanyTeammate.create!(person: manager2, organization: organization, first_employed_at: 1.month.ago)
       direct_report2 = create(:person)
-      direct_report2_teammate = create(:teammate, type: 'CompanyTeammate', person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
+      direct_report2_teammate = create(:company_teammate, person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
       create(:employment_tenure, teammate: direct_report2_teammate, company: organization, manager_teammate: manager2_teammate, ended_at: nil)
       
       get organization_employees_path(organization, manager_teammate_id: [manager_teammate.id, manager2_teammate.id])
@@ -146,7 +146,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
   describe 'authorization' do
     let(:non_manager) { create(:person) }
-    let!(:non_manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: non_manager, organization: organization) }
+    let!(:non_manager_teammate) { create(:company_teammate, person: non_manager, organization: organization) }
 
     before do
       # Reload as CompanyTeammate to ensure has_direct_reports? method is available

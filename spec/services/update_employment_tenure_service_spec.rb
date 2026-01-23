@@ -3,11 +3,11 @@ require 'rails_helper'
 RSpec.describe UpdateEmploymentTenureService, type: :service do
   let(:company) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: company) }
+  let(:teammate) { create(:company_teammate, person: person, organization: company) }
   let(:current_manager) { create(:person) }
-  let(:current_manager_teammate) { CompanyTeammate.create!(person: current_manager, organization: company) }
+  let(:current_manager_teammate) { create(:company_teammate, person: current_manager, organization: company) }
   let(:new_manager) { create(:person) }
-  let(:new_manager_teammate) { CompanyTeammate.create!(person: new_manager, organization: company) }
+  let(:new_manager_teammate) { create(:company_teammate, person: new_manager, organization: company) }
   let(:position_major_level) { create(:position_major_level) }
   let(:current_position_type) { create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Current Engineer') }
   let(:new_position_type) { create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'New Engineer') }
@@ -15,7 +15,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
   let(:new_position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:current_position) { create(:position, position_type: current_position_type, position_level: current_position_level) }
   let(:new_position) { create(:position, position_type: new_position_type, position_level: new_position_level) }
-  let(:created_by) { create(:person) }
+  let(:created_by) { create(:company_teammate, organization: company) }
   
   # Create seat after position to ensure they match
   let(:current_seat) do
@@ -122,8 +122,8 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
 
         snapshot = MaapSnapshot.last
         expect(snapshot.change_type).to eq('position_tenure')
-        expect(snapshot.employee).to eq(person)
-        expect(snapshot.created_by).to eq(created_by)
+        expect(snapshot.employee_company_teammate).to eq(person)
+        expect(snapshot.creator_company_teammate).to eq(created_by)
         expect(snapshot.company_id).to eq(company.id)
         expect(snapshot.effective_date).to eq(Date.current)
         expect(snapshot.reason).to eq('Manager change')

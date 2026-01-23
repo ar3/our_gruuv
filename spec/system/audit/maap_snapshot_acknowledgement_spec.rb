@@ -29,7 +29,7 @@ RSpec.describe 'MAAP Snapshot Acknowledgement', type: :system do
     xit 'can see and acknowledge position tenure snapshot' do # SKIPPED: For now
       # Create snapshot for position tenure change
       snapshot = MaapSnapshot.create!(
-        employee: employee_person,
+        employee_company_teammate: employee_teammate,
         company: company,
         change_type: 'position_tenure',
         reason: 'Test position tenure change',
@@ -67,7 +67,7 @@ RSpec.describe 'MAAP Snapshot Acknowledgement', type: :system do
     xit 'can see and acknowledge assignment tenure snapshot' do # SKIPPED: For now
       # Create snapshot for assignment tenure change
       snapshot = MaapSnapshot.create!(
-        employee: employee_person,
+        employee_company_teammate: employee_teammate,
         company: company,
         change_type: 'assignment_management',
         reason: 'Test assignment tenure change',
@@ -104,7 +104,7 @@ RSpec.describe 'MAAP Snapshot Acknowledgement', type: :system do
     xit 'can acknowledge multiple snapshots at once' do # SKIPPED: For now
       # Create multiple snapshots
       snapshot1 = MaapSnapshot.create!(
-        employee: employee_person,
+        employee_company_teammate: employee_teammate,
         company: company,
         change_type: 'position_tenure',
         reason: 'Test position tenure change 1',
@@ -114,7 +114,7 @@ RSpec.describe 'MAAP Snapshot Acknowledgement', type: :system do
       )
       
       snapshot2 = MaapSnapshot.create!(
-        employee: employee_person,
+        employee_company_teammate: employee_teammate,
         company: company,
         change_type: 'assignment_management',
         reason: 'Test assignment tenure change 2',

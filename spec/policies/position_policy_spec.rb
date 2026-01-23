@@ -11,7 +11,7 @@ RSpec.describe PositionPolicy, type: :policy do
   let(:position) { create(:position, position_type: position_type, position_level: position_level).tap { |p| p.position_type } }
   let(:position_in_department) { create(:position, position_type: position_type_in_department, position_level: position_level).tap { |p| p.position_type } }
   
-  let(:company_teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: company) }
+  let(:company_teammate) { create(:company_teammate, person: person, organization: company) }
   let(:pundit_user) { OpenStruct.new(user: company_teammate, impersonating_teammate: nil) }
   
   subject { described_class.new(pundit_user, position) }
@@ -19,7 +19,7 @@ RSpec.describe PositionPolicy, type: :policy do
   describe '#create?' do
     context 'as admin' do
       let(:admin_person) { create(:person, :admin) }
-      let(:admin_teammate) { create(:teammate, type: 'CompanyTeammate', person: admin_person, organization: company) }
+      let(:admin_teammate) { create(:company_teammate, person: admin_person, organization: company) }
       let(:admin_pundit_user) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
       subject { described_class.new(admin_pundit_user, position) }
       
@@ -79,7 +79,7 @@ RSpec.describe PositionPolicy, type: :policy do
   describe '#update?' do
     context 'as admin' do
       let(:admin_person) { create(:person, :admin) }
-      let(:admin_teammate) { create(:teammate, type: 'CompanyTeammate', person: admin_person, organization: company) }
+      let(:admin_teammate) { create(:company_teammate, person: admin_person, organization: company) }
       let(:admin_pundit_user) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
       subject { described_class.new(admin_pundit_user, position) }
       
@@ -112,7 +112,7 @@ RSpec.describe PositionPolicy, type: :policy do
   describe '#destroy?' do
     context 'as admin' do
       let(:admin_person) { create(:person, :admin) }
-      let(:admin_teammate) { create(:teammate, type: 'CompanyTeammate', person: admin_person, organization: company) }
+      let(:admin_teammate) { create(:company_teammate, person: admin_person, organization: company) }
       let(:admin_pundit_user) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
       subject { described_class.new(admin_pundit_user, position) }
       
@@ -151,7 +151,7 @@ RSpec.describe PositionPolicy, type: :policy do
 
     context 'when user is not in the organization hierarchy' do
       let(:other_company) { create(:organization, :company) }
-      let(:other_company_teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: other_company) }
+      let(:other_company_teammate) { create(:company_teammate, person: person, organization: other_company) }
       let(:other_pundit_user) { OpenStruct.new(user: other_company_teammate, impersonating_teammate: nil) }
       subject { described_class.new(other_pundit_user, position) }
       

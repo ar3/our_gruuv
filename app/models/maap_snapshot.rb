@@ -1,7 +1,7 @@
 class MaapSnapshot < ApplicationRecord
   # Core relationships (optional for exploration snapshots)
-  belongs_to :employee, class_name: 'Person', optional: true
-  belongs_to :created_by, class_name: 'Person', optional: true
+  belongs_to :employee_company_teammate, class_name: 'CompanyTeammate', optional: true
+  belongs_to :creator_company_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :company, class_name: 'Organization', optional: true
   
   # Change metadata
@@ -27,7 +27,7 @@ class MaapSnapshot < ApplicationRecord
   # Scopes
   scope :recent, -> { order(created_at: :desc) }
   scope :by_change_type, ->(type) { where(change_type: type) }
-  scope :for_employee, ->(employee) { where(employee: employee) }
+  scope :for_employee_teammate, ->(teammate) { where(employee_company_teammate: teammate) }
   scope :for_company, ->(company) { where(company: company) }
   scope :exploration, -> { where(change_type: 'exploration') }
   scope :executed, -> { where.not(effective_date: nil) }
@@ -47,25 +47,25 @@ class MaapSnapshot < ApplicationRecord
   end
   
   # Class methods for building snapshots
-  def self.build_for_employee(employee:, created_by:, change_type:, reason:, request_info: {})
-    company = employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first&.employment_tenures&.active&.first&.company
+  def self.build_for_employee(employee_teammate:, creator_teammate:, change_type:, reason:, request_info: {})
+    company = employee_teammate.organization
     new(
-      employee: employee,
-      created_by: created_by,
+      employee_company_teammate: employee_teammate,
+      creator_company_teammate: creator_teammate,
       company: company,
       change_type: change_type,
       reason: reason,
       manager_request_info: request_info,
-      maap_data: build_maap_data_for_employee(employee, company)
+      maap_data: build_maap_data_for_teammate(employee_teammate)
     )
   end
   
-  def self.build_for_employee_with_changes(employee:, created_by:, change_type:, reason:, request_info: {}, form_params: {})
-    # Find the company from the employee's teammates
-    company = employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first&.organization
+  def self.build_for_employee_with_changes(employee_teammate:, creator_teammate:, change_type:, reason:, request_info: {}, form_params: {})
+    # Find the company from the employee teammate
+    company = employee_teammate.organization
     new(
-      employee: employee,
-      created_by: created_by,
+      employee_company_teammate: employee_teammate,
+      creator_company_teammate: creator_teammate,
       company: company,
       change_type: change_type,
       reason: reason,
@@ -73,15 +73,15 @@ class MaapSnapshot < ApplicationRecord
       form_params: form_params,
       # maap_data should always reflect DB state (post-execution log)
       # Proposed changes are stored in form_params only
-      maap_data: build_maap_data_for_employee(employee, company)
+      maap_data: build_maap_data_for_teammate(employee_teammate)
     )
   end
 
-  def self.build_for_employee_without_maap_data(employee:, created_by:, change_type:, reason:, request_info: {}, form_params: {})
-    company = employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first&.employment_tenures&.active&.first&.company
+  def self.build_for_employee_without_maap_data(employee_teammate:, creator_teammate:, change_type:, reason:, request_info: {}, form_params: {})
+    company = employee_teammate.organization
     new(
-      employee: employee,
-      created_by: created_by,
+      employee_company_teammate: employee_teammate,
+      creator_company_teammate: creator_teammate,
       company: company,
       change_type: change_type,
       reason: reason,
@@ -91,10 +91,10 @@ class MaapSnapshot < ApplicationRecord
     )
   end
   
-  def self.build_exploration(created_by:, company:, reason:, request_info: {})
+  def self.build_exploration(creator_teammate:, company:, reason:, request_info: {})
     new(
-      employee: nil,
-      created_by: created_by,
+      employee_company_teammate: nil,
+      creator_company_teammate: creator_teammate,
       company: company,
       change_type: 'exploration',
       reason: reason,
@@ -121,29 +121,28 @@ class MaapSnapshot < ApplicationRecord
   end
   
   def self.pending_acknowledgement_for(teammate)
-    where(employee: teammate.person, employee_acknowledged_at: nil)
+    where(employee_company_teammate: teammate, employee_acknowledged_at: nil)
       .where.not(effective_date: nil)
   end
   
   def primary_potential_observer
-    return nil unless employee
-    employee.teammates.find_by(organization: company)
+    employee_company_teammate
   end
 
   private
   
-  def self.build_maap_data_for_employee(employee, company)
+  def self.build_maap_data_for_teammate(teammate)
     {
-      position: build_position_data(employee, company),
-      assignments: build_assignments_data(employee, company),
-      abilities: build_abilities_data(employee, company),
-      aspirations: build_aspirations_data(employee, company)
+      position: build_position_data(teammate),
+      assignments: build_assignments_data(teammate),
+      abilities: build_abilities_data(teammate),
+      aspirations: build_aspirations_data(teammate)
     }
   end
   
-  def self.build_position_data(employee, company)
-    teammate = employee.teammates.find_by(organization: company)
+  def self.build_position_data(teammate)
     return nil unless teammate
+    company = teammate.organization
     active_employment = EmploymentTenure.where(teammate: teammate).active.where(company: company).first
     return nil unless active_employment
     
@@ -177,9 +176,9 @@ class MaapSnapshot < ApplicationRecord
     }
   end
   
-  def self.build_assignments_data(employee, company)
-    teammate = employee.teammates.find_by(organization: company)
+  def self.build_assignments_data(teammate)
     return [] unless teammate
+    company = teammate.organization
     
     teammate.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: company }).map do |active_tenure|
       # Find most recent closed assignment tenure for this assignment
@@ -209,9 +208,9 @@ class MaapSnapshot < ApplicationRecord
     end
   end
   
-  def self.build_abilities_data(employee, company)
-    teammate = employee.teammates.find_by(organization: company)
+  def self.build_abilities_data(teammate)
     return [] unless teammate
+    company = teammate.organization
     TeammateMilestone.where(teammate: teammate).joins(:ability).where(abilities: { organization: company }).includes(:ability).map do |milestone|
       {
         ability_id: milestone.ability_id,
@@ -222,9 +221,9 @@ class MaapSnapshot < ApplicationRecord
     end
   end
   
-  def self.build_aspirations_data(employee, company)
-    teammate = employee.teammates.find_by(organization: company)
+  def self.build_aspirations_data(teammate)
     return [] unless teammate
+    company = teammate.organization
     
     # Get all aspirations for the company
     aspirations = company.aspirations

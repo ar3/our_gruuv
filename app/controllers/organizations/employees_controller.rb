@@ -346,11 +346,11 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Authorize access to audit view (organization context passed via pundit_user)
     authorize @teammate, :audit?, policy_class: CompanyTeammatePolicy
     
-    # Get MAAP snapshots for this person within this organization
-    @maap_snapshots = MaapSnapshot.for_employee(@person)
+    # Get MAAP snapshots for this teammate within this organization
+    @maap_snapshots = MaapSnapshot.for_employee_teammate(@teammate)
                                   .for_company(@organization)
                                   .recent
-                                  .includes(:created_by)
+                                  .includes(:creator_company_teammate)
     
     # Separate acknowledged and pending snapshots for employee view
     if current_person == @person
@@ -383,7 +383,16 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     end
     
     # Find and acknowledge the snapshots
-    snapshots = MaapSnapshot.where(id: snapshot_ids, employee: @person).where.not(effective_date: nil)
+    # Get the teammate for the person in this organization
+    teammate = @person.teammates.find_by(organization: @organization)
+    
+    if teammate
+      snapshots = MaapSnapshot.where(id: snapshot_ids, employee_company_teammate: teammate).where.not(effective_date: nil)
+    else
+      redirect_to audit_organization_employee_path(@organization, @person), 
+                  alert: 'Unable to find teammate record.'
+      return
+    end
     
     acknowledged_count = 0
     snapshots.each do |snapshot|

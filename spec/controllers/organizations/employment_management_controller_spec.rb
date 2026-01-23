@@ -8,7 +8,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
   let(:manager) { create(:person) }
-  let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
+  let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
   
   before do
     # Set up organization with positions and managers

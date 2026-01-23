@@ -1,16 +1,16 @@
 require 'rails_helper'
 
 RSpec.describe InitialMaapSnapshotService, type: :service do
-  let(:company) { create(:organization, :company) }
-  let(:person) { create(:person) }
-  let(:company_teammate) { create(:teammate, person: person, organization: company, type: 'CompanyTeammate') }
-  let(:position_major_level) { create(:position_major_level) }
-  let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
-  let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let(:assignment1) { create(:assignment, company: company, title: 'Assignment 1') }
-  let(:assignment2) { create(:assignment, company: company, title: 'Assignment 2') }
-  let(:employment_tenure) do
+  let!(:company) { create(:organization, :company) }
+  let!(:person) { create(:person) }
+  let!(:company_teammate) { create(:company_teammate, person: person, organization: company) }
+  let!(:position_major_level) { create(:position_major_level) }
+  let!(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
+  let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
+  let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let!(:assignment1) { create(:assignment, company: company, title: 'Assignment 1') }
+  let!(:assignment2) { create(:assignment, company: company, title: 'Assignment 2') }
+  let!(:employment_tenure) do
     create(:employment_tenure,
       teammate: company_teammate,
       company: company,
@@ -20,25 +20,20 @@ RSpec.describe InitialMaapSnapshotService, type: :service do
     )
   end
 
-  before do
-    # Ensure employment tenure exists
-    employment_tenure
-  end
-
   describe '#create_initial_snapshot' do
     context 'when all prerequisites are met' do
-      let!(:position_assignment1) do
+      before do
+        # Create position_assignments for the employment_tenure's position
+        actual_position = employment_tenure.reload.position
         create(:position_assignment,
-          position: position,
+          position: actual_position,
           assignment: assignment1,
           assignment_type: 'required',
           min_estimated_energy: 20,
           max_estimated_energy: 30
         )
-      end
-      let!(:position_assignment2) do
         create(:position_assignment,
-          position: position,
+          position: actual_position,
           assignment: assignment2,
           assignment_type: 'required',
           min_estimated_energy: 10,
@@ -51,6 +46,7 @@ RSpec.describe InitialMaapSnapshotService, type: :service do
         
         expect {
           result = service.create_initial_snapshot
+          puts "DEBUG: Result = #{result.inspect}" unless result[:success]
           expect(result[:success]).to be true
           expect(result[:snapshot]).to be_a(MaapSnapshot)
         }.to change { MaapSnapshot.count }.by(1)
@@ -61,13 +57,13 @@ RSpec.describe InitialMaapSnapshotService, type: :service do
         result = service.create_initial_snapshot
 
         snapshot = result[:snapshot]
-        expect(snapshot.employee).to eq(person)
+        expect(snapshot.employee_company_teammate).to eq(company_teammate)
         expect(snapshot.company).to eq(company)
         expect(snapshot.change_type).to eq('assignment_management')
         expect(snapshot.reason).to eq('Initial expectation')
-        expect(snapshot.created_by.id).to eq(-1)
-        expect(snapshot.created_by.first_name).to eq('OG')
-        expect(snapshot.created_by.last_name).to eq('Automation')
+        expect(snapshot.creator_company_teammate.person.id).to eq(-1)
+        expect(snapshot.creator_company_teammate.person.first_name).to eq('OG')
+        expect(snapshot.creator_company_teammate.person.last_name).to eq('Automation')
       end
 
       it 'includes required assignments in maap_data with correct energy percentages' do
@@ -98,13 +94,18 @@ RSpec.describe InitialMaapSnapshotService, type: :service do
 
         snapshot = result[:snapshot]
         position_data = snapshot.maap_data['position']
+        actual_position = employment_tenure.reload.position
         
         expect(position_data).to be_present
-        expect(position_data['position_id']).to eq(position.id)
+        expect(position_data['position_id']).to eq(actual_position.id)
       end
 
       it 'handles assignments with only min energy' do
-        position_assignment1.update!(max_estimated_energy: nil)
+        # Find the position_assignment for assignment1 and update it
+        actual_position = employment_tenure.reload.position
+        pa1 = PositionAssignment.find_by(position: actual_position, assignment: assignment1)
+        pa1.update!(max_estimated_energy: nil)
+        
         service = described_class.new(company_teammate: company_teammate)
         result = service.create_initial_snapshot
 
@@ -114,7 +115,11 @@ RSpec.describe InitialMaapSnapshotService, type: :service do
       end
 
       it 'handles assignments with only max energy' do
-        position_assignment1.update!(min_estimated_energy: nil)
+        # Find the position_assignment for assignment1 and update it
+        actual_position = employment_tenure.reload.position
+        pa1 = PositionAssignment.find_by(position: actual_position, assignment: assignment1)
+        pa1.update!(min_estimated_energy: nil)
+        
         service = described_class.new(company_teammate: company_teammate)
         result = service.create_initial_snapshot
 
@@ -140,7 +145,9 @@ RSpec.describe InitialMaapSnapshotService, type: :service do
     end
 
     context 'when company teammate already has MAAP snapshots' do
-      let!(:existing_snapshot) { create(:maap_snapshot, employee: person, company: company) }
+      before do
+        create(:maap_snapshot, employee_company_teammate: company_teammate, company: company)
+      end
 
       it 'returns failure with appropriate message' do
         service = described_class.new(company_teammate: company_teammate)
@@ -152,11 +159,13 @@ RSpec.describe InitialMaapSnapshotService, type: :service do
       end
 
       it 'does not create a new snapshot' do
-        service = described_class.new(company_teammate: company_teammate)
+        # Snapshot already created in before block
+        existing_count = MaapSnapshot.count
         
-        expect {
-          service.create_initial_snapshot
-        }.not_to change { MaapSnapshot.count }
+        service = described_class.new(company_teammate: company_teammate)
+        service.create_initial_snapshot
+        
+        expect(MaapSnapshot.count).to eq(existing_count)
       end
     end
 

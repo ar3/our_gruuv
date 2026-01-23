@@ -6,9 +6,9 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
   let(:direct_report) { create(:person) }
   let(:non_direct_report) { create(:person) }
   
-  let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
-  let!(:direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: direct_report, organization: organization) }
-  let!(:non_direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: non_direct_report, organization: organization) }
+  let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
+  let!(:direct_report_teammate) { create(:company_teammate, person: direct_report, organization: organization) }
+  let!(:non_direct_report_teammate) { create(:company_teammate, person: non_direct_report, organization: organization) }
 
   let(:manager_ct) { CompanyTeammate.find(manager_teammate.id) }
   let(:direct_report_ct) { CompanyTeammate.find(direct_report_teammate.id) }
@@ -45,9 +45,9 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
 
   it 'returns direct reports for multiple managers when manager_id[] is set' do
     manager2 = create(:person)
-    manager2_teammate = create(:teammate, type: 'CompanyTeammate', person: manager2, organization: organization, first_employed_at: 1.month.ago)
+    manager2_teammate = create(:company_teammate, person: manager2, organization: organization, first_employed_at: 1.month.ago)
     direct_report2 = create(:person)
-    direct_report2_teammate = create(:teammate, type: 'CompanyTeammate', person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
+    direct_report2_teammate = create(:company_teammate, person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
     
     # Reload as CompanyTeammate instances
     manager2_ct = CompanyTeammate.find(manager2_teammate.id)
