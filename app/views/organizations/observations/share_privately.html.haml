@@ -29,7 +29,7 @@
               = label_tag "teammate_#{teammate_info[:teammate].id}", class: 'form-check-label' do
                 .d-flex.align-items-center
                   %span
-                    %strong= person.preferred_name || person.first_name
+                    %strong= person.casual_name
                     %small.text-muted.ms-2= teammate_info[:role]
                   - if disabled && disabled_reason
                     %i.bi.bi-exclamation-triangle.text-warning.ms-2{

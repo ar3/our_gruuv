@@ -67,7 +67,7 @@
             - @available_teammates_for_notification.each do |teammate_info|
               .mb-2
                 %i.bi.bi-person.me-2
-                %strong= teammate_info[:person].preferred_name || teammate_info[:person].first_name
+                %strong= teammate_info[:person].casual_name
                 %small.text-muted.ms-2= teammate_info[:role]
           
           - if can_send_private
