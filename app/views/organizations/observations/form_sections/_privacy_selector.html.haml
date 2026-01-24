@@ -7,10 +7,48 @@
 - other_manager_names ||= @other_manager_names || []
 - only_observee_is_observer ||= @only_observee_is_observer || false
 - organization ||= local_assigns[:organization] || @organization
-- company_name = @observation&.company&.name || organization&.name || 'company'
+- observation ||= @observation
+- display_only ||= false
+- company_name = observation&.company&.name || organization&.name || 'company'
 - is_non_generic = ['quick_note', 'feedback', 'kudos'].include?(observation_type.to_s)
 
-- if is_non_generic
+- if display_only
+  %label.form-label Privacy Level
+  - Observation.privacy_levels.keys.each do |key|
+    - is_current = observation&.privacy_level == key
+    .form-check
+      = radio_button_tag 'privacy_level_display', key, is_current, class: 'form-check-input', disabled: true, id: "privacy_display_#{key}"
+      = label_tag "privacy_display_#{key}", class: 'form-check-label' do
+        - case key
+        - when 'observer_only'
+          🔒 Just for me (Journal)
+        - when 'observed_only'
+          - if observee_names.any?
+            👤 Just #{observee_names.join(', ')}
+          - else
+            👤 Just for their eyes only
+        - when 'managers_only'
+          - if direct_manager_names.any?
+            👔 Just Managers: #{direct_manager_names.join(', ')}
+            - if other_manager_names.any?
+              %i.bi.bi-info-circle.ms-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => other_managers_popover_content(other_manager_names)}
+          - else
+            👔 Just for their manager's eyes only
+        - when 'observed_and_managers'
+          - if observee_names.any? || direct_manager_names.any?
+            - stakeholder_parts = []
+            - stakeholder_parts << observee_names.join(', ') if observee_names.any?
+            - stakeholder_parts << direct_manager_names.join(', ') if direct_manager_names.any?
+            👥 Stakeholders: #{stakeholder_parts.join(', ')}
+            - if other_manager_names.any?
+              %i.bi.bi-info-circle.ms-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => other_managers_popover_content(other_manager_names)}
+          - else
+            👥 Stakeholder
+        - when 'public_to_company'
+          🏢 Public to #{company_name}
+        - when 'public_to_world'
+          🌍 Public to world
+- elsif is_non_generic
   .row.mb-3
     .col-md-6
       = form.label :privacy_level, "Privacy Level", class: 'form-label'
