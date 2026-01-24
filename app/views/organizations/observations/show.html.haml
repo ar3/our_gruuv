@@ -23,8 +23,6 @@
         %button.btn.btn-primary.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
           Publish
         %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
-    - if !@observation.soft_deleted? && policy(@observation).destroy?
-      = button_to 'Archive', organization_observation_path(@organization, @observation), method: :delete, class: 'btn btn-outline-secondary', data: { confirm: 'Are you sure you want to archive this observation?', turbo: false }
     - elsif @observation.soft_deleted? && policy(@observation).restore?
       = button_to 'Restore', restore_organization_observation_path(@organization, @observation), method: :patch, class: 'btn btn-outline-success', data: { turbo: false }
     = render 'mode_switcher', organization: @organization, observation: @observation
@@ -429,3 +427,61 @@
         %hr
         
         = render 'page_visit_stats'
+    
+    / Actions section
+    .card.mb-4
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-gear.me-2
+          Actions
+      .card-body
+        .d-grid.gap-2
+          / View Public Version
+          - if policy(@observation).view_permalink?
+            = link_to @observation.decorate.permalink_path, target: '_blank', class: 'btn btn-outline-secondary w-100' do
+              %i.bi.bi-globe.me-2
+              View Public Version
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-outline-secondary.w-100.disabled{disabled: true}
+                  %i.bi.bi-globe.me-2
+                  View Public Version
+              - view_public_tooltip = 'You do not have permission to view the public version'
+              - if !@observation.published?
+                - view_public_tooltip = 'Public version is only available for published observations'
+              - elsif @observation.privacy_level != 'public_to_world'
+                - view_public_tooltip = 'Public version is only available for observations with "Public to World" privacy level'
+              
+              - if view_public_tooltip.present?
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => view_public_tooltip}
+          
+          / Edit Observation
+          - if policy(@observation).update?
+            = link_to edit_organization_observation_path(@organization, @observation, return_url: organization_observation_path(@organization, @observation), return_text: 'Back to Observation'), class: 'btn btn-outline-secondary w-100' do
+              %i.bi.bi-pencil.me-2
+              Edit Observation
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-outline-secondary.w-100.disabled{disabled: true}
+                  %i.bi.bi-pencil.me-2
+                  Edit Observation
+              %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be the observer to edit this observation"}
+          
+          / Archive Observation
+          - if !@observation.soft_deleted? && policy(@observation).destroy?
+            = button_to organization_observation_path(@organization, @observation), method: :delete, class: 'btn btn-outline-secondary w-100', data: { confirm: 'Are you sure you want to archive this observation?', turbo: false } do
+              %i.bi.bi-archive.me-2
+              Archive Observation
+          - elsif @observation.soft_deleted? && policy(@observation).restore?
+            = button_to restore_organization_observation_path(@organization, @observation), method: :patch, class: 'btn btn-outline-success w-100', data: { turbo: false } do
+              %i.bi.bi-arrow-counterclockwise.me-2
+              Restore Observation
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-outline-secondary.w-100.disabled{disabled: true}
+                  %i.bi.bi-archive.me-2
+                  Archive Observation
+              %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be the observer to archive this observation"}

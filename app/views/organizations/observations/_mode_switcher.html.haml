@@ -40,3 +40,21 @@
           %i.bi.bi-globe.me-2
           Public Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Public Mode is only available for observations with 'Public to World' privacy level"}
+    
+    %li
+      %hr.dropdown-divider
+    
+    %li
+      - if !observation.soft_deleted? && policy(observation).destroy?
+        = button_to organization_observation_path(organization, observation), method: :delete, class: 'dropdown-item text-danger', data: { confirm: 'Are you sure you want to archive this observation?', turbo: false }, form: { style: 'display: inline;' } do
+          %i.bi.bi-archive.me-2
+          Archive Observation
+      - elsif observation.soft_deleted? && policy(observation).restore?
+        = button_to restore_organization_observation_path(organization, observation), method: :patch, class: 'dropdown-item', data: { turbo: false }, form: { style: 'display: inline;' } do
+          %i.bi.bi-arrow-counterclockwise.me-2
+          Restore Observation
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-archive.me-2
+          Archive Observation
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be the observer to archive this observation"}

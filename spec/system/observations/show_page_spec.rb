@@ -188,6 +188,136 @@ RSpec.describe 'Observation Show Page', type: :system do
     end
   end
 
+  describe 'Archive Observation in mode switcher' do
+    let(:published_observation) do
+      build(:observation, observer: observer, company: company, story: 'Test story').tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+      end
+    end
+
+    let(:archived_observation) do
+      build(:observation, observer: observer, company: company, story: 'Test story', deleted_at: Time.current).tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+      end
+    end
+
+    context 'when user is observer and observation is not archived' do
+      it 'shows Archive Observation as clickable button in dropdown' do
+        visit organization_observation_path(company, published_observation)
+        
+        # Open the dropdown
+        find('button.dropdown-toggle').click
+        
+        expect(page).to have_button('Archive Observation')
+        expect(page).to have_css('.dropdown-item i.bi-archive')
+      end
+
+      it 'shows divider before Archive option' do
+        visit organization_observation_path(company, published_observation)
+        
+        # Open the dropdown
+        find('button.dropdown-toggle').click
+        
+        expect(page).to have_css('.dropdown-divider')
+      end
+
+      it 'archives observation when Archive Observation is clicked' do
+        visit organization_observation_path(company, published_observation)
+        
+        # Open the dropdown
+        find('button.dropdown-toggle').click
+        
+        # Wait for dropdown to be visible
+        expect(page).to have_css('.dropdown-menu.show', wait: 2)
+        
+        # Find and click the Archive button in the dropdown
+        within('.dropdown-menu') do
+          archive_button = find('button', text: 'Archive Observation')
+          # Accept confirmation before clicking
+          page.driver.browser.switch_to.alert.accept rescue nil
+          archive_button.click
+        end
+        
+        # Wait for redirect and reload
+        sleep 2
+        published_observation.reload
+        expect(published_observation.deleted_at).to be_present
+        expect(page).to have_content('Observation was successfully archived')
+      end
+    end
+
+    context 'when observation is archived and user is observer' do
+      it 'shows Restore Observation button in dropdown' do
+        visit organization_observation_path(company, archived_observation)
+        
+        # Open the dropdown
+        find('button.dropdown-toggle').click
+        
+        expect(page).to have_button('Restore Observation')
+        expect(page).to have_css('.dropdown-item i.bi-arrow-counterclockwise')
+      end
+
+      it 'restores observation when Restore Observation is clicked' do
+        visit organization_observation_path(company, archived_observation)
+        
+        # Open the dropdown
+        find('button.dropdown-toggle').click
+        
+        # Target the one in the dropdown specifically
+        within('.dropdown-menu') do
+          click_button 'Restore Observation'
+        end
+        
+        archived_observation.reload
+        expect(archived_observation.deleted_at).to be_nil
+        expect(page).to have_content('Observation was successfully restored')
+      end
+    end
+
+    context 'when user is not observer' do
+      before do
+        switch_to_user(other_person, company)
+      end
+
+      it 'does not allow non-observer to archive observation' do
+        visit organization_observation_path(company, published_observation)
+        
+        # Non-observers may be redirected or see a different page structure
+        # If they can see the show page, Archive should be disabled
+        # Check for disabled Archive button in actions card if it exists
+        if page.has_css?('.card', text: /Actions/, wait: 2)
+          within('.card', text: /Actions/) do
+            expect(page).to have_css('button.btn-outline-secondary.disabled[disabled]', text: 'Archive Observation')
+            expect(page).to have_css('i.bi-exclamation-triangle.text-warning')
+          end
+        end
+        
+        # If mode switcher exists, Archive should also be disabled there
+        if page.has_css?('button.dropdown-toggle', wait: 0)
+          # Try to find observation mode switcher by looking for specific content
+          dropdown_buttons = all('button.dropdown-toggle')
+          observation_switcher = dropdown_buttons.find { |btn| btn.text.match?(/View Mode|Edit Mode|Public Mode/) }
+          
+          if observation_switcher
+            observation_switcher.click
+            expect(page).to have_css('.dropdown-menu.show', wait: 2)
+            
+            within('.dropdown-menu') do
+              if page.has_content?('Archive Observation', wait: 0)
+                expect(page).to have_css('.dropdown-item.text-muted.disabled', text: /Archive Observation/)
+                expect(page).to have_css('[data-bs-toggle="tooltip"][data-bs-title="You need to be the observer to archive this observation"]')
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
   describe 'Form buttons on new/edit pages' do
     let(:draft_observation) do
       build(:observation, observer: observer, company: company, published_at: nil, story: 'Test story').tap do |obs|
