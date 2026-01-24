@@ -5,10 +5,10 @@ RSpec.describe 'Organizations::Seats', type: :request do
   let(:company) { create(:organization, :company) }
   let(:person_teammate) { create(:teammate, person: person, organization: company, first_employed_at: 1.year.ago, can_manage_maap: true) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let(:seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
+  let(:seat) { create(:seat, title: title, seat_needed_by: Date.current) }
 
   before do
     # Ensure teammate has MAAP access

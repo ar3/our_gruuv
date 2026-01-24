@@ -4,8 +4,8 @@ RSpec.describe PositionAssignment, type: :model do
   let(:company) { create(:organization, type: 'Company') }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
   let(:assignment) { create(:assignment, company: company) }
   let(:position_assignment) { create(:position_assignment, position: position, assignment: assignment) }
 
@@ -119,7 +119,7 @@ RSpec.describe PositionAssignment, type: :model do
       end
 
       it 'allows same assignment with different position' do
-        other_position = create(:position, position_type: position_type, position_level: create(:position_level, position_major_level: position_major_level))
+        other_position = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level))
         create(:position_assignment, position: position, assignment: assignment)
         
         new_assignment = build(:position_assignment, position: other_position, assignment: assignment)

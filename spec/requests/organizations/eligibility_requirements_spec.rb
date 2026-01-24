@@ -4,9 +4,9 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:teammate) { create(:company_teammate, person: person, organization: organization) }
-  let(:position_type) { create(:position_type, organization: organization) }
-  let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:title) { create(:title, organization: organization) }
+  let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
 
   before do
     teammate

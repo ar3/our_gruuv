@@ -174,7 +174,7 @@
                     %td
                       = link_to organization_seat_path(@organization, seat), class: "text-decoration-none" do
                         = seat.display_name
-                    %td= seat.position_type.external_title
+                    %td= seat.title.external_title
                     %td= seat.seat_needed_by.strftime('%B %d, %Y')
                     %td
                       %span.badge{class: seat_state_badge_class(seat.state)}
@@ -209,7 +209,7 @@
                     %td
                       = link_to organization_seat_path(@organization, seat), class: "text-decoration-none" do
                         = seat.display_name
-                    %td= seat.position_type.external_title
+                    %td= seat.title.external_title
                     %td= seat.seat_needed_by.strftime('%B %d, %Y')
                     %td
                       %span.badge{class: seat_state_badge_class(seat.state)}
@@ -221,12 +221,12 @@
                       - else
                         %span.text-muted —
 
-    - if @position_types.any?
+    - if @titles.any?
       .card.mb-4
         .card-header
           %h5.mb-0
             %i.bi.bi-briefcase.me-2
-            Position Types (#{@position_types.count})
+            Titles (#{@titles.count})
         .card-body
           .table-responsive
             %table.table.table-hover
@@ -236,13 +236,13 @@
                   %th Level
                   %th Positions
               %tbody
-                - @position_types.each do |position_type|
+                - @titles.each do |title|
                   %tr
                     %td
-                      = link_to organization_position_type_path(@organization, position_type), class: "text-decoration-none" do
-                        = position_type.external_title
-                    %td= position_type.position_major_level.description
-                    %td= position_type.positions.count
+                      = link_to organization_title_path(@organization, title), class: "text-decoration-none" do
+                        = title.external_title
+                    %td= title.position_major_level.description
+                    %td= title.positions.count
 
     - if @assignments.any?
       .card.mb-4

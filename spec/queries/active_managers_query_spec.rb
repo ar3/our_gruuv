@@ -3,9 +3,9 @@ require 'rails_helper'
 RSpec.describe ActiveManagersQuery, type: :query do
   let(:company) { create(:organization, :company) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
 
   describe '#call' do
     context 'with require_active_teammate: true (strict mode)' do

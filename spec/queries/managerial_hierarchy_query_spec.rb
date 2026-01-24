@@ -59,9 +59,9 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
 
       it 'includes manager position information' do
         position_major_level = create(:position_major_level)
-        position_type = create(:position_type, organization: company, position_major_level: position_major_level)
+        title = create(:title, organization: company, position_major_level: position_major_level)
         position_level = create(:position_level, position_major_level: position_major_level)
-        position = create(:position, position_type: position_type, position_level: position_level)
+        position = create(:position, title: title, position_level: position_level)
         # Find or create the manager's employment tenure and update its position
         manager_tenure = EmploymentTenure.find_or_create_by!(teammate: direct_manager_teammate, company: company) do |et|
           et.started_at = 1.month.ago

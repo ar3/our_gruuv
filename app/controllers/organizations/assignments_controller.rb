@@ -127,9 +127,9 @@ class Organizations::AssignmentsController < ApplicationController
     
     # Load positions that require or suggest this assignment
     @position_assignments = @assignment.position_assignments
-      .includes(position: [:position_type, :position_level])
-      .joins(position: [:position_type, :position_level])
-      .order('position_assignments.assignment_type, position_types.external_title, position_levels.level')
+      .includes(position: [:title, :position_level])
+      .joins(position: [:title, :position_level])
+      .order('position_assignments.assignment_type, titles.external_title, position_levels.level')
     
     render layout: determine_layout
   end

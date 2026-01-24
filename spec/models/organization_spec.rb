@@ -40,9 +40,9 @@ RSpec.describe Organization, type: :model do
     it 'returns only huddle participants who are not active employees' do
       # Create an employment tenure for person1 (making them an employee)
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      position_type = create(:position_type, organization: company, position_major_level: position_major_level)
+      title = create(:title, organization: company, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
-      position = create(:position, position_type: position_type, position_level: position_level)
+      position = create(:position, title: title, position_level: position_level)
       create(:employment_tenure, teammate: teammate1, company: company, position: position)
       
       # person2 has no employment tenure (just a huddle participant)
@@ -54,9 +54,9 @@ RSpec.describe Organization, type: :model do
     it 'returns empty when all huddle participants are employees' do
       # Make both people employees
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      position_type = create(:position_type, organization: company, position_major_level: position_major_level)
+      title = create(:title, organization: company, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
-      position = create(:position, position_type: position_type, position_level: position_level)
+      position = create(:position, title: title, position_level: position_level)
       
       create(:employment_tenure, teammate: teammate1, company: company, position: position)
       create(:employment_tenure, teammate: teammate2, company: company, position: position)

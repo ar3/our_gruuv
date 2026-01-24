@@ -4,9 +4,9 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
-  let(:position_type) { create(:position_type, organization: organization) }
-  let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:title) { create(:title, organization: organization) }
+  let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
   
   let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, can_manage_employment: true) }
   let!(:employee_teammate) { create(:company_teammate, person: employee, organization: organization) }

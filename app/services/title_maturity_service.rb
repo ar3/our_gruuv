@@ -1,26 +1,26 @@
-class PositionTypeMaturityService
-  def initialize(position_type)
-    @position_type = position_type
+class TitleMaturityService
+  def initialize(title)
+    @title = title
   end
 
-  def self.calculate_phase(position_type)
-    new(position_type).calculate_phase
+  def self.calculate_phase(title)
+    new(title).calculate_phase
   end
 
-  def self.next_steps_message(position_type)
-    new(position_type).next_steps_message
+  def self.next_steps_message(title)
+    new(title).next_steps_message
   end
 
-  def self.phase_status(position_type)
-    new(position_type).phase_status
+  def self.phase_status(title)
+    new(title).phase_status
   end
 
-  def self.phase_health_status(position_type)
-    new(position_type).phase_health_status
+  def self.phase_health_status(title)
+    new(title).phase_health_status
   end
 
-  def self.phase_health_reason(position_type, phase)
-    new(position_type).phase_health_reason(phase)
+  def self.phase_health_reason(title, phase)
+    new(title).phase_health_reason(phase)
   end
 
   def calculate_phase
@@ -125,7 +125,7 @@ class PositionTypeMaturityService
 
   private
 
-  attr_reader :position_type
+  attr_reader :title
 
   # Helper method to compare semantic versions
   def semantic_version_gte?(version_string, target_version)
@@ -144,7 +144,7 @@ class PositionTypeMaturityService
 
   # Phase 1 Health: Check positions, required assignments, and assignment outcomes
   def phase_one_health
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     return :red if positions.empty?
 
     positions_with_required = positions.count { |p| p.position_assignments.where(assignment_type: 'required').exists? }
@@ -170,7 +170,7 @@ class PositionTypeMaturityService
 
   def phase_one_reason
     health = phase_one_health
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     
     case health
     when :red
@@ -203,10 +203,10 @@ class PositionTypeMaturityService
 
   # Phase 2 Health: Semantic version >= 1.0.0
   def phase_two_health
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     assignments = Assignment
       .joins(position_assignments: :position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -231,10 +231,10 @@ class PositionTypeMaturityService
 
   def phase_two_reason
     health = phase_two_health
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     assignments = Assignment
       .joins(position_assignments: :position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -269,7 +269,7 @@ class PositionTypeMaturityService
 
   # Phase 3 Health: Employment tenures and check-ins
   def phase_three_health
-    position_ids = position_type.positions.pluck(:id)
+    position_ids = title.positions.pluck(:id)
     return :red if position_ids.empty?
 
     # Check for employment tenures
@@ -310,7 +310,7 @@ class PositionTypeMaturityService
 
   def phase_three_reason
     health = phase_three_health
-    position_ids = position_type.positions.pluck(:id)
+    position_ids = title.positions.pluck(:id)
 
     case health
     when :red
@@ -338,7 +338,7 @@ class PositionTypeMaturityService
   def phase_four_health
     required_assignment_ids = PositionAssignment
       .joins(:position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(assignment_type: 'required')
       .distinct
       .pluck(:assignment_id)
@@ -366,7 +366,7 @@ class PositionTypeMaturityService
     health = phase_four_health
     required_assignment_ids = PositionAssignment
       .joins(:position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(assignment_type: 'required')
       .distinct
       .pluck(:assignment_id)
@@ -413,7 +413,7 @@ class PositionTypeMaturityService
   def phase_five_health
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -441,7 +441,7 @@ class PositionTypeMaturityService
     health = phase_five_health
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -488,7 +488,7 @@ class PositionTypeMaturityService
   def phase_six_health
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -511,7 +511,7 @@ class PositionTypeMaturityService
     health = phase_six_health
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -551,7 +551,7 @@ class PositionTypeMaturityService
 
   # Phase 7 Health: Positions with eligibility requirements summaries
   def phase_seven_health
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     return :red if positions.empty?
 
     positions_with_summaries = positions.count { |p| p.eligibility_requirements_summary.present? }
@@ -570,7 +570,7 @@ class PositionTypeMaturityService
 
   def phase_seven_reason
     health = phase_seven_health
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     positions_with_summaries = positions.count { |p| p.eligibility_requirements_summary.present? }
     percentage = positions.length > 0 ? (positions_with_summaries.to_f / positions.length) * 100 : 0.0
 
@@ -598,16 +598,16 @@ class PositionTypeMaturityService
 
   # Phase 8 Health: Continuous improvement (created/updated dates)
   def phase_eight_health
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     assignments = Assignment
       .joins(position_assignments: :position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -662,16 +662,16 @@ class PositionTypeMaturityService
 
   def phase_eight_reason
     health = phase_eight_health
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     assignments = Assignment
       .joins(position_assignments: :position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -726,13 +726,13 @@ class PositionTypeMaturityService
   def phase_nine_health
     assignments = Assignment
       .joins(position_assignments: :position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -776,13 +776,13 @@ class PositionTypeMaturityService
     health = phase_nine_health
     assignments = Assignment
       .joins(position_assignments: :position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -841,14 +841,14 @@ class PositionTypeMaturityService
 
   # Phase 1: At least one position has ≥1 required assignment
   def phase_one_met?
-    position_type.positions.joins(:position_assignments)
+    title.positions.joins(:position_assignments)
                   .where(position_assignments: { assignment_type: 'required' })
                   .exists?
   end
 
   # Phase 2: All positions have ≥1 required assignment
   def phase_two_met?
-    positions = position_type.positions
+    positions = title.positions
     return false if positions.empty?
     
     positions.all? do |position|
@@ -859,7 +859,7 @@ class PositionTypeMaturityService
   # Phase 3: At least one position has employment_tenure AND there exists ≥1 AssignmentCheckIn for required assignments
   def phase_three_met?
     # Check if any position has an employment tenure
-    position_ids = position_type.positions.pluck(:id)
+    position_ids = title.positions.pluck(:id)
     return false if position_ids.empty?
 
     positions_with_tenures = EmploymentTenure
@@ -897,10 +897,10 @@ class PositionTypeMaturityService
 
   # Phase 4: All required assignments have ≥1 AssignmentAbility
   def phase_four_met?
-    # Get all required assignments for positions in this position type
+    # Get all required assignments for positions in this title
     required_assignment_ids = PositionAssignment
       .joins(:position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(assignment_type: 'required')
       .distinct
       .pluck(:assignment_id)
@@ -921,7 +921,7 @@ class PositionTypeMaturityService
     # Get all abilities used in required assignments
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
 
@@ -938,7 +938,7 @@ class PositionTypeMaturityService
     # Get all abilities used in required assignments
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
 
@@ -952,7 +952,7 @@ class PositionTypeMaturityService
 
   # Phase 7: All positions have non-nil eligibility_requirements_summary
   def phase_seven_met?
-    positions = position_type.positions
+    positions = title.positions
     return false if positions.empty?
 
     positions.all? do |position|
@@ -965,16 +965,16 @@ class PositionTypeMaturityService
     six_months_ago = 6.months.ago
 
     # Get all related entities
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     assignments = Assignment
       .joins(position_assignments: :position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -997,16 +997,16 @@ class PositionTypeMaturityService
     six_months_ago = 6.months.ago
 
     # Get all related entities
-    positions = position_type.positions.to_a
+    positions = title.positions.to_a
     assignments = Assignment
       .joins(position_assignments: :position)
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
     abilities = Ability
       .joins(assignment_abilities: { assignment: { position_assignments: :position } })
-      .where(positions: { position_type_id: position_type.id })
+      .where(positions: { title_id: title.id })
       .where(position_assignments: { assignment_type: 'required' })
       .distinct
       .to_a
@@ -1051,4 +1051,3 @@ class PositionTypeMaturityService
     percentage >= 10.0
   end
 end
-

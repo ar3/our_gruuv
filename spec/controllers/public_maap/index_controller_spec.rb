@@ -5,9 +5,9 @@ RSpec.describe PublicMaap::IndexController, type: :controller do
     let!(:company_with_position) do
       company = create(:organization, :company, name: 'Company A')
       position_major_level = create(:position_major_level)
-      position_type = create(:position_type, organization: company, position_major_level: position_major_level)
+      title = create(:title, organization: company, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level)
-      create(:position, position_type: position_type, position_level: position_level)
+      create(:position, title: title, position_level: position_level)
       company
     end
 

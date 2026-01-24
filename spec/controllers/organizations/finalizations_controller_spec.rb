@@ -64,9 +64,9 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
     end
 
     context 'position check-ins' do
-      let(:position_type) { create(:position_type, organization: organization) }
-      let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-      let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let(:title) { create(:title, organization: organization) }
+      let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+      let(:position) { create(:position, title: title, position_level: position_level) }
       let(:employment_tenure) do
         # Use the existing employment_tenure from the before block, or find/create one
         EmploymentTenure.find_by(teammate: employee_teammate, company: organization) ||

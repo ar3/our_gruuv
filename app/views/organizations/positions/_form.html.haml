@@ -8,16 +8,16 @@
 .row
   .col-md-6
     .mb-3
-      = form.label :position_type_id, "Position Type", class: "form-label"
-      - position_type = @position_type || @position.position_type
-      - if position_type
-        = form.hidden_field :position_type_id, value: position_type.id
-        %input.form-control{type: "text", value: position_type.display_name_with_major_level, readonly: true, disabled: true}
-        %small.form-text.text-muted Position type cannot be changed
+      = form.label :title_id, "Title", class: "form-label"
+      - title = @title || @position.title
+      - if title
+        = form.hidden_field :title_id, value: title.id
+        %input.form-control{type: "text", value: title.display_name_with_major_level, readonly: true, disabled: true}
+        %small.form-text.text-muted Title cannot be changed
       - else
-        = form.hidden_field :position_type_id, value: (@position.position_type_id || params[:position_type_id])
+        = form.hidden_field :title_id, value: (@position.title_id || params[:title_id])
         %input.form-control{type: "text", value: "Unknown", readonly: true, disabled: true}
-        %small.form-text.text-muted Position type is required
+        %small.form-text.text-muted Title is required
   
   .col-md-6
     .mb-3
@@ -26,22 +26,22 @@
         options_from_collection_for_select(@position_levels, :id, :level, @position.position_level_id), 
         { prompt: 'Select a position level' }, 
         { class: "form-select", required: true, id: "position_level_select" }
-      %small.form-text.text-muted Choose the level within the selected position type
+      %small.form-text.text-muted Choose the level within the selected title
 
 .row
   .col-md-12
-    - position_type = @position_type || @position.position_type
-    - if position_type&.position_summary.present?
+    - title = @title || @position.title
+    - if title&.position_summary.present?
       .mb-3
         .markdown-content--bordered
-          = simple_format(position_type.position_summary)
-        %small.form-text.text-muted.mt-2 This is the base summary from the position type. Your position-specific summary below will be appended to this.
+          = simple_format(title.position_summary)
+        %small.form-text.text-muted.mt-2 This is the base summary from the title. Your position-specific summary below will be appended to this.
     
     .mb-3
       = form.label :position_summary, "Position Summary", class: "form-label"
       = form.text_area :position_summary, class: "form-control", rows: 4,
         placeholder: "Optional description of this position's responsibilities and expectations..."
-      %small.form-text.text-muted A brief description of what this position entails. This will be appended to the position type summary above.
+      %small.form-text.text-muted A brief description of what this position entails. This will be appended to the title summary above.
 
 - level_1_template = "• Living Values. Above the bar on all Values for 2+ quarters in the last 4 quarters \n\n• Meeting Required Assignments: Has met expectations of 80% of Required Assignments for 2 quarters in a row\n\n• Demonstrated Abilities: \n\nManager says, \"I want to entrust this person with more responsibility, because they have demonstrated the Abilities needed for the Assignments they are taking on\"\n\n• Achievement\n\nWTWT. If your team is meeting expectations for 2+ quarters in a row that directly contributes to every member of that team "
 - level_2_template = "• Living Values. Above the bar on all Values for 2+ quarters in a row\n\n• Meeting Required Assignments: Has met expectations of 100% of Required Assignments for 2 quarters in a row\n\n• Demonstrated Abilities: \n\nManager says, \"I want to entrust this person with more responsibility, because they have demonstrated the Abilities needed for the Assignments they are taking on, and are above the expected milestone for 33% of the Abilities.\" \n\n• Achievement\n\nWTWT. If your team is exceeding expectations for 2+ quarters in a row that directly contributes to every member of that team "

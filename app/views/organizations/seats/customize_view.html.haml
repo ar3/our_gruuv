@@ -86,7 +86,7 @@
       .card.mb-4
         .card-body
           %label.form-label.fw-bold Select What Order You See Them In
-          - sort_options = [['Seat Needed By (Earliest)', 'seat_needed_by'], ['Seat Needed By (Latest)', 'seat_needed_by_desc'], ['Position Type (A-Z)', 'position_type'], ['Position Type (Z-A)', 'position_type_desc'], ['State', 'state'], ['Created Date (Newest)', 'created_at'], ['Created Date (Oldest)', 'created_at_asc']]
+          - sort_options = [['Seat Needed By (Earliest)', 'seat_needed_by'], ['Seat Needed By (Latest)', 'seat_needed_by_desc'], ['Title (A-Z)', 'title'], ['Title (Z-A)', 'title_desc'], ['State', 'state'], ['Created Date (Newest)', 'created_at'], ['Created Date (Oldest)', 'created_at_asc']]
           = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
   .row
     .col-md-4

@@ -246,17 +246,17 @@ RSpec.describe AssignmentsAndAbilitiesUploadParser, type: :service do
     context 'position_assignments enhancement' do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
-      let!(:position_type) do
-        create(:position_type, external_title: 'Growth & Development Manager', organization: organization, position_major_level: position_major_level)
+      let!(:title) do
+        create(:title, external_title: 'Growth & Development Manager', organization: organization, position_major_level: position_major_level)
       end
-      let!(:seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 3.months) }
+      let!(:seat) { create(:seat, title: title, seat_needed_by: Date.current + 3.months) }
 
-      it 'includes position, position_type, and seat information' do
+      it 'includes position, title, and seat information' do
         parser.parse
         enhanced = parser.enhanced_preview_actions
         pa = enhanced['position_assignments'].first
         
-        expect(pa).to have_key('position_type_title')
+        expect(pa).to have_key('title_title')
         expect(pa).to have_key('position_display_name')
         expect(pa).to have_key('will_create_position')
         expect(pa).to have_key('seats_count')
@@ -294,7 +294,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadParser, type: :service do
         
         expect(pa).to have_key('position_title')
         expect(pa).to have_key('will_update_seat_department')
-        expect(pa['position_type_title']).to be_nil
+        expect(pa['title_title']).to be_nil
         expect(pa['seats_count']).to eq(0)
       end
     end

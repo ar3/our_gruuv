@@ -6,9 +6,9 @@ RSpec.describe "EmploymentTenures", type: :request do
   let(:organization) { company }
   let(:position) do
     position_major_level = create(:position_major_level)
-    position_type = create(:position_type, organization: company, position_major_level: position_major_level)
+    title = create(:title, organization: company, position_major_level: position_major_level)
     position_level = create(:position_level, position_major_level: position_major_level)
-    create(:position, position_type: position_type, position_level: position_level)
+    create(:position, title: title, position_level: position_level)
   end
   
   # Use the teammate created by sign_in_as_teammate_for_request instead of creating a duplicate
@@ -54,9 +54,9 @@ RSpec.describe "EmploymentTenures", type: :request do
       let!(:active_tenure) { create(:employment_tenure, teammate: person_teammate, company: company, position: position, started_at: 6.months.ago) }
       let(:new_position) do
         position_major_level = create(:position_major_level)
-        position_type = create(:position_type, organization: company, position_major_level: position_major_level)
+        title = create(:title, organization: company, position_major_level: position_major_level)
         position_level = create(:position_level, position_major_level: position_major_level)
-        create(:position, position_type: position_type, position_level: position_level)
+        create(:position, title: title, position_level: position_level)
       end
 
       it "deactivates the current active tenure and creates a new one" do

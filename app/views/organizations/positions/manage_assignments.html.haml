@@ -1,5 +1,5 @@
-- content_for :title, "Manage Assignments for #{@position.position_type.external_title}"
-- content_for :header, "Manage Assignments for #{@position.position_type.external_title}"
+- content_for :title, "Manage Assignments for #{@position.title.external_title}"
+- content_for :header, "Manage Assignments for #{@position.title.external_title}"
 - content_for :return_url, @return_url
 - content_for :return_text, @return_text
 
@@ -51,7 +51,7 @@
                   %div.h5.mb-0= "#{@suggested_totals[:anticipated]}%"
     
     = form_with url: update_assignments_organization_position_path(@organization, @position), method: :patch, local: true do |form|
-      - company = @position.position_type.organization.root_company
+      - company = @position.title.organization.root_company
       - hierarchy_tree = build_assignment_hierarchy_tree(@assignments_by_org, company)
       
       - if hierarchy_tree.any?

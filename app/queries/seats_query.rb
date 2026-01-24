@@ -38,7 +38,7 @@ class SeatsQuery
 
   def base_scope
     Seat.for_organization(organization)
-        .includes(:position_type, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person })
+        .includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person })
   end
 
   def filter_by_state(seats)
@@ -67,10 +67,10 @@ class SeatsQuery
 
   def apply_sort(seats)
     case params[:sort]
-    when 'position_type'
-      seats.joins(:position_type).order('position_types.external_title ASC, seats.seat_needed_by ASC')
-    when 'position_type_desc'
-      seats.joins(:position_type).order('position_types.external_title DESC, seats.seat_needed_by DESC')
+    when 'title'
+      seats.joins(:title).order('titles.external_title ASC, seats.seat_needed_by ASC')
+    when 'title_desc'
+      seats.joins(:title).order('titles.external_title DESC, seats.seat_needed_by DESC')
     when 'seat_needed_by_desc'
       seats.order(seat_needed_by: :desc)
     when 'state'

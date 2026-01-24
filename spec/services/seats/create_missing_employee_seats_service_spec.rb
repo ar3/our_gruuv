@@ -3,9 +3,9 @@ require 'rails_helper'
 RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
   let(:organization) { create(:organization, :company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
+  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
   let(:service) { described_class.new(organization) }
 
   describe '#call' do
@@ -13,7 +13,7 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
       it 'creates seats for employees without seats' do
         employee1 = create(:person)
         employee1_teammate = create(:teammate, person: employee1, organization: organization, first_employed_at: 1.year.ago)
-        # Create tenure with position - ensure position_type is set correctly
+        # Create tenure with position - ensure title is set correctly
         tenure = create(:employment_tenure, teammate: employee1_teammate, company: organization, position: position, started_at: 1.year.ago, seat: nil)
         # Reload to ensure associations are fresh
         tenure.position.reload
@@ -26,8 +26,8 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
         
         tenure.reload
         expect(tenure.seat).to be_present
-        # Verify the seat's position_type matches the tenure's position's position_type
-        expect(tenure.seat.position_type_id).to eq(tenure.position.position_type_id)
+        # Verify the seat's title matches the tenure's position's title
+        expect(tenure.seat.title_id).to eq(tenure.position.title_id)
         expect(tenure.seat.state).to eq('filled')
       end
 
@@ -51,12 +51,12 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
         tenure2.position = position
         tenure2.save!
         
-        # Verify both tenures have the same position and position_type_id before service call
+        # Verify both tenures have the same position and title_id before service call
         expect(tenure1.position_id).to eq(tenure2.position_id)
         # Reload positions to ensure they're fresh
         tenure1.position.reload
         tenure2.position.reload
-        expect(tenure1.position.position_type_id).to eq(tenure2.position.position_type_id)
+        expect(tenure1.position.title_id).to eq(tenure2.position.title_id)
         # Verify they have the same started_at date
         expect(tenure1.started_at.to_date).to eq(tenure2.started_at.to_date)
         
@@ -76,9 +76,9 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
         employee1_teammate = create(:teammate, person: employee1, organization: organization, first_employed_at: 1.year.ago)
         start_date = 1.year.ago.to_date
         tenure = create(:employment_tenure, teammate: employee1_teammate, company: organization, position: position, started_at: start_date, seat: nil)
-        # Reload to ensure associations are fresh, then create seat with matching position_type
+        # Reload to ensure associations are fresh, then create seat with matching title
         tenure.position.reload
-        existing_seat = create(:seat, position_type_id: tenure.position.position_type_id, seat_needed_by: start_date, state: 'filled')
+        existing_seat = create(:seat, title_id: tenure.position.title_id, seat_needed_by: start_date, state: 'filled')
         
         result = service.call
         
@@ -96,9 +96,9 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
         employee1 = create(:person)
         employee1_teammate = create(:teammate, person: employee1, organization: organization, first_employed_at: 1.year.ago)
         tenure = create(:employment_tenure, teammate: employee1_teammate, company: organization, position: position, started_at: 1.year.ago, seat: nil)
-        # Reload to ensure associations are fresh, then create seat with matching position_type
+        # Reload to ensure associations are fresh, then create seat with matching title
         tenure.position.reload
-        seat = create(:seat, position_type_id: tenure.position.position_type_id, seat_needed_by: 1.year.ago.to_date)
+        seat = create(:seat, title_id: tenure.position.title_id, seat_needed_by: 1.year.ago.to_date)
         tenure.update!(seat: seat)
         
         result = service.call

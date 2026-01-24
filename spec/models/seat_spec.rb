@@ -2,11 +2,11 @@ require 'rails_helper'
 
 RSpec.describe Seat, type: :model do
   let(:organization) { create(:organization, :company) }
-  let(:position_type) { create(:position_type, organization: organization) }
-  let(:seat) { create(:seat, position_type: position_type) }
+  let(:title) { create(:title, organization: organization) }
+  let(:seat) { create(:seat, title: title) }
 
   describe 'associations' do
-    it { should belong_to(:position_type) }
+    it { should belong_to(:title) }
     it { should have_many(:employment_tenures).dependent(:nullify) }
     it { should belong_to(:department).optional }
     it { should belong_to(:team).optional }
@@ -17,7 +17,7 @@ RSpec.describe Seat, type: :model do
   describe 'department, team, and reports_to_seat associations' do
     let(:department) { create(:organization, :department, parent: organization) }
     let(:team) { create(:organization, :team, parent: organization) }
-    let(:reports_to_seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 6.months) }
+    let(:reports_to_seat) { create(:seat, title: title, seat_needed_by: Date.current + 6.months) }
 
     it 'can belong to a department' do
       seat.department = department
@@ -41,23 +41,23 @@ RSpec.describe Seat, type: :model do
     end
 
     it 'has many reporting_seats' do
-      reporting_seat = create(:seat, position_type: position_type, seat_needed_by: Date.current + 9.months, reports_to_seat: seat)
+      reporting_seat = create(:seat, title: title, seat_needed_by: Date.current + 9.months, reports_to_seat: seat)
       expect(seat.reporting_seats).to include(reporting_seat)
     end
   end
 
   describe 'validations' do
     it { should validate_presence_of(:seat_needed_by) }
-    it { should validate_presence_of(:position_type) }
+    it { should validate_presence_of(:title) }
   end
 
   # Note: Enum test removed due to shoulda-matchers limitation with string-backed enums
 
   describe 'scopes' do
-    let!(:draft_seat) { create(:seat, :draft, position_type: position_type, seat_needed_by: Date.current + 1.month) }
-    let!(:open_seat) { create(:seat, :open, position_type: position_type, seat_needed_by: Date.current + 2.months) }
-    let!(:filled_seat) { create(:seat, :filled, position_type: position_type, seat_needed_by: Date.current + 3.months) }
-    let!(:archived_seat) { create(:seat, :archived, position_type: position_type, seat_needed_by: Date.current + 4.months) }
+    let!(:draft_seat) { create(:seat, :draft, title: title, seat_needed_by: Date.current + 1.month) }
+    let!(:open_seat) { create(:seat, :open, title: title, seat_needed_by: Date.current + 2.months) }
+    let!(:filled_seat) { create(:seat, :filled, title: title, seat_needed_by: Date.current + 3.months) }
+    let!(:archived_seat) { create(:seat, :archived, title: title, seat_needed_by: Date.current + 4.months) }
 
     describe '.ordered' do
       it 'orders by seat_needed_by' do
@@ -82,20 +82,20 @@ RSpec.describe Seat, type: :model do
 
   describe '#display_name' do
     it 'returns position type title with date' do
-      expect(seat.display_name).to eq("#{position_type.external_title} - #{seat.seat_needed_by.strftime('%B %Y')}")
+      expect(seat.display_name).to eq("#{title.external_title} - #{seat.seat_needed_by.strftime('%B %Y')}")
     end
   end
 
   describe '#title' do
     it 'returns position type external title' do
-      expect(seat.title).to eq(position_type.external_title)
+      expect(seat.title).to eq(title.external_title)
     end
   end
 
   describe 'state management' do
     describe '#needs_reconciliation?' do
       context 'when seat is filled' do
-        let(:seat) { create(:seat, :filled, position_type: position_type) }
+        let(:seat) { create(:seat, :filled, title: title) }
 
         it 'returns true when no active employment tenures exist' do
           expect(seat.needs_reconciliation?).to be true
@@ -108,7 +108,7 @@ RSpec.describe Seat, type: :model do
       end
 
       context 'when seat is open' do
-        let(:seat) { create(:seat, :open, position_type: position_type) }
+        let(:seat) { create(:seat, :open, title: title) }
 
         # TODO: Fix this test - complex employment tenure association issue
         # it 'returns true when active employment tenures exist' do
@@ -122,7 +122,7 @@ RSpec.describe Seat, type: :model do
       end
 
       context 'when seat is archived' do
-        let(:seat) { create(:seat, :archived, position_type: position_type) }
+        let(:seat) { create(:seat, :archived, title: title) }
 
         it 'returns true when active employment tenures exist' do
           create(:employment_tenure, :with_seat, seat: seat, ended_at: nil)
@@ -135,7 +135,7 @@ RSpec.describe Seat, type: :model do
       end
 
       context 'when seat is draft' do
-        let(:seat) { create(:seat, :draft, position_type: position_type) }
+        let(:seat) { create(:seat, :draft, title: title) }
 
         it 'returns true when any employment tenures exist' do
           create(:employment_tenure, :with_seat, seat: seat, ended_at: 1.day.ago)
@@ -183,7 +183,7 @@ RSpec.describe Seat, type: :model do
   describe 'HR text defaults' do
     describe '#seat_disclaimer_with_default' do
       context 'when seat_disclaimer is present' do
-        let(:seat) { create(:seat, position_type: position_type, seat_disclaimer: 'Custom disclaimer') }
+        let(:seat) { create(:seat, title: title, seat_disclaimer: 'Custom disclaimer') }
 
         it 'returns the custom disclaimer' do
           expect(seat.seat_disclaimer_with_default).to eq('Custom disclaimer')
@@ -191,7 +191,7 @@ RSpec.describe Seat, type: :model do
       end
 
       context 'when seat_disclaimer is nil' do
-        let(:seat) { create(:seat, position_type: position_type, seat_disclaimer: nil) }
+        let(:seat) { create(:seat, title: title, seat_disclaimer: nil) }
 
         it 'returns the database default' do
           expect(seat.seat_disclaimer_with_default).to eq(Seat.column_defaults['seat_disclaimer'])
@@ -201,7 +201,7 @@ RSpec.describe Seat, type: :model do
 
     describe '#work_environment_with_default' do
       context 'when work_environment is present' do
-        let(:seat) { create(:seat, position_type: position_type, work_environment: 'Custom environment') }
+        let(:seat) { create(:seat, title: title, work_environment: 'Custom environment') }
 
         it 'returns the custom environment' do
           expect(seat.work_environment_with_default).to eq('Custom environment')
@@ -209,7 +209,7 @@ RSpec.describe Seat, type: :model do
       end
 
       context 'when work_environment is nil' do
-        let(:seat) { create(:seat, position_type: position_type, work_environment: nil) }
+        let(:seat) { create(:seat, title: title, work_environment: nil) }
 
         it 'returns the database default' do
           expect(seat.work_environment_with_default).to eq(Seat.column_defaults['work_environment'])
@@ -219,7 +219,7 @@ RSpec.describe Seat, type: :model do
 
     describe '#physical_requirements_with_default' do
       context 'when physical_requirements is present' do
-        let(:seat) { create(:seat, position_type: position_type, physical_requirements: 'Custom requirements') }
+        let(:seat) { create(:seat, title: title, physical_requirements: 'Custom requirements') }
 
         it 'returns the custom requirements' do
           expect(seat.physical_requirements_with_default).to eq('Custom requirements')
@@ -227,7 +227,7 @@ RSpec.describe Seat, type: :model do
       end
 
       context 'when physical_requirements is nil' do
-        let(:seat) { create(:seat, position_type: position_type, physical_requirements: nil) }
+        let(:seat) { create(:seat, title: title, physical_requirements: nil) }
 
         it 'returns the database default' do
           expect(seat.physical_requirements_with_default).to eq(Seat.column_defaults['physical_requirements'])
@@ -237,7 +237,7 @@ RSpec.describe Seat, type: :model do
 
     describe '#travel_with_default' do
       context 'when travel is present' do
-        let(:seat) { create(:seat, position_type: position_type, travel: 'Custom travel policy') }
+        let(:seat) { create(:seat, title: title, travel: 'Custom travel policy') }
 
         it 'returns the custom travel policy' do
           expect(seat.travel_with_default).to eq('Custom travel policy')
@@ -245,7 +245,7 @@ RSpec.describe Seat, type: :model do
       end
 
       context 'when travel is nil' do
-        let(:seat) { create(:seat, position_type: position_type, travel: nil) }
+        let(:seat) { create(:seat, title: title, travel: nil) }
 
         it 'returns the database default' do
           expect(seat.travel_with_default).to eq(Seat.column_defaults['travel'])
@@ -256,7 +256,7 @@ RSpec.describe Seat, type: :model do
 
   describe '#has_direct_reports?' do
     context 'when seat has reporting seats' do
-      let!(:reporting_seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 1.month, reports_to_seat: seat) }
+      let!(:reporting_seat) { create(:seat, title: title, seat_needed_by: Date.current + 1.month, reports_to_seat: seat) }
 
       it 'returns true' do
         expect(seat.has_direct_reports?).to be true

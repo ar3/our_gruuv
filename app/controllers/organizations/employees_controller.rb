@@ -265,9 +265,9 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     authorize @organization, :manage_employment?
     @person = Person.new
     @employment_tenure = EmploymentTenure.new
-    @positions = @organization.positions.includes(:position_type, :position_level)
-                                .joins(:position_type)
-                                .order('position_types.external_title')
+    @positions = @organization.positions.includes(:title, :position_level)
+                                .joins(:title)
+                                .order('titles.external_title')
     load_manager_data
   end
 
@@ -314,15 +314,15 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employee was successfully created.'
     end
   rescue ActiveRecord::RecordInvalid
-    @positions = @organization.positions.includes(:position_type, :position_level)
-                                .joins(:position_type)
-                                .order('position_types.external_title')
+    @positions = @organization.positions.includes(:title, :position_level)
+                                .joins(:title)
+                                .order('titles.external_title')
     load_manager_data
     render :new_employee, status: :unprocessable_entity
   rescue => e
-    @positions = @organization.positions.includes(:position_type, :position_level)
-                                .joins(:position_type)
-                                .order('position_types.external_title')
+    @positions = @organization.positions.includes(:title, :position_level)
+                                .joins(:title)
+                                .order('titles.external_title')
     load_manager_data
     @error_message = "An error occurred: #{e.message}"
     render :new_employee, status: :unprocessable_entity

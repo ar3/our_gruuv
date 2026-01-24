@@ -331,7 +331,7 @@ class UnassignedEmployeeUploadProcessor
           type: 'employment_tenure',
           action: 'exists',
           person_name: person.display_name,
-          position_title: existing_tenure.position.position_type.external_title,
+          position_title: existing_tenure.position.title.external_title,
           id: existing_tenure.id
         }
         results[:summary][:successful_creates] += 1
@@ -352,7 +352,7 @@ class UnassignedEmployeeUploadProcessor
           type: 'employment_tenure',
           action: 'created',
           person_name: person.display_name,
-          position_title: employment_tenure.position.position_type.external_title,
+          position_title: employment_tenure.position.title.external_title,
           id: employment_tenure.id
         }
         results[:summary][:successful_creates] += 1
@@ -372,29 +372,29 @@ class UnassignedEmployeeUploadProcessor
   def find_or_create_position(job_title)
     return nil if job_title.blank?
 
-    # Find existing position type
-    position_type = PositionType.find_by(external_title: job_title, organization: organization)
+    # Find existing title
+    title = Title.find_by(external_title: job_title, organization: organization)
     
-    if position_type.nil?
-      # Create new position type
+    if title.nil?
+      # Create new title
       position_major_level = PositionMajorLevel.first || PositionMajorLevel.create!(set_name: 'Engineering', major_level: 'Standard')
-      position_type = PositionType.create!(
+      title = Title.create!(
         external_title: job_title,
         organization: organization,
         position_major_level: position_major_level
       )
     end
 
-    # Find existing position for this position type
-    position = Position.find_by(position_type: position_type)
+    # Find existing position for this title
+    position = Position.find_by(title: title)
     
     if position.nil?
       # Create new position
-      position_level = PositionLevel.find_by(position_major_level: position_type.position_major_level) || 
-                      PositionLevel.create!(position_major_level: position_type.position_major_level, level: '1.0')
+      position_level = PositionLevel.find_by(position_major_level: title.position_major_level) || 
+                      PositionLevel.create!(position_major_level: title.position_major_level, level: '1.0')
       
       position = Position.create!(
-        position_type: position_type,
+        title: title,
         position_level: position_level
       )
     end

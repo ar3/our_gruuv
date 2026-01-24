@@ -16,7 +16,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
         name: @teammate.person.display_name,
         casual_name: @teammate.person.casual_name,
         manager: @teammate.current_manager&.display_name,
-        position_type: active_tenure&.position&.position_type&.external_title
+        external_title: active_tenure&.position&.title&.external_title
       }
     end
     

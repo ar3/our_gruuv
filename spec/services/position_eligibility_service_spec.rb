@@ -3,9 +3,9 @@ require 'rails_helper'
 RSpec.describe PositionEligibilityService do
   describe '#check_unique_to_you_assignment_check_ins' do
     let(:organization) { create(:organization, :company) }
-    let(:position_type) { create(:position_type, organization: organization) }
-    let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:title) { create(:title, organization: organization) }
+    let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
     let(:teammate) { create(:company_teammate, organization: organization) }
     let(:required_assignment) { create(:assignment, company: organization) }
     let(:unique_assignment) { create(:assignment, company: organization) }

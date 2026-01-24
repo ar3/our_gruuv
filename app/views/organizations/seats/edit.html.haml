@@ -26,10 +26,10 @@
           .row
             .col-md-6
               .mb-3
-                = f.label :position_type_id, "Position Type", class: "form-label"
-                = f.collection_select :position_type_id, @organization.position_types, :id, :external_title, { prompt: "Select a position type" }, { class: "form-select", required: true }
-                - if @seat.errors[:position_type_id].any?
-                  .invalid-feedback.d-block= @seat.errors[:position_type_id].join(", ")
+                = f.label :title_id, "Title", class: "form-label"
+                = f.collection_select :title_id, @organization.titles, :id, :external_title, { prompt: "Select a title" }, { class: "form-select", required: true }
+                - if @seat.errors[:title_id].any?
+                  .invalid-feedback.d-block= @seat.errors[:title_id].join(", ")
 
               .mb-3
                 = f.label :seat_needed_by, "Needed By Date", class: "form-label"

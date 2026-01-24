@@ -10,9 +10,9 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
   let!(:employee1_teammate) { create(:teammate, person: employee1, organization: company) }
   let!(:employee2_teammate) { create(:teammate, person: employee2, organization: company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
   let(:employment_tenure1) { create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: 1.year.ago) }
   let(:employment_tenure2) { create(:employment_tenure, teammate: employee2_teammate, company: company, position: position, started_at: 6.months.ago) }
   let(:huddle_playbook) { create(:huddle_playbook, organization: team) }
@@ -405,25 +405,25 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       expect(response).to render_template(:new_employee)
     end
 
-    it 'sorts positions alphabetically by position_type external_title' do
+    it 'sorts positions alphabetically by title external_title' do
       # Create multiple position types with different external titles
-      position_type_z = create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Zebra Position')
-      position_type_a = create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Alpha Position')
-      position_type_m = create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Middle Position')
+      title_z = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Zebra Position')
+      title_a = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Alpha Position')
+      title_m = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Middle Position')
       
       position_level_1 = create(:position_level, position_major_level: position_major_level, level: '1.0')
       position_level_2 = create(:position_level, position_major_level: position_major_level, level: '2.0')
       
-      position_z = create(:position, position_type: position_type_z, position_level: position_level_1)
-      position_a = create(:position, position_type: position_type_a, position_level: position_level_2)
-      position_m = create(:position, position_type: position_type_m, position_level: position_level_1)
+      position_z = create(:position, title: title_z, position_level: position_level_1)
+      position_a = create(:position, title: title_a, position_level: position_level_2)
+      position_m = create(:position, title: title_m, position_level: position_level_1)
       
       get :new_employee, params: { organization_id: company.id }
       
       positions = assigns(:positions).to_a
       # Filter to only the positions we created for this test
       test_positions = positions.select { |p| [position_a.id, position_m.id, position_z.id].include?(p.id) }
-      external_titles = test_positions.map { |p| p.position_type.external_title }
+      external_titles = test_positions.map { |p| p.title.external_title }
       
       # Verify positions are sorted alphabetically by external_title
       expect(external_titles).to eq(['Alpha Position', 'Middle Position', 'Zebra Position'])

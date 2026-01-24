@@ -81,7 +81,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     
     # Create and validate the form
     @form = EmploymentTenureUpdateForm.new(@current_employment)
-    @form.current_person = current_person
+    @form.current_company_teammate = current_company_teammate
     @form.teammate = @teammate
     
     if @form.validate(employment_params) && @form.save
@@ -146,7 +146,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       teammate: @teammate,
       current_tenure: @current_employment,
       termination_date: termination_date,
-      created_by: current_person,
+      created_by: current_company_teammate,
       reason: reason
     )
     
@@ -287,13 +287,13 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     
     # Load positions - get all positions for company and descendant departments
     orgs_in_hierarchy = [company] + company.descendants.select { |org| org.department? }
-    positions = Position.joins(position_type: :organization)
+    positions = Position.joins(title: :organization)
                         .where(organizations: { id: orgs_in_hierarchy })
-                        .includes(:position_type, :position_level)
+                        .includes(:title, :position_level)
                         .ordered
     
-    # Group positions by department (position_type's organization)
-    @positions_by_department = positions.group_by { |pos| pos.position_type.organization }
+    # Group positions by department (title's organization)
+    @positions_by_department = positions.group_by { |pos| pos.title.organization }
     
     # Keep flat array for backward compatibility
     @positions = positions
@@ -305,7 +305,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
                                       .pluck(:seat_id)
     
     available_seats = company.seats
-                             .includes(:position_type)
+                             .includes(:title)
                              .where.not(id: active_seat_ids)
                              .where(state: [:open, :filled])
     
@@ -319,7 +319,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     # Initialize form for display (only if not already set in update action)
     unless @form
       @form = EmploymentTenureUpdateForm.new(@current_employment || EmploymentTenure.new)
-      @form.current_person = current_person
+      @form.current_company_teammate = current_company_teammate
       @form.teammate = @teammate
     end
   end

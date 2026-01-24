@@ -69,7 +69,7 @@ class UnassignedEmployeeUploadParser
         unassigned_employees: [],
         departments: [],
         managers: [],
-        position_types: [],
+        titles: [],
         positions: [],
         teammates: [],
         employment_tenures: []
@@ -81,11 +81,11 @@ class UnassignedEmployeeUploadParser
         parse_row(row, row_num)
       end
 
-      # Deduplicate departments, managers, position types, teammates, and employment tenures
+      # Deduplicate departments, managers, titles, teammates, and employment tenures
       @parsed_data[:departments] = @parsed_data[:departments].uniq { |d| d['name'] }
       @parsed_data[:managers] = @parsed_data[:managers].uniq { |m| m['name'] }
-      @parsed_data[:position_types] = @parsed_data[:position_types].uniq { |pt| pt['external_title'] }
-      @parsed_data[:positions] = @parsed_data[:positions].uniq { |p| "#{p['position_type_title']}_#{p['position_level']}" }
+      @parsed_data[:titles] = @parsed_data[:titles].uniq { |title| title['external_title'] }
+      @parsed_data[:positions] = @parsed_data[:positions].uniq { |p| "#{p['title_name']}_#{p['position_level']}" }
       @parsed_data[:teammates] = @parsed_data[:teammates].uniq { |t| "#{t['person_name']}_#{t['organization_name']}" }
       @parsed_data[:employment_tenures] = @parsed_data[:employment_tenures].uniq { |et| "#{et['person_name']}_#{et['position_title']}" }
       
@@ -103,7 +103,7 @@ class UnassignedEmployeeUploadParser
       unassigned_employees: @parsed_data[:unassigned_employees] || [],
       departments: @parsed_data[:departments] || [],
       managers: @parsed_data[:managers] || [],
-      position_types: @parsed_data[:position_types] || [],
+      titles: @parsed_data[:titles] || [],
       positions: @parsed_data[:positions] || [],
       teammates: @parsed_data[:teammates] || [],
       employment_tenures: @parsed_data[:employment_tenures] || []
@@ -117,7 +117,7 @@ class UnassignedEmployeeUploadParser
       unassigned_employees: enhance_unassigned_employees_preview(@parsed_data[:unassigned_employees] || []),
       departments: enhance_departments_preview(@parsed_data[:departments] || []),
       managers: enhance_managers_preview(@parsed_data[:managers] || []),
-      position_types: enhance_position_types_preview(@parsed_data[:position_types] || []),
+      titles: enhance_titles_preview(@parsed_data[:titles] || []),
       positions: enhance_positions_preview(@parsed_data[:positions] || []),
       teammates: enhance_teammates_preview(@parsed_data[:teammates] || []),
       employment_tenures: enhance_employment_tenures_preview(@parsed_data[:employment_tenures] || [])
@@ -198,10 +198,10 @@ class UnassignedEmployeeUploadParser
       @parsed_data[:managers] << manager_data if manager_data
     end
 
-    # Parse position type data
-    if position_type_data_present?(row_hash)
-      position_type_data = parse_position_type_data(row_hash, row_num)
-      @parsed_data[:position_types] << position_type_data if position_type_data
+    # Parse title data
+    if title_data_present?(row_hash)
+      title_data = parse_title_data(row_hash, row_num)
+      @parsed_data[:titles] << title_data if title_data
     end
 
     # Parse position data
@@ -235,7 +235,7 @@ class UnassignedEmployeeUploadParser
     row_hash['Manager'].present? || row_hash['Manager Email'].present?
   end
 
-  def position_type_data_present?(row_hash)
+  def title_data_present?(row_hash)
     row_hash['Job Title'].present?
   end
 
@@ -334,7 +334,7 @@ class UnassignedEmployeeUploadParser
     }
   end
 
-  def parse_position_type_data(row_hash, row_num)
+  def parse_title_data(row_hash, row_num)
     job_title = row_hash['Job Title']&.strip
     
     return nil if job_title.blank?
@@ -352,7 +352,7 @@ class UnassignedEmployeeUploadParser
     return nil if job_title.blank? || job_title_level.blank?
 
     {
-      'position_type_title' => job_title,
+      'title_name' => job_title,
       'position_level' => job_title_level,
       'row' => row_num
     }
@@ -524,30 +524,30 @@ class UnassignedEmployeeUploadParser
     end
   end
 
-  def enhance_position_types_preview(position_types_data)
-    return [] if position_types_data.blank?
+  def enhance_titles_preview(titles_data)
+    return [] if titles_data.blank?
     
-    position_types_data.map do |position_type_data|
-      # Try to find existing position type by external_title
-      existing_position_type = nil
+    titles_data.map do |title_data|
+      # Try to find existing title by external_title
+      existing_title = nil
       action = 'create'
       
-      if position_type_data['external_title'].present?
+      if title_data['external_title'].present?
         # We need to find the organization context - this would need to be passed in
         # For now, we'll assume it's a create action
-        existing_position_type = nil
+        existing_title = nil
       end
       
-      if existing_position_type
+      if existing_title
         action = 'update'
-        position_type_data.merge(
+        title_data.merge(
           'action' => action,
-          'existing_id' => existing_position_type.id,
-          'existing_name' => existing_position_type.external_title,
+          'existing_id' => existing_title.id,
+          'existing_name' => existing_title.external_title,
           'will_create' => false
         )
       else
-        position_type_data.merge(
+        title_data.merge(
           'action' => action,
           'existing_id' => nil,
           'existing_name' => nil,
@@ -561,12 +561,12 @@ class UnassignedEmployeeUploadParser
     return [] if positions_data.blank?
     
     positions_data.map do |position_data|
-      # Try to find existing position by position_type and position_level
+      # Try to find existing position by title and position_level
       existing_position = nil
       action = 'create'
       
-      if position_data['position_type_title'].present? && position_data['position_level'].present?
-        # We need to find the organization context and position type - this would need to be passed in
+      if position_data['title_name'].present? && position_data['position_level'].present?
+        # We need to find the organization context and title - this would need to be passed in
         # For now, we'll assume it's a create action
         existing_position = nil
       end

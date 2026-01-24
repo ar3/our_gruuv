@@ -295,8 +295,8 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
-    # Position types management
-    resources :position_types, module: :organizations do
+    # Titles management
+    resources :titles, module: :organizations do
       member do
         post :clone_positions
       end
@@ -374,7 +374,7 @@ get '/login', to: 'auth#login', as: :login
     resources :seats, module: :organizations do
       collection do
         post :create_missing_employee_seats
-        post :create_missing_position_type_seats
+        post :create_missing_title_seats
         get :customize_view
         patch :update_view
       end

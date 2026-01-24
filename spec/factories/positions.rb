@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :position do
-    association :position_type
+    association :title
     association :position_level
     position_summary { "This position is responsible for developing software applications" }
     

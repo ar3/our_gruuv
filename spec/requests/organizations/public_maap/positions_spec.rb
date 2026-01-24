@@ -6,15 +6,15 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
   let(:position_major_level) { create(:position_major_level) }
   
   let!(:position_company) do
-    position_type = create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Company Position Type')
+    title = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Company Position Type')
     position_level = create(:position_level, position_major_level: position_major_level)
-    create(:position, position_type: position_type, position_level: position_level, position_summary: 'This is a company position')
+    create(:position, title: title, position_level: position_level, position_summary: 'This is a company position')
   end
 
   let!(:position_department) do
-    position_type = create(:position_type, organization: department, position_major_level: position_major_level, external_title: 'Department Position Type')
+    title = create(:title, organization: department, position_major_level: position_major_level, external_title: 'Department Position Type')
     position_level = create(:position_level, position_major_level: position_major_level)
-    create(:position, position_type: position_type, position_level: position_level)
+    create(:position, title: title, position_level: position_level)
   end
 
   describe 'GET /organizations/:organization_id/public_maap/positions' do

@@ -2,14 +2,14 @@ class PositionForm < Reform::Form
   include FormSemanticVersionable
 
   # Define form properties - Reform handles Rails integration automatically
-  property :position_type_id
+  property :title_id
   property :position_level_id
   property :position_summary
   property :eligibility_requirements_summary
   property :version_type, virtual: true
 
   # Use ActiveModel validations
-  validates :position_type_id, presence: true
+  validates :title_id, presence: true
   validates :position_level_id, presence: true
   validates :version_type, presence: true, unless: :new_form_without_data?
   validate :version_type_for_context
@@ -27,8 +27,8 @@ class PositionForm < Reform::Form
     super
     
     # Set associations if IDs are present
-    if position_type_id.present?
-      model.position_type = PositionType.find(position_type_id)
+    if title_id.present?
+      model.title = Title.find(title_id)
     end
     if position_level_id.present?
       model.position_level = PositionLevel.find(position_level_id)

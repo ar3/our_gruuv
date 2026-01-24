@@ -6,8 +6,8 @@ class PositionPolicy < ApplicationPolicy
     return false unless viewing_teammate
     viewing_teammate_org = viewing_teammate.organization
     return false unless viewing_teammate_org
-    return false unless record.position_type.organization == viewing_teammate_org ||
-                        viewing_teammate_org.self_and_descendants.include?(record.position_type.organization)
+    return false unless record.title.organization == viewing_teammate_org ||
+                        viewing_teammate_org.self_and_descendants.include?(record.title.organization)
     
     true
   end
@@ -50,12 +50,12 @@ class PositionPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless record
     
-    # Ensure position_type is loaded
-    position_type = record.position_type
-    return false unless position_type
+    # Ensure title is loaded
+    title = record.title
+    return false unless title
     
     # Ensure organization is loaded
-    position_org = position_type.organization
+    position_org = title.organization
     return false unless position_org
     
     # Get the company the position is associated with (root company)
@@ -73,8 +73,8 @@ class PositionPolicy < ApplicationPolicy
   def can_manage_assignments?
     return false unless viewing_teammate
     return false unless actual_organization
-    return false unless record.position_type.organization == actual_organization ||
-                        actual_organization.self_and_descendants.include?(record.position_type.organization)
+    return false unless record.title.organization == actual_organization ||
+                        actual_organization.self_and_descendants.include?(record.title.organization)
     
     # Check if user can manage MAAP in the organization
     Teammate.can_manage_maap_in_hierarchy?(viewing_teammate.person, actual_organization)
@@ -90,8 +90,8 @@ class PositionPolicy < ApplicationPolicy
       return scope.none unless actual_organization
       
       orgs = actual_organization.self_and_descendants
-      scope.joins(:position_type)
-           .where(position_types: { organization: orgs })
+      scope.joins(:title)
+           .where(titles: { organization: orgs })
     end
   end
 end

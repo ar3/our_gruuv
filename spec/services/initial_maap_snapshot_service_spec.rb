@@ -5,9 +5,9 @@ RSpec.describe InitialMaapSnapshotService, type: :service do
   let!(:person) { create(:person) }
   let!(:company_teammate) { create(:company_teammate, person: person, organization: company) }
   let!(:position_major_level) { create(:position_major_level) }
-  let!(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
+  let!(:title) { create(:title, organization: company, position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let!(:position) { create(:position, title: title, position_level: position_level) }
   let!(:assignment1) { create(:assignment, company: company, title: 'Assignment 1') }
   let!(:assignment2) { create(:assignment, company: company, title: 'Assignment 2') }
   let!(:employment_tenure) do

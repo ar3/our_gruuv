@@ -90,7 +90,7 @@
     = current_person.employment_status_text_for(organization)
   - positions_secondary_html = capture do
     %i.bi.bi-list.me-1
-    All #{pluralize(organization.position_types_count, 'Titles')}
+    All #{pluralize(organization.titles_count, 'Titles')}
   - positions_tertiary_html = capture do
     %i.bi.bi-people.me-1
     All #{pluralize(organization.seats_count, 'Seat')}

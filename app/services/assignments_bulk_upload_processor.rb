@@ -217,23 +217,23 @@ class AssignmentsBulkUploadProcessor
   end
 
   def find_or_create_position_by_title_and_level(external_title, level)
-    # Find or create PositionType
+    # Find or create Title
     org_ids = organization.self_and_descendants.map(&:id)
-    position_type = find_with_flexible_matching(
-      PositionType,
+    title = find_with_flexible_matching(
+      Title,
       :external_title,
       external_title,
-      PositionType.joins(:organization).where(organizations: { id: org_ids })
+      Title.joins(:organization).where(organizations: { id: org_ids })
     )
     
-    unless position_type
-      # Create new PositionType
+    unless title
+      # Create new Title
       position_major_level = PositionMajorLevel.where(major_level: 1).first
       unless position_major_level
-        raise "No PositionMajorLevel with major_level = 1 found. Cannot create PositionType: #{external_title}"
+        raise "No PositionMajorLevel with major_level = 1 found. Cannot create Title: #{external_title}"
       end
       
-      position_type = PositionType.create!(
+      title = Title.create!(
         external_title: external_title,
         organization: organization,
         position_major_level: position_major_level
@@ -241,22 +241,22 @@ class AssignmentsBulkUploadProcessor
     end
     
     # Find or create PositionLevel
-    position_level = position_type.position_major_level.position_levels.find_by(level: level)
+    position_level = title.position_major_level.position_levels.find_by(level: level)
     
     unless position_level
       # Create new PositionLevel
       position_level = PositionLevel.create!(
-        position_major_level: position_type.position_major_level,
+        position_major_level: title.position_major_level,
         level: level
       )
     end
     
     # Find or create Position
-    position = Position.find_by(position_type: position_type, position_level: position_level)
+    position = Position.find_by(title: title, position_level: position_level)
     
     unless position
       position = Position.create!(
-        position_type: position_type,
+        title: title,
         position_level: position_level,
         semantic_version: '1.0.0'
       )

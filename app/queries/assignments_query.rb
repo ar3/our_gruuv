@@ -59,7 +59,7 @@ class AssignmentsQuery
         :draft_external_reference,
         :abilities,
         assignment_abilities: :ability,
-        position_assignments: { position: [:position_type, :position_level] }
+        position_assignments: { position: [:title, :position_level] }
       )
     end
   end

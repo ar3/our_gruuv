@@ -33,7 +33,7 @@ export default class extends Controller {
       positions.forEach(position => {
         const option = document.createElement('option')
         option.value = position.id
-        option.textContent = `${position.position_type.name} - ${position.position_level.name}`
+        option.textContent = `${position.title.external_title} - ${position.position_level.level}`
         this.positionSelectTarget.appendChild(option)
       })
     } catch (error) {

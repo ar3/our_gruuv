@@ -1,4 +1,4 @@
-class PositionTypeDecorator < Draper::Decorator
+class TitleDecorator < Draper::Decorator
   delegate_all
 
   # Define presentation-specific methods here. Helpers are accessed through

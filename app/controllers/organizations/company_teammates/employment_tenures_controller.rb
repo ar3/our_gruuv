@@ -35,8 +35,8 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
     @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
-    @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
-    @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
+    @positions = @company ? @company.positions.includes(:title, :position_level) : []
+    @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
   end
 
   def create
@@ -98,8 +98,8 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
       else
         @company = @employment_tenure.company
         @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
-        @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
-        @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
+        @positions = @company ? @company.positions.includes(:title, :position_level) : []
+        @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
         render :change, status: :unprocessable_entity
       end
     end
@@ -107,8 +107,8 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     # If save fails, we need to set up the form for re-rendering
     @company = @employment_tenure.company
     @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
-    @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
-    @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
+    @positions = @company ? @company.positions.includes(:title, :position_level) : []
+    @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
     render :change, status: :unprocessable_entity
   end
 
@@ -122,8 +122,8 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     # Don't allow changing company
     @company = @employment_tenure.company
     @managers = @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name')
-    @positions = @company.positions.includes(:position_type, :position_level)
-    @seats = @company.seats.includes(:position_type).where(state: [:open, :filled])
+    @positions = @company.positions.includes(:title, :position_level)
+    @seats = @company.seats.includes(:title).where(state: [:open, :filled])
   end
 
   def update
@@ -133,8 +133,8 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     else
       @company = @employment_tenure.company
       @managers = @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name')
-      @positions = @company.positions.includes(:position_type, :position_level)
-      @seats = @company.seats.includes(:position_type).where(state: [:open, :filled])
+      @positions = @company.positions.includes(:title, :position_level)
+      @seats = @company.seats.includes(:title).where(state: [:open, :filled])
       render :edit, status: :unprocessable_entity
     end
   end

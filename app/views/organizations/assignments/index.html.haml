@@ -145,19 +145,19 @@
                       None
                 %td
                   - if assignment.position_assignments.any?
-                    - # Group position_assignments by position_type
-                    - position_assignments_by_type = assignment.position_assignments.group_by { |pa| pa.position.position_type }
-                    - position_assignments_by_type.each_with_index do |(position_type, position_assignments), index|
+                    - # Group position_assignments by title
+                    - position_assignments_by_title = assignment.position_assignments.group_by { |pa| pa.position.title }
+                    - position_assignments_by_title.each_with_index do |(title, position_assignments), index|
                       - if position_assignments.count > 1
-                        - # Multiple positions in this type - show collapsible section
-                        - collapse_id = "assignment_#{assignment.id}_position_type_#{position_type.id}"
+                        - # Multiple positions in this title - show collapsible section
+                        - collapse_id = "assignment_#{assignment.id}_title_#{title.id}"
                         %small
                           %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
                             %span.not-collapsed
                               %i.bi.bi-chevron-up.me-1
                             %span.collapsed
                               %i.bi.bi-chevron-down.me-1
-                            = position_type.external_title
+                            = title.external_title
                           .collapse{id: collapse_id}
                             - position_assignments.each do |position_assignment|
                               - position = position_assignment.position

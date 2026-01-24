@@ -63,7 +63,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     company = @position.company.root_company || @position.company
     @company_aspirations = Aspiration.within_hierarchy(company).ordered
-    @title_department_aspirations = Aspiration.within_hierarchy(@position.position_type.organization).ordered
+    @title_department_aspirations = Aspiration.within_hierarchy(@position.title.organization).ordered
   end
 
   def selectable_teammates

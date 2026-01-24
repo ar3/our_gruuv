@@ -6,9 +6,9 @@ RSpec.describe Organizations::CompanyTeammates::Asana::OauthController, type: :c
   let(:employee) { create(:person, full_name: 'Employee Person') }
   let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, can_manage_employment: true) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
-  let(:position_type) { create(:position_type, organization: organization) }
-  let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:title) { create(:title, organization: organization) }
+  let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
   let(:employment_tenure) do
     employee_teammate.update!(first_employed_at: 1.year.ago)
     create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: CompanyTeammate.find(manager_teammate.id), position: position)

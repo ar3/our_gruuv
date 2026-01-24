@@ -3,17 +3,17 @@ require 'rails_helper'
 RSpec.describe SeatsQuery do
   let(:organization) { create(:organization, :company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
-  let(:position_type2) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Product Manager') }
+  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+  let(:title2) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Product Manager') }
   
-  let!(:draft_seat) { create(:seat, :draft, position_type: position_type, seat_needed_by: Date.current + 1.month) }
-  let!(:open_seat) { create(:seat, :open, position_type: position_type, seat_needed_by: Date.current + 2.months) }
-  let!(:filled_seat) { create(:seat, :filled, position_type: position_type2, seat_needed_by: Date.current + 3.months) }
-  let!(:archived_seat) { create(:seat, :archived, position_type: position_type2, seat_needed_by: Date.current + 4.months) }
+  let!(:draft_seat) { create(:seat, :draft, title: title, seat_needed_by: Date.current + 1.month) }
+  let!(:open_seat) { create(:seat, :open, title: title, seat_needed_by: Date.current + 2.months) }
+  let!(:filled_seat) { create(:seat, :filled, title: title2, seat_needed_by: Date.current + 3.months) }
+  let!(:archived_seat) { create(:seat, :archived, title: title2, seat_needed_by: Date.current + 4.months) }
   
-  let!(:parent_seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 5.months) }
-  let!(:child_seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 6.months, reports_to_seat: parent_seat) }
-  let!(:child_seat2) { create(:seat, position_type: position_type2, seat_needed_by: Date.current + 7.months, reports_to_seat: parent_seat) }
+  let!(:parent_seat) { create(:seat, title: title, seat_needed_by: Date.current + 5.months) }
+  let!(:child_seat) { create(:seat, title: title, seat_needed_by: Date.current + 6.months, reports_to_seat: parent_seat) }
+  let!(:child_seat2) { create(:seat, title: title2, seat_needed_by: Date.current + 7.months, reports_to_seat: parent_seat) }
 
   describe '#call' do
     context 'with no filters' do
@@ -71,16 +71,16 @@ RSpec.describe SeatsQuery do
         expect(results.last).to eq(child_seat2)
       end
 
-      it 'sorts by position_type' do
-        query = SeatsQuery.new(organization, { sort: 'position_type' })
+      it 'sorts by title' do
+        query = SeatsQuery.new(organization, { sort: 'title' })
         results = query.call.to_a
         
-        # Should be grouped by position_type, then by seat_needed_by
-        position_type_seats = results.select { |s| s.position_type == position_type }
-        position_type2_seats = results.select { |s| s.position_type == position_type2 }
+        # Should be grouped by title, then by seat_needed_by
+        title_seats = results.select { |s| s.title == title }
+        title2_seats = results.select { |s| s.title == title2 }
         
-        expect(position_type_seats.map(&:id)).to eq([draft_seat, open_seat, parent_seat, child_seat].map(&:id))
-        expect(position_type2_seats.map(&:id)).to eq([filled_seat, archived_seat, child_seat2].map(&:id))
+        expect(title_seats.map(&:id)).to eq([draft_seat, open_seat, parent_seat, child_seat].map(&:id))
+        expect(title2_seats.map(&:id)).to eq([filled_seat, archived_seat, child_seat2].map(&:id))
       end
 
       it 'sorts by state' do
@@ -129,8 +129,8 @@ RSpec.describe SeatsQuery do
     end
 
     it 'returns specified sort' do
-      query = SeatsQuery.new(organization, { sort: 'position_type' })
-      expect(query.current_sort).to eq('position_type')
+      query = SeatsQuery.new(organization, { sort: 'title' })
+      expect(query.current_sort).to eq('title')
     end
   end
 

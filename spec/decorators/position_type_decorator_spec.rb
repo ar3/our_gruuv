@@ -1,4 +1,4 @@
 require 'rails_helper'
 
-RSpec.describe PositionTypeDecorator do
+RSpec.describe TitleDecorator do
 end

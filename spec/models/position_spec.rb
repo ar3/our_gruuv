@@ -4,16 +4,16 @@ RSpec.describe Position, type: :model do
   let(:company) { create(:organization, type: 'Company') }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
 
   describe 'validations' do
     it 'is valid with valid attributes' do
       expect(position).to be_valid
     end
 
-    it 'requires position_type' do
-      position.position_type = nil
+    it 'requires title' do
+      position.title = nil
       expect(position).not_to be_valid
     end
 
@@ -41,26 +41,26 @@ RSpec.describe Position, type: :model do
     end
 
     describe 'composite uniqueness' do
-      it 'prevents duplicate position_type and position_level combination' do
-        create(:position, position_type: position_type, position_level: position_level)
+      it 'prevents duplicate title and position_level combination' do
+        create(:position, title: title, position_level: position_level)
         
-        duplicate = build(:position, position_type: position_type, position_level: position_level)
+        duplicate = build(:position, title: title, position_level: position_level)
         expect(duplicate).not_to be_valid
       end
 
-      it 'allows same position_level with different position_type' do
-        other_position_type = create(:position_type, external_title: 'Different Title', organization: company, position_major_level: position_major_level)
-        create(:position, position_type: position_type, position_level: position_level)
+      it 'allows same position_level with different title' do
+        other_title = create(:title, external_title: 'Different Title', organization: company, position_major_level: position_major_level)
+        create(:position, title: title, position_level: position_level)
         
-        new_position = build(:position, position_type: other_position_type, position_level: position_level)
+        new_position = build(:position, title: other_title, position_level: position_level)
         expect(new_position).to be_valid
       end
     end
   end
 
   describe 'associations' do
-    it 'belongs to a position_type' do
-      expect(position.position_type).to eq(position_type)
+    it 'belongs to a title' do
+      expect(position.title).to eq(title)
     end
 
     it 'belongs to a position_level' do
@@ -85,24 +85,24 @@ RSpec.describe Position, type: :model do
   end
 
   describe 'scopes' do
-    it 'orders by position_type and position_level' do
-      type1 = create(:position_type, external_title: 'Zebra', organization: company, position_major_level: position_major_level)
-      type2 = create(:position_type, external_title: 'Alpha', organization: company, position_major_level: position_major_level)
+    it 'orders by title and position_level' do
+      type1 = create(:title, external_title: 'Zebra', organization: company, position_major_level: position_major_level)
+      type2 = create(:title, external_title: 'Alpha', organization: company, position_major_level: position_major_level)
       
       level1 = create(:position_level, level: '2.0', position_major_level: position_major_level)
       level2 = create(:position_level, level: '1.0', position_major_level: position_major_level)
       
-      pos1 = create(:position, position_type: type1, position_level: level1)
-      pos2 = create(:position, position_type: type2, position_level: level2)
-      pos3 = create(:position, position_type: type2, position_level: level1)
+      pos1 = create(:position, title: type1, position_level: level1)
+      pos2 = create(:position, title: type2, position_level: level2)
+      pos3 = create(:position, title: type2, position_level: level1)
       
       expect(Position.ordered).to eq([pos2, pos3, pos1])
     end
 
     it 'filters by company' do
       other_company = create(:organization, type: 'Company')
-      other_position_type = create(:position_type, organization: other_company, position_major_level: position_major_level)
-      other_position = create(:position, position_type: other_position_type, position_level: position_level)
+      other_title = create(:title, organization: other_company, position_major_level: position_major_level)
+      other_position = create(:position, title: other_title, position_level: position_level)
       
       expect(Position.for_company(company)).to include(position)
       expect(Position.for_company(company)).not_to include(other_position)
@@ -111,11 +111,11 @@ RSpec.describe Position, type: :model do
 
   describe 'instance methods' do
     it 'returns display name without version' do
-      expect(position.display_name).to eq("#{position_type.external_title} - #{position_level.level}")
+      expect(position.display_name).to eq("#{title.external_title} - #{position_level.level}")
     end
     
     it 'returns display name with version' do
-      expect(position.display_name_with_version).to eq("#{position_type.external_title} - #{position_level.level} v#{position.semantic_version}")
+      expect(position.display_name_with_version).to eq("#{title.external_title} - #{position_level.level} v#{position.semantic_version}")
     end
 
     it 'returns company' do
@@ -123,7 +123,7 @@ RSpec.describe Position, type: :model do
     end
 
     describe 'assignment methods' do
-      let(:position_with_assignments) { create(:position, :with_assignments, position_type: position_type, position_level: position_level) }
+      let(:position_with_assignments) { create(:position, :with_assignments, title: title, position_level: position_level) }
 
       it 'returns required assignments' do
         expect(position_with_assignments.required_assignments.count).to eq(2)
@@ -143,7 +143,7 @@ RSpec.describe Position, type: :model do
     end
 
     describe 'external reference methods' do
-      let(:position_with_refs) { create(:position, :with_external_references, position_type: position_type, position_level: position_level) }
+      let(:position_with_refs) { create(:position, :with_external_references, title: title, position_level: position_level) }
 
       it 'returns published URL' do
         expect(position_with_refs.published_url).to eq("https://docs.google.com/document/d/published-example")
@@ -162,9 +162,9 @@ RSpec.describe Position, type: :model do
 
   describe '#to_param' do
     it 'returns id-name-parameterized format based on display_name' do
-      position_type = create(:position_type, external_title: 'Software Engineer', organization: company, position_major_level: position_major_level)
+      title = create(:title, external_title: 'Software Engineer', organization: company, position_major_level: position_major_level)
       position_level = create(:position_level, level: '1.2', position_major_level: position_major_level)
-      position = create(:position, position_type: position_type, position_level: position_level)
+      position = create(:position, title: title, position_level: position_level)
       
       expected_param = "#{position.id}-#{position.display_name.parameterize}"
       expect(position.to_param).to eq(expected_param)
@@ -172,7 +172,7 @@ RSpec.describe Position, type: :model do
   end
 
   describe '.find_by_param' do
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
 
     it 'finds by numeric id' do
       expect(Position.find_by_param(position.id.to_s)).to eq(position)

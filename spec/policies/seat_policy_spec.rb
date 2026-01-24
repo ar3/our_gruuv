@@ -5,8 +5,8 @@ RSpec.describe SeatPolicy, type: :policy do
   subject { described_class }
 
   let(:organization) { create(:organization, :company) }
-  let(:position_type) { create(:position_type, organization: organization) }
-  let(:seat) { create(:seat, position_type: position_type) }
+  let(:title) { create(:title, organization: organization) }
+  let(:seat) { create(:seat, title: title) }
   
   let(:maap_manager_person) { create(:person) }
   let(:active_employee_person) { create(:person) }
@@ -91,10 +91,10 @@ RSpec.describe SeatPolicy, type: :policy do
   end
 
   describe "policy scope" do
-    let!(:draft_seat) { create(:seat, :draft, position_type: position_type, seat_needed_by: Date.current + 1.month) }
-    let!(:open_seat) { create(:seat, :open, position_type: position_type, seat_needed_by: Date.current + 2.months) }
-    let!(:filled_seat) { create(:seat, :filled, position_type: position_type, seat_needed_by: Date.current + 3.months) }
-    let!(:archived_seat) { create(:seat, :archived, position_type: position_type, seat_needed_by: Date.current + 4.months) }
+    let!(:draft_seat) { create(:seat, :draft, title: title, seat_needed_by: Date.current + 1.month) }
+    let!(:open_seat) { create(:seat, :open, title: title, seat_needed_by: Date.current + 2.months) }
+    let!(:filled_seat) { create(:seat, :filled, title: title, seat_needed_by: Date.current + 3.months) }
+    let!(:archived_seat) { create(:seat, :archived, title: title, seat_needed_by: Date.current + 4.months) }
 
     context "for MAAP managers" do
       let(:scope) { Pundit.policy_scope(pundit_user_maap_manager, Seat.for_organization(organization)) }

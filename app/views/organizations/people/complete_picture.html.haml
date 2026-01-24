@@ -29,8 +29,8 @@
             = @current_employment.company.display_name
           
           %p
-            %strong Position Type:
-            = @current_employment.position.position_type&.external_title || 'Not specified'
+            %strong Title:
+            = @current_employment.position.title&.external_title || 'Not specified'
           
           %p
             %strong Position Level:

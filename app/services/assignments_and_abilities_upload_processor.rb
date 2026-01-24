@@ -229,16 +229,16 @@ class AssignmentsAndAbilitiesUploadProcessor
         @results[:successes] << {
           type: 'position',
           id: position.id,
-          position_type_id: position.position_type.id,
+          title_id: position.title.id,
           action: was_position_created ? 'created' : 'found',
           position_title: position.display_name,
-          position_type_title: position.position_type.external_title,
+          title_name: position.title.external_title,
           row: pa_data['row']
         }
         
         # Update seat departments if department_names are provided
         if pa_data['department_names'].present?
-          update_seat_departments_for_position_type(position.position_type, pa_data['department_names'])
+          update_seat_departments_for_title(position.title, pa_data['department_names'])
         end
         
         # Check if already linked
@@ -424,58 +424,58 @@ class AssignmentsAndAbilitiesUploadProcessor
       return nil, false
     end
     
-    # Use flexible matching to find PositionType
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Looking for PositionType: #{position_title}"
-    position_type = find_with_flexible_matching(
-      PositionType,
+    # Use flexible matching to find Title
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Looking for Title: #{position_title}"
+    title = find_with_flexible_matching(
+      Title,
       :external_title,
       position_title,
-      PositionType.joins(:organization).where(organizations: { id: organization.id })
+      Title.joins(:organization).where(organizations: { id: organization.id })
     )
     
-    unless position_type
-      # PositionType not found - create a new one
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: PositionType not found for title: #{position_title} in organization #{organization.id}, creating new PositionType"
+    unless title
+      # Title not found - create a new one
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Title not found for title: #{position_title} in organization #{organization.id}, creating new Title"
       
       # Find PositionMajorLevel with major_level = 1 (raise error if none exists)
       position_major_level = PositionMajorLevel.where(major_level: 1).first
       unless position_major_level
-        error_msg = "No PositionMajorLevel with major_level = 1 found. Cannot create PositionType: #{position_title}"
+        error_msg = "No PositionMajorLevel with major_level = 1 found. Cannot create Title: #{position_title}"
         Rails.logger.error "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: #{error_msg}"
         raise error_msg
       end
       
-      # Create new PositionType with exact title from CSV
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new PositionType: #{position_title} with PositionMajorLevel: #{position_major_level.set_name} (major_level: #{position_major_level.major_level})"
-      position_type = PositionType.create!(
+      # Create new Title with exact title from CSV
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new Title: #{position_title} with PositionMajorLevel: #{position_major_level.set_name} (major_level: #{position_major_level.major_level})"
+      title = Title.create!(
         external_title: position_title,
         organization: organization,
         position_major_level: position_major_level
       )
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created PositionType: #{position_type.external_title} (id: #{position_type.id})"
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created Title: #{title.external_title} (id: #{title.id})"
     else
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found PositionType: #{position_type.external_title} (id: #{position_type.id})"
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found Title: #{title.external_title} (id: #{title.id})"
     end
     
-    # Find existing Position for this PositionType
-    position = Position.find_by(position_type: position_type)
+    # Find existing Position for this Title
+    position = Position.find_by(title: title)
     if position
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found existing Position: #{position.display_name} (id: #{position.id})"
       return position, false
     end
     
-    # Get first PositionLevel from PositionType's PositionMajorLevel
-    position_level = position_type.position_major_level.position_levels.order(:level).first
+    # Get first PositionLevel from Title's PositionMajorLevel
+    position_level = title.position_major_level.position_levels.order(:level).first
     
     unless position_level
-      Rails.logger.warn "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: No PositionLevel found for PositionType #{position_type.external_title} (PositionMajorLevel: #{position_type.position_major_level.id})"
+      Rails.logger.warn "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: No PositionLevel found for Title #{title.external_title} (PositionMajorLevel: #{title.position_major_level.id})"
       return nil, false
     end
     
     # Create new Position
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new Position for PositionType #{position_type.external_title} with PositionLevel #{position_level.level}"
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new Position for Title #{title.external_title} with PositionLevel #{position_level.level}"
     position = Position.create!(
-      position_type: position_type,
+      title: title,
       position_level: position_level,
       semantic_version: '1.0.0'
     )
@@ -552,20 +552,20 @@ class AssignmentsAndAbilitiesUploadProcessor
     (min_energy.nil? || min_energy == 0) && (max_energy.nil? || max_energy == 0)
   end
 
-  def update_seat_departments_for_position_type(position_type, department_names)
+  def update_seat_departments_for_title(title, department_names)
     if department_names.blank?
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: No department names provided for position type #{position_type.external_title}"
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: No department names provided for title #{title.external_title}"
       return
     end
     
     # If multiple department names provided, leave department field untouched
     if department_names.length > 1
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Multiple department names provided (#{department_names.inspect}), leaving seat department fields untouched for position type #{position_type.external_title}"
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Multiple department names provided (#{department_names.inspect}), leaving seat department fields untouched for title #{title.external_title}"
       return
     end
     
     dept_name = department_names.first
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for position type #{position_type.external_title} with department: #{dept_name}"
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for title #{title.external_title} with department: #{dept_name}"
     
     # Find or create department by exact name match
     org_ids = organization.self_and_descendants.map(&:id)
@@ -588,9 +588,9 @@ class AssignmentsAndAbilitiesUploadProcessor
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created department: #{department.name} (id: #{department.id})"
     end
     
-    # Update ALL seats for this position type
-    seats = Seat.where(position_type: position_type)
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating #{seats.count} seats for position type #{position_type.external_title} with department_id: #{department.id}"
+    # Update ALL seats for this title
+    seats = Seat.where(title: title)
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating #{seats.count} seats for title #{title.external_title} with department_id: #{department.id}"
     
     seats.update_all(department_id: department.id)
     Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updated #{seats.count} seats with department_id: #{department.id} (#{department.name})"

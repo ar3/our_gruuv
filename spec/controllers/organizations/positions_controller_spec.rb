@@ -3,8 +3,8 @@ require 'rails_helper'
 RSpec.describe Organizations::PositionsController, type: :controller do
   let(:person) { create(:person) }
   let(:organization) { create(:organization, :company) }
-  let(:position_type) { create(:position_type, organization: organization) }
-  let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+  let(:title) { create(:title, organization: organization) }
+  let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
 
   before do
     create(:teammate, person: person, organization: organization)
@@ -12,15 +12,15 @@ RSpec.describe Organizations::PositionsController, type: :controller do
   end
 
   describe 'GET #index' do
-    let!(:position_level_1) { create(:position_level, position_major_level: position_type.position_major_level, level: '1.1') }
-    let!(:position_level_2) { create(:position_level, position_major_level: position_type.position_major_level, level: '1.2') }
-    let!(:position_level_3) { create(:position_level, position_major_level: position_type.position_major_level, level: '1.3') }
-    let!(:position_level_4) { create(:position_level, position_major_level: position_type.position_major_level, level: '2.1') }
+    let!(:position_level_1) { create(:position_level, position_major_level: title.position_major_level, level: '1.1') }
+    let!(:position_level_2) { create(:position_level, position_major_level: title.position_major_level, level: '1.2') }
+    let!(:position_level_3) { create(:position_level, position_major_level: title.position_major_level, level: '1.3') }
+    let!(:position_level_4) { create(:position_level, position_major_level: title.position_major_level, level: '2.1') }
     
-    let!(:position_v1) { create(:position, position_type: position_type, position_level: position_level_1, semantic_version: '1.0.0') }
-    let!(:position_v1_2) { create(:position, position_type: position_type, position_level: position_level_2, semantic_version: '1.2.3') }
-    let!(:position_v2) { create(:position, position_type: position_type, position_level: position_level_3, semantic_version: '2.0.0') }
-    let!(:position_v0) { create(:position, position_type: position_type, position_level: position_level_4, semantic_version: '0.1.0') }
+    let!(:position_v1) { create(:position, title: title, position_level: position_level_1, semantic_version: '1.0.0') }
+    let!(:position_v1_2) { create(:position, title: title, position_level: position_level_2, semantic_version: '1.2.3') }
+    let!(:position_v2) { create(:position, title: title, position_level: position_level_3, semantic_version: '2.0.0') }
+    let!(:position_v0) { create(:position, title: title, position_level: position_level_4, semantic_version: '0.1.0') }
 
     it 'returns all positions when no filters applied' do
       get :index, params: { organization_id: organization.id }
@@ -53,12 +53,12 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       expect(assigns(:positions)).to be_empty
     end
 
-    it 'combines major_version filter with position_type filter' do
-      other_position_type = create(:position_type, organization: organization)
-      other_position_level = create(:position_level, position_major_level: other_position_type.position_major_level)
-      other_position = create(:position, position_type: other_position_type, position_level: other_position_level, semantic_version: '1.0.0')
+    it 'combines major_version filter with title filter' do
+      other_title = create(:title, organization: organization)
+      other_position_level = create(:position_level, position_major_level: other_title.position_major_level)
+      other_position = create(:position, title: other_title, position_level: other_position_level, semantic_version: '1.0.0')
 
-      get :index, params: { organization_id: organization.id, major_version: 1, position_type: position_type.id }
+      get :index, params: { organization_id: organization.id, major_version: 1, title: title.id }
       positions = assigns(:positions)
       expect(positions).to include(position_v1, position_v1_2)
       expect(positions).not_to include(other_position, position_v2, position_v0)
@@ -73,7 +73,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
   end
 
   describe 'GET #show' do
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
     let(:manager_teammate) { CompanyTeammate.find_by(person: person, organization: organization) }
     let(:employee_person) { create(:person) }
     let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
@@ -83,7 +83,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
         # Make the manager have direct reports (any employee, not necessarily with this position)
         other_employee_person = create(:person)
         other_employee_teammate = create(:teammate, person: other_employee_person, organization: organization)
-        other_position = create(:position, position_type: position_type, position_level: create(:position_level, position_major_level: position_type.position_major_level))
+        other_position = create(:position, title: title, position_level: create(:position_level, position_major_level: title.position_major_level))
         create(:employment_tenure, 
           teammate: other_employee_teammate, 
           company: organization, 
@@ -179,7 +179,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
   end
 
   describe 'GET #manage_assignments' do
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
     let(:assignment) { create(:assignment, company: organization) }
 
     before do
@@ -230,7 +230,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
   end
 
   describe 'PATCH #update_assignments' do
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
     let(:assignment) { create(:assignment, company: organization) }
 
     before do
@@ -333,7 +333,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
   describe 'POST #create' do
     let(:position_params) do
       {
-        position_type_id: position_type.id,
+        title_id: title.id,
         position_level_id: position_level.id,
         version_type: 'ready'
       }
@@ -350,7 +350,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
           post :create, params: {
             organization_id: organization.id,
             position: position_params,
-            position_type_id: position_type.id
+            title_id: title.id
           }
         }.to change(Position, :count).by(1)
         
@@ -370,7 +370,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
           post :create, params: {
             organization_id: organization.id,
             position: position_params,
-            position_type_id: position_type.id
+            title_id: title.id
           }
         }.not_to change(Position, :count)
         
@@ -392,7 +392,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
           post :create, params: {
             organization_id: organization.id,
             position: position_params,
-            position_type_id: position_type.id
+            title_id: title.id
           }
         }.to change(Position, :count).by(1)
         
@@ -402,10 +402,10 @@ RSpec.describe Organizations::PositionsController, type: :controller do
   end
 
   describe 'PATCH #update' do
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
     let(:update_params) do
       {
-        position_type_id: position_type.id,
+        title_id: title.id,
         position_level_id: position_level.id,
         position_summary: 'Updated summary',
         version_type: 'insignificant'
@@ -473,7 +473,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
   end
 
   describe 'DELETE #destroy' do
-    let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let!(:position) { create(:position, title: title, position_level: position_level) }
 
     context 'with can_manage_maap permission' do
       before do

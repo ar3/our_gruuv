@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_24_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -800,21 +800,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
     t.index ["set_name", "major_level"], name: "index_position_major_levels_on_set_name_and_major_level", unique: true
   end
 
-  create_table "position_types", force: :cascade do |t|
-    t.bigint "organization_id", null: false
-    t.bigint "position_major_level_id", null: false
-    t.string "external_title", null: false
-    t.text "alternative_titles"
-    t.text "position_summary"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["organization_id", "position_major_level_id", "external_title"], name: "index_position_types_on_org_level_title_unique", unique: true
-    t.index ["organization_id"], name: "index_position_types_on_organization_id"
-    t.index ["position_major_level_id"], name: "index_position_types_on_position_major_level_id"
-  end
-
   create_table "positions", force: :cascade do |t|
-    t.bigint "position_type_id", null: false
+    t.bigint "title_id", null: false
     t.bigint "position_level_id", null: false
     t.text "position_summary"
     t.datetime "created_at", null: false
@@ -824,8 +811,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
     t.jsonb "eligibility_requirements_explicit", default: {}, null: false
     t.index ["eligibility_requirements_explicit"], name: "index_positions_on_eligibility_requirements_explicit", using: :gin
     t.index ["position_level_id"], name: "index_positions_on_position_level_id"
-    t.index ["position_type_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true
-    t.index ["position_type_id"], name: "index_positions_on_position_type_id"
+    t.index ["title_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true
+    t.index ["title_id"], name: "index_positions_on_title_id"
   end
 
   create_table "prompt_answers", force: :cascade do |t|
@@ -895,7 +882,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
   end
 
   create_table "seats", force: :cascade do |t|
-    t.bigint "position_type_id", null: false
+    t.bigint "title_id", null: false
     t.date "seat_needed_by", null: false
     t.string "job_classification", default: "Salaried Exempt"
     t.string "team"
@@ -915,10 +902,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
     t.bigint "team_id"
     t.bigint "reports_to_seat_id"
     t.index ["department_id"], name: "index_seats_on_department_id"
-    t.index ["position_type_id", "seat_needed_by"], name: "index_seats_on_position_type_and_needed_by", unique: true
-    t.index ["position_type_id"], name: "index_seats_on_position_type_id"
     t.index ["reports_to_seat_id"], name: "index_seats_on_reports_to_seat_id"
     t.index ["team_id"], name: "index_seats_on_team_id"
+    t.index ["title_id", "seat_needed_by"], name: "index_seats_on_position_type_and_needed_by", unique: true
+    t.index ["title_id"], name: "index_seats_on_title_id"
   end
 
   create_table "slack_configurations", force: :cascade do |t|
@@ -1034,6 +1021,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
     t.index ["organization_id"], name: "index_third_party_objects_on_organization_id"
   end
 
+  create_table "titles", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "position_major_level_id", null: false
+    t.string "external_title", null: false
+    t.text "alternative_titles"
+    t.text "position_summary"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "position_major_level_id", "external_title"], name: "index_position_types_on_org_level_title_unique", unique: true
+    t.index ["organization_id"], name: "index_titles_on_organization_id"
+    t.index ["position_major_level_id"], name: "index_titles_on_position_major_level_id"
+  end
+
   create_table "user_preferences", force: :cascade do |t|
     t.bigint "person_id", null: false
     t.jsonb "preferences", default: {}
@@ -1127,10 +1127,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
   add_foreign_key "position_check_ins", "maap_snapshots"
   add_foreign_key "position_check_ins", "teammates"
   add_foreign_key "position_levels", "position_major_levels"
-  add_foreign_key "position_types", "organizations"
-  add_foreign_key "position_types", "position_major_levels"
   add_foreign_key "positions", "position_levels"
-  add_foreign_key "positions", "position_types"
+  add_foreign_key "positions", "titles"
   add_foreign_key "prompt_answers", "prompt_questions"
   add_foreign_key "prompt_answers", "prompts"
   add_foreign_key "prompt_answers", "teammates", column: "updated_by_company_teammate_id"
@@ -1142,8 +1140,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
   add_foreign_key "prompts", "teammates", column: "company_teammate_id"
   add_foreign_key "seats", "organizations", column: "department_id"
   add_foreign_key "seats", "organizations", column: "team_id"
-  add_foreign_key "seats", "position_types"
   add_foreign_key "seats", "seats", column: "reports_to_seat_id"
+  add_foreign_key "seats", "titles"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"
   add_foreign_key "teammate_identities", "teammates"
@@ -1155,5 +1153,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_23_170000) do
   add_foreign_key "teammates", "people"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
+  add_foreign_key "titles", "organizations"
+  add_foreign_key "titles", "position_major_levels"
   add_foreign_key "user_preferences", "people"
 end

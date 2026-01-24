@@ -11,7 +11,7 @@ class EmploymentTenureUpdateForm < Reform::Form
   validates :position_id, presence: true
   validate :position_exists
   validate :manager_teammate_exists, if: -> { manager_teammate_id.present? }
-  validate :seat_matches_position_type, if: -> { seat_id.present? && seat_id.to_s.strip != '' }
+  validate :seat_matches_title, if: -> { seat_id.present? && seat_id.to_s.strip != '' }
   validate :termination_date_format, if: -> { termination_date.present? }
   validate :employment_type_inclusion, if: -> { employment_type.present? }
   validate :reason_only_with_major_changes
@@ -105,7 +105,7 @@ class EmploymentTenureUpdateForm < Reform::Form
       teammate: teammate,
       current_tenure: model,
       params: service_params,
-      created_by: current_person
+      created_by: current_company_teammate
     )
     
     if result.ok?
@@ -116,14 +116,14 @@ class EmploymentTenureUpdateForm < Reform::Form
     end
   end
 
-  # Helper method to get current person (passed from controller)
-  def current_person
-    @current_person
+  # Helper method to get current company teammate (passed from controller)
+  def current_company_teammate
+    @current_company_teammate
   end
 
-  # Helper method to set current person
-  def current_person=(person)
-    @current_person = person
+  # Helper method to set current company teammate
+  def current_company_teammate=(teammate)
+    @current_company_teammate = teammate
   end
 
   # Helper method to get teammate (passed from controller)
@@ -151,7 +151,7 @@ class EmploymentTenureUpdateForm < Reform::Form
     end
     # Add validation check for position validity
     unless position.valid?
-      errors.add(:position_id, 'is invalid - position level must be compatible with position type')
+      errors.add(:position_id, 'is invalid - position level must be compatible with title')
     end
   end
 
@@ -162,7 +162,7 @@ class EmploymentTenureUpdateForm < Reform::Form
     end
   end
 
-  def seat_matches_position_type
+  def seat_matches_title
     # Skip validation if seat_id is blank, nil, empty string, or "0"
     # Convert to string and strip to handle edge cases
     seat_id_str = seat_id.to_s.strip
@@ -178,8 +178,8 @@ class EmploymentTenureUpdateForm < Reform::Form
     
     return unless seat && position
     
-    unless seat.position_type_id == position.position_type_id
-      errors.add(:seat, 'must match the position type of the selected position')
+    unless seat.title_id == position.title_id
+      errors.add(:seat, 'must match the title of the selected position')
     end
   end
 

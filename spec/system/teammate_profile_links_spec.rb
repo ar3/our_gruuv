@@ -6,9 +6,9 @@ RSpec.describe "Teammate Profile Links", type: :system do
   let(:employee) { create(:person) }
   let(:position) do
     position_major_level = create(:position_major_level)
-    position_type = create(:position_type, organization: organization, position_major_level: position_major_level)
+    title = create(:title, organization: organization, position_major_level: position_major_level)
     position_level = create(:position_level, position_major_level: position_major_level)
-    create(:position, position_type: position_type, position_level: position_level)
+    create(:position, title: title, position_level: position_level)
   end
 
   let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization, can_manage_employment: true) }

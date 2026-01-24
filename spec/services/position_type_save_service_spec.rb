@@ -1,29 +1,29 @@
 require 'rails_helper'
 
-RSpec.describe PositionTypeSaveService, type: :service do
+RSpec.describe TitleSaveService, type: :service do
   let(:company) { create(:organization, type: 'Company') }
   let(:position_major_level1) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
   let(:position_major_level2) { create(:position_major_level, major_level: 2, set_name: 'Engineering') }
   let(:position_level1) { create(:position_level, position_major_level: position_major_level1, level: '1.1') }
   let(:position_level2) { create(:position_level, position_major_level: position_major_level1, level: '1.2') }
-  let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level1) }
-  let(:position1) { create(:position, position_type: position_type, position_level: position_level1) }
-  let(:position2) { create(:position, position_type: position_type, position_level: position_level2) }
+  let(:title) { create(:title, organization: company, position_major_level: position_major_level1) }
+  let(:position1) { create(:position, title: title, position_level: position_level1) }
+  let(:position2) { create(:position, title: title, position_level: position_level2) }
 
   describe '.create' do
-    let(:new_position_type) { PositionType.new(organization: company, position_major_level: position_major_level1) }
-    let(:params) { { external_title: 'Test Position Type' } }
+    let(:new_title) { Title.new(organization: company, position_major_level: position_major_level1) }
+    let(:params) { { external_title: 'Test Title' } }
 
-    it 'creates a position type successfully' do
-      result = described_class.create(position_type: new_position_type, params: params)
+    it 'creates a title successfully' do
+      result = described_class.create(title: new_title, params: params)
       
       expect(result.ok?).to be true
       expect(result.value).to be_persisted
-      expect(result.value.external_title).to eq('Test Position Type')
+      expect(result.value.external_title).to eq('Test Title')
     end
 
     it 'returns error when validation fails' do
-      result = described_class.create(position_type: new_position_type, params: {})
+      result = described_class.create(title: new_title, params: {})
       
       expect(result.ok?).to be false
       expect(result.error).to be_present
@@ -32,12 +32,12 @@ RSpec.describe PositionTypeSaveService, type: :service do
 
   describe '.update' do
     context 'when position_major_level_id does not change' do
-      it 'updates the position type successfully' do
+      it 'updates the title successfully' do
         params = { external_title: 'Updated Title' }
-        result = described_class.update(position_type: position_type, params: params)
+        result = described_class.update(title: title, params: params)
         
         expect(result.ok?).to be true
-        expect(position_type.reload.external_title).to eq('Updated Title')
+        expect(title.reload.external_title).to eq('Updated Title')
       end
 
       it 'does not update associated positions' do
@@ -45,7 +45,7 @@ RSpec.describe PositionTypeSaveService, type: :service do
         original_position_level_id = position1.position_level_id
         
         params = { external_title: 'Updated Title' }
-        described_class.update(position_type: position_type, params: params)
+        described_class.update(title: title, params: params)
         
         expect(position1.reload.position_level_id).to eq(original_position_level_id)
       end
@@ -57,12 +57,12 @@ RSpec.describe PositionTypeSaveService, type: :service do
         position2
       end
 
-      it 'updates the position type successfully' do
+      it 'updates the title successfully' do
         params = { position_major_level_id: position_major_level2.id }
-        result = described_class.update(position_type: position_type, params: params)
+        result = described_class.update(title: title, params: params)
         
         expect(result.ok?).to be true
-        expect(position_type.reload.position_major_level_id).to eq(position_major_level2.id)
+        expect(title.reload.position_major_level_id).to eq(position_major_level2.id)
       end
 
       it 'updates all associated positions to use position levels from the new major level' do
@@ -73,7 +73,7 @@ RSpec.describe PositionTypeSaveService, type: :service do
         new_position_level2 = create(:position_level, position_major_level: position_major_level2, level: '2.2')
         
         params = { position_major_level_id: position_major_level2.id }
-        described_class.update(position_type: position_type, params: params)
+        described_class.update(title: title, params: params)
         
         expect(position1.reload.position_level).to eq(new_position_level1)
         expect(position2.reload.position_level).to eq(new_position_level2)
@@ -81,7 +81,7 @@ RSpec.describe PositionTypeSaveService, type: :service do
 
       it 'creates position levels in the new major level if they do not exist' do
         params = { position_major_level_id: position_major_level2.id }
-        described_class.update(position_type: position_type, params: params)
+        described_class.update(title: title, params: params)
         
         # Verify position levels were created with the new format
         # Old level "1.1" (minor part "1") becomes "2.1" when major level changes to 2
@@ -97,7 +97,7 @@ RSpec.describe PositionTypeSaveService, type: :service do
 
       it 'creates new position levels with the correct format combining new major level and minor level' do
         params = { position_major_level_id: position_major_level2.id }
-        described_class.update(position_type: position_type, params: params)
+        described_class.update(title: title, params: params)
         
         # Old level "1.1" should become "2.1" (major level 2 + minor level 1)
         # Old level "1.2" should become "2.2" (major level 2 + minor level 2)
@@ -107,7 +107,7 @@ RSpec.describe PositionTypeSaveService, type: :service do
 
       it 'returns error when validation fails' do
         params = { external_title: '' }
-        result = described_class.update(position_type: position_type, params: params)
+        result = described_class.update(title: title, params: params)
         
         expect(result.ok?).to be false
         expect(result.error).to be_present
@@ -120,16 +120,16 @@ RSpec.describe PositionTypeSaveService, type: :service do
       position1 # Create position
     end
 
-    it 'deletes the position type successfully' do
-      result = described_class.delete(position_type: position_type)
+    it 'deletes the title successfully' do
+      result = described_class.delete(title: title)
       
       expect(result.ok?).to be true
-      expect(PositionType.find_by(id: position_type.id)).to be_nil
+      expect(Title.find_by(id: title.id)).to be_nil
     end
 
     it 'deletes associated positions due to dependent: :destroy' do
       position_id = position1.id
-      described_class.delete(position_type: position_type)
+      described_class.delete(title: title)
       
       expect(Position.find_by(id: position_id)).to be_nil
     end

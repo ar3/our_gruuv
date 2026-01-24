@@ -8,7 +8,7 @@ RSpec.describe 'Positions and Seats Complete Flow', type: :system do
   # Create teammate but NO employment - this makes them a "potential employee"
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let!(:position_type) { create(:position_type, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
+  let!(:title) { create(:title, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
 
   before do
@@ -18,13 +18,13 @@ RSpec.describe 'Positions and Seats Complete Flow', type: :system do
   describe 'CRUD all components of a position' do
     xit 'creates position type, position level, position, and seat' do # SKIPPED: For now
       # Create position type
-      visit new_position_type_path
-      fill_in 'position_type_external_title', with: 'Senior Engineer'
-      select position_major_level.set_name, from: 'position_type_position_major_level_id'
+      visit new_title_path
+      fill_in 'title_external_title', with: 'Senior Engineer'
+      select position_major_level.set_name, from: 'title_position_major_level_id'
       click_button 'Create Position Type'
       
-      position_type = PositionType.last
-      expect(position_type.external_title).to eq('Senior Engineer')
+      title = Title.last
+      expect(title.external_title).to eq('Senior Engineer')
       
       # Create position level directly (no separate route for this)
       position_level = create(:position_level, position_major_level: position_major_level, level: '2.1')
@@ -32,29 +32,29 @@ RSpec.describe 'Positions and Seats Complete Flow', type: :system do
       
       # Create position
       visit new_organization_position_path(company)
-      select position_type.external_title, from: 'position_type_select'
+      select title.external_title, from: 'title_select'
       select position_level.level, from: 'position_level_select'
       click_button 'Create Position'
       
       position = Position.last
-      expect(position.position_type).to eq(position_type)
+      expect(position.title).to eq(title)
       expect(position.position_level).to eq(position_level)
       
       # Create seat
       visit new_organization_seat_path(company)
-      select position_type.external_title, from: 'seat_position_type_id'
+      select title.external_title, from: 'seat_title_id'
       fill_in 'seat_seat_needed_by', with: (Date.current + 3.months).to_s
       click_button 'Create Seat'
       
       seat = Seat.last
-      expect(seat.position_type).to eq(position_type)
+      expect(seat.title).to eq(title)
       expect(seat.seat_needed_by).to be_present
     end
   end
 
   describe 'Assign employment tenure of position to employee' do
-    let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
-    let!(:seat) { create(:seat, position_type: position_type) }
+    let!(:position) { create(:position, title: title, position_level: position_level) }
+    let!(:seat) { create(:seat, title: title) }
 
     xit 'assigns employment tenure and creates maap_snapshot' do # DELETED: Employment tenure assignment flow
       # Assign employment tenure
@@ -90,11 +90,11 @@ RSpec.describe 'Positions and Seats Complete Flow', type: :system do
     end
 
     xit 'creates maap_snapshot when changing employment tenure' do # DELETED: Employment tenure change flow
-      # Create existing employment tenure - ensure seat matches position's position_type
+      # Create existing employment tenure - ensure seat matches position's title
       existing_tenure = create(:employment_tenure,
         teammate: employee_teammate,
         position: position,
-        seat: seat, # seat already matches position.position_type from let! block
+        seat: seat, # seat already matches position.title from let! block
         company: company,
         started_at: 1.year.ago
       )
@@ -102,7 +102,7 @@ RSpec.describe 'Positions and Seats Complete Flow', type: :system do
       # Change employment tenure
       visit edit_employment_tenure_path(existing_tenure)
       
-      new_position = create(:position, position_type: position_type, position_level: position_level)
+      new_position = create(:position, title: title, position_level: position_level)
       select new_position.external_title, from: 'employment_tenure_position_id'
       
       click_button 'Update Employment Tenure'

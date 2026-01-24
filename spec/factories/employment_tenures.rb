@@ -12,9 +12,9 @@ FactoryBot.define do
     after(:build) do |employment_tenure, evaluator|
       # Create a position with the correct relationships for this company
       position_major_level = create(:position_major_level)
-      position_type = create(:position_type, organization: employment_tenure.company, position_major_level: position_major_level)
+      title = create(:title, organization: employment_tenure.company, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level)
-      employment_tenure.position = create(:position, position_type: position_type, position_level: position_level)
+      employment_tenure.position = create(:position, title: title, position_level: position_level)
       
       # Handle legacy 'manager' parameter (Person) by converting to manager_teammate
       if evaluator.manager
@@ -48,11 +48,11 @@ FactoryBot.define do
     
     trait :with_seat do
       after(:build) do |employment_tenure|
-        # Override the default position creation to use the seat's position type
+        # Override the default position creation to use the seat's title
         if employment_tenure.seat
-          position_type = employment_tenure.seat.position_type
-          position_level = create(:position_level, position_major_level: position_type.position_major_level)
-          employment_tenure.position = create(:position, position_type: position_type, position_level: position_level)
+          title = employment_tenure.seat.title
+          position_level = create(:position_level, position_major_level: title.position_major_level)
+          employment_tenure.position = create(:position, title: title, position_level: position_level)
         end
       end
     end

@@ -1,83 +1,83 @@
-class Organizations::PositionTypesController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_position_type, only: [:show, :edit, :update, :destroy, :clone_positions]
+class Organizations::TitlesController < Organizations::OrganizationNamespaceBaseController
+  before_action :set_title, only: [:show, :edit, :update, :destroy, :clone_positions]
   after_action :verify_authorized
 
   def index
-    authorize @organization, :view_position_types?
-    @position_types = @organization.position_types.ordered
+    authorize @organization, :view_titles?
+    @titles = @organization.titles.ordered
     respond_to do |format|
       format.html
-      format.json { render json: @position_types }
+      format.json { render json: @titles }
     end
   end
 
   def show
-    authorize @position_type
+    authorize @title
     
-    # Load teammates with active employment tenures on any position with this position type
+    # Load teammates with active employment tenures on any position with this title
     # Get all tenures, then group by teammate and take the first one for each, preserving order
     all_tenures = EmploymentTenure
       .active
       .joins(:position, teammate: :person)
-      .where(positions: { position_type_id: @position_type.id })
-      .includes(teammate: :person, position: [:position_type, :position_level])
+      .where(positions: { title_id: @title.id })
+      .includes(teammate: :person, position: [:title, :position_level])
       .order('people.last_name, people.first_name, employment_tenures.started_at DESC')
     
     # Group by teammate_id and take the first (most recent) tenure for each teammate
     # Preserve the order by sorting the grouped results by the original order
     grouped = all_tenures.to_a.group_by(&:teammate_id)
-    @teammates_with_position_type = all_tenures.to_a.uniq(&:teammate_id)
+    @teammates_with_title = all_tenures.to_a.uniq(&:teammate_id)
   end
 
   def new
-    @position_type = PositionType.new(organization: @organization)
+    @title = Title.new(organization: @organization)
     authorize @organization, :manage_maap?
   end
 
   def edit
-    authorize @position_type
+    authorize @title
   end
 
   def create
     authorize @organization, :manage_maap?
-    @position_type = PositionType.new(position_type_params)
-    @position_type.organization = @organization
+    @title = Title.new(title_params)
+    @title.organization = @organization
 
-    result = PositionTypeSaveService.create(position_type: @position_type, params: position_type_params)
+    result = TitleSaveService.create(title: @title, params: title_params)
     
     if result.ok?
-      redirect_to organization_position_type_path(@organization, @position_type), notice: 'Position type was successfully created.'
+      redirect_to organization_title_path(@organization, @title), notice: 'Title was successfully created.'
     else
-      @position_type.errors.add(:base, result.error) if result.error.is_a?(String)
+      @title.errors.add(:base, result.error) if result.error.is_a?(String)
       render :new, status: :unprocessable_entity
     end
   end
 
   def update
-    authorize @position_type
-    result = PositionTypeSaveService.update(position_type: @position_type, params: position_type_params)
+    authorize @title
+    result = TitleSaveService.update(title: @title, params: title_params)
     
     if result.ok?
-      redirect_to organization_position_type_path(@organization, @position_type), notice: 'Position type was successfully updated.'
+      redirect_to organization_title_path(@organization, @title), notice: 'Title was successfully updated.'
     else
-      @position_type.errors.add(:base, result.error) if result.error.is_a?(String)
+      @title.errors.add(:base, result.error) if result.error.is_a?(String)
       render :edit, status: :unprocessable_entity
     end
   end
 
   def destroy
-    authorize @position_type
-    result = PositionTypeSaveService.delete(position_type: @position_type)
+    authorize @title
+    result = TitleSaveService.delete(title: @title)
     
     if result.ok?
-      redirect_to organization_position_types_path(@organization), notice: 'Position type was successfully deleted.'
+      redirect_to organization_titles_path(@organization), notice: 'Title was successfully deleted.'
     else
-      redirect_to organization_position_types_path(@organization), alert: result.error
+      redirect_to organization_titles_path(@organization), alert: result.error
     end
   end
 
   def clone_positions
-    authorize @position_type, :clone_positions?
+    authorize @title, :clone_positions?
     Rails.logger.info "Clone positions called with params: #{params.inspect}"
     
     source_position = Position.find(params[:source_position_id])
@@ -89,13 +89,13 @@ class Organizations::PositionTypesController < Organizations::OrganizationNamesp
     
     if target_level_ids.empty?
       Rails.logger.warn "No target level IDs provided"
-      redirect_to organization_position_type_path(@organization, @position_type), alert: 'Please select at least one target level.'
+      redirect_to organization_title_path(@organization, @title), alert: 'Please select at least one target level.'
       return
     end
     
-    if source_position.position_type != @position_type
-      Rails.logger.warn "Source position type mismatch: #{source_position.position_type_id} vs #{@position_type.id}"
-      redirect_to organization_position_type_path(@organization, @position_type), alert: 'Source position must belong to this position type.'
+    if source_position.title != @title
+      Rails.logger.warn "Source title mismatch: #{source_position.title_id} vs #{@title.id}"
+      redirect_to organization_title_path(@organization, @title), alert: 'Source position must belong to this title.'
       return
     end
     
@@ -110,7 +110,7 @@ class Organizations::PositionTypesController < Organizations::OrganizationNamesp
         Rails.logger.info "Found level: #{level.inspect}"
         
         # Check if position already exists for this level
-        existing_position = Position.find_by(position_type: @position_type, position_level: level)
+        existing_position = Position.find_by(title: @title, position_level: level)
         if existing_position.present?
           Rails.logger.info "Position already exists for level #{level_id}"
           next
@@ -118,7 +118,7 @@ class Organizations::PositionTypesController < Organizations::OrganizationNamesp
         
         # Clone the position
         new_position = Position.new(
-          position_type: @position_type,
+          title: @title,
           position_level: level,
           position_summary: source_position.position_summary
         )
@@ -175,22 +175,21 @@ class Organizations::PositionTypesController < Organizations::OrganizationNamesp
     if created_count > 0
       notice_msg = "Successfully created #{created_count} new position(s)."
       notice_msg += " Errors: #{errors.join('; ')}" if errors.any?
-      redirect_to organization_position_type_path(@organization, @position_type), notice: notice_msg
+      redirect_to organization_title_path(@organization, @title), notice: notice_msg
     else
       alert_msg = 'No new positions were created. They may already exist.'
       alert_msg += " Errors: #{errors.join('; ')}" if errors.any?
-      redirect_to organization_position_type_path(@organization, @position_type), alert: alert_msg
+      redirect_to organization_title_path(@organization, @title), alert: alert_msg
     end
   end
 
   private
 
-  def set_position_type
-    @position_type = @organization.position_types.find(params[:id])
+  def set_title
+    @title = @organization.titles.find(params[:id])
   end
 
-  def position_type_params
-    params.require(:position_type).permit(:position_major_level_id, :external_title, :alternative_titles, :position_summary)
+  def title_params
+    params.require(:title).permit(:position_major_level_id, :external_title, :alternative_titles, :position_summary)
   end
 end
-

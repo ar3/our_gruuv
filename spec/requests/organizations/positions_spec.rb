@@ -3,8 +3,8 @@ require 'rails_helper'
 RSpec.describe 'Organizations::Positions', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:position_type) { create(:position_type, organization: organization) }
-  let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+  let(:title) { create(:title, organization: organization) }
+  let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
 
   before do
     create(:teammate, person: person, organization: organization)
@@ -12,15 +12,15 @@ RSpec.describe 'Organizations::Positions', type: :request do
   end
 
   describe 'GET /organizations/:organization_id/positions' do
-    let!(:position_level_1) { create(:position_level, position_major_level: position_type.position_major_level, level: '1.1') }
-    let!(:position_level_2) { create(:position_level, position_major_level: position_type.position_major_level, level: '1.2') }
-    let!(:position_level_3) { create(:position_level, position_major_level: position_type.position_major_level, level: '1.3') }
-    let!(:position_level_4) { create(:position_level, position_major_level: position_type.position_major_level, level: '2.1') }
+    let!(:position_level_1) { create(:position_level, position_major_level: title.position_major_level, level: '1.1') }
+    let!(:position_level_2) { create(:position_level, position_major_level: title.position_major_level, level: '1.2') }
+    let!(:position_level_3) { create(:position_level, position_major_level: title.position_major_level, level: '1.3') }
+    let!(:position_level_4) { create(:position_level, position_major_level: title.position_major_level, level: '2.1') }
     
-    let!(:position_v1) { create(:position, position_type: position_type, position_level: position_level_1, semantic_version: '1.0.0') }
-    let!(:position_v1_2) { create(:position, position_type: position_type, position_level: position_level_2, semantic_version: '1.2.3') }
-    let!(:position_v2) { create(:position, position_type: position_type, position_level: position_level_3, semantic_version: '2.0.0') }
-    let!(:position_v0) { create(:position, position_type: position_type, position_level: position_level_4, semantic_version: '0.1.0') }
+    let!(:position_v1) { create(:position, title: title, position_level: position_level_1, semantic_version: '1.0.0') }
+    let!(:position_v1_2) { create(:position, title: title, position_level: position_level_2, semantic_version: '1.2.3') }
+    let!(:position_v2) { create(:position, title: title, position_level: position_level_3, semantic_version: '2.0.0') }
+    let!(:position_v0) { create(:position, title: title, position_level: position_level_4, semantic_version: '0.1.0') }
 
     it 'filters by major version 1' do
       get organization_positions_path(organization, major_version: 1)

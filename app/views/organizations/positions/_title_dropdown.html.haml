@@ -1,0 +1,10 @@
+.mb-3
+  = form.label :title_id, "Title", class: "form-label"
+  .d-flex
+    = form.select :title_id, 
+      options_from_collection_for_select(@titles, :id, :display_name_with_major_level, @position.title_id), 
+      { prompt: 'Select a title' }, 
+      { class: "form-select", required: true, id: "title_select" }
+    = link_to new_organization_title_path(@organization), class: "btn btn-outline-secondary ms-2", target: "_blank" do
+      %i.bi.bi-plus
+  %small.form-text.text-muted Choose the title or create a new one

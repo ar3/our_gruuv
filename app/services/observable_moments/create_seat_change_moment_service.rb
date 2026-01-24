@@ -10,7 +10,15 @@ module ObservableMoments
     
     def call
       # Primary observer is the person who made the change (created_by)
-      primary_observer = @created_by.teammates.find_by(organization: @new_employment_tenure.company)
+      # If created_by is already a CompanyTeammate in the same organization, use it directly
+      # Otherwise, find the person's teammate in the company
+      primary_observer = if @created_by.is_a?(CompanyTeammate) && @created_by.organization_id == @new_employment_tenure.company_id
+        @created_by
+      elsif @created_by.is_a?(CompanyTeammate)
+        @created_by.person.teammates.find_by(organization: @new_employment_tenure.company, type: 'CompanyTeammate')
+      else
+        @created_by.teammates.find_by(organization: @new_employment_tenure.company)
+      end
       return Result.err("Could not find creator's teammate in company") unless primary_observer
       
       # Build metadata

@@ -8,16 +8,16 @@ RSpec.describe "EmploymentTenures Cross-Company", type: :request do
   
   let(:position1) do
     position_major_level = create(:position_major_level)
-    position_type = create(:position_type, organization: company1, position_major_level: position_major_level)
+    title = create(:title, organization: company1, position_major_level: position_major_level)
     position_level = create(:position_level, position_major_level: position_major_level)
-    create(:position, position_type: position_type, position_level: position_level)
+    create(:position, title: title, position_level: position_level)
   end
 
   let(:position2) do
     position_major_level = create(:position_major_level)
-    position_type = create(:position_type, organization: company2, position_major_level: position_major_level)
+    title = create(:title, organization: company2, position_major_level: position_major_level)
     position_level = create(:position_level, position_major_level: position_major_level)
-    create(:position, position_type: position_type, position_level: position_level)
+    create(:position, title: title, position_level: position_level)
   end
 
   let(:teammate1) do

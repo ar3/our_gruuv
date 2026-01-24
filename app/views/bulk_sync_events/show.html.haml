@@ -24,7 +24,7 @@
   - managers_data = Array(preview_actions&.dig('managers'))
   - departments_data = Array(preview_actions&.dig('departments'))
   - unassigned_employees_data = Array(preview_actions&.dig('unassigned_employees'))
-  - position_types_data = Array(preview_actions&.dig('position_types'))
+  - titles_data = Array(preview_actions&.dig('titles'))
   - positions_data = Array(preview_actions&.dig('positions'))
   - teammates_data = Array(preview_actions&.dig('teammates'))
   - employment_tenures_data = Array(preview_actions&.dig('employment_tenures'))
@@ -58,7 +58,7 @@
   - managers_data = managers_data.nil? ? [] : managers_data
   - departments_data = departments_data.nil? ? [] : departments_data
   - unassigned_employees_data = unassigned_employees_data.nil? ? [] : unassigned_employees_data
-  - position_types_data = position_types_data.nil? ? [] : position_types_data
+  - titles_data = titles_data.nil? ? [] : titles_data
   - positions_data = positions_data.nil? ? [] : positions_data
   - teammates_data = teammates_data.nil? ? [] : teammates_data
   - employment_tenures_data = employment_tenures_data.nil? ? [] : employment_tenures_data
@@ -74,7 +74,7 @@
   - managers_data = managers_data.is_a?(Array) ? managers_data : []
   - departments_data = departments_data.is_a?(Array) ? departments_data : []
   - unassigned_employees_data = unassigned_employees_data.is_a?(Array) ? unassigned_employees_data : []
-  - position_types_data = position_types_data.is_a?(Array) ? position_types_data : []
+  - titles_data = titles_data.is_a?(Array) ? titles_data : []
   - positions_data = positions_data.is_a?(Array) ? positions_data : []
   - teammates_data = teammates_data.is_a?(Array) ? teammates_data : []
   - employment_tenures_data = employment_tenures_data.is_a?(Array) ? employment_tenures_data : []
@@ -469,36 +469,36 @@
                               %span.text-muted None
                           %td= manager['row']
               
-              - if position_types_data.present?
-                %h6 Position Types (#{position_types_data.length})
+              - if titles_data.present?
+                %h6 Titles (#{titles_data.length})
                 .table-responsive.mb-3
                   %table.table.table-sm
                     %thead
                       %tr
                         %th
-                          = check_box_tag 'select_all_position_types', '1', true, class: 'form-check-input', data: { target: 'position-types-checkbox' }
+                          = check_box_tag 'select_all_titles', '1', true, class: 'form-check-input', data: { target: 'titles-checkbox' }
                           %label.form-check-label.ms-1 Select All
                         %th External Title
                         %th Action
                         %th Existing Record
                         %th Row
                     %tbody
-                      - position_types_data.each do |position_type|
+                      - titles_data.each do |title|
                         %tr
                           %td
-                            = check_box_tag "selected_position_types[]", position_type['row'], true, class: 'form-check-input position-types-checkbox'
-                          %td= position_type['external_title']
+                            = check_box_tag "selected_titles[]", title['row'], true, class: 'form-check-input titles-checkbox'
+                          %td= title['external_title']
                           %td
-                            - if position_type['will_create']
+                            - if title['will_create']
                               %span.badge.bg-success New
                             - else
                               %span.badge.bg-warning Update
                           %td
-                            - if position_type['existing_id']
-                              %span.text-muted Existing position type
+                            - if title['existing_id']
+                              %span.text-muted Existing title
                             - else
                               %span.text-muted None
-                          %td= position_type['row']
+                          %td= title['row']
               
               - if positions_data.present?
                 %h6 Positions (#{positions_data.length})
@@ -509,7 +509,7 @@
                         %th
                           = check_box_tag 'select_all_positions', '1', true, class: 'form-check-input', data: { target: 'positions-checkbox' }
                           %label.form-check-label.ms-1 Select All
-                        %th Position Type
+                        %th Title
                         %th Level
                         %th Action
                         %th Existing Record
@@ -519,7 +519,7 @@
                         %tr
                           %td
                             = check_box_tag "selected_positions[]", position['row'], true, class: 'form-check-input positions-checkbox'
-                          %td= position['position_type_title']
+                          %td= position['title_name']
                           %td= position['position_level']
                           %td
                             - if position['will_create']
@@ -962,10 +962,10 @@
                                 %span.badge.bg-info.ms-1 Existing
                             - else
                               = pa['position_title']
-                              %span.badge.bg-warning.ms-1 Position Type Not Found
+                              %span.badge.bg-warning.ms-1 Title Not Found
                           %td
-                            - if pa['position_type_title']
-                              = pa['position_type_title']
+                            - if pa['title_name']
+                              = pa['title_name']
                             - else
                               %span.text-muted Not found
                           %td

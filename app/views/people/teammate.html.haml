@@ -24,10 +24,10 @@
               
               / Current Position
               - current_tenure = @employment_tenures.find { |t| t.company == @current_organization && t.ended_at.nil? }
-              - if current_tenure&.position&.position_type
+              - if current_tenure&.position&.title
                 .alert.alert-success
                   %strong Current Position:
-                  = current_tenure.position.position_type.external_title
+                  = current_tenure.position.title.external_title
                   - if current_tenure.started_at
                     %br
                     %small Started: #{format_date_in_user_timezone(current_tenure.started_at)}

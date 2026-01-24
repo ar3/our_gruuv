@@ -1,5 +1,5 @@
 module Seats
-  class CreateMissingPositionTypeSeatsService
+  class CreateMissingTitleSeatsService
     def initialize(organization)
       @organization = organization
       @created_count = 0
@@ -8,12 +8,12 @@ module Seats
 
     def call
       ActiveRecord::Base.transaction do
-        position_types = @organization.position_types.includes(:seats)
+        titles = @organization.titles.includes(:seats)
         
-        position_types.each do |position_type|
-          next if position_type.seats.exists?
+        titles.each do |title|
+          next if title.seats.exists?
           
-          create_seat_for_position_type(position_type)
+          create_seat_for_title(title)
         end
 
         {
@@ -32,13 +32,13 @@ module Seats
 
     private
 
-    def create_seat_for_position_type(position_type)
+    def create_seat_for_title(title)
       # Use current date as the default seat_needed_by date
       seat_needed_by = Date.current
       
-      # Check if a seat already exists for this position_type and date
+      # Check if a seat already exists for this title and date
       existing_seat = Seat.find_by(
-        position_type: position_type,
+        title: title,
         seat_needed_by: seat_needed_by
       )
       
@@ -49,7 +49,7 @@ module Seats
       
       # Create a new seat
       seat = Seat.new(
-        position_type: position_type,
+        title: title,
         seat_needed_by: seat_needed_by,
         state: 'draft' # Draft state since it's not yet filled
       )
@@ -57,12 +57,10 @@ module Seats
       if seat.save
         @created_count += 1
       else
-        @errors << "Failed to create seat for #{position_type.external_title}: #{seat.errors.full_messages.join(', ')}"
+        @errors << "Failed to create seat for #{title.external_title}: #{seat.errors.full_messages.join(', ')}"
       end
     rescue => e
-      @errors << "Error creating seat for position type #{position_type.id}: #{e.message}"
+      @errors << "Error creating seat for title #{title.id}: #{e.message}"
     end
   end
 end
-
-

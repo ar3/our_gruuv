@@ -14,7 +14,7 @@ class EmploymentTenure < ApplicationRecord
     allow_blank: true 
   }
   validate :no_overlapping_active_tenures_for_same_teammate_and_company
-  validate :seat_position_type_matches_position, if: :seat
+  validate :seat_title_matches_position, if: :seat
 
   POSITION_RATINGS = {
     -3 => { key: :monitoring_pip, emoji: '🔴', label: 'Performance Improvement Plan', description: 'Monitoring after PIP' },
@@ -85,12 +85,12 @@ class EmploymentTenure < ApplicationRecord
     end
   end
 
-  def seat_position_type_matches_position
+  def seat_title_matches_position
     return unless seat && position
     
     # Compare IDs to avoid object identity issues
-    unless seat.position_type_id == position.position_type_id
-      errors.add(:seat, "must match the position type of the selected position")
+    unless seat.title_id == position.title_id
+      errors.add(:seat, "must match the title of the selected position")
     end
   end
 

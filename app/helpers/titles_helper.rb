@@ -1,5 +1,5 @@
-module PositionTypesHelper
-  def position_type_current_view_name
+module TitlesHelper
+  def title_current_view_name
     return 'View Mode' unless action_name
     
     case action_name

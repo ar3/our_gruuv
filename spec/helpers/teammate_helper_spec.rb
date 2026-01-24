@@ -6,9 +6,9 @@ RSpec.describe TeammateHelper, type: :helper do
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let!(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, ended_at: nil) }
   let!(:position_major_level) { create(:position_major_level) }
-  let!(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
+  let!(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let!(:position) { create(:position, title: title, position_level: position_level) }
   let!(:assignment) { create(:assignment, company: organization) }
   let!(:aspiration) { create(:aspiration, organization: organization) }
   let!(:ability) { create(:ability, organization: organization) }

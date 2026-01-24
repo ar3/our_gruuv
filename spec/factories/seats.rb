@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :seat do
-    association :position_type
+    association :title
     seat_needed_by { Date.current + 3.months }
     job_classification { "Salaried Exempt" }
     state { :draft }

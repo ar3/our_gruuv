@@ -171,7 +171,7 @@ class Person < ApplicationRecord
     # Return organizations that have assignments, abilities, or positions
     Organization.joins("LEFT JOIN assignments ON assignments.company_id = organizations.id")
                 .joins("LEFT JOIN abilities ON abilities.organization_id = organizations.id")
-                .joins("LEFT JOIN positions ON positions.position_type_id IN (SELECT id FROM position_types WHERE organization_id = organizations.id)")
+                .joins("LEFT JOIN positions ON positions.title_id IN (SELECT id FROM titles WHERE organization_id = organizations.id)")
                 .where("assignments.id IS NOT NULL OR abilities.id IS NOT NULL OR positions.id IS NOT NULL")
                 .distinct
                 .order(:type, :name)

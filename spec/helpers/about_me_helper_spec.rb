@@ -534,9 +534,9 @@ RSpec.describe AboutMeHelper, type: :helper do
     let(:organization) { create(:organization, :company) }
     let(:person) { create(:person) }
     let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
-    let(:position_type) { create(:position_type, organization: organization) }
-    let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:title) { create(:title, organization: organization) }
+    let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
     let!(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil) }
 
     context 'when no position exists' do
@@ -653,9 +653,9 @@ RSpec.describe AboutMeHelper, type: :helper do
     let(:organization) { create(:organization, :company) }
     let(:person) { create(:person) }
     let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
-    let(:position_type) { create(:position_type, organization: organization) }
-    let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:title) { create(:title, organization: organization) }
+    let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
     let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil) }
 
     before do

@@ -124,9 +124,9 @@ RSpec.describe 'About Me Page', type: :request do
     end
 
     context 'assignment check-in data loading' do
-      let(:position_type) { create(:position_type, organization: organization) }
-      let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-      let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let(:title) { create(:title, organization: organization) }
+      let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+      let(:position) { create(:position, title: title, position_level: position_level) }
 
       before do
         # End the existing employment_tenure from the main before block and create a new one with position

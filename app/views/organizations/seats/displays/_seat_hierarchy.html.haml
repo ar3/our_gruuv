@@ -33,7 +33,7 @@
                     - else
                       %span.fw-bold= seat.display_name
                     %br
-                    %span.text-muted.small= seat.position_type.external_title
+                    %span.text-muted.small= seat.title.external_title
                     %br
                     %span.badge{class: seat_state_badge_class(seat.state)}
                       = seat.state.titleize

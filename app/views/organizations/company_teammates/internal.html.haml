@@ -291,9 +291,9 @@
           .row
             .col-md-6
               %p.mb-2
-                %strong Active Position Type:
-                - if @active_employment_tenure.position&.position_type
-                  = @active_employment_tenure.position.position_type.external_title
+                %strong Active Title:
+                - if @active_employment_tenure.position&.title
+                  = @active_employment_tenure.position.title.external_title
                 - else
                   %span.text-muted Not set
               %p.mb-2

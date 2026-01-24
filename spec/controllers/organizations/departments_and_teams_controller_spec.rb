@@ -55,8 +55,8 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
     end
 
     it 'loads seats, position types, assignments, abilities, and playbooks' do
-      position_type = create(:position_type, organization: department)
-      seat = create(:seat, position_type: position_type)
+      title = create(:title, organization: department)
+      seat = create(:seat, title: title)
       assignment = create(:assignment, company: organization, department: department)
       ability = create(:ability, organization: department)
       playbook = create(:huddle_playbook, organization: department)
@@ -65,7 +65,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
       
       expect(response).to be_successful
       expect(assigns(:seats)).to include(seat)
-      expect(assigns(:position_types)).to include(position_type)
+      expect(assigns(:titles)).to include(title)
       expect(assigns(:assignments)).to include(assignment)
       expect(assigns(:abilities)).to include(ability)
       expect(assigns(:huddle_playbooks)).to include(playbook)

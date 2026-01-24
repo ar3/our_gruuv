@@ -57,8 +57,8 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
     context 'with valid data' do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
-      let!(:position_type) do
-        create(:position_type, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+      let!(:title) do
+        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
       end
       let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
 
@@ -92,14 +92,14 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       it 'creates position-assignment links' do
         expect { processor.process }.to change(PositionAssignment, :count).by(1)
         assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
-        position = Position.find_by(position_type: position_type)
+        position = Position.find_by(title: title)
         expect(PositionAssignment.find_by(assignment: assignment, position: position)).to be_present
       end
 
       it 'sets max_estimated_energy to 5 for new position assignments' do
         processor.process
         assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
-        position = Position.find_by(position_type: position_type)
+        position = Position.find_by(title: title)
         position_assignment = PositionAssignment.find_by(assignment: assignment, position: position)
         expect(position_assignment.max_estimated_energy).to eq(5)
         expect(position_assignment.min_estimated_energy).to be_nil
@@ -379,8 +379,8 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
 
     context 'when PositionMajorLevel has no PositionLevels' do
       let!(:position_major_level) { create(:position_major_level) }
-      let!(:position_type) do
-        create(:position_type, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+      let!(:title) do
+        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
       end
 
       let(:preview_actions) do
@@ -418,8 +418,8 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
     context 'position tracking' do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
-      let!(:position_type) do
-        create(:position_type, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+      let!(:title) do
+        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
       end
 
       context 'when position is created' do
@@ -453,14 +453,14 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
           position_results = bulk_sync_event.reload.results['successes'].select { |s| s['type'] == 'position' }
           expect(position_results.length).to eq(1)
           expect(position_results.first['action']).to eq('created')
-          expect(position_results.first['position_type_id']).to eq(position_type.id)
-          expect(position_results.first['position_type_title']).to eq('Software Engineer')
+          expect(position_results.first['title_id']).to eq(title.id)
+          expect(position_results.first['title_name']).to eq('Software Engineer')
         end
       end
 
       context 'when position already exists' do
         let!(:existing_position) do
-          create(:position, position_type: position_type, position_level: position_level)
+          create(:position, title: title, position_level: position_level)
         end
 
         let(:preview_actions) do
@@ -501,10 +501,10 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
     context 'with existing position assignment' do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
-      let!(:position_type) do
-        create(:position_type, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+      let!(:title) do
+        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
       end
-      let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let!(:position) { create(:position, title: title, position_level: position_level) }
       let!(:assignment) { create(:assignment, title: 'Test Assignment', company: organization) }
 
       context 'when both min and max energy are nil' do
@@ -694,12 +694,12 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
     context 'seat department updates' do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
-      let!(:position_type) do
-        create(:position_type, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+      let!(:title) do
+        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
       end
       let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
-      let!(:seat1) { create(:seat, position_type: position_type, department: nil, seat_needed_by: Date.current + 3.months) }
-      let!(:seat2) { create(:seat, position_type: position_type, department: nil, seat_needed_by: Date.current + 4.months) }
+      let!(:seat1) { create(:seat, title: title, department: nil, seat_needed_by: Date.current + 3.months) }
+      let!(:seat2) { create(:seat, title: title, department: nil, seat_needed_by: Date.current + 4.months) }
 
       context 'when department_names are provided' do
         let(:preview_actions) do
@@ -897,7 +897,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       end
 
       context 'with multiple seats for same position type' do
-        let!(:seat3) { create(:seat, position_type: position_type, department: nil, seat_needed_by: Date.current + 5.months) }
+        let!(:seat3) { create(:seat, title: title, department: nil, seat_needed_by: Date.current + 5.months) }
         let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
 
         let(:preview_actions) do

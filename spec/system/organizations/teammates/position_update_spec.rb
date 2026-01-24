@@ -7,11 +7,11 @@ RSpec.describe 'Position Update', type: :system, js: true do
   let(:employee_person) { create(:person, first_name: 'Employee', last_name: 'User') }
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let(:shared_major_level) { create(:position_major_level) }
-  let!(:position_type1) { create(:position_type, organization: company, position_major_level: shared_major_level, external_title: 'Software Engineer I') }
-  let!(:position_type2) { create(:position_type, organization: company, position_major_level: shared_major_level, external_title: 'Software Engineer II') }
+  let!(:title1) { create(:title, organization: company, position_major_level: shared_major_level, external_title: 'Software Engineer I') }
+  let!(:title2) { create(:title, organization: company, position_major_level: shared_major_level, external_title: 'Software Engineer II') }
   let!(:position_level1) { create(:position_level, position_major_level: shared_major_level) }
   let!(:position_level2) { create(:position_level, position_major_level: shared_major_level) }
-  let!(:position) { Position.create!(position_type_id: position_type1.id, position_level_id: position_level1.id, position_summary: 'Test position') }
+  let!(:position) { Position.create!(title_id: title1.id, position_level_id: position_level1.id, position_summary: 'Test position') }
   let!(:manager_employment_tenure) do
     # Create employment tenure for manager so they show up in employees list and have proper access
     manager_teammate.update!(first_employed_at: 2.years.ago)
@@ -68,9 +68,9 @@ RSpec.describe 'Position Update', type: :system, js: true do
       started_at: 5.months.ago
     )
   end
-  let!(:new_position) { Position.create!(position_type_id: position_type2.id, position_level_id: position_level2.id, position_summary: 'Test position 2') }
-  let!(:seat) { Seat.create!(position_type_id: position_type1.id, seat_needed_by: Date.current + 3.months, job_classification: 'Salaried Exempt', state: :open) }
-  let!(:seat_for_new_position) { Seat.create!(position_type_id: position_type2.id, seat_needed_by: Date.current + 4.months, job_classification: 'Salaried Exempt', state: :open) }
+  let!(:new_position) { Position.create!(title_id: title2.id, position_level_id: position_level2.id, position_summary: 'Test position 2') }
+  let!(:seat) { Seat.create!(title_id: title1.id, seat_needed_by: Date.current + 3.months, job_classification: 'Salaried Exempt', state: :open) }
+  let!(:seat_for_new_position) { Seat.create!(title_id: title2.id, seat_needed_by: Date.current + 4.months, job_classification: 'Salaried Exempt', state: :open) }
   
   let!(:current_tenure) do
     # Ensure employee_teammate has first_employed_at set (required for termination validation)
@@ -438,8 +438,8 @@ RSpec.describe 'Position Update', type: :system, js: true do
 
   describe 'Position dropdown grouping' do
     let(:department) { create(:organization, :department, parent: company) }
-    let!(:dept_position_type) { create(:position_type, organization: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
-    let!(:dept_position) { create(:position, position_type_id: dept_position_type.id, position_level_id: position_level1.id) }
+    let!(:dept_title) { create(:title, organization: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
+    let!(:dept_position) { create(:position, title_id: dept_title.id, position_level_id: position_level1.id) }
 
     it 'shows positions grouped by department with optgroups' do
       visit organization_teammate_position_path(company, employee_teammate)
@@ -540,8 +540,8 @@ RSpec.describe 'Position Update', type: :system, js: true do
 
     context 'position dropdown grouping in start/restart form' do
       let(:department) { create(:organization, :department, parent: company) }
-      let!(:dept_position_type) { create(:position_type, organization: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
-      let!(:dept_position) { create(:position, position_type_id: dept_position_type.id, position_level_id: position_level1.id) }
+      let!(:dept_title) { create(:title, organization: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
+      let!(:dept_position) { create(:position, title_id: dept_title.id, position_level_id: position_level1.id) }
 
       before do
         sign_in_and_visit(manager_person, company, organization_teammate_position_path(company, teammate_without_employment))

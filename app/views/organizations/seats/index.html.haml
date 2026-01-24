@@ -265,18 +265,18 @@
             / Main statistics/metrics area
             .row.text-center
               .col-3
-                .h3.text-primary= @spotlight_stats[:position_types][:total]
-                %small.text-muted Total Position Types
+                .h3.text-primary= @spotlight_stats[:titles][:total]
+                %small.text-muted Total Titles
               .col-3
-                .h3.text-success= @spotlight_stats[:position_types][:with_seats]
+                .h3.text-success= @spotlight_stats[:titles][:with_seats]
                 %small.text-muted With Seats
               .col-3
-                .h3.text-warning= @spotlight_stats[:position_types][:without_seats]
+                .h3.text-warning= @spotlight_stats[:titles][:without_seats]
                 %small.text-muted Without Seats
               .col-3
-                - if @spotlight_stats[:position_types][:without_seats] > 0
+                - if @spotlight_stats[:titles][:without_seats] > 0
                   - if policy(Seat).create?
-                    = button_to create_missing_position_type_seats_organization_seats_path(organization), method: :post, class: "btn btn-primary btn-sm", data: { confirm: "Create seats for #{@spotlight_stats[:position_types][:without_seats]} position type(s) without seats?" } do
+                    = button_to create_missing_title_seats_organization_seats_path(organization), method: :post, class: "btn btn-primary btn-sm", data: { confirm: "Create seats for #{@spotlight_stats[:titles][:without_seats]} title(s) without seats?" } do
                       %i.bi.bi-plus-circle.me-2
                       Create Missing Seats
                   - else
@@ -291,10 +291,10 @@
           
           .col-md-4
             / Action alerts or status messages
-            - if @spotlight_stats[:position_types][:without_seats] > 0
+            - if @spotlight_stats[:titles][:without_seats] > 0
               .alert.alert-warning.small
                 %i.bi.bi-exclamation-triangle.me-2
-                %strong #{@spotlight_stats[:position_types][:without_seats]} position type#{'s' if @spotlight_stats[:position_types][:without_seats] != 1} #{'does' if @spotlight_stats[:position_types][:without_seats] == 1} #{'do' if @spotlight_stats[:position_types][:without_seats] != 1} not have any seats
+                %strong #{@spotlight_stats[:titles][:without_seats]} title#{'s' if @spotlight_stats[:titles][:without_seats] != 1} #{'does' if @spotlight_stats[:titles][:without_seats] == 1} #{'do' if @spotlight_stats[:titles][:without_seats] != 1} not have any seats
             - else
               .alert.alert-success.small
                 %i.bi.bi-check-circle.me-2

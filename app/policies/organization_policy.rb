@@ -124,7 +124,7 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
-  def view_position_types?
+  def view_titles?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
     admin_bypass? || true

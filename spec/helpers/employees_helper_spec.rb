@@ -12,12 +12,12 @@ RSpec.describe EmployeesHelper, type: :helper do
   describe '#format_snapshot_changes' do
     context 'with employment changes' do
       let(:position_major_level) { create(:position_major_level) }
-      let(:position_type1) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
-      let(:position_type2) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 2') }
+      let(:title1) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+      let(:title2) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 2') }
       let(:position_level1) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position_level2) { create(:position_level, position_major_level: position_major_level, level: '1.2') }
-      let(:position1) { create(:position, position_type: position_type1, position_level: position_level1) }
-      let(:position2) { create(:position, position_type: position_type2, position_level: position_level2) }
+      let(:position1) { create(:position, title: title1, position_level: position_level1) }
+      let(:position2) { create(:position, title: title2, position_level: position_level2) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
           employee_teammate: person,
@@ -514,9 +514,9 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     context 'with position changes when current is "none"' do
       let(:position_major_level) { create(:position_major_level) }
-      let(:position_type1) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+      let(:title1) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
       let(:position_level1) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
-      let(:position1) { create(:position, position_type: position_type1, position_level: position_level1) }
+      let(:position1) { create(:position, title: title1, position_level: position_level1) }
       let(:snapshot) do
         create(:maap_snapshot,
           employee_teammate: person,
@@ -569,9 +569,9 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     context 'with employment_type and official_position_rating changes' do
       let(:position_major_level) { create(:position_major_level) }
-      let(:position_type1) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+      let(:title1) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
       let(:position_level1) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
-      let(:position1) { create(:position, position_type: position_type1, position_level: position_level1) }
+      let(:position1) { create(:position, title: title1, position_level: position_level1) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
           employee_teammate: person,
@@ -741,9 +741,9 @@ RSpec.describe EmployeesHelper, type: :helper do
 
   describe '#format_snapshot_all_fields' do
     let(:position_major_level) { create(:position_major_level) }
-    let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Engineer') }
+    let(:title) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer') }
     let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
-    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
     let(:assignment) { create(:assignment, company: organization) }
     
     let(:previous_snapshot) do

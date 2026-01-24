@@ -120,36 +120,36 @@ RSpec.describe FlexibleNameMatcher, type: :concern do
     end
     
     context 'with Senior variations' do
-      let!(:position_type) { create(:position_type, external_title: 'Sr Developer', organization: organization) }
+      let!(:title) { create(:title, external_title: 'Sr Developer', organization: organization) }
       
       it 'finds with Sr variation' do
         result = matcher.find_with_flexible_matching(
-          PositionType,
+          Title,
           :external_title,
           'Sr Developer',
-          PositionType.joins(:organization).where(organizations: { id: organization.id })
+          Title.joins(:organization).where(organizations: { id: organization.id })
         )
-        expect(result).to eq(position_type)
+        expect(result).to eq(title)
       end
       
       it 'finds with Sr. variation' do
         result = matcher.find_with_flexible_matching(
-          PositionType,
+          Title,
           :external_title,
           'Sr. Developer',
-          PositionType.joins(:organization).where(organizations: { id: organization.id })
+          Title.joins(:organization).where(organizations: { id: organization.id })
         )
-        expect(result).to eq(position_type)
+        expect(result).to eq(title)
       end
       
       it 'finds with Senior variation' do
         result = matcher.find_with_flexible_matching(
-          PositionType,
+          Title,
           :external_title,
           'Senior Developer',
-          PositionType.joins(:organization).where(organizations: { id: organization.id })
+          Title.joins(:organization).where(organizations: { id: organization.id })
         )
-        expect(result).to eq(position_type)
+        expect(result).to eq(title)
       end
     end
   end

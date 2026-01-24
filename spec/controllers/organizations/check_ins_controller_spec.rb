@@ -4,9 +4,9 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person, full_name: 'Manager Person') }
   let(:employee) { create(:person, full_name: 'Employee Person') }
-  let(:position_type) { create(:position_type, organization: organization, external_title: 'Software Engineer') }
-  let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level, level: '1.2') }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:title) { create(:title, organization: organization, external_title: 'Software Engineer') }
+  let(:position_level) { create(:position_level, position_major_level: title.position_major_level, level: '1.2') }
+  let(:position) { create(:position, title: title, position_level: position_level) }
   let(:assignment) { create(:assignment, company: organization, title: 'Frontend Development') }
   let(:aspiration) { create(:aspiration, organization: organization, name: 'Technical Skills') }
 

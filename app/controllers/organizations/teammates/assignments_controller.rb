@@ -30,10 +30,10 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     @position_assignment = nil
     
     # Check if this assignment is connected to the teammate's current position
-    if @current_employment&.position&.position_type
+    if @current_employment&.position&.title
       @position_assignment = PositionAssignment.joins(:position)
         .where(assignment: @assignment)
-        .where(positions: { position_type: @current_employment.position.position_type })
+        .where(positions: { title: @current_employment.position.title })
         .first
     end
   end

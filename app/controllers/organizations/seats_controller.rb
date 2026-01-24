@@ -32,14 +32,14 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
       # For other views, use filtered seats directly
       @filtered_seats = filtered_seats.to_a
       
-      # For seat_maap_health view, group by position type
+      # For seat_maap_health view, group by title
       if query.current_view == 'seat_maap_health'
-        @seats_by_position_type = @filtered_seats.group_by(&:position_type)
-        @position_types = @seats_by_position_type.keys.sort_by(&:external_title)
+        @seats_by_title = @filtered_seats.group_by(&:title)
+        @titles = @seats_by_title.keys.sort_by(&:external_title)
         
-        # Preload maturity data for all position types
-        @position_types.each do |position_type|
-          position_type.maap_maturity_phase
+        # Preload maturity data for all titles
+        @titles.each do |title|
+          title.maap_maturity_phase
         end
       end
     end
@@ -127,10 +127,10 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     end
   end
 
-  def create_missing_position_type_seats
+  def create_missing_title_seats
     authorize Seat.new, :create?
     
-    result = Seats::CreateMissingPositionTypeSeatsService.new(organization).call
+    result = Seats::CreateMissingTitleSeatsService.new(organization).call
     
     if result[:success]
       redirect_to organization_seats_path(organization), notice: "Successfully created #{result[:created_count]} seat(s) for position types."
@@ -187,22 +187,22 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   private
 
   def set_seat
-    @seat = Seat.includes(:position_type, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person }).find(params[:id])
+    @seat = Seat.includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person }).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     flash[:error] = "Seat not found"
     redirect_to organization_seats_path(organization)
   end
 
   def set_related_data
-    @position_types = organization.position_types.ordered
+    @titles = organization.titles.ordered
     
     @departments = organization.descendants.select { |o| o.type == 'Department' }.sort_by(&:display_name)
     @teams = organization.descendants.select { |o| o.type == 'Team' }.sort_by(&:display_name)
     
     # Load seats with their active employment tenures and teammates
     all_seats = Seat.for_organization(organization)
-                    .includes(:position_type, employment_tenures: { teammate: :person })
-                    .order('position_types.external_title ASC, seats.seat_needed_by ASC')
+                    .includes(:title, employment_tenures: { teammate: :person })
+                    .order('titles.external_title ASC, seats.seat_needed_by ASC')
     
     # Exclude current seat if editing (can't report to itself)
     current_seat_id = @seat&.id || params[:id]
@@ -232,7 +232,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def seat_params
     params.require(:seat).permit(
-      :position_type_id,
+      :title_id,
       :seat_needed_by,
       :job_classification,
       :team,
@@ -266,11 +266,11 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     employees_without_seats = active_employment_tenures.select { |et| et.seat.nil? }.count
     total_active_employees = active_employment_tenures.count
     
-    # Calculate position type seat statistics
-    position_types = organization.position_types.includes(:seats)
-    position_types_with_seats = position_types.select { |pt| pt.seats.exists? }.count
-    position_types_without_seats = position_types.select { |pt| !pt.seats.exists? }.count
-    total_position_types = position_types.count
+    # Calculate title seat statistics
+    titles = organization.titles.includes(:seats)
+    titles_with_seats = titles.select { |title| title.seats.exists? }.count
+    titles_without_seats = titles.select { |title| !title.seats.exists? }.count
+    total_titles = titles.count
     
     {
       employees: {
@@ -278,10 +278,10 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
         with_seats: employees_with_seats,
         without_seats: employees_without_seats
       },
-      position_types: {
-        total: total_position_types,
-        with_seats: position_types_with_seats,
-        without_seats: position_types_without_seats
+      titles: {
+        total: total_titles,
+        with_seats: titles_with_seats,
+        without_seats: titles_without_seats
       }
     }
   end

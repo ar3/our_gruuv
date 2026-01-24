@@ -1,4 +1,4 @@
-class PositionTypePolicy < ApplicationPolicy
+class TitlePolicy < ApplicationPolicy
   def show?
     admin_bypass? || user_has_maap_permission_for_record? || user_is_active_company_teammate_in_same_company?
   end
@@ -33,12 +33,12 @@ class PositionTypePolicy < ApplicationPolicy
         root_company = viewing_teammate_org.root_company
         return scope.none unless root_company
         
-        # Include position types if:
+        # Include titles if:
         # 1. User can manage MAAP (existing behavior)
         # 2. User is actively employed company teammate in the same company
         if viewing_teammate.can_manage_maap? || viewing_teammate.assigned_employee?
-          # Include position types from root company and all its descendants
-          # This allows viewing department position types when signed in to company
+          # Include titles from root company and all its descendants
+          # This allows viewing department titles when signed in to company
           org_ids = root_company.self_and_descendants.map(&:id)
           scope.where(organization_id: org_ids)
         else
@@ -80,14 +80,12 @@ class PositionTypePolicy < ApplicationPolicy
     
     # Get root companies for both organizations
     viewing_teammate_root_company = viewing_teammate.organization.root_company
-    position_type_root_company = record.organization.root_company
+    title_root_company = record.organization.root_company
     
     return false unless viewing_teammate_root_company
-    return false unless position_type_root_company
+    return false unless title_root_company
     
     # Check if they're in the same company
-    viewing_teammate_root_company.id == position_type_root_company.id
+    viewing_teammate_root_company.id == title_root_company.id
   end
 end
-
-

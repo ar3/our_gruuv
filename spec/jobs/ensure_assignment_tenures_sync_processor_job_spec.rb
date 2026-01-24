@@ -117,9 +117,9 @@ RSpec.describe EnsureAssignmentTenuresSyncProcessorJob, type: :job do
 
     context 'with real processor integration' do
       let!(:position_major_level) { create(:position_major_level) }
-      let!(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
+      let!(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
-      let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let!(:position) { create(:position, title: title, position_level: position_level) }
       let!(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
       let!(:position_assignment) do
         create(:position_assignment, :required,

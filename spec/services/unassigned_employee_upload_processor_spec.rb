@@ -97,7 +97,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         expect(john_tenure.started_at).to eq(Date.parse('2024-01-15'))
         expect(john_tenure.company).to be_a(Organization)
         expect(john_tenure.position).to be_present
-        expect(john_tenure.position.position_type.external_title).to eq('Software Engineer')
+        expect(john_tenure.position.title.external_title).to eq('Software Engineer')
         jane_teammate = jane.teammates.find_by(organization: organization)
         expect(john_tenure.manager_teammate).to eq(jane_teammate) # Jane is John's manager
         
@@ -106,7 +106,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         expect(jane_tenure.started_at).to eq(Date.parse('2024-01-10'))
         expect(jane_tenure.company).to be_a(Organization)
         expect(jane_tenure.position).to be_present
-        expect(jane_tenure.position.position_type.external_title).to eq('Senior Engineer')
+        expect(jane_tenure.position.title.external_title).to eq('Senior Engineer')
         bob_teammate = bob.teammates.find_by(organization: organization)
         expect(jane_tenure.manager_teammate).to eq(bob_teammate) # Bob is Jane's manager
         
@@ -150,7 +150,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         existing_tenure = existing_person.employment_tenures.find_by(company: organization)
         expect(existing_tenure).to be_present
         expect(existing_tenure.started_at).to eq(Date.parse('2024-01-15'))
-        expect(existing_tenure.position.position_type.external_title).to eq('Software Engineer')
+        expect(existing_tenure.position.title.external_title).to eq('Software Engineer')
       end
 
       it 'includes update action in results' do
@@ -202,9 +202,9 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
     context 'with existing employment tenures' do
       let!(:existing_person) { create(:person, email: 'john.doe@company.com', first_name: 'John', last_name: 'Doe') }
       let!(:existing_person_teammate) { create(:teammate, person: existing_person, organization: organization) }
-      let!(:existing_position_type) { create(:position_type, organization: organization, external_title: 'Software Engineer') }
-      let!(:existing_position_level) { create(:position_level, position_major_level: existing_position_type.position_major_level) }
-      let!(:existing_position) { create(:position, position_type: existing_position_type, position_level: existing_position_level) }
+      let!(:existing_title) { create(:title, organization: organization, external_title: 'Software Engineer') }
+      let!(:existing_position_level) { create(:position_level, position_major_level: existing_title.position_major_level) }
+      let!(:existing_position) { create(:position, title: existing_title, position_level: existing_position_level) }
       let!(:existing_employment_tenure) { create(:employment_tenure, teammate: existing_person_teammate, company: organization, position: existing_position, started_at: Date.parse('2023-01-01')) }
 
       it 'handles existing employment tenures correctly' do
@@ -354,9 +354,9 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
     describe '#create_employment_tenure' do
       let(:person) { create(:person, first_name: 'John', last_name: 'Doe') }
       let!(:teammate) { create(:company_teammate, person: person, organization: organization) }
-      let!(:position_type) { create(:position_type, organization: organization, external_title: 'Software Engineer') }
-      let!(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-      let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let!(:title) { create(:title, organization: organization, external_title: 'Software Engineer') }
+      let!(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+      let!(:position) { create(:position, title: title, position_level: position_level) }
       let!(:manager) { create(:person, first_name: 'Jane', last_name: 'Smith') }
       let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
       let(:employee_data) do

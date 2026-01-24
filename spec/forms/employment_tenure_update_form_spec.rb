@@ -9,15 +9,15 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
   let(:new_manager) { create(:person) }
   let(:new_manager_teammate) { CompanyTeammate.create!(person: new_manager, organization: company) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let(:seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 1.month) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
+  let(:seat) { create(:seat, title: title, seat_needed_by: Date.current + 1.month) }
   
   let(:current_tenure) do
     # Create position and seat first to ensure they match
     pos = position
-    seat_obj = create(:seat, position_type: pos.position_type, seat_needed_by: Date.current + 10.months)
+    seat_obj = create(:seat, title: pos.title, seat_needed_by: Date.current + 10.months)
     
     # Create employment_tenure directly to avoid factory's after(:build) hook overwriting position
     # Ensure manager_teammate is created
@@ -61,11 +61,11 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
       end
 
       it 'allows reason when position changes' do
-        new_position_type = create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'New Position Type')
+        new_title = create(:title, organization: company, position_major_level: position_major_level, external_title: 'New Position Type')
         new_position_level = create(:position_level, position_major_level: position_major_level)
-        new_position = create(:position, position_type: new_position_type, position_level: new_position_level)
-        # Create a seat that matches the new position's position_type
-        new_seat = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 5.months)
+        new_position = create(:position, title: new_title, position_level: new_position_level)
+        # Create a seat that matches the new position's title
+        new_seat = create(:seat, title: new_title, seat_needed_by: Date.current + 5.months)
         form.manager_teammate_id = current_manager_teammate.id
         form.position_id = new_position.id
         form.employment_type = 'full_time'
@@ -97,7 +97,7 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
       end
 
       it 'allows reason with seat change (reason ignored but no error)' do
-        new_seat = create(:seat, position_type: position.position_type, seat_needed_by: Date.current + 3.months)
+        new_seat = create(:seat, title: position.title, seat_needed_by: Date.current + 3.months)
         form.manager_teammate_id = current_manager_teammate.id
         form.position_id = position.id
         form.employment_type = 'full_time'
@@ -135,10 +135,10 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
     end
 
     describe 'seat_id validation' do
-      it 'validates seat_id matches position position_type if provided' do
+      it 'validates seat_id matches position title if provided' do
         other_position_major_level = create(:position_major_level)
-        other_position_type = create(:position_type, organization: company, position_major_level: other_position_major_level)
-        other_seat = create(:seat, position_type: other_position_type, seat_needed_by: Date.current + 4.months)
+        other_title = create(:title, organization: company, position_major_level: other_position_major_level)
+        other_seat = create(:seat, title: other_title, seat_needed_by: Date.current + 4.months)
         
         form.position_id = position.id
         form.seat_id = other_seat.id
@@ -200,7 +200,8 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
 
   describe '#save' do
     it 'calls UpdateEmploymentTenureService with validated params' do
-      form.current_person = create(:person)
+      creator_teammate = CompanyTeammate.create!(person: create(:person), organization: company)
+      form.current_company_teammate = creator_teammate
       form.teammate = teammate
       
       # Validate with params to set up @original_params
@@ -235,7 +236,8 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
     end
 
     it 'clears seat when seat_id is set to nil' do
-      form.current_person = create(:person)
+      creator_teammate = CompanyTeammate.create!(person: create(:person), organization: company)
+      form.current_company_teammate = creator_teammate
       form.teammate = teammate
       
       # Ensure current_tenure has a seat
@@ -259,12 +261,13 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
         teammate: teammate,
         current_tenure: current_tenure,
         params: hash_including(seat_id: nil),
-        created_by: anything
+        created_by: creator_teammate
       )
     end
 
     it 'clears seat when seat_id is set to empty string' do
-      form.current_person = create(:person)
+      creator_teammate = CompanyTeammate.create!(person: create(:person), organization: company)
+      form.current_company_teammate = creator_teammate
       form.teammate = teammate
       
       # Ensure current_tenure has a seat

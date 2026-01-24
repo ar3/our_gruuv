@@ -371,8 +371,8 @@ class AssignmentsAndAbilitiesUploadParser
           'department_names' => pa['department_names'],
           'row' => pa['row'],
           'action' => 'create',
-          'position_type_title' => nil,
-          'position_type_id' => nil,
+          'title_name' => nil,
+          'title_id' => nil,
           'position_id' => nil,
           'position_display_name' => nil,
           'will_create_position' => false,
@@ -387,23 +387,23 @@ class AssignmentsAndAbilitiesUploadParser
       position_title = pa['position_title']
       next nil if position_title.blank?
       
-      # Find position type using flexible matching
-      position_type = find_with_flexible_matching(
-        PositionType,
+      # Find title using flexible matching
+      title = find_with_flexible_matching(
+        Title,
         :external_title,
         position_title,
-        PositionType.joins(:organization).where(organizations: { id: organization.id })
+        Title.joins(:organization).where(organizations: { id: organization.id })
       )
       
-      unless position_type
+      unless title
         {
           'assignment_title' => pa['assignment_title'],
           'position_title' => position_title,
           'department_names' => pa['department_names'],
           'row' => pa['row'],
           'action' => 'create',
-          'position_type_title' => nil,
-          'position_type_id' => nil,
+          'title_name' => nil,
+          'title_id' => nil,
           'position_id' => nil,
           'position_display_name' => nil,
           'will_create_position' => false,
@@ -412,12 +412,12 @@ class AssignmentsAndAbilitiesUploadParser
           'will_update_seat_department' => pa['department_names'].present?
         }
       else
-        # Find existing position for this position type
-        position = Position.find_by(position_type: position_type)
+        # Find existing position for this title
+        position = Position.find_by(title: title)
         will_create_position = position.nil?
         
-        # Get all seats for this position type
-        seats = Seat.where(position_type: position_type).includes(:department)
+        # Get all seats for this title
+        seats = Seat.where(title: title).includes(:department)
         seats_data = seats.map do |seat|
           {
             'id' => seat.id,
@@ -433,10 +433,10 @@ class AssignmentsAndAbilitiesUploadParser
           'department_names' => pa['department_names'],
           'row' => pa['row'],
           'action' => 'create',
-          'position_type_title' => position_type.external_title,
-          'position_type_id' => position_type.id,
+          'title_name' => title.external_title,
+          'title_id' => title.id,
           'position_id' => position&.id,
-          'position_display_name' => position ? position.display_name : "#{position_type.external_title} - [Will be created]",
+          'position_display_name' => position ? position.display_name : "#{title.external_title} - [Will be created]",
           'will_create_position' => will_create_position,
           'seats_count' => seats.count,
           'seats' => seats_data,

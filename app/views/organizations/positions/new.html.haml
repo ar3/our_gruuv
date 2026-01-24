@@ -14,7 +14,7 @@
           Create New Position
       
       .card-body
-        = form_with model: [@organization, @form], url: organization_positions_path(@organization, position_type_id: params[:position_type_id]), local: true do |form|
+        = form_with model: [@organization, @form], url: organization_positions_path(@organization, title_id: params[:title_id]), local: true do |form|
           - if @form.errors.any?
             .alert.alert-danger
               %h5= "#{pluralize(@form.errors.count, "error")} prohibited this position from being saved:"

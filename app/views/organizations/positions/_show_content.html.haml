@@ -15,8 +15,8 @@
           
             %h5.mb-2
               %i.bi.bi-tag.me-2
-              Position Type
-            %p= link_to @position.position_type.external_title, organization_position_type_path(@organization, @position.position_type), class: "text-decoration-none"
+              Title
+            %p= link_to @position.title.external_title, organization_title_path(@organization, @position.title), class: "text-decoration-none"
           
             %h5.mb-2
               %i.bi.bi-star.me-2
@@ -197,5 +197,5 @@
             Manager Access Required
           %p.mb-0
             This section is for managers only. To see who has what title, visit the
-            = link_to @position.position_type.external_title, organization_position_type_path(@organization, @position.position_type), class: "text-decoration-none fw-bold"
+            = link_to @position.title.external_title, organization_title_path(@organization, @position.title), class: "text-decoration-none fw-bold"
             page.

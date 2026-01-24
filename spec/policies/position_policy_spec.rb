@@ -5,11 +5,11 @@ RSpec.describe PositionPolicy, type: :policy do
   let(:company) { create(:organization, :company) }
   let(:department) { create(:organization, :department, parent: company) }
   let(:person) { create(:person) }
-  let(:position_type) { create(:position_type, organization: company) }
-  let(:position_type_in_department) { create(:position_type, organization: department) }
-  let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level).tap { |p| p.position_type } }
-  let(:position_in_department) { create(:position, position_type: position_type_in_department, position_level: position_level).tap { |p| p.position_type } }
+  let(:title) { create(:title, organization: company) }
+  let(:title_in_department) { create(:title, organization: department) }
+  let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+  let(:position) { create(:position, title: title, position_level: position_level).tap { |p| p.title } }
+  let(:position_in_department) { create(:position, title: title_in_department, position_level: position_level).tap { |p| p.title } }
   
   let(:company_teammate) { create(:company_teammate, person: person, organization: company) }
   let(:pundit_user) { OpenStruct.new(user: company_teammate, impersonating_teammate: nil) }
@@ -62,8 +62,8 @@ RSpec.describe PositionPolicy, type: :policy do
 
     context 'for position in different company' do
       let(:other_company) { create(:organization, :company) }
-      let(:other_position_type) { create(:position_type, organization: other_company) }
-      let(:other_position) { create(:position, position_type: other_position_type, position_level: position_level) }
+      let(:other_title) { create(:title, organization: other_company) }
+      let(:other_position) { create(:position, title: other_title, position_level: position_level) }
       subject { described_class.new(pundit_user, other_position) }
 
       before do

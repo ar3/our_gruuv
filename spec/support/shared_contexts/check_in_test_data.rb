@@ -24,16 +24,16 @@ RSpec.shared_context 'check_in_test_data' do
   let(:position_level_4) { create(:position_level, position_major_level: position_major_level, level: '4.0') }
 
   # 1 position type for company + 1 per department
-  let(:company_position_type) { create(:position_type, organization: company, external_title: 'Company Manager', position_major_level: position_major_level) }
-  let(:sales_position_type) { create(:position_type, organization: sales_department, external_title: 'Sales Rep', position_major_level: position_major_level) }
-  let(:product_position_type) { create(:position_type, organization: product_department, external_title: 'Product Manager', position_major_level: position_major_level) }
-  let(:support_position_type) { create(:position_type, organization: support_department, external_title: 'Support Specialist', position_major_level: position_major_level) }
+  let(:company_title) { create(:title, organization: company, external_title: 'Company Manager', position_major_level: position_major_level) }
+  let(:sales_title) { create(:title, organization: sales_department, external_title: 'Sales Rep', position_major_level: position_major_level) }
+  let(:product_title) { create(:title, organization: product_department, external_title: 'Product Manager', position_major_level: position_major_level) }
+  let(:support_title) { create(:title, organization: support_department, external_title: 'Support Specialist', position_major_level: position_major_level) }
 
   # 1 position per position type
-  let(:company_position) { create(:position, position_type: company_position_type, position_level: position_level_1) }
-  let(:sales_position) { create(:position, position_type: sales_position_type, position_level: position_level_2) }
-  let(:product_position) { create(:position, position_type: product_position_type, position_level: position_level_3) }
-  let(:support_position) { create(:position, position_type: support_position_type, position_level: position_level_4) }
+  let(:company_position) { create(:position, title: company_title, position_level: position_level_1) }
+  let(:sales_position) { create(:position, title: sales_title, position_level: position_level_2) }
+  let(:product_position) { create(:position, title: product_title, position_level: position_level_3) }
+  let(:support_position) { create(:position, title: support_title, position_level: position_level_4) }
 
   # 3 company-level assignments
   let(:company_assignment_1) { create(:assignment, company: company, title: 'Company Strategy', tagline: 'Drive company-wide strategic initiatives') }
@@ -93,10 +93,10 @@ RSpec.shared_context 'check_in_test_data' do
     support_aspiration
     
     # Create position types and positions
-    company_position_type
-    sales_position_type
-    product_position_type
-    support_position_type
+    company_title
+    sales_title
+    product_title
+    support_title
     company_position
     sales_position
     product_position

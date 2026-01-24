@@ -52,7 +52,7 @@ class CommentPolicy < ApplicationPolicy
       Pundit.policy(pundit_user, commentable).show?
     when Position
       Pundit.policy(pundit_user, commentable).show?
-    when PositionType
+    when Title
       Pundit.policy(pundit_user, commentable).show?
     when Comment
       # For nested comments, check if user can view the root commentable
@@ -68,7 +68,7 @@ class CommentPolicy < ApplicationPolicy
         Pundit.policy(pundit_user, root).show?
       when Position
         Pundit.policy(pundit_user, root).show?
-      when PositionType
+      when Title
         Pundit.policy(pundit_user, root).show?
       else
         false

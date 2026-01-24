@@ -57,14 +57,14 @@
                         - if @position_assignment
                           .form-control-plaintext
                             %span.badge.bg-primary.me-2= @position_assignment.assignment_type.titleize
-                            Connected to #{@current_employment.position.position_type.external_title}
+                            Connected to #{@current_employment.position.title.external_title}
                             - if @position_assignment.min_estimated_energy.present? || @position_assignment.max_estimated_energy.present?
                               %br
                               %small.text-muted= @position_assignment.energy_range_display
                         - else
                           .form-control-plaintext
                             %span.badge.bg-secondary.me-2 Unconnected
-                            Not connected to #{@current_employment.position.position_type.external_title}
+                            Not connected to #{@current_employment.position.title.external_title}
                   
                   .col-md-6
                     / Assignment Outcomes

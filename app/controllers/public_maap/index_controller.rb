@@ -8,7 +8,7 @@ class PublicMaap::IndexController < ApplicationController
     
     # Companies with positions
     company_ids_with_content += Position
-      .joins(position_type: :organization)
+      .joins(title: :organization)
       .where(organizations: { type: 'Company' })
       .pluck('organizations.id')
     

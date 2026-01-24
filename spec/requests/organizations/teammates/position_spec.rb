@@ -15,12 +15,12 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
   let(:new_manager) { create(:person) }
   let(:new_manager_teammate) { create(:company_teammate, person: new_manager, organization: organization) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
-  let(:new_position_type) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'New Position Type') }
+  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+  let(:new_title) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'New Position Type') }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:new_position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let(:new_position) { create(:position, position_type: new_position_type, position_level: new_position_level) }
+  let(:position) { create(:position, title: title, position_level: position_level) }
+  let(:new_position) { create(:position, title: new_title, position_level: new_position_level) }
   
   # Create employment tenure for the teammate (manager) so they have an org to check permissions against
   let!(:teammate_employment_tenure) do
@@ -37,7 +37,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
   let(:current_tenure) do
     # Create position and seat first to ensure they match
     pos = position
-    seat_obj = create(:seat, position_type: pos.position_type, seat_needed_by: Date.current + 10.months)
+    seat_obj = create(:seat, title: pos.title, seat_needed_by: Date.current + 10.months)
     
     # Create employment_tenure directly to avoid factory's after(:build) hook overwriting position
     # Ensure manager_teammate is created and is a CompanyTeammate instance
@@ -86,7 +86,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
 
     it 'loads only available seats (not associated with active tenures)' do
       # Create another seat that's filled
-      filled_seat = create(:seat, position_type: position.position_type, seat_needed_by: Date.current + 11.months)
+      filled_seat = create(:seat, title: position.title, seat_needed_by: Date.current + 11.months)
       other_teammate = create(:teammate, person: create(:person), organization: organization)
       EmploymentTenure.create!(
         teammate: other_teammate,
@@ -97,7 +97,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       )
       
       # Create an available seat (ensure it's in open or filled state)
-      available_seat = create(:seat, position_type: position.position_type, seat_needed_by: Date.current + 12.months, state: :open)
+      available_seat = create(:seat, title: position.title, seat_needed_by: Date.current + 12.months, state: :open)
       
       get organization_teammate_position_path(organization, employee_teammate)
       
@@ -252,7 +252,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       end
 
       it 'updates tenure on position change' do
-        seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 16.months)
+        seat_for_new_position = create(:seat, title: new_title, seat_needed_by: Date.current + 16.months)
         
         expect {
           patch organization_teammate_position_path(organization, employee_teammate), params: {
@@ -301,12 +301,12 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         
         snapshot = MaapSnapshot.last
         expect(snapshot.change_type).to eq('position_tenure')
-        expect(snapshot.employee_company_teammate).to eq(employee_person)
+        expect(snapshot.employee_company_teammate).to eq(employee_teammate)
         expect(snapshot.reason).to eq('Manager change')
       end
 
       it 'creates maap_snapshot when position changes' do
-        seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 14.months)
+        seat_for_new_position = create(:seat, title: new_title, seat_needed_by: Date.current + 14.months)
         
         expect {
           patch organization_teammate_position_path(organization, employee_teammate), params: {
@@ -339,7 +339,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       end
 
       it 'does not create maap_snapshot when only seat changes' do
-        new_seat = create(:seat, position_type: position.position_type, seat_needed_by: Date.current + 15.months)
+        new_seat = create(:seat, title: position.title, seat_needed_by: Date.current + 15.months)
         
         expect {
           patch organization_teammate_position_path(organization, employee_teammate), params: {
@@ -537,8 +537,8 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
 
       it 'loads positions grouped by department' do
         department = create(:organization, :department, parent: organization)
-        dept_position_type = create(:position_type, organization: department, position_major_level: position_major_level)
-        dept_position = create(:position, position_type: dept_position_type, position_level: position_level)
+        dept_title = create(:title, organization: department, position_major_level: position_major_level)
+        dept_position = create(:position, title: dept_title, position_level: position_level)
         
         get organization_teammate_position_path(organization, teammate_without_employment)
         
@@ -683,7 +683,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         
         snapshot = MaapSnapshot.last
         expect(snapshot.change_type).to eq('position_tenure')
-        expect(snapshot.employee_company_teammate).to eq(employee_person)
+        expect(snapshot.employee_company_teammate).to eq(employee_teammate)
         expect(snapshot.effective_date).to eq(termination_date)
         expect(snapshot.reason).to eq('Voluntary resignation')
       end

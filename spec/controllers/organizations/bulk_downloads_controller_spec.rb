@@ -126,9 +126,9 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         it 'includes positions data in CSV' do
           assignment = create(:assignment, company: organization, title: 'Position Test')
           position_major_level = create(:position_major_level)
-          position_type = create(:position_type, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
+          title = create(:title, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          position = create(:position, position_type: position_type, position_level: position_level)
+          position = create(:position, title: title, position_level: position_level)
           create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: 10, max_estimated_energy: 20)
           
           get :download, params: { organization_id: organization.id, type: 'assignments' }
@@ -143,12 +143,12 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
           assignment = create(:assignment, company: organization, title: 'Multi Position Test')
           position_major_level1 = create(:position_major_level)
           position_major_level2 = create(:position_major_level)
-          position_type1 = create(:position_type, organization: organization, external_title: 'Backend Engineer', position_major_level: position_major_level1)
-          position_type2 = create(:position_type, organization: organization, external_title: 'Frontend Engineer', position_major_level: position_major_level2)
+          title1 = create(:title, organization: organization, external_title: 'Backend Engineer', position_major_level: position_major_level1)
+          title2 = create(:title, organization: organization, external_title: 'Frontend Engineer', position_major_level: position_major_level2)
           position_level1 = create(:position_level, level: '1.0', position_major_level: position_major_level1)
           position_level2 = create(:position_level, level: '3.0', position_major_level: position_major_level2)
-          position1 = create(:position, position_type: position_type1, position_level: position_level1)
-          position2 = create(:position, position_type: position_type2, position_level: position_level2)
+          position1 = create(:position, title: title1, position_level: position_level1)
+          position2 = create(:position, title: title2, position_level: position_level2)
           create(:position_assignment, position: position1, assignment: assignment, assignment_type: 'required', min_estimated_energy: 10, max_estimated_energy: 20)
           create(:position_assignment, position: position2, assignment: assignment, assignment_type: 'suggested', min_estimated_energy: 5, max_estimated_energy: 15)
           
@@ -165,9 +165,9 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         it 'handles positions with missing energy values' do
           assignment = create(:assignment, company: organization, title: 'Energy Edge Cases')
           position_major_level = create(:position_major_level)
-          position_type = create(:position_type, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
+          title = create(:title, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
           position_level = create(:position_level, level: '1.0', position_major_level: position_major_level)
-          position = create(:position, position_type: position_type, position_level: position_level)
+          position = create(:position, title: title, position_level: position_level)
           
           # No energy values
           create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: nil, max_estimated_energy: nil)

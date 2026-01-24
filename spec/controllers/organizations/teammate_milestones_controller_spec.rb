@@ -38,8 +38,8 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
       teammate.update!(first_employed_at: 1.month.ago)
       
       # Create a position with required assignments
-      position_type = create(:position_type, organization: organization)
-      position_level = create(:position_level, position_major_level: position_type.position_major_level)
+      title = create(:title, organization: organization)
+      position_level = create(:position_level, position_major_level: title.position_major_level)
       
       # Create employment tenure (factory will create a position)
       employment_tenure = create(:employment_tenure, 
@@ -156,8 +156,8 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
       
       # Create a position with required assignments
       # Note: employment_tenure factory creates its own position, so we'll use that position
-      position_type = create(:position_type, organization: organization)
-      position_level = create(:position_level, position_major_level: position_type.position_major_level)
+      title = create(:title, organization: organization)
+      position_level = create(:position_level, position_major_level: title.position_major_level)
       
       # Create employment tenure first (factory will create a position)
       employment_tenure = create(:employment_tenure, 

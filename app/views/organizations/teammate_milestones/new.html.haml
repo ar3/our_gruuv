@@ -28,9 +28,9 @@
                 - if @teammate_display[:manager]
                   %p.text-muted.mb-1
                     %small Manager: #{@teammate_display[:manager]}
-                - if @teammate_display[:position_type]
+                - if @teammate_display[:external_title]
                   %p.text-muted.mb-0
-                    %small Position: #{@teammate_display[:position_type]}
+                    %small Position: #{@teammate_display[:external_title]}
             = link_to "Change milestone recipient", 
                      select_teammate_organization_teammate_milestones_path(organization, return_url: request.url),
                      class: "text-muted text-decoration-none"

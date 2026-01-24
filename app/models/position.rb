@@ -3,7 +3,7 @@ class Position < ApplicationRecord
   include ModelSemanticVersionable
   
   # Associations
-  belongs_to :position_type
+  belongs_to :title
   belongs_to :position_level
   has_many :position_assignments, dependent: :destroy
   has_many :assignments, through: :position_assignments
@@ -14,17 +14,17 @@ class Position < ApplicationRecord
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   
   # Validations
-  validates :position_type, presence: true
+  validates :title, presence: true
   validates :position_level, presence: true
-  validates :position_level, uniqueness: { scope: :position_type_id }
-  validates :position_level, inclusion: { in: ->(position) { position.position_type&.position_major_level&.position_levels || [] } }
+  validates :position_level, uniqueness: { scope: :title_id }
+  validates :position_level, inclusion: { in: ->(position) { position.title&.position_major_level&.position_levels || [] } }
   
   # Callbacks
   before_save :normalize_eligibility_requirements_summary
   
   # Scopes
-  scope :ordered, -> { joins(:position_type, :position_level).order('position_types.external_title, position_levels.level') }
-  scope :for_company, ->(company) { joins(position_type: :organization).where(organizations: { id: company.id }) }
+  scope :ordered, -> { joins(:title, :position_level).order('titles.external_title, position_levels.level') }
+  scope :for_company, ->(company) { joins(title: :organization).where(organizations: { id: company.id }) }
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)
@@ -42,7 +42,7 @@ class Position < ApplicationRecord
   end
 
   def display_name
-    "#{position_type.external_title} - #{position_level.level}"
+    "#{title.external_title} - #{position_level.level}"
   end
 
   def to_s
@@ -54,7 +54,7 @@ class Position < ApplicationRecord
   end
   
   def company
-    position_type.organization
+    title.organization
   end
   
   def required_assignments
@@ -86,7 +86,7 @@ class Position < ApplicationRecord
   # pg_search configuration
   pg_search_scope :search_by_full_text,
     associated_against: {
-      position_type: [:external_title],
+      title: [:external_title],
       position_level: [:level]
     },
     using: {
@@ -95,7 +95,7 @@ class Position < ApplicationRecord
   
   multisearchable against: [],
     associated_against: {
-      position_type: [:external_title],
+      title: [:external_title],
       position_level: [:level]
     }
   

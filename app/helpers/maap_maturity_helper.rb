@@ -23,10 +23,10 @@ module MaapMaturityHelper
     9 => 'Establishing a culture with 365::360 degree observations against all aspects'
   }.freeze
 
-  def maap_maturity_status_bar(position_type)
+  def maap_maturity_status_bar(title)
     begin
-      phase_health = position_type.maap_maturity_phase_health_status
-      current_phase = position_type.maap_maturity_phase.to_i
+      phase_health = title.maap_maturity_phase_health_status
+      current_phase = title.maap_maturity_phase.to_i
       
       # Ensure phase_health is an array with 9 elements
       phase_health = Array.new(9, :red) unless phase_health.is_a?(Array) && phase_health.length == 9
@@ -47,7 +47,7 @@ module MaapMaturityHelper
         classes << 'current' if is_current
 
         begin
-          popover_content = maap_maturity_phase_popover_content(position_type, phase)
+          popover_content = maap_maturity_phase_popover_content(title, phase)
         rescue => e
           Rails.logger.error "Error getting popover content for phase #{phase}: #{e.message}"
           popover_content = "Error loading phase information"
@@ -67,8 +67,8 @@ module MaapMaturityHelper
     end
   end
 
-  def maap_maturity_phase_popover_content(position_type, phase)
-    reason_data = position_type.maap_maturity_phase_health_reason(phase)
+  def maap_maturity_phase_popover_content(title, phase)
+    reason_data = title.maap_maturity_phase_health_reason(phase)
     status = reason_data[:status]
     reason = reason_data[:reason]
     to_green = reason_data[:to_green]
@@ -92,9 +92,9 @@ module MaapMaturityHelper
     end.to_s
   end
 
-  def maap_maturity_next_steps_text(position_type)
+  def maap_maturity_next_steps_text(title)
     content_tag :p, class: 'text-muted small mb-0' do
-      position_type.maap_maturity_next_steps
+      title.maap_maturity_next_steps
     end
   end
 

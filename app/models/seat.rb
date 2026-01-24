@@ -1,6 +1,6 @@
 class Seat < ApplicationRecord
   # Associations
-  belongs_to :position_type
+  belongs_to :title
   has_many :employment_tenures, dependent: :nullify
   belongs_to :department, class_name: 'Organization', optional: true
   belongs_to :team, class_name: 'Organization', optional: true
@@ -9,8 +9,8 @@ class Seat < ApplicationRecord
 
   # Validations
   validates :seat_needed_by, presence: true
-  validates :position_type, presence: true
-  validates :seat_needed_by, uniqueness: { scope: :position_type_id }
+  validates :title, presence: true
+  validates :seat_needed_by, uniqueness: { scope: :title_id }
 
   # Enums
   enum :state, {
@@ -24,28 +24,24 @@ class Seat < ApplicationRecord
   scope :ordered, -> { order(:seat_needed_by) }
   scope :active, -> { where(state: [:open, :filled]) }
   scope :available, -> { where(state: :open) }
-  scope :for_organization, ->(organization) { joins(:position_type).where(position_types: { organization: organization }) }
+  scope :for_organization, ->(organization) { joins(:title).where(titles: { organization: organization }) }
 
   # Instance methods
   def display_name
-    "#{position_type.external_title} - #{seat_needed_by.strftime('%B %Y')}"
+    "#{title.external_title} - #{seat_needed_by.strftime('%B %Y')}"
   end
 
   def to_s
     display_name
   end
 
-  def title
-    position_type.external_title
-  end
-
   def summary
-    position_type.position_summary
+    title.position_summary
   end
 
   # Assignment inheritance methods
   def required_assignments
-    earliest_position = position_type.positions.order(:position_level_id).first
+    earliest_position = title.positions.order(:position_level_id).first
     return [] unless earliest_position
 
     earliest_position.required_assignments.includes(:assignment).joins(:assignment).order('position_assignments.max_estimated_energy DESC NULLS LAST, position_assignments.min_estimated_energy DESC NULLS LAST, assignments.title')
@@ -53,7 +49,7 @@ class Seat < ApplicationRecord
 
   def suggested_assignments
     # Get all positions for this position type
-    positions = position_type.positions.order(:position_level_id)
+    positions = title.positions.order(:position_level_id)
     return [] if positions.empty?
 
     earliest_position = positions.first

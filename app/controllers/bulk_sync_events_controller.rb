@@ -206,9 +206,9 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
       filtered['managers'] = preview_actions['managers'].select { |m| selected_manager_rows.include?(m['row']) }
     end
     
-    if preview_actions['position_types'].present?
-      selected_position_type_rows = Array(params[:selected_position_types]).map(&:to_i)
-      filtered['position_types'] = preview_actions['position_types'].select { |pt| selected_position_type_rows.include?(pt['row']) }
+    if preview_actions['titles'].present?
+      selected_title_rows = Array(params[:selected_titles]).map(&:to_i)
+      filtered['titles'] = preview_actions['titles'].select { |title| selected_title_rows.include?(title['row']) }
     end
     
     if preview_actions['positions'].present?

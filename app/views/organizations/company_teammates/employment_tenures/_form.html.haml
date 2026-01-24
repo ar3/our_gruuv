@@ -18,7 +18,7 @@
     .col-md-6
       .mb-3
         = form.label :position_id, "Position", class: "form-label"
-        - positions = employment_tenure.company ? employment_tenure.company.positions.includes(:position_type, :position_level) : []
+        - positions = employment_tenure.company ? employment_tenure.company.positions.includes(:title, :position_level) : []
         = form.collection_select :position_id, positions, :id, :display_name, 
           { prompt: 'Select a position' }, { class: "form-select", required: true }
 
@@ -39,7 +39,7 @@
     .col-md-6
       .mb-3
         = form.label :seat_id, "Seat (Optional)", class: "form-label"
-        - seats = employment_tenure.company ? employment_tenure.company.seats.includes(:position_type).where(state: [:open, :filled]) : []
+        - seats = employment_tenure.company ? employment_tenure.company.seats.includes(:title).where(state: [:open, :filled]) : []
         = form.collection_select :seat_id, seats, :id, :display_name, 
           { prompt: 'Select a seat (optional)', include_blank: 'No Specific Seat' }, { class: "form-select" }
         %small.form-text.text-muted

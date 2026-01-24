@@ -63,7 +63,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       CompanyTeammate.includes(
         person: [:page_visits],
         employment_tenures: { 
-          position: :position_type,
+          position: :title,
           manager_teammate: :person
         },
         assignment_tenures: :assignment,
@@ -75,7 +75,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
                      .find_each do |teammate|
         person = teammate.person
         latest_tenure = teammate.employment_tenures.order(started_at: :desc).first
-        external_title = latest_tenure&.position&.position_type&.external_title || ''
+        external_title = latest_tenure&.position&.title&.external_title || ''
         
         # PageVisit data
         page_visits = person.page_visits
@@ -191,7 +191,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
     CSV.generate(headers: true) do |csv|
       csv << ['Assignment ID', 'Title', 'Tagline', 'Department', 'Positions', 'Milestones', 'Outcomes', 'Required Activities', 'Handbook', 'Version', 'Changes Count', 'Public URL', 'Created At', 'Updated At']
       
-      Assignment.includes(:company, :department, :published_external_reference, position_assignments: { position: [:position_type, :position_level] }, assignment_abilities: :ability, assignment_outcomes: [])
+      Assignment.includes(:company, :department, :published_external_reference, position_assignments: { position: [:title, :position_level] }, assignment_abilities: :ability, assignment_outcomes: [])
                 .where(company: company.self_and_descendants)
                 .order(:title)
                 .find_each do |assignment|
@@ -202,7 +202,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         positions = assignment.position_assignments.map do |position_assignment|
           position = position_assignment.position
           parts = [
-            "#{position.position_type.external_title} - #{position.position_level.level}",
+            "#{position.title.external_title} - #{position.position_level.level}",
             " (#{position_assignment.assignment_type}"
           ]
           
@@ -307,13 +307,13 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       ]
       
       Position.includes(
-        position_type: [:organization, :seats],
+        title: [:organization, :seats],
         position_level: [],
         position_assignments: :assignment
       )
-              .joins(position_type: :organization)
+              .joins(title: :organization)
               .where(organizations: { id: company.self_and_descendants.map(&:id) })
-              .order('position_types.external_title, position_levels.level')
+              .order('titles.external_title, position_levels.level')
               .find_each do |position|
         # Public position URL (full URL)
         public_url = begin
@@ -356,17 +356,17 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # PaperTrail versions count
         version_count = position.versions.count
         
-        # Position type summary
-        position_type_summary = position.position_type&.position_summary || ''
+        # Title summary
+        title_summary = position.title&.position_summary || ''
         
         # Position summary
         position_summary = position.position_summary || ''
         
-        # Seats: newline-separated list of seat display names for this position's position_type
-        seats_list = position.position_type&.seats&.map(&:display_name)&.join("\n") || ''
+        # Seats: newline-separated list of seat display names for this position's title
+        seats_list = position.title&.seats&.map(&:display_name)&.join("\n") || ''
         
         csv << [
-          position.position_type&.external_title || '',
+          position.title&.external_title || '',
           position.position_level&.level || '',
           position.company&.display_name || '',
           position.semantic_version || '',
@@ -376,7 +376,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           active_tenures_count,
           assignments_list,
           version_count,
-          position_type_summary,
+          title_summary,
           position_summary,
           seats_list
         ]

@@ -46,7 +46,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   private
   
   def set_wizard_data
-    @positions = @organization.positions.includes(:position_type, :position_level)
+    @positions = @organization.positions.includes(:title, :position_level)
     @managers = @organization.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name')
     @employment_tenure = EmploymentTenure.new
   end

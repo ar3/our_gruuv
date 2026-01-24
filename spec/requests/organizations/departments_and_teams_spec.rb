@@ -94,8 +94,8 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
     end
 
     it 'displays department details' do
-      position_type = create(:position_type, organization: department)
-      seat = create(:seat, position_type: position_type)
+      title = create(:title, organization: department)
+      seat = create(:seat, title: title)
       assignment = create(:assignment, company: organization, department: department)
       ability = create(:ability, organization: department)
       playbook = create(:huddle_playbook, organization: department)
@@ -113,17 +113,17 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
 
     it 'displays seats with employment tenures and person information' do
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      position_type = create(:position_type, organization: department, position_major_level: position_major_level)
+      title = create(:title, organization: department, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
       # Create seat first, then use :with_seat trait to ensure position matches
-      seat = create(:seat, position_type: position_type, state: :filled)
+      seat = create(:seat, title: title, state: :filled)
       
       # Find or create a teammate
       teammate = Teammate.find_or_create_by(person: current_person, organization: organization) do |t|
         t.type = 'CompanyTeammate'
       end
       teammate.update_column(:type, 'CompanyTeammate') if teammate.type != 'CompanyTeammate'
-      # Use :with_seat trait to ensure position matches seat's position_type
+      # Use :with_seat trait to ensure position matches seat's title
       employment_tenure = create(:employment_tenure, :with_seat,
         teammate: teammate, 
         company: organization, 
@@ -140,8 +140,8 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
     end
 
     it 'handles seats without employment tenures gracefully' do
-      position_type = create(:position_type, organization: department)
-      seat = create(:seat, position_type: position_type, state: :open)
+      title = create(:title, organization: department)
+      seat = create(:seat, title: title, state: :open)
       
       get organization_departments_and_team_path(organization, department)
       
@@ -152,16 +152,16 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
 
     it 'handles seats with inactive employment tenures' do
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      position_type = create(:position_type, organization: department, position_major_level: position_major_level)
+      title = create(:title, organization: department, position_major_level: position_major_level)
       # Create seat first, then use :with_seat trait to ensure position matches
-      seat = create(:seat, position_type: position_type, state: :open)
+      seat = create(:seat, title: title, state: :open)
       
       # Find or create an ended employment tenure (inactive)
       teammate = Teammate.find_or_create_by(person: current_person, organization: organization) do |t|
         t.type = 'CompanyTeammate'
       end
       teammate.update_column(:type, 'CompanyTeammate') if teammate.type != 'CompanyTeammate'
-      # Use :with_seat trait to ensure position matches seat's position_type
+      # Use :with_seat trait to ensure position matches seat's title
       employment_tenure = create(:employment_tenure, :with_seat, :inactive,
         teammate: teammate, 
         company: organization, 

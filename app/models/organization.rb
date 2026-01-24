@@ -13,8 +13,8 @@ class Organization < ApplicationRecord
   has_many :abilities, dependent: :destroy
   has_many :aspirations, dependent: :destroy
   has_many :prompt_templates, foreign_key: 'company_id', dependent: :destroy
-  has_many :position_types, dependent: :destroy
-  has_many :seats, through: :position_types
+  has_many :titles, dependent: :destroy
+  has_many :seats, through: :titles
   has_many :seats_as_department, class_name: 'Seat', foreign_key: 'department_id', dependent: :nullify
   has_many :seats_as_team, class_name: 'Seat', foreign_key: 'team_id', dependent: :nullify
   has_one :slack_configuration, dependent: :destroy
@@ -184,11 +184,11 @@ class Organization < ApplicationRecord
   
   def positions
     # Positions within this organization
-    Position.joins(:position_type).where(position_types: { organization: self })
+    Position.joins(:title).where(titles: { organization: self })
   end
 
-  def position_types_count
-    position_types.count
+  def titles_count
+    titles.count
   end
 
   def seats_count

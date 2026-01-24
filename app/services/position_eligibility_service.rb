@@ -154,7 +154,7 @@ class PositionEligibilityService
   end
 
   def check_title_department_aspirational_values_check_ins(teammate, position, requirements)
-    organization = position.position_type.organization
+    organization = position.title.organization
     aspirations = Aspiration.within_hierarchy(organization).ordered
 
     check_aspiration_group(

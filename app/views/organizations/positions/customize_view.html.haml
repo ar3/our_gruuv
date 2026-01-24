@@ -20,10 +20,10 @@
           %label.form-label.fw-bold Select What Positions You See
           
           .mb-3
-            %label.form-label Position Type
-            - position_types = @organization.position_types.includes(:position_major_level).order(:external_title)
-            - position_type_options = [['All Position Types', '']] + position_types.map { |pt| [pt.external_title, pt.id] }
-            = select_tag 'position_type', options_for_select(position_type_options, @current_filters[:position_type]), class: 'form-select'
+            %label.form-label Title
+            - titles = @organization.titles.includes(:position_major_level).order(:external_title)
+            - title_options = [['All Titles', '']] + titles.map { |title| [title.external_title, title.id] }
+            = select_tag 'title', options_for_select(title_options, @current_filters[:title]), class: 'form-select'
           
           .mb-3
             %label.form-label Position Level

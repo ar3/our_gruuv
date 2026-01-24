@@ -12,12 +12,12 @@
       Positions
     .d-flex.align-items-center
       - if policy(@organization).manage_maap?
-        = link_to new_organization_position_type_path(@organization), class: "btn btn-primary ml-2" do
+        = link_to new_organization_title_path(@organization), class: "btn btn-primary ml-2" do
           %i.bi.bi-plus
       - else
         .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
           %i.bi.bi-plus
-        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create position types"}
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create titles"}
 
 - content_for :header_action do
   .d-flex.gap-2
@@ -27,27 +27,27 @@
       Customize View
 .row.justify-content-center
   .col-lg-12
-    - if @position_types.any?
-      - @position_types.each do |position_type|
+    - if @titles.any?
+      - @titles.each do |title|
         .card.mb-3
           .card-header.d-flex.justify-content-between.align-items-center
             .d-flex.align-items-center
-              %a.text-decoration-none.text-dark.fw-bold{"data-bs-toggle" => "collapse", "data-bs-target" => "#positionType#{position_type.id}", "aria-expanded" => "false", "aria-controls" => "positionType#{position_type.id}", style: "cursor: pointer;"}
-                %span.not-collapsed{id: "positionTypeExpandIcon#{position_type.id}"}
+              %a.text-decoration-none.text-dark.fw-bold{"data-bs-toggle" => "collapse", "data-bs-target" => "#title#{title.id}", "aria-expanded" => "false", "aria-controls" => "title#{title.id}", style: "cursor: pointer;"}
+                %span.not-collapsed{id: "titleExpandIcon#{title.id}"}
                   %i.bi.bi-chevron-down.me-2
-                %span.collapsed{id: "positionTypeCollapseIcon#{position_type.id}"}
+                %span.collapsed{id: "titleCollapseIcon#{title.id}"}
                   %i.bi.bi-chevron-right.me-2
-                = position_type.external_title
-              %span.badge.bg-secondary.ms-2= "#{position_type.positions.count} position#{'s' if position_type.positions.count != 1}"
+                = title.external_title
+              %span.badge.bg-secondary.ms-2= "#{title.positions.count} position#{'s' if title.positions.count != 1}"
             .d-flex.align-items-center.gap-2
-              = link_to organization_position_type_path(@organization, position_type), class: "btn btn-sm btn-outline-secondary", title: "View Position Type" do
+              = link_to organization_title_path(@organization, title), class: "btn btn-sm btn-outline-secondary", title: "View Title" do
                 %i.bi.bi-eye
               .text-muted
-                %small= position_type.position_major_level.set_name
+                %small= title.position_major_level.set_name
           
-          .collapse{"id" => "positionType#{position_type.id}"}
+          .collapse{"id" => "title#{title.id}"}
             .card-body.p-0
-              - if position_type.positions.any?
+              - if title.positions.any?
                 .table-responsive
                   %table.table.table-hover.mb-0
                     %thead.table-light
@@ -58,7 +58,7 @@
                         %th Assignments
                         %th Actions
                     %tbody
-                      - position_type.positions.includes(:position_level).order('position_levels.level').each do |position|
+                      - title.positions.includes(:position_level).order('position_levels.level').each do |position|
                         %tr
                           %td
                             = link_to organization_position_path(@organization, position), class: "text-decoration-none fw-bold" do
@@ -96,12 +96,12 @@
               - else
                 .p-3.text-center.text-muted
                   %i.bi.bi-info-circle.me-2
-                  No positions created for this type yet.
+                  No positions created for this title yet.
     - else
       .alert.alert-info
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
-          No Position Types Created
+          No Titles Created
         %p.mb-2 
-          Create your first position type to define roles and responsibilities for your team.
+          Create your first title to define roles and responsibilities for your team.
 

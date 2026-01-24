@@ -9,29 +9,29 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
   let(:new_manager) { create(:person) }
   let(:new_manager_teammate) { create(:company_teammate, person: new_manager, organization: company) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:current_position_type) { create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Current Engineer') }
-  let(:new_position_type) { create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'New Engineer') }
+  let(:current_title) { create(:title, organization: company, position_major_level: position_major_level, external_title: 'Current Engineer') }
+  let(:new_title) { create(:title, organization: company, position_major_level: position_major_level, external_title: 'New Engineer') }
   let(:current_position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:new_position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:current_position) { create(:position, position_type: current_position_type, position_level: current_position_level) }
-  let(:new_position) { create(:position, position_type: new_position_type, position_level: new_position_level) }
+  let(:current_position) { create(:position, title: current_title, position_level: current_position_level) }
+  let(:new_position) { create(:position, title: new_title, position_level: new_position_level) }
   let(:created_by) { create(:company_teammate, organization: company) }
   
   # Create seat after position to ensure they match
   let(:current_seat) do
     current_position # Ensure position is created first
-    create(:seat, position_type: current_position.position_type, seat_needed_by: Date.current + 1.month)
+    create(:seat, title: current_position.title, seat_needed_by: Date.current + 1.month)
   end
   let(:new_seat) do
     current_position # Ensure position is created first
-    create(:seat, position_type: current_position.position_type, seat_needed_by: Date.current + 2.months)
+    create(:seat, title: current_position.title, seat_needed_by: Date.current + 2.months)
   end
   
   let(:current_tenure) do
     # Create position and seat first to ensure they match
     pos = current_position
     # Use a unique date that won't conflict with current_seat or new_seat
-    seat = create(:seat, position_type: pos.position_type, seat_needed_by: Date.current + 10.months)
+    seat = create(:seat, title: pos.title, seat_needed_by: Date.current + 10.months)
     
     # Create employment_tenure directly to avoid factory's after(:build) hook overwriting position
     # Ensure manager_teammate is created
@@ -97,7 +97,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         
         moment = ObservableMoment.last
         expect(moment.moment_type).to eq('seat_change')
-        expect(moment.primary_potential_observer.person).to eq(created_by)
+        expect(moment.primary_potential_observer).to eq(created_by)
         expect(moment.metadata['old_position_id']).to eq(current_position.id)
       end
 
@@ -122,7 +122,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
 
         snapshot = MaapSnapshot.last
         expect(snapshot.change_type).to eq('position_tenure')
-        expect(snapshot.employee_company_teammate).to eq(person)
+        expect(snapshot.employee_company_teammate).to eq(teammate)
         expect(snapshot.creator_company_teammate).to eq(created_by)
         expect(snapshot.company_id).to eq(company.id)
         expect(snapshot.effective_date).to eq(Date.current)
@@ -133,8 +133,8 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
 
     context 'when position changes' do
       it 'ends current tenure and creates new tenure with position change' do
-        # Create a seat that matches the new position's position_type
-        seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 3.months)
+        # Create a seat that matches the new position's title
+        seat_for_new_position = create(:seat, title: new_title, seat_needed_by: Date.current + 3.months)
         
         params = {
           manager_teammate_id: current_manager_teammate.id,
@@ -162,7 +162,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
       end
 
       it 'creates maap_snapshot' do
-        seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 4.months)
+        seat_for_new_position = create(:seat, title: new_title, seat_needed_by: Date.current + 4.months)
         
         params = {
           manager_teammate_id: current_manager_teammate.id,
@@ -422,7 +422,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
     context 'when multiple changes occur' do
       it 'handles manager and position change together' do
         new_manager_teammate
-        seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 5.months)
+        seat_for_new_position = create(:seat, title: new_title, seat_needed_by: Date.current + 5.months)
         
         params = {
           manager_teammate_id: new_manager_teammate.id,
@@ -450,7 +450,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
 
       it 'creates maap_snapshot for multiple changes' do
         new_manager_teammate
-        seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 6.months)
+        seat_for_new_position = create(:seat, title: new_title, seat_needed_by: Date.current + 6.months)
         
         params = {
           manager_teammate_id: new_manager_teammate.id,

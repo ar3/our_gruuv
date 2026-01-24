@@ -42,9 +42,9 @@
             %p.text-muted.mb-1
               %small Manager: #{manager.preferred_first_then_last_display_name}
           - active_tenure = teammate.active_employment_tenure
-          - if active_tenure&.position&.position_type
+          - if active_tenure&.position&.title
             %p.text-muted.mb-0
-              %small Position: #{active_tenure.position.position_type.external_title}
+              %small Position: #{active_tenure.position.title.external_title}
 - else
   .alert.alert-warning
     %h6.mb-2

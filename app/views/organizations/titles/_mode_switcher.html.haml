@@ -1,7 +1,7 @@
 .dropdown
   %button.btn.btn-outline-primary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
     %i.bi.bi-eye.me-2
-    = position_type_current_view_name
+    = title_current_view_name
   %ul.dropdown-menu
     %li
       - if action_name == 'show'
@@ -10,7 +10,7 @@
           View Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - else
-        = link_to organization_position_type_path(@organization, @position_type), class: 'dropdown-item' do
+        = link_to organization_title_path(@organization, @title), class: 'dropdown-item' do
           %i.bi.bi-eye.me-2
           View Mode
       
@@ -20,14 +20,12 @@
           %i.bi.bi-pencil.me-2
           Edit Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@position_type).update?
-        = link_to edit_organization_position_type_path(@organization, @position_type), class: 'dropdown-item' do
+      - elsif policy(@title).update?
+        = link_to edit_organization_title_path(@organization, @title), class: 'dropdown-item' do
           %i.bi.bi-pencil.me-2
           Edit Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-pencil.me-2
           Edit Mode
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to edit position types"}
-
-
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to edit titles"}

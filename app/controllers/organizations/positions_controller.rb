@@ -4,10 +4,10 @@ class Organizations::PositionsController < ApplicationController
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
-    @positions = @organization.positions.includes(:position_type, :position_level)
+    @positions = @organization.positions.includes(:title, :position_level)
     
     # Apply filters
-    @positions = @positions.where(position_type_id: params[:position_type]) if params[:position_type].present?
+    @positions = @positions.where(title_id: params[:title]) if params[:title].present?
     @positions = @positions.where(position_level_id: params[:position_level]) if params[:position_level].present?
     
     # Filter by major version (using SQL LIKE for efficiency)
@@ -19,7 +19,7 @@ class Organizations::PositionsController < ApplicationController
     # Apply sorting
     case params[:sort]
     when 'name'
-      @positions = @positions.joins(:position_type).order('position_types.external_title')
+      @positions = @positions.joins(:title).order('titles.external_title')
     when 'level'
       @positions = @positions.joins(:position_level).order('position_levels.level')
     when 'assignments'
@@ -36,13 +36,13 @@ class Organizations::PositionsController < ApplicationController
     if params[:direction] == 'desc'
       case params[:sort]
       when 'name'
-        @positions = @positions.joins(:position_type).order('position_types.external_title DESC')
+        @positions = @positions.joins(:title).order('titles.external_title DESC')
       when 'level'
         @positions = @positions.joins(:position_level).order('position_levels.level DESC')
       end
     end
     
-    @position_types = @organization.position_types.includes(:positions, :position_major_level).order(:external_title)
+    @titles = @organization.titles.includes(:positions, :position_major_level).order(:external_title)
     
     render layout: determine_layout
   end
@@ -65,23 +65,23 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def new
-    unless params[:position_type_id].present?
-      redirect_to organization_positions_path(@organization), alert: 'Position type is required to create a position.'
+    unless params[:title_id].present?
+      redirect_to organization_positions_path(@organization), alert: 'Title is required to create a position.'
       return
     end
     
     @position = Position.new
-    @position.position_type_id = params[:position_type_id]
-    @position_type = PositionType.find(params[:position_type_id])
+    @position.title_id = params[:title_id]
+    @title = Title.find(params[:title_id])
     
-    # Ensure the position type belongs to the organization
-    unless @position_type.organization == @organization
-      redirect_to organization_positions_path(@organization), alert: 'Invalid position type for this organization.'
+    # Ensure the title belongs to the organization
+    unless @title.organization == @organization
+      redirect_to organization_positions_path(@organization), alert: 'Invalid title for this organization.'
       return
     end
     
-    # Pre-populate position levels based on the selected position type
-    @position_levels = @position_type.position_major_level.position_levels
+    # Pre-populate position levels based on the selected title
+    @position_levels = @title.position_major_level.position_levels
     
     @position_decorator = PositionDecorator.new(@position)
     @form = PositionForm.new(@position)
@@ -91,21 +91,21 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def create
-    # Get position_type_id from params or from position_params
-    position_type_id = params[:position_type_id] || position_params[:position_type_id]
+    # Get title_id from params or from position_params
+    title_id = params[:title_id] || position_params[:title_id]
     
-    unless position_type_id.present?
-      redirect_to organization_positions_path(@organization), alert: 'Position type is required to create a position.'
+    unless title_id.present?
+      redirect_to organization_positions_path(@organization), alert: 'Title is required to create a position.'
       return
     end
     
     @position = Position.new
-    @position.position_type_id = position_type_id
-    @position_type = PositionType.find(position_type_id)
+    @position.title_id = title_id
+    @title = Title.find(title_id)
     
-    # Ensure the position type belongs to the organization
-    unless @position_type.organization == @organization
-      redirect_to organization_positions_path(@organization), alert: 'Invalid position type for this organization.'
+    # Ensure the title belongs to the organization
+    unless @title.organization == @organization
+      redirect_to organization_positions_path(@organization), alert: 'Invalid title for this organization.'
       return
     end
     
@@ -122,7 +122,7 @@ class Organizations::PositionsController < ApplicationController
     if @form.validate(position_params) && @form.save
       redirect_to organization_position_path(@organization, @position), notice: 'Position was successfully created.'
     else
-      @position_levels = @position_type.position_major_level.position_levels
+      @position_levels = @title.position_major_level.position_levels
       render :new, status: :unprocessable_entity
     end
   end
@@ -160,9 +160,9 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def position_levels
-    if params[:position_type_id].present?
-      position_type = PositionType.find(params[:position_type_id])
-      @position_levels = position_type.position_major_level.position_levels
+    if params[:title_id].present?
+      title = Title.find(params[:title_id])
+      @position_levels = title.position_major_level.position_levels
       render json: @position_levels.map { |level| { id: level.id, level: level.level, level_name: level.level_name } }
     else
       render json: []
@@ -175,7 +175,7 @@ class Organizations::PositionsController < ApplicationController
     
     # Load current state from params
     @current_filters = {
-      position_type: params[:position_type],
+      title: params[:title],
       position_level: params[:position_level],
       major_version: params[:major_version],
       sort: params[:sort] || 'name',
@@ -208,7 +208,7 @@ class Organizations::PositionsController < ApplicationController
     authorize @position, :manage_assignments?
     
     # Get position's company and all descendants
-    company = @position.position_type.organization.root_company
+    company = @position.title.organization.root_company
     company_and_descendants = company.self_and_descendants
     
     # Load all assignments in company hierarchy
@@ -299,17 +299,17 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def set_related_data
-    @position_types = PositionType.joins(:organization, :position_major_level)
-                                  .where(organizations: { id: @organization.id })
-                                  .order('position_major_levels.major_level, position_types.external_title')
+    @titles = Title.joins(:organization, :position_major_level)
+                   .where(organizations: { id: @organization.id })
+                   .order('position_major_levels.major_level, titles.external_title')
     
-    # Set position levels based on current position's type, or from position_type_id param
-    if @position&.position_type
-      @position_levels = @position.position_type.position_major_level.position_levels
-      @position_type = @position.position_type
-    elsif params[:position_type_id].present?
-      @position_type = PositionType.find_by(id: params[:position_type_id], organization: @organization)
-      @position_levels = @position_type&.position_major_level&.position_levels || []
+    # Set position levels based on current position's title, or from title_id param
+    if @position&.title
+      @position_levels = @position.title.position_major_level.position_levels
+      @title = @position.title
+    elsif params[:title_id].present?
+      @title = Title.find_by(id: params[:title_id], organization: @organization)
+      @position_levels = @title&.position_major_level&.position_levels || []
     else
       @position_levels = []
     end
@@ -318,6 +318,6 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def position_params
-    params.require(:position).permit(:position_level_id, :external_title, :position_summary, :eligibility_requirements_summary, :version_type)
+    params.require(:position).permit(:title_id, :position_level_id, :external_title, :position_summary, :eligibility_requirements_summary, :version_type)
   end
 end

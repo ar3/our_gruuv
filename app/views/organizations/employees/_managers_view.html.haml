@@ -29,7 +29,7 @@
           - if active_tenure.position
             .col-auto.mb-2
               = link_to job_description_organization_position_path(@organization, active_tenure.position), class: "btn btn-outline-secondary btn-sm text-start" do
-                = active_tenure.position.position_type.external_title
+                = active_tenure.position.title.external_title
                 %br
                 %small.text-muted.mt-1
                   #{active_tenure.position.required_assignments_count} required, #{active_tenure.position.suggested_assignments_count} suggested Assignments

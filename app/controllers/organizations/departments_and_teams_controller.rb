@@ -29,17 +29,17 @@ class Organizations::DepartmentsAndTeamsController < Organizations::Organization
     @child_departments = @descendants.select { |d| d.department? }
     @child_teams = @descendants.select { |d| d.team? }
     
-    # Load seats with active employment tenures (via position_types)
-    @seats = Seat.for_organization(@department_or_team).includes(:position_type, employment_tenures: { teammate: :person })
+    # Load seats with active employment tenures (via titles)
+    @seats = Seat.for_organization(@department_or_team).includes(:title, employment_tenures: { teammate: :person })
     
     # Load seats directly linked via department_id
-    @seats_as_department = @department_or_team.seats_as_department.includes(:position_type, employment_tenures: { teammate: :person })
+    @seats_as_department = @department_or_team.seats_as_department.includes(:title, employment_tenures: { teammate: :person })
     
     # Load teammates
     @teammates = @department_or_team.teammates.includes(:person).order('people.last_name, people.first_name')
     
-    # Load position types
-    @position_types = @department_or_team.position_types.includes(:positions).ordered
+    # Load titles
+    @titles = @department_or_team.titles.includes(:positions).ordered
     
     # Load assignments (where company or department matches)
     @assignments = Assignment.where(

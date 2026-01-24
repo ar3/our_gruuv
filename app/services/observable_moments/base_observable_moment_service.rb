@@ -16,10 +16,17 @@ module ObservableMoments
       # Use separate transaction to avoid blocking primary actions
       begin
         ApplicationRecord.transaction do
+          # Convert created_by to Person if it's a CompanyTeammate
+          created_by_person = if @created_by.is_a?(CompanyTeammate)
+            @created_by.person
+          else
+            @created_by
+          end
+          
           observable_moment = ObservableMoment.create!(
             momentable: @momentable,
             company: @company,
-            created_by: @created_by,
+            created_by: created_by_person,
             primary_potential_observer: @primary_potential_observer,
             moment_type: @moment_type,
             occurred_at: @occurred_at,
