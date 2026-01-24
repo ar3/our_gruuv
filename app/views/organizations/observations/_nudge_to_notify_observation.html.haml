@@ -1,0 +1,108 @@
+.card.mb-4.border-success{ role: "region", "aria-labelledby": "share-prompt" }
+  .card-body.bg-light
+    .text-center.py-3.mb-3
+      %h4.mb-0{ id: "share-prompt" }
+        🎉GREAT Observation... almost done! 
+      %h6.mt-1.mb0 #{@observation.observer.casual_name} helping #{@observation.company.name} grow with one great story at a time 📖
+    
+    .row
+      / Left column - Privacy selector and view stats
+      .col-md-4
+        %h4 Some people could see this, but...
+        %hr.my-2.mb-2.mt-2
+        / Privacy selector (display only, all disabled) - use names like the partial
+        %label.form-label Privacy Level
+        - company_name = @observation.company.name
+        - observee_names = @observee_names || []
+        - direct_manager_names = @direct_manager_names || []
+        - other_manager_names = @other_manager_names || []
+        - Observation.privacy_levels.keys.each do |key|
+          - is_current = @observation.privacy_level == key
+          .form-check
+            = radio_button_tag 'privacy_level_display', key, is_current, class: 'form-check-input', disabled: true, id: "privacy_display_#{key}"
+            = label_tag "privacy_display_#{key}", class: 'form-check-label' do
+              - case key
+              - when 'observer_only'
+                🔒 Just for me (Journal)
+              - when 'observed_only'
+                - if observee_names.any?
+                  👤 Just #{observee_names.join(', ')}
+                - else
+                  👤 Just for their eyes only
+              - when 'managers_only'
+                - if direct_manager_names.any?
+                  👔 Just Managers: #{direct_manager_names.join(', ')}
+                  - if other_manager_names.any?
+                    %i.bi.bi-info-circle.ms-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => other_managers_popover_content(other_manager_names)}
+                - else
+                  👔 Just for their manager's eyes only
+              - when 'observed_and_managers'
+                - if observee_names.any? || direct_manager_names.any?
+                  - stakeholder_parts = []
+                  - stakeholder_parts << observee_names.join(', ') if observee_names.any?
+                  - stakeholder_parts << direct_manager_names.join(', ') if direct_manager_names.any?
+                  👥 Stakeholders: #{stakeholder_parts.join(', ')}
+                  - if other_manager_names.any?
+                    %i.bi.bi-info-circle.ms-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => other_managers_popover_content(other_manager_names)}
+                - else
+                  👥 Stakeholder
+              - when 'public_to_company'
+                🏢 Public to #{company_name}
+              - when 'public_to_world'
+                🌍 Public to world
+          
+        / Page visit statistics
+        = render 'page_visit_stats'
+      
+      / Right column - Slack announcement options
+      .col-md-8
+        / Top section: Celebrate with Slack Post
+        .mb-4
+          %h4 ... No one has been notified yet...
+          %hr.my-2.mb-2.mt-2
+          %h6.mb-3
+            📣Celebrate with a Slack Post 📢
+          - can_send_public = !@observation.draft? && policy(@observation).post_to_slack? && @observation.privacy_level != 'observer_only' && (@observation.privacy_level == 'public_to_company' || @observation.privacy_level == 'public_to_world')
+          - is_public = @observation.privacy_level == 'public_to_company' || @observation.privacy_level == 'public_to_world'
+          
+          - if is_public
+            - if @kudos_channel_organizations&.any?
+              - @kudos_channel_organizations.each do |org_info|
+                .mb-2
+                  %i.bi.bi-hash.me-2
+                  = org_info[:display_name]
+                  - if org_info[:already_sent]
+                    %span.badge.bg-secondary.ms-2 Already sent
+            
+            - if can_send_public
+              = link_to 'Select the channel to post the celebration', share_publicly_organization_observation_path(@organization, @observation), class: 'btn btn-sm btn-outline-primary mt-2'
+            - else
+              = link_to 'Select the channel to post the celebration', '#', class: 'btn btn-sm btn-outline-secondary mt-2', disabled: true, onclick: 'return false;'
+          - else
+            .alert.alert-info.mt-2
+              %i.bi.bi-info-circle.me-2
+              This is a private observation and therefore can't be shared in a channel
+        
+        / OR divider
+        .d-flex.align-items-center.my-4
+          %hr.flex-grow-1
+          %span.mx-3.text-muted OR
+          %hr.flex-grow-1
+        
+        / Bottom section: Notify people privately
+        .mb-2
+          %h6.mb-3
+            Notify people privately
+          - can_send_private = !@observation.draft? && policy(@observation).post_to_slack? && @observation.privacy_level != 'observer_only'
+          
+          - if @available_teammates_for_notification&.any?
+            - @available_teammates_for_notification.each do |teammate_info|
+              .mb-2
+                %i.bi.bi-person.me-2
+                %strong= teammate_info[:person].preferred_name || teammate_info[:person].first_name
+                %small.text-muted.ms-2= teammate_info[:role]
+          
+          - if can_send_private
+            = link_to 'Select who to send private notification', share_privately_organization_observation_path(@organization, @observation), class: 'btn btn-sm btn-outline-primary mt-2'
+          - else
+            = link_to 'Select who to send private notification', '#', class: 'btn btn-sm btn-outline-secondary mt-2', disabled: true, onclick: 'return false;'

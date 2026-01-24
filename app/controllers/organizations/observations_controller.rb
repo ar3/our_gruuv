@@ -230,6 +230,113 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @debug_data = debug_service.call
     end
 
+    # Load data for the "great observation" section (only shown when published, no notifications, not journal, and observer)
+    if @observation.published? && @observation.notifications.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
+      # Prepare privacy selector data (observee_names, direct_manager_names, etc.)
+      prepare_privacy_selector_data
+      
+      # Load organizations with kudos channels (company + descendants)
+      company = @observation.company
+      organizations_with_channels = ([company] + company.descendants.to_a)
+                                    .select { |org| org.kudos_channel_id.present? }
+      
+      # Build list of organizations with channel info
+      @kudos_channel_organizations = organizations_with_channels.map do |org|
+        channel = org.kudos_channel
+        {
+          organization: org,
+          channel: channel,
+          display_name: channel ? "#{org.display_name} - #{channel.display_name}" : org.display_name,
+          already_sent: notification_already_sent_to_organization?(org.id)
+        }
+      end
+      
+      # Determine which teammates should be available for notification based on privacy level
+      @available_teammates_for_notification = case @observation.privacy_level
+      when 'public_to_company', 'public_to_world'
+        # Public: show all observees and their managers
+        build_public_observation_teammates_list
+      when 'observed_only'
+        # Only observees
+        @observation.observed_teammates.map do |teammate|
+          {
+            teammate: teammate,
+            role: "Observed",
+            person: teammate.person
+          }
+        end
+      when 'managers_only'
+        # Only direct managers (level 0)
+        teammates = []
+        @observation.observed_teammates.each do |teammate|
+          managers = ManagerialHierarchyQuery.new(
+            person: teammate.person, 
+            organization: company
+          ).call
+          
+          # Only include level 0 (direct) managers
+          managers.select { |m| m[:level] == 0 }.each do |manager_info|
+            manager_teammate = company.teammates.find_by(person_id: manager_info[:person_id])
+            next unless manager_teammate
+            
+            unless teammates.any? { |t| t[:teammate].id == manager_teammate.id }
+              teammates << {
+                teammate: manager_teammate,
+                role: "Manager of #{teammate.person.casual_name}",
+                person: manager_teammate.person
+              }
+            end
+          end
+        end
+        teammates
+      when 'observed_and_managers'
+        # Observees + direct managers only
+        teammates = []
+        # Add observees
+        @observation.observed_teammates.each do |teammate|
+          teammates << {
+            teammate: teammate,
+            role: "Observed",
+            person: teammate.person
+          }
+        end
+        # Add direct managers (level 0)
+        @observation.observed_teammates.each do |teammate|
+          managers = ManagerialHierarchyQuery.new(
+            person: teammate.person, 
+            organization: company
+          ).call
+          
+          managers.select { |m| m[:level] == 0 }.each do |manager_info|
+            manager_teammate = company.teammates.find_by(person_id: manager_info[:person_id])
+            next unless manager_teammate
+            
+            unless teammates.any? { |t| t[:teammate].id == manager_teammate.id }
+              teammates << {
+                teammate: manager_teammate,
+                role: "Manager of #{teammate.person.casual_name}",
+                person: manager_teammate.person
+              }
+            end
+          end
+        end
+        teammates
+      else
+        []
+      end
+      
+      # Load page visit statistics from both show page and public permalink page
+      show_page_url = organization_observation_path(organization, @observation)
+      public_page_url = @observation.decorate.permalink_path
+      
+      # Query for visits to either URL
+      page_visits = PageVisit.where(url: [show_page_url, public_page_url])
+      @page_visit_stats = {
+        total_views: page_visits.sum(:visit_count) || 0,
+        unique_viewers: page_visits.distinct.count(:person_id) || 0
+      }
+    end
+
   end
 
   def edit
@@ -1099,7 +1206,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         unless teammates.any? { |t| t[:teammate].id == manager_teammate.id }
           teammates << {
             teammate: manager_teammate,
-            role: "Manager of #{teammate.person.display_name}",
+            role: "Manager of #{teammate.person.casual_name}",
             person: manager_teammate.person
           }
         end
@@ -1148,7 +1255,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           unless teammates.any? { |t| t[:teammate].id == manager_teammate.id }
             teammates << {
               teammate: manager_teammate,
-              role: "Manager of #{teammate.person.display_name}",
+              role: "Manager of #{teammate.person.casual_name}",
               person: manager_teammate.person
             }
           end

@@ -181,27 +181,87 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       before do
         # Ensure observation has no notifications
         observation.notifications.destroy_all
+        # Assign observation and organization
+        assign(:observation, observation)
+        assign(:organization, company)
         # Make current_person available
         obs_observer = observation.observer
         view.instance_variable_set(:@current_person, obs_observer)
         view.define_singleton_method(:current_person) { obs_observer }
+        
+        # Mock instance variables that would be set in controller
+        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}")
+        assign(:kudos_channel_organizations, [])
+        assign(:available_teammates_for_notification, [])
+        assign(:page_visit_stats, { total_views: 5, unique_viewers: 3 })
+        assign(:observee_names, [observee_person.casual_name])
+        assign(:direct_manager_names, [])
+        assign(:other_manager_names, [])
+        
+        # Mock route helpers
+        allow(view).to receive(:share_publicly_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
+        allow(view).to receive(:share_privately_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/share_privately")
+        
+        # Mock policy
+        allow(view).to receive(:policy) do |obj|
+          if obj == observation
+            double(
+              post_to_slack?: true,
+              publish?: false,
+              view_permalink?: false,
+              update?: false,
+              destroy?: false,
+              restore?: false
+            )
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+          end
+        end
+        
         render
       end
 
-      it 'displays the share prompt section' do
-        expect(rendered).to have_content('Great observation 🎉')
-        expect(rendered).to have_content('This is fuel for continuous improvement')
-        expect(rendered).to have_content('Select share publicly or privately')
+      it 'displays the personalized heading' do
+        expect(rendered).to have_content('🎉GREAT Observation... almost done!')
+        expect(rendered).to have_content("#{observer.casual_name} helping #{company.name} grow with one great story at a time 📖")
       end
 
-      it 'displays Share Publicly and Share Privately buttons' do
-        expect(rendered).to have_link('Share Publicly', href: "/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
-        expect(rendered).to have_link('Share Privately', href: "/organizations/#{company.id}/observations/#{observation.id}/share_privately")
+      it 'displays two-column layout' do
+        expect(rendered).to have_css('.row .col-md-4')
+        expect(rendered).to have_css('.row .col-md-8')
       end
 
-      it 'has large button styling' do
-        expect(rendered).to have_css('a.btn-lg', text: 'Share Publicly')
-        expect(rendered).to have_css('a.btn-lg', text: 'Share Privately')
+      it 'displays privacy selector with all buttons disabled' do
+        Observation.privacy_levels.keys.each do |key|
+          expect(rendered).to have_css("input[type='radio'][name='privacy_level_display'][value='#{key}'][disabled]")
+        end
+      end
+
+      it 'displays current privacy level as checked' do
+        expect(rendered).to have_css("input[type='radio'][name='privacy_level_display'][value='#{observation.privacy_level}'][checked]")
+      end
+
+      it 'displays page visit statistics' do
+        expect(rendered).to have_content('Observation has been viewed 5 times by 3 teammates')
+        expect(rendered).to have_css('.text-muted.caption-text')
+      end
+
+      it 'displays Slack celebration section header' do
+        expect(rendered).to have_content('📣Celebrate with a Slack Post 📢')
+      end
+
+      it 'displays private notification section header' do
+        expect(rendered).to have_content('Notify people privately')
+      end
+
+      it 'displays OR divider' do
+        expect(rendered).to have_content('OR')
+        expect(rendered).to have_css('hr')
+      end
+
+      it 'displays correct link texts' do
+        expect(rendered).to have_link('Select the channel to post the celebration', href: "/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
+        expect(rendered).to have_link('Select who to send private notification', href: "/organizations/#{company.id}/observations/#{observation.id}/share_privately")
       end
     end
 
@@ -216,12 +276,25 @@ RSpec.  describe 'organizations/observations/show', type: :view do
 
       before do
         assign(:observation, private_observation)
+        assign(:organization, company)
         # Ensure observation has no notifications
         private_observation.notifications.destroy_all
         # Make current_person available
         obs_observer = private_observation.observer
         view.instance_variable_set(:@current_person, obs_observer)
         view.define_singleton_method(:current_person) { obs_observer }
+        
+        # Mock instance variables that would be set in controller
+        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{private_observation.id}")
+        assign(:kudos_channel_organizations, [])
+        assign(:available_teammates_for_notification, [
+          { teammate: observee_teammate, person: observee_person, role: 'Observed' }
+        ])
+        assign(:page_visit_stats, { total_views: 2, unique_viewers: 1 })
+        assign(:observee_names, [observee_person.casual_name])
+        assign(:direct_manager_names, [])
+        assign(:other_manager_names, [])
+        
         # Mock route helpers
         allow(view).to receive(:share_publicly_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{private_observation.id}/share_publicly")
         allow(view).to receive(:share_privately_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{private_observation.id}/share_privately")
@@ -244,16 +317,17 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
 
       it 'displays the share prompt section' do
-        expect(rendered).to have_content('Great observation 🎉')
+        expect(rendered).to have_content('🎉GREAT Observation... almost done!')
+        expect(rendered).to have_content("#{observer.casual_name} helping #{company.name} grow with one great story at a time 📖")
       end
 
-      it 'disables Share Publicly button with warning icon' do
-        expect(rendered).to have_css('button.btn-outline-secondary.btn-lg.disabled[disabled]', text: 'Share Publicly')
-        expect(rendered).to have_css('i.bi-exclamation-triangle.text-warning[data-bs-toggle="tooltip"][data-bs-title="Only public observations can be shared publicly"]')
+      it 'shows alert for non-public observation in channels section' do
+        expect(rendered).to have_content('This is a private observation and therefore can\'t be shared in a channel')
+        expect(rendered).to have_css('.alert.alert-info')
       end
 
-      it 'enables Share Privately button' do
-        expect(rendered).to have_link('Share Privately', href: "/organizations/#{company.id}/observations/#{private_observation.id}/share_privately")
+      it 'enables private notification link' do
+        expect(rendered).to have_link('Select who to send private notification', href: "/organizations/#{company.id}/observations/#{private_observation.id}/share_privately")
       end
     end
 
@@ -276,7 +350,8 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
 
       it 'does not display the share prompt section' do
-        expect(rendered).not_to have_content('Great observation 🎉')
+        expect(rendered).not_to have_content('helping')
+        expect(rendered).not_to have_content('grow with one great story at a time')
       end
     end
 
@@ -312,7 +387,8 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
 
       it 'does not display the share prompt section' do
-        expect(rendered).not_to have_content('Great observation 🎉')
+        expect(rendered).not_to have_content('helping')
+        expect(rendered).not_to have_content('grow with one great story at a time')
       end
     end
 
@@ -349,7 +425,8 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
 
       it 'does not display the share prompt section' do
-        expect(rendered).not_to have_content('Great observation 🎉')
+        expect(rendered).not_to have_content('helping')
+        expect(rendered).not_to have_content('grow with one great story at a time')
       end
     end
 
@@ -368,7 +445,8 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
 
       it 'does not display the share prompt section' do
-        expect(rendered).not_to have_content('Great observation 🎉')
+        expect(rendered).not_to have_content('helping')
+        expect(rendered).not_to have_content('grow with one great story at a time')
       end
     end
   end

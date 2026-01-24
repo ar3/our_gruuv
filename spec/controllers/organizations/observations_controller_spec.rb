@@ -367,6 +367,116 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       end
     end
 
+    context 'when observation is published, has no notifications, and is not journal' do
+      let(:public_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      let(:slack_channel) { create(:third_party_object, third_party_source: 'slack', third_party_object_type: 'channel', organization: company) }
+      let!(:kudos_channel_association) do
+        company.third_party_object_associations.create!(
+          third_party_object: slack_channel,
+          association_type: 'observation_kudos_channel'
+        )
+      end
+
+      before do
+        # Ensure observation has no notifications
+        public_observation.notifications.destroy_all
+        # Create page visits for both show page and public permalink page
+        show_page_url = organization_observation_path(company, public_observation)
+        public_page_url = public_observation.decorate.permalink_path
+        
+        # Visits to show page
+        create(:page_visit, person: observer, url: show_page_url, visit_count: 3)
+        create(:page_visit, person: observee_person, url: show_page_url, visit_count: 2)
+        
+        # Visits to public page (same people, different URL)
+        create(:page_visit, person: observer, url: public_page_url, visit_count: 1)
+        create(:page_visit, person: observee_person, url: public_page_url, visit_count: 1)
+      end
+
+      it 'sets @kudos_channel_organizations with organizations that have kudos channels' do
+        get :show, params: { organization_id: company.id, id: public_observation.id }
+        expect(assigns(:kudos_channel_organizations)).to be_an(Array)
+        expect(assigns(:kudos_channel_organizations).length).to eq(1)
+        expect(assigns(:kudos_channel_organizations).first[:organization].id).to eq(company.id)
+        expect(assigns(:kudos_channel_organizations).first[:channel]).to eq(slack_channel)
+      end
+
+      it 'sets @available_teammates_for_notification for public observations' do
+        # Ensure teammates have Slack identities for them to be included
+        create(:teammate_identity, teammate: observer_teammate, provider: 'slack', uid: 'U123456')
+        create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: 'U789012')
+        create(:teammate_identity, teammate: manager_teammate, provider: 'slack', uid: 'U345678') if manager_teammate
+        
+        get :show, params: { organization_id: company.id, id: public_observation.id }
+        expect(assigns(:available_teammates_for_notification)).to be_an(Array)
+        # Should include observer, observee, and manager (if they have Slack)
+        expect(assigns(:available_teammates_for_notification).length).to be >= 2
+        teammate_ids = assigns(:available_teammates_for_notification).map { |t| t[:teammate].id }
+        expect(teammate_ids).to include(observer_teammate.id)
+        expect(teammate_ids).to include(observee_teammate.id)
+      end
+
+      it 'sets @page_visit_stats with correct counts from both show and public pages' do
+        get :show, params: { organization_id: company.id, id: public_observation.id }
+        expect(assigns(:page_visit_stats)).to be_a(Hash)
+        # Total views: 3 + 2 (show page) + 1 + 1 (public page) = 7
+        expect(assigns(:page_visit_stats)[:total_views]).to eq(7)
+        # Unique viewers: observer and observee (counted once across both URLs)
+        expect(assigns(:page_visit_stats)[:unique_viewers]).to eq(2)
+      end
+
+      context 'when observation is not public' do
+        let(:private_observation) do
+          obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+          obs
+        end
+
+        before do
+          private_observation.notifications.destroy_all
+        end
+
+        it 'sets @available_teammates_for_notification using private list' do
+          # Ensure teammates have Slack identities for them to be included
+          create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: 'U789012')
+          
+          get :show, params: { organization_id: company.id, id: private_observation.id }
+          expect(assigns(:available_teammates_for_notification)).to be_an(Array)
+          # For observed_only, should only include observees (not observer)
+          teammate_ids = assigns(:available_teammates_for_notification).map { |t| t[:teammate].id }
+          expect(teammate_ids).to include(observee_teammate.id)
+          expect(teammate_ids).not_to include(observer_teammate.id)
+        end
+      end
+
+      context 'when observation has notifications' do
+        before do
+          Notification.create!(
+            notifiable: public_observation,
+            notification_type: 'observation_channel',
+            status: 'sent_successfully',
+            metadata: { 'organization_id' => company.id.to_s }
+          )
+        end
+
+        it 'does not set instance variables' do
+          get :show, params: { organization_id: company.id, id: public_observation.id }
+          expect(assigns(:kudos_channel_organizations)).to be_nil
+          expect(assigns(:available_teammates_for_notification)).to be_nil
+          expect(assigns(:page_visit_stats)).to be_nil
+        end
+      end
+    end
+
     context 'public_to_world privacy' do
       let(:public_world_observation) do
         obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
