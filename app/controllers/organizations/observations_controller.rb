@@ -326,15 +326,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       end
       
       # Load page visit statistics from both show page and public permalink page
-      show_page_url = organization_observation_path(organization, @observation)
-      public_page_url = @observation.decorate.permalink_path
-      
-      # Query for visits to either URL
-      page_visits = PageVisit.where(url: [show_page_url, public_page_url])
-      @page_visit_stats = {
-        total_views: page_visits.sum(:visit_count) || 0,
-        unique_viewers: page_visits.distinct.count(:person_id) || 0
-      }
+      @page_visit_stats = Observations::PageVisitStatsService.call(
+        observation: @observation,
+        organization: organization
+      )
     end
 
   end
