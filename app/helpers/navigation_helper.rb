@@ -121,6 +121,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Eligibility Requirements',
+            icon: 'bi-check2-circle',
+            path: organization_eligibility_requirements_path(current_organization),
+            policy_check: -> { policy(:eligibility_requirement).index? },
+            coming_soon: false
+          },
+          {
             label: 'Assignments',
             icon: 'bi-list-check',
             path: organization_assignments_path(current_organization),

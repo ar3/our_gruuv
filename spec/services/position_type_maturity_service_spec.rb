@@ -63,7 +63,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         
         # Set up phase 3: employment tenure and check-in
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         # Create employment tenure directly to avoid factory's after(:build) hook that creates a new position
         employment_tenure = EmploymentTenure.create!(
           teammate: teammate,
@@ -87,7 +87,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         
         # Set up employment tenure but no check-ins
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         # No check-ins
         
@@ -106,7 +106,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -128,7 +128,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -152,7 +152,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -178,7 +178,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -203,7 +203,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -216,7 +216,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
         
         # Set up phase 6: all abilities have milestone attainments
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: teammate)
         
         expect(described_class.calculate_phase(position_type)).to eq(7)
       end
@@ -231,7 +231,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -241,7 +241,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:assignment_ability, assignment: assignment2, ability: ability2, milestone_level: 1)
         
         # Set up phase 6 partially: only some abilities have milestone attainments
-        create(:teammate_milestone, teammate: teammate, ability: ability1, milestone_level: 1, certified_by: person)
+        create(:teammate_milestone, teammate: teammate, ability: ability1, milestone_level: 1, certifying_teammate: teammate)
         # ability2 has no teammate milestones
         
         expect(described_class.calculate_phase(position_type)).to eq(6)
@@ -260,7 +260,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -272,7 +272,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: teammate)
         
         expect(described_class.calculate_phase(position_type)).to eq(8)
       end
@@ -289,7 +289,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -301,7 +301,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: teammate)
         
         expect(described_class.calculate_phase(position_type)).to eq(7)
       end
@@ -318,7 +318,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -330,7 +330,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: teammate)
         
         # Total entities: 6 (2 positions, 2 assignments, 2 abilities)
         # Updated in last 6 months: 6 (all)
@@ -350,7 +350,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -362,7 +362,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: teammate)
         
         # Total entities: 6 (2 positions, 2 assignments, 2 abilities)
         # Updated in last 6 months: 0
@@ -383,7 +383,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -395,7 +395,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: teammate)
         
         # Set up phase 9: published observations
         observer = create(:person)
@@ -419,7 +419,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
         
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: company)
+        teammate = create(:company_teammate, person: person, organization: company)
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
@@ -431,7 +431,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: teammate)
         
         # No published observations (or <10%)
         # Total entities: 6 (2 positions, 2 assignments, 2 abilities)
@@ -460,7 +460,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
       create(:position_assignment, position: position2, assignment: assignment2, assignment_type: 'required')
       
       person = create(:person)
-      teammate = create(:teammate, person: person, organization: company)
+      teammate = create(:company_teammate, person: person, organization: company)
       EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
       create(:assignment_check_in, teammate: teammate, assignment: assignment1)
       
@@ -472,7 +472,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
       )
       create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
       create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-      create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certified_by: person)
+      create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: teammate)
       
       # Set up phase 9: published observations
       observer = create(:person)

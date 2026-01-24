@@ -1,0 +1,23 @@
+- return if check.blank?
+
+- status = check[:status]
+- badge_class = status == :passed ? "bg-success" : (status == :failed ? "bg-warning text-dark" : "bg-secondary")
+- status_text = status == :passed ? "Meeting requirements" : (status == :failed ? "Working to meet requirements" : "Not configured")
+
+.row.mb-3
+  .col-md-4
+    %strong= title
+  .col-md-4
+    - details = check[:details] || {}
+    - if details[:minimum_rating].present?
+      %div= "Rating: #{details[:minimum_rating]}"
+    - if details[:minimum_months_at_or_above_rating_criteria].present?
+      %div= "#{details[:minimum_months_at_or_above_rating_criteria]} months"
+    - if details[:minimum_percentage].present?
+      %div= "#{details[:minimum_percentage]}% coverage"
+    - if details[:minimum_mileage_points].present?
+      %div= "#{details[:minimum_mileage_points]} mileage points"
+  .col-md-4
+    %span.badge{class: badge_class}= status_text
+    - if details[:next_steps].present?
+      %div.text-muted.small= details[:next_steps]

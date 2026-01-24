@@ -1,0 +1,99 @@
+- content_for :header do
+  %h1 Eligibility Requirements
+
+- content_for :go_back_link do
+  = link_to "Back to Eligibility Selection", organization_eligibility_requirements_path(@organization), class: "btn btn-outline-secondary btn-sm"
+
+.row.mb-4
+  .col-md-6
+    .card
+      .card-body
+        %h5.card-title Teammate
+        %p.mb-0= @teammate.person.display_name
+  .col-md-6
+    .card
+      .card-body
+        %h5.card-title Position
+        %p.mb-0= @position.display_name
+
+.row.mb-4
+  .col-12
+    - overall_class = @eligibility_report[:overall_eligible] ? "bg-success" : "bg-warning"
+    .alert.text-dark{class: overall_class}
+      %strong Overall Eligibility:
+      = @eligibility_report[:overall_eligible] ? "Meeting requirements" : "Working to meet requirements"
+
+.row
+  .col-12
+    .card.mb-4
+      .card-body
+        %h5.card-title Aspirational Values
+        .row
+          .col-md-4.fw-semibold Requirement
+          .col-md-4.fw-semibold Position Requirement
+          .col-md-4.fw-semibold Teammate Status
+        %hr
+        %h6 Company Aspirational Values
+        %ul.mb-2
+          - @company_aspirations.each do |aspiration|
+            %li= aspiration.name
+        - company_check = @eligibility_report[:checks].find { |check| check[:key] == :company_aspirational_values_check_in_requirements }
+        = render partial: "organizations/eligibility_requirements/requirement_row",
+          locals: { check: company_check, title: "Company Aspirational Values" }
+
+        %h6.mt-3 Title/Department Aspirational Values
+        %ul.mb-2
+          - @title_department_aspirations.each do |aspiration|
+            %li= aspiration.name
+        - title_check = @eligibility_report[:checks].find { |check| check[:key] == :title_department_aspirational_values_check_in_requirements }
+        = render partial: "organizations/eligibility_requirements/requirement_row",
+          locals: { check: title_check, title: "Title/Department Aspirational Values" }
+
+    .card.mb-4
+      .card-body
+        %h5.card-title Assignments
+        .row
+          .col-md-4.fw-semibold Requirement
+          .col-md-4.fw-semibold Position Requirement
+          .col-md-4.fw-semibold Teammate Status
+        %hr
+        %h6 Required Assignments
+        %ul.mb-2
+          - @required_assignments.each do |assignment|
+            %li= assignment.title
+        - required_check = @eligibility_report[:checks].find { |check| check[:key] == :required_assignment_check_in_requirements }
+        = render partial: "organizations/eligibility_requirements/requirement_row",
+          locals: { check: required_check, title: "Required Assignment Check-Ins" }
+
+        %h6.mt-3 Unique-to-You Assignments
+        %ul.mb-2
+          - @unique_assignments.each do |assignment|
+            %li= assignment.title
+        - unique_check = @eligibility_report[:checks].find { |check| check[:key] == :unique_to_you_assignment_check_in_requirements }
+        = render partial: "organizations/eligibility_requirements/requirement_row",
+          locals: { check: unique_check, title: "Unique-to-You Assignment Check-Ins" }
+
+    .card
+      .card-body
+        %h5.card-title Milestones
+        .row
+          .col-md-4.fw-semibold Requirement
+          .col-md-4.fw-semibold Position Requirement
+          .col-md-4.fw-semibold Teammate Status
+        %hr
+        %h6 Required Abilities
+        %ul.mb-2
+          - @required_abilities.each do |ability|
+            %li= ability.name
+        - milestones_check = @eligibility_report[:checks].find { |check| check[:key] == :milestone_requirements }
+        = render partial: "organizations/eligibility_requirements/requirement_row",
+          locals: { check: milestones_check, title: "Required Ability Milestones" }
+
+        %h6.mt-3 Unique-to-You Abilities
+        %ul.mb-2
+          - @unique_abilities.each do |ability|
+            %li= ability.name
+
+        - mileage_check = @eligibility_report[:checks].find { |check| check[:key] == :mileage_requirements }
+        = render partial: "organizations/eligibility_requirements/requirement_row",
+          locals: { check: mileage_check, title: "Milestone Mileage" }

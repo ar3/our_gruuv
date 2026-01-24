@@ -107,6 +107,8 @@ get '/login', to: 'auth#login', as: :login
         patch :acknowledge_snapshots
       end
     end
+
+    resources :eligibility_requirements, module: :organizations, only: [:index, :show]
     
     # Teammate Milestones
     resources :teammate_milestones, module: :organizations, only: [:new, :create, :show] do

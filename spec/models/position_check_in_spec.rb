@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe PositionCheckIn, type: :model do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization) }
   let!(:employment_tenure) do
     create(:employment_tenure,
            teammate: teammate,
@@ -334,7 +334,7 @@ RSpec.describe PositionCheckIn, type: :model do
     end
 
     it 'can be linked to a snapshot' do
-      snapshot = create(:maap_snapshot, employee: person)
+      snapshot = create(:maap_snapshot, employee_company_teammate: teammate)
       
       check_in.update!(maap_snapshot: snapshot)
       
@@ -350,7 +350,7 @@ RSpec.describe PositionCheckIn, type: :model do
 
     it 'finalized check-in can be linked to snapshot' do
       finalized_by_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
-      snapshot = create(:maap_snapshot, employee: person)
+      snapshot = create(:maap_snapshot, employee_company_teammate: teammate)
       
       finalized_check_in = create(:position_check_in,
         teammate: teammate,
@@ -411,7 +411,7 @@ RSpec.describe PositionCheckIn, type: :model do
     end
 
     it 'check-in can access snapshot after linking' do
-      snapshot = create(:maap_snapshot, employee: person)
+      snapshot = create(:maap_snapshot, employee_company_teammate: teammate)
       
       finalized_check_in = create(:position_check_in,
         teammate: teammate,
@@ -423,11 +423,11 @@ RSpec.describe PositionCheckIn, type: :model do
       )
       
       expect(finalized_check_in.maap_snapshot).to eq(snapshot)
-      expect(finalized_check_in.maap_snapshot.employee_company_teammate).to eq(person)
+      expect(finalized_check_in.maap_snapshot.employee_company_teammate).to eq(teammate)
     end
 
     it 'maintains rating consistency when snapshot is linked' do
-      snapshot = create(:maap_snapshot, employee: person)
+      snapshot = create(:maap_snapshot, employee_company_teammate: teammate)
       
       finalized_check_in = create(:position_check_in,
         teammate: teammate,

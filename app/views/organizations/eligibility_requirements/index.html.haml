@@ -1,0 +1,25 @@
+- content_for :header do
+  %h1 Eligibility Requirements
+
+.row
+  .col-md-8.col-lg-6
+    .card
+      .card-body
+        = form_with url: organization_eligibility_requirements_path(@organization), method: :get, local: true do |form|
+          .mb-3
+            = form.label :teammate_id, "Teammate", class: "form-label"
+            - teammate_options = @selectable_teammates.map { |teammate| [teammate.person.display_name, teammate.id] }
+            = form.select :teammate_id,
+              options_for_select(teammate_options, params[:teammate_id] || current_company_teammate&.id),
+              { include_blank: "Select teammate" },
+              class: "form-select"
+
+          .mb-3
+            = form.label :position_id, "Position", class: "form-label"
+            - position_options = @positions.map { |position| [position.display_name, position.id] }
+            = form.select :position_id,
+              options_for_select(position_options, params[:position_id]),
+              { include_blank: "Select position" },
+              class: "form-select"
+
+          = form.submit "View Eligibility", class: "btn btn-primary"
