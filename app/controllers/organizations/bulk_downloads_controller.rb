@@ -2,6 +2,7 @@ require 'csv'
 
 class Organizations::BulkDownloadsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_login
+  before_action :set_bulk_download, only: [:download_file]
 
   def require_login
     unless current_person
@@ -13,40 +14,115 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
     authorize company, :view_bulk_sync_events?
   end
 
+  def show
+    @download_type = params[:id]
+    authorize company, :view_bulk_download_history?
+    
+    @bulk_downloads = BulkDownload
+      .for_organization(company)
+      .by_type(@download_type)
+      .recent
+      .includes(:downloaded_by, downloaded_by: :person)
+  end
+
   def download
     type = params[:type]
+    
+    csv_content = nil
+    filename = nil
     
     case type
     when 'company_teammates'
       authorize company, :download_company_teammates_csv?
-      send_data download_company_teammates_csv, 
-                filename: "company_teammates_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv",
-                type: 'text/csv',
-                disposition: 'attachment'
+      csv_content = download_company_teammates_csv
+      filename = "company_teammates_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
     when 'assignments'
       authorize company, :download_bulk_csv?
-      send_data download_assignments_csv,
-                filename: "assignments_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv",
-                type: 'text/csv',
-                disposition: 'attachment'
+      csv_content = download_assignments_csv
+      filename = "assignments_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
     when 'abilities'
       authorize company, :download_bulk_csv?
-      send_data download_abilities_csv,
-                filename: "abilities_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv",
-                type: 'text/csv',
-                disposition: 'attachment'
+      csv_content = download_abilities_csv
+      filename = "abilities_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
     when 'positions'
       authorize company, :download_bulk_csv?
-      send_data download_positions_csv,
-                filename: "positions_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv",
-                type: 'text/csv',
-                disposition: 'attachment'
+      csv_content = download_positions_csv
+      filename = "positions_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
+    when 'seats'
+      authorize company, :download_bulk_csv?
+      csv_content = download_seats_csv
+      filename = "seats_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
+    when 'titles'
+      authorize company, :download_bulk_csv?
+      csv_content = download_titles_csv
+      filename = "titles_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
+    when 'departments_and_teams'
+      authorize company, :download_bulk_csv?
+      csv_content = download_departments_and_teams_csv
+      filename = "departments_and_teams_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
     else
       head :not_found
+      return
+    end
+    
+    # Upload to S3 and log the download
+    begin
+      uploader = S3::CsvUploader.new
+      s3_result = uploader.upload(
+        csv_content,
+        filename: filename,
+        organization_id: company.id,
+        download_type: type
+      )
+      
+      BulkDownload.create!(
+        company: company,
+        downloaded_by: current_company_teammate,
+        download_type: type,
+        s3_key: s3_result[:s3_key],
+        s3_url: s3_result[:s3_url],
+        filename: filename,
+        file_size: csv_content.bytesize
+      )
+    rescue => e
+      # Log error but don't fail the download
+      Rails.logger.error "Failed to upload bulk download to S3: #{e.message}"
+      Rails.logger.error e.backtrace.first(10).join("\n")
+    end
+    
+    # Send CSV to user
+    send_data csv_content,
+              filename: filename,
+              type: 'text/csv',
+              disposition: 'attachment'
+  end
+
+  def download_file
+    unless policy(@bulk_download).download?
+      head :forbidden
+      return
+    end
+    
+    begin
+      uploader = S3::CsvUploader.new
+      file_content = uploader.download(@bulk_download.s3_key)
+      
+      send_data file_content,
+                filename: @bulk_download.filename,
+                type: 'text/csv',
+                disposition: 'attachment'
+    rescue => e
+      Rails.logger.error "Failed to download file from S3: #{e.message}"
+      flash[:alert] = 'Failed to download file. Please try again.'
+      redirect_to organization_bulk_download_path(company, @bulk_download.download_type)
     end
   end
 
   private
+
+  def set_bulk_download
+    @bulk_download = BulkDownload.find(params[:id])
+  end
 
   def download_company_teammates_csv
     CSV.generate(headers: true) do |csv|
@@ -379,6 +455,134 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           title_summary,
           position_summary,
           seats_list
+        ]
+      end
+    end
+  end
+
+  def download_seats_csv
+    CSV.generate(headers: true) do |csv|
+      csv << [
+        'Seat ID', 'Display Name', 'Title', 'Organization', 'Department', 'Team',
+        'State', 'Seat Needed By', 'Reports To Seat', 'Number of Direct Reports',
+        'Active Employment Tenures', 'Job Classification', 'Created At', 'Updated At'
+      ]
+      
+      org_ids = company.self_and_descendants.map(&:id)
+      Seat.joins(:title)
+          .where(titles: { organization_id: org_ids })
+          .includes(:title, :department, :team, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person })
+          .order('titles.external_title, seats.seat_needed_by')
+          .find_each do |seat|
+        # Reports to seat display name
+        reports_to_display = seat.reports_to_seat&.display_name || ''
+        
+        # Number of direct reports
+        direct_reports_count = seat.reporting_seats.count
+        
+        # Active employment tenures count
+        active_tenures_count = seat.employment_tenures.active.count
+        
+        csv << [
+          seat.id,
+          seat.display_name,
+          seat.title.external_title,
+          seat.title.organization.display_name,
+          seat.department&.display_name || '',
+          seat.team&.display_name || '',
+          seat.state,
+          seat.seat_needed_by&.strftime('%Y-%m-%d') || '',
+          reports_to_display,
+          direct_reports_count,
+          active_tenures_count,
+          seat.job_classification || '',
+          seat.created_at&.to_s || '',
+          seat.updated_at&.to_s || ''
+        ]
+      end
+    end
+  end
+
+  def download_titles_csv
+    CSV.generate(headers: true) do |csv|
+      csv << [
+        'Title ID', 'External Title', 'Organization', 'Position Major Level',
+        'Number of Positions', 'Number of Seats', 'Number of Active Employment Tenures',
+        'Created At', 'Updated At'
+      ]
+      
+      org_ids = company.self_and_descendants.map(&:id)
+      Title.where(organization_id: org_ids)
+           .includes(:organization, :position_major_level, :positions, :seats)
+           .order(:external_title)
+           .find_each do |title|
+        # Count positions
+        positions_count = title.positions.count
+        
+        # Count seats
+        seats_count = title.seats.count
+        
+        # Count active employment tenures through positions
+        active_tenures_count = EmploymentTenure.active
+          .joins(:position)
+          .where(positions: { title_id: title.id })
+          .count
+        
+        csv << [
+          title.id,
+          title.external_title,
+          title.organization.display_name,
+          title.position_major_level.major_level,
+          positions_count,
+          seats_count,
+          active_tenures_count,
+          title.created_at&.to_s || '',
+          title.updated_at&.to_s || ''
+        ]
+      end
+    end
+  end
+
+  def download_departments_and_teams_csv
+    CSV.generate(headers: true) do |csv|
+      csv << [
+        'Organization ID', 'Name', 'Type', 'Parent Organization',
+        'Number of Seats', 'Number of Titles', 'Number of Teammates',
+        'Number of Child Departments', 'Number of Child Teams',
+        'Created At', 'Updated At'
+      ]
+      
+      org_ids = company.self_and_descendants.map(&:id)
+      Organization.where(type: ['Department', 'Team'])
+                  .where(id: org_ids)
+                  .includes(:parent, :seats, :titles, :teammates, :children)
+                  .order(:type, :name)
+                  .find_each do |org|
+        # Count seats (both through titles and direct associations)
+        seats_count = org.seats.count + org.seats_as_department.count + org.seats_as_team.count
+        
+        # Count titles
+        titles_count = org.titles.count
+        
+        # Count teammates
+        teammates_count = org.teammates.count
+        
+        # Count child departments and teams
+        child_departments_count = org.children.where(type: 'Department').count
+        child_teams_count = org.children.where(type: 'Team').count
+        
+        csv << [
+          org.id,
+          org.name,
+          org.type,
+          org.parent&.display_name || '',
+          seats_count,
+          titles_count,
+          teammates_count,
+          child_departments_count,
+          child_teams_count,
+          org.created_at&.to_s || '',
+          org.updated_at&.to_s || ''
         ]
       end
     end

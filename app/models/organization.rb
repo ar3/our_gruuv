@@ -23,6 +23,7 @@ class Organization < ApplicationRecord
   has_many :teammates, dependent: :destroy
   has_many :bulk_sync_events, dependent: :destroy
   has_many :upload_events, class_name: 'BulkSyncEvent', dependent: :destroy # Backward compatibility alias
+  has_many :bulk_downloads, foreign_key: 'company_id', dependent: :destroy
   has_many :observations, foreign_key: :company_id, dependent: :destroy
   
   # Validations

@@ -453,5 +453,51 @@ RSpec.describe OrganizationPolicy, type: :policy do
       end
     end
   end
+
+  describe '#view_bulk_download_history?' do
+    it 'allows viewing download history for any teammate' do
+      policy = OrganizationPolicy.new(pundit_user_employed, organization)
+      expect(policy.view_bulk_download_history?).to be true
+    end
+
+    it 'allows viewing download history for admin' do
+      policy = OrganizationPolicy.new(pundit_user_admin, organization)
+      expect(policy.view_bulk_download_history?).to be true
+    end
+
+    it 'denies viewing download history for different organization' do
+      policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+      expect(policy.view_bulk_download_history?).to be false
+    end
+  end
+
+  describe '#download_any_bulk_download?' do
+    it 'allows download for admin' do
+      policy = OrganizationPolicy.new(pundit_user_admin, organization)
+      expect(policy.download_any_bulk_download?).to be true
+    end
+
+    it 'allows download for employment manager' do
+      policy = OrganizationPolicy.new(pundit_user_employment, organization)
+      expect(policy.download_any_bulk_download?).to be true
+    end
+
+    it 'denies download for regular teammate' do
+      policy = OrganizationPolicy.new(pundit_user_employed, organization)
+      expect(policy.download_any_bulk_download?).to be false
+    end
+  end
+
+  describe '#download_own_bulk_download?' do
+    it 'allows download for any teammate' do
+      policy = OrganizationPolicy.new(pundit_user_employed, organization)
+      expect(policy.download_own_bulk_download?).to be true
+    end
+
+    it 'allows download for admin' do
+      policy = OrganizationPolicy.new(pundit_user_admin, organization)
+      expect(policy.download_own_bulk_download?).to be true
+    end
+  end
 end
 

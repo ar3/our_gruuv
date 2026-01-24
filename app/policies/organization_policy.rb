@@ -161,6 +161,24 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  def view_bulk_download_history?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    admin_bypass? || true
+  end
+
+  def download_any_bulk_download?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    admin_bypass? || viewing_teammate.can_manage_employment?
+  end
+
+  def download_own_bulk_download?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    admin_bypass? || true
+  end
+
   def customize_company?
     return false unless viewing_teammate
     return false unless record.company? # Only companies can be customized

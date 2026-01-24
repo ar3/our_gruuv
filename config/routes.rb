@@ -143,9 +143,12 @@ get '/login', to: 'auth#login', as: :login
     end
     
     # Bulk downloads
-    resources :bulk_downloads, only: [:index], module: :organizations do
+    resources :bulk_downloads, only: [:index, :show], module: :organizations do
       collection do
         get :download
+      end
+      member do
+        get :download_file
       end
     end
     

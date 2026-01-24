@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_24_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -192,6 +192,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_120000) do
     t.string "semantic_version", default: "0.0.1", null: false
     t.index ["company_id"], name: "index_assignments_on_company_id"
     t.index ["department_id"], name: "index_assignments_on_department_id"
+  end
+
+  create_table "bulk_downloads", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "downloaded_by_id", null: false
+    t.string "download_type", null: false
+    t.string "s3_key", null: false
+    t.string "s3_url", null: false
+    t.string "filename", null: false
+    t.bigint "file_size"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_bulk_downloads_on_company_id"
+    t.index ["created_at"], name: "index_bulk_downloads_on_created_at"
+    t.index ["download_type"], name: "index_bulk_downloads_on_download_type"
+    t.index ["downloaded_by_id"], name: "index_bulk_downloads_on_downloaded_by_id"
   end
 
   create_table "bulk_sync_events", force: :cascade do |t|
@@ -1073,6 +1089,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_120000) do
   add_foreign_key "assignment_tenures", "teammates"
   add_foreign_key "assignments", "organizations", column: "company_id"
   add_foreign_key "assignments", "organizations", column: "department_id"
+  add_foreign_key "bulk_downloads", "organizations", column: "company_id"
+  add_foreign_key "bulk_downloads", "teammates", column: "downloaded_by_id"
   add_foreign_key "bulk_sync_events", "organizations"
   add_foreign_key "bulk_sync_events", "people", column: "creator_id"
   add_foreign_key "bulk_sync_events", "people", column: "initiator_id"

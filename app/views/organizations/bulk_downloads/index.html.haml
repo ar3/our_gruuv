@@ -22,17 +22,19 @@
               %h6.mb-1 Company Teammates
               %p.text-muted.small.mb-0
                 Download all company teammates with their name fields and latest position external title.
-            .d-flex.align-items-center
+            .d-flex.align-items-center.gap-2
+              = link_to organization_bulk_download_path(current_organization, 'company_teammates'), class: "btn btn-outline-secondary" do
+                %i.bi.bi-clock-history.me-2
+                View History
               - if policy(current_organization).download_company_teammates_csv?
                 = link_to download_organization_bulk_downloads_path(current_organization, type: 'company_teammates'), class: "btn btn-primary" do
                   %i.bi.bi-download.me-2
                   Download CSV
               - else
                 .d-flex.align-items-center.gap-2
-                  .flex-grow-1
-                    %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-                      %i.bi.bi-download.me-2
-                      Download CSV
+                  %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                    %i.bi.bi-download.me-2
+                    Download CSV
                   %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires employment management permission"}}
           
           / Assignments Download
@@ -41,17 +43,19 @@
               %h6.mb-1 All Assignments
               %p.text-muted.small.mb-0
                 Download all assignments for this organization and its descendants.
-            .d-flex.align-items-center
+            .d-flex.align-items-center.gap-2
+              = link_to organization_bulk_download_path(current_organization, 'assignments'), class: "btn btn-outline-secondary" do
+                %i.bi.bi-clock-history.me-2
+                View History
               - if policy(current_organization).download_bulk_csv?
                 = link_to download_organization_bulk_downloads_path(current_organization, type: 'assignments'), class: "btn btn-primary" do
                   %i.bi.bi-download.me-2
                   Download CSV
               - else
                 .d-flex.align-items-center.gap-2
-                  .flex-grow-1
-                    %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-                      %i.bi.bi-download.me-2
-                      Download CSV
+                  %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                    %i.bi.bi-download.me-2
+                    Download CSV
                   %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires active teammate status"}}
           
           / Abilities Download
@@ -60,17 +64,19 @@
               %h6.mb-1 All Abilities
               %p.text-muted.small.mb-0
                 Download all abilities for this organization and its descendants.
-            .d-flex.align-items-center
+            .d-flex.align-items-center.gap-2
+              = link_to organization_bulk_download_path(current_organization, 'abilities'), class: "btn btn-outline-secondary" do
+                %i.bi.bi-clock-history.me-2
+                View History
               - if policy(current_organization).download_bulk_csv?
                 = link_to download_organization_bulk_downloads_path(current_organization, type: 'abilities'), class: "btn btn-primary" do
                   %i.bi.bi-download.me-2
                   Download CSV
               - else
                 .d-flex.align-items-center.gap-2
-                  .flex-grow-1
-                    %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-                      %i.bi.bi-download.me-2
-                      Download CSV
+                  %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                    %i.bi.bi-download.me-2
+                    Download CSV
                   %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires active teammate status"}}
           
           / Positions Download
@@ -79,16 +85,81 @@
               %h6.mb-1 All Positions
               %p.text-muted.small.mb-0
                 Download all positions for this organization and its descendants.
-            .d-flex.align-items-center
+            .d-flex.align-items-center.gap-2
+              = link_to organization_bulk_download_path(current_organization, 'positions'), class: "btn btn-outline-secondary" do
+                %i.bi.bi-clock-history.me-2
+                View History
               - if policy(current_organization).download_bulk_csv?
                 = link_to download_organization_bulk_downloads_path(current_organization, type: 'positions'), class: "btn btn-primary" do
                   %i.bi.bi-download.me-2
                   Download CSV
               - else
                 .d-flex.align-items-center.gap-2
-                  .flex-grow-1
-                    %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-                      %i.bi.bi-download.me-2
-                      Download CSV
+                  %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                    %i.bi.bi-download.me-2
+                    Download CSV
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires active teammate status"}}
+          
+          / Seats Download
+          .list-group-item.d-flex.align-items-center.justify-content-between.py-3
+            .flex-grow-1
+              %h6.mb-1 Seats
+              %p.text-muted.small.mb-0
+                Download all seats for this organization and its descendants.
+            .d-flex.align-items-center.gap-2
+              = link_to organization_bulk_download_path(current_organization, 'seats'), class: "btn btn-outline-secondary" do
+                %i.bi.bi-clock-history.me-2
+                View History
+              - if policy(current_organization).download_bulk_csv?
+                = link_to download_organization_bulk_downloads_path(current_organization, type: 'seats'), class: "btn btn-primary" do
+                  %i.bi.bi-download.me-2
+                  Download CSV
+              - else
+                .d-flex.align-items-center.gap-2
+                  %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                    %i.bi.bi-download.me-2
+                    Download CSV
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires active teammate status"}}
+          
+          / Titles Download
+          .list-group-item.d-flex.align-items-center.justify-content-between.py-3
+            .flex-grow-1
+              %h6.mb-1 Titles
+              %p.text-muted.small.mb-0
+                Download all titles for this organization and its descendants.
+            .d-flex.align-items-center.gap-2
+              = link_to organization_bulk_download_path(current_organization, 'titles'), class: "btn btn-outline-secondary" do
+                %i.bi.bi-clock-history.me-2
+                View History
+              - if policy(current_organization).download_bulk_csv?
+                = link_to download_organization_bulk_downloads_path(current_organization, type: 'titles'), class: "btn btn-primary" do
+                  %i.bi.bi-download.me-2
+                  Download CSV
+              - else
+                .d-flex.align-items-center.gap-2
+                  %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                    %i.bi.bi-download.me-2
+                    Download CSV
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires active teammate status"}}
+          
+          / Departments and Teams Download
+          .list-group-item.d-flex.align-items-center.justify-content-between.py-3
+            .flex-grow-1
+              %h6.mb-1 Departments and Teams
+              %p.text-muted.small.mb-0
+                Download all departments and teams for this organization and its descendants.
+            .d-flex.align-items-center.gap-2
+              = link_to organization_bulk_download_path(current_organization, 'departments_and_teams'), class: "btn btn-outline-secondary" do
+                %i.bi.bi-clock-history.me-2
+                View History
+              - if policy(current_organization).download_bulk_csv?
+                = link_to download_organization_bulk_downloads_path(current_organization, type: 'departments_and_teams'), class: "btn btn-primary" do
+                  %i.bi.bi-download.me-2
+                  Download CSV
+              - else
+                .d-flex.align-items-center.gap-2
+                  %button.btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                    %i.bi.bi-download.me-2
+                    Download CSV
                   %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires active teammate status"}}
 

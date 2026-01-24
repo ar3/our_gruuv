@@ -436,6 +436,180 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         expect(response).to have_http_status(:not_found)
       end
     end
+
+    context 'when S3 upload succeeds' do
+      before do
+        employed_teammate
+        sign_in_as_teammate(employed_person, organization)
+        allow_any_instance_of(S3::CsvUploader).to receive(:upload).and_return({
+          s3_key: 'bulk-downloads/123/assignments/test.csv',
+          s3_url: 'https://bucket.s3.amazonaws.com/bulk-downloads/123/assignments/test.csv'
+        })
+      end
+
+      it 'creates a BulkDownload record' do
+        expect {
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+        }.to change(BulkDownload, :count).by(1)
+        
+        bulk_download = BulkDownload.last
+        expect(bulk_download.company_id).to eq(organization.id)
+        expect(bulk_download.downloaded_by_id).to eq(employed_teammate.id)
+        expect(bulk_download.download_type).to eq('assignments')
+        expect(bulk_download.s3_key).to be_present
+        expect(bulk_download.s3_url).to be_present
+        expect(bulk_download.filename).to be_present
+        expect(bulk_download.file_size).to be_present
+      end
+    end
+
+    context 'when S3 upload fails' do
+      before do
+        employed_teammate
+        sign_in_as_teammate(employed_person, organization)
+        allow_any_instance_of(S3::CsvUploader).to receive(:upload).and_raise(StandardError.new('S3 Error'))
+      end
+
+      it 'still sends CSV to user' do
+        get :download, params: { organization_id: organization.id, type: 'assignments' }
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include('text/csv')
+      end
+
+      it 'does not create a BulkDownload record' do
+        expect {
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+        }.not_to change(BulkDownload, :count)
+      end
+    end
+
+    context 'when downloading seats CSV' do
+      before do
+        employed_teammate
+        sign_in_as_teammate(employed_person, organization)
+        allow_any_instance_of(S3::CsvUploader).to receive(:upload).and_return({
+          s3_key: 'bulk-downloads/123/seats/test.csv',
+          s3_url: 'https://bucket.s3.amazonaws.com/bulk-downloads/123/seats/test.csv'
+        })
+      end
+
+      it 'allows download' do
+        get :download, params: { organization_id: organization.id, type: 'seats' }
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include('text/csv')
+      end
+    end
+
+    context 'when downloading titles CSV' do
+      before do
+        employed_teammate
+        sign_in_as_teammate(employed_person, organization)
+        allow_any_instance_of(S3::CsvUploader).to receive(:upload).and_return({
+          s3_key: 'bulk-downloads/123/titles/test.csv',
+          s3_url: 'https://bucket.s3.amazonaws.com/bulk-downloads/123/titles/test.csv'
+        })
+      end
+
+      it 'allows download' do
+        get :download, params: { organization_id: organization.id, type: 'titles' }
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include('text/csv')
+      end
+    end
+
+    context 'when downloading departments_and_teams CSV' do
+      before do
+        employed_teammate
+        sign_in_as_teammate(employed_person, organization)
+        allow_any_instance_of(S3::CsvUploader).to receive(:upload).and_return({
+          s3_key: 'bulk-downloads/123/departments_and_teams/test.csv',
+          s3_url: 'https://bucket.s3.amazonaws.com/bulk-downloads/123/departments_and_teams/test.csv'
+        })
+      end
+
+      it 'allows download' do
+        get :download, params: { organization_id: organization.id, type: 'departments_and_teams' }
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include('text/csv')
+      end
+    end
+  end
+
+  describe 'GET #show' do
+    let(:bulk_download) do
+      teammate = CompanyTeammate.find(employed_teammate.id)
+      create(:bulk_download, :assignments, company: organization, downloaded_by: teammate)
+    end
+
+    before do
+      employed_teammate
+      sign_in_as_teammate(employed_person, organization)
+    end
+
+    it 'allows access to show page' do
+      get :show, params: { organization_id: organization.id, id: 'assignments' }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'loads bulk downloads for the specified type' do
+      bulk_download
+      teammate = CompanyTeammate.find(employed_teammate.id)
+      other_download = create(:bulk_download, :abilities, company: organization, downloaded_by: teammate)
+      
+      get :show, params: { organization_id: organization.id, id: 'assignments' }
+      
+      expect(assigns(:bulk_downloads)).to include(bulk_download)
+      expect(assigns(:bulk_downloads)).not_to include(other_download)
+    end
+  end
+
+  describe 'GET #download_file' do
+    let(:bulk_download) { create(:bulk_download, :assignments, company: organization, downloaded_by: employed_teammate.reload) }
+    let(:other_teammate) { create(:company_teammate, organization: organization) }
+    let(:other_bulk_download) { create(:bulk_download, :assignments, company: organization, downloaded_by: other_teammate) }
+
+    context 'when user can download any file (og_admin or can_manage_employment)' do
+      before do
+        employment_teammate
+        sign_in_as_teammate(employment_person, organization)
+        allow_any_instance_of(S3::CsvUploader).to receive(:download).and_return('CSV content')
+      end
+
+      it 'allows download of own file' do
+        teammate = CompanyTeammate.find(employment_teammate.id)
+        own_download = create(:bulk_download, :assignments, company: organization, downloaded_by: teammate)
+        get :download_file, params: { organization_id: organization.id, id: own_download.id }
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include('text/csv')
+      end
+
+      it 'allows download of other user\'s file' do
+        get :download_file, params: { organization_id: organization.id, id: other_bulk_download.id }
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include('text/csv')
+      end
+    end
+
+    context 'when user can only download own file' do
+      before do
+        employed_teammate
+        sign_in_as_teammate(employed_person, organization)
+        allow_any_instance_of(S3::CsvUploader).to receive(:download).and_return('CSV content')
+      end
+
+      it 'allows download of own file' do
+        teammate = CompanyTeammate.find(employed_teammate.id)
+        own_download = create(:bulk_download, :assignments, company: organization, downloaded_by: teammate)
+        get :download_file, params: { organization_id: organization.id, id: own_download.id }
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include('text/csv')
+      end
+
+      it 'denies download of other user\'s file' do
+        get :download_file, params: { organization_id: organization.id, id: other_bulk_download.id }
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
   end
 end
 

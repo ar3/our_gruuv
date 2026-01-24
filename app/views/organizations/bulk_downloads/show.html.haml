@@ -1,0 +1,62 @@
+- content_for :title, download_type_display_name(@download_type)
+- content_for :go_back_link do
+  = link_to organization_bulk_downloads_path(current_organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Bulk Downloads
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0
+      = download_type_display_name(@download_type)
+      %small.text-muted.ms-2 Download History
+    .d-flex.align-items-center.gap-2
+      - if can_download_new?(@download_type)
+        = link_to download_organization_bulk_downloads_path(current_organization, type: @download_type), class: "btn btn-primary" do
+          %i.bi.bi-download.me-2
+          Download New CSV
+
+.row.justify-content-center
+  .col-lg-10
+    - if @bulk_downloads.any?
+      .card
+        .card-body
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Downloaded By
+                %th Downloaded At
+                %th File Size
+                %th Actions
+            %tbody
+              - @bulk_downloads.each do |bulk_download|
+                %tr
+                  %td
+                    = bulk_download.downloaded_by.person.display_name
+                    %br
+                    %small.text-muted= bulk_download.downloaded_by.person.email
+                  %td
+                    = bulk_download.created_at.strftime('%B %d, %Y at %I:%M %p')
+                    %br
+                    %small.text-muted= time_ago_in_words(bulk_download.created_at) + ' ago'
+                  %td
+                    = number_to_human_size(bulk_download.file_size || 0)
+                  %td
+                    - if policy(bulk_download).download?
+                      = link_to download_file_organization_bulk_download_path(current_organization, bulk_download), class: "btn btn-sm btn-outline-primary" do
+                        %i.bi.bi-download.me-1
+                        Download
+                    - else
+                      %span.text-muted.small
+                        %i.bi.bi-lock.me-1
+                        No access
+    - else
+      .card
+        .card-body.text-center.py-5
+          %i.bi.bi-inbox.fs-1.text-muted.mb-3
+          %h5.text-muted No downloads yet
+          %p.text-muted.mb-4
+            No one has downloaded a #{download_type_display_name(@download_type).downcase} CSV file yet.
+          - if can_download_new?(@download_type)
+            = link_to download_organization_bulk_downloads_path(current_organization, type: @download_type), class: "btn btn-primary" do
+              %i.bi.bi-download.me-2
+              Download New CSV
