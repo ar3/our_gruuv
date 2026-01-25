@@ -96,6 +96,88 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       expect(assigns(:filtered_seats)).to include(seat_with_employee)
     end
 
+    it 'groups seats by department for table view' do
+      dept_a = create(:organization, :department, parent: company, name: 'Department A')
+      dept_b = create(:organization, :department, parent: company, name: 'Department B')
+      
+      title_a = create(:title, organization: company, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
+      title_b = create(:title, organization: company, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
+      title_no_dept = create(:title, organization: company, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
+      
+      seat_a = create(:seat, title: title_a, seat_needed_by: Date.current)
+      seat_b = create(:seat, title: title_b, seat_needed_by: Date.current + 1.month)
+      seat_no_dept = create(:seat, title: title_no_dept, seat_needed_by: Date.current + 2.months)
+      
+      get :index, params: { organization_id: company.id, view: 'table' }
+      
+      expect(assigns(:current_view)).to eq('table')
+      expect(assigns(:seats_by_department)).to be_present
+      
+      # Find departments by ID since they might be different object instances
+      dept_a_key = assigns(:seats_by_department).keys.find { |k| k&.id == dept_a.id }
+      dept_b_key = assigns(:seats_by_department).keys.find { |k| k&.id == dept_b.id }
+      
+      expect(dept_a_key).not_to be_nil
+      expect(dept_b_key).not_to be_nil
+      expect(assigns(:seats_by_department).keys).to include(nil)
+      expect(assigns(:seats_by_department)[dept_a_key]).to include(seat_a)
+      expect(assigns(:seats_by_department)[dept_b_key]).to include(seat_b)
+      expect(assigns(:seats_by_department)[nil]).to include(seat_no_dept)
+    end
+
+    it 'sorts departments hierarchically' do
+      dept_a = create(:organization, :department, parent: company, name: 'Department A')
+      dept_a1 = create(:organization, :department, parent: dept_a, name: 'Department A.1')
+      dept_b = create(:organization, :department, parent: company, name: 'Department B')
+      
+      title_a = create(:title, organization: company, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
+      title_a1 = create(:title, organization: company, department: dept_a1, position_major_level: position_major_level, external_title: 'Title A1')
+      title_b = create(:title, organization: company, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
+      title_no_dept = create(:title, organization: company, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
+      
+      create(:seat, title: title_a, seat_needed_by: Date.current)
+      create(:seat, title: title_a1, seat_needed_by: Date.current)
+      create(:seat, title: title_b, seat_needed_by: Date.current)
+      create(:seat, title: title_no_dept, seat_needed_by: Date.current)
+      
+      get :index, params: { organization_id: company.id, view: 'table' }
+      
+      seats_by_dept = assigns(:seats_by_department)
+      dept_keys = seats_by_dept.keys
+      
+      # No department should come first
+      expect(dept_keys.first).to be_nil
+      
+      # Then departments sorted hierarchically by display_name
+      dept_names = dept_keys.compact.map(&:display_name)
+      expect(dept_names).to eq([
+        "#{company.name} > Department A",
+        "#{company.name} > Department A > Department A.1",
+        "#{company.name} > Department B"
+      ])
+    end
+
+    it 'sorts seats within each department by title then seat_needed_by' do
+      dept = create(:organization, :department, parent: company, name: 'Department A')
+      
+      title_z = create(:title, organization: company, department: dept, position_major_level: position_major_level, external_title: 'Z Title')
+      title_a = create(:title, organization: company, department: dept, position_major_level: position_major_level, external_title: 'A Title')
+      
+      seat_z_later = create(:seat, title: title_z, seat_needed_by: Date.current + 2.months)
+      seat_a_earlier = create(:seat, title: title_a, seat_needed_by: Date.current)
+      seat_a_later = create(:seat, title: title_a, seat_needed_by: Date.current + 1.month)
+      
+      get :index, params: { organization_id: company.id, view: 'table' }
+      
+      seats_by_dept = assigns(:seats_by_department)
+      # Find department by ID since it might be a different object instance
+      dept_key = seats_by_dept.keys.find { |k| k&.id == dept.id }
+      
+      expect(dept_key).not_to be_nil
+      seats_in_dept = seats_by_dept[dept_key]
+      expect(seats_in_dept.map(&:id)).to eq([seat_a_earlier.id, seat_a_later.id, seat_z_later.id])
+    end
+
     it 'calculates spotlight stats for employees' do
       employee1 = create(:person)
       employee2 = create(:person)
@@ -273,13 +355,15 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         # Create reports_to_seat inside the test to avoid counting it in the expectation
         reports_to_seat = create(:seat, title: title, seat_needed_by: Date.current + 6.months)
 
+        # Set department on title
+        title.update!(department: department)
+
         expect {
           post :create, params: {
             organization_id: company.id,
             seat: {
               title_id: title.id,
               seat_needed_by: Date.current + 3.months,
-              department_id: department.id,
               team_id: team.id,
               reports_to_seat_id: reports_to_seat.id
             }
@@ -287,6 +371,7 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         }.to change { Seat.count }.by(1)
 
         created_seat = Seat.last
+        expect(created_seat.title.department_id).to eq(department.id)
         expect(created_seat.department_id).to eq(department.id)
         expect(created_seat.team_id).to eq(team.id)
         expect(created_seat.reports_to_seat_id).to eq(reports_to_seat.id)
@@ -320,19 +405,22 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       let(:department) { create(:organization, :department, parent: company) }
       let(:team) { create(:organization, :team, parent: company) }
 
-      it 'updates a seat with department, team, and reports_to_seat associations' do
+      it 'updates a seat with team and reports_to_seat associations' do
+        # Set department on title
+        seat.title.update!(department: department)
+        
         reports_to_seat = create(:seat, title: title, seat_needed_by: Date.current + 6.months)
         patch :update, params: {
           organization_id: company.id,
           id: seat.id,
           seat: {
-            department_id: department.id,
             team_id: team.id,
             reports_to_seat_id: reports_to_seat.id
           }
         }
 
         seat.reload
+        expect(seat.title.department_id).to eq(department.id)
         expect(seat.department_id).to eq(department.id)
         expect(seat.team_id).to eq(team.id)
         expect(seat.reports_to_seat_id).to eq(reports_to_seat.id)
@@ -340,22 +428,24 @@ RSpec.describe Organizations::SeatsController, type: :controller do
 
       it 'clears associations when set to empty string' do
         reports_to_seat = create(:seat, title: title, seat_needed_by: Date.current + 6.months)
-        seat.update!(department: department, team: team, reports_to_seat: reports_to_seat)
+        seat.title.update!(department: department)
+        seat.update!(team: team, reports_to_seat: reports_to_seat)
 
         patch :update, params: {
           organization_id: company.id,
           id: seat.id,
           seat: {
-            department_id: '',
             team_id: '',
             reports_to_seat_id: ''
           }
         }
 
         seat.reload
-        expect(seat.department).to be_nil
         expect(seat.team).to be_nil
         expect(seat.reports_to_seat).to be_nil
+        # Department comes from title, so it should still be set
+        expect(seat.department).to be_a(Department)
+        expect(seat.department.id).to eq(department.id)
       end
     end
   end

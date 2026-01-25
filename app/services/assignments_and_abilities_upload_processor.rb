@@ -588,12 +588,12 @@ class AssignmentsAndAbilitiesUploadProcessor
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created department: #{department.name} (id: #{department.id})"
     end
     
-    # Update ALL seats for this title
-    seats = Seat.where(title: title)
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating #{seats.count} seats for title #{title.external_title} with department_id: #{department.id}"
+    # Update title's department_id (department_id was moved from seats to titles)
+    # All seats for this title will derive their department from the title
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating title #{title.external_title} with department_id: #{department.id}"
     
-    seats.update_all(department_id: department.id)
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updated #{seats.count} seats with department_id: #{department.id} (#{department.name})"
+    title.update!(department_id: department.id)
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updated title #{title.external_title} with department_id: #{department.id} (#{department.name})"
   end
 end
 

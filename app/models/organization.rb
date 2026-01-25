@@ -15,7 +15,10 @@ class Organization < ApplicationRecord
   has_many :prompt_templates, foreign_key: 'company_id', dependent: :destroy
   has_many :titles, dependent: :destroy
   has_many :seats, through: :titles
-  has_many :seats_as_department, class_name: 'Seat', foreign_key: 'department_id', dependent: :nullify
+  # Seats linked via title's department_id (department_id was moved from seats to titles)
+  def seats_as_department
+    Seat.for_department(self)
+  end
   has_many :seats_as_team, class_name: 'Seat', foreign_key: 'team_id', dependent: :nullify
   has_one :slack_configuration, dependent: :destroy
   has_many :third_party_objects, dependent: :destroy

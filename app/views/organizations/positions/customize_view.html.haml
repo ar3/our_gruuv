@@ -20,6 +20,12 @@
           %label.form-label.fw-bold Select What Positions You See
           
           .mb-3
+            %label.form-label Department
+            - departments = @organization.descendants.select { |o| o.type == 'Department' }.sort_by(&:display_name)
+            - department_options = [['All Departments', '']] + departments.map { |dept| [dept.display_name, dept.id] }
+            = select_tag 'department', options_for_select(department_options, @current_filters[:department]), class: 'form-select'
+          
+          .mb-3
             %label.form-label Title
             - titles = @organization.titles.includes(:position_major_level).order(:external_title)
             - title_options = [['All Titles', '']] + titles.map { |title| [title.external_title, title.id] }

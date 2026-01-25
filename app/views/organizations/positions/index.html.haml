@@ -27,76 +27,101 @@
       Customize View
 .row.justify-content-center
   .col-lg-12
-    - if @titles.any?
-      - @titles.each do |title|
-        .card.mb-3
-          .card-header.d-flex.justify-content-between.align-items-center
-            .d-flex.align-items-center
-              %a.text-decoration-none.text-dark.fw-bold{"data-bs-toggle" => "collapse", "data-bs-target" => "#title#{title.id}", "aria-expanded" => "false", "aria-controls" => "title#{title.id}", style: "cursor: pointer;"}
-                %span.not-collapsed{id: "titleExpandIcon#{title.id}"}
-                  %i.bi.bi-chevron-down.me-2
-                %span.collapsed{id: "titleCollapseIcon#{title.id}"}
-                  %i.bi.bi-chevron-right.me-2
-                = title.external_title
-              %span.badge.bg-secondary.ms-2= "#{title.positions.count} position#{'s' if title.positions.count != 1}"
-            .d-flex.align-items-center.gap-2
-              = link_to organization_title_path(@organization, title), class: "btn btn-sm btn-outline-secondary", title: "View Title" do
-                %i.bi.bi-eye
-              .text-muted
-                %small= title.position_major_level.set_name
-          
-          .collapse{"id" => "title#{title.id}"}
-            .card-body.p-0
-              - if title.positions.any?
-                .table-responsive
-                  %table.table.table-hover.mb-0
-                    %thead.table-light
-                      %tr
-                        %th Position
-                        %th Level
-                        %th Version
-                        %th Assignments
-                        %th Actions
-                    %tbody
-                      - title.positions.includes(:position_level).order('position_levels.level').each do |position|
+    - if @titles_by_department.any?
+      - @titles_by_department.each do |department, titles|
+        - stats = @department_stats[department] || { titles_count: 0, positions_count: 0 }
+        .card.mb-4
+          .card-header.bg-primary.text-white
+            %h5.mb-0.d-flex.align-items-center.justify-content-between
+              .d-flex.align-items-center
+                - if department
+                  %i.bi.bi-building.me-2
+                  = department.display_name
+                - else
+                  %i.bi.bi-question-circle.me-2
+                  No Department
+              .d-flex.align-items-center.gap-2
+                %span.badge.bg-light.text-dark
+                  = stats[:titles_count]
+                  title#{'s' if stats[:titles_count] != 1}
+                %span.badge.bg-light.text-dark
+                  = stats[:positions_count]
+                  position#{'s' if stats[:positions_count] != 1}
+        
+        - titles.each do |title|
+          .card.mb-3.ms-4
+            .card-header.d-flex.justify-content-between.align-items-center
+              .d-flex.align-items-center
+                %a.text-decoration-none.text-dark.fw-bold{"data-bs-toggle" => "collapse", "data-bs-target" => "#title#{title.id}", "aria-expanded" => "false", "aria-controls" => "title#{title.id}", style: "cursor: pointer;"}
+                  %span.not-collapsed{id: "titleExpandIcon#{title.id}"}
+                    %i.bi.bi-chevron-down.me-2
+                  %span.collapsed{id: "titleCollapseIcon#{title.id}"}
+                    %i.bi.bi-chevron-right.me-2
+                  = title.external_title
+                %span.badge.bg-secondary.ms-2= "#{title.positions.size} position#{'s' if title.positions.size != 1}"
+              .d-flex.align-items-center.gap-2
+                = link_to organization_title_path(@organization, title), class: "btn btn-sm btn-outline-secondary", title: "View Title" do
+                  %i.bi.bi-eye
+                .text-muted
+                  %small= title.position_major_level.set_name
+            
+            .collapse{"id" => "title#{title.id}"}
+              .card-body.p-0
+                - if title.positions.any?
+                  .table-responsive
+                    %table.table.table-hover.mb-0
+                      %thead.table-light
                         %tr
-                          %td
-                            = link_to organization_position_path(@organization, position), class: "text-decoration-none fw-bold" do
-                              = position.display_name
-                            - if position.position_summary.present?
-                              %br
-                              %small.text-muted= truncate(position.position_summary, length: 100)
-                          %td
-                            %span.badge.bg-info= position.position_level.level
-                          %td= position.semantic_version
-                          %td
-                            - if position.required_assignments_count > 0 || position.suggested_assignments_count > 0
-                              %span.badge.bg-primary.me-1
-                                = position.required_assignments_count
-                              %small.text-muted required
-                              - if position.suggested_assignments_count > 0
+                          %th Position
+                          %th Level
+                          %th Version
+                          %th Assignments
+                          %th Actions
+                      %tbody
+                        - title.positions.sort_by { |p| p.position_level&.level.to_i || 0 }.each do |position|
+                          - required_count = position.instance_variable_get(:@required_count) || 0
+                          - suggested_count = position.instance_variable_get(:@suggested_count) || 0
+                          %tr
+                            %td
+                              = link_to organization_position_path(@organization, position), class: "text-decoration-none fw-bold" do
+                                = position.display_name
+                              - if position.position_summary.present?
                                 %br
-                                %span.badge.bg-secondary.me-1
-                                  = position.suggested_assignments_count
+                                %small.text-muted= truncate(position.position_summary, length: 100)
+                            %td
+                              - if position.position_level
+                                %span.badge.bg-info= position.position_level.level
+                              - else
+                                %span.badge.bg-secondary N/A
+                            %td= position.semantic_version
+                            %td
+                              - if required_count > 0 || suggested_count > 0
+                                %span.badge.bg-primary.me-1
+                                  = required_count
+                                %small.text-muted required
+                                - if suggested_count > 0
+                                  %br
+                                  %span.badge.bg-secondary.me-1
+                                    = suggested_count
                                 %small.text-muted suggested
-                            - else
-                              %span.text-muted
-                                %i.bi.bi-exclamation-triangle.me-1
-                                None
-                          %td
-                            .btn-group.btn-group-sm
-                              = link_to organization_position_path(@organization, position), class: "btn btn-outline-primary", title: "View" do
-                                %i.bi.bi-eye
-                              = link_to job_description_organization_position_path(@organization, position), class: "btn btn-outline-info", title: "Job Description" do
-                                %i.bi.bi-file-text
-                              = link_to edit_organization_position_path(@organization, position), class: "btn btn-outline-secondary", title: "Edit" do
-                                %i.bi.bi-pencil
-                              = link_to organization_position_path(@organization, position), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
-                                %i.bi.bi-trash
-              - else
-                .p-3.text-center.text-muted
-                  %i.bi.bi-info-circle.me-2
-                  No positions created for this title yet.
+                              - else
+                                %span.text-muted
+                                  %i.bi.bi-exclamation-triangle.me-1
+                                  None
+                            %td
+                              .btn-group.btn-group-sm
+                                = link_to organization_position_path(@organization, position), class: "btn btn-outline-primary", title: "View" do
+                                  %i.bi.bi-eye
+                                = link_to job_description_organization_position_path(@organization, position), class: "btn btn-outline-info", title: "Job Description" do
+                                  %i.bi.bi-file-text
+                                = link_to edit_organization_position_path(@organization, position), class: "btn btn-outline-secondary", title: "Edit" do
+                                  %i.bi.bi-pencil
+                                = link_to organization_position_path(@organization, position), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
+                                  %i.bi.bi-trash
+                - else
+                  .p-3.text-center.text-muted
+                    %i.bi.bi-info-circle.me-2
+                    No positions created for this title yet.
     - else
       .alert.alert-info
         %h6.mb-2

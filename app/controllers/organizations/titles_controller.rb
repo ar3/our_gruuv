@@ -4,10 +4,9 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
 
   def index
     authorize @organization, :view_titles?
-    @titles = @organization.titles.ordered
     respond_to do |format|
-      format.html
-      format.json { render json: @titles }
+      format.html { redirect_to organization_positions_path(@organization) }
+      format.json { render json: @organization.titles.ordered }
     end
   end
 
@@ -70,9 +69,9 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     result = TitleSaveService.delete(title: @title)
     
     if result.ok?
-      redirect_to organization_titles_path(@organization), notice: 'Title was successfully deleted.'
+      redirect_to organization_positions_path(@organization), notice: 'Title was successfully deleted.'
     else
-      redirect_to organization_titles_path(@organization), alert: result.error
+      redirect_to organization_positions_path(@organization), alert: result.error
     end
   end
 
@@ -190,6 +189,6 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
   end
 
   def title_params
-    params.require(:title).permit(:position_major_level_id, :external_title, :alternative_titles, :position_summary)
+    params.require(:title).permit(:position_major_level_id, :external_title, :alternative_titles, :position_summary, :department_id)
   end
 end

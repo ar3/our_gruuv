@@ -42,15 +42,6 @@
                 = f.select :job_classification, ["Salaried Exempt", "Salaried Non-Exempt", "Hourly", "Contractor", "Intern"], {}, { class: "form-select" }
 
             .col-md-6
-              = render 'shared/department_dropdown',
-                form: f,
-                organization: @organization,
-                field_name: :department_id,
-                label_text: "Department (Optional)",
-                selected_department_id: @seat.department_id,
-                include_blank: true,
-                help_text: "Select the department for this seat"
-
               = render 'shared/team_dropdown',
                 form: f,
                 organization: @organization,

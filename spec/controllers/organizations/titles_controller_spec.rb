@@ -73,7 +73,7 @@ RSpec.describe Organizations::TitlesController, type: :controller do
       }.to change(Title, :count).by(1)
       
       expect(response).to redirect_to(organization_title_path(organization, Title.last))
-      expect(flash[:notice]).to eq('Position type was successfully created.')
+      expect(flash[:notice]).to eq('Title was successfully created.')
     end
 
     it 'renders new with errors when creation fails' do
@@ -128,7 +128,7 @@ RSpec.describe Organizations::TitlesController, type: :controller do
       
       expect(title.reload.external_title).to eq('Updated Title')
       expect(response).to redirect_to(organization_title_path(organization, title))
-      expect(flash[:notice]).to eq('Position type was successfully updated.')
+      expect(flash[:notice]).to eq('Title was successfully updated.')
     end
 
     it 'updates position levels when major level changes' do
@@ -200,8 +200,8 @@ RSpec.describe Organizations::TitlesController, type: :controller do
       }.to change(Title, :count).by(-1)
       
       expect(Title.find_by(id: title_id)).to be_nil
-      expect(response).to redirect_to(organization_titles_path(organization))
-      expect(flash[:notice]).to eq('Position type was successfully deleted.')
+      expect(response).to redirect_to(organization_positions_path(organization))
+      expect(flash[:notice]).to eq('Title was successfully deleted.')
     end
 
     it 'redirects with alert when deletion fails' do
@@ -212,7 +212,7 @@ RSpec.describe Organizations::TitlesController, type: :controller do
         id: title.id
       }
       
-      expect(response).to redirect_to(organization_titles_path(organization))
+      expect(response).to redirect_to(organization_positions_path(organization))
       expect(flash[:alert]).to eq('Deletion failed')
     end
   end

@@ -70,6 +70,66 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       expect(positions).to include(position_v1, position_v1_2)
       expect(positions.length).to eq(2)
     end
+
+    it 'sorts departments hierarchically by display_name' do
+      position_major_level = create(:position_major_level)
+      
+      # Create departments with hierarchy
+      dept_a = create(:organization, :department, parent: organization, name: 'Department A')
+      dept_a1 = create(:organization, :department, parent: dept_a, name: 'Department A.1')
+      dept_a2 = create(:organization, :department, parent: dept_a, name: 'Department A.2')
+      dept_b = create(:organization, :department, parent: organization, name: 'Department B')
+      dept_b1 = create(:organization, :department, parent: dept_b, name: 'Department B.1')
+      dept_c = create(:organization, :department, parent: organization, name: 'Department C')
+      
+      # Create titles for each department with unique external titles
+      title_a = create(:title, organization: organization, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
+      title_a1 = create(:title, organization: organization, department: dept_a1, position_major_level: position_major_level, external_title: 'Title A1')
+      title_a2 = create(:title, organization: organization, department: dept_a2, position_major_level: position_major_level, external_title: 'Title A2')
+      title_b = create(:title, organization: organization, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
+      title_b1 = create(:title, organization: organization, department: dept_b1, position_major_level: position_major_level, external_title: 'Title B1')
+      title_c = create(:title, organization: organization, department: dept_c, position_major_level: position_major_level, external_title: 'Title C')
+      title_no_dept = create(:title, organization: organization, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
+      
+      get :index, params: { organization_id: organization.id }
+      
+      titles_by_dept = assigns(:titles_by_department)
+      dept_keys = titles_by_dept.keys
+      
+      # No department should come first
+      expect(dept_keys.first).to be_nil
+      
+      # Then departments sorted hierarchically by display_name
+      dept_names = dept_keys.compact.map(&:display_name)
+      expect(dept_names).to eq([
+        "#{organization.name} > Department A",
+        "#{organization.name} > Department A > Department A.1",
+        "#{organization.name} > Department A > Department A.2",
+        "#{organization.name} > Department B",
+        "#{organization.name} > Department B > Department B.1",
+        "#{organization.name} > Department C"
+      ])
+    end
+
+    it 'sorts titles alphanumerically within each department' do
+      dept = create(:organization, :department, parent: organization, name: 'Department A')
+      position_major_level = create(:position_major_level)
+      
+      # Create titles with different names
+      title_z = create(:title, organization: organization, department: dept, external_title: 'Z Title', position_major_level: position_major_level)
+      title_a = create(:title, organization: organization, department: dept, external_title: 'A Title', position_major_level: position_major_level)
+      title_m = create(:title, organization: organization, department: dept, external_title: 'M Title', position_major_level: position_major_level)
+      
+      get :index, params: { organization_id: organization.id }
+      
+      titles_by_dept = assigns(:titles_by_department)
+      # Find the department in the hash (it might be a different object instance)
+      dept_key = titles_by_dept.keys.find { |k| k&.id == dept.id }
+      
+      expect(dept_key).not_to be_nil
+      titles_in_dept = titles_by_dept[dept_key]
+      expect(titles_in_dept.map(&:external_title)).to eq(['A Title', 'M Title', 'Z Title'])
+    end
   end
 
   describe 'GET #show' do

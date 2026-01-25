@@ -2,7 +2,6 @@ class Seat < ApplicationRecord
   # Associations
   belongs_to :title
   has_many :employment_tenures, dependent: :nullify
-  belongs_to :department, class_name: 'Organization', optional: true
   belongs_to :team, class_name: 'Organization', optional: true
   belongs_to :reports_to_seat, class_name: 'Seat', optional: true
   has_many :reporting_seats, class_name: 'Seat', foreign_key: 'reports_to_seat_id', dependent: :nullify
@@ -25,6 +24,7 @@ class Seat < ApplicationRecord
   scope :active, -> { where(state: [:open, :filled]) }
   scope :available, -> { where(state: :open) }
   scope :for_organization, ->(organization) { joins(:title).where(titles: { organization: organization }) }
+  scope :for_department, ->(department) { joins(:title).where(titles: { department_id: department.id }) }
 
   # Instance methods
   def display_name
@@ -137,5 +137,14 @@ class Seat < ApplicationRecord
 
   def has_direct_reports?
     reporting_seats.exists?
+  end
+
+  # Derive department from title
+  def department
+    title&.department
+  end
+
+  def department_id
+    title&.department_id
   end
 end

@@ -914,10 +914,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "seat_disclaimer", default: "This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time."
-    t.bigint "department_id"
     t.bigint "team_id"
     t.bigint "reports_to_seat_id"
-    t.index ["department_id"], name: "index_seats_on_department_id"
     t.index ["reports_to_seat_id"], name: "index_seats_on_reports_to_seat_id"
     t.index ["team_id"], name: "index_seats_on_team_id"
     t.index ["title_id", "seat_needed_by"], name: "index_seats_on_position_type_and_needed_by", unique: true
@@ -1045,6 +1043,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
     t.text "position_summary"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "department_id"
+    t.index ["department_id"], name: "index_titles_on_department_id"
     t.index ["organization_id", "position_major_level_id", "external_title"], name: "index_position_types_on_org_level_title_unique", unique: true
     t.index ["organization_id"], name: "index_titles_on_organization_id"
     t.index ["position_major_level_id"], name: "index_titles_on_position_major_level_id"
@@ -1156,7 +1156,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
   add_foreign_key "prompt_templates", "organizations", column: "company_id"
   add_foreign_key "prompts", "prompt_templates"
   add_foreign_key "prompts", "teammates", column: "company_teammate_id"
-  add_foreign_key "seats", "organizations", column: "department_id"
   add_foreign_key "seats", "organizations", column: "team_id"
   add_foreign_key "seats", "seats", column: "reports_to_seat_id"
   add_foreign_key "seats", "titles"
@@ -1172,6 +1171,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
   add_foreign_key "titles", "organizations"
+  add_foreign_key "titles", "organizations", column: "department_id"
   add_foreign_key "titles", "position_major_levels"
   add_foreign_key "user_preferences", "people"
 end

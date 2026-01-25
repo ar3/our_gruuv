@@ -58,6 +58,19 @@
             
             .row
               .col-md-12
+                .mb-3
+                  = render 'shared/department_dropdown',
+                    form: form,
+                    organization: @organization,
+                    field_name: :department_id,
+                    label_text: "Department (Optional)",
+                    selected_department_id: @title.department_id,
+                    include_blank: true,
+                    include_root_option: false,
+                    help_text: "Select the department for this title"
+            
+            .row
+              .col-md-12
                 .d-flex.justify-content-between
                   = link_to "Cancel", "javascript:history.back()", class: "btn btn-outline-secondary"
                   = form.submit "Create Title", class: "btn btn-primary"

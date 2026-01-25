@@ -10,6 +10,11 @@ class Organizations::PositionsController < ApplicationController
     @positions = @positions.where(title_id: params[:title]) if params[:title].present?
     @positions = @positions.where(position_level_id: params[:position_level]) if params[:position_level].present?
     
+    # Filter by department
+    if params[:department].present?
+      @positions = @positions.joins(:title).where(titles: { department_id: params[:department] })
+    end
+    
     # Filter by major version (using SQL LIKE for efficiency)
     if params[:major_version].present?
       major_version = params[:major_version].to_i
@@ -42,7 +47,64 @@ class Organizations::PositionsController < ApplicationController
       end
     end
     
-    @titles = @organization.titles.includes(:positions, :position_major_level).order(:external_title)
+    # Load titles with department for grouping
+    # Eager load positions with position_level to avoid N+1 queries
+    @titles = @organization.titles
+      .includes(
+        :position_major_level,
+        :department,
+        positions: [:position_level]
+      )
+      .order(:external_title)
+    
+    # Preload position assignment counts to avoid N+1 queries
+    # Get all position IDs first
+    position_ids = @titles.flat_map { |t| t.positions.map(&:id) }
+    
+    # Load all position assignments in one query and group by position_id
+    # Only query if there are positions to avoid empty query
+    position_assignments_by_position = if position_ids.any?
+      PositionAssignment
+        .where(position_id: position_ids)
+        .group_by(&:position_id)
+    else
+      {}
+    end
+    
+    # Attach counts to positions as instance variables to avoid method calls
+    @titles.each do |title|
+      title.positions.each do |position|
+        pas = position_assignments_by_position[position.id] || []
+        position.instance_variable_set(:@required_count, pas.count { |pa| pa.assignment_type == 'required' })
+        position.instance_variable_set(:@suggested_count, pas.count { |pa| pa.assignment_type == 'suggested' })
+      end
+    end
+    
+    # Group titles by department for display
+    @titles_by_department = @titles.group_by { |title| title.department }
+    
+    # Sort departments hierarchically by display_name (which includes full path)
+    # This will naturally sort: Company, Company > Department A, Company > Department A > Department A.1, etc.
+    @titles_by_department = @titles_by_department.sort_by do |department, _titles|
+      # nil departments (no department) should come first, then sort by display_name
+      department ? [1, department.display_name] : [0, '']
+    end.to_h
+    
+    # Sort titles within each department alphanumerically
+    @titles_by_department.each do |_department, titles|
+      titles.sort_by! { |title| title.external_title }
+    end
+    
+    # Pre-calculate counts for each department to avoid N+1 queries
+    @department_stats = {}
+    @titles_by_department.each do |department, titles|
+      distinct_titles_count = titles.count
+      total_positions_count = titles.sum { |t| t.positions.size }
+      @department_stats[department] = {
+        titles_count: distinct_titles_count,
+        positions_count: total_positions_count
+      }
+    end
     
     render layout: determine_layout
   end
@@ -177,6 +239,7 @@ class Organizations::PositionsController < ApplicationController
     @current_filters = {
       title: params[:title],
       position_level: params[:position_level],
+      department: params[:department],
       major_version: params[:major_version],
       sort: params[:sort] || 'name',
       direction: params[:direction] || 'asc',

@@ -2,6 +2,7 @@ class Title < ApplicationRecord
   # Associations
   belongs_to :organization
   belongs_to :position_major_level
+  belongs_to :department, class_name: 'Organization', optional: true
   has_many :positions, dependent: :destroy
   has_many :seats, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy

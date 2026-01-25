@@ -488,7 +488,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           seat.display_name,
           seat.title.external_title,
           seat.title.organization.display_name,
-          seat.department&.display_name || '',
+          seat.title&.department&.display_name || '',
           seat.team&.display_name || '',
           seat.state,
           seat.seat_needed_by&.strftime('%Y-%m-%d') || '',

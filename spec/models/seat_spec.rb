@@ -8,7 +8,6 @@ RSpec.describe Seat, type: :model do
   describe 'associations' do
     it { should belong_to(:title) }
     it { should have_many(:employment_tenures).dependent(:nullify) }
-    it { should belong_to(:department).optional }
     it { should belong_to(:team).optional }
     it { should belong_to(:reports_to_seat).optional }
     it { should have_many(:reporting_seats).dependent(:nullify) }
@@ -19,11 +18,12 @@ RSpec.describe Seat, type: :model do
     let(:team) { create(:organization, :team, parent: organization) }
     let(:reports_to_seat) { create(:seat, title: title, seat_needed_by: Date.current + 6.months) }
 
-    it 'can belong to a department' do
-      seat.department = department
-      seat.save!
-      expect(seat.reload.department_id).to eq(department.id)
-      expect(seat.reload.department).to be_a(Department)
+    it 'derives department from title' do
+      title.update!(department: department)
+      seat.reload
+      expect(seat.department_id).to eq(department.id)
+      expect(seat.department).to be_a(Department)
+      expect(seat.department.id).to eq(department.id)
     end
 
     it 'can belong to a team' do
@@ -87,8 +87,8 @@ RSpec.describe Seat, type: :model do
   end
 
   describe '#title' do
-    it 'returns position type external title' do
-      expect(seat.title).to eq(title.external_title)
+    it 'returns the title object' do
+      expect(seat.title).to eq(title)
     end
   end
 

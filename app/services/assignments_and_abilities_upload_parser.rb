@@ -417,13 +417,13 @@ class AssignmentsAndAbilitiesUploadParser
         will_create_position = position.nil?
         
         # Get all seats for this title
-        seats = Seat.where(title: title).includes(:department)
+        seats = Seat.where(title: title).includes(title: :department)
         seats_data = seats.map do |seat|
           {
             'id' => seat.id,
             'display_name' => seat.display_name,
-            'department_id' => seat.department_id,
-            'department_name' => seat.department&.name
+            'department_id' => seat.title&.department_id,
+            'department_name' => seat.title&.department&.name
           }
         end
         

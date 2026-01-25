@@ -42,6 +42,38 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
           title.maap_maturity_phase
         end
       end
+      
+      # For table and table_with_employee views, group by department
+      if ['table', 'table_with_employee'].include?(query.current_view)
+        # Eager load title and department to avoid N+1 queries
+        @filtered_seats = filtered_seats.includes(title: :department).to_a
+        
+        # Group seats by department (using title's department)
+        @seats_by_department = @filtered_seats.group_by { |seat| seat.title&.department }
+        
+        # Sort departments hierarchically by display_name (which includes full path)
+        # This will naturally sort: Company, Company > Department A, Company > Department A > Department A.1, etc.
+        @seats_by_department = @seats_by_department.sort_by do |department, _seats|
+          # nil departments (no department) should come first, then sort by display_name
+          department ? [1, department.display_name] : [0, '']
+        end.to_h
+        
+        # Sort seats within each department: first by title external_title, then by seat_needed_by
+        @seats_by_department.each do |_department, seats|
+          seats.sort_by! { |seat| [seat.title&.external_title || '', seat.seat_needed_by || Date.today] }
+        end
+        
+        # Pre-calculate counts for each department to avoid N+1 queries
+        @department_stats = {}
+        @seats_by_department.each do |department, seats|
+          distinct_titles_count = seats.map { |s| s.title&.id }.compact.uniq.count
+          total_seats_count = seats.size
+          @department_stats[department] = {
+            titles_count: distinct_titles_count,
+            seats_count: total_seats_count
+          }
+        end
+      end
     end
     
     # Store current filter/sort state for view
@@ -236,7 +268,6 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
       :seat_needed_by,
       :job_classification,
       :team,
-      :department_id,
       :team_id,
       :reports_to_seat_id,
       :reports,
