@@ -295,6 +295,8 @@ get '/login', to: 'auth#login', as: :login
         get :job_description
         get :manage_assignments
         patch :update_assignments
+        get :manage_eligibility
+        patch :update_eligibility
       end
     end
     

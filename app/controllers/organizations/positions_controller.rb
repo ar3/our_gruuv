@@ -1,6 +1,6 @@
 class Organizations::PositionsController < ApplicationController
   before_action :set_organization
-  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy, :manage_assignments, :update_assignments]
+  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy, :manage_assignments, :update_assignments, :manage_eligibility, :update_eligibility]
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
@@ -351,6 +351,134 @@ class Organizations::PositionsController < ApplicationController
     end
   end
 
+  def manage_eligibility
+    authorize @position, :manage_eligibility?
+    
+    # Parse existing JSONB for form pre-population
+    @eligibility_data = @position.eligibility_requirements_explicit || {}
+    
+    # Calculate minimum mileage from required assignments
+    @minimum_mileage_from_assignments = calculate_minimum_mileage_from_assignments
+    
+    render layout: determine_layout
+  end
+
+  def update_eligibility
+    authorize @position, :manage_eligibility?
+    
+    eligibility_params = params[:eligibility_requirements]&.permit! || {}
+    new_eligibility_data = {}
+    
+    # Build JSONB hash, only including sections with at least one field filled
+    if eligibility_params[:mileage_requirements].present?
+      mileage = eligibility_params[:mileage_requirements]
+      if mileage[:minimum_mileage_points].present?
+        new_eligibility_data['mileage_requirements'] = {
+          'minimum_mileage_points' => mileage[:minimum_mileage_points].to_i
+        }
+      end
+    end
+    
+    if eligibility_params[:position_check_in_requirements].present?
+      pos_check = eligibility_params[:position_check_in_requirements]
+      if pos_check[:minimum_rating].present? || pos_check[:minimum_months_at_or_above_rating_criteria].present?
+        pos_data = {}
+        pos_data['minimum_rating'] = pos_check[:minimum_rating].to_i if pos_check[:minimum_rating].present?
+        pos_data['minimum_months_at_or_above_rating_criteria'] = pos_check[:minimum_months_at_or_above_rating_criteria].to_i if pos_check[:minimum_months_at_or_above_rating_criteria].present?
+        new_eligibility_data['position_check_in_requirements'] = pos_data if pos_data.any?
+      end
+    end
+    
+    if eligibility_params[:required_assignment_check_in_requirements].present?
+      req_ass = eligibility_params[:required_assignment_check_in_requirements]
+      if req_ass[:minimum_rating].present? || req_ass[:minimum_months_at_or_above_rating_criteria].present? || req_ass[:minimum_percentage_of_assignments].present?
+        req_data = {}
+        req_data['minimum_rating'] = req_ass[:minimum_rating] if req_ass[:minimum_rating].present?
+        req_data['minimum_months_at_or_above_rating_criteria'] = req_ass[:minimum_months_at_or_above_rating_criteria].to_i if req_ass[:minimum_months_at_or_above_rating_criteria].present?
+        req_data['minimum_percentage_of_assignments'] = req_ass[:minimum_percentage_of_assignments].to_f if req_ass[:minimum_percentage_of_assignments].present?
+        new_eligibility_data['required_assignment_check_in_requirements'] = req_data if req_data.any?
+      end
+    end
+    
+    if eligibility_params[:unique_to_you_assignment_check_in_requirements].present?
+      unique_ass = eligibility_params[:unique_to_you_assignment_check_in_requirements]
+      if unique_ass[:minimum_rating].present? || unique_ass[:minimum_months_at_or_above_rating_criteria].present? || unique_ass[:minimum_percentage_of_assignments].present?
+        unique_data = {}
+        unique_data['minimum_rating'] = unique_ass[:minimum_rating] if unique_ass[:minimum_rating].present?
+        unique_data['minimum_months_at_or_above_rating_criteria'] = unique_ass[:minimum_months_at_or_above_rating_criteria].to_i if unique_ass[:minimum_months_at_or_above_rating_criteria].present?
+        unique_data['minimum_percentage_of_assignments'] = unique_ass[:minimum_percentage_of_assignments].to_f if unique_ass[:minimum_percentage_of_assignments].present?
+        new_eligibility_data['unique_to_you_assignment_check_in_requirements'] = unique_data if unique_data.any?
+      end
+    end
+    
+    if eligibility_params[:company_aspirational_values_check_in_requirements].present?
+      company_asp = eligibility_params[:company_aspirational_values_check_in_requirements]
+      if company_asp[:minimum_rating].present? || company_asp[:minimum_months_at_or_above_rating_criteria].present? || company_asp[:minimum_percentage_of_aspirational_values].present?
+        company_data = {}
+        company_data['minimum_rating'] = company_asp[:minimum_rating] if company_asp[:minimum_rating].present?
+        company_data['minimum_months_at_or_above_rating_criteria'] = company_asp[:minimum_months_at_or_above_rating_criteria].to_i if company_asp[:minimum_months_at_or_above_rating_criteria].present?
+        company_data['minimum_percentage_of_aspirational_values'] = company_asp[:minimum_percentage_of_aspirational_values].to_f if company_asp[:minimum_percentage_of_aspirational_values].present?
+        new_eligibility_data['company_aspirational_values_check_in_requirements'] = company_data if company_data.any?
+      end
+    end
+    
+    if eligibility_params[:title_department_aspirational_values_check_in_requirements].present?
+      title_asp = eligibility_params[:title_department_aspirational_values_check_in_requirements]
+      if title_asp[:minimum_rating].present? || title_asp[:minimum_months_at_or_above_rating_criteria].present? || title_asp[:minimum_percentage_of_aspirational_values].present?
+        title_data = {}
+        title_data['minimum_rating'] = title_asp[:minimum_rating] if title_asp[:minimum_rating].present?
+        title_data['minimum_months_at_or_above_rating_criteria'] = title_asp[:minimum_months_at_or_above_rating_criteria].to_i if title_asp[:minimum_months_at_or_above_rating_criteria].present?
+        title_data['minimum_percentage_of_aspirational_values'] = title_asp[:minimum_percentage_of_aspirational_values].to_f if title_asp[:minimum_percentage_of_aspirational_values].present?
+        new_eligibility_data['title_department_aspirational_values_check_in_requirements'] = title_data if title_data.any?
+      end
+    end
+    
+    # Validate numeric ranges
+    errors = []
+    new_eligibility_data.each do |key, value|
+      if value.is_a?(Hash)
+        if value['minimum_months_at_or_above_rating_criteria'].present? && value['minimum_months_at_or_above_rating_criteria'] < 0
+          errors << "#{key.humanize}: Minimum months must be >= 0"
+        end
+        if value['minimum_percentage_of_assignments'].present? && (value['minimum_percentage_of_assignments'] < 0 || value['minimum_percentage_of_assignments'] > 100)
+          errors << "#{key.humanize}: Minimum percentage must be between 0 and 100"
+        end
+        if value['minimum_percentage_of_aspirational_values'].present? && (value['minimum_percentage_of_aspirational_values'] < 0 || value['minimum_percentage_of_aspirational_values'] > 100)
+          errors << "#{key.humanize}: Minimum percentage must be between 0 and 100"
+        end
+        if value['minimum_rating'].present? && key == 'position_check_in_requirements'
+          rating = value['minimum_rating'].to_i
+          unless (-3..3).include?(rating)
+            errors << "Position check-in minimum rating must be between -3 and 3"
+          end
+        end
+        if value['minimum_mileage_points'].present? && value['minimum_mileage_points'] < 0
+          errors << "Minimum mileage points must be >= 0"
+        end
+      end
+    end
+    
+    # Validate minimum mileage against required assignments
+    if new_eligibility_data['mileage_requirements'].present? && new_eligibility_data['mileage_requirements']['minimum_mileage_points'].present?
+      minimum_mileage_from_assignments = calculate_minimum_mileage_from_assignments
+      entered_mileage = new_eligibility_data['mileage_requirements']['minimum_mileage_points'].to_i
+      if entered_mileage < minimum_mileage_from_assignments
+        errors << "Minimum mileage points (#{entered_mileage}) cannot be lower than the total from required assignments (#{minimum_mileage_from_assignments})"
+      end
+    end
+    
+    if errors.any?
+      # Convert params to string-keyed hash for form re-population
+      @eligibility_data = eligibility_params.to_h.deep_stringify_keys
+      @minimum_mileage_from_assignments = calculate_minimum_mileage_from_assignments
+      flash[:alert] = "Validation errors: #{errors.join('; ')}"
+      render :manage_eligibility, status: :unprocessable_entity, layout: determine_layout
+    else
+      @position.update!(eligibility_requirements_explicit: new_eligibility_data)
+      redirect_to organization_position_path(@organization, @position), notice: 'Eligibility requirements updated successfully.'
+    end
+  end
+
   private
 
   def set_organization
@@ -382,5 +510,18 @@ class Organizations::PositionsController < ApplicationController
 
   def position_params
     params.require(:position).permit(:title_id, :position_level_id, :external_title, :position_summary, :eligibility_requirements_summary, :version_type)
+  end
+
+  def calculate_minimum_mileage_from_assignments
+    mileage_service = MilestoneMileageService.new
+    total_points = 0
+    
+    @position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+      position_assignment.assignment.assignment_abilities.each do |assignment_ability|
+        total_points += mileage_service.milestone_points(assignment_ability.milestone_level)
+      end
+    end
+    
+    total_points
   end
 end

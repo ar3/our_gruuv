@@ -44,6 +44,14 @@ class PositionPolicy < ApplicationPolicy
     viewing_teammate.person.admin? || can_manage_assignments?
   end
 
+  def manage_eligibility?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    
+    # Only admins or users with can_manage_maap permission on company teammate record can manage eligibility
+    viewing_teammate.person.admin? || can_manage_maap_for_position_company?
+  end
+
   private
 
   def can_manage_maap_for_position_company?

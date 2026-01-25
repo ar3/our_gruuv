@@ -1,0 +1,191 @@
+- content_for :title, "Manage Eligibility Requirements for #{@position.display_name}"
+- content_for :header, "Manage Eligibility Requirements for #{@position.display_name}"
+
+- content_for :go_back_link do
+  = link_to organization_position_path(@organization, @position), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Position
+
+.card
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-check2-circle.me-2
+      Eligibility Requirements Configuration
+    %p.mb-0.text-muted
+      Configure eligibility requirements for this position. Leave fields blank to remove requirements.
+  
+  .card-body
+    = form_with url: update_eligibility_organization_position_path(@organization, @position), method: :patch, local: true do |form|
+      - if flash[:alert]
+        .alert.alert-danger
+          = flash[:alert]
+      
+      - eligibility = @eligibility_data || {}
+      
+      / Milestone Mileage Requirements
+      .card.mb-4
+        .card-header.bg-light
+          %h6.mb-0 Milestone Mileage Requirements
+        .card-body
+          .mb-3
+            = form.label "eligibility_requirements[mileage_requirements][minimum_mileage_points]", "Minimum Mileage Points", class: "form-label"
+            = form.number_field "eligibility_requirements[mileage_requirements][minimum_mileage_points]",
+              value: eligibility.dig('mileage_requirements', 'minimum_mileage_points'),
+              class: "form-control",
+              min: @minimum_mileage_from_assignments || 0,
+              step: 1
+            - if @minimum_mileage_from_assignments && @minimum_mileage_from_assignments > 0
+              %small.form-text.text-muted
+                Total milestone points required across all abilities. Minimum: #{@minimum_mileage_from_assignments} points (based on required assignments).
+            - else
+              %small.form-text.text-muted Total milestone points required across all abilities
+      
+      / Position Check-In Requirements
+      .card.mb-4
+        .card-header.bg-light
+          %h6.mb-0 Position Check-In Requirements
+        .card-body
+          .row
+            .col-md-6.mb-3
+              = form.label "eligibility_requirements[position_check_in_requirements][minimum_rating]", "Minimum Rating", class: "form-label"
+              = form.select "eligibility_requirements[position_check_in_requirements][minimum_rating]",
+                options_for_select([[-3, -3], [-2, -2], [-1, -1], [0, 0], [1, 1], [2, 2], [3, 3]], eligibility.dig('position_check_in_requirements', 'minimum_rating')),
+                { include_blank: "Select rating" },
+                class: "form-select"
+              %small.form-text.text-muted Rating that must be met or exceeded (-3 to 3)
+            .col-md-6.mb-3
+              = form.label "eligibility_requirements[position_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+              = form.number_field "eligibility_requirements[position_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+                value: eligibility.dig('position_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+                class: "form-control",
+                min: 0,
+                step: 1
+              %small.form-text.text-muted Number of months at or above minimum rating
+      
+      / Required Assignment Check-In Requirements
+      .card.mb-4
+        .card-header.bg-light
+          %h6.mb-0 Required Assignment Check-In Requirements
+        .card-body
+          .row
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[required_assignment_check_in_requirements][minimum_rating]", "Minimum Rating", class: "form-label"
+              = form.select "eligibility_requirements[required_assignment_check_in_requirements][minimum_rating]",
+                options_for_select([['Meeting', 'meeting'], ['Exceeding', 'exceeding']], eligibility.dig('required_assignment_check_in_requirements', 'minimum_rating')),
+                { include_blank: "Select rating" },
+                class: "form-select"
+              %small.form-text.text-muted Rating that must be met or exceeded
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[required_assignment_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+              = form.number_field "eligibility_requirements[required_assignment_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+                value: eligibility.dig('required_assignment_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+                class: "form-control",
+                min: 0,
+                step: 1
+              %small.form-text.text-muted Number of months at or above minimum rating
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[required_assignment_check_in_requirements][minimum_percentage_of_assignments]", "Minimum Percentage", class: "form-label"
+              = form.number_field "eligibility_requirements[required_assignment_check_in_requirements][minimum_percentage_of_assignments]",
+                value: eligibility.dig('required_assignment_check_in_requirements', 'minimum_percentage_of_assignments'),
+                class: "form-control",
+                min: 0,
+                max: 100,
+                step: 0.1
+              %small.form-text.text-muted Percentage of required assignments that must meet criteria (0-100)
+      
+      / Unique-to-You Assignment Check-In Requirements
+      .card.mb-4
+        .card-header.bg-light
+          %h6.mb-0 Unique-to-You Assignment Check-In Requirements
+        .card-body
+          .row
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_rating]", "Minimum Rating", class: "form-label"
+              = form.select "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_rating]",
+                options_for_select([['Meeting', 'meeting'], ['Exceeding', 'exceeding']], eligibility.dig('unique_to_you_assignment_check_in_requirements', 'minimum_rating')),
+                { include_blank: "Select rating" },
+                class: "form-select"
+              %small.form-text.text-muted Rating that must be met or exceeded
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+              = form.number_field "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+                value: eligibility.dig('unique_to_you_assignment_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+                class: "form-control",
+                min: 0,
+                step: 1
+              %small.form-text.text-muted Number of months at or above minimum rating
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_percentage_of_assignments]", "Minimum Percentage", class: "form-label"
+              = form.number_field "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_percentage_of_assignments]",
+                value: eligibility.dig('unique_to_you_assignment_check_in_requirements', 'minimum_percentage_of_assignments'),
+                class: "form-control",
+                min: 0,
+                max: 100,
+                step: 0.1
+              %small.form-text.text-muted Percentage of unique-to-you assignments that must meet criteria (0-100)
+      
+      / Company Aspirational Values Check-In Requirements
+      .card.mb-4
+        .card-header.bg-light
+          %h6.mb-0 Company Aspirational Values Check-In Requirements
+        .card-body
+          .row
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_rating]", "Minimum Rating", class: "form-label"
+              = form.select "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_rating]",
+                options_for_select([['Meeting', 'meeting'], ['Exceeding', 'exceeding']], eligibility.dig('company_aspirational_values_check_in_requirements', 'minimum_rating')),
+                { include_blank: "Select rating" },
+                class: "form-select"
+              %small.form-text.text-muted Rating that must be met or exceeded
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+              = form.number_field "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+                value: eligibility.dig('company_aspirational_values_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+                class: "form-control",
+                min: 0,
+                step: 1
+              %small.form-text.text-muted Number of months at or above minimum rating
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_percentage_of_aspirational_values]", "Minimum Percentage", class: "form-label"
+              = form.number_field "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_percentage_of_aspirational_values]",
+                value: eligibility.dig('company_aspirational_values_check_in_requirements', 'minimum_percentage_of_aspirational_values'),
+                class: "form-control",
+                min: 0,
+                max: 100,
+                step: 0.1
+              %small.form-text.text-muted Percentage of company aspirational values that must meet criteria (0-100)
+      
+      / Title/Department Aspirational Values Check-In Requirements
+      .card.mb-4
+        .card-header.bg-light
+          %h6.mb-0 Title/Department Aspirational Values Check-In Requirements
+        .card-body
+          .row
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[title_department_aspirational_values_check_in_requirements][minimum_rating]", "Minimum Rating", class: "form-label"
+              = form.select "eligibility_requirements[title_department_aspirational_values_check_in_requirements][minimum_rating]",
+                options_for_select([['Meeting', 'meeting'], ['Exceeding', 'exceeding']], eligibility.dig('title_department_aspirational_values_check_in_requirements', 'minimum_rating')),
+                { include_blank: "Select rating" },
+                class: "form-select"
+              %small.form-text.text-muted Rating that must be met or exceeded
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[title_department_aspirational_values_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+              = form.number_field "eligibility_requirements[title_department_aspirational_values_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+                value: eligibility.dig('title_department_aspirational_values_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+                class: "form-control",
+                min: 0,
+                step: 1
+              %small.form-text.text-muted Number of months at or above minimum rating
+            .col-md-4.mb-3
+              = form.label "eligibility_requirements[title_department_aspirational_values_check_in_requirements][minimum_percentage_of_aspirational_values]", "Minimum Percentage", class: "form-label"
+              = form.number_field "eligibility_requirements[title_department_aspirational_values_check_in_requirements][minimum_percentage_of_aspirational_values]",
+                value: eligibility.dig('title_department_aspirational_values_check_in_requirements', 'minimum_percentage_of_aspirational_values'),
+                class: "form-control",
+                min: 0,
+                max: 100,
+                step: 0.1
+              %small.form-text.text-muted Percentage of title/department aspirational values that must meet criteria (0-100)
+      
+      .d-flex.justify-content-between.mt-4
+        = link_to "Cancel", organization_position_path(@organization, @position), class: "btn btn-secondary"
+        = form.submit "Save Eligibility Requirements", class: "btn btn-primary"
