@@ -130,11 +130,13 @@ module ObservationsHelper
   def privacy_level_display_text(observation)
     observee_names = observation.observed_teammates.map { |t| t.person.casual_name }
     
-    # Get manager names for all observees (deduplicated)
+    # Get direct manager names (level 0 only) for all observees (deduplicated)
     manager_names = []
     observation.observed_teammates.each do |teammate|
       managers = ManagerialHierarchyQuery.new(person: teammate.person, organization: observation.company).call
-      managers.each do |manager_info|
+      # Filter to only include direct managers (level 0)
+      direct_managers = managers.select { |m| m[:level] == 0 }
+      direct_managers.each do |manager_info|
         manager_name = manager_info[:name]
         manager_names << manager_name unless manager_names.include?(manager_name)
       end
@@ -156,9 +158,14 @@ module ObservationsHelper
         '👔 Just for their manager\'s eyes only'
       end
     when 'observed_and_managers'
-      observee_text = observee_names.any? ? "Observees: #{observee_names.join(', ')}" : 'Observees'
-      manager_text = manager_names.any? ? "Managers: #{manager_names.join(', ')}" : 'Managers'
-      "👥 #{observee_text} AND #{manager_text}"
+      parts = []
+      parts << observee_names.join(', ') if observee_names.any?
+      parts << manager_names.join(', ') if manager_names.any?
+      if parts.any?
+        "👥 #{parts.join(' AND ')}"
+      else
+        '👥 Observees and Managers'
+      end
     when 'public_to_company'
       "🏢 Public to #{observation.company.name}"
     when 'public_to_world'

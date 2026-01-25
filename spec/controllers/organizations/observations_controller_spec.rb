@@ -161,6 +161,63 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       # The wall view should show observee avatars and story content
       expect(response.body).to include('rounded-circle bg-primary') # Avatar circles
     end
+
+    context 'large list view' do
+      it 'renders large list view when view is large_list' do
+        observation # Create the observation
+        get :index, params: { organization_id: company.id, view: 'large_list' }
+        expect(response).to have_http_status(:success)
+        expect(assigns(:current_view)).to eq('large_list')
+      end
+
+      it 'shows "Who can see this" header instead of "Privacy"' do
+        observation # Create the observation
+        get :index, params: { organization_id: company.id, view: 'large_list' }
+        expect(response.body).to include('Who can see this')
+        expect(response.body).not_to include('<strong>Privacy:</strong>')
+      end
+
+      context 'with managers' do
+        let(:direct_manager_person) { create(:person, first_name: 'Direct', last_name: 'Manager') }
+        let(:direct_manager_teammate) { CompanyTeammate.create!(person: direct_manager_person, organization: company) }
+        let(:upper_manager_person) { create(:person, first_name: 'Upper', last_name: 'Manager') }
+        let(:upper_manager_teammate) { CompanyTeammate.create!(person: upper_manager_person, organization: company) }
+        let(:managers_only_observation) do
+          obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only)
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+          obs
+        end
+        let(:observed_and_managers_observation) do
+          obs = build(:observation, observer: observer, company: company, privacy_level: :observed_and_managers)
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+          obs
+        end
+
+        before do
+          # Set up hierarchy: observee -> direct_manager -> upper_manager
+          create(:employment_tenure, teammate: direct_manager_teammate, company: company, manager_teammate: upper_manager_teammate)
+          create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: direct_manager_teammate)
+        end
+
+        it 'shows only direct managers for managers_only privacy level' do
+          managers_only_observation
+          get :index, params: { organization_id: company.id, view: 'large_list' }
+          expect(response.body).to include('Direct Manager')
+          expect(response.body).not_to include('Upper Manager')
+        end
+
+        it 'shows only direct managers for observed_and_managers privacy level' do
+          observed_and_managers_observation
+          get :index, params: { organization_id: company.id, view: 'large_list' }
+          expect(response.body).to include('Direct Manager')
+          expect(response.body).not_to include('Upper Manager')
+        end
+      end
+    end
   end
 
   describe 'GET #show' do
@@ -2840,21 +2897,17 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(response).to render_template(layout: 'overlay')
       end
 
-      it 'assigns available teammates for public observations including observer' do
+      it 'assigns available teammates for public observations excluding observer' do
         # Get the observer teammate (already created by before block) and create Slack identity
         signed_in_teammate = company.teammates.find_by(person: observer)
         create(:teammate_identity, teammate: signed_in_teammate, provider: 'slack', uid: 'U123456')
         
         get :share_privately, params: { organization_id: company.id, id: public_observation.id }
         expect(assigns(:available_teammates)).to be_present
-        # Should include observees and observer
+        # Should include observees but NOT the observer (observer is always in the DM)
         teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
         expect(teammate_ids).to include(observee_teammate.id)
-        expect(teammate_ids).to include(signed_in_teammate.id)
-        
-        # Check observer role
-        observer_info = assigns(:available_teammates).find { |t| t[:teammate].id == signed_in_teammate.id }
-        expect(observer_info[:role]).to eq('Observer')
+        expect(teammate_ids).not_to include(signed_in_teammate.id)
       end
 
       it 'marks teammates without Slack identity as disabled' do
@@ -2915,7 +2968,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
         end
 
-        it 'shows observer and observees for observed_only' do
+        it 'shows observees for observed_only excluding observer' do
           # Get the observer teammate (already created by before block) and create Slack identity
           signed_in_teammate = company.teammates.find_by(person: observer)
           create(:teammate_identity, teammate: signed_in_teammate, provider: 'slack', uid: 'U123456')
@@ -2926,12 +2979,12 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           expect(assigns(:available_teammates)).to be_present
           teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
           expect(teammate_ids).to include(observee_teammate.id)
-          expect(teammate_ids).to include(signed_in_teammate.id)
+          expect(teammate_ids).not_to include(signed_in_teammate.id) # Observer is always in the DM
           # Should not include managers
           expect(teammate_ids).not_to include(manager_teammate.id)
         end
 
-        it 'shows observer and managers for managers_only' do
+        it 'shows managers for managers_only excluding observer' do
           # Get the observer teammate (already created by before block) and create Slack identity
           signed_in_teammate = company.teammates.find_by(person: observer)
           create(:teammate_identity, teammate: signed_in_teammate, provider: 'slack', uid: 'U123456')
@@ -2944,9 +2997,29 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           get :share_privately, params: { organization_id: company.id, id: managers_only_obs.id }
           teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
           expect(teammate_ids).to include(manager_teammate.id)
-          expect(teammate_ids).to include(signed_in_teammate.id)
+          expect(teammate_ids).not_to include(signed_in_teammate.id) # Observer is always in the DM
           # Should not include observees
           expect(teammate_ids).not_to include(observee_teammate.id)
+        end
+
+        it 'excludes observer even when observer is also an observee' do
+          # Get the observer teammate (already created by before block) and create Slack identity
+          signed_in_teammate = company.teammates.find_by(person: observer)
+          create(:teammate_identity, teammate: signed_in_teammate, provider: 'slack', uid: 'U123456')
+          
+          # Create an observation where the observer is also an observee
+          self_observation = build(:observation, observer: observer, company: company, privacy_level: :public_to_company)
+          self_observation.observees.build(teammate: signed_in_teammate) # Observer is also an observee
+          self_observation.observees.build(teammate: observee_teammate) # Add another observee
+          self_observation.save!
+          self_observation.publish!
+
+          get :share_privately, params: { organization_id: company.id, id: self_observation.id }
+          teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
+          # Observer should NOT be in the list, even though they're also an observee
+          expect(teammate_ids).not_to include(signed_in_teammate.id)
+          # Other observee should still be included
+          expect(teammate_ids).to include(observee_teammate.id)
         end
       end
     end

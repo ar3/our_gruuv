@@ -876,6 +876,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       build_private_observation_teammates_list
     end
     
+    # Exclude the observer from the list since they're always included in the DM
+    observer_teammate = @observation.company.teammates.find_by(person: @observation.observer)
+    if observer_teammate
+      @available_teammates = @available_teammates.reject { |t| t[:teammate].id == observer_teammate.id }
+    end
+    
     # Mark teammates with disabled status and reason
     @available_teammates.each do |teammate_info|
       teammate = teammate_info[:teammate]
