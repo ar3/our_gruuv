@@ -65,6 +65,16 @@ class Person < ApplicationRecord
     preferred_first_then_last_display_name
   end
   
+  def max_two_initials
+    first_initial = preferred_name[0] if preferred_name.present?
+    first_initial = first_name[0] if first_initial.nil? && first_name.present?
+    last_initial = last_name[0] if last_name.present?
+    last_initial = suffix[0] if last_initial.nil? && suffix.present?
+
+    initials = "#{first_initial}#{last_initial}"
+    initials
+  end
+
   def last_first_display_name
     return "#{last_name}, #{first_name} (#{preferred_name})" if last_name.present? && first_name.present? && preferred_name.present? && preferred_name != first_name
     return "#{last_name}, #{first_name}" if last_name.present? && first_name.present?

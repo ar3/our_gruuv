@@ -159,7 +159,42 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(response).to have_http_status(:success)
       expect(assigns(:current_view)).to eq('wall')
       # The wall view should show observee avatars and story content
-      expect(response.body).to include('rounded-circle bg-primary') # Avatar circles
+      # Should show either profile image or initials in blue circle
+      expect(response.body).to include('rounded-circle')
+    end
+
+    context 'wall view with profile images' do
+      let(:observee_with_image) { create(:person, first_name: 'Alice', last_name: 'Smith') }
+      let(:observee_without_image) { create(:person, first_name: 'Bob', last_name: 'Jones') }
+      let(:teammate_with_image) { create(:teammate, person: observee_with_image, organization: company) }
+      let(:teammate_without_image) { create(:teammate, person: observee_without_image, organization: company) }
+      let!(:person_identity) { create(:person_identity, person: observee_with_image, profile_image_url: 'https://example.com/avatar.jpg') }
+      let(:observation_with_image) do
+        obs = build(:observation, observer: observer, company: company)
+        obs.observees.build(teammate: teammate_with_image)
+        obs.save!
+        obs
+      end
+      let(:observation_without_image) do
+        obs = build(:observation, observer: observer, company: company)
+        obs.observees.build(teammate: teammate_without_image)
+        obs.save!
+        obs
+      end
+
+      it 'shows profile image when available' do
+        observation_with_image
+        get :index, params: { organization_id: company.id, view: 'wall' }
+        expect(response.body).to include('https://example.com/avatar.jpg')
+        expect(response.body).to include('object-fit: cover')
+      end
+
+      it 'shows initials in blue circle when no profile image' do
+        observation_without_image
+        get :index, params: { organization_id: company.id, view: 'wall' }
+        expect(response.body).to include('bg-primary')
+        expect(response.body).to include(observee_without_image.max_two_initials)
+      end
     end
 
     context 'large list view' do

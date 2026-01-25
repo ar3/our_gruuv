@@ -162,6 +162,56 @@ RSpec.describe Person, type: :model do
     end
   end
 
+  describe '#max_two_initials' do
+    context 'with preferred name and last name' do
+      let(:person) { create(:person, preferred_name: 'Johnny', first_name: 'John', last_name: 'Doe') }
+
+      it 'returns preferred name initial and last name initial' do
+        expect(person.max_two_initials).to eq('JD')
+      end
+    end
+
+    context 'with first name and last name, no preferred name' do
+      let(:person) { create(:person, preferred_name: nil, first_name: 'Jane', last_name: 'Smith') }
+
+      it 'returns first name initial and last name initial' do
+        expect(person.max_two_initials).to eq('JS')
+      end
+    end
+
+    context 'with preferred name but no last name' do
+      let(:person) { create(:person, preferred_name: 'Bob', first_name: 'Robert', last_name: nil) }
+
+      it 'returns preferred name initial only' do
+        expect(person.max_two_initials).to eq('B')
+      end
+    end
+
+    context 'with suffix but no last name' do
+      let(:person) { create(:person, preferred_name: 'John', first_name: 'John', last_name: nil, suffix: 'Jr') }
+
+      it 'returns first initial and suffix initial' do
+        expect(person.max_two_initials).to eq('JJ')
+      end
+    end
+
+    context 'with only first name' do
+      let(:person) { create(:person, preferred_name: nil, first_name: 'Alice', last_name: nil, suffix: nil) }
+
+      it 'returns first name initial only' do
+        expect(person.max_two_initials).to eq('A')
+      end
+    end
+
+    context 'with no name fields' do
+      let(:person) { create(:person, preferred_name: nil, first_name: nil, last_name: nil, suffix: nil) }
+
+      it 'returns empty string' do
+        expect(person.max_two_initials).to eq('')
+      end
+    end
+  end
+
   describe '#latest_profile_image_url' do
     let(:person) { create(:person) }
 
