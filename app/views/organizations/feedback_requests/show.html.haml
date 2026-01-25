@@ -1,0 +1,175 @@
+- content_for :title, "Feedback Request"
+
+- content_for :go_back_link do
+  = link_to organization_feedback_requests_path(organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Feedback Requests
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-chat-dots.me-2
+      Feedback Request
+    - if @feedback_request.subject_line.present?
+      %small.text-muted.ms-2= @feedback_request.subject_line
+    - case @feedback_request.state
+    - when 'invalid'
+      %span.badge.bg-danger.ms-2 Invalid
+    - when 'ready'
+      %span.badge.bg-warning.ms-2 Ready
+    - when 'active'
+      %span.badge.bg-success.ms-2 Active
+    - when 'archived'
+      %span.badge.bg-secondary.ms-2 Archived
+    - if @feedback_request.archived?
+      %span.badge.bg-secondary.ms-2 Archived
+
+.card.mb-3
+  .card-header
+    %h5.mb-0 Request Details
+  .card-body
+    .row
+      .col-md-6
+        %p
+          %strong Subject:
+          = @feedback_request.subject_of_feedback_teammate.person.display_name
+        %p
+          %strong Requestor:
+          = @feedback_request.requestor_teammate.person.display_name
+        %p
+          %strong Subject Line:
+          = @feedback_request.subject_line
+        %p
+          %strong State:
+          - case @feedback_request.state
+          - when 'invalid'
+            %span.badge.bg-danger Invalid
+          - when 'ready'
+            %span.badge.bg-warning Ready
+          - when 'active'
+            %span.badge.bg-success Active
+          - when 'archived'
+            %span.badge.bg-secondary Archived
+        %p
+          %strong Focus Items:
+          - rateables = @questions.map(&:rateable).compact.uniq
+          - if rateables.any?
+            - rateables.each do |rateable|
+              - case rateable.class.name
+              - when 'Position'
+                %span.badge.bg-dark.me-1= rateable.display_name
+              - when 'Assignment'
+                %span.badge.bg-primary.me-1= rateable.title
+              - when 'Ability'
+                %span.badge.bg-info.me-1= rateable.name
+              - when 'Aspiration'
+                %span.badge.bg-success.me-1= rateable.name
+          - else
+            %span.text-muted None selected
+      .col-md-6
+        %p
+          %strong Created:
+          = format_time_in_user_timezone(@feedback_request.created_at)
+        %p
+          %strong Questions:
+          = @questions.count
+        %p
+          %strong Responders:
+          = @responders.count
+        %p
+          %strong Observations:
+          = @observations.count
+
+.card.mb-3
+  .card-header
+    %h5.mb-0 Questions
+  .card-body
+    - if @questions.any?
+      %ol
+        - @questions.each do |question|
+          %li.mb-2
+            = question.question_text
+            - if question.rateable
+              %br
+              %small.text-muted
+                - case question.rateable.class.name
+                - when 'Position'
+                  %i.bi.bi-briefcase.me-1
+                  About: #{question.rateable.display_name}
+                - when 'Assignment'
+                  %i.bi.bi-briefcase.me-1
+                  About: #{question.rateable.title}
+                - when 'Ability'
+                  %i.bi.bi-star.me-1
+                  About: #{question.rateable.name}
+                - when 'Aspiration'
+                  %i.bi.bi-bullseye.me-1
+                  About: #{question.rateable.name}
+    - else
+      %p.text-muted No questions defined.
+
+.card.mb-3
+  .card-header
+    %h5.mb-0 Responders
+  .card-body
+    - if @responders.any?
+      %ul.list-unstyled
+        - @responders.each do |responder|
+          %li.mb-1
+            %i.bi.bi-person.me-2
+            = responder.person.display_name
+    - else
+      %p.text-muted No responders assigned.
+
+- if @observations.any?
+  .card.mb-3
+    .card-header
+      %h5.mb-0 Generated Observations
+    .card-body
+      %ul.list-unstyled
+        - @observations.each do |observation|
+          %li.mb-2
+            = link_to organization_observation_path(organization, observation), class: "text-decoration-none" do
+              %i.bi.bi-eye.me-2
+              Observation by #{observation.observer.display_name}
+              - if observation.feedback_request_question
+                %small.text-muted
+                  (Question: #{observation.feedback_request_question.question_text.truncate(50)})
+
+.card
+  .card-body
+    .d-flex.gap-2
+      - if policy(@feedback_request).answer?
+        = link_to answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-primary" do
+          %i.bi.bi-reply.me-2
+          Answer Request
+      - if policy(@feedback_request).update? && @feedback_request.can_be_edited?
+        - if @feedback_request.feedback_request_questions.empty?
+          = link_to select_focus_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do
+            %i.bi.bi-bullseye.me-2
+            Select Focus
+        - elsif @feedback_request.feedback_request_questions.any? { |q| q.question_text.blank? }
+          = link_to feedback_prompt_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do
+            %i.bi.bi-question-circle.me-2
+            Edit Questions
+        - elsif @feedback_request.responders.empty?
+          = link_to select_respondents_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do
+            %i.bi.bi-people.me-2
+            Select Respondents
+        - else
+          = link_to edit_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do
+            %i.bi.bi-pencil.me-2
+            Edit
+      - if @feedback_request.can_add_responders? && policy(@feedback_request).update?
+        = link_to select_respondents_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-info" do
+          %i.bi.bi-person-plus.me-2
+          Add Respondents
+      - if policy(@feedback_request).destroy?
+        - if @feedback_request.archived?
+          = link_to restore_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-success" do
+            %i.bi.bi-arrow-counterclockwise.me-2
+            Restore
+        - else
+          = link_to archive_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this feedback request?" } do
+            %i.bi.bi-archive.me-2
+            Archive

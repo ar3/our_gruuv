@@ -1,0 +1,75 @@
+- content_for :title, "Select Focus"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bullseye.me-2
+      Select Focus for Feedback Request
+    - if @feedback_request.subject_line.present?
+      %small.text-muted.ms-2= @feedback_request.subject_line
+
+- content_for :go_back_link do
+  = link_to edit_organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Edit Request
+
+.card.mb-3
+  .card-body
+    %p
+      %strong Subject:
+      = @subject_teammate.person.display_name
+
+= form_with url: update_focus_organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true do |form|
+  .card.mb-3
+    .card-header
+      %h5.mb-0 Position
+    .card-body
+      - if @position
+        .form-check
+          = check_box_tag 'position_id', @position.id, @selected_position == @position, class: 'form-check-input', id: 'position_checkbox'
+          = label_tag 'position_checkbox', @position.display_name, class: 'form-check-label'
+      - else
+        %p.text-muted No active position for this subject.
+
+  .card.mb-3
+    .card-header
+      %h5.mb-0 Assignments
+      %small.text-muted Active assignment tenures and required assignments for active position
+    .card-body
+      - if @assignments.any?
+        - @assignments.each do |assignment|
+          .form-check
+            = check_box_tag 'assignment_ids[]', assignment.id, @selected_assignments.include?(assignment), class: 'form-check-input', id: "assignment_#{assignment.id}"
+            = label_tag "assignment_#{assignment.id}", assignment.title, class: 'form-check-label'
+      - else
+        %p.text-muted No assignments available.
+
+  .card.mb-3
+    .card-header
+      %h5.mb-0 Abilities
+      %small.text-muted Required for all selected assignments
+    .card-body
+      - if @abilities.any?
+        - @abilities.each do |ability|
+          .form-check
+            = check_box_tag 'ability_ids[]', ability.id, @selected_abilities.include?(ability), class: 'form-check-input', id: "ability_#{ability.id}"
+            = label_tag "ability_#{ability.id}", ability.name, class: 'form-check-label'
+      - else
+        %p.text-muted No abilities available.
+
+  .card.mb-3
+    .card-header
+      %h5.mb-0 Aspirations
+      %small.text-muted Company and department aspirations
+    .card-body
+      - if @aspirations.any?
+        - @aspirations.each do |aspiration|
+          .form-check
+            = check_box_tag 'aspiration_ids[]', aspiration.id, @selected_aspirations.include?(aspiration), class: 'form-check-input', id: "aspiration_#{aspiration.id}"
+            = label_tag "aspiration_#{aspiration.id}", aspiration.name, class: 'form-check-label'
+      - else
+        %p.text-muted No aspirations available.
+
+  .d-flex.justify-content-between
+    = link_to 'Cancel', organization_feedback_requests_path(organization), class: 'btn btn-secondary'
+    = form.submit 'Continue to Questions', class: 'btn btn-primary'

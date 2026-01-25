@@ -20,6 +20,12 @@ class CompanyPolicy < OrganizationPolicy
     admin_bypass? || viewing_teammate.can_create_employment?
   end
 
+  def view_feedback_requests?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    admin_bypass? || true
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate

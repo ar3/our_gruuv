@@ -156,6 +156,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Feedback Requests (🚧Alpha🚧)',
+            icon: 'bi-chat-dots',
+            path: organization_feedback_requests_path(current_organization),
+            policy_check: -> { policy(current_company).view_feedback_requests? },
+            coming_soon: false
+          },
+          {
             label: 'Departments & Teams',
             icon: 'bi-diagram-3',
             path: organization_departments_and_teams_path(current_organization),

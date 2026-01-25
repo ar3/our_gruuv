@@ -98,6 +98,12 @@
                 %strong Permalink: 
                 = link_to @observation.decorate.permalink_url, @observation.decorate.permalink_url, target: '_blank', class: 'text-decoration-none'
                 %i.bi.bi-box-arrow-up-right.ms-1
+            - if @observation.feedback_request_question.present?
+              %p
+                %strong Created from: 
+                = link_to organization_feedback_request_path(@organization, @observation.feedback_request_question.feedback_request), class: 'text-decoration-none' do
+                  Feedback Request
+                  %i.bi.bi-box-arrow-up-right.ms-1
 
     - if @observation.observed_teammates.any?
       .card.mb-4{ role: "region", "aria-labelledby": "observation-observees" }

@@ -1,0 +1,28 @@
+.row
+  .col-md-8
+    / Main statistics/metrics area
+    .row.text-center
+      .col-3
+        .h3.text-primary= @spotlight_stats[:total_responders] || 0
+        %small.text-muted Total Responders
+      .col-3
+        .h3.text-success= @spotlight_stats[:responded_count] || 0
+        %small.text-muted Have Responded
+      .col-3
+        .h3.text-warning= @spotlight_stats[:unanswered_count] || 0
+        %small.text-muted Haven't Responded
+      .col-3
+        .h3.text-info= @spotlight_stats[:open_requests] || 0
+        %small.text-muted Open Requests
+  
+  .col-md-4
+    / Action alerts or status messages
+    - if @spotlight_stats[:open_requests].to_i == 0
+      .alert.alert-info.small
+        %i.bi.bi-info-circle.me-2
+        %strong No open feedback requests
+    - elsif @spotlight_stats[:unanswered_count].to_i > 0
+      response_rate = @spotlight_stats[:total_responders].to_i > 0 ? (@spotlight_stats[:responded_count].to_f / @spotlight_stats[:total_responders].to_f * 100).round : 0
+      .alert.alert-warning.small
+        %i.bi.bi-exclamation-triangle.me-2
+        %strong #{@spotlight_stats[:unanswered_count]} responder#{'s' if @spotlight_stats[:unanswered_count] != 1} haven't responded (#{100 - response_rate}% remaining)

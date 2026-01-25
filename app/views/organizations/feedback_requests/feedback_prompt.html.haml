@@ -1,0 +1,53 @@
+- content_for :title, "Feedback Questions"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-question-circle.me-2
+      Feedback Questions
+    - if @feedback_request.subject_line.present?
+      %small.text-muted.ms-2= @feedback_request.subject_line
+
+- content_for :go_back_link do
+  = link_to select_focus_organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Select Focus
+
+.card
+  .card-body
+    = form_with url: update_questions_organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true do |form|
+      - if flash[:alert]
+        .alert.alert-danger= flash[:alert]
+      
+      %table.table.table-bordered
+        %thead
+          %tr
+            %th{style: 'width: 30%'} Focus Item
+            %th{style: 'width: 70%'} Question
+        %tbody
+          - @questions.each do |question|
+            %tr
+              %td
+                - case question.rateable_type
+                - when 'Position'
+                  %strong Position:
+                  %br
+                  = question.rateable.display_name
+                - when 'Assignment'
+                  %strong Assignment:
+                  %br
+                  = question.rateable.title
+                - when 'Ability'
+                  %strong Ability:
+                  %br
+                  = question.rateable.name
+                - when 'Aspiration'
+                  %strong Aspiration:
+                  %br
+                  = question.rateable.name
+              %td
+                = text_area_tag "questions[#{question.id}][question_text]", question.question_text, class: 'form-control', rows: 3, required: true, placeholder: 'Enter your question about this focus item...'
+      
+      .d-flex.justify-content-between.mt-3
+        = link_to 'Cancel', organization_feedback_requests_path(organization), class: 'btn btn-secondary'
+        = form.submit 'Continue to Select Respondents', class: 'btn btn-primary'

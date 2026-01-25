@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_25_205515) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -363,6 +363,44 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
     t.index ["referable_type", "referable_id"], name: "index_external_references_on_referable"
   end
 
+  create_table "feedback_request_questions", force: :cascade do |t|
+    t.bigint "feedback_request_id", null: false
+    t.text "question_text", null: false
+    t.integer "position", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "rateable_type"
+    t.bigint "rateable_id"
+    t.index ["feedback_request_id", "position"], name: "index_feedback_request_questions_on_request_and_position", unique: true
+    t.index ["feedback_request_id"], name: "index_feedback_request_questions_on_feedback_request_id"
+    t.index ["position"], name: "index_feedback_request_questions_on_position"
+    t.index ["rateable_type", "rateable_id"], name: "index_feedback_request_questions_on_rateable"
+  end
+
+  create_table "feedback_request_responders", force: :cascade do |t|
+    t.bigint "feedback_request_id", null: false
+    t.bigint "teammate_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["feedback_request_id", "teammate_id"], name: "index_feedback_request_responders_on_request_and_teammate", unique: true
+    t.index ["feedback_request_id"], name: "index_feedback_request_responders_on_feedback_request_id"
+    t.index ["teammate_id"], name: "index_feedback_request_responders_on_teammate_id"
+  end
+
+  create_table "feedback_requests", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "requestor_teammate_id", null: false
+    t.bigint "subject_of_feedback_teammate_id", null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "subject_line"
+    t.index ["company_id"], name: "index_feedback_requests_on_company_id"
+    t.index ["deleted_at"], name: "index_feedback_requests_on_deleted_at"
+    t.index ["requestor_teammate_id"], name: "index_feedback_requests_on_requestor_teammate_id"
+    t.index ["subject_of_feedback_teammate_id"], name: "index_feedback_requests_on_subject_of_feedback_teammate_id"
+  end
+
   create_table "goal_check_ins", force: :cascade do |t|
     t.bigint "goal_id", null: false
     t.date "check_in_week_start", null: false
@@ -645,10 +683,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
     t.string "created_as_type"
     t.bigint "observation_trigger_id"
     t.bigint "observable_moment_id"
+    t.bigint "feedback_request_question_id"
     t.index ["company_id"], name: "index_observations_on_company_id"
     t.index ["created_as_type"], name: "index_observations_on_created_as_type"
     t.index ["custom_slug"], name: "index_observations_on_custom_slug", unique: true
     t.index ["deleted_at"], name: "index_observations_on_deleted_at"
+    t.index ["feedback_request_question_id"], name: "index_observations_on_feedback_request_question_id"
     t.index ["observable_moment_id"], name: "index_observations_on_observable_moment_id"
     t.index ["observation_trigger_id"], name: "index_observations_on_observation_trigger_id"
     t.index ["observation_type"], name: "index_observations_on_observation_type"
@@ -1103,6 +1143,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
   add_foreign_key "employment_tenures", "teammates"
   add_foreign_key "employment_tenures", "teammates", column: "manager_teammate_id"
   add_foreign_key "external_project_caches", "teammates", column: "last_synced_by_teammate_id"
+  add_foreign_key "feedback_request_questions", "feedback_requests"
+  add_foreign_key "feedback_request_responders", "feedback_requests"
+  add_foreign_key "feedback_request_responders", "teammates"
+  add_foreign_key "feedback_requests", "organizations", column: "company_id"
+  add_foreign_key "feedback_requests", "teammates", column: "requestor_teammate_id"
+  add_foreign_key "feedback_requests", "teammates", column: "subject_of_feedback_teammate_id"
   add_foreign_key "goal_check_ins", "goals"
   add_foreign_key "goal_check_ins", "people", column: "confidence_reporter_id"
   add_foreign_key "goal_links", "goals", column: "child_id"
@@ -1129,6 +1175,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_24_210306) do
   add_foreign_key "observable_moments", "teammates", column: "primary_potential_observer_id"
   add_foreign_key "observable_moments", "teammates", column: "processed_by_teammate_id"
   add_foreign_key "observation_ratings", "observations"
+  add_foreign_key "observations", "feedback_request_questions"
   add_foreign_key "observations", "observable_moments"
   add_foreign_key "observations", "observation_triggers"
   add_foreign_key "observations", "organizations", column: "company_id"

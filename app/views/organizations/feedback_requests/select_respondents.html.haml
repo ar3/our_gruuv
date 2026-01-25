@@ -1,0 +1,31 @@
+- content_for :title, "Select Respondents"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-people.me-2
+      Select Respondents
+    - if @feedback_request.subject_line.present?
+      %small.text-muted.ms-2= @feedback_request.subject_line
+
+- content_for :go_back_link do
+  = link_to feedback_prompt_organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Questions
+
+.card
+  .card-body
+    = form_with url: update_respondents_organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true do |form|
+      - if flash[:alert]
+        .alert.alert-danger= flash[:alert]
+      
+      .mb-3
+        %label.form-label
+          Select who can respond to this feedback request
+          %span.text-danger *
+        %small.text-muted.d-block Select at least one respondent
+        = select_tag 'respondent_ids[]', options_from_collection_for_select(@teammates, :id, ->(t) { t.person.display_name }, @selected_respondents), { class: 'form-select', multiple: true, required: true, size: 10 }
+      
+      .d-flex.justify-content-between
+        = link_to 'Cancel', organization_feedback_requests_path(organization), class: 'btn btn-secondary'
+        = form.submit 'Create Feedback Request', class: 'btn btn-primary'

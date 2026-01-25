@@ -1,0 +1,103 @@
+- content_for :title, "Answer Feedback Request"
+
+- content_for :go_back_link do
+  = link_to organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Feedback Request
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-reply.me-2
+      Answer Feedback Request
+
+.card.mb-3
+  .card-header
+    %h5.mb-0 Request Details
+  .card-body
+    %p
+      %strong Subject:
+      = @feedback_request.subject_of_feedback_teammate.person.display_name
+    %p
+      %strong Resources:
+      - rateables = @questions.map(&:rateable).compact.uniq
+      - if rateables.any?
+        - rateables.each do |rateable|
+          - case rateable.class.name
+          - when 'Assignment'
+            %span.badge.bg-primary.me-1= rateable.title
+          - when 'Ability'
+            %span.badge.bg-info.me-1= rateable.name
+          - when 'Aspiration'
+            %span.badge.bg-success.me-1= rateable.name
+      - else
+        %span.text-muted Generic
+
+.card
+  .card-header
+    %h5.mb-0 Answer Questions
+  .card-body
+    = form_with url: submit_answers_organization_feedback_request_path(organization, @feedback_request), method: :post, local: true do |form|
+      - if flash[:alert]
+        .alert.alert-danger= flash[:alert]
+      
+      - @questions.each_with_index do |question, index|
+        .card.mb-3
+          .card-header
+            %h6.mb-0 Question #{index + 1}
+          .card-body
+            %p.mb-3= question.question_text
+            
+            .mb-3
+              = label_tag "answers[#{question.id}][story]", "Your Answer", class: 'form-label'
+              %span.text-danger *
+              = text_area_tag "answers[#{question.id}][story]", '', class: 'form-control', rows: 4, required: true
+            
+            - if question.rateable.present?
+              .mb-3
+                %label.form-label Rating
+                = select_tag "answers[#{question.id}][rating]", options_for_select([['N/A', 'na'], ['Strongly Disagree', 'strongly_disagree'], ['Disagree', 'disagree'], ['Agree', 'agree'], ['Strongly Agree', 'strongly_agree']], 'na'), { class: 'form-select' }
+                %small.text-muted.d-block.mt-1
+                  - case question.rateable.class.name
+                  - when 'Assignment'
+                    Rating for: #{question.rateable.title}
+                  - when 'Ability'
+                    Rating for: #{question.rateable.name}
+                  - when 'Aspiration'
+                    Rating for: #{question.rateable.name}
+            
+            - unless question.rateable.present?
+              .mb-3
+                %label.form-label Optional Ratings
+                %small.text-muted.d-block You can optionally add ratings for assignments, abilities, or aspirations.
+                .row
+                  .col-md-4
+                    = label_tag "answers[#{question.id}][ratings][0][rateable_type]", "Type", class: 'form-label'
+                    = select_tag "answers[#{question.id}][ratings][0][rateable_type]", options_for_select([['', ''], ['Assignment', 'Assignment'], ['Ability', 'Ability'], ['Aspiration', 'Aspiration']], ''), { class: 'form-select' }
+                  .col-md-4
+                    = label_tag "answers[#{question.id}][ratings][0][rateable_id]", "Resource", class: 'form-label'
+                    %select.form-select{name: "answers[#{question.id}][ratings][0][rateable_id]", id: "answers_#{question.id}_ratings_0_rateable_id"}
+                      %option{value: ""} Select...
+                      - if @assignments
+                        %optgroup{label: "Assignments"}
+                          - @assignments.each do |assignment|
+                            %option{value: assignment.id}= assignment.title
+                      - if @abilities
+                        %optgroup{label: "Abilities"}
+                          - @abilities.each do |ability|
+                            %option{value: ability.id}= ability.name
+                      - if @aspirations
+                        %optgroup{label: "Aspirations"}
+                          - @aspirations.each do |aspiration|
+                            %option{value: aspiration.id}= aspiration.name
+                  .col-md-4
+                    = label_tag "answers[#{question.id}][ratings][0][rating]", "Rating", class: 'form-label'
+                    = select_tag "answers[#{question.id}][ratings][0][rating]", options_for_select([['N/A', 'na'], ['Strongly Disagree', 'strongly_disagree'], ['Disagree', 'disagree'], ['Agree', 'agree'], ['Strongly Agree', 'strongly_agree']], 'na'), { class: 'form-select' }
+            
+            .mb-3
+              = label_tag "answers[#{question.id}][privacy_level]", "Privacy Level", class: 'form-label'
+              = select_tag "answers[#{question.id}][privacy_level]", options_for_select([['For them and their managers', 'observed_and_managers'], ['For them only', 'observed_only'], ['For managers only', 'managers_only'], ['Public to company', 'public_to_company']], 'observed_and_managers'), { class: 'form-select' }
+      
+      .d-flex.justify-content-between
+        = link_to 'Cancel', organization_feedback_request_path(organization, @feedback_request), class: 'btn btn-secondary'
+        = form.submit 'Submit Answers', class: 'btn btn-primary'

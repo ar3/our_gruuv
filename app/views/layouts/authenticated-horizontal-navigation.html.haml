@@ -110,6 +110,8 @@
                     %li= link_to "Slack Settings", organization_slack_path(current_organization), class: "dropdown-item"
                   - if policy(current_organization).show?
                     %li= link_to "Huddle Playbooks", organization_huddle_playbooks_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_feedback_requests?
+                    %li= link_to "Feedback Requests", organization_feedback_requests_path(current_organization), class: "dropdown-item"
                   - if policy(current_company).customize_company?
                     %li= link_to "#{current_company.name} Preferences", edit_organization_company_preference_path(current_organization), class: "dropdown-item"
                   - if policy(current_company).view_bulk_sync_events?

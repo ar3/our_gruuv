@@ -1,0 +1,29 @@
+.row
+  .col-md-8
+    / Main statistics/metrics area
+    .row.text-center
+      .col-3
+        .h3.text-primary= @spotlight_stats[:open_requests] || 0
+        %small.text-muted Open Requests
+      .col-3
+        .h3.text-info= @spotlight_stats[:total_requests] || 0
+        %small.text-muted Total Requests
+      .col-3
+        .h3.text-success= @spotlight_stats[:with_responses] || 0
+        %small.text-muted With Responses
+      .col-3
+        .h3.text-warning= @spotlight_stats[:total_responders] || 0
+        %small.text-muted Total Responders
+  
+  .col-md-4
+    / Action alerts or status messages
+    - if @spotlight_stats[:open_requests].to_i == 0
+      .alert.alert-info.small
+        %i.bi.bi-info-circle.me-2
+        %strong No open feedback requests
+    - elsif @spotlight_stats[:responded_count].to_i > 0 && @spotlight_stats[:total_responders].to_i > 0
+      response_rate = (@spotlight_stats[:responded_count].to_f / @spotlight_stats[:total_responders].to_f * 100).round
+      - if response_rate < 50
+        .alert.alert-warning.small
+          %i.bi.bi-exclamation-triangle.me-2
+          %strong Only #{response_rate}% of responders have answered

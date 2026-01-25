@@ -19,13 +19,13 @@ Rails.application.routes.draw do
   get "/auth/debug", to: "auth#oauth_debug"
   
   # OAuth routes
-get '/auth/:provider/callback', to: 'auth#google_oauth2_callback'
-get '/auth/failure', to: 'auth#failure'
-post '/auth/google_oauth2', to: redirect('/auth/google_oauth2')
+  get '/auth/:provider/callback', to: 'auth#google_oauth2_callback'
+  get '/auth/failure', to: 'auth#failure'
+  post '/auth/google_oauth2', to: redirect('/auth/google_oauth2')
 
-# Login page
-get '/login', to: 'auth#login', as: :login
-  
+  # Login page
+  get '/login', to: 'auth#login', as: :login
+    
   
   # Organization switcher
   get '/organizations/switch', to: 'organizations#switch_page', as: :switch_organizations
@@ -375,6 +375,26 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Feedback Requests management
+    resources :feedback_requests, module: :organizations do
+      collection do
+        get :customize_view
+        patch :update_view
+      end
+      member do
+        get :select_focus
+        patch :update_focus
+        get :feedback_prompt
+        patch :update_questions
+        get :select_respondents
+        patch :update_respondents
+        get :answer
+        post :submit_answers
+        post :archive
+        post :restore
+      end
+    end
+    
     # Seats management
     resources :seats, module: :organizations do
       collection do
@@ -477,24 +497,24 @@ get '/login', to: 'auth#login', as: :login
 
   # Organization access permissions - moved to organization namespace
 
-# Impersonation routes
-resources :impersonations, only: [:create, :destroy]
+  # Impersonation routes
+  resources :impersonations, only: [:create, :destroy]
 
-# Interest submissions for coming soon features
-resources :interest_submissions, path: 'interest', only: [:index, :new, :create, :show]
+  # Interest submissions for coming soon features
+  resources :interest_submissions, path: 'interest', only: [:index, :new, :create, :show]
 
-# Change logs
-resources :change_logs, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+  # Change logs
+  resources :change_logs, only: [:index, :show, :new, :create, :edit, :update, :destroy]
 
-# Identity management
-post '/profile/identities/connect_google', to: 'people#connect_google_identity', as: :connect_google_identity
-delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconnect_identity
+  # Identity management
+  post '/profile/identities/connect_google', to: 'people#connect_google_identity', as: :connect_google_identity
+  delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconnect_identity
 
-# User preferences
-resource :user_preferences, only: [] do
-  patch :layout, on: :collection, to: 'user_preferences#update_layout'
-  patch :vertical_nav, on: :collection, to: 'user_preferences#update_vertical_nav'
-end
+  # User preferences
+  resource :user_preferences, only: [] do
+    patch :layout, on: :collection, to: 'user_preferences#update_layout'
+    patch :vertical_nav, on: :collection, to: 'user_preferences#update_vertical_nav'
+  end
   
   # Test-only routes (only loaded in test environment)
   if Rails.env.test?

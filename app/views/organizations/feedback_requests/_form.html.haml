@@ -1,0 +1,198 @@
+= form_with model: [organization, @feedback_request], url: (@feedback_request.persisted? ? organization_feedback_request_path(organization, @feedback_request) : organization_feedback_requests_path(organization)), local: true do |form|
+  - if @feedback_request.errors.any?
+    .alert.alert-danger
+      %h4= "#{pluralize(@feedback_request.errors.count, "error")} prohibited this feedback request from being saved:"
+      %ul.mb-0
+        - @feedback_request.errors.full_messages.each do |message|
+          %li= message
+  
+  .mb-3
+    = form.label :subject_of_feedback_teammate_id, "Subject (who the feedback is about)", class: 'form-label'
+    %span.text-danger *
+    = form.collection_select :subject_of_feedback_teammate_id, @teammates, :id, ->(t) { t.person.display_name }, { prompt: 'Select a teammate...' }, { class: 'form-select', required: true }
+  
+  .mb-3
+    %label.form-label Questions
+    %span.text-danger *
+    %small.text-muted.d-block Add questions that responders will answer. Each question can be about a specific assignment, ability, or aspiration. Each answer will create a separate observation.
+    #questions_container
+      - if @questions && @questions.any?
+        - @questions.each_with_index do |question, index|
+          .question-item.mb-2.border.rounded.p-2
+            .d-flex.justify-content-between.align-items-start
+              .flex-grow-1.me-2
+                = label_tag "questions_#{index}_text", "Question #{index + 1}", class: 'form-label'
+                = text_area_tag "feedback_request[questions_attributes][#{index}][question_text]", question.question_text, class: 'form-control', rows: 2, required: true
+                = hidden_field_tag "feedback_request[questions_attributes][#{index}][position]", index + 1
+                - if question.persisted?
+                  = hidden_field_tag "feedback_request[questions_attributes][#{index}][id]", question.id
+                
+                .mt-2
+                  %label.form-label.small Resource (Optional)
+                  %small.text-muted.d-block This question is about:
+                  .row
+                    .col-md-6
+                      = select_tag "feedback_request[questions_attributes][#{index}][rateable_type]", options_for_select([['None', ''], ['Assignment', 'Assignment'], ['Ability', 'Ability'], ['Aspiration', 'Aspiration']], question.rateable_type), { class: 'form-select form-select-sm question-rateable-type', data: { index: index } }
+                    .col-md-6
+                      - rateable_id = question.rateable_id if question.rateable
+                      - if question.rateable_type == 'Assignment'
+                        = select_tag "feedback_request[questions_attributes][#{index}][rateable_id]", options_from_collection_for_select(@assignments, :id, :title, rateable_id), { include_blank: 'Select assignment...', class: 'form-select form-select-sm question-rateable-id', data: { index: index, type: 'Assignment' }, style: "#{'display: none;' unless question.rateable_type == 'Assignment'}" }
+                      - elsif question.rateable_type == 'Ability'
+                        = select_tag "feedback_request[questions_attributes][#{index}][rateable_id]", options_from_collection_for_select(@abilities, :id, :name, rateable_id), { include_blank: 'Select ability...', class: 'form-select form-select-sm question-rateable-id', data: { index: index, type: 'Ability' }, style: "#{'display: none;' unless question.rateable_type == 'Ability'}" }
+                      - elsif question.rateable_type == 'Aspiration'
+                        = select_tag "feedback_request[questions_attributes][#{index}][rateable_id]", options_from_collection_for_select(@aspirations, :id, :name, rateable_id), { include_blank: 'Select aspiration...', class: 'form-select form-select-sm question-rateable-id', data: { index: index, type: 'Aspiration' }, style: "#{'display: none;' unless question.rateable_type == 'Aspiration'}" }
+                      - else
+                        = select_tag "feedback_request[questions_attributes][#{index}][rateable_id]", '', { class: 'form-select form-select-sm question-rateable-id', data: { index: index }, style: 'display: none;' }
+              .btn-group-vertical
+                - unless index == 0
+                  %button.btn.btn-sm.btn-outline-secondary.move-up{type: 'button', data: { index: index }}
+                    %i.bi.bi-arrow-up
+                - unless index == @questions.length - 1
+                  %button.btn.btn-sm.btn-outline-secondary.move-down{type: 'button', data: { index: index }}
+                    %i.bi.bi-arrow-down
+                %button.btn.btn-sm.btn-outline-danger.remove-question{type: 'button', data: { index: index }}
+                  %i.bi.bi-trash
+      - else
+        .question-item.mb-2.border.rounded.p-2
+          .d-flex.justify-content-between.align-items-start
+            .flex-grow-1.me-2
+              = label_tag "questions_0_text", "Question 1", class: 'form-label'
+              = text_area_tag "feedback_request[questions_attributes][0][question_text]", '', class: 'form-control', rows: 2, required: true
+              = hidden_field_tag "feedback_request[questions_attributes][0][position]", 1
+              
+              .mt-2
+                %label.form-label.small Resource (Optional)
+                %small.text-muted.d-block This question is about:
+                .row
+                  .col-md-6
+                    = select_tag "feedback_request[questions_attributes][0][rateable_type]", options_for_select([['None', ''], ['Assignment', 'Assignment'], ['Ability', 'Ability'], ['Aspiration', 'Aspiration']], ''), { class: 'form-select form-select-sm question-rateable-type', data: { index: 0 } }
+                  .col-md-6
+                    = select_tag "feedback_request[questions_attributes][0][rateable_id]", '', { class: 'form-select form-select-sm question-rateable-id', data: { index: 0 }, style: 'display: none;' }
+            %button.btn.btn-sm.btn-outline-danger.remove-question{type: 'button', data: { index: 0 }}
+              %i.bi.bi-trash
+    
+    %button.btn.btn-sm.btn-outline-primary#add-question{type: 'button'}
+      %i.bi.bi-plus.me-1
+      Add Question
+  
+  .mb-3
+    = label_tag :responder_teammate_ids, "Responders (who can answer)", class: 'form-label'
+    %span.text-danger *
+    %small.text-muted.d-block Select teammates who can answer this feedback request.
+    = select_tag "feedback_request[responder_teammate_ids]", options_from_collection_for_select(@teammates, :id, ->(t) { t.person.display_name }, (@responders&.map(&:id) || [])), { class: 'form-select', multiple: true, required: true, size: 5 }
+  
+  .d-flex.justify-content-between
+    = link_to 'Cancel', organization_feedback_requests_path(organization), class: 'btn btn-secondary'
+    = form.submit (@feedback_request.persisted? ? 'Update Feedback Request' : 'Create Feedback Request'), class: 'btn btn-primary'
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    let questionIndex = #{@questions&.length || 1};
+    
+    // Resource type toggle
+    document.querySelectorAll('input[name="resource_type"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        document.getElementById('assignment_field').style.display = this.value === 'assignment' ? 'block' : 'none';
+        document.getElementById('ability_field').style.display = this.value === 'ability' ? 'block' : 'none';
+        document.getElementById('aspiration_field').style.display = this.value === 'aspiration' ? 'block' : 'none';
+        
+        // Clear values when hiding
+        if (this.value !== 'assignment') {
+          document.getElementById('feedback_request_assignment_id').value = '';
+        }
+        if (this.value !== 'ability') {
+          document.getElementById('feedback_request_ability_id').value = '';
+        }
+        if (this.value !== 'aspiration') {
+          document.getElementById('feedback_request_aspiration_id').value = '';
+        }
+      });
+    });
+    
+    // Add question
+    document.getElementById('add-question').addEventListener('click', function() {
+      const container = document.getElementById('questions_container');
+      const questionItem = document.createElement('div');
+      questionItem.className = 'question-item mb-2 border rounded p-2';
+      questionItem.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1 me-2">
+            <label class="form-label">Question ${questionIndex + 1}</label>
+            <textarea name="feedback_request[questions_attributes][${questionIndex}][question_text]" class="form-control" rows="2" required></textarea>
+            <input type="hidden" name="feedback_request[questions_attributes][${questionIndex}][position]" value="${questionIndex + 1}">
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger remove-question" data-index="${questionIndex}">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      `;
+      container.appendChild(questionItem);
+      questionIndex++;
+      updateQuestionNumbers();
+    });
+    
+    // Remove question
+    document.getElementById('questions_container').addEventListener('click', function(e) {
+      if (e.target.closest('.remove-question')) {
+        e.target.closest('.question-item').remove();
+        updateQuestionNumbers();
+      }
+    });
+    
+    // Move question up/down
+    document.getElementById('questions_container').addEventListener('click', function(e) {
+      const moveBtn = e.target.closest('.move-up, .move-down');
+      if (moveBtn) {
+        const item = moveBtn.closest('.question-item');
+        const container = document.getElementById('questions_container');
+        if (moveBtn.classList.contains('move-up')) {
+          const prev = item.previousElementSibling;
+          if (prev) {
+            container.insertBefore(item, prev);
+            updateQuestionNumbers();
+          }
+        } else {
+          const next = item.nextElementSibling;
+          if (next) {
+            container.insertBefore(next, item);
+            updateQuestionNumbers();
+          }
+        }
+      }
+    });
+    
+    function updateQuestionNumbers() {
+      const items = document.querySelectorAll('.question-item');
+      items.forEach(function(item, index) {
+        const label = item.querySelector('label');
+        if (label) {
+          label.textContent = `Question ${index + 1}`;
+        }
+        const positionInput = item.querySelector('input[type="hidden"][name*="[position]"]');
+        if (positionInput) {
+          positionInput.value = index + 1;
+          // Update the name attribute to reflect new index
+          const nameMatch = positionInput.name.match(/\[(\d+)\]/);
+          if (nameMatch) {
+            const oldIndex = nameMatch[1];
+            positionInput.name = positionInput.name.replace(`[${oldIndex}]`, `[${index}]`);
+            const textarea = item.querySelector('textarea');
+            if (textarea) {
+              textarea.name = textarea.name.replace(`[${oldIndex}]`, `[${index}]`);
+            }
+            // Update rateable_type and rateable_id fields
+            const rateableTypeSelect = item.querySelector('.question-rateable-type');
+            if (rateableTypeSelect) {
+              rateableTypeSelect.name = rateableTypeSelect.name.replace(`[${oldIndex}]`, `[${index}]`);
+              rateableTypeSelect.dataset.index = index;
+            }
+            const rateableIdSelect = item.querySelector('.question-rateable-id');
+            if (rateableIdSelect) {
+              rateableIdSelect.name = rateableIdSelect.name.replace(`[${oldIndex}]`, `[${index}]`);
+              rateableIdSelect.dataset.index = index;
+            }
+          }
+        }
+      });
+    }
+  });

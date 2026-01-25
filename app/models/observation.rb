@@ -8,6 +8,7 @@ class Observation < ApplicationRecord
   belongs_to :company, class_name: 'Organization'
   belongs_to :observation_trigger, optional: true
   belongs_to :observable_moment, optional: true
+  belongs_to :feedback_request_question, optional: true
   has_many :observees, dependent: :destroy
   has_many :observed_teammates, through: :observees, source: :teammate
   has_many :observation_ratings, dependent: :destroy

@@ -1,0 +1,35 @@
+- content_for :title, "Edit Feedback Request"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-pencil.me-2
+      Edit Feedback Request
+
+- content_for :go_back_link do
+  = link_to organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Feedback Request
+
+.card
+  .card-body
+    = form_with model: [organization, @feedback_request], url: organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true do |form|
+      - if @feedback_request.errors.any?
+        .alert.alert-danger
+          %ul.mb-0
+            - @feedback_request.errors.full_messages.each do |message|
+              %li= message
+      
+      .mb-3
+        = form.label :subject_of_feedback_teammate_id, "Subject (who the feedback is about)", class: 'form-label'
+        %span.text-danger *
+        = form.collection_select :subject_of_feedback_teammate_id, @teammates, :id, ->(t) { t.person.display_name }, { prompt: 'Select subject...' }, { class: 'form-select', required: true }
+      
+      .mb-3
+        = form.label :subject_line, "Subject Line", class: 'form-label'
+        %span.text-danger *
+        = form.text_field :subject_line, class: 'form-control', required: true, placeholder: 'Enter a brief subject line for this feedback request'
+      
+      .d-flex.justify-content-between
+        = link_to 'Cancel', organization_feedback_request_path(organization, @feedback_request), class: 'btn btn-secondary'
+        = form.submit 'Update', class: 'btn btn-primary'
