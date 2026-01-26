@@ -173,16 +173,17 @@
 
 = form_with url: organization_company_teammate_check_ins_path(organization, @teammate), method: :patch, scope: :check_ins do |f|
   
-  -# Position Section
+  -# Aspiration Section
   = render 'shared/section_header', 
-           title: 'Position/Overall', 
-           icon: 'bi-briefcase', 
-           description: 'Assess role performance and growth'
-  
-  = render 'position_check_ins_table',
-           position_check_in: @position_check_in,
+           title: 'Aspirational Values', 
+           icon: 'bi-star', 
+           description: 'Track progress toward personal goals'
+
+  = render 'aspiration_check_ins_table',
+           aspiration_check_ins: @aspiration_check_ins,
            form: f,
            view_mode: @view_mode
+  
   .row.mt-4
     .col-12
       .d-flex.gap-2
@@ -223,22 +224,23 @@
         = f.submit 'Save All & Continue Editing', name: 'save_and_continue_editing', class: 'btn btn-outline-primary btn-lg'
         = f.submit 'Save All & Proceed to Review Check-Ins', class: 'btn btn-primary btn-lg'
   
-  -# Aspiration Section
+  -# Position Section
   = render 'shared/section_header', 
-           title: 'Aspirational Values', 
-           icon: 'bi-star', 
-           description: 'Track progress toward personal goals'
-
-  = render 'aspiration_check_ins_table',
-           aspiration_check_ins: @aspiration_check_ins,
+           title: 'Position/Overall', 
+           icon: 'bi-briefcase', 
+           description: 'Assess role performance and growth'
+  
+  = render 'position_check_ins_table',
+           position_check_in: @position_check_in,
            form: f,
            view_mode: @view_mode
-  
   .row.mt-4
     .col-12
       .d-flex.gap-2
         = f.submit 'Save All & Continue Editing', name: 'save_and_continue_editing', class: 'btn btn-outline-primary btn-lg'
         = f.submit 'Save All & Proceed to Review Check-Ins', class: 'btn btn-primary btn-lg'
+
+
 
   -# Abilities Section
   = render 'shared/section_header', 
