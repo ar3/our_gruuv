@@ -42,7 +42,11 @@ class CompanyTeammatePolicy < ApplicationPolicy
   end
 
   def manage_assignments?
-    audit?
+    return false unless audit?
+    # Additional requirement: target person must have active employment
+    # You can't manage assignments for someone with no employment
+    return false unless record&.employment_tenures&.active&.exists?
+    true
   end
 
   def update_permission?

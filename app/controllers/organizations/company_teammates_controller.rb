@@ -300,7 +300,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def assignment_tenure_check_in_bypass
     # Check if user is a manager of this teammate OR has manage_employment permission
-    is_manager = policy(@teammate).manager?
+    # Use in_managerial_hierarchy_of? directly to check for actual manager relationship
+    # (not manager? which is too permissive - allows any teammate in same organization)
+    is_manager = current_company_teammate&.in_managerial_hierarchy_of?(@teammate) || false
     has_manage_employment = policy(organization).manage_employment?
     
     # Authorize: manager or has manage_employment permission
@@ -384,7 +386,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def update_assignment_tenure_check_in_bypass
     # Check if user is a manager of this teammate OR has manage_employment permission
-    is_manager = policy(@teammate).manager?
+    # Use in_managerial_hierarchy_of? directly to check for actual manager relationship
+    # (not manager? which is too permissive - allows any teammate in same organization)
+    is_manager = current_company_teammate&.in_managerial_hierarchy_of?(@teammate) || false
     has_manage_employment = policy(organization).manage_employment?
     
     # Authorize: manager or has manage_employment permission
@@ -423,7 +427,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         energy_percentage = energy_percentage_str.to_i
         
         company = organization.root_company || organization
-        assignment = Assignment.find_by(id: assignment_id, company: company.self_and_descendants)
+        company_ids = company.self_and_descendants.map(&:id)
+        assignment = Assignment.where(id: assignment_id, company_id: company_ids).first
         next unless assignment
         
         active_tenure = @teammate.assignment_tenures.where(assignment: assignment).active.first
@@ -436,10 +441,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
               anticipated_energy_percentage: 0
             )
             changes_made = true
-          elsif active_tenure.anticipated_energy_percentage != energy_percentage
-            # Update the energy percentage
-            active_tenure.update!(anticipated_energy_percentage: energy_percentage)
-            changes_made = true
+          else
+            current_energy = active_tenure.anticipated_energy_percentage
+            if current_energy != energy_percentage
+              # Update the energy percentage
+              active_tenure.update!(anticipated_energy_percentage: energy_percentage)
+              changes_made = true
+            end
           end
         elsif energy_percentage > 0
           # Create new tenure
@@ -457,7 +465,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         request_info = build_request_info
         snapshot = MaapSnapshot.build_for_employee(
           employee_teammate: @teammate,
-          creator_teammate: current_teammate,
+          creator_teammate: current_company_teammate,
           change_type: 'assignment_management',
           reason: 'Check-in Bypass',
           request_info: request_info

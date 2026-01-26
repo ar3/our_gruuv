@@ -172,8 +172,10 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         create(:assignment_tenure, teammate: teammate3, assignment: assignment, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 75)
         
         # Create some finalized check-ins
-        check_in1 = create(:assignment_check_in, teammate: teammate1, assignment: assignment, check_in_started_on: 2.months.ago, official_check_in_completed_at: 2.months.ago, official_rating: 'meeting', employee_personal_alignment: 'like')
-        check_in2 = create(:assignment_check_in, teammate: teammate2, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'exceeding', employee_personal_alignment: 'love')
+        manager_teammate_for_check_in = create(:company_teammate, person: create(:person), organization: organization)
+        finalized_teammate = create(:company_teammate, person: create(:person), organization: organization)
+        check_in1 = create(:assignment_check_in, teammate: teammate1, assignment: assignment, check_in_started_on: 2.months.ago, official_check_in_completed_at: 2.months.ago, official_rating: 'meeting', employee_personal_alignment: 'like', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
+        check_in2 = create(:assignment_check_in, teammate: teammate2, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'exceeding', employee_personal_alignment: 'love', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
 
         get organization_assignment_path(organization, assignment)
         expect(response).to have_http_status(:success)
@@ -190,8 +192,10 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         teammate1 = create(:teammate, person: create(:person), organization: organization)
         teammate2 = create(:teammate, person: create(:person), organization: organization)
         
-        check_in1 = create(:assignment_check_in, teammate: teammate1, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'meeting')
-        check_in2 = create(:assignment_check_in, teammate: teammate2, assignment: assignment, check_in_started_on: 2.months.ago, official_check_in_completed_at: 2.months.ago, official_rating: 'exceeding')
+        manager_teammate_for_check_in = create(:company_teammate, person: create(:person), organization: organization)
+        finalized_teammate = create(:company_teammate, person: create(:person), organization: organization)
+        check_in1 = create(:assignment_check_in, teammate: teammate1, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'meeting', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
+        check_in2 = create(:assignment_check_in, teammate: teammate2, assignment: assignment, check_in_started_on: 2.months.ago, official_check_in_completed_at: 2.months.ago, official_rating: 'exceeding', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
 
         get organization_assignment_path(organization, assignment)
         expect(response).to have_http_status(:success)
@@ -201,12 +205,14 @@ RSpec.describe 'Organizations::Assignments', type: :request do
       it 'shows most popular rating when 6 or more teammates have finalized check-ins' do
         teammates = 6.times.map { create(:teammate, person: create(:person), organization: organization) }
         
+        manager_teammate_for_check_in = create(:company_teammate, person: create(:person), organization: organization)
+        finalized_teammate = create(:company_teammate, person: create(:person), organization: organization)
         # Create 4 check-ins with 'meeting' rating and 2 with 'exceeding'
         teammates[0..3].each do |teammate|
-          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'meeting')
+          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'meeting', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
         end
         teammates[4..5].each do |teammate|
-          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'exceeding')
+          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'exceeding', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
         end
 
         get organization_assignment_path(organization, assignment)
@@ -218,12 +224,14 @@ RSpec.describe 'Organizations::Assignments', type: :request do
       it 'shows most popular personal alignment when 6 or more teammates have finalized check-ins' do
         teammates = 6.times.map { create(:teammate, person: create(:person), organization: organization) }
         
+        manager_teammate_for_check_in = create(:company_teammate, person: create(:person), organization: organization)
+        finalized_teammate = create(:company_teammate, person: create(:person), organization: organization)
         # Create 4 check-ins with 'love' alignment and 2 with 'like'
         teammates[0..3].each do |teammate|
-          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, employee_personal_alignment: 'love')
+          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, employee_personal_alignment: 'love', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
         end
         teammates[4..5].each do |teammate|
-          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, employee_personal_alignment: 'like')
+          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, employee_personal_alignment: 'like', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
         end
 
         get organization_assignment_path(organization, assignment)

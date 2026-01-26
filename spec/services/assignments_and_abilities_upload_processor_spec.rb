@@ -698,8 +698,8 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
       end
       let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
-      let!(:seat1) { create(:seat, title: title, department: nil, seat_needed_by: Date.current + 3.months) }
-      let!(:seat2) { create(:seat, title: title, department: nil, seat_needed_by: Date.current + 4.months) }
+      let!(:seat1) { create(:seat, title: title, seat_needed_by: Date.current + 3.months) }
+      let!(:seat2) { create(:seat, title: title, seat_needed_by: Date.current + 4.months) }
 
       context 'when department_names are provided' do
         let(:preview_actions) do
@@ -897,7 +897,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       end
 
       context 'with multiple seats for same position type' do
-        let!(:seat3) { create(:seat, title: title, department: nil, seat_needed_by: Date.current + 5.months) }
+        let!(:seat3) { create(:seat, title: title, seat_needed_by: Date.current + 5.months) }
         let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
 
         let(:preview_actions) do

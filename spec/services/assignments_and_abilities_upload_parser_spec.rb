@@ -256,7 +256,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadParser, type: :service do
         enhanced = parser.enhanced_preview_actions
         pa = enhanced['position_assignments'].first
         
-        expect(pa).to have_key('title_title')
+        expect(pa).to have_key('title_name')
         expect(pa).to have_key('position_display_name')
         expect(pa).to have_key('will_create_position')
         expect(pa).to have_key('seats_count')

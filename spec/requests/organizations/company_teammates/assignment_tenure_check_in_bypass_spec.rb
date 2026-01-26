@@ -320,8 +320,8 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         }.to change(MaapSnapshot, :count).by(1)
         
         snapshot = MaapSnapshot.last
-        expect(snapshot.employee_company_teammate).to eq(employee)
-        expect(snapshot.creator_company_teammate).to eq(manager)
+        expect(snapshot.employee_company_teammate).to eq(employee_teammate)
+        expect(snapshot.creator_company_teammate).to eq(manager_teammate)
         expect(snapshot.change_type).to eq('assignment_management')
         expect(snapshot.reason).to eq('Check-in Bypass')
         expect(snapshot.manager_request_info).to include('ip_address', 'user_agent', 'timestamp')

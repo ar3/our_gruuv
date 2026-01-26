@@ -58,8 +58,10 @@ RSpec.describe 'People::Assignments', type: :request do
 
       it 'loads recent check-ins' do
         # Create finalized check-ins (not open) to avoid validation error
-        check_in1 = create(:assignment_check_in, teammate: employee_teammate, assignment: assignment, check_in_started_on: 1.week.ago, employee_completed_at: 1.week.ago, manager_completed_at: 1.week.ago, official_check_in_completed_at: 1.week.ago)
-        check_in2 = create(:assignment_check_in, teammate: employee_teammate, assignment: assignment, check_in_started_on: 2.weeks.ago, employee_completed_at: 2.weeks.ago, manager_completed_at: 2.weeks.ago, official_check_in_completed_at: 2.weeks.ago)
+        manager_teammate_for_check_in = create(:company_teammate, person: create(:person), organization: organization)
+        finalized_teammate = create(:company_teammate, person: create(:person), organization: organization)
+        check_in1 = create(:assignment_check_in, teammate: employee_teammate, assignment: assignment, check_in_started_on: 1.week.ago, employee_completed_at: 1.week.ago, manager_completed_at: 1.week.ago, official_check_in_completed_at: 1.week.ago, manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
+        check_in2 = create(:assignment_check_in, teammate: employee_teammate, assignment: assignment, check_in_started_on: 2.weeks.ago, employee_completed_at: 2.weeks.ago, manager_completed_at: 2.weeks.ago, official_check_in_completed_at: 2.weeks.ago, manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
         get person_assignment_path(employee_person, assignment)
         expect(assigns(:recent_check_ins)).to include(check_in1, check_in2)
       end
@@ -173,7 +175,9 @@ RSpec.describe 'People::Assignments', type: :request do
         expect(check_in.manager_rating).to eq('meeting')
         expect(check_in.manager_private_notes).to eq('Good work')
         expect(check_in.manager_completed_at).to be_present
-        expect(check_in.manager_completed_by).to eq(manager_person)
+        # The manager_completed_by_teammate should be the signed-in teammate (manager_teammate)
+        expect(check_in.manager_completed_by_teammate).to be_present
+        expect(check_in.manager_completed_by_teammate.person).to eq(manager_person)
       end
 
       it 'does not allow manager to update employee fields' do
