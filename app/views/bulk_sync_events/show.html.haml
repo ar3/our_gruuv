@@ -235,7 +235,7 @@
                               %span.text-muted None
                           %td= person['row']
               
-              - if assignments_data.present? && @bulk_sync_event.type != 'BulkSyncEvent::UploadAssignmentsAndAbilities'
+              - if assignments_data.present? && @bulk_sync_event.type != 'BulkSyncEvent::UploadAssignmentsAndAbilities' && @bulk_sync_event.type != 'BulkSyncEvent::UploadAssignmentsBulk'
                 %h6 Assignments (#{assignments_data.length})
                 .table-responsive.mb-3
                   %table.table.table-sm
@@ -983,6 +983,159 @@
                           %td
                             %span.badge.bg-success= pa['action'] || 'create'
                           %td= pa['row']
+              
+              -# UploadAssignmentsBulk preview sections
+              - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsBulk' && assignments_data.present?
+                %h6.mt-4 Assignments (#{assignments_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_assignments_bulk', '1', true, class: 'form-check-input', data: { target: 'assignments-bulk-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Title
+                        %th Tagline
+                        %th Department
+                        %th Outcomes Count
+                        %th Positions Count
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - assignments_data.each do |assignment|
+                        - next if assignment['title'].blank?
+                        %tr
+                          %td
+                            = check_box_tag "selected_assignments[]", assignment['row'], true, class: 'form-check-input assignments-bulk-checkbox'
+                          %td= assignment['title']
+                          %td= assignment['tagline']
+                          %td= assignment['department']
+                          %td= assignment['outcomes_count'] || 0
+                          %td= assignment['positions_count'] || 0
+                          %td
+                            - if assignment['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if assignment['existing_id'].present?
+                              - link_text = assignment['existing_title'].presence || assignment['title'].presence || "Assignment ##{assignment['existing_id']}"
+                              = link_to link_text, organization_assignment_path(current_organization, assignment['existing_id']), class: 'text-decoration-none'
+                            - else
+                              %span.text-muted None
+                          %td= assignment['row']
+              
+              - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsBulk'
+                -# Collect all outcomes from all assignments
+                - all_outcomes = []
+                - assignments_data.each do |assignment|
+                  - if assignment['outcomes'].present?
+                    - assignment['outcomes'].each_with_index do |outcome_text, idx|
+                      - all_outcomes << { 'assignment_title' => assignment['title'], 'assignment_row' => assignment['row'], 'outcome_text' => outcome_text, 'outcome_index' => idx + 1 }
+                
+                - if all_outcomes.present?
+                  %h6.mt-4 Outcomes (#{all_outcomes.length})
+                  %p.text-muted.small Outcomes will be created when their parent assignments are processed.
+                  .table-responsive.mb-3
+                    %table.table.table-sm
+                      %thead
+                        %tr
+                          %th Assignment
+                          %th Outcome
+                          %th Row
+                      %tbody
+                        - all_outcomes.each_with_index do |outcome, idx|
+                          %tr
+                            %td
+                              - existing_assignment_id = assignments_data.find { |a| a['title'] == outcome['assignment_title'] }&.dig('existing_id')
+                              - if existing_assignment_id
+                                = link_to outcome['assignment_title'], organization_assignment_path(current_organization, existing_assignment_id), class: 'text-decoration-none'
+                              - else
+                                = outcome['assignment_title']
+                            %td= outcome['outcome_text']
+                            %td= outcome['assignment_row']
+              
+              - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsBulk'
+                -# Collect all position assignments from all assignments
+                - all_position_assignments = []
+                - assignments_data.each do |assignment|
+                  - if assignment['positions'].present?
+                    - assignment['positions'].each do |position|
+                      - all_position_assignments << { 'assignment_title' => assignment['title'], 'assignment_row' => assignment['row'], 'position' => position }
+                
+                - if all_position_assignments.present?
+                  %h6.mt-4 Position Assignments (#{all_position_assignments.length})
+                  %p.text-muted.small Position assignments will be created when their parent assignments are processed.
+                  .table-responsive.mb-3
+                    %table.table.table-sm
+                      %thead
+                        %tr
+                          %th Assignment
+                          %th Position Title
+                          %th Level
+                          %th Type
+                          %th Energy Range
+                          %th Row
+                      %tbody
+                        - all_position_assignments.each_with_index do |pa, idx|
+                          %tr
+                            %td
+                              - existing_assignment_id = assignments_data.find { |a| a['title'] == pa['assignment_title'] }&.dig('existing_id')
+                              - if existing_assignment_id
+                                = link_to pa['assignment_title'], organization_assignment_path(current_organization, existing_assignment_id), class: 'text-decoration-none'
+                              - else
+                                = pa['assignment_title']
+                            %td= pa['position']['external_title']
+                            %td= pa['position']['level']
+                            %td
+                              %span.badge{class: pa['position']['assignment_type'] == 'required' ? 'bg-danger' : 'bg-info'}
+                                = pa['position']['assignment_type']&.humanize
+                            %td
+                              - if pa['position']['min_estimated_energy'] || pa['position']['max_estimated_energy']
+                                = "#{pa['position']['min_estimated_energy'] || 0}% - #{pa['position']['max_estimated_energy'] || '∞'}%"
+                              - else
+                                %span.text-muted Not specified
+                            %td= pa['assignment_row']
+              
+              - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsBulk'
+                -# Collect unique departments and show how they'll be interpreted
+                - unique_departments = assignments_data.map { |a| a['department'] }.compact.uniq
+                - if unique_departments.present?
+                  %h6.mt-4 Departments (#{unique_departments.length})
+                  .table-responsive.mb-3
+                    %table.table.table-sm
+                      %thead
+                        %tr
+                          %th Department Name
+                          %th Interpretation
+                          %th Assignments Count
+                          %th Status
+                      %tbody
+                        - unique_departments.each do |dept_name|
+                          - assignments_count = assignments_data.count { |a| a['department'] == dept_name }
+                          -# Parse hierarchical department structure (e.g., "CareerPlug > Product > Engineering")
+                          - dept_parts = dept_name.split('>').map(&:strip)
+                          - root_dept = dept_parts.first
+                          - sub_dept_path = dept_parts.length > 1 ? dept_parts[1..-1].join(' > ') : nil
+                          %tr
+                            %td= dept_name
+                            %td
+                              %small
+                                %strong Root:
+                                = root_dept
+                                - if sub_dept_path
+                                  %br
+                                  %strong Path:
+                                  = sub_dept_path
+                            %td= assignments_count
+                            %td
+                              - org_ids = current_organization.self_and_descendants.map(&:id)
+                              - existing_dept = Organization.where(id: org_ids, type: 'Department').find_by("LOWER(name) = ?", root_dept.downcase)
+                              - if existing_dept
+                                %span.badge.bg-info Existing
+                              - else
+                                %span.badge.bg-success Will Create
               
               .d-flex.gap-2.mt-4
                 = form.submit 'Process Selected Items', class: 'btn btn-success btn-lg', data: { confirm: 'Are you sure you want to process the selected items? This action cannot be undone.' }

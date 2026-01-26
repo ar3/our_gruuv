@@ -33,6 +33,11 @@ class FeedbackRequestPolicy < ApplicationPolicy
     
     return false unless subject_teammate
     
+    # Check if user has can_manage_employment - they can create feedback for anyone
+    if viewing_teammate.is_a?(CompanyTeammate) && viewing_teammate.can_manage_employment?
+      return true
+    end
+    
     # Must be in same organization
     return false unless viewing_teammate.organization == subject_teammate.organization
     

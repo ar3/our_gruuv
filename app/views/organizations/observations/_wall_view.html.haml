@@ -21,13 +21,10 @@
             .flex-grow-1
               %small.text-muted
                 - if observation.observed_teammates.any?
-                  - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
+                  - names = observation.observed_teammates.map { |t| t.person.casual_name }
                   = names.join(', ')
                 - else
                   No one observed
-              %br
-              %small.text-muted
-                by #{observation.observer.preferred_name || observation.observer.first_name}
           
           / Story text
           %p.card-text.mb-3
@@ -68,7 +65,9 @@
           
           / Date
           %small.text-muted= format_date_in_user_timezone(observation.observed_at, format: '%b %d, %Y')
-        
+          %small.text-muted
+            by #{observation.observer.casual_name}
+
         .card-footer.bg-light
           .btn-group.btn-group-sm.w-100
             - if policy(observation).view_permalink?

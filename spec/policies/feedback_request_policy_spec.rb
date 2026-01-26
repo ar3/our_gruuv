@@ -111,6 +111,22 @@ RSpec.describe FeedbackRequestPolicy, type: :policy do
       end
     end
 
+    context "when user has can_manage_employment permission" do
+      let(:admin_teammate) { create(:company_teammate, organization: company, can_manage_employment: true) }
+      let(:unrelated_teammate) { create(:company_teammate, organization: company) }
+      let(:new_request) { FeedbackRequest.new(company: company, subject_of_feedback_teammate: unrelated_teammate) }
+      let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
+
+      it "allows user with can_manage_employment to create request for anyone" do
+        expect(subject).to permit(pundit_user_admin, new_request)
+      end
+
+      it "allows user with can_manage_employment to create request for themselves" do
+        self_request = FeedbackRequest.new(company: company, subject_of_feedback_teammate: admin_teammate)
+        expect(subject).to permit(pundit_user_admin, self_request)
+      end
+    end
+
     context "when no subject is set (new action)" do
       let(:new_request) { FeedbackRequest.new(company: company) }
 

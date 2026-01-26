@@ -309,42 +309,39 @@ class AssignmentsBulkUploadParser
         )
       end
       
+      outcomes = assignment['outcomes'] || []
+      positions = assignment['positions'] || []
+      
+      base_data = {
+        'assignment_id' => assignment_id,
+        'title' => assignment_title,
+        'tagline' => assignment['tagline'],
+        'department' => assignment['department'],
+        'positions' => positions,
+        'positions_count' => positions.length,
+        'milestones' => assignment['milestones'] || [],
+        'outcomes' => outcomes,
+        'outcomes_count' => outcomes.length,
+        'required_activities' => assignment['required_activities'],
+        'handbook' => assignment['handbook'],
+        'version' => assignment['version'],
+        'row' => assignment['row']
+      }
+      
       if existing_assignment
-        {
-          'assignment_id' => assignment_id,
-          'title' => assignment_title,
-          'tagline' => assignment['tagline'],
-          'department' => assignment['department'],
-          'positions' => assignment['positions'] || [],
-          'milestones' => assignment['milestones'] || [],
-          'outcomes' => assignment['outcomes'] || [],
-          'required_activities' => assignment['required_activities'],
-          'handbook' => assignment['handbook'],
-          'version' => assignment['version'],
-          'row' => assignment['row'],
+        base_data.merge({
           'action' => 'update',
           'existing_id' => existing_assignment.id,
           'existing_title' => existing_assignment.title,
           'will_create' => false
-        }
+        })
       else
-        {
-          'assignment_id' => assignment_id,
-          'title' => assignment_title,
-          'tagline' => assignment['tagline'],
-          'department' => assignment['department'],
-          'positions' => assignment['positions'] || [],
-          'milestones' => assignment['milestones'] || [],
-          'outcomes' => assignment['outcomes'] || [],
-          'required_activities' => assignment['required_activities'],
-          'handbook' => assignment['handbook'],
-          'version' => assignment['version'],
-          'row' => assignment['row'],
+        base_data.merge({
           'action' => 'create',
           'existing_id' => nil,
           'existing_title' => nil,
           'will_create' => true
-        }
+        })
       end
     end.compact
   end
