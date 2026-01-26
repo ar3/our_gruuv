@@ -462,6 +462,10 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       
       # Create MAAP snapshot if changes were made
       if changes_made
+        unless current_company_teammate
+          raise "current_company_teammate is required to create MAAP snapshot"
+        end
+        
         request_info = build_request_info
         snapshot = MaapSnapshot.build_for_employee(
           employee_teammate: @teammate,
