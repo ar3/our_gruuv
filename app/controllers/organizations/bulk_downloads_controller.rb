@@ -377,13 +377,13 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
   def download_positions_csv
     CSV.generate(headers: true) do |csv|
       csv << [
-        'External Title', 'Level', 'Company', 'Semantic Version', 'Created At', 'Updated At',
+        'External Title', 'Level', 'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
         'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Version Count',
-        'Position Type Summary', 'Position Summary', 'Seats'
+        'Title', 'Position Summary', 'Seats', 'Other Uploads'
       ]
       
       Position.includes(
-        title: [:organization, :seats],
+        title: [:organization, :seats, :department],
         position_level: [],
         position_assignments: :assignment
       )
@@ -432,8 +432,8 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # PaperTrail versions count
         version_count = position.versions.count
         
-        # Title summary
-        title_summary = position.title&.position_summary || ''
+        # Title (external_title)
+        title_value = position.title&.external_title || ''
         
         # Position summary
         position_summary = position.position_summary || ''
@@ -441,10 +441,21 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # Seats: newline-separated list of seat display names for this position's title
         seats_list = position.title&.seats&.map(&:display_name)&.join("\n") || ''
         
+        # Department
+        department_name = position.title&.department&.display_name || ''
+        
+        # Other Uploads: external_title - level
+        other_uploads = if position.title&.external_title.present? && position.position_level&.level.present?
+          "#{position.title.external_title} - #{position.position_level.level}"
+        else
+          ''
+        end
+        
         csv << [
           position.title&.external_title || '',
           position.position_level&.level || '',
           position.company&.display_name || '',
+          department_name,
           position.semantic_version || '',
           position.created_at&.to_s || '',
           position.updated_at&.to_s || '',
@@ -452,9 +463,10 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           active_tenures_count,
           assignments_list,
           version_count,
-          title_summary,
+          title_value,
           position_summary,
-          seats_list
+          seats_list,
+          other_uploads
         ]
       end
     end

@@ -498,9 +498,9 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           get download_organization_bulk_downloads_path(organization, type: 'positions')
           csv = CSV.parse(response.body, headers: true)
           expect(csv.headers).to include(
-            'External Title', 'Level', 'Company', 'Semantic Version', 'Created At', 'Updated At',
+            'External Title', 'Level', 'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
             'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Version Count',
-            'Position Type Summary', 'Position Summary', 'Seats'
+            'Title', 'Position Summary', 'Seats', 'Other Uploads'
           )
         end
 
@@ -601,7 +601,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           PaperTrail.enabled = false
         end
 
-        it 'includes position type summary and position summary in separate columns' do
+        it 'includes title and position summary in separate columns' do
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
           title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer', position_summary: 'Base position type summary')
@@ -609,7 +609,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           get download_organization_bulk_downloads_path(organization, type: 'positions')
           csv = CSV.parse(response.body, headers: true)
           row = csv.first
-          expect(row['Position Type Summary']).to eq('Base position type summary')
+          expect(row['Title']).to eq('Software Engineer')
           expect(row['Position Summary']).to eq('Position-specific summary')
         end
 

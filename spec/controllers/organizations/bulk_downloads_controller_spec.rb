@@ -404,9 +404,9 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
           get :download, params: { organization_id: organization.id, type: 'positions' }
           csv = CSV.parse(response.body, headers: true)
           expect(csv.headers).to include(
-            'External Title', 'Level', 'Company', 'Semantic Version', 'Created At', 'Updated At',
+            'External Title', 'Level', 'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
             'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Version Count',
-            'Position Type Summary', 'Position Summary', 'Seats'
+            'Title', 'Position Summary', 'Seats', 'Other Uploads'
           )
         end
       end
