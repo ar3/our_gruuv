@@ -312,15 +312,115 @@ class AssignmentsBulkUploadParser
       outcomes = assignment['outcomes'] || []
       positions = assignment['positions'] || []
       
+      # Preview department hierarchy
+      department_preview = nil
+      if assignment['department'].present?
+        interpreter = DepartmentNameInterpreter.new(assignment['department'], organization)
+        department_preview = interpreter.preview
+      end
+      
+      # Enhance outcomes with create/skip status
+      enhanced_outcomes = []
+      if existing_assignment && outcomes.present?
+        outcomes.each do |outcome_text|
+          existing_outcome = AssignmentOutcome.find_by(
+            assignment: existing_assignment,
+            description: outcome_text
+          )
+          enhanced_outcomes << {
+            'description' => outcome_text,
+            'will_create' => existing_outcome.nil?,
+            'existing_id' => existing_outcome&.id
+          }
+        end
+      else
+        # For new assignments, all outcomes will be created
+        outcomes.each do |outcome_text|
+          enhanced_outcomes << {
+            'description' => outcome_text,
+            'will_create' => true,
+            'existing_id' => nil
+          }
+        end
+      end
+      
+      # Enhance positions with create/update/skip status
+      enhanced_positions = []
+      if existing_assignment && positions.present?
+        positions.each do |position_data|
+          external_title = position_data['external_title']
+          level = position_data['level']
+          
+          # Find position
+          position = find_position_by_title_and_level(external_title, level)
+          
+          if position
+            # Check if position assignment exists
+            existing_pa = PositionAssignment.find_by(
+              position: position,
+              assignment: existing_assignment
+            )
+            
+            if existing_pa
+              # Check if values would change
+              assignment_type = position_data['assignment_type'] || 'required'
+              min_energy = position_data['min_estimated_energy']
+              max_energy = position_data['max_estimated_energy']
+              
+              # Note: The processor deletes all position assignments and recreates them,
+              # so technically it's always an update. But we show "skip" if values won't change
+              # to indicate it's effectively a no-op.
+              values_changed = (
+                existing_pa.assignment_type != assignment_type ||
+                existing_pa.min_estimated_energy != min_energy ||
+                existing_pa.max_estimated_energy != max_energy
+              )
+              
+              enhanced_positions << position_data.merge({
+                'position_id' => position.id,
+                'action' => values_changed ? 'update' : 'skip',
+                'existing_id' => existing_pa.id
+              })
+            else
+              # Position assignment doesn't exist, will be created
+              enhanced_positions << position_data.merge({
+                'position_id' => position.id,
+                'action' => 'create',
+                'existing_id' => nil
+              })
+            end
+          else
+            # Position doesn't exist yet, will be created (and position assignment will be created)
+            enhanced_positions << position_data.merge({
+              'position_id' => nil,
+              'action' => 'create',
+              'existing_id' => nil
+            })
+          end
+        end
+      else
+        # For new assignments, all position assignments will be created
+        positions.each do |position_data|
+          enhanced_positions << position_data.merge({
+            'position_id' => nil,
+            'action' => 'create',
+            'existing_id' => nil
+          })
+        end
+      end
+      
       base_data = {
         'assignment_id' => assignment_id,
         'title' => assignment_title,
         'tagline' => assignment['tagline'],
         'department' => assignment['department'],
+        'department_preview' => department_preview,
         'positions' => positions,
+        'enhanced_positions' => enhanced_positions,
         'positions_count' => positions.length,
         'milestones' => assignment['milestones'] || [],
         'outcomes' => outcomes,
+        'enhanced_outcomes' => enhanced_outcomes,
         'outcomes_count' => outcomes.length,
         'required_activities' => assignment['required_activities'],
         'handbook' => assignment['handbook'],
@@ -344,5 +444,28 @@ class AssignmentsBulkUploadParser
         })
       end
     end.compact
+  end
+
+  def find_position_by_title_and_level(external_title, level)
+    return nil if external_title.blank? || level.blank?
+    
+    org_ids = organization.self_and_descendants.map(&:id)
+    
+    # Find Title
+    title = find_with_flexible_matching(
+      Title,
+      :external_title,
+      external_title,
+      Title.joins(:organization).where(organizations: { id: org_ids })
+    )
+    
+    return nil unless title
+    
+    # Find PositionLevel
+    position_level = title.position_major_level&.position_levels&.find_by(level: level)
+    return nil unless position_level
+    
+    # Find Position
+    Position.find_by(title: title, position_level: position_level)
   end
 end

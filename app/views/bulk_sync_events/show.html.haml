@@ -1027,12 +1027,16 @@
                           %td= assignment['row']
               
               - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsBulk'
-                -# Collect all outcomes from all assignments
+                -# Collect all outcomes from all assignments with enhanced data
                 - all_outcomes = []
                 - assignments_data.each do |assignment|
-                  - if assignment['outcomes'].present?
+                  - if assignment['enhanced_outcomes'].present?
+                    - assignment['enhanced_outcomes'].each_with_index do |outcome_data, idx|
+                      - all_outcomes << { 'assignment_title' => assignment['title'], 'assignment_row' => assignment['row'], 'outcome_text' => outcome_data['description'], 'will_create' => outcome_data['will_create'], 'existing_id' => outcome_data['existing_id'], 'outcome_index' => idx + 1 }
+                  - elsif assignment['outcomes'].present?
+                    -# Fallback if enhanced_outcomes not available
                     - assignment['outcomes'].each_with_index do |outcome_text, idx|
-                      - all_outcomes << { 'assignment_title' => assignment['title'], 'assignment_row' => assignment['row'], 'outcome_text' => outcome_text, 'outcome_index' => idx + 1 }
+                      - all_outcomes << { 'assignment_title' => assignment['title'], 'assignment_row' => assignment['row'], 'outcome_text' => outcome_text, 'will_create' => assignment['will_create'], 'existing_id' => nil, 'outcome_index' => idx + 1 }
                 
                 - if all_outcomes.present?
                   %h6.mt-4 Outcomes (#{all_outcomes.length})
@@ -1043,6 +1047,7 @@
                         %tr
                           %th Assignment
                           %th Outcome
+                          %th Status
                           %th Row
                       %tbody
                         - all_outcomes.each_with_index do |outcome, idx|
@@ -1054,15 +1059,24 @@
                               - else
                                 = outcome['assignment_title']
                             %td= outcome['outcome_text']
+                            %td
+                              - if outcome['will_create']
+                                %span.badge.bg-success Will Create
+                              - else
+                                %span.badge.bg-secondary Will Skip
                             %td= outcome['assignment_row']
               
               - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsBulk'
-                -# Collect all position assignments from all assignments
+                -# Collect all position assignments from all assignments with enhanced data
                 - all_position_assignments = []
                 - assignments_data.each do |assignment|
-                  - if assignment['positions'].present?
+                  - if assignment['enhanced_positions'].present?
+                    - assignment['enhanced_positions'].each do |position|
+                      - all_position_assignments << { 'assignment_title' => assignment['title'], 'assignment_row' => assignment['row'], 'position' => position, 'action' => position['action'] }
+                  - elsif assignment['positions'].present?
+                    -# Fallback if enhanced_positions not available
                     - assignment['positions'].each do |position|
-                      - all_position_assignments << { 'assignment_title' => assignment['title'], 'assignment_row' => assignment['row'], 'position' => position }
+                      - all_position_assignments << { 'assignment_title' => assignment['title'], 'assignment_row' => assignment['row'], 'position' => position, 'action' => assignment['will_create'] ? 'create' : 'update' }
                 
                 - if all_position_assignments.present?
                   %h6.mt-4 Position Assignments (#{all_position_assignments.length})
@@ -1076,6 +1090,7 @@
                           %th Level
                           %th Type
                           %th Energy Range
+                          %th Status
                           %th Row
                       %tbody
                         - all_position_assignments.each_with_index do |pa, idx|
@@ -1096,46 +1111,66 @@
                                 = "#{pa['position']['min_estimated_energy'] || 0}% - #{pa['position']['max_estimated_energy'] || '∞'}%"
                               - else
                                 %span.text-muted Not specified
+                            %td
+                              - if pa['action'] == 'create'
+                                %span.badge.bg-success Will Create
+                              - elsif pa['action'] == 'update'
+                                %span.badge.bg-warning Will Update
+                              - elsif pa['action'] == 'skip'
+                                %span.badge.bg-secondary Will Skip
+                              - else
+                                %span.badge.bg-info= pa['action']&.humanize || 'Unknown'
                             %td= pa['assignment_row']
               
               - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsBulk'
-                -# Collect unique departments and show how they'll be interpreted
-                - unique_departments = assignments_data.map { |a| a['department'] }.compact.uniq
-                - if unique_departments.present?
-                  %h6.mt-4 Departments (#{unique_departments.length})
+                -# Collect unique departments with their preview info
+                - department_map = {}
+                - assignments_data.each do |assignment|
+                  - if assignment['department'].present? && assignment['department_preview'].present?
+                    - dept_name = assignment['department']
+                    - unless department_map.key?(dept_name)
+                      - department_map[dept_name] = { 'preview' => assignment['department_preview'], 'assignments' => [] }
+                    - department_map[dept_name]['assignments'] << assignment['title']
+                
+                - if department_map.present?
+                  %h6.mt-4 Departments (#{department_map.length})
                   .table-responsive.mb-3
                     %table.table.table-sm
                       %thead
                         %tr
                           %th Department Name
-                          %th Interpretation
+                          %th Hierarchy
                           %th Assignments Count
                           %th Status
                       %tbody
-                        - unique_departments.each do |dept_name|
-                          - assignments_count = assignments_data.count { |a| a['department'] == dept_name }
-                          -# Parse hierarchical department structure (e.g., "CareerPlug > Product > Engineering")
-                          - dept_parts = dept_name.split('>').map(&:strip)
-                          - root_dept = dept_parts.first
-                          - sub_dept_path = dept_parts.length > 1 ? dept_parts[1..-1].join(' > ') : nil
-                          %tr
-                            %td= dept_name
-                            %td
-                              %small
-                                %strong Root:
-                                = root_dept
-                                - if sub_dept_path
-                                  %br
-                                  %strong Path:
-                                  = sub_dept_path
-                            %td= assignments_count
-                            %td
-                              - org_ids = current_organization.self_and_descendants.map(&:id)
-                              - existing_dept = Organization.where(id: org_ids, type: 'Department').find_by("LOWER(name) = ?", root_dept.downcase)
-                              - if existing_dept
-                                %span.badge.bg-info Existing
+                - department_map.each do |dept_name, dept_info|
+                  - preview = dept_info['preview']
+                  - assignments_count = dept_info['assignments'].length
+                  %tr
+                    %td= dept_name
+                    %td
+                      - if preview && preview['valid'] && preview['hierarchy_info'].present?
+                        %ul.mb-0.pl-3
+                          - preview['hierarchy_info'].each do |node|
+                            %li
+                              = node['name']
+                              - if node['will_create']
+                                %span.badge.bg-success.ms-2 Will Create
                               - else
-                                %span.badge.bg-success Will Create
+                                %span.badge.bg-secondary.ms-2 Will Skip (ID: #{node['existing_id']})
+                      - elsif preview && !preview['valid']
+                        %span.text-danger= preview['error_message']
+                      - else
+                        %span.text-muted No hierarchy
+                    %td= assignments_count
+                    %td
+                      - if preview && preview['valid']
+                        - if preview['department']
+                          %span.badge.bg-info Valid
+                        - else
+                          %span.badge.bg-warning Company-level (no department)
+                      - else
+                        %span.badge.bg-danger Invalid
               
               .d-flex.gap-2.mt-4
                 = form.submit 'Process Selected Items', class: 'btn btn-success btn-lg', data: { confirm: 'Are you sure you want to process the selected items? This action cannot be undone.' }

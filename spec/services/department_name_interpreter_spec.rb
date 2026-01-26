@@ -178,32 +178,32 @@ RSpec.describe DepartmentNameInterpreter do
       end
 
       context 'when first level does not match company name' do
-        it 'treats entire string as single department name' do
+        it 'returns nil and marks as invalid' do
           interpreter = described_class.new('Other Company > Engineering', company)
           department = interpreter.interpret
 
-          expect(department).to be_present
-          expect(department.name).to eq('Other Company > Engineering')
-          expect(department.type).to eq('Department')
-          expect(department.parent).to eq(company)
+          expect(department).to be_nil
+          expect(interpreter.valid).to be_falsey
+          expect(interpreter.error_message).to include("does not match company name")
         end
 
-        it 'is case-sensitive when checking company name match' do
-          interpreter = described_class.new('Acme Corp > Engineering', company)
+        it 'is case-insensitive when checking company name match' do
+          interpreter = described_class.new('acme corp > Engineering', company)
           department = interpreter.interpret
 
           # Should work - case-insensitive match
           expect(department).to be_present
           expect(department.name).to eq('Engineering')
+          expect(interpreter.valid).to be_truthy
         end
 
-        it 'treats as single name when company name is completely different' do
+        it 'returns nil when company name is completely different' do
           interpreter = described_class.new('XYZ Inc > Engineering > Backend', company)
           department = interpreter.interpret
 
-          expect(department).to be_present
-          expect(department.name).to eq('XYZ Inc > Engineering > Backend')
-          expect(department.parent).to eq(company)
+          expect(department).to be_nil
+          expect(interpreter.valid).to be_falsey
+          expect(interpreter.error_message).to include("does not match company name")
         end
       end
     end
@@ -261,6 +261,71 @@ RSpec.describe DepartmentNameInterpreter do
         department = interpreter.interpret
 
         expect(interpreter.department).to eq(department)
+      end
+    end
+  end
+
+  describe '#preview' do
+    context 'with valid department name' do
+      it 'returns preview info without creating departments' do
+        interpreter = described_class.new('Engineering', company)
+        preview = interpreter.preview
+
+        expect(preview[:valid]).to be_truthy
+        expect(preview[:hierarchy_info]).to be_present
+        expect(preview[:hierarchy_info].length).to eq(1)
+        expect(preview[:hierarchy_info].first[:name]).to eq('Engineering')
+        expect(preview[:hierarchy_info].first[:will_create]).to be_truthy
+        expect(preview[:hierarchy_info].first[:department]).to be_nil # Not created yet
+      end
+
+      it 'shows existing departments as will_create: false' do
+        existing_dept = create(:organization, type: 'Department', name: 'Engineering', parent: company)
+        
+        interpreter = described_class.new('Engineering', company)
+        preview = interpreter.preview
+
+        expect(preview[:valid]).to be_truthy
+        expect(preview[:hierarchy_info].first[:will_create]).to be_falsey
+        expect(preview[:hierarchy_info].first[:existing_id]).to eq(existing_dept.id)
+        expect(preview[:hierarchy_info].first[:department].id).to eq(existing_dept.id)
+      end
+
+      it 'handles hierarchical departments' do
+        interpreter = described_class.new('Acme Corp > Engineering > Backend', company)
+        preview = interpreter.preview
+
+        expect(preview[:valid]).to be_truthy
+        expect(preview[:hierarchy_info].length).to eq(2)
+        expect(preview[:hierarchy_info].first[:name]).to eq('Engineering')
+        expect(preview[:hierarchy_info].last[:name]).to eq('Backend')
+      end
+
+      it 'returns nil department when name matches company' do
+        interpreter = described_class.new('Acme Corp', company)
+        preview = interpreter.preview
+
+        expect(preview[:valid]).to be_truthy
+        expect(preview[:department]).to be_nil
+        expect(preview[:hierarchy_info]).to be_empty
+      end
+    end
+
+    context 'with invalid department name' do
+      it 'returns invalid when first part does not match company' do
+        interpreter = described_class.new('Other Company > Engineering', company)
+        preview = interpreter.preview
+
+        expect(preview[:valid]).to be_falsey
+        expect(preview[:error_message]).to include("does not match company name")
+      end
+
+      it 'returns invalid for blank name' do
+        interpreter = described_class.new('', company)
+        preview = interpreter.preview
+
+        expect(preview[:valid]).to be_falsey
+        expect(preview[:error_message]).to include("blank")
       end
     end
   end
