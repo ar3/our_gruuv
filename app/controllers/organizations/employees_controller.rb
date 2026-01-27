@@ -366,9 +366,10 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Authorize access to audit view
     authorize @person, :audit?, policy_class: PersonPolicy
     
+    teammate = @person.teammates.find_by(organization: @organization)
     # Only allow employees to acknowledge their own snapshots
     unless current_person == @person
-      redirect_to audit_organization_employee_path(@organization, @person), 
+      redirect_to audit_organization_employee_path(@organization, teammate), 
                   alert: 'You can only acknowledge your own check-ins.'
       return
     end
@@ -377,7 +378,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     snapshot_ids = params[:snapshot_ids] || []
     
     if snapshot_ids.empty?
-      redirect_to audit_organization_employee_path(@organization, @person), 
+      redirect_to audit_organization_employee_path(@organization, teammate), 
                   alert: 'Please select at least one check-in to acknowledge.'
       return
     end
@@ -389,7 +390,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     if teammate
       snapshots = MaapSnapshot.where(id: snapshot_ids, employee_company_teammate: teammate).where.not(effective_date: nil)
     else
-      redirect_to audit_organization_employee_path(@organization, @person), 
+      redirect_to audit_organization_employee_path(@organization, teammate), 
                   alert: 'Unable to find teammate record.'
       return
     end
@@ -409,7 +410,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       end
     end
     
-    redirect_to audit_organization_employee_path(@organization, @person), 
+    redirect_to audit_organization_employee_path(@organization, teammate), 
                 notice: "Successfully acknowledged #{acknowledged_count} check-in#{'s' if acknowledged_count != 1}."
   end
   

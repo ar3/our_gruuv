@@ -68,8 +68,6 @@ class CompanyTeammatePolicy < ApplicationPolicy
     return false unless viewing_teammate.employed?
     return true if viewing_teammate.can_manage_employment?
     return true if viewing_teammate.in_managerial_hierarchy_of?(record)
-    # Allow any teammate in the same organization to view check-ins (they will behave as managers)
-    return true if viewing_teammate.organization == record.organization
     false
   end
 
