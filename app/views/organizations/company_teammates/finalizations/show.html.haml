@@ -14,14 +14,13 @@
 = render 'shared/check_in_wizard_header', organization: @organization, teammate: @teammate, current_step: 2
 
 = form_with url: organization_company_teammate_finalization_path(organization, @teammate), method: :post, local: true do |f|
-  
-  -# Position Section
+  -# Aspiration Section
   = render 'shared/section_header', 
-           title: 'Position/Overall', 
-           icon: 'bi-briefcase', 
-           description: 'Set official position rating'
+           title: 'Aspirational Values', 
+           icon: 'bi-star', 
+           description: 'Set official aspiration ratings'
   
-  = render 'organizations/finalizations/position_finalization_table', form: f, view_mode: @view_mode
+  = render 'organizations/finalizations/aspiration_finalization_table', form: f, view_mode: @view_mode
   
   -# Assignment Section
   = render 'shared/section_header', 
@@ -31,13 +30,14 @@
   
   = render 'organizations/finalizations/assignment_finalization_table', form: f, view_mode: @view_mode
   
-  -# Aspiration Section
-  = render 'shared/section_header', 
-           title: 'Aspirational Values', 
-           icon: 'bi-star', 
-           description: 'Set official aspiration ratings'
   
-  = render 'organizations/finalizations/aspiration_finalization_table', form: f, view_mode: @view_mode
+  -# Position Section
+  = render 'shared/section_header', 
+           title: 'Position/Overall', 
+           icon: 'bi-briefcase', 
+           description: 'Set official position rating'
+  
+  = render 'organizations/finalizations/position_finalization_table', form: f, view_mode: @view_mode
   
   -# Finalization button section
   - if @ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?
