@@ -52,6 +52,41 @@ RSpec.describe 'Organizations::Positions', type: :request do
       positions = controller.instance_variable_get(:@positions)
       expect(positions).to include(position_v1, position_v1_2, position_v2, position_v0)
     end
+
+    it 'includes a link icon next to departments that links to the department show page' do
+      department = create(:organization, :department, parent: organization, name: 'Engineering')
+      title_in_dept = create(:title, organization: organization, department: department,
+        position_major_level: title.position_major_level, external_title: 'Engineer')
+      create(:position, title: title_in_dept, position_level: position_level_1, semantic_version: '1.0.0')
+
+      get organization_positions_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(organization_departments_and_team_path(organization, department))
+      expect(response.body).to include('bi-link-45deg')
+    end
+
+    it 'shows major level with info icon and tooltip for position_major_level description' do
+      pml = title.position_major_level
+      pml.update!(description: 'Individual contributor levels')
+
+      get organization_positions_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(pml.major_level.to_s)
+      expect(response.body).to include('bi-info-circle')
+      expect(response.body).to include('data-bs-toggle="tooltip"')
+      expect(response.body).to include('Individual contributor levels')
+    end
+
+    it 'includes archive button that shows "archive coming soon" on click' do
+      get organization_positions_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('bi-archive')
+      expect(response.body).to include('archive coming soon')
+      expect(response.body).to include('onclick')
+    end
   end
 end
 

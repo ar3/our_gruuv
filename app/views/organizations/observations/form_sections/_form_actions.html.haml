@@ -1,13 +1,13 @@
 .d-flex.gap-2.mt-3
   -# Publish button - submit form to publish action (POST, no _method)
-  = form.submit "Publish & Return to #{return_text.presence || 'Back'}", 
+  = form.submit "Publish", 
                 class: 'btn btn-primary',
                 formaction: publish_organization_observation_path(organization, observation.new_record? ? :new : observation),
                 formmethod: :post,
                 name: 'publish',
                 onclick: "var field = document.getElementById('form_method_field'); if (field) field.remove(); return true;"
   -# Save Draft button - submit form to update_draft action (PATCH via _method override)
-  = form.submit "Save Draft & return to #{return_text.presence || 'Back'}", 
+  = form.submit "Save Draft", 
                 class: 'btn btn-outline-primary',
                 formaction: update_draft_organization_observation_path(organization, observation.new_record? ? :new : observation),
                 formmethod: :post,
