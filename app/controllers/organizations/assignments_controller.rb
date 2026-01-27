@@ -18,8 +18,17 @@ class Organizations::AssignmentsController < ApplicationController
       policy_scope: policy_scope(Assignment)
     )
     
-    @assignments = query.call
-    
+    @assignments = query.call.includes(:department)
+
+    # Group assignments by department for section headers (nil = "No Department")
+    assignments_array = @assignments.to_a
+    grouped = assignments_array.group_by(&:department)
+    @assignments_by_department = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
+    @department_stats = {}
+    @assignments_by_department.each do |department, list|
+      @department_stats[department] = { assignments_count: list.size }
+    end
+
     # Set current filters, sort, view, and spotlight for view
     @current_filters = query.current_filters
     @current_sort = query.current_sort

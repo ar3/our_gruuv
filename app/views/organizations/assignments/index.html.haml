@@ -97,91 +97,107 @@
 
 .row.justify-content-center
   .col-lg-12
-    - if @assignments.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
-            %tr
-              %th Assignment
-              %th Outcomes
-              %th Abilities
-              %th Positions
-          %tbody
-            - @assignments.each do |assignment|
-              %tr
-                %td
-                  - if assignment.department&.display_name || assignment.company_name
-                    %small.text-muted
-                      %i.bi.bi-building.me-1
-                      = assignment.department&.display_name || assignment.company_name
-                    %br
-                  %strong
-                    = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
-                    %small.text-muted.ms-2
-                      v#{assignment.semantic_version}
-                  %br
-                  %small.text-muted= assignment.tagline
-                %td
-                  - if assignment.assignment_outcomes.any?
-                    - assignment.assignment_outcomes.each do |outcome|
-                      = link_to edit_organization_assignment_assignment_outcome_path(@organization, assignment, outcome), class: "badge bg-light me-1 mb-1 text-decoration-none text-spice-#{outcome.outcome_type == 'sentiment' ? '1' : '2'}", data: {bs_toggle: 'tooltip', bs_title: outcome.description} do
-                        = outcome.outcome_type.titleize
-                      %br
-                  - else
-                    %span.text-muted
-                      %i.bi.bi-exclamation-triangle.me-1
-                      None
-                %td
-                  - if assignment.abilities.any?
-                    - assignment.assignment_abilities.includes(:ability).each do |assignment_ability|
-                      - ability = assignment_ability.ability
-                      - milestone_level = assignment_ability.milestone_level
-                      = link_to organization_ability_path(@organization, ability), class: "badge bg-light text-spice-4 me-1 mb-1 text-decoration-none" do
-                        = "#{ability.name} (M#{milestone_level})"
-                      %br
-                  - else
-                    %span.text-muted
-                      %i.bi.bi-exclamation-triangle.me-1
-                      None
-                %td
-                  - if assignment.position_assignments.any?
-                    - # Group position_assignments by title
-                    - position_assignments_by_title = assignment.position_assignments.group_by { |pa| pa.position.title }
-                    - position_assignments_by_title.each_with_index do |(title, position_assignments), index|
-                      - if position_assignments.count > 1
-                        - # Multiple positions in this title - show collapsible section
-                        - collapse_id = "assignment_#{assignment.id}_title_#{title.id}"
-                        %small
-                          %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
-                            %span.not-collapsed
-                              %i.bi.bi-chevron-up.me-1
-                            %span.collapsed
-                              %i.bi.bi-chevron-down.me-1
-                            = title.external_title
-                          .collapse{id: collapse_id}
-                            - position_assignments.each do |position_assignment|
+    - if @assignments_by_department.any?
+      - @assignments_by_department.each do |department, assignments|
+        - stats = @department_stats[department] || { assignments_count: 0 }
+        .card.mb-4
+          .card-header.bg-primary.text-white
+            %h5.mb-0.d-flex.align-items-center.justify-content-between
+              .d-flex.align-items-center
+                - if department
+                  %i.bi.bi-building.me-2
+                  = department.display_name
+                  = link_to organization_departments_and_team_path(@organization, department), class: "text-white ms-2", title: "View department" do
+                    %i.bi.bi-link-45deg
+                - else
+                  %i.bi.bi-question-circle.me-2
+                  No Department
+              .d-flex.align-items-center.gap-2
+                %span.badge.bg-light.text-dark
+                  = stats[:assignments_count]
+                  assignment#{'s' if stats[:assignments_count] != 1}
+          .card-body.p-0
+            .table-responsive
+              %table.table.table-hover.mb-0
+                %thead.table-light
+                  %tr
+                    %th Assignment
+                    %th Outcomes
+                    %th Abilities
+                    %th Positions
+                %tbody
+                  - assignments.each do |assignment|
+                    %tr
+                      %td
+                        - if assignment.department&.display_name || assignment.company_name
+                          %small.text-muted
+                            %i.bi.bi-building.me-1
+                            = assignment.department&.display_name || assignment.company_name
+                          %br
+                        %strong
+                          = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
+                          %small.text-muted.ms-2
+                            v#{assignment.semantic_version}
+                        %br
+                        %small.text-muted= assignment.tagline
+                      %td
+                        - if assignment.assignment_outcomes.any?
+                          - assignment.assignment_outcomes.each do |outcome|
+                            = link_to edit_organization_assignment_assignment_outcome_path(@organization, assignment, outcome), class: "badge bg-light me-1 mb-1 text-decoration-none text-spice-#{outcome.outcome_type == 'sentiment' ? '1' : '2'}", data: {bs_toggle: 'tooltip', bs_title: outcome.description} do
+                              = outcome.outcome_type.titleize
+                            %br
+                        - else
+                          %span.text-muted
+                            %i.bi.bi-exclamation-triangle.me-1
+                            None
+                      %td
+                        - if assignment.abilities.any?
+                          - assignment.assignment_abilities.includes(:ability).each do |assignment_ability|
+                            - ability = assignment_ability.ability
+                            - milestone_level = assignment_ability.milestone_level
+                            = link_to organization_ability_path(@organization, ability), class: "badge bg-light text-spice-4 me-1 mb-1 text-decoration-none" do
+                              = "#{ability.name} (M#{milestone_level})"
+                            %br
+                        - else
+                          %span.text-muted
+                            %i.bi.bi-exclamation-triangle.me-1
+                            None
+                      %td
+                        - if assignment.position_assignments.any?
+                          - position_assignments_by_title = assignment.position_assignments.group_by { |pa| pa.position.title }
+                          - position_assignments_by_title.each_with_index do |(title, position_assignments), index|
+                            - if position_assignments.count > 1
+                              - collapse_id = "assignment_#{assignment.id}_title_#{title.id}"
+                              %small
+                                %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
+                                  %span.not-collapsed
+                                    %i.bi.bi-chevron-up.me-1
+                                  %span.collapsed
+                                    %i.bi.bi-chevron-down.me-1
+                                  = title.external_title
+                                .collapse{id: collapse_id}
+                                  - position_assignments.each do |position_assignment|
+                                    - position = position_assignment.position
+                                    %small.d-block.ms-3.mt-1
+                                      %i.bi.bi-arrow-right.me-1
+                                      = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
+                                        = position.position_level.level
+                                      - if position_assignment.energy_percentage_suffix.present?
+                                        = " #{position_assignment.energy_percentage_suffix}"
+                            - else
+                              - position_assignment = position_assignments.first
                               - position = position_assignment.position
-                              %small.d-block.ms-3.mt-1
-                                %i.bi.bi-arrow-right.me-1
+                              %small
                                 = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
-                                  = position.position_level.level
+                                  = position.display_name
                                 - if position_assignment.energy_percentage_suffix.present?
                                   = " #{position_assignment.energy_percentage_suffix}"
-                      - else
-                        - # Single position in this type - show normally
-                        - position_assignment = position_assignments.first
-                        - position = position_assignment.position
-                        %small
-                          = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
-                            = position.display_name
-                          - if position_assignment.energy_percentage_suffix.present?
-                            = " #{position_assignment.energy_percentage_suffix}"
-                      - unless index == position_assignments_by_title.size - 1
-                        %br
-                  - else
-                    %span.text-muted
-                      %i.bi.bi-dash.me-1
-                      None
+                            - unless index == position_assignments_by_title.size - 1
+                              %br
+                        - else
+                          %span.text-muted
+                            %i.bi.bi-dash.me-1
+                            None
     - else
       .alert.alert-info
         %h6.mb-2
