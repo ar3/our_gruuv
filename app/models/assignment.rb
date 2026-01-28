@@ -50,6 +50,13 @@ class Assignment < ApplicationRecord
     "#{title} v#{semantic_version}"
   end
   
+  def to_s
+    hierarchy = [company&.name].compact
+    hierarchy += department_ancestry_names if department.present?
+    hierarchy << display_name
+    hierarchy.join(' > ')
+  end
+
   def name
     title
   end
@@ -131,6 +138,17 @@ class Assignment < ApplicationRecord
   
   private
   
+  def department_ancestry_names
+    return [] unless department
+    node = department
+    path = []
+    while node && node != company
+      path.unshift(node.name)
+      node = node.parent
+    end
+    path
+  end
+
   def department_must_belong_to_company
     return unless department && company
     

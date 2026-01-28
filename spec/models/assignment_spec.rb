@@ -106,6 +106,32 @@ RSpec.describe Assignment, type: :model do
     end
   end
 
+  describe '#to_s' do
+    it 'returns company and assignment title when no department' do
+      company = create(:organization, :company, name: 'Acme Corp')
+      assignment = create(:assignment, company: company, title: 'Product Manager', department: nil)
+
+      expect(assignment.to_s).to eq("Acme Corp > Product Manager v#{assignment.semantic_version}")
+    end
+
+    it 'returns company, department, and assignment title when department is set' do
+      company = create(:organization, :company, name: 'Acme Corp')
+      department = create(:organization, :department, parent: company, name: 'Engineering')
+      assignment = create(:assignment, company: company, department: department, title: 'Product Manager')
+
+      expect(assignment.to_s).to eq("Acme Corp > Engineering > Product Manager v#{assignment.semantic_version}")
+    end
+
+    it 'returns full department hierarchy when department is nested' do
+      company = create(:organization, :company, name: 'Acme Corp')
+      parent_dept = create(:organization, :department, parent: company, name: 'Engineering')
+      department = create(:organization, :department, parent: parent_dept, name: 'Backend')
+      assignment = create(:assignment, company: company, department: department, title: 'Product Manager')
+
+      expect(assignment.to_s).to eq("Acme Corp > Engineering > Backend > Product Manager v#{assignment.semantic_version}")
+    end
+  end
+
   describe 'ability-related methods' do
     let(:ability1) { create(:ability, organization: organization) }
     let(:ability2) { create(:ability, organization: organization) }
