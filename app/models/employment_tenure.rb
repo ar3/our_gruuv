@@ -17,7 +17,7 @@ class EmploymentTenure < ApplicationRecord
   validate :seat_title_matches_position, if: :seat
 
   POSITION_RATINGS = {
-    -3 => { key: :monitoring_pip, emoji: '🔴', label: 'Performance Improvement Plan', description: 'Monitoring after PIP' },
+    -3 => { key: :monitoring_pip, emoji: '🔴', label: 'Performance Improvement Plan', description: 'Monitoring during PIP' },
     -2 => { key: :monitoring_after_written_warning, emoji: '⭕️', label: 'Written Warning', description: 'Monitoring after written warning' },
     -1 => { key: :monitoring_after_verbal_warning, emoji: '🟠', label: 'Verbal Warning', description: 'Monitoring after verbal warning' },
      1 => { key: :actively_coaching, emoji: '🟡', label: 'Developing', description: 'Meets some expectations, but improvement and consistency are needed in specific areas' },
