@@ -9,10 +9,21 @@
   .d-flex.align-items-center
     %h1.mb-0.me-2
       Goals
-    .d-flex.align-items-center
+    .d-flex.align-items-center.ms-2
       - if policy(Goal).create?
-        = link_to new_organization_goal_path(@organization), class: "btn btn-primary ml-2" do
-          %i.bi.bi-plus
+        - owner_param = (@current_filters[:owner_type].present? && @current_filters[:owner_id].present?) ? "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}" : nil
+        - new_goal_path_opts = owner_param ? { owner_id: owner_param } : {}
+        - bulk_new_path_opts = owner_param ? { owner_id: owner_param } : {}
+        .dropdown
+          %button.btn.btn-primary.dropdown-toggle{"aria-expanded" => "false", "data-bs-toggle" => "dropdown", type: "button"}
+            %i.bi.bi-plus
+          %ul.dropdown-menu
+            %li
+              = link_to new_organization_goal_path(@organization, new_goal_path_opts), class: "dropdown-item" do
+                Create single goal
+            %li
+              = link_to bulk_new_organization_goals_path(@organization, bulk_new_path_opts), class: "dropdown-item" do
+                Bulk create goals
       - else
         .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
           %i.bi.bi-plus

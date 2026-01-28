@@ -1,0 +1,41 @@
+- content_for :title, "Bulk create goals"
+
+- content_for :go_back_link do
+  - back_path = @owner_param ? organization_goals_path(@organization, owner_id: @owner_param) : organization_goals_path(@organization)
+  = link_to back_path, class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Goals
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      Bulk create goals
+
+.container-fluid
+  .row
+    .col-12
+      .card
+        .card-body
+          = form_with url: bulk_create_organization_goals_path(@organization), method: :post, local: true do |f|
+            - if @owner_param.present?
+              = hidden_field_tag :owner_id, @owner_param
+
+            .mb-4
+              %label.form-label.fw-bold
+                Bulk create goals
+                %i.bi.bi-info-circle.text-muted.ms-2{
+                  "data-bs-toggle" => "tooltip",
+                  "data-bs-title" => "Create nested goals: Regular lines create goals. Lines starting with numbers, *, •, -, –, or .. create sub-goals linked to the previous goal. A goal followed by sub-goals becomes an objective."
+                }
+              %small.text-muted.d-block.mb-2
+                Enter one goal title per line. Default type is measurable outcome. A goal followed by sub-goals becomes an objective.
+              = text_area_tag "bulk_goal_titles", "", rows: 8, class: "form-control", placeholder: "Goal 1\nGoal 2\nObjective 3\n* Key Result 3-1\n* Key Result 3-2\n* Key Result 3-3\nObjective 4\n1. Step 4-1\n2. Step 4-2\n3. Step 4-3"
+              %small.form-text.text-muted
+                New goals will use the selected owner and default privacy level.
+
+            .d-flex.gap-2.mt-3
+              - cancel_path = @owner_param ? organization_goals_path(@organization, owner_id: @owner_param) : organization_goals_path(@organization)
+              = link_to cancel_path, class: "btn btn-outline-secondary" do
+                %i.bi.bi-arrow-left.me-1
+                Cancel
+              = f.submit "Create goals", class: "btn btn-primary", id: "bulk-create-goals-btn", data: { test_id: "bulk-create-goals" }

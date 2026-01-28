@@ -275,6 +275,65 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       render :new, status: :unprocessable_entity
     end
   end
+
+  def bulk_new
+    authorize Goal.new
+    company = @organization.root_company || @organization
+    current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
+    @owner = resolve_owner_for_bulk(current_teammate)
+    unless @owner
+      redirect_to organization_goals_path(@organization),
+                  alert: 'Please select an owner to bulk create goals.'
+      return
+    end
+    @owner_param = build_owner_param_for_bulk
+  end
+
+  def bulk_create
+    authorize Goal.new
+    company = @organization.root_company || @organization
+    current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
+    @owner = resolve_owner_for_bulk(current_teammate)
+    unless @owner
+      redirect_to organization_goals_path(@organization),
+                  alert: 'Please select an owner to bulk create goals.'
+      return
+    end
+
+    bulk_goal_titles = params[:bulk_goal_titles].to_s
+    parse_result = Goals::ParseService.new(bulk_goal_titles, 'quantitative_key_result').call
+
+    if parse_result[:errors].any?
+      redirect_to bulk_new_organization_goals_path(@organization, owner_id: build_owner_param_for_bulk),
+                  alert: parse_result[:errors].join(' ')
+      return
+    end
+
+    if parse_result[:goals].empty?
+      redirect_to bulk_new_organization_goals_path(@organization, owner_id: build_owner_param_for_bulk),
+                  alert: 'Please enter at least one goal.'
+      return
+    end
+
+    service = Goals::BulkCreateUnlinkedService.new(
+      @organization,
+      current_person,
+      current_teammate,
+      @owner,
+      parse_result[:goals],
+      default_goal_type: 'quantitative_key_result',
+      privacy_level: 'only_creator_owner_and_managers'
+    )
+
+    if service.call
+      count = service.created_goals.size
+      redirect_to organization_goals_path(@organization, owner_id: build_owner_param_for_bulk),
+                  notice: "#{count} #{'goal'.pluralize(count)} created successfully."
+    else
+      redirect_to bulk_new_organization_goals_path(@organization, owner_id: build_owner_param_for_bulk),
+                  alert: service.errors.join(' ')
+    end
+  end
   
   def edit
     authorize @goal
@@ -638,6 +697,32 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
   
   private
+
+  def resolve_owner_for_bulk(current_teammate)
+    owner_id_param = params[:owner_id].to_s
+    if owner_id_param.include?('_')
+      owner_type, owner_id = owner_id_param.split('_', 2)
+    else
+      owner_type = params[:owner_type]
+      owner_id = params[:owner_id]
+    end
+    return current_teammate if owner_type.blank? || owner_id.blank?
+
+    case owner_type
+    when 'CompanyTeammate'
+      CompanyTeammate.find_by(id: owner_id)
+    when 'Company', 'Department', 'Team', 'Organization'
+      Organization.find_by(id: owner_id)
+    else
+      nil
+    end
+  end
+
+  def build_owner_param_for_bulk
+    return nil unless @owner
+    owner_type = @owner.is_a?(CompanyTeammate) ? 'CompanyTeammate' : (@owner.respond_to?(:type) ? @owner.type : @owner.class.name)
+    "#{owner_type}_#{@owner.id}"
+  end
   
   def set_goal
     # Load goal without scoping - policy will handle authorization checks

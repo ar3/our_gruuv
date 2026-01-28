@@ -20,28 +20,6 @@
                   Latest: #{format_date_in_user_timezone(latest_finalized.official_check_in_completed_at, current_person)}
       
       .row.mt-2
-        - active_tenure = teammate.is_a?(CompanyTeammate) ? teammate.active_employment_tenure : nil
-        - if active_tenure
-          - if active_tenure.seat
-            .col-auto.mb-2
-              = link_to organization_seat_path(@organization, active_tenure.seat), class: "btn btn-outline-secondary btn-sm" do
-                = active_tenure.seat.display_name
-          - if active_tenure.position
-            .col-auto.mb-2
-              = link_to job_description_organization_position_path(@organization, active_tenure.position), class: "btn btn-outline-secondary btn-sm text-start" do
-                = active_tenure.position.title.external_title
-                %br
-                %small.text-muted.mt-1
-                  #{active_tenure.position.required_assignments_count} required, #{active_tenure.position.suggested_assignments_count} suggested Assignments
-
-          - else
-            .col-auto.mb-2
-              %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
-                need to define position
-        - else
-          .col-auto.mb-2
-            %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
-              need to define position
         .col-auto.mb-2
           = link_to complete_picture_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start" do
             #{teammate.person.casual_name}'s Unique Job Description
@@ -55,4 +33,30 @@
                   Total Energy: #{total_energy}%
               - else
                 Total Energy: 0%
+        - active_tenure = teammate.is_a?(CompanyTeammate) ? teammate.active_employment_tenure : nil
+        - if active_tenure
+          - if active_tenure.position
+            .col-auto.mb-2
+              = link_to job_description_organization_position_path(@organization, active_tenure.position), class: "btn btn-outline-secondary btn-sm text-start" do
+                = active_tenure.position.title.external_title
+                %br
+                %small.text-muted.mt-1
+                  #{active_tenure.position.required_assignments_count} required, #{active_tenure.position.suggested_assignments_count} suggested Assignments
+          - else
+            .col-auto.mb-2
+              %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
+                need to define position
+
+
+          - if active_tenure.seat
+            .col-auto.mb-2
+              = link_to organization_seat_path(@organization, active_tenure.seat), class: "btn btn-outline-secondary btn-sm" do
+                = active_tenure.seat.display_name
+
+          
+        - else
+          .col-auto.mb-2
+            %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
+              need to define position
+
 

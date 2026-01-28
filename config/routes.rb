@@ -316,6 +316,8 @@ Rails.application.routes.draw do
         get :customize_view
         patch :update_view
         post :bulk_update_check_ins
+        get :bulk_new
+        post :bulk_create
       end
       member do
         patch :start

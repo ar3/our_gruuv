@@ -486,6 +486,90 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       end
     end
   end
+
+  describe 'GET #bulk_new' do
+    it 'renders bulk_new when owner is resolved from params' do
+      get :bulk_new, params: { organization_id: company.id, owner_id: "CompanyTeammate_#{creator_teammate.id}" }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:bulk_new)
+      expect(assigns(:owner)).to eq(creator_teammate)
+      expect(assigns(:owner_param)).to eq("CompanyTeammate_#{creator_teammate.id}")
+    end
+
+    it 'renders bulk_new when owner defaults to current teammate' do
+      get :bulk_new, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:owner)).to eq(creator_teammate)
+    end
+
+    it 'redirects to goals index when owner_id does not match any record' do
+      get :bulk_new, params: { organization_id: company.id, owner_id: 'CompanyTeammate_999999' }
+      expect(response).to redirect_to(organization_goals_path(company))
+      expect(flash[:alert]).to eq('Please select an owner to bulk create goals.')
+    end
+  end
+
+  describe 'POST #bulk_create' do
+    it 'creates goals from bulk_goal_titles and redirects to goals index' do
+      expect {
+        post :bulk_create, params: {
+          organization_id: company.id,
+          owner_id: "CompanyTeammate_#{creator_teammate.id}",
+          bulk_goal_titles: "Goal A\nGoal B\nGoal C"
+        }
+      }.to change(Goal, :count).by(3)
+
+      created = Goal.last(3)
+      expect(created.map(&:title).sort).to eq(['Goal A', 'Goal B', 'Goal C'])
+      created.each do |goal|
+        expect(goal.owner).to eq(creator_teammate)
+        expect(goal.creator).to eq(creator_teammate)
+        expect(goal.goal_type).to eq('quantitative_key_result')
+      end
+      expect(GoalLink.count).to eq(0)
+      expect(response).to redirect_to(organization_goals_path(company, owner_id: "CompanyTeammate_#{creator_teammate.id}"))
+      expect(flash[:notice]).to match(/\d+ goals? created successfully\./)
+    end
+
+    it 'creates nested goals and parent-child links when using sub-line syntax' do
+      post :bulk_create, params: {
+        organization_id: company.id,
+        owner_id: "CompanyTeammate_#{creator_teammate.id}",
+        bulk_goal_titles: "Parent goal\n  - Child 1\n  - Child 2"
+      }
+
+      expect(response).to redirect_to(organization_goals_path(company, owner_id: "CompanyTeammate_#{creator_teammate.id}"))
+      expect(Goal.count).to be >= 3
+      expect(GoalLink.count).to be >= 2
+      parent = Goal.find_by(title: 'Parent goal')
+      expect(parent).to be_present
+      expect(parent.goal_type).to eq('inspirational_objective')
+    end
+
+    it 'redirects back to bulk_new with alert when bulk_goal_titles is empty' do
+      expect {
+        post :bulk_create, params: {
+          organization_id: company.id,
+          owner_id: "CompanyTeammate_#{creator_teammate.id}",
+          bulk_goal_titles: "   \n\n"
+        }
+      }.not_to change(Goal, :count)
+
+      expect(response).to redirect_to(bulk_new_organization_goals_path(company, owner_id: "CompanyTeammate_#{creator_teammate.id}"))
+      expect(flash[:alert]).to eq('Please enter at least one goal.')
+    end
+
+    it 'redirects to goals index when no owner can be resolved' do
+      post :bulk_create, params: {
+        organization_id: company.id,
+        owner_id: 'CompanyTeammate_999999',
+        bulk_goal_titles: "Goal 1"
+      }
+
+      expect(response).to redirect_to(organization_goals_path(company))
+      expect(flash[:alert]).to eq('Please select an owner to bulk create goals.')
+    end
+  end
   
   describe 'GET #edit' do
     let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }

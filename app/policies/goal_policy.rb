@@ -12,6 +12,14 @@ class GoalPolicy < ApplicationPolicy
     admin_bypass? || user_is_teammate_of_company?
   end
 
+  def bulk_new?
+    create?
+  end
+
+  def bulk_create?
+    create?
+  end
+
   def update?
     admin_bypass? || user_is_creator_or_owner?
   end
