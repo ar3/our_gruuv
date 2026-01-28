@@ -10,6 +10,9 @@
       - if level > 0
         %i.bi.bi-arrow-return-right.me-2.text-muted
       = org.name
+      - if org.department? || org.team?
+        = link_to organization_departments_and_team_path(org.root_company, org), target: "_blank", rel: "noopener noreferrer", class: "ms-2", title: "View department" do
+          %i.bi.bi-box-arrow-up-right
   
   - if assignments.any?
     .table-responsive
@@ -27,9 +30,13 @@
             %tr{class: has_value ? 'table-info' : nil}
               %td
                 %strong= assignment.title
+                = link_to organization_assignment_path(assignment.company, assignment), target: "_blank", class: "ms-2", title: "View assignment" do
+                  %i.bi.bi-box-arrow-up-right
                 - if assignment.department
                   %br
                   %small.text-muted= department_hierarchy_display(assignment.department)
+                  = link_to organization_departments_and_team_path(assignment.department.root_company, assignment.department), target: "_blank", rel: "noopener noreferrer", class: "ms-2", title: "View department" do
+                    %i.bi.bi-box-arrow-up-right
               %td
                 = form.select "position_assignments[#{assignment.id}][min_estimated_energy]",
                   energy_percentage_options(existing_pa&.min_estimated_energy),
