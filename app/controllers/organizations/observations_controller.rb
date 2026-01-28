@@ -43,6 +43,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @current_sort = query.current_sort
     @current_view = query.current_view
     @current_spotlight = query.current_spotlight
+
+    # Load teammate for "involving" filter pill when that filter is active
+    @involving_teammate = if params[:involving_teammate_id].present?
+      Teammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
+    end
     
     # Calculate spotlight statistics from all observations (not filtered, not paginated)
     # Need to re-run query without sorting joins to avoid group issues
@@ -1643,6 +1648,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     observations = query.filter_by_timeframe(observations)
     observations = query.filter_by_draft_status(observations)
     observations = query.filter_by_observer(observations)
+    observations = query.filter_by_involving_teammate(observations)
     observations
   end
 

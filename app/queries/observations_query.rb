@@ -13,6 +13,7 @@ class ObservationsQuery
     observations = filter_by_timeframe(observations)
     observations = filter_by_draft_status(observations)
     observations = filter_by_observer(observations)
+    observations = filter_by_involving_teammate(observations)
     observations = filter_by_soft_deleted_status(observations)
     observations = apply_sort(observations)
     observations
@@ -27,6 +28,7 @@ class ObservationsQuery
       filters[:timeframe_end_date] = params[:timeframe_end_date] if params[:timeframe_end_date].present?
     end
     filters[:include_soft_deleted] = params[:include_soft_deleted] if params[:include_soft_deleted].present?
+    filters[:involving_teammate_id] = params[:involving_teammate_id] if params[:involving_teammate_id].present?
     filters
   end
 
@@ -117,8 +119,18 @@ class ObservationsQuery
 
   def filter_by_observer(observations)
     return observations unless params[:observer_id].present?
-    
+
     observations.where(observer_id: params[:observer_id])
+  end
+
+  def filter_by_involving_teammate(observations)
+    return observations unless params[:involving_teammate_id].present?
+
+    teammate = Teammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
+    return observations unless teammate
+
+    observed_ids = Observee.where(teammate_id: teammate.id).select(:observation_id)
+    observations.where(observer_id: teammate.person_id).or(observations.where(id: observed_ids))
   end
 
   def filter_by_soft_deleted_status(observations)

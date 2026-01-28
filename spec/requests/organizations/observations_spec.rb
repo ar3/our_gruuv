@@ -15,6 +15,23 @@ RSpec.describe 'Organizations::Observations', type: :request do
     PaperTrail.enabled = true
   end
 
+  describe 'GET /organizations/:organization_id/observations (index)' do
+    it 'allows access to index' do
+      get organization_observations_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    context 'with involving_teammate_id' do
+      it 'shows Observations involving pill in Filters area when filter is active' do
+        get organization_observations_path(organization, involving_teammate_id: teammate.id)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Observations involving')
+        expect(response.body).to include(person.casual_name)
+        expect(response.body).to include('rounded-pill')
+      end
+    end
+  end
+
   describe 'GET /organizations/:organization_id/observations/select_type' do
     it 'allows access to select_type page' do
       get select_type_organization_observations_path(organization)

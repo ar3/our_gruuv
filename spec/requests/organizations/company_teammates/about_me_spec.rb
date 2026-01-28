@@ -35,6 +35,12 @@ RSpec.describe 'About Me Page', type: :request do
         expect(assigns(:teammate).id).to eq(teammate.id)
         expect(assigns(:person)).to eq(person)
       end
+
+      it 'assigns observations_involving_url for the teammate' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_involving_url)).to be_present
+        expect(assigns(:observations_involving_url)).to include("involving_teammate_id=#{teammate.id}")
+      end
     end
 
     context 'when user does not have view_check_ins permission' do
@@ -69,6 +75,7 @@ RSpec.describe 'About Me Page', type: :request do
   describe 'Navigation link' do
     it 'appears in navigation for authorized users' do
       get dashboard_organization_path(organization)
+      follow_redirect!
       expect(response.body).to include('About')
       expect(response.body).to include(person.casual_name)
     end
@@ -289,6 +296,12 @@ RSpec.describe 'About Me Page', type: :request do
     let(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
     let(:third_person) { create(:person) }
     let(:third_teammate) { create(:company_teammate, person: third_person, organization: organization) }
+
+    it 'shows View All observations involving link with teammate casual name' do
+      get about_me_organization_company_teammate_path(organization, teammate)
+      expect(response.body).to include("View All observations involving #{person.casual_name}")
+      expect(response.body).to include("involving_teammate_id=#{teammate.id}")
+    end
 
     context 'when teammate is only observer' do
       let!(:observation_given) do
@@ -955,14 +968,15 @@ RSpec.describe 'About Me Page', type: :request do
 
           it 'shows summary with statistics' do
             get about_me_organization_company_teammate_path(organization, teammate)
-            expect(response.body).to include('Reflection Prompt')
+            # Section uses company_label; default is "Prompt(s)" / "Reflection(s)"
+            expect(response.body).to match(/Prompts?.*Reflections?|Reflections?.*Prompts?/i)
             expect(response.body).to include(teammate.person.casual_name)
             expect(response.body).to include('has started')
             expect(response.body).to include('has answered')
             expect(response.body).to include('of the total')
             expect(response.body).to include('questions')
             expect(response.body).to include('total goals associated with')
-            expect(response.body).to include('of these reflections')
+            expect(response.body).to match(/of these (prompts|reflections)/i)
           end
 
           context 'when prompt is open' do

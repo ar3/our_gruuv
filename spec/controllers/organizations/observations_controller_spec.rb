@@ -31,6 +31,33 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(assigns(:observations)).to include(observation)
     end
 
+    context 'with involving_teammate_id' do
+      it 'assigns @involving_teammate when param is present' do
+        observation
+        get :index, params: { organization_id: company.id, involving_teammate_id: observee_teammate.id }
+        expect(assigns(:involving_teammate).id).to eq(observee_teammate.id)
+        expect(assigns(:involving_teammate)).to be_a(Teammate)
+      end
+
+      it 'filters observations to those involving the teammate (observer or observee)' do
+        observation.publish!
+        other_observee = create(:teammate, person: create(:person), organization: company)
+        other_obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
+        other_obs.observees.build(teammate: other_observee)
+        other_obs.save!
+        other_obs.publish!
+        get :index, params: { organization_id: company.id, involving_teammate_id: observee_teammate.id }
+        expect(assigns(:observations)).to include(observation)
+        expect(assigns(:observations)).not_to include(other_obs)
+      end
+
+      it 'includes involving_teammate_id in current_filters' do
+        get :index, params: { organization_id: company.id, involving_teammate_id: observee_teammate.id }
+        expect(assigns(:current_filters)).to have_key(:involving_teammate_id)
+        expect(assigns(:current_filters)[:involving_teammate_id]).to eq(observee_teammate.id.to_s)
+      end
+    end
+
     it 'defaults to most_observed spotlight when no spotlight parameter is provided' do
       get :index, params: { organization_id: company.id }
       expect(assigns(:current_spotlight)).to eq('most_observed')

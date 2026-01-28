@@ -193,6 +193,44 @@ RSpec.describe ObservationsQuery, type: :query do
         expect(results).not_to include(observation2)
       end
     end
+
+    context 'by involving_teammate_id' do
+      let(:params) { { involving_teammate_id: observee_teammate.id } }
+
+      it 'returns only observations where the teammate is observer or observee (within visible scope)' do
+        results = query.call.to_a
+        # observation1: observer is observer, observee is observee_teammate → observee_teammate involved, visible to observer
+        # observation2: observer is observee_person, observee is observee_teammate → observee_teammate involved but observed_only so NOT visible to observer
+        # observation3: observer is observer, observee is observee_teammate → observee_teammate involved, visible
+        # draft_observation: observer is observer, observee is observee_teammate → observee_teammate involved, visible (observer's own draft)
+        expect(results).to include(observation1, observation3, draft_observation)
+        expect(results).not_to include(observation2) # observed_only self-observation from observee_person, not visible to observer
+      end
+
+      it 'excludes observations where the teammate is neither observer nor observee' do
+        other_teammate = create(:teammate, person: create(:person), organization: company)
+        other_obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+          obs.publish!
+        end
+        results = described_class.new(company, params, current_person: observer).call.to_a
+        expect(results).not_to include(other_obs)
+      end
+
+      context 'when involving_teammate_id is invalid or wrong org' do
+        let(:other_company) { create(:organization, :company) }
+        let(:other_teammate) { create(:teammate, person: create(:person), organization: other_company) }
+        let(:params) { { involving_teammate_id: other_teammate.id } }
+
+        it 'returns base scope (no involving filter applied)' do
+          results = query.call.to_a
+          # Teammate not in this org, so filter finds no teammate and returns observations unchanged
+          # visibility still applies, so observer sees observation1, observation3, draft
+          expect(results).to include(observation1, observation3, draft_observation)
+        end
+      end
+    end
   end
 
   describe 'sorting' do
@@ -264,6 +302,12 @@ RSpec.describe ObservationsQuery, type: :query do
     it 'excludes all timeframe' do
       query = described_class.new(company, { timeframe: 'all' }, current_person: observer)
       expect(query.current_filters).to eq({})
+    end
+
+    it 'includes involving_teammate_id when present' do
+      query = described_class.new(company, { involving_teammate_id: observee_teammate.id }, current_person: observer)
+      expect(query.current_filters).to have_key(:involving_teammate_id)
+      expect(query.current_filters[:involving_teammate_id]).to eq(observee_teammate.id)
     end
   end
 

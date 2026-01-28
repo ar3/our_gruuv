@@ -107,6 +107,20 @@ module NavigationHelper
         section: 'admin',
         items: [
           {
+            label: 'Eligibility Requirements 🚧 Beta',
+            icon: 'bi-check2-circle',
+            path: organization_eligibility_requirements_path(current_organization),
+            policy_check: -> { policy(:eligibility_requirement).index? },
+            coming_soon: false
+          },
+          {
+            label: 'Feedback Requests 🚧 Beta',
+            icon: 'bi-chat-dots',
+            path: organization_feedback_requests_path(current_organization),
+            policy_check: -> { policy(current_company).view_feedback_requests? },
+            coming_soon: false
+          },
+          {
             label: 'Seats',
             icon: 'bi-briefcase',
             path: organization_seats_path(current_organization),
@@ -118,13 +132,6 @@ module NavigationHelper
             icon: 'bi-briefcase-fill',
             path: organization_positions_path(current_organization),
             policy_check: -> { current_organization.present? && policy(current_organization).show? },
-            coming_soon: false
-          },
-          {
-            label: 'Eligibility Requirements',
-            icon: 'bi-check2-circle',
-            path: organization_eligibility_requirements_path(current_organization),
-            policy_check: -> { policy(:eligibility_requirement).index? },
             coming_soon: false
           },
           {
@@ -153,13 +160,6 @@ module NavigationHelper
             icon: 'bi-file-text',
             path: organization_prompt_templates_path(current_organization),
             policy_check: -> { policy(current_company).view_prompt_templates? },
-            coming_soon: false
-          },
-          {
-            label: 'Feedback Requests (🚧Alpha🚧)',
-            icon: 'bi-chat-dots',
-            path: organization_feedback_requests_path(current_organization),
-            policy_check: -> { policy(current_company).view_feedback_requests? },
             coming_soon: false
           },
           {

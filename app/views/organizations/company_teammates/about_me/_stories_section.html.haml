@@ -1,6 +1,6 @@
 - stories_indicator = shareable_observations_status_indicator(@teammate, organization)
 = render 'shared/section_header', 
-         title: "#{@teammate.person.casual_name} stories", 
+         title: "#{@teammate.person.casual_name} observations / stories", 
          icon: 'bi-book', 
          description: 'Recent observations and feedback',
          collapsible: true,
@@ -21,11 +21,19 @@
 .collapse#storiesSection
   .card.mb-4
     .card-body
-      - if @draft_observation_count.to_i > 0
-        .d-grid.mb-4
-          = link_to @draft_observations_url,
-                    class: "btn btn-primary" do
-            Review your #{pluralize(@draft_observation_count, "draft observation")}
+      .row.mb-4
+        .col-md-6
+          - if @draft_observation_count.to_i > 0
+            .d-grid
+              = link_to @draft_observations_url,
+                        class: "btn btn-primary" do
+                Review your #{pluralize(@draft_observation_count, "draft observation")}
+        .col-md-6
+          - if @teammate.present?
+            .d-grid
+              = link_to @observations_involving_url,
+                        class: "btn btn-outline-primary" do
+                View All observations involving #{@teammate.person.casual_name}
       .row
         -# Left side: Observations given
         .col-md-6

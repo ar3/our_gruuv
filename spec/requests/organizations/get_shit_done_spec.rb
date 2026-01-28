@@ -20,9 +20,9 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
   describe 'GET /organizations/:organization_id/get_shit_done' do
     it 'renders the dashboard page' do
       get "/organizations/#{company.to_param}/get_shit_done"
-      
+
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Get Shit Done')
+      expect(response.body).to include('Get S*** Done')
     end
 
     it 'loads pending observable moments for the current teammate' do
@@ -45,9 +45,11 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
     it 'loads pending MAAP snapshots for the current person' do
       # Ensure teammate is a CompanyTeammate
       company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
-      snapshot1 = create(:maap_snapshot, employee: person, company: company, effective_date: Time.current, employee_acknowledged_at: nil, change_type: 'assignment_management', reason: 'Test reason 1')
-      snapshot2 = create(:maap_snapshot, employee: person, company: company, effective_date: Time.current, employee_acknowledged_at: Time.current, change_type: 'position_tenure', reason: 'Test reason 2')
-      snapshot3 = create(:maap_snapshot, employee: other_person, company: company, effective_date: Time.current, employee_acknowledged_at: nil, change_type: 'milestone_management', reason: 'Test reason 3')
+      other_company_tm = CompanyTeammate.find_or_create_by!(person: other_person, organization: company)
+      creator = create(:company_teammate, organization: company)
+      snapshot1 = create(:maap_snapshot, employee_company_teammate: company_teammate, creator_company_teammate: creator, company: company, effective_date: Time.current, employee_acknowledged_at: nil, change_type: 'assignment_management', reason: 'Test reason 1')
+      snapshot2 = create(:maap_snapshot, employee_company_teammate: company_teammate, creator_company_teammate: creator, company: company, effective_date: Time.current, employee_acknowledged_at: Time.current, change_type: 'position_tenure', reason: 'Test reason 2')
+      snapshot3 = create(:maap_snapshot, employee_company_teammate: other_company_tm, creator_company_teammate: creator, company: company, effective_date: Time.current, employee_acknowledged_at: nil, change_type: 'milestone_management', reason: 'Test reason 3')
       
       get "/organizations/#{company.to_param}/get_shit_done"
       

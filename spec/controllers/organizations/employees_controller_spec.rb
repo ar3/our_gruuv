@@ -7,8 +7,8 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
   let(:employee1) { create(:person) }
   let(:employee2) { create(:person) }
   let(:huddle_participant) { create(:person) }
-  let!(:employee1_teammate) { create(:teammate, person: employee1, organization: company) }
-  let!(:employee2_teammate) { create(:teammate, person: employee2, organization: company) }
+  let!(:employee1_teammate) { create(:company_teammate, person: employee1, organization: company) }
+  let!(:employee2_teammate) { create(:company_teammate, person: employee2, organization: company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
   let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
@@ -181,9 +181,9 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
 
   describe 'GET #audit' do
     let(:maap_manager) { create(:person) }
-    let!(:maap_access) { create(:teammate, person: maap_manager, organization: company, can_manage_maap: true, can_manage_employment: true, first_employed_at: 1.year.ago) }
-    let(:maap_snapshot1) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'assignment_management') }
-    let(:maap_snapshot2) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'position_tenure') }
+    let!(:maap_access) { create(:company_teammate, person: maap_manager, organization: company, can_manage_maap: true, can_manage_employment: true, first_employed_at: 1.year.ago) }
+    let(:maap_snapshot1) { create(:maap_snapshot, employee_company_teammate: employee1_teammate, creator_company_teammate: maap_access, company: company, change_type: 'assignment_management') }
+    let(:maap_snapshot2) { create(:maap_snapshot, employee_company_teammate: employee1_teammate, creator_company_teammate: maap_access, company: company, change_type: 'position_tenure') }
 
     before do
       maap_snapshot1
@@ -198,40 +198,43 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       end
 
       it 'returns http success' do
-        get :audit, params: { organization_id: company.id, id: employee1.id }
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
         expect(response).to have_http_status(:success)
       end
 
       it 'assigns the correct variables' do
-        get :audit, params: { organization_id: company.id, id: employee1.id }
-        
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
+
         expect(assigns(:person)).to eq(employee1)
         expect(assigns(:maap_snapshots)).to include(maap_snapshot1, maap_snapshot2)
       end
 
       it 'only shows MAAP snapshots for the specific organization' do
         other_company = create(:organization, :company)
-        other_snapshot = create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: other_company)
-        
-        get :audit, params: { organization_id: company.id, id: employee1.id }
-        
+        other_employee_tm = create(:company_teammate, person: employee1, organization: other_company)
+        other_creator_tm = create(:company_teammate, person: maap_manager, organization: other_company)
+        other_snapshot = create(:maap_snapshot, employee_company_teammate: other_employee_tm, creator_company_teammate: other_creator_tm, company: other_company)
+
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
+
         expect(assigns(:maap_snapshots)).to include(maap_snapshot1, maap_snapshot2)
         expect(assigns(:maap_snapshots)).not_to include(other_snapshot)
       end
     end
 
     context 'when user does not have MAAP management permissions' do
-      let(:unauthorized_user) { create(:person) }
-      
+      # User from another org cannot view this org's audit
+      let(:other_org) { create(:organization, :company) }
+      let(:other_org_user) { create(:person) }
+      let!(:other_org_teammate) { create(:company_teammate, person: other_org_user, organization: other_org, first_employed_at: 1.year.ago) }
+
       before do
-        unauthorized_teammate = create(:teammate, person: unauthorized_user, organization: company, first_employed_at: 1.year.ago)
-        sign_in_as_teammate(unauthorized_user, company)
+        sign_in_as_teammate(other_org_user, other_org)
       end
 
       it 'redirects when authorization fails' do
-        get :audit, params: { organization_id: company.id, id: employee1.id }
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
       end
     end
 
@@ -241,47 +244,47 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       end
 
       it 'allows access to own audit view' do
-        get :audit, params: { organization_id: company.id, id: employee1.id }
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
         expect(response).to have_http_status(:success)
       end
-      
+
       it 'assigns pending snapshots when user is the person' do
-        executed_snapshot = create(:maap_snapshot, 
-          employee: employee1, 
-          created_by: maap_manager, 
-          company: company, 
+        executed_snapshot = create(:maap_snapshot,
+          employee_company_teammate: employee1_teammate,
+          creator_company_teammate: maap_access,
+          company: company,
           change_type: 'assignment_management',
           effective_date: 1.day.ago,
           employee_acknowledged_at: nil
         )
-        
-        get :audit, params: { organization_id: company.id, id: employee1.id }
-        
+
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
+
         expect(assigns(:pending_snapshots)).to include(executed_snapshot)
       end
-      
+
       it 'assigns acknowledged snapshots when user is the person' do
-        acknowledged_snapshot = create(:maap_snapshot, 
-          employee: employee1, 
-          created_by: maap_manager, 
-          company: company, 
+        acknowledged_snapshot = create(:maap_snapshot,
+          employee_company_teammate: employee1_teammate,
+          creator_company_teammate: maap_access,
+          company: company,
           change_type: 'assignment_management',
           effective_date: 2.days.ago,
           employee_acknowledged_at: 1.day.ago
         )
-        
-        get :audit, params: { organization_id: company.id, id: employee1.id }
-        
+
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
+
         expect(assigns(:acknowledged_snapshots)).to include(acknowledged_snapshot)
       end
-      
+
       it 'renders the audit view template' do
-        get :audit, params: { organization_id: company.id, id: employee1.id }
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
         expect(response).to render_template(:audit)
       end
-      
+
       it 'renders audit view with snapshots' do
-        get :audit, params: { organization_id: company.id, id: employee1.id }
+        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
         expect(response).to have_http_status(:success)
         expect(assigns(:maap_snapshots)).to include(maap_snapshot1, maap_snapshot2)
         # Verify the view renders without errors

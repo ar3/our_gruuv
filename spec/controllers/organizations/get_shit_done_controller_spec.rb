@@ -3,8 +3,8 @@ require 'rails_helper'
 RSpec.describe Organizations::GetShitDoneController, type: :controller do
   let(:company) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, organization: company, person: person) }
-  
+  let!(:teammate) { create(:company_teammate, organization: company, person: person) }
+
   before do
     sign_in_as_teammate(person, company)
   end
@@ -33,10 +33,12 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
     
     it 'loads pending MAAP snapshots for the current teammate' do
       # MAAP snapshots need effective_date to be pending acknowledgement
-      snapshot1 = create(:maap_snapshot, employee: person, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
-      snapshot2 = create(:maap_snapshot, employee: person, company: company, employee_acknowledged_at: Time.current, effective_date: Time.current)
+      creator = create(:company_teammate, organization: company)
+      snapshot1 = create(:maap_snapshot, employee_company_teammate: teammate, creator_company_teammate: creator, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
+      snapshot2 = create(:maap_snapshot, employee_company_teammate: teammate, creator_company_teammate: creator, company: company, employee_acknowledged_at: Time.current, effective_date: Time.current)
       other_person = create(:person)
-      snapshot3 = create(:maap_snapshot, employee: other_person, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
+      other_tm = create(:company_teammate, person: other_person, organization: company)
+      snapshot3 = create(:maap_snapshot, employee_company_teammate: other_tm, creator_company_teammate: creator, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
       
       get :show, params: { organization_id: company.id }
       
@@ -96,13 +98,14 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
     it 'calculates total pending items' do
       # Ensure teammate is a CompanyTeammate
       company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
-      
+
       # Create observable moment - need to ensure it's for the correct observer
       observable_moment = create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
       # Reload to ensure associations are set
       observable_moment.reload
-      
-      create(:maap_snapshot, employee: person, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
+
+      creator = create(:company_teammate, organization: company)
+      create(:maap_snapshot, employee_company_teammate: company_teammate, creator_company_teammate: creator, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
       create(:observation, observer: person, company: company, published_at: nil)
       
       # Goal needs to meet check_in_eligible criteria and have no recent check-in

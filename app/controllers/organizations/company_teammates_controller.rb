@@ -910,6 +910,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         return_url: about_me_organization_company_teammate_path(organization, @teammate),
         return_text: "Back to About #{casual_name}"
       )
+      @observations_involving_url = organization_observations_path(
+        organization,
+        involving_teammate_id: @teammate.id,
+        return_url: about_me_organization_company_teammate_path(organization, @teammate),
+        return_text: "Back to About #{casual_name}"
+      )
     else
       @observations_given_count = 0
       @recent_observations_given = []
@@ -919,6 +925,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       @observations_received_url = organization_observations_path(organization)
       @draft_observation_count = 0
       @draft_observations_url = organization_observations_path(organization)
+      @observations_involving_url = organization_observations_path(organization)
     end
   end
 

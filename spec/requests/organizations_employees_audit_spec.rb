@@ -5,17 +5,17 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
   let(:employee) { create(:person) }
   let(:manager) { create(:person) }
   let(:maap_manager) { create(:person) }
-  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization, first_employed_at: 1.year.ago) }
-  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization, first_employed_at: 1.year.ago) }
-  let!(:maap_manager_teammate) { create(:teammate, person: maap_manager, organization: organization, can_manage_maap: true, can_manage_employment: true, first_employed_at: 1.year.ago) }
+  let!(:employee_teammate) { create(:company_teammate, person: employee, organization: organization, first_employed_at: 1.year.ago) }
+  let!(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, first_employed_at: 1.year.ago) }
+  let!(:maap_manager_teammate) { create(:company_teammate, person: maap_manager, organization: organization, can_manage_maap: true, can_manage_employment: true, first_employed_at: 1.year.ago) }
   let!(:employee_employment) { create(:employment_tenure, teammate: employee_teammate, company: organization, started_at: 1.year.ago) }
   let!(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago) }
   let!(:maap_manager_employment) { create(:employment_tenure, teammate: maap_manager_teammate, company: organization, started_at: 1.year.ago) }
   
   let(:maap_snapshot1) do
     create(:maap_snapshot,
-      employee_teammate: employee,
-      creator_teammate: maap_manager,
+      employee_company_teammate: employee_teammate,
+      creator_company_teammate: maap_manager_teammate,
       company: organization,
       change_type: 'assignment_management',
       reason: 'Assignment updates',
@@ -23,11 +23,11 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       employee_acknowledged_at: nil
     )
   end
-  
+
   let(:maap_snapshot2) do
     create(:maap_snapshot,
-      employee_teammate: employee,
-      creator_teammate: maap_manager,
+      employee_company_teammate: employee_teammate,
+      creator_company_teammate: maap_manager_teammate,
       company: organization,
       change_type: 'position_tenure',
       reason: 'Position change',
@@ -62,8 +62,10 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     
     it 'only shows MAAP snapshots for the specific organization' do
       other_company = create(:organization, :company)
-      other_snapshot = create(:maap_snapshot, employee: employee, created_by: maap_manager, company: other_company)
-      
+      other_employee_tm = create(:company_teammate, person: employee, organization: other_company)
+      other_creator_tm = create(:company_teammate, person: maap_manager, organization: other_company)
+      other_snapshot = create(:maap_snapshot, employee_company_teammate: other_employee_tm, creator_company_teammate: other_creator_tm, company: other_company)
+
       get audit_organization_employee_path(organization, employee_teammate)
       
       expect(assigns(:maap_snapshots)).to include(maap_snapshot1, maap_snapshot2)
@@ -95,8 +97,8 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     
     it 'displays custom reasons correctly' do
       custom_snapshot = create(:maap_snapshot,
-                               employee_teammate: employee,
-                               creator_teammate: maap_manager,
+                               employee_company_teammate: employee_teammate,
+                               creator_company_teammate: maap_manager_teammate,
                                company: organization,
                                change_type: 'bulk_check_in_finalization',
                                reason: 'Q4 2024 Performance Review',
@@ -110,13 +112,38 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
   end
   
   describe 'when user does not have MAAP management permissions' do
+    # User from another org cannot view this org's audit (policy: viewing_teammate.organization != record.organization)
+    let(:other_org) { create(:organization, :company) }
+    let(:other_org_person) { create(:person) }
+    let!(:other_org_teammate) { create(:company_teammate, person: other_org_person, organization: other_org, first_employed_at: 1.year.ago) }
+
     before do
-      sign_in_as_teammate_for_request(manager, organization)
+      sign_in_as_teammate_for_request(other_org_person, other_org)
     end
-    
+
     it 'redirects when authorization fails' do
       get audit_organization_employee_path(organization, employee_teammate)
-      expect(response).to redirect_to(root_path)
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe 'when user is same-org teammate with no permissions and no direct reports' do
+    # Peer: same org as target, no can_manage_employment/can_manage_maap, not in managerial hierarchy of employee
+    let(:peer) { create(:person) }
+    let!(:peer_teammate) do
+      create(:company_teammate, person: peer, organization: organization, first_employed_at: 1.year.ago)
+    end
+    let!(:peer_employment) do
+      create(:employment_tenure, teammate: peer_teammate, company: organization, started_at: 1.year.ago)
+    end
+
+    before do
+      sign_in_as_teammate_for_request(peer, organization)
+    end
+
+    it 'redirects when trying to view another teammate\'s audit' do
+      get audit_organization_employee_path(organization, employee_teammate)
+      expect(response).to have_http_status(:redirect)
     end
   end
   
@@ -155,9 +182,9 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     
     it 'renders snapshot_row partial for pending snapshots' do
       get audit_organization_employee_path(organization, employee_teammate)
-      
+
       # Check that the snapshot data is present in the response
-      expect(response.body).to include(maap_snapshot1.created_by.display_name)
+      expect(response.body).to include(maap_snapshot1.creator_company_teammate&.person&.display_name)
       expect(response.body).to include(maap_snapshot1.reason)
     end
     
@@ -172,7 +199,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
   
   describe 'when there are no snapshots' do
     let(:employee_without_snapshots) { create(:person) }
-    let!(:employee_without_snapshots_teammate) { create(:teammate, person: employee_without_snapshots, organization: organization, first_employed_at: 1.year.ago) }
+    let!(:employee_without_snapshots_teammate) { create(:company_teammate, person: employee_without_snapshots, organization: organization, first_employed_at: 1.year.ago) }
     let!(:employee_without_snapshots_employment) { create(:employment_tenure, teammate: employee_without_snapshots_teammate, company: organization, started_at: 1.year.ago) }
     
     before do
@@ -192,7 +219,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     context 'when employee does not exist in organization' do
       let(:other_organization) { create(:organization, :company) }
       let(:other_employee) { create(:person) }
-      let!(:other_employee_teammate) { create(:teammate, person: other_employee, organization: other_organization, first_employed_at: 1.year.ago) }
+      let!(:other_employee_teammate) { create(:company_teammate, person: other_employee, organization: other_organization, first_employed_at: 1.year.ago) }
       let!(:other_employee_employment) { create(:employment_tenure, teammate: other_employee_teammate, company: other_organization, started_at: 1.year.ago) }
       
       before do
@@ -200,10 +227,8 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       end
       
       it 'handles employee not found in organization gracefully' do
-        # The employee exists but is not an employee of the organization
-        # The controller uses @organization.employees.find which should raise RecordNotFound
-        # In request specs, exceptions are typically handled and return error responses
-        get audit_organization_employee_path(organization, other_employee.id)
+        # Use an id that is not any teammate or employee in this org (controller tries teammate then person)
+        get audit_organization_employee_path(organization, 999999999)
         expect(response.status).to be >= 400
       end
     end

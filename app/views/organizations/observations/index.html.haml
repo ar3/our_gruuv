@@ -113,9 +113,14 @@
             %small.text-muted
               %i.bi.bi-funnel.me-1
               Filters:
-              - if @current_filters.any?
-                = @current_filters.map { |k, v| "#{k}: #{Array(v).join(', ')}" }.join('; ')
-              - else
+              - if @involving_teammate.present?
+                %span.badge.rounded-pill.bg-primary.ms-1.me-1
+                  Observations involving #{@involving_teammate.person.casual_name}
+              - other_filters = @current_filters.except(:involving_teammate_id)
+              - if other_filters.any?
+                - separator = @involving_teammate.present? ? '; ' : ''
+                = separator + other_filters.map { |k, v| "#{k}: #{Array(v).join(', ')}" }.join('; ')
+              - elsif @involving_teammate.blank?
                 All observations
               %br
               %i.bi.bi-sort-down.me-1
