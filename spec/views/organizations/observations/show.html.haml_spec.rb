@@ -176,6 +176,89 @@ RSpec.  describe 'organizations/observations/show', type: :view do
     allow(observation).to receive(:format_ratings_by_type_and_level).and_return([])
   end
 
+  describe 'Details section' do
+    it 'displays Privacy label and who can see (names or level text)' do
+      assign(:observee_names, [observee_person.casual_name])
+      assign(:direct_manager_names, [])
+      assign(:other_manager_names, [])
+      render
+      expect(rendered).to have_css('h5', text: 'Details')
+      expect(rendered).to have_content('Privacy:')
+      # public_to_company shows company name
+      expect(rendered).to have_content("Public to #{company.name}")
+    end
+
+    context 'when observed_only with observee names' do
+      let(:observed_only_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      before do
+        assign(:observation, observed_only_observation)
+        assign(:observee_names, [observee_person.casual_name])
+        assign(:direct_manager_names, [])
+        assign(:other_manager_names, [])
+        allow_any_instance_of(Observation).to receive(:decorate).and_return(
+          double(
+            story_html: '<p>Test</p>',
+            gifs_html: '',
+            visibility_text_style: 'text-info',
+            visibility_icon: '👤',
+            visibility_text: 'Just for their eyes only',
+            feelings_display_html: '',
+            permalink_url: "https://example.com/observations/#{observed_only_observation.id}"
+          )
+        )
+        render
+      end
+
+      it 'displays observee names in Privacy line' do
+        expect(rendered).to have_content('Privacy:')
+        expect(rendered).to have_content("Just #{observee_person.casual_name}")
+      end
+    end
+
+    context 'when managers_only with direct and other managers' do
+      let(:manager_teammate) { create(:teammate, person: create(:person, first_name: 'Direct', last_name: 'Manager'), organization: company) }
+      let(:managers_only_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      before do
+        assign(:observation, managers_only_observation)
+        assign(:observee_names, [observee_person.casual_name])
+        assign(:direct_manager_names, [manager_teammate.person.casual_name])
+        assign(:other_manager_names, ['Senior VP'])
+        allow_any_instance_of(Observation).to receive(:decorate).and_return(
+          double(
+            story_html: '<p>Test</p>',
+            gifs_html: '',
+            visibility_text_style: 'text-info',
+            visibility_icon: '👔',
+            visibility_text: 'Just Managers',
+            feelings_display_html: '',
+            permalink_url: "https://example.com/observations/#{managers_only_observation.id}"
+          )
+        )
+        render
+      end
+
+      it 'displays direct manager names and info icon for other managers' do
+        expect(rendered).to have_content('Just Managers:')
+        expect(rendered).to have_content(manager_teammate.person.casual_name)
+        expect(rendered).to have_css('i.bi-info-circle[data-bs-toggle="popover"]')
+      end
+    end
+  end
+
   describe 'share prompt section' do
     context 'when observation is published, has no notifications, and is not journal' do
       before do

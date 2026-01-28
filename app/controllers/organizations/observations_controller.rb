@@ -244,11 +244,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @debug_data = debug_service.call
     end
 
+    # Prepare privacy names for Details section (who can see this)
+    prepare_privacy_selector_data
+
     # Load data for the "great observation" section (only shown when published, no notifications, not journal, and observer)
     if @observation.published? && @observation.notifications.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
-      # Prepare privacy selector data (observee_names, direct_manager_names, etc.)
-      prepare_privacy_selector_data
-      
       # Load organizations with kudos channels (company + descendants)
       company = @observation.company
       organizations_with_channels = ([company] + company.descendants.to_a)
