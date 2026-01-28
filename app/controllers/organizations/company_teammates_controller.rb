@@ -859,27 +859,39 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def load_stories_for_about_me
     if @teammate
-      # Get shareable observations (published, not observer_only) in last 30 days
+      # Use same ObservationsQuery as filtered_observations so collapsed counts and expanded lists match "View All"
       since_date = 30.days.ago
-      
-      # Use query object for observations
-      query = AboutMeObservationsQuery.new(@teammate, organization)
-      
-      # Observations given (where teammate is observer, excluding self-observations)
-      given_observations = query.observations_given
-      
-      @observations_given_count = given_observations.count
-      @recent_observations_given = given_observations.limit(3).includes(observees: { teammate: :person })
-      
-      # Observations received (where teammate is observee, including self-observations)
-      received_observations = query.observations_received
-      
-      @observations_received_count = received_observations.count
-      @recent_observations_received = received_observations.limit(3).includes(:observer, observees: { teammate: :person })
-      
-      # Build filter URLs
-      casual_name = @teammate.person.casual_name
+      timeframe_start = since_date.to_date.to_s
+      timeframe_end = Time.current.to_date.to_s
       teammate_ids = @teammate.person.teammates.where(organization: organization).pluck(:id)
+
+      # Observations given: observer = teammate, published, not journal, last 30 days, exclude self-observations
+      given_params = {
+        observer_id: @teammate.person.id,
+        exclude_observer_as_observee: true,
+        timeframe: 'between',
+        timeframe_start_date: timeframe_start,
+        timeframe_end_date: timeframe_end
+      }
+      given_query = ObservationsQuery.new(organization, given_params, current_person: current_person)
+      given_observations = given_query.call
+      @observations_given_count = given_observations.count
+      @recent_observations_given = given_observations.limit(3).includes(:observer, { observed_teammates: :person }, :observation_ratings)
+
+      # Observations received: teammate is observee, published, not journal, last 30 days
+      received_params = {
+        observee_ids: teammate_ids,
+        timeframe: 'between',
+        timeframe_start_date: timeframe_start,
+        timeframe_end_date: timeframe_end
+      }
+      received_query = ObservationsQuery.new(organization, received_params, current_person: current_person)
+      received_observations = received_query.call
+      @observations_received_count = received_observations.count
+      @recent_observations_received = received_observations.limit(3).includes(:observer, { observed_teammates: :person }, :observation_ratings)
+      
+      # Build filter URLs (same params as ObservationsQuery so "View All" shows the same set)
+      casual_name = @teammate.person.casual_name
       @observations_given_url = filtered_observations_organization_observations_path(
         organization,
         observer_id: @teammate.person.id,

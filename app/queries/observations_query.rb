@@ -14,6 +14,7 @@ class ObservationsQuery
     observations = filter_by_draft_status(observations)
     observations = filter_by_observer(observations)
     observations = filter_by_involving_teammate(observations)
+    observations = filter_by_observee_ids(observations)
     observations = filter_by_soft_deleted_status(observations)
     observations = apply_sort(observations)
     observations
@@ -120,7 +121,20 @@ class ObservationsQuery
   def filter_by_observer(observations)
     return observations unless params[:observer_id].present?
 
-    observations.where(observer_id: params[:observer_id])
+    observations = observations.merge(Observation.published).merge(Observation.not_journal)
+    observations = observations.where(observer_id: params[:observer_id])
+
+    if params[:exclude_observer_as_observee].present? &&
+       (params[:exclude_observer_as_observee] == true || params[:exclude_observer_as_observee].to_s == 'true')
+      observer_teammate_ids = Teammate.where(organization: organization, person_id: params[:observer_id]).select(:id)
+      self_observation_ids = Observation.joins(:observees)
+                                       .where(observer_id: params[:observer_id])
+                                       .where(observees: { teammate_id: observer_teammate_ids })
+                                       .select(:id)
+      observations = observations.where.not(id: self_observation_ids)
+    end
+
+    observations
   end
 
   def filter_by_involving_teammate(observations)
@@ -131,6 +145,15 @@ class ObservationsQuery
 
     observed_ids = Observee.where(teammate_id: teammate.id).select(:observation_id)
     observations.where(observer_id: teammate.person_id).or(observations.where(id: observed_ids))
+  end
+
+  def filter_by_observee_ids(observations)
+    observee_ids = Array(params[:observee_ids]).reject(&:blank?)
+    return observations if observee_ids.empty?
+
+    observations = observations.joins(:observees).where(observees: { teammate_id: observee_ids }).distinct
+    observations = observations.merge(Observation.published).merge(Observation.not_journal)
+    observations
   end
 
   def filter_by_soft_deleted_status(observations)

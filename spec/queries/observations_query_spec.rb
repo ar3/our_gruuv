@@ -231,6 +231,51 @@ RSpec.describe ObservationsQuery, type: :query do
         end
       end
     end
+
+    context 'by observer_id (shareable given: published, not journal)' do
+      let(:params) { { observer_id: observer.id } }
+
+      it 'returns only published, non-journal observations from that observer' do
+        results = query.call.to_a
+        # observation1 is observer_only (journal) → excluded
+        # observation3 is public_to_world, published, from observer → included
+        # draft_observation is from observer but draft → excluded
+        expect(results).to include(observation3)
+        expect(results).not_to include(observation1, draft_observation)
+      end
+    end
+
+    context 'by observer_id with exclude_observer_as_observee' do
+      let!(:self_obs) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_company, observed_at: 5.days.ago).tap do |obs|
+          obs.observees.build(teammate: observer_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let(:params) { { observer_id: observer.id, exclude_observer_as_observee: true } }
+
+      it 'excludes observations where the observer is also an observee (self-observations)' do
+        results = query.call.to_a
+        expect(results).to include(observation3) # observer → observee_teammate, not self
+        expect(results).not_to include(self_obs) # observer observes themselves
+      end
+    end
+
+    context 'by observee_ids (shareable received: published, not journal)' do
+      let(:params) { { observee_ids: [observee_teammate.id] } }
+
+      it 'returns only published, non-journal observations where teammate is observee (within visible scope)' do
+        results = query.call.to_a
+        # observation1 observer_only → excluded by not_journal
+        # observation2 observed_only, from observee_person to observee_teammate → not visible to observer (current_person)
+        # observation3 public, from observer to observee_teammate → included
+        # draft_observation has observee_teammate but draft → excluded by published
+        expect(results).to include(observation3)
+        expect(results).not_to include(observation1, draft_observation)
+      end
+    end
   end
 
   describe 'sorting' do

@@ -7,8 +7,12 @@
       .list-group-item
         .d-flex
           .flex-grow-1
-            %strong= observation.observer.display_name
-            %br
+            .mb-1
+              %span From: #{observation.observer.casual_name}
+              - if observation.observed_teammates.any?
+                %span.ms-2 To: #{observation.observed_teammates.map { |t| t.person.casual_name }.join(', ')}
+              - else
+                %span.ms-2 To: No one
             %small.text-muted= format_date_in_user_timezone(observation.observed_at)
             %p.mb-0.mt-1= truncate(observation.story, length: 200)
           .ms-3

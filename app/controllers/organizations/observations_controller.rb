@@ -190,7 +190,16 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     if @end_date.present?
       observations = observations.where('observed_at <= ?', @end_date)
     end
-    
+
+    # When observer_id is present (e.g. "View All Observations Given" from About Me), restrict to that observer and to published, non-journal
+    if params[:observer_id].present?
+      observations = observations.where(observer_id: params[:observer_id])
+      observations = observations.merge(Observation.published).merge(Observation.not_journal)
+    end
+
+    # Sort by published date descending (most recent first)
+    observations = observations.order(published_at: :desc)
+
     # Assign observations for the view
     @observations = observations.includes(:observer, { observed_teammates: :person }, :observation_ratings)
     

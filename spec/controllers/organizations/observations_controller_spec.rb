@@ -2390,6 +2390,61 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       end
     end
     
+    context 'when observer_id is present (e.g. View All Observations Given)' do
+      let!(:journal_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observer_only, observed_at: 2.days.ago, story: 'Journal only story')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      let(:other_observer_person) { create(:person) }
+      let!(:other_observer_teammate) { create(:teammate, person: other_observer_person, organization: company) }
+      let!(:other_observer_observation) do
+        obs = build(:observation, observer: other_observer_person, company: company, privacy_level: :public_to_company, observed_at: 2.days.ago, story: 'From other observer')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'restricts to observations where that person is the observer' do
+        get :filtered_observations, params: { organization_id: company.id, observer_id: observer.id }
+        expect(response.body).to include(published_observation.story)
+        expect(response.body).not_to include(other_observer_observation.story)
+      end
+
+      it 'excludes draft observations when observer_id is present' do
+        get :filtered_observations, params: { organization_id: company.id, observer_id: observer.id }
+        expect(response.body).not_to include(draft_observation.story)
+      end
+
+      it 'excludes journal (observer_only) observations when observer_id is present' do
+        get :filtered_observations, params: { organization_id: company.id, observer_id: observer.id }
+        expect(response.body).not_to include(journal_observation.story)
+      end
+
+      it 'includes only published, non-journal observations from that observer' do
+        get :filtered_observations, params: { organization_id: company.id, observer_id: observer.id }
+        expect(response.body).to include(published_observation.story)
+        expect(response.body).not_to include(draft_observation.story, journal_observation.story, other_observer_observation.story)
+      end
+    end
+
+    context 'sorting' do
+      it 'sorts observations in descending order by published_at (most recent first)' do
+        get :filtered_observations, params: { organization_id: company.id, observer_id: observer.id }
+        obs = assigns(:observations).to_a
+        # Each consecutive pair should be published_at desc (nil published_at counts as oldest)
+        obs.each_cons(2) do |a, b|
+          a_at = a.published_at || Time.zone.at(0)
+          b_at = b.published_at || Time.zone.at(0)
+          expect(a_at).to be >= b_at, "expected order by published_at desc, got #{a.id}(#{a.published_at}) before #{b.id}(#{b.published_at})"
+        end
+      end
+    end
+
     context 'filtering by observee_ids' do
       let(:other_teammate) { create(:teammate, organization: company) }
       

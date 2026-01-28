@@ -52,6 +52,7 @@ class Observation < ApplicationRecord
   
   scope :recent, -> { order(observed_at: :desc) }
   scope :journal, -> { where(privacy_level: :observer_only) }
+  scope :not_journal, -> { where.not(privacy_level: :observer_only) }
   scope :public_observations, -> { where(privacy_level: :public_to_world) }
   scope :company_wide, -> { where(privacy_level: :public_to_company) }
   scope :for_company, ->(company) { where(company: company) }
