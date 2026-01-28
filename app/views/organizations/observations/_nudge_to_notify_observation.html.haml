@@ -35,12 +35,16 @@
           
           - if is_public
             - if @kudos_channel_organizations&.any?
-              - @kudos_channel_organizations.each do |org_info|
-                .mb-2
-                  %i.bi.bi-hash.me-2
-                  = org_info[:display_name]
-                  - if org_info[:already_sent]
-                    %span.badge.bg-secondary.ms-2 Already sent
+              - company_org_info = @kudos_channel_organizations.first
+              .mb-2
+                %i.bi.bi-hash.me-2
+                = company_org_info[:display_name]
+                - if company_org_info[:already_sent]
+                  %span.badge.bg-secondary.ms-2 Already sent
+              - other_count = @kudos_channel_organizations.size - 1
+              - if other_count.positive?
+                .mb-2.text-muted.small
+                  or one of the other #{other_count} public kudos channels
             
             - if can_send_public
               = link_to 'Select the channel to post the celebration', share_publicly_organization_observation_path(@organization, @observation), class: 'btn btn-sm btn-outline-primary mt-2'

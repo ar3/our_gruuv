@@ -263,6 +263,41 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         expect(rendered).to have_link('Select the channel to post the celebration', href: "/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
         expect(rendered).to have_link('Select who to send private notification', href: "/organizations/#{company.id}/observations/#{observation.id}/share_privately")
       end
+
+      context 'when there is one company kudos channel' do
+        before do
+          assign(:kudos_channel_organizations, [
+            { organization: company, channel: nil, display_name: 'Acme - #kudos', already_sent: false }
+          ])
+          render
+        end
+
+        it 'displays only the company channel name' do
+          expect(rendered).to have_content('Acme - #kudos')
+          expect(rendered).not_to have_content('or one of the other')
+        end
+      end
+
+      context 'when there are multiple public kudos channels' do
+        before do
+          assign(:kudos_channel_organizations, [
+            { organization: company, channel: nil, display_name: 'Acme - #kudos', already_sent: false },
+            { organization: nil, channel: nil, display_name: 'Team A - #kudos', already_sent: false },
+            { organization: nil, channel: nil, display_name: 'Team B - #kudos', already_sent: false }
+          ])
+          render
+        end
+
+        it 'displays company channel and message about other channels' do
+          expect(rendered).to have_content('Acme - #kudos')
+          expect(rendered).to have_content('or one of the other 2 public kudos channels')
+        end
+
+        it 'does not list the other channel names' do
+          expect(rendered).not_to have_content('Team A - #kudos')
+          expect(rendered).not_to have_content('Team B - #kudos')
+        end
+      end
     end
 
     context 'when observation is not public (cannot share publicly)' do

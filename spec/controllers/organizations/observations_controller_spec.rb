@@ -532,14 +532,14 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         create(:teammate_identity, teammate: observer_teammate, provider: 'slack', uid: 'U123456')
         create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: 'U789012')
         create(:teammate_identity, teammate: manager_teammate, provider: 'slack', uid: 'U345678') if manager_teammate
-        
+
         get :show, params: { organization_id: company.id, id: public_observation.id }
         expect(assigns(:available_teammates_for_notification)).to be_an(Array)
-        # Should include observer, observee, and manager (if they have Slack)
-        expect(assigns(:available_teammates_for_notification).length).to be >= 2
+        # List shows only observees (excluding observer) and direct managers, not observer or managers-of-managers
         teammate_ids = assigns(:available_teammates_for_notification).map { |t| t[:teammate].id }
-        expect(teammate_ids).to include(observer_teammate.id)
         expect(teammate_ids).to include(observee_teammate.id)
+        expect(teammate_ids).not_to include(observer_teammate.id)
+        expect(assigns(:available_teammates_for_notification).length).to be >= 1
       end
 
       it 'sets @page_visit_stats with correct counts from both show and public pages' do

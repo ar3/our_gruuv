@@ -271,8 +271,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         # Public: show all observees and their managers
         build_public_observation_teammates_list
       when 'observed_only'
-        # Only observees
-        @observation.observed_teammates.map do |teammate|
+        # Only observees (excluding observer if they are also an observee)
+        @observation.observed_teammates.reject { |t| t.person_id == @observation.observer_id }.map do |teammate|
           {
             teammate: teammate,
             role: "Observed",
@@ -304,10 +304,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         end
         teammates
       when 'observed_and_managers'
-        # Observees + direct managers only
+        # Observees (excluding observer) + direct managers only
         teammates = []
-        # Add observees
-        @observation.observed_teammates.each do |teammate|
+        # Add observees (excluding observer if they are also an observee)
+        @observation.observed_teammates.reject { |t| t.person_id == @observation.observer_id }.each do |teammate|
           teammates << {
             teammate: teammate,
             role: "Observed",
@@ -1186,38 +1186,30 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
 
   def build_public_observation_teammates_list
     teammates = []
-    
-    # Always include the observer if they have Slack configured
-    observer_teammate = @observation.company.teammates.find_by(person: @observation.observer)
-    if observer_teammate&.has_slack_identity?
-      teammates << {
-        teammate: observer_teammate,
-        role: "Observer",
-        person: observer_teammate.person
-      }
-    end
-    
-    # Add observees
+    observer_id = @observation.observer_id
+
+    # Add observees (excluding observer if they are also an observee)
     @observation.observed_teammates.each do |teammate|
+      next if teammate.person_id == observer_id
+
       teammates << {
         teammate: teammate,
         role: "Observed",
         person: teammate.person
       }
     end
-    
-    # Add managers of observees
+
+    # Add direct managers only (level 0), not managers of managers
     @observation.observed_teammates.each do |teammate|
       managers = ManagerialHierarchyQuery.new(
-        person: teammate.person, 
+        person: teammate.person,
         organization: @observation.company
       ).call
-      
-      managers.each do |manager_info|
+
+      managers.select { |m| m[:level] == 0 }.each do |manager_info|
         manager_teammate = @observation.company.teammates.find_by(person_id: manager_info[:person_id])
         next unless manager_teammate
-        
-        # Avoid duplicates
+
         unless teammates.any? { |t| t[:teammate].id == manager_teammate.id }
           teammates << {
             teammate: manager_teammate,
@@ -1227,7 +1219,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         end
       end
     end
-    
+
     teammates
   end
 
@@ -1277,8 +1269,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         end
       end
     when 'observed_and_managers'
-      # Observer + observees + managers
-      # Note: build_public_observation_teammates_list already includes observer
+      # Observer (added above) + observees (excl. observer) + direct managers from public list
       public_teammates = build_public_observation_teammates_list
       # Merge with existing teammates (avoid duplicates)
       public_teammates.each do |public_teammate|
