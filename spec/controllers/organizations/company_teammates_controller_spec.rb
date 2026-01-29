@@ -139,6 +139,34 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         
         expect(assigns(:active_assignment_tenures)).to eq([])
       end
+
+      it 'sorts assignment tenures by energy (highest first) then alphabetically' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        
+        # Create assignments with specific titles for alphabetical sorting
+        assignment_alpha = create(:assignment, company: organization, title: 'Alpha Assignment')
+        assignment_beta = create(:assignment, company: organization, title: 'Beta Assignment')
+        assignment_charlie = create(:assignment, company: organization, title: 'Charlie Assignment')
+        assignment_delta = create(:assignment, company: organization, title: 'Delta Assignment')
+        
+        # Create tenures with different energy levels
+        # Higher energy should come first, then alpha for same energy
+        tenure_low_energy = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_charlie, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 10)
+        tenure_high_energy = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_beta, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 50)
+        tenure_no_energy = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_delta, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: nil)
+        tenure_same_high_energy = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_alpha, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 50)
+        
+        get :internal, params: { organization_id: organization.id, id: employee_teammate.id }
+        
+        tenures = assigns(:active_assignment_tenures)
+        
+        # Expect order: Alpha (50%), Beta (50%), Charlie (10%), Delta (nil/0)
+        # Same energy sorts alphabetically by assignment title
+        expect(tenures[0]).to eq(tenure_same_high_energy)  # Alpha, 50%
+        expect(tenures[1]).to eq(tenure_high_energy)        # Beta, 50%
+        expect(tenures[2]).to eq(tenure_low_energy)         # Charlie, 10%
+        expect(tenures[3]).to eq(tenure_no_energy)          # Delta, nil
+      end
     end
 
     context 'when viewing inactive teammate (no active employment)' do

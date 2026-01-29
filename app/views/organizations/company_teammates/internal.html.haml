@@ -293,7 +293,7 @@
               %p.mb-2
                 %strong Active Title:
                 - if @active_employment_tenure.position&.title
-                  = @active_employment_tenure.position.title.external_title
+                  = link_to @active_employment_tenure.position.title.external_title, organization_title_path(@current_organization, @active_employment_tenure.position.title), class: "text-decoration-none"
                 - else
                   %span.text-muted Not set
               %p.mb-2
@@ -362,7 +362,8 @@
           .list-group
             - @active_departments_and_teams.each do |dept_team_teammate|
               .list-group-item
-                %strong= dept_team_teammate.organization.name
+                %strong
+                  = link_to dept_team_teammate.organization.name, organization_departments_and_team_path(@current_organization, dept_team_teammate.organization), class: "text-decoration-none"
                 %span.badge.bg-info.ms-2= dept_team_teammate.organization.type
         - else
           %p.text-muted No active departments or teams.

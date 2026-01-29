@@ -111,11 +111,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     end
 
     # Active assignment tenures for this teammate in this organization
+    # Sort by energy (highest first), then alphabetically by assignment title
     @active_assignment_tenures = @teammate&.assignment_tenures&.active
                                       &.joins(:assignment)
                                       &.where(assignments: { company: organization })
                                       &.includes(:assignment)
-                                      &.order('assignments.title') || []
+                                      &.order(Arel.sql('COALESCE(assignment_tenures.anticipated_energy_percentage, 0) DESC, assignments.title ASC')) || []
 
     # Active departments/teams within this company
     company_descendant_ids = organization.self_and_descendants.map(&:id)
