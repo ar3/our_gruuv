@@ -140,6 +140,12 @@ module GoalsHelper
   def goal_privacy_rings_with_label(goal)
     "#{goal_privacy_rings(goal)} #{goal_privacy_label(goal)}"
   end
+
+  # Standardized visibility display: "Visible to: 🔘🔘🔘○" with tooltip
+  # Use this for dense/moderate density views (tables, lists, cards)
+  def goal_visibility_display(goal)
+    "Visible to: #{goal_privacy_rings(goal)}"
+  end
   
   def goal_privacy_tooltip_text(goal)
     case goal.privacy_level
@@ -153,6 +159,36 @@ module GoalsHelper
       'Everyone in the company can view this goal'
     else
       goal.privacy_level.humanize
+    end
+  end
+
+  def goal_privacy_badge_class(goal)
+    case goal.privacy_level
+    when 'only_creator'
+      'bg-dark'
+    when 'only_creator_and_owner'
+      'bg-danger'
+    when 'only_creator_owner_and_managers'
+      'bg-warning text-dark'
+    when 'everyone_in_company'
+      'bg-light text-dark border'
+    else
+      'bg-secondary'
+    end
+  end
+
+  def goal_privacy_icon(goal)
+    case goal.privacy_level
+    when 'only_creator'
+      'bi-lock-fill'
+    when 'only_creator_and_owner'
+      'bi-person-lock'
+    when 'only_creator_owner_and_managers'
+      'bi-people'
+    when 'everyone_in_company'
+      'bi-globe'
+    else
+      'bi-shield'
     end
   end
   
@@ -340,7 +376,8 @@ module GoalsHelper
           end
           badges = content_tag(:p, class: 'mb-1') do
             content_tag(:span, goal.timeframe.to_s.humanize, class: "badge me-2 #{timeframe_badge_class(goal.timeframe)}", 'data-bs-toggle': 'tooltip', 'data-bs-title': timeframe_tooltip_text(goal)) +
-            content_tag(:span, goal.status.to_s.humanize, class: "badge me-2 #{status_badge_class(goal.status)}")
+            content_tag(:span, goal.status.to_s.humanize, class: "badge me-2 #{status_badge_class(goal.status)}") +
+            content_tag(:span, goal_visibility_display(goal), class: 'text-muted small ms-2', 'data-bs-toggle': 'tooltip', 'data-bs-title': goal_privacy_tooltip_text(goal))
           end
           check_in_sentence = ''
           if most_recent_check_in.present?

@@ -28,6 +28,8 @@
                   = goal.timeframe.to_s.humanize
                 %span.badge.me-2{class: status_badge_class(goal.status)}
                   = goal.status.to_s.humanize
+                %span.text-muted.small.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_privacy_tooltip_text(goal)}
+                  = goal_visibility_display(goal)
               - if most_recent_check_in.present?
                 %p.mb-1.small.text-muted
                   = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal

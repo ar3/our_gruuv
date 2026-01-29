@@ -10,6 +10,7 @@ This document provides a comprehensive overview of all styling patterns used in 
 | **Show Pages** | [show-pages.md](./show-pages.md) | Standard patterns for detail/show pages |
 | **Buttons** | [buttons.md](./buttons.md) | Button hierarchy and authorization patterns |
 | **Colors** | [colors.md](./colors.md) | Semantic color system and usage |
+| **Privacy Indicators** | [privacy-indicators.md](./privacy-indicators.md) | Visibility/privacy level display patterns |
 | **Navigation** | [navigation.md](./navigation.md) | Navigation and back link patterns |
 | **Forms** | [forms.md](./forms.md) | Form layout and HAML best practices |
 | **Responsive** | [responsive.md](./responsive.md) | Responsive design patterns |
