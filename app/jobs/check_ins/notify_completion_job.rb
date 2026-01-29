@@ -81,7 +81,16 @@ module CheckIns
       
       case completion_state.to_sym
       when :both_complete
-        completer_name = check_in.manager_completed_by_teammate_id == manager_teammate.id ? manager_name : employee_name
+        # Whichever timestamp is latest (and present) is who completed last
+        emp_at = check_in.employee_completed_at
+        mgr_at = check_in.manager_completed_at
+        completer_name = if emp_at.present? && mgr_at.present?
+          emp_at > mgr_at ? employee_name : manager_name
+        elsif mgr_at.present?
+          manager_name
+        else
+          employee_name
+        end
         link = Rails.application.routes.url_helpers.organization_company_teammate_finalization_url(
           organization,
           employee_teammate,

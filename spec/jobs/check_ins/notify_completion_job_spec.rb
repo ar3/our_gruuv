@@ -52,6 +52,22 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
         )
       end
 
+      it 'states the employee (not the manager) as the person who took the action' do
+        expect(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D123456' })
+        expect(slack_service).to receive(:post_group_dm) do |args|
+          # Message must begin with employee name so it's clear the employee completed their side
+          expect(args[:text]).to start_with("#{employee.display_name} has completed a check-in")
+          { success: true }
+        end
+
+        CheckIns::NotifyCompletionJob.perform_and_get_result(
+          check_in_id: check_in.id,
+          check_in_type: 'AssignmentCheckIn',
+          completion_state: :employee_only,
+          organization_id: organization.id
+        )
+      end
+
       it 'includes check-in show link in message' do
         expect(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D123456' })
         expect(slack_service).to receive(:post_group_dm) do |args|
@@ -90,14 +106,30 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
           organization_id: organization.id
         )
       end
+
+      it 'states the manager (not the employee) as the person who took the action' do
+        expect(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D123456' })
+        expect(slack_service).to receive(:post_group_dm) do |args|
+          # Message must begin with manager name so it's clear the manager completed their side
+          expect(args[:text]).to start_with("#{manager.display_name} has completed a check-in")
+          { success: true }
+        end
+
+        CheckIns::NotifyCompletionJob.perform_and_get_result(
+          check_in_id: check_in.id,
+          check_in_type: 'AssignmentCheckIn',
+          completion_state: :manager_only,
+          organization_id: organization.id
+        )
+      end
     end
 
     context 'when both complete' do
       before do
         manager_ct = CompanyTeammate.find(manager_teammate.id)
         check_in.update!(
-          employee_completed_at: Time.current,
-          manager_completed_at: Time.current,
+          employee_completed_at: 2.hours.ago,
+          manager_completed_at: 1.hour.ago,
           manager_completed_by_teammate: manager_ct
         )
       end
@@ -109,6 +141,40 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
           # The job uses url_helpers which returns a full URL, so check for the path portion
           finalization_path = organization_company_teammate_finalization_path(organization, employee_teammate)
           expect(args[:text]).to match(/#{Regexp.escape(finalization_path)}/)
+          { success: true }
+        end
+
+        CheckIns::NotifyCompletionJob.perform_and_get_result(
+          check_in_id: check_in.id,
+          check_in_type: 'AssignmentCheckIn',
+          completion_state: :both_complete,
+          organization_id: organization.id
+        )
+      end
+
+      it 'states the manager as completer when manager_completed_at is latest' do
+        expect(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D123456' })
+        expect(slack_service).to receive(:post_group_dm) do |args|
+          expect(args[:text]).to start_with("#{manager.display_name} has completed a check-in")
+          expect(args[:text]).to include('we are now ready to review together')
+          { success: true }
+        end
+
+        CheckIns::NotifyCompletionJob.perform_and_get_result(
+          check_in_id: check_in.id,
+          check_in_type: 'AssignmentCheckIn',
+          completion_state: :both_complete,
+          organization_id: organization.id
+        )
+      end
+
+      it 'states the employee as completer when employee_completed_at is latest' do
+        check_in.update!(employee_completed_at: 1.hour.ago, manager_completed_at: 2.hours.ago)
+
+        expect(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D123456' })
+        expect(slack_service).to receive(:post_group_dm) do |args|
+          expect(args[:text]).to start_with("#{employee.display_name} has completed a check-in")
+          expect(args[:text]).to include('we are now ready to review together')
           { success: true }
         end
 
