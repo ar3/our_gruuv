@@ -44,8 +44,9 @@
           .row.align-items-end
             .col-md-10
               %label.form-label.fw-bold.fs-5.mb-2 Select Owner
-              = select_tag :owner_id, options_for_select(available_goal_owners, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"), { class: "form-select form-select-lg", required: true, id: "owner-select" }
-              %small.form-text.text-muted Choose who owns the goals you want to view
+              - selected_value = @current_filters[:owner_id] == 'everyone_in_company' ? 'everyone_in_company' : "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"
+              = select_tag :owner_id, options_for_select(available_goal_owners, selected_value), { class: "form-select form-select-lg", required: true, id: "owner-select" }
+              %small.form-text.text-muted Choose who owns the goals you want to view, or see all company-wide visible goals
             .col-md-2
               = f.submit "Go", class: "btn btn-primary btn-lg w-100"
           / Preserve other filter parameters

@@ -377,7 +377,8 @@ module GoalsHelper
           badges = content_tag(:p, class: 'mb-1') do
             content_tag(:span, goal.timeframe.to_s.humanize, class: "badge me-2 #{timeframe_badge_class(goal.timeframe)}", 'data-bs-toggle': 'tooltip', 'data-bs-title': timeframe_tooltip_text(goal)) +
             content_tag(:span, goal.status.to_s.humanize, class: "badge me-2 #{status_badge_class(goal.status)}") +
-            content_tag(:span, goal_visibility_display(goal), class: 'text-muted small ms-2', 'data-bs-toggle': 'tooltip', 'data-bs-title': goal_privacy_tooltip_text(goal))
+            content_tag(:span, goal_visibility_display(goal), class: 'text-muted small ms-2', 'data-bs-toggle': 'tooltip', 'data-bs-title': goal_privacy_tooltip_text(goal)) +
+            content_tag(:span, " | Owned by: #{goal_owner_display_name(goal)}", class: 'text-muted small ms-2')
           end
           check_in_sentence = ''
           if most_recent_check_in.present?
@@ -486,6 +487,18 @@ module GoalsHelper
     stats
   end
   
+  def goal_owner_display_name(goal)
+    return 'Unknown' unless goal.owner
+    
+    if goal.owner_type == 'CompanyTeammate'
+      goal.owner.person&.display_name || 'Unknown'
+    elsif goal.owner_type == 'Organization'
+      goal.owner.display_name || goal.owner.name || 'Unknown'
+    else
+      'Unknown'
+    end
+  end
+
   def goal_is_completed?(goal)
     goal.completed_at.present?
   end

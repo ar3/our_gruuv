@@ -144,6 +144,72 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id }
       expect(assigns(:view_style)).to eq('hierarchical-indented')
     end
+
+    context 'with everyone_in_company filter' do
+      let!(:public_goal) do
+        create(:goal, 
+               creator: creator_teammate, 
+               owner: creator_teammate, 
+               privacy_level: 'everyone_in_company',
+               started_at: 1.day.ago,
+               most_likely_target_date: Date.today + 1.month)
+      end
+      let!(:private_goal) do
+        create(:goal, 
+               creator: creator_teammate, 
+               owner: creator_teammate, 
+               privacy_level: 'only_creator',
+               started_at: 1.day.ago,
+               most_likely_target_date: Date.today + 1.month)
+      end
+      let!(:draft_public_goal) do
+        create(:goal, 
+               creator: creator_teammate, 
+               owner: creator_teammate, 
+               privacy_level: 'everyone_in_company',
+               started_at: nil)
+      end
+      let!(:other_person) { create(:person) }
+      let!(:other_teammate) do
+        other_person.teammates.find_or_create_by!(organization: company) do |t|
+          t.type = 'CompanyTeammate'
+          t.first_employed_at = nil
+          t.last_terminated_at = nil
+        end
+      end
+      let!(:other_public_goal) do
+        create(:goal, 
+               creator: other_teammate, 
+               owner: other_teammate, 
+               privacy_level: 'everyone_in_company',
+               started_at: 1.day.ago,
+               most_likely_target_date: Date.today + 2.months)
+      end
+
+      it 'filters to only show active goals with everyone_in_company privacy' do
+        get :index, params: { organization_id: company.id, owner_id: 'everyone_in_company' }
+        
+        goals = assigns(:goals)
+        expect(goals).to include(public_goal, other_public_goal)
+        expect(goals).not_to include(private_goal)  # Wrong privacy level
+        expect(goals).not_to include(draft_public_goal)  # Not active (not started)
+      end
+
+      it 'sets the owner_id in current_filters to everyone_in_company' do
+        get :index, params: { organization_id: company.id, owner_id: 'everyone_in_company' }
+        
+        expect(assigns(:current_filters)[:owner_id]).to eq('everyone_in_company')
+        expect(assigns(:current_filters)[:owner_type]).to be_nil
+      end
+
+      it 'shows goals from multiple owners' do
+        get :index, params: { organization_id: company.id, owner_id: 'everyone_in_company' }
+        
+        goals = assigns(:goals)
+        owner_ids = goals.map(&:owner_id).uniq
+        expect(owner_ids.count).to be > 1
+      end
+    end
   end
   
   describe 'GET #show' do

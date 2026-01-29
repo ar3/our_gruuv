@@ -7,8 +7,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def index
     authorize company, :view_goals?
+    
+    # Check for special "everyone_in_company" filter
+    @everyone_in_company_filter = params[:owner_id] == 'everyone_in_company'
+    
     # Parse owner_id if it's in format "Type_ID" (e.g., "Teammate_123")
-    if params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
+    if !@everyone_in_company_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
       params[:owner_type] = owner_type
       params[:owner_id] = owner_id
@@ -17,8 +21,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Get current teammate for this organization
     current_teammate = current_person.teammates.find_by(organization: @organization)
     
-    # Default to logged in user if no owner is selected
-    unless params[:owner_type].present? && params[:owner_id].present?
+    # Default to logged in user if no owner is selected (unless using everyone_in_company filter)
+    unless @everyone_in_company_filter || (params[:owner_type].present? && params[:owner_id].present?)
       if current_teammate
         params[:owner_type] = 'CompanyTeammate'
         params[:owner_id] = current_teammate.id.to_s
@@ -52,8 +56,14 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       show_completed: params[:show_completed] == '1'
     )
     
-    # Filter by owner
-    @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
+    # Apply owner or privacy filter
+    if @everyone_in_company_filter
+      # Filter for active goals with "everyone_in_company" privacy level
+      @goals = @goals.where(privacy_level: 'everyone_in_company').active
+    else
+      # Filter by owner
+      @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
+    end
     
     # Set default spotlight
     spotlight_param = params[:spotlight]
@@ -63,12 +73,16 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Calculate spotlight stats for goals_overview (before other filters)
     if spotlight_param == 'goals_overview'
-      all_goals_for_owner = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
-      all_goals_for_owner = Goals::FilterQuery.new(all_goals_for_owner).call(
+      if @everyone_in_company_filter
+        all_goals_for_filter = policy_scope(Goal).where(privacy_level: 'everyone_in_company').active
+      else
+        all_goals_for_filter = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
+      end
+      all_goals_for_filter = Goals::FilterQuery.new(all_goals_for_filter).call(
         show_deleted: params[:show_deleted] == '1',
         show_completed: params[:show_completed] == '1'
       )
-      @spotlight_stats = helpers.calculate_goals_overview_stats(all_goals_for_owner)
+      @spotlight_stats = helpers.calculate_goals_overview_stats(all_goals_for_filter)
     end
     
     # Apply filters
@@ -129,8 +143,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       direction: params[:direction],
       view: @view_style,
       spotlight: spotlight_param,
-      owner_type: params[:owner_type],
-      owner_id: params[:owner_id],
+      owner_type: @everyone_in_company_filter ? nil : params[:owner_type],
+      owner_id: @everyone_in_company_filter ? 'everyone_in_company' : params[:owner_id],
       show_deleted: params[:show_deleted],
       show_completed: params[:show_completed]
     }
@@ -859,6 +873,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Get company (root organization)
     company = @organization.root_company || @organization
+    
+    # Add special option for "All goals visible to everyone at <company name>"
+    if company.display_name.present?
+      options << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"]
+    end
     
     # Add current teammate (person themselves) - should be first/default
     # Find teammate in the company or any descendant organization

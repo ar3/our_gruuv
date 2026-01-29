@@ -86,6 +86,32 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
   
+  describe '#goal_owner_display_name' do
+    it 'returns person display name for CompanyTeammate owner' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+      expect(helper.goal_owner_display_name(goal)).to eq(person.display_name)
+    end
+
+    it 'returns organization display name for Organization owner' do
+      goal = create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company')
+      expect(helper.goal_owner_display_name(goal)).to eq(company.display_name)
+    end
+
+    it 'returns "Unknown" when owner is nil' do
+      goal = build(:goal, creator: creator_teammate, owner: nil)
+      expect(helper.goal_owner_display_name(goal)).to eq('Unknown')
+    end
+
+    context 'with department owner' do
+      let(:department) { create(:organization, :department, parent: company, name: 'Engineering') }
+      
+      it 'returns department display name' do
+        goal = create(:goal, creator: creator_teammate, owner: department, privacy_level: 'everyone_in_company')
+        expect(helper.goal_owner_display_name(goal)).to eq(department.display_name)
+      end
+    end
+  end
+
   describe '#confidence_percentage_options' do
     it 'returns options from 5% to 95% in steps of 5' do
       options = helper.confidence_percentage_options

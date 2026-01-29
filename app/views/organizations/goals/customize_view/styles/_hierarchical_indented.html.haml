@@ -30,6 +30,8 @@
                   = goal.status.to_s.humanize
                 %span.text-muted.small.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_privacy_tooltip_text(goal)}
                   = goal_visibility_display(goal)
+                %span.text-muted.small.ms-2
+                  = "| Owned by: #{goal_owner_display_name(goal)}"
               - if most_recent_check_in.present?
                 %p.mb-1.small.text-muted
                   = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal
