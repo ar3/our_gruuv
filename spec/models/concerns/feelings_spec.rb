@@ -134,8 +134,8 @@ RSpec.describe Feelings, type: :concern do
   end
 
   describe 'FEELINGS constant' do
-    it 'contains exactly 48 feelings' do
-      expect(Feelings::FEELINGS.size).to eq(48)
+    it 'contains exactly 58 feelings' do
+      expect(Feelings::FEELINGS.size).to eq(58)
     end
 
     it 'has all required keys for each feeling' do
