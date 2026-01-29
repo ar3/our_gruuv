@@ -85,6 +85,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     load_assignment_check_in_data
     load_aspiration_check_in_data
     load_abilities_data
+    load_viewer_check_in_readiness_for_about_me
   end
 
   def internal
@@ -1142,6 +1143,27 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     # Count aspirational values with finalized check-ins in the last 90 days
     @aspirations_with_recent_check_ins_count = @aspiration_check_ins_data.count do |data|
       data[:latest_finalized] && data[:latest_finalized].official_check_in_completed_at >= cutoff_date
+    end
+  end
+
+  # Sets instance variables for the "viewer completed their side" sentence on collapsed check-in sections.
+  # Only relevant when viewing your own about me page (viewing teammate == about-me teammate).
+  def load_viewer_check_in_readiness_for_about_me
+    @viewing_own_about_me = current_company_teammate.present? && current_company_teammate == @teammate
+
+    if @viewing_own_about_me
+      # Viewer is the employee; count check-ins where they have completed the employee side.
+      @viewer_ready_aspiration_count = @aspiration_check_ins_data.count do |data|
+        data[:check_in]&.employee_completed_at.present?
+      end
+      @viewer_ready_assignment_count = @assignment_check_ins_data.count do |data|
+        data[:check_in]&.employee_completed_at.present?
+      end
+      @viewer_ready_position = @position_check_in&.employee_completed_at.present?
+    else
+      @viewer_ready_aspiration_count = 0
+      @viewer_ready_assignment_count = 0
+      @viewer_ready_position = false
     end
   end
 

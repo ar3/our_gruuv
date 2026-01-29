@@ -20,6 +20,9 @@
       = " of these assignments in the last 90 days.".html_safe
     - else
       No assignments
+  - if @viewing_own_about_me && @viewer_ready_assignment_count.to_i.positive?
+    %p.mb-0.mt-2
+      ✅ You have completed your side of the check-in for #{@viewer_ready_assignment_count} of the #{pluralize(@required_assignments.count, 'assignment')}.
 
 -# Collapsible content
 .collapse#assignmentsCheckInSection

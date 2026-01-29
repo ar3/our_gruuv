@@ -20,6 +20,9 @@
       = " of these aspirational values in the last 90 days.".html_safe
     - else
       No company aspirational values
+  - if @viewing_own_about_me && @viewer_ready_aspiration_count.to_i.positive?
+    %p.mb-0.mt-2
+      ✅ You have completed your side of the check-in for #{@viewer_ready_aspiration_count} of the #{pluralize(@company_aspirations.count, 'aspirational value')}.
 
 -# Collapsible content
 .collapse#aspirationsCheckInSection

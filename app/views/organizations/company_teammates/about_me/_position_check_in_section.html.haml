@@ -15,6 +15,9 @@
     %span.inline-sentence-highlight= @position_display_name
     = ", and their last overall check-in: ".html_safe
     %span.inline-sentence-highlight= @last_check_in_date ? format_date_in_user_timezone(@last_check_in_date) : "has not happened yet"
+  - if @viewing_own_about_me && @viewer_ready_position
+    %p.mb-0.mt-2
+      ✅ You have completed your side of the check-in.
 
 -# Collapsible content
 .collapse#positionCheckInSection

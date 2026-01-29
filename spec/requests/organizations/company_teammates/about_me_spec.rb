@@ -1373,5 +1373,87 @@ RSpec.describe 'About Me Page', type: :request do
       end
     end
   end
+
+  describe 'Viewer check-in readiness sentence (collapsed sections)' do
+    it 'sets viewing_own_about_me to true when viewing own page' do
+      get about_me_organization_company_teammate_path(organization, teammate)
+      expect(assigns(:viewing_own_about_me)).to be true
+      expect(assigns(:viewer_ready_aspiration_count)).to eq(0)
+      expect(assigns(:viewer_ready_assignment_count)).to eq(0)
+      expect(assigns(:viewer_ready_position)).to be false
+    end
+
+    it 'does not show "You have completed your side" when viewing own page with no completed check-ins' do
+      get about_me_organization_company_teammate_path(organization, teammate)
+      expect(response.body).not_to include('You have completed your side of the check-in')
+    end
+
+    context 'when viewing own page and viewer (employee) has completed their side' do
+      let(:title) { create(:title, organization: organization) }
+      let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+      let(:position) { create(:position, title: title, position_level: position_level) }
+      let(:required_assignment) { create(:assignment, company: organization) }
+      let!(:aspiration1) { create(:aspiration, organization: organization, name: 'Aspiration 1') }
+      let!(:aspiration2) { create(:aspiration, organization: organization, name: 'Aspiration 2') }
+
+      before do
+        EmploymentTenure.where(teammate: teammate, company: organization, ended_at: nil).update_all(ended_at: 2.years.ago)
+        create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
+        teammate.reload
+        actual_position = teammate.active_employment_tenure.position
+        create(:position_assignment, position: actual_position, assignment: required_assignment, assignment_type: 'required')
+        create(:assignment_tenure, teammate: teammate, assignment: required_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil)
+        # Viewer (teammate) has completed employee side for one aspiration, one assignment, and position
+        create(:aspiration_check_in, teammate: teammate, aspiration: aspiration1, employee_completed_at: 1.day.ago)
+        create(:assignment_check_in, teammate: teammate, assignment: required_assignment, employee_completed_at: 1.day.ago)
+        position_check_in = PositionCheckIn.find_or_create_open_for(teammate)
+        position_check_in.update!(employee_completed_at: 1.day.ago)
+      end
+
+      it 'sets viewing_own_about_me and viewer readiness counts' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:viewing_own_about_me)).to be true
+        expect(assigns(:viewer_ready_aspiration_count)).to eq(1)
+        expect(assigns(:viewer_ready_assignment_count)).to eq(1)
+        expect(assigns(:viewer_ready_position)).to be true
+      end
+
+      it 'shows aspirational values viewer sentence in collapsed summary' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('You have completed your side of the check-in for 1 of the 2 aspirational values')
+      end
+
+      it 'shows assignments viewer sentence in collapsed summary' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('You have completed your side of the check-in for 1 of the 1 assignment')
+      end
+
+      it 'shows position viewer sentence in collapsed summary (no X of Y)' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('You have completed your side of the check-in.')
+      end
+    end
+
+    context 'when viewing another teammate\'s about me' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
+
+      before do
+        create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        other_teammate.update!(first_employed_at: 1.year.ago)
+        allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_check_ins?).and_return(true)
+        sign_in_as_teammate_for_request(other_person, organization)
+      end
+
+      it 'sets viewing_own_about_me to false and does not show viewer sentence' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:viewing_own_about_me)).to be false
+        expect(assigns(:viewer_ready_aspiration_count)).to eq(0)
+        expect(assigns(:viewer_ready_assignment_count)).to eq(0)
+        expect(assigns(:viewer_ready_position)).to be false
+        expect(response.body).not_to match(/You have completed your side of the check-in/)
+      end
+    end
+  end
 end
 
