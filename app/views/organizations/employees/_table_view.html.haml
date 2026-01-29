@@ -5,7 +5,7 @@
         %th Name
         %th Organization
         %th Employment Status
-        %th Position
+        %th Title
         %th Permissions
         %th Employment Dates
         %th Actions
@@ -23,7 +23,7 @@
             %br
             = employment_status_progress_bar(teammate)
           %td
-            = teammate_current_position(teammate)
+            = teammate_current_title(teammate)
           %td
             = teammate_permissions_badges(teammate)
           %td

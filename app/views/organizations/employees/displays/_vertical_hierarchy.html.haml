@@ -30,10 +30,13 @@
                   .flex-shrink-0.me-3
                     = teammate_profile_image(teammate, size: 48)
                   .flex-grow-1
-                    - if policy(teammate).show?
+                    - if policy(teammate).internal?
                       = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
                     - else
                       %span.fw-bold= teammate.person.display_name
+                    %br
+                    %small.text-muted
+                      = teammate_current_title(teammate)
                     %br
                     %span.text-muted.small= teammate.person.email
 

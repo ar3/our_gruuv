@@ -90,6 +90,21 @@ module TeammateHelper
     end
   end
 
+  def teammate_current_title(teammate, organization = nil)
+    organization ||= @organization
+    current_tenure = teammate.employment_tenures.active.first
+    title = current_tenure&.position&.title
+    
+    if title
+      link_to title.external_title, 
+              organization_title_path(organization, title), 
+              class: "text-decoration-none", 
+              target: "_blank"
+    else
+      content_tag :span, "No title", class: "text-muted"
+    end
+  end
+
   # Filter and sort helper methods
   def filter_display_name(filter_name, filter_value)
     case filter_name.to_s

@@ -398,6 +398,94 @@ RSpec.describe TeammateHelper, type: :helper do
     end
   end
 
+  describe '#teammate_current_position' do
+    context 'when teammate has an active employment tenure with position' do
+      it 'returns the position display name' do
+        # Factory creates employment_tenure with a position automatically
+        result = helper.teammate_current_position(teammate)
+        expect(result).to include(employment_tenure.position.display_name)
+        expect(result).to include('text-dark')
+      end
+    end
+
+    context 'when teammate has no active employment tenure' do
+      before do
+        employment_tenure.update!(ended_at: 1.day.ago)
+      end
+
+      it 'returns "No position"' do
+        result = helper.teammate_current_position(teammate)
+        expect(result).to include('No position')
+        expect(result).to include('text-muted')
+      end
+    end
+
+    context 'when teammate has no employment tenures at all' do
+      let(:teammate_without_tenure) { create(:teammate, person: create(:person), organization: organization) }
+
+      it 'returns "No position"' do
+        result = helper.teammate_current_position(teammate_without_tenure)
+        expect(result).to include('No position')
+        expect(result).to include('text-muted')
+      end
+    end
+  end
+
+  describe '#teammate_current_title' do
+    context 'when teammate has an active employment tenure with position and title' do
+      it 'returns a link to the title show page' do
+        # Factory creates employment_tenure with a position (and title) automatically
+        tenure_title = employment_tenure.position.title
+        result = helper.teammate_current_title(teammate)
+        expect(result).to include(tenure_title.external_title)
+        expect(result).to include('href')
+        expect(result).to include(organization_title_path(organization, tenure_title))
+      end
+
+      it 'opens the link in a new window' do
+        result = helper.teammate_current_title(teammate)
+        expect(result).to include('target="_blank"')
+      end
+
+      it 'has no text decoration class' do
+        result = helper.teammate_current_title(teammate)
+        expect(result).to include('text-decoration-none')
+      end
+    end
+
+    context 'when teammate has no active employment tenure' do
+      before do
+        employment_tenure.update!(ended_at: 1.day.ago)
+      end
+
+      it 'returns "No title"' do
+        result = helper.teammate_current_title(teammate)
+        expect(result).to include('No title')
+        expect(result).to include('text-muted')
+      end
+    end
+
+    context 'when teammate has no employment tenures at all' do
+      let(:teammate_without_tenure) { create(:teammate, person: create(:person), organization: organization) }
+
+      it 'returns "No title"' do
+        result = helper.teammate_current_title(teammate_without_tenure)
+        expect(result).to include('No title')
+        expect(result).to include('text-muted')
+      end
+    end
+
+    context 'when a different organization is provided' do
+      let(:other_organization) { create(:organization) }
+
+      it 'uses the provided organization for the link path' do
+        tenure_title = employment_tenure.position.title
+        result = helper.teammate_current_title(teammate, other_organization)
+        expect(result).to include(organization_title_path(other_organization, tenure_title))
+      end
+    end
+  end
+
   describe '#clear_filter_url' do
     before do
       manager = create(:person)

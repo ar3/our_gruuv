@@ -36,17 +36,19 @@
                     serving #{pluralize(direct_reports_count, 'person')} directly
                   - else
                     serving #{pluralize(direct_reports_count, 'person')} directly & #{total_reports_count} total
-            - if teammate && policy(teammate).show?
+            - if teammate && policy(teammate).internal?
               = link_to person.display_name, internal_organization_company_teammate_path(teammate_org, teammate), class: "text-decoration-none fw-bold"
             - else
               %span.fw-bold= person.display_name
             %br
             - if active_seat
               = link_to active_seat, organization_seat_path(organization, active_seat), class: "text-muted small text-decoration-none"
-            - elsif position_obj
-              = link_to position_obj, organization_position_path(organization, position_obj), class: "text-muted small text-decoration-none"
-            - else
+            - elsif position_obj&.title
+              = link_to position_obj.title.external_title, organization_title_path(organization, position_obj.title), class: "text-muted small text-decoration-none", target: "_blank", rel: "noopener noreferrer"
+            - elsif position.present?
               %span.text-muted.small= position
+            - else
+              %span.text-muted.small No title
 
 - if has_subordinates
   .collapse.show{id: children_id}
