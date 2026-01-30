@@ -28,8 +28,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         params[:owner_id] = current_teammate.id.to_s
       else
         @goals = policy_scope(Goal.none)
-        @view_style = params[:view] || 'hierarchical-indented'
-        @view_style = 'hierarchical-indented' unless %w[table cards list network tree nested timeline check-in hierarchical-indented].include?(@view_style)
+        @view_style = params[:view] || 'hierarchical-collapsible'
+        @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible].include?(@view_style)
         @goal_count = 0
         @show_performance_warning = false
         @current_filters = {
@@ -95,8 +95,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @goals = apply_sorting(@goals, params[:sort], params[:direction])
     
     # Set view style
-    @view_style = params[:view] || 'hierarchical-indented'
-    @view_style = 'hierarchical-indented' unless %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible].include?(@view_style)
+    @view_style = params[:view] || 'hierarchical-collapsible'
+    @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible].include?(@view_style)
     
     # For check-in view, filter to eligible goals and load check-ins
     if @view_style == 'check-in'
@@ -595,7 +595,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       status: params[:status],
       sort: params[:sort] || 'smart_sort',
       direction: params[:direction] || 'asc',
-      view: params[:view] || 'hierarchical-indented',
+      view: params[:view] || 'hierarchical-collapsible',
       spotlight: params[:spotlight] || 'goals_overview',
       owner_type: params[:owner_type],
       owner_id: params[:owner_id],
@@ -605,7 +605,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Validate view style
     valid_views = %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible]
-    @current_filters[:view] = 'hierarchical-indented' unless valid_views.include?(@current_filters[:view])
+    @current_filters[:view] = 'hierarchical-collapsible' unless valid_views.include?(@current_filters[:view])
     
     @current_sort = @current_filters[:sort]
     @current_view = @current_filters[:view]

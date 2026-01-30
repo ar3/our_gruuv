@@ -140,9 +140,9 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:view_style)).to eq('cards')
     end
     
-    it 'defaults view style to hierarchical-indented' do
+    it 'defaults view style to hierarchical-collapsible' do
       get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id }
-      expect(assigns(:view_style)).to eq('hierarchical-indented')
+      expect(assigns(:view_style)).to eq('hierarchical-collapsible')
     end
 
     context 'with everyone_in_company filter' do

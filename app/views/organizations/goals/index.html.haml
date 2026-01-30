@@ -148,8 +148,8 @@
       - when 'hierarchical-collapsible'
         = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible'
       - else
-        / Default to hierarchical-indented view
-        = render partial: 'organizations/goals/customize_view/styles/hierarchical_indented'
+        / Default to hierarchical-collapsible view
+        = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible'
     - else
       .alert.alert-info
         %h6.mb-2
