@@ -1,0 +1,200 @@
+- content_for :title, "Insights: Seats, Titles & Positions"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bar-chart-line.me-2
+      Insights: Seats, Titles & Positions
+
+.container-fluid
+  / Seats Section
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-briefcase.me-2
+            Seats Analytics
+        .card-body
+          .row.mb-4
+            .col-md-4.text-center
+              .display-4.text-primary= @total_seats
+              %p.text-muted.mb-0 Total Seats
+          
+          .row
+            .col-md-6
+              #seats-by-state-chart{style: "height: 400px;"}
+            .col-md-6
+              #seats-by-department-chart{style: "height: 400px;"}
+
+  %hr.my-5
+  
+  / Titles Section
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-success.text-white
+          %h4.mb-0
+            %i.bi.bi-tag.me-2
+            Titles Analytics
+        .card-body
+          .row.mb-4
+            .col-md-4.text-center
+              .display-4.text-success= @total_titles
+              %p.text-muted.mb-0 Total Titles
+          
+          .row
+            .col-md-6.mx-auto
+              #titles-by-department-chart{style: "height: 400px;"}
+
+  %hr.my-5
+  
+  / Positions Section
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-info.text-white
+          %h4.mb-0
+            %i.bi.bi-briefcase-fill.me-2
+            Positions Analytics
+        .card-body
+          .row.mb-4
+            .col-md-4.text-center
+              .display-4.text-info= @total_positions
+              %p.text-muted.mb-0 Total Positions
+          
+          .row
+            .col-md-6
+              #titles-by-position-count-chart{style: "height: 400px;"}
+            .col-md-6
+              #positions-by-assignment-count-chart{style: "height: 400px;"}
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    // Seats by State Chart (Pie)
+    Highcharts.chart('seats-by-state-chart', {
+      chart: { type: 'pie' },
+      title: { text: 'Seats by State' },
+      accessibility: { enabled: false },
+      plotOptions: {
+        pie: {
+          allowPointSelect: true,
+          cursor: 'pointer',
+          dataLabels: {
+            enabled: true,
+            format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+          }
+        }
+      },
+      series: [{
+        name: 'Seats',
+        colorByPoint: true,
+        data: #{seats_by_state_chart_data.to_json}
+      }]
+    });
+
+    // Seats by Department Chart (Pie - Open vs Filled)
+    Highcharts.chart('seats-by-department-chart', {
+      chart: { type: 'column' },
+      title: { text: 'Open vs Filled Seats by Department' },
+      accessibility: { enabled: false },
+      xAxis: {
+        categories: #{department_categories.to_json},
+        title: { text: 'Department' }
+      },
+      yAxis: {
+        min: 0,
+        title: { text: 'Number of Seats' },
+        stackLabels: { enabled: true }
+      },
+      plotOptions: {
+        column: {
+          stacking: 'normal',
+          dataLabels: {
+            enabled: true
+          }
+        }
+      },
+      series: [{
+        name: 'Open',
+        data: #{open_seats_data.to_json},
+        color: '#ffc107'
+      }, {
+        name: 'Filled',
+        data: #{filled_seats_data.to_json},
+        color: '#28a745'
+      }]
+    });
+
+    // Titles by Department Chart (Pie)
+    Highcharts.chart('titles-by-department-chart', {
+      chart: { type: 'pie' },
+      title: { text: 'Titles by Department' },
+      accessibility: { enabled: false },
+      plotOptions: {
+        pie: {
+          allowPointSelect: true,
+          cursor: 'pointer',
+          dataLabels: {
+            enabled: true,
+            format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+          }
+        }
+      },
+      series: [{
+        name: 'Titles',
+        colorByPoint: true,
+        data: #{titles_by_department_chart_data.to_json}
+      }]
+    });
+
+    // Titles by Position Count Chart (Bar)
+    Highcharts.chart('titles-by-position-count-chart', {
+      chart: { type: 'bar' },
+      title: { text: 'Number of Titles by Position Count' },
+      accessibility: { enabled: false },
+      xAxis: {
+        categories: #{titles_by_position_count_categories.to_json},
+        title: { text: 'Number of Positions' }
+      },
+      yAxis: {
+        min: 0,
+        title: { text: 'Number of Titles' }
+      },
+      plotOptions: {
+        bar: {
+          dataLabels: { enabled: true }
+        }
+      },
+      series: [{
+        name: 'Titles',
+        data: #{titles_by_position_count_data.to_json},
+        color: '#198754'
+      }]
+    });
+
+    // Positions by Required Assignment Count Chart (Bar)
+    Highcharts.chart('positions-by-assignment-count-chart', {
+      chart: { type: 'bar' },
+      title: { text: 'Positions by Required Assignment Count' },
+      accessibility: { enabled: false },
+      xAxis: {
+        categories: #{positions_by_assignment_count_categories.to_json},
+        title: { text: 'Required Assignments' }
+      },
+      yAxis: {
+        min: 0,
+        title: { text: 'Number of Positions' }
+      },
+      plotOptions: {
+        bar: {
+          dataLabels: { enabled: true }
+        }
+      },
+      series: [{
+        name: 'Positions',
+        data: #{positions_by_assignment_count_data.to_json},
+        color: '#0dcaf0'
+      }]
+    });
+  });

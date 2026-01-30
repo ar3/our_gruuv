@@ -102,6 +102,48 @@ module NavigationHelper
         ]
       },
       {
+        label: 'Insights',
+        icon: 'bi-bar-chart-line',
+        section: 'insights',
+        items: [
+          {
+            label: 'Seats, Titles, Positions',
+            icon: 'bi-briefcase',
+            path: organization_insights_seats_titles_positions_path(current_organization),
+            policy_check: -> { policy(current_company).view_seats? },
+            coming_soon: false
+          },
+          {
+            label: 'Assignments',
+            icon: 'bi-list-check',
+            path: organization_insights_assignments_path(current_organization),
+            policy_check: -> { policy(current_company).view_assignments? },
+            coming_soon: false
+          },
+          {
+            label: 'Abilities',
+            icon: 'bi-award',
+            path: organization_insights_abilities_path(current_organization),
+            policy_check: -> { policy(current_company).view_abilities? },
+            coming_soon: false
+          },
+          {
+            label: 'Goals',
+            icon: 'bi-bullseye',
+            path: organization_insights_goals_path(current_organization),
+            policy_check: -> { policy(current_company).view_goals? },
+            coming_soon: false
+          },
+          {
+            label: 'Huddles',
+            icon: 'bi-chat-dots',
+            path: huddles_review_organization_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          }
+        ]
+      },
+      {
         label: 'Admin',
         icon: 'bi-gear',
         section: 'admin',

@@ -397,6 +397,14 @@ Rails.application.routes.draw do
       end
     end
     
+    # Insights analytics
+    namespace :insights, module: :organizations do
+      get 'seats_titles_positions', to: 'insights#seats_titles_positions'
+      get 'assignments', to: 'insights#assignments'
+      get 'abilities', to: 'insights#abilities'
+      get 'goals', to: 'insights#goals'
+    end
+    
     # Seats management
     resources :seats, module: :organizations do
       collection do

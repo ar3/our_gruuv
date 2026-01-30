@@ -217,5 +217,41 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(my_employees_item).to be_nil
       end
     end
+
+    describe 'Insights section' do
+      it 'includes Insights section in navigation structure' do
+        structure = helper.navigation_structure
+        insights_section = structure.find { |item| item[:label] == 'Insights' }
+        expect(insights_section).to be_present
+        expect(insights_section[:section]).to eq('insights')
+        expect(insights_section[:icon]).to eq('bi-bar-chart-line')
+      end
+
+      it 'has the expected Insights sub-items' do
+        structure = helper.navigation_structure
+        insights_section = structure.find { |item| item[:label] == 'Insights' }
+        items = insights_section[:items]
+        
+        labels = items.map { |item| item[:label] }
+        expect(labels).to include('Seats, Titles, Positions')
+        expect(labels).to include('Assignments')
+        expect(labels).to include('Abilities')
+        expect(labels).to include('Goals')
+        expect(labels).to include('Huddles')
+      end
+
+      it 'places Insights section between Huddles and Admin' do
+        structure = helper.navigation_structure
+        huddles_index = structure.find_index { |item| item[:label] == 'Huddles' }
+        insights_index = structure.find_index { |item| item[:label] == 'Insights' }
+        admin_index = structure.find_index { |item| item[:label] == 'Admin' }
+        
+        expect(huddles_index).to be_present
+        expect(insights_index).to be_present
+        expect(admin_index).to be_present
+        expect(insights_index).to be > huddles_index
+        expect(insights_index).to be < admin_index
+      end
+    end
   end
 end

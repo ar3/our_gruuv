@@ -1,0 +1,21 @@
+- content_for :title, "Insights: Goals"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bar-chart-line.me-2
+      Insights: Goals
+
+.container-fluid
+  .row.justify-content-center
+    .col-lg-8
+      .card.border-0.shadow-sm
+        .card-body.text-center.py-5
+          .display-1.text-primary.mb-4
+            %i.bi.bi-bullseye
+          .display-4.text-primary.mb-3= @total_goals
+          %h4.text-muted Total Goals
+          
+          .alert.alert-info.mt-4
+            %i.bi.bi-info-circle.me-2
+            More analytics for Goals are coming soon. Stay tuned!
