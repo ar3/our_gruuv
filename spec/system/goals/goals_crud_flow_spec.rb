@@ -108,7 +108,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       
       # Find and click delete button with confirmation
       # Use JavaScript to handle Turbo and confirmation
-      delete_link = find('a.btn-outline-danger', text: /Delete Goal/i, wait: 5)
+      delete_link = find('a.btn-outline-danger', text: /Archive Goal/i, wait: 5)
       page.execute_script("window.confirm = function() { return true; }")
       delete_link.click
       
