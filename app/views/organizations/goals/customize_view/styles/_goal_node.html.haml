@@ -1,0 +1,100 @@
+- goal = node[:goal]
+- children = node[:children] || []
+- direct_children_count = node[:direct_children_count] || 0
+- total_descendants_count = node[:total_descendants_count] || 0
+- has_children = children.any?
+- node_id = "goal-node-#{goal.id}"
+- children_id = "goal-children-#{goal.id}"
+- most_recent_check_in = node[:most_recent_check_in]
+- current_week_check_in = node[:current_week_check_in]
+- can_check_in = node[:can_check_in]
+- current_week_start = Date.current.beginning_of_week(:monday)
+
+.tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
+  .d-flex.align-items-start
+    - if depth > 0
+      %i.bi.bi-arrow-return-right.me-2{style: "color: #999; margin-top: 12px;"}
+    .card{style: "width: 100%; max-width: 700px; position: relative;", class: goal_warning_class(goal)}
+      .card-body.p-2
+        .d-flex.align-items-start
+          .flex-shrink-0.me-3
+            = goal_owner_image(goal, size: 48)
+          .flex-grow-1
+            / Header row with collapse button and counts
+            - if has_children
+              .d-flex.align-items-center.mb-2
+                %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
+                  %i.bi.bi-chevron-down.toggle-icon
+                %span.badge.bg-light.text-dark.small
+                  - if direct_children_count == total_descendants_count
+                    #{pluralize(direct_children_count, 'sub-goal')}
+                  - else
+                    #{pluralize(direct_children_count, 'sub-goal')} directly & #{total_descendants_count} total
+            
+            / Goal title and category badge
+            .d-flex.align-items-center.flex-wrap.mb-1
+              = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold me-2"
+              %span.badge.me-2{class: goal_category_badge_class(goal)}
+                = goal_category_label(goal)
+              - if goal.should_show_warning?
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+            
+            / Status badges row
+            .d-flex.align-items-center.flex-wrap.mb-2
+              %span.badge.me-2{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
+                = goal.timeframe.to_s.humanize
+              %span.badge.me-2{class: status_badge_class(goal.status)}
+                = goal.status.to_s.humanize
+              %span.text-muted.small.me-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_privacy_tooltip_text(goal)}
+                = goal_visibility_display(goal)
+              %span.text-muted.small
+                | Owned by: #{goal_owner_display_name(goal)}
+            
+            / Target dates
+            - if goal.most_likely_target_date.present?
+              .small.text-muted.mb-2
+                %i.bi.bi-calendar-event.me-1
+                Target: #{goal.most_likely_target_date.strftime('%B %d, %Y')}
+                - if goal.most_likely_target_date < Date.today && goal.completed_at.nil?
+                  %span.text-danger.ms-1 (Overdue)
+            
+            / Most recent check-in display
+            - if most_recent_check_in.present?
+              .small.text-muted.mb-2
+                = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal
+            
+            / Inline check-in form (only if can_check_in and goal is check-in eligible)
+            - if can_check_in && goal.check_in_eligible? && goal.completed_at.nil?
+              - can_update_goal = policy(goal).update?
+              .check-in-inline.mt-2.p-2.bg-light.rounded
+                = form_with url: check_in_organization_goal_path(@organization, goal), method: :post, local: true, class: "d-flex align-items-end gap-2 flex-wrap" do |f|
+                  = hidden_field_tag :return_url, request.fullpath
+                  .flex-grow-1{style: "min-width: 120px; max-width: 150px;"}
+                    %label.form-label.small.mb-1 Confidence
+                    = select_tag :confidence_percentage, options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm' }
+                  - if can_update_goal
+                    .flex-grow-1{style: "min-width: 150px; max-width: 200px;"}
+                      %label.form-label.small.mb-1 Target Date
+                      = date_field_tag :most_likely_target_date, goal.most_likely_target_date, class: 'form-control form-control-sm'
+                  .flex-grow-1{style: "min-width: 200px;"}
+                    %label.form-label.small.mb-1 Reason (optional)
+                    = text_field_tag :confidence_reason, current_week_check_in&.confidence_reason, class: 'form-control form-control-sm', placeholder: 'Brief update...'
+                  .flex-shrink-0
+                    %button.btn.btn-primary.btn-sm{type: "submit"}
+                      %i.bi.bi-check-lg
+                      Check In
+            - elsif goal.completed_at.nil?
+              / Action buttons for non-check-in-eligible goals
+              .d-flex.gap-2.mt-2
+                - if goal.started_at.nil? && policy(goal).update?
+                  = button_to start_organization_goal_path(@organization, goal), method: :patch, class: "btn btn-primary btn-sm", form: { style: "display: inline-block;" } do
+                    %i.bi.bi-play-circle.me-1
+                    Start
+                = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
+                  %i.bi.bi-eye.me-1
+                  View
+
+- if has_children
+  .collapse.show{id: children_id}
+    - children.each do |child_node|
+      = render 'organizations/goals/customize_view/styles/goal_node', node: child_node, depth: depth + 1

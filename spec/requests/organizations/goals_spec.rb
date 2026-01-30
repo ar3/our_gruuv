@@ -803,6 +803,111 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
   
+  describe 'GET /organizations/:organization_id/goals with hierarchical-collapsible view' do
+    let!(:active_goal) do
+      create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Active Goal',
+        started_at: 1.week.ago,
+        most_likely_target_date: Date.today + 30.days
+      )
+    end
+    let!(:child_goal) do
+      create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Child Goal',
+        started_at: 1.week.ago,
+        most_likely_target_date: Date.today + 15.days
+      )
+    end
+    let!(:goal_link) { create(:goal_link, parent: active_goal, child: child_goal) }
+
+    it 'renders the hierarchical-collapsible view' do
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-collapsible',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Active Goal')
+      expect(response.body).to include('Child Goal')
+      expect(response.body).to include('tree-node')
+    end
+
+    it 'shows expand/collapse buttons' do
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-collapsible',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Expand All')
+      expect(response.body).to include('Collapse All')
+    end
+
+    it 'shows current check-in week banner' do
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-collapsible',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Current Check-in Week')
+    end
+
+    it 'shows inline check-in forms for check-in eligible goals' do
+      # Create a check-in eligible goal (quantitative_key_result with target date)
+      check_in_eligible_goal = create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Check-in Eligible Goal',
+        goal_type: 'quantitative_key_result',
+        started_at: 1.week.ago,
+        most_likely_target_date: Date.today + 30.days,
+        privacy_level: 'everyone_in_company'
+      )
+      
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-collapsible',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      # Check for check-in form elements
+      expect(response.body).to include('Confidence')
+      expect(response.body).to include('Check In')
+    end
+
+    it 'shows goal hierarchy with sub-goal counts' do
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-collapsible',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('1 sub-goal')
+    end
+
+    it 'shows owner image for goals' do
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-collapsible',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      # Check for profile image container classes
+      expect(response.body).to include('rounded-circle')
+    end
+  end
+
   describe 'POST /organizations/:organization_id/goals/:id/complete' do
     context 'with valid data' do
       it 'creates final check-in with 100% confidence for hit' do

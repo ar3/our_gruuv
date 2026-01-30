@@ -143,5 +143,75 @@ RSpec.describe GoalsHelper, type: :helper do
       expect(values).to eq(values.sort)
     end
   end
+
+  describe '#goal_owner_image' do
+    context 'with CompanyTeammate owner' do
+      it 'returns div with initials when no profile image' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+        result = helper.goal_owner_image(goal, size: 48)
+        
+        expect(result).to include('rounded-circle')
+        expect(result).to include('48px')
+      end
+
+      it 'returns img tag when teammate has profile image' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+        # Mock on the reloaded owner from the database
+        allow(goal.owner).to receive(:profile_image_url).and_return('https://example.com/image.jpg')
+        result = helper.goal_owner_image(goal, size: 48)
+        
+        expect(result).to include('img')
+        expect(result).to include('rounded-circle')
+      end
+    end
+
+    context 'with Organization owner' do
+      it 'returns div with organization initials' do
+        goal = create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company')
+        result = helper.goal_owner_image(goal, size: 48)
+        
+        expect(result).to include('rounded-circle')
+        expect(result).to include('bg-secondary')
+        expect(result).to include('48px')
+      end
+    end
+
+    context 'with nil owner' do
+      it 'returns div with question mark' do
+        goal = build(:goal, creator: creator_teammate, owner: nil)
+        result = helper.goal_owner_image(goal, size: 48)
+        
+        expect(result).to include('?')
+        expect(result).to include('rounded-circle')
+      end
+    end
+
+    context 'with custom size' do
+      it 'respects the size parameter' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+        result = helper.goal_owner_image(goal, size: 64)
+        
+        expect(result).to include('64px')
+      end
+    end
+  end
+
+  describe '#organization_initials_circle' do
+    it 'returns a div with initials' do
+      result = helper.organization_initials_circle('AB', size: 48)
+      
+      expect(result).to include('AB')
+      expect(result).to include('rounded-circle')
+      expect(result).to include('bg-secondary')
+      expect(result).to include('48px')
+    end
+
+    it 'handles single letter initials' do
+      result = helper.organization_initials_circle('X', size: 32)
+      
+      expect(result).to include('X')
+      expect(result).to include('32px')
+    end
+  end
 end
 

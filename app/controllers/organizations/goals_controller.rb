@@ -96,7 +96,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Set view style
     @view_style = params[:view] || 'hierarchical-indented'
-    @view_style = 'hierarchical-indented' unless %w[table cards list network tree nested timeline check-in hierarchical-indented].include?(@view_style)
+    @view_style = 'hierarchical-indented' unless %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible].include?(@view_style)
     
     # For check-in view, filter to eligible goals and load check-ins
     if @view_style == 'check-in'
@@ -128,6 +128,20 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         .recent
         .group_by(&:goal_id)
         .transform_values { |check_ins| check_ins.first }
+    end
+    
+    # For hierarchical-collapsible view, build hierarchy with check-ins and permissions
+    if @view_style == 'hierarchical-collapsible'
+      @goal_hierarchy = Goals::HierarchyWithCheckInsQuery.new(
+        goals: @goals,
+        current_person: current_person,
+        organization: @organization
+      ).call
+      
+      # Also expose individual maps for fallback rendering
+      @most_recent_check_ins_by_goal = @goal_hierarchy[:most_recent_check_ins_by_goal]
+      @current_week_check_ins_by_goal = @goal_hierarchy[:current_week_check_ins_by_goal]
+      @can_check_in_goals = @goal_hierarchy[:can_check_in_goals]
     end
     
     # Performance check for visualizations
@@ -588,6 +602,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       show_deleted: params[:show_deleted],
       show_completed: params[:show_completed]
     }
+    
+    # Validate view style
+    valid_views = %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible]
+    @current_filters[:view] = 'hierarchical-indented' unless valid_views.include?(@current_filters[:view])
     
     @current_sort = @current_filters[:sort]
     @current_view = @current_filters[:view]

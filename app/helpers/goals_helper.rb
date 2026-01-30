@@ -498,6 +498,51 @@ module GoalsHelper
       'Unknown'
     end
   end
+  
+  # Returns the owner's profile image or organization initials
+  # For CompanyTeammate owners: shows their profile image or initials
+  # For Organization owners: shows organization initials
+  def goal_owner_image(goal, size: 48)
+    return organization_initials_circle('?', size: size) unless goal.owner
+    
+    if goal.owner_type == 'CompanyTeammate'
+      teammate = goal.owner
+      profile_url = teammate.profile_image_url
+      
+      if profile_url.present?
+        image_tag profile_url,
+                  class: "rounded-circle",
+                  style: "width: #{size}px; height: #{size}px; object-fit: cover;",
+                  alt: teammate.person&.display_name || 'Owner'
+      else
+        # Fallback to person initials
+        initials = teammate.person&.first_name&.first&.upcase || teammate.person&.email&.first&.upcase || '?'
+        content_tag :div,
+                    class: "bg-primary rounded-circle d-flex align-items-center justify-content-center text-white",
+                    style: "width: #{size}px; height: #{size}px;" do
+          content_tag :span, initials, class: "fw-bold", style: "font-size: #{size * 0.4}px;"
+        end
+      end
+    elsif goal.owner_type == 'Organization'
+      org = goal.owner
+      # Get initials from organization name (first letter of each word, max 2)
+      name = org.display_name || org.name || 'Org'
+      initials = name.split(/\s+/).map(&:first).take(2).join.upcase
+      initials = 'O' if initials.blank?
+      organization_initials_circle(initials, size: size)
+    else
+      organization_initials_circle('?', size: size)
+    end
+  end
+  
+  # Helper to render organization initials in a colored circle
+  def organization_initials_circle(initials, size: 48)
+    content_tag :div,
+                class: "bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white",
+                style: "width: #{size}px; height: #{size}px;" do
+      content_tag :span, initials, class: "fw-bold", style: "font-size: #{size * 0.4}px;"
+    end
+  end
 
   def goal_is_completed?(goal)
     goal.completed_at.present?

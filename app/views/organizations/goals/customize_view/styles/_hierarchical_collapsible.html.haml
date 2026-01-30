@@ -1,0 +1,108 @@
+- hierarchy = @goal_hierarchy || Goals::HierarchyWithCheckInsQuery.new(goals: @goals, current_person: current_person, organization: @organization).call
+- root_goals = hierarchy[:root_goals]
+- current_week_start = Date.current.beginning_of_week(:monday)
+- current_week_end = current_week_start.end_of_week(:sunday)
+
+- if @goals.empty?
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No goals to display
+- else
+  / Check-in week info banner
+  .alert.alert-light.mb-4
+    .d-flex.align-items-center.justify-content-between
+      .d-flex.align-items-center
+        %i.bi.bi-calendar-event.me-2
+        %span
+          %strong Current Check-in Week:
+          = "#{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}"
+      .d-flex.align-items-center.gap-2
+        %button.btn.btn-outline-secondary.btn-sm#expand-all-goals{type: "button", "data-action": "click->goals-tree#expandAll"}
+          %i.bi.bi-arrows-expand.me-1
+          Expand All
+        %button.btn.btn-outline-secondary.btn-sm#collapse-all-goals{type: "button", "data-action": "click->goals-tree#collapseAll"}
+          %i.bi.bi-arrows-collapse.me-1
+          Collapse All
+  
+  .tree-visualization{style: "padding: 10px 0;"}
+    - if root_goals.empty?
+      / No hierarchy found, display flat list
+      - @goals.each do |goal|
+        - node = { goal: goal, children: [], direct_children_count: 0, total_descendants_count: 0, most_recent_check_in: @most_recent_check_ins_by_goal&.[](goal.id), current_week_check_in: @current_week_check_ins_by_goal&.[](goal.id), can_check_in: @can_check_in_goals&.include?(goal.id) }
+        = render 'organizations/goals/customize_view/styles/goal_node', node: node, depth: 0
+    - else
+      - root_goals.each do |root_node|
+        = render 'organizations/goals/customize_view/styles/goal_node', node: root_node, depth: 0
+
+:javascript
+  // Handle collapse/expand icon toggle for individual nodes
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleButtons = document.querySelectorAll('.toggle-children');
+    
+    toggleButtons.forEach(function(button) {
+      const targetId = button.getAttribute('data-bs-target');
+      const target = document.querySelector(targetId);
+      const icon = button.querySelector('.toggle-icon');
+      
+      if (target) {
+        // Set initial icon state based on whether it's expanded
+        if (target.classList.contains('show')) {
+          icon.classList.remove('bi-chevron-up');
+          icon.classList.add('bi-chevron-down');
+        } else {
+          icon.classList.remove('bi-chevron-down');
+          icon.classList.add('bi-chevron-up');
+        }
+        
+        // Listen for Bootstrap collapse events
+        target.addEventListener('show.bs.collapse', function() {
+          icon.classList.remove('bi-chevron-up');
+          icon.classList.add('bi-chevron-down');
+        });
+        
+        target.addEventListener('hide.bs.collapse', function() {
+          icon.classList.remove('bi-chevron-down');
+          icon.classList.add('bi-chevron-up');
+        });
+      }
+    });
+    
+    // Expand All button - toggle class directly without Bootstrap JS
+    const expandAllBtn = document.getElementById('expand-all-goals');
+    if (expandAllBtn) {
+      expandAllBtn.addEventListener('click', function() {
+        document.querySelectorAll('.tree-visualization .collapse').forEach(function(el) {
+          el.classList.add('show');
+          // Update icon
+          const button = document.querySelector('[data-bs-target="#' + el.id + '"]');
+          if (button) {
+            const icon = button.querySelector('.toggle-icon');
+            if (icon) {
+              icon.classList.remove('bi-chevron-up');
+              icon.classList.add('bi-chevron-down');
+            }
+          }
+        });
+      });
+    }
+    
+    // Collapse All button - toggle class directly without Bootstrap JS
+    const collapseAllBtn = document.getElementById('collapse-all-goals');
+    if (collapseAllBtn) {
+      collapseAllBtn.addEventListener('click', function() {
+        document.querySelectorAll('.tree-visualization .collapse.show').forEach(function(el) {
+          el.classList.remove('show');
+          // Update icon
+          const button = document.querySelector('[data-bs-target="#' + el.id + '"]');
+          if (button) {
+            const icon = button.querySelector('.toggle-icon');
+            if (icon) {
+              icon.classList.remove('bi-chevron-down');
+              icon.classList.add('bi-chevron-up');
+            }
+          }
+        });
+      });
+    }
+  });
