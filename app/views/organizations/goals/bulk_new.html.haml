@@ -17,8 +17,20 @@
       .card
         .card-body
           = form_with url: bulk_create_organization_goals_path(@organization), method: :post, local: true do |f|
-            - if @owner_param.present?
-              = hidden_field_tag :owner_id, @owner_param
+            .mb-4
+              %label.form-label.fw-bold
+                Owner
+                %span.text-danger *
+              = select_tag :owner_id, 
+                options_for_select(available_goal_owners_for_bulk, @owner_param),
+                class: 'form-select', 
+                id: 'bulk-goal-owner-select',
+                data: { test_id: 'bulk-goal-owner' }
+              %small.form-text.text-muted
+                Choose who these goals belong to: yourself, an employee, a team, department, or company.
+              %small.form-text.text-muted.d-block.mt-1
+                %i.bi.bi-info-circle.me-1
+                Selecting a team, department, or company will default privacy to "everyone in the company". Selecting a teammate will default privacy to "creator, owner, and managers".
 
             .mb-4
               %label.form-label.fw-bold
@@ -30,8 +42,6 @@
               %small.text-muted.d-block.mb-2
                 Enter one goal title per line. Default type is measurable outcome. A goal followed by sub-goals becomes an objective.
               = text_area_tag "bulk_goal_titles", "", rows: 8, class: "form-control", placeholder: "Goal 1\nGoal 2\nObjective 3\n* Key Result 3-1\n* Key Result 3-2\n* Key Result 3-3\nObjective 4\n1. Step 4-1\n2. Step 4-2\n3. Step 4-3"
-              %small.form-text.text-muted
-                New goals will use the selected owner and default privacy level.
 
             .d-flex.gap-2.mt-3
               - cancel_path = @owner_param ? organization_goals_path(@organization, owner_id: @owner_param) : organization_goals_path(@organization)

@@ -210,6 +210,130 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         expect(owner_ids.count).to be > 1
       end
     end
+
+    context 'with created_by_me filter' do
+      let!(:other_person) { create(:person) }
+      let!(:other_teammate) do
+        other_person.teammates.find_or_create_by!(organization: company) do |t|
+          t.type = 'CompanyTeammate'
+          t.first_employed_at = nil
+          t.last_terminated_at = nil
+        end
+      end
+      let!(:my_goal_own_owner) do
+        create(:goal,
+               creator: creator_teammate,
+               owner: creator_teammate,
+               title: 'My goal I own',
+               started_at: 1.day.ago)
+      end
+      let!(:my_goal_company_owner) do
+        create(:goal,
+               creator: creator_teammate,
+               owner: company,
+               title: 'My goal for company',
+               started_at: 1.day.ago)
+      end
+      let!(:my_goal_other_owner) do
+        create(:goal,
+               creator: creator_teammate,
+               owner: other_teammate,
+               title: 'My goal for someone else',
+               started_at: 1.day.ago)
+      end
+      let!(:other_persons_goal) do
+        create(:goal,
+               creator: other_teammate,
+               owner: other_teammate,
+               privacy_level: 'everyone_in_company',
+               title: 'Someone elses goal',
+               started_at: 1.day.ago)
+      end
+
+      it 'filters to only show goals created by the current teammate' do
+        get :index, params: { organization_id: company.id, owner_id: 'created_by_me' }
+
+        goals = assigns(:goals)
+        expect(goals).to include(my_goal_own_owner, my_goal_company_owner, my_goal_other_owner)
+        expect(goals).not_to include(other_persons_goal)
+      end
+
+      it 'includes goals with different owners as long as current teammate created them' do
+        get :index, params: { organization_id: company.id, owner_id: 'created_by_me' }
+
+        goals = assigns(:goals)
+        owner_ids = goals.map(&:owner_id).uniq
+        expect(owner_ids.count).to be > 1
+      end
+
+      it 'sets the owner_id in current_filters to created_by_me' do
+        get :index, params: { organization_id: company.id, owner_id: 'created_by_me' }
+
+        expect(assigns(:current_filters)[:owner_id]).to eq('created_by_me')
+        expect(assigns(:current_filters)[:owner_type]).to be_nil
+      end
+    end
+
+    context 'with organization owner filter (STI type conversion)' do
+      let!(:company_goal) do
+        create(:goal,
+               creator: creator_teammate,
+               owner: company,
+               title: 'Company owned goal',
+               started_at: 1.day.ago)
+      end
+      let(:department) { create(:organization, :department, parent: company) }
+      let!(:department_goal) do
+        create(:goal,
+               creator: creator_teammate,
+               owner: department,
+               title: 'Department owned goal',
+               started_at: 1.day.ago)
+      end
+      let(:team) { create(:organization, :team, parent: company) }
+      let!(:team_goal) do
+        create(:goal,
+               creator: creator_teammate,
+               owner: team,
+               title: 'Team owned goal',
+               started_at: 1.day.ago)
+      end
+
+      it 'finds company-owned goals when using Company_ID format in owner_id param' do
+        # This tests the STI type conversion: Company -> Organization
+        get :index, params: { organization_id: company.id, owner_id: "Company_#{company.id}" }
+
+        goals = assigns(:goals)
+        expect(goals).to include(company_goal)
+        expect(goals).not_to include(department_goal, team_goal)
+      end
+
+      it 'finds department-owned goals when using Department_ID format in owner_id param' do
+        # This tests the STI type conversion: Department -> Organization
+        get :index, params: { organization_id: company.id, owner_id: "Department_#{department.id}" }
+
+        goals = assigns(:goals)
+        expect(goals).to include(department_goal)
+        expect(goals).not_to include(company_goal, team_goal)
+      end
+
+      it 'finds team-owned goals when using Team_ID format in owner_id param' do
+        # This tests the STI type conversion: Team -> Organization
+        get :index, params: { organization_id: company.id, owner_id: "Team_#{team.id}" }
+
+        goals = assigns(:goals)
+        expect(goals).to include(team_goal)
+        expect(goals).not_to include(company_goal, department_goal)
+      end
+
+      it 'converts owner_type to Organization in params for STI compatibility' do
+        get :index, params: { organization_id: company.id, owner_id: "Company_#{company.id}" }
+
+        # The controller should convert Company -> Organization for the query
+        expect(assigns(:current_filters)[:owner_type]).to eq('Organization')
+        expect(assigns(:current_filters)[:owner_id]).to eq(company.id.to_s)
+      end
+    end
   end
   
   describe 'GET #show' do
@@ -568,10 +692,18 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:owner)).to eq(creator_teammate)
     end
 
-    it 'redirects to goals index when owner_id does not match any record' do
+    it 'defaults to current teammate when owner_id does not match any record' do
       get :bulk_new, params: { organization_id: company.id, owner_id: 'CompanyTeammate_999999' }
-      expect(response).to redirect_to(organization_goals_path(company))
-      expect(flash[:alert]).to eq('Please select an owner to bulk create goals.')
+      expect(response).to have_http_status(:success)
+      expect(assigns(:owner)).to eq(creator_teammate)
+    end
+
+    it 'allows selecting an organization owner from params' do
+      get :bulk_new, params: { organization_id: company.id, owner_id: "Company_#{company.id}" }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:owner).id).to eq(company.id)
+      expect(assigns(:owner)).to be_a(Organization)
+      expect(assigns(:owner_param)).to eq("Company_#{company.id}")
     end
   end
 
@@ -634,6 +766,73 @@ RSpec.describe Organizations::GoalsController, type: :controller do
 
       expect(response).to redirect_to(organization_goals_path(company))
       expect(flash[:alert]).to eq('Please select an owner to bulk create goals.')
+    end
+
+    context 'privacy level defaults' do
+      it 'sets privacy to only_creator_owner_and_managers when owner is a CompanyTeammate' do
+        expect {
+          post :bulk_create, params: {
+            organization_id: company.id,
+            owner_id: "CompanyTeammate_#{creator_teammate.id}",
+            bulk_goal_titles: "Teammate Goal"
+          }
+        }.to change(Goal, :count).by(1)
+
+        created_goal = Goal.last
+        expect(created_goal.owner).to eq(creator_teammate)
+        expect(created_goal.privacy_level).to eq('only_creator_owner_and_managers')
+      end
+
+      it 'sets privacy to everyone_in_company when owner is a Company' do
+        expect {
+          post :bulk_create, params: {
+            organization_id: company.id,
+            owner_id: "Company_#{company.id}",
+            bulk_goal_titles: "Company Goal"
+          }
+        }.to change(Goal, :count).by(1)
+
+        created_goal = Goal.last
+        expect(created_goal.owner_id).to eq(company.id)
+        expect(created_goal.owner).to be_a(Organization)
+        expect(created_goal.privacy_level).to eq('everyone_in_company')
+      end
+
+      it 'sets privacy to everyone_in_company when owner is a Department' do
+        department = create(:organization, :department, parent: company)
+        create(:teammate, person: person, organization: department, type: 'DepartmentTeammate')
+
+        expect {
+          post :bulk_create, params: {
+            organization_id: company.id,
+            owner_id: "Department_#{department.id}",
+            bulk_goal_titles: "Department Goal"
+          }
+        }.to change(Goal, :count).by(1)
+
+        created_goal = Goal.last
+        expect(created_goal.owner_id).to eq(department.id)
+        expect(created_goal.owner).to be_a(Organization)
+        expect(created_goal.privacy_level).to eq('everyone_in_company')
+      end
+
+      it 'sets privacy to everyone_in_company when owner is a Team' do
+        team = create(:organization, :team, parent: company)
+        create(:teammate, person: person, organization: team, type: 'TeamTeammate')
+
+        expect {
+          post :bulk_create, params: {
+            organization_id: company.id,
+            owner_id: "Team_#{team.id}",
+            bulk_goal_titles: "Team Goal"
+          }
+        }.to change(Goal, :count).by(1)
+
+        created_goal = Goal.last
+        expect(created_goal.owner_id).to eq(team.id)
+        expect(created_goal.owner).to be_a(Organization)
+        expect(created_goal.privacy_level).to eq('everyone_in_company')
+      end
     end
   end
   

@@ -8,12 +8,15 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   def index
     authorize company, :view_goals?
     
-    # Check for special "everyone_in_company" filter
+    # Check for special filters
     @everyone_in_company_filter = params[:owner_id] == 'everyone_in_company'
+    @created_by_me_filter = params[:owner_id] == 'created_by_me'
     
     # Parse owner_id if it's in format "Type_ID" (e.g., "Teammate_123")
-    if !@everyone_in_company_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
+    if !@everyone_in_company_filter && !@created_by_me_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
+      # Rails STI polymorphic associations store base class 'Organization' for Company/Department/Team
+      owner_type = 'Organization' if owner_type.in?(['Company', 'Department', 'Team'])
       params[:owner_type] = owner_type
       params[:owner_id] = owner_id
     end
@@ -21,8 +24,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Get current teammate for this organization
     current_teammate = current_person.teammates.find_by(organization: @organization)
     
-    # Default to logged in user if no owner is selected (unless using everyone_in_company filter)
-    unless @everyone_in_company_filter || (params[:owner_type].present? && params[:owner_id].present?)
+    # Default to logged in user if no owner is selected (unless using special filters)
+    unless @everyone_in_company_filter || @created_by_me_filter || (params[:owner_type].present? && params[:owner_id].present?)
       if current_teammate
         params[:owner_type] = 'CompanyTeammate'
         params[:owner_id] = current_teammate.id.to_s
@@ -56,10 +59,13 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       show_completed: params[:show_completed] == '1'
     )
     
-    # Apply owner or privacy filter
+    # Apply owner or special filter
     if @everyone_in_company_filter
       # Filter for active goals with "everyone_in_company" privacy level
       @goals = @goals.where(privacy_level: 'everyone_in_company').active
+    elsif @created_by_me_filter
+      # Filter for goals created by the current teammate
+      @goals = @goals.where(creator: current_teammate)
     else
       # Filter by owner
       @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
@@ -75,6 +81,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     if spotlight_param == 'goals_overview'
       if @everyone_in_company_filter
         all_goals_for_filter = policy_scope(Goal).where(privacy_level: 'everyone_in_company').active
+      elsif @created_by_me_filter
+        all_goals_for_filter = policy_scope(Goal).where(creator: current_teammate)
       else
         all_goals_for_filter = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
       end
@@ -308,10 +316,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     authorize Goal.new
     company = @organization.root_company || @organization
     current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
+    # Resolve owner from params, or default to current teammate
     @owner = resolve_owner_for_bulk(current_teammate)
+    @owner ||= current_teammate
     unless @owner
       redirect_to organization_goals_path(@organization),
-                  alert: 'Please select an owner to bulk create goals.'
+                  alert: 'You must be a company teammate to bulk create goals.'
       return
     end
     @owner_param = build_owner_param_for_bulk
@@ -343,6 +353,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       return
     end
 
+    # Determine privacy level based on owner type:
+    # - Organization owner (Company/Department/Team) -> everyone_in_company
+    # - Teammate owner -> only_creator_owner_and_managers
+    privacy = privacy_level_for_owner(@owner)
+
     service = Goals::BulkCreateUnlinkedService.new(
       @organization,
       current_person,
@@ -350,7 +365,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       @owner,
       parse_result[:goals],
       default_goal_type: 'quantitative_key_result',
-      privacy_level: 'only_creator_owner_and_managers'
+      privacy_level: privacy
     )
 
     if service.call
@@ -897,6 +912,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       options << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"]
     end
     
+    # Add special option for "All goals created by me"
+    options << ["All goals created by me", "created_by_me"]
+    
     # Add current teammate (person themselves) - should be first/default
     # Find teammate in the company or any descendant organization
     # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
@@ -965,5 +983,20 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     options.reject { |label, value| label.blank? || value.blank? || value.nil? }
   end
   helper_method :available_goal_owners
+
+  # Returns goal owners for bulk create form (excludes filter options that aren't actual owners)
+  def available_goal_owners_for_bulk
+    available_goal_owners.reject { |_label, value| value.in?(['everyone_in_company', 'created_by_me']) }
+  end
+  helper_method :available_goal_owners_for_bulk
+
+  # Determines the appropriate privacy level based on owner type
+  def privacy_level_for_owner(owner)
+    if owner.is_a?(Organization)
+      'everyone_in_company'
+    else
+      'only_creator_owner_and_managers'
+    end
+  end
 end
 

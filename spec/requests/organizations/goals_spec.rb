@@ -1063,5 +1063,123 @@ RSpec.describe 'Organizations::Goals', type: :request do
       end
     end
   end
+
+  describe 'GET /organizations/:organization_id/goals index page owner dropdown' do
+    it 'includes the created_by_me option in the owner dropdown' do
+      get organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('All goals created by me')
+      expect(response.body).to include('value="created_by_me"')
+    end
+
+    it 'filters goals by creator when created_by_me is selected' do
+      other_person = create(:person)
+      other_teammate = other_person.teammates.find_or_create_by!(organization: organization) do |t|
+        t.type = 'CompanyTeammate'
+      end
+
+      my_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Goal')
+      other_goal = create(:goal, creator: other_teammate, owner: other_teammate, 
+                          privacy_level: 'everyone_in_company', title: 'Other Goal')
+
+      get organization_goals_path(organization, owner_id: 'created_by_me')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('My Goal')
+      expect(response.body).not_to include('Other Goal')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/goals/bulk_new' do
+    it 'renders the bulk create form with owner dropdown' do
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Bulk create goals')
+      expect(response.body).to include('Owner')
+      expect(response.body).to include('bulk-goal-owner-select')
+    end
+
+    it 'includes teammate options in owner dropdown' do
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Teammate: #{person.display_name}")
+      expect(response.body).to include("CompanyTeammate_#{teammate.id}")
+    end
+
+    it 'includes company option in owner dropdown' do
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Company: #{organization.display_name}")
+      expect(response.body).to include("Company_#{organization.id}")
+    end
+
+    it 'does not include everyone_in_company filter option in owner dropdown' do
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      # The "All goals visible to everyone" option should NOT be present for bulk create
+      expect(response.body).not_to include('value="everyone_in_company"')
+    end
+
+    it 'does not include created_by_me filter option in owner dropdown' do
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      # The "All goals created by me" option should NOT be present for bulk create
+      expect(response.body).not_to include('value="created_by_me"')
+    end
+
+    it 'defaults to current teammate when no owner_id param provided' do
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      # Should have current teammate selected
+      expect(response.body).to include("selected=\"selected\" value=\"CompanyTeammate_#{teammate.id}\"")
+    end
+
+    it 'shows informational text about privacy defaults' do
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('everyone in the company')
+      expect(response.body).to include('creator, owner, and managers')
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/goals/bulk_create' do
+    it 'creates goals with teammate owner and correct privacy level' do
+      expect {
+        post bulk_create_organization_goals_path(organization), params: {
+          owner_id: "CompanyTeammate_#{teammate.id}",
+          bulk_goal_titles: "Test Goal 1\nTest Goal 2"
+        }
+      }.to change(Goal, :count).by(2)
+
+      created_goals = Goal.last(2)
+      created_goals.each do |goal|
+        expect(goal.owner_id).to eq(teammate.id)
+        expect(goal.owner_type).to eq('CompanyTeammate')
+        expect(goal.privacy_level).to eq('only_creator_owner_and_managers')
+      end
+    end
+
+    it 'creates goals with company owner and everyone_in_company privacy' do
+      expect {
+        post bulk_create_organization_goals_path(organization), params: {
+          owner_id: "Company_#{organization.id}",
+          bulk_goal_titles: "Company Goal"
+        }
+      }.to change(Goal, :count).by(1)
+
+      created_goal = Goal.last
+      expect(created_goal.owner_id).to eq(organization.id)
+      expect(created_goal.owner_type).to eq('Organization')
+      expect(created_goal.privacy_level).to eq('everyone_in_company')
+    end
+  end
 end
 
