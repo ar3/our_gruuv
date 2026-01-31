@@ -1035,17 +1035,30 @@ RSpec.describe Goal, type: :model do
         expect(goal.owner_type).to eq('CompanyTeammate')
       end
       
-      it 'accepts Organization as valid owner_type' do
+      it 'accepts Company as valid owner_type' do
         goal = build(:goal, creator: creator_teammate, owner: company)
-        goal.owner_type = 'Organization'
+        goal.owner_type = 'Company'
         goal.earliest_target_date = Date.today + 1.month
         goal.most_likely_target_date = Date.today + 2.months
         goal.latest_target_date = Date.today + 3.months
         
         goal.save!
         
-        expect(goal.owner_type).to eq('Organization')
-        expect(goal.reload.owner_type).to eq('Organization')
+        expect(goal.owner_type).to eq('Company')
+        expect(goal.reload.owner_type).to eq('Company')
+      end
+      
+      it 'converts Organization to explicit type automatically' do
+        goal = build(:goal, creator: creator_teammate, owner: company)
+        goal.owner_type = 'Organization'
+        goal.earliest_target_date = Date.today + 1.month
+        goal.most_likely_target_date = Date.today + 2.months
+        goal.latest_target_date = Date.today + 3.months
+        
+        expect(goal).to be_valid
+        goal.save!
+        # The callback should convert Organization to the explicit type
+        expect(goal.owner_type).to eq('Company')
       end
     end
   end

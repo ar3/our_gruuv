@@ -85,13 +85,13 @@ class GoalPolicy < ApplicationPolicy
     end
     
     # User is direct member of owner organization (if owner is Company/Department/Team)
-    # Rails polymorphic associations use "Organization" as owner_type for STI subclasses
-    if record.owner_type == 'Organization' || record.owner_type.in?(['Company', 'Department', 'Team'])
+    if record.owner_type.in?(['Company', 'Department', 'Team'])
       teammate_org = viewing_teammate.organization
       # Check if viewing_teammate is directly in the owner organization (not just in the company hierarchy)
       # For everyone_in_company privacy, allow direct members of owner organization to update
       # For other privacy levels, also allow direct members
-      return true if teammate_org == record.owner
+      # Compare by ID because Rails STI may load different class instances for same record
+      return true if teammate_org.id == record.owner_id
       
       # Don't allow members of descendant organizations to update (only direct members)
       # This distinguishes "direct member of owner org" from "any member of company"

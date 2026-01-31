@@ -128,7 +128,7 @@ RSpec.describe Goals::BulkCreateUnlinkedService, type: :service do
       created = Goal.last(3)
       created.each do |goal|
         expect(goal.owner_id).to eq(company_owner.id)
-        expect(goal.owner_type).to eq('Organization')
+        expect(goal.owner_type).to eq('Company')
       end
     end
   end

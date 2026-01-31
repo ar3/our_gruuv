@@ -30,18 +30,18 @@ FactoryBot.define do
       end
       
       # Explicitly set owner_type based on owner's actual type
-      # Rails polymorphic associations use base class name, so we need to override
+      # Use explicit types (CompanyTeammate, Company, Department, Team) instead of base class
       if goal.owner.present?
         if goal.owner.respond_to?(:type)
           if goal.owner.type == 'CompanyTeammate'
             goal.owner_type = 'CompanyTeammate'
           elsif goal.owner.type.in?(['Department', 'Team', 'Company'])
-            goal.owner_type = 'Organization'
+            goal.owner_type = goal.owner.type
           end
         elsif goal.owner.is_a?(CompanyTeammate)
           goal.owner_type = 'CompanyTeammate'
         elsif goal.owner.is_a?(Organization)
-          goal.owner_type = 'Organization'
+          goal.owner_type = goal.owner.type
         end
       end
     end
@@ -54,14 +54,14 @@ FactoryBot.define do
           if goal.owner.type == 'CompanyTeammate'
             'CompanyTeammate'
           elsif goal.owner.type.in?(['Department', 'Team', 'Company'])
-            'Organization'
+            goal.owner.type
           else
             nil
           end
         elsif goal.owner.is_a?(CompanyTeammate)
           'CompanyTeammate'
         elsif goal.owner.is_a?(Organization)
-          'Organization'
+          goal.owner.type
         else
           nil
         end

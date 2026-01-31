@@ -12,11 +12,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @everyone_in_company_filter = params[:owner_id] == 'everyone_in_company'
     @created_by_me_filter = params[:owner_id] == 'created_by_me'
     
-    # Parse owner_id if it's in format "Type_ID" (e.g., "Teammate_123")
+    # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
     if !@everyone_in_company_filter && !@created_by_me_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
-      # Rails STI polymorphic associations store base class 'Organization' for Company/Department/Team
-      owner_type = 'Organization' if owner_type.in?(['Company', 'Department', 'Team'])
       params[:owner_type] = owner_type
       params[:owner_id] = owner_id
     end
@@ -587,7 +585,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   def customize_view
     authorize @organization, :show?
     
-    # Parse owner_id if it's in format "Type_ID" (e.g., "Teammate_123")
+    # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
     if params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
       params[:owner_type] = owner_type

@@ -41,7 +41,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
     
     it 'filters by timeframe: next' do
-      get :index, params: { organization_id: company.id, owner_type: 'Organization', owner_id: company.id, timeframe: 'next' }
+      get :index, params: { organization_id: company.id, owner_type: 'Company', owner_id: company.id, timeframe: 'next' }
       goals = assigns(:goals)
       expect(goals).to include(team_goal)
       expect(goals).not_to include(personal_goal, later_goal)
@@ -326,11 +326,11 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         expect(goals).not_to include(company_goal, department_goal)
       end
 
-      it 'converts owner_type to Organization in params for STI compatibility' do
+      it 'preserves explicit owner_type when parsing owner_id param' do
         get :index, params: { organization_id: company.id, owner_id: "Company_#{company.id}" }
 
-        # The controller should convert Company -> Organization for the query
-        expect(assigns(:current_filters)[:owner_type]).to eq('Organization')
+        # The controller should preserve the explicit type (Company, Department, Team)
+        expect(assigns(:current_filters)[:owner_type]).to eq('Company')
         expect(assigns(:current_filters)[:owner_id]).to eq(company.id.to_s)
       end
     end

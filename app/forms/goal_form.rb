@@ -105,7 +105,7 @@ class GoalForm < Reform::Form
   end
   
   def owner_selection
-    # If owner_id is provided as a string like "Teammate_123" or "Company_456", parse it
+    # If owner_id is provided as a string like "CompanyTeammate_123" or "Company_456", parse it
     # Otherwise, validate that both owner_type and owner_id are present
     # Note: parse_owner_selection is called before this validation, so if owner was nil/blank,
     # it should have been set to current_teammate already
@@ -168,10 +168,8 @@ class GoalForm < Reform::Form
   def privacy_level_for_owner_type
     return unless owner_type && privacy_level
     
-    # Rails polymorphic associations use the base class name for STI, so
-    # Company/Department/Team all show up as "Organization" in owner_type after saving.
-    # But in the form, we might still have "Company", "Department", or "Team" before saving.
-    if owner_type.in?(['Company', 'Department', 'Team', 'Organization'])
+    # Company/Department/Team owners have restricted privacy options
+    if owner_type.in?(['Company', 'Department', 'Team'])
       if privacy_level == 'only_creator_and_owner'
         errors.add(:privacy_level, 'is not valid for Organization owner')
       end
@@ -217,7 +215,7 @@ class GoalForm < Reform::Form
     end
     
     # Only allow CompanyTeammate, Company, Department, or Team as owner types
-    unless owner_type.in?(['CompanyTeammate', 'Company', 'Department', 'Team', 'Organization'])
+    unless owner_type.in?(['CompanyTeammate', 'Company', 'Department', 'Team'])
       # Error will be added in owner_type_valid
       return
     end
@@ -226,7 +224,7 @@ class GoalForm < Reform::Form
     owner = case owner_type
             when 'CompanyTeammate'
               Teammate.find_by(id: owner_id)
-            when 'Organization', 'Company', 'Department', 'Team'
+            when 'Company', 'Department', 'Team'
               Organization.find_by(id: owner_id)
             end
     
@@ -250,7 +248,7 @@ class GoalForm < Reform::Form
     end
     
     # Only allow CompanyTeammate, Company, Department, or Team as owner types
-    unless owner_type.in?(['CompanyTeammate', 'Company', 'Department', 'Team', 'Organization'])
+    unless owner_type.in?(['CompanyTeammate', 'Company', 'Department', 'Team'])
       errors.add(:owner_type, 'must be CompanyTeammate, Company, Department, or Team')
       return
     end
@@ -259,7 +257,7 @@ class GoalForm < Reform::Form
     owner = case owner_type
             when 'CompanyTeammate'
               Teammate.find_by(id: owner_id)
-            when 'Organization', 'Company', 'Department', 'Team'
+            when 'Company', 'Department', 'Team'
               Organization.find_by(id: owner_id)
             end
     
@@ -270,7 +268,7 @@ class GoalForm < Reform::Form
       unless owner.type == 'CompanyTeammate' || owner.is_a?(CompanyTeammate)
         errors.add(:owner_id, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
       end
-    elsif owner_type.in?(['Organization', 'Company', 'Department', 'Team'])
+    elsif owner_type.in?(['Company', 'Department', 'Team'])
       # Check the actual type attribute for STI
       org_type = owner.respond_to?(:type) ? owner.type : owner.class.name
       unless org_type.in?(['Department', 'Team', 'Company']) || owner.is_a?(Department) || owner.is_a?(Team) || owner.is_a?(Company)

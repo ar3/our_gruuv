@@ -1177,7 +1177,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
 
       created_goal = Goal.last
       expect(created_goal.owner_id).to eq(organization.id)
-      expect(created_goal.owner_type).to eq('Organization')
+      expect(created_goal.owner_type).to eq('Company')
       expect(created_goal.privacy_level).to eq('everyone_in_company')
     end
   end

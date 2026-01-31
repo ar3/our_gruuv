@@ -86,8 +86,8 @@ module Goals
       elsif owner_record.is_a?(CompanyTeammate)
         goal.owner_type = 'CompanyTeammate'
       elsif owner_record.is_a?(Organization)
-        # Goal model expects owner_type 'Organization' for Company/Department/Team (polymorphic base class)
-        goal.owner_type = 'Organization'
+        # Store explicit type (Company, Department, or Team)
+        goal.owner_type = owner_record.type
       else
         goal.owner_type = owner_record.class.base_class.name
       end

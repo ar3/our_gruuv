@@ -492,7 +492,7 @@ module GoalsHelper
     
     if goal.owner_type == 'CompanyTeammate'
       goal.owner.person&.display_name || 'Unknown'
-    elsif goal.owner_type == 'Organization'
+    elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
       goal.owner.display_name || goal.owner.name || 'Unknown'
     else
       'Unknown'
@@ -523,7 +523,7 @@ module GoalsHelper
           content_tag :span, initials, class: "fw-bold", style: "font-size: #{size * 0.4}px;"
         end
       end
-    elsif goal.owner_type == 'Organization'
+    elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
       org = goal.owner
       # Get initials from organization name (first letter of each word, max 2)
       name = org.display_name || org.name || 'Org'

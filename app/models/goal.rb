@@ -17,6 +17,7 @@ class Goal < ApplicationRecord
   
   # Callbacks
   before_validation :set_company_id
+  before_validation :set_explicit_owner_type
   
   # Enums
   enum :goal_type, {
@@ -50,7 +51,7 @@ class Goal < ApplicationRecord
     organization_ids = teammates.map(&:organization_id)
     
     where(
-      "(owner_type = 'CompanyTeammate' AND owner_id IN (?)) OR creator_id IN (?) OR (owner_type = 'Organization' AND owner_id IN (?))",
+      "(owner_type = 'CompanyTeammate' AND owner_id IN (?)) OR creator_id IN (?) OR (owner_type IN ('Company', 'Department', 'Team') AND owner_id IN (?))",
       teammate_ids, teammate_ids, organization_ids
     )
   }
@@ -163,7 +164,7 @@ class Goal < ApplicationRecord
     when 'only_creator_and_owner'
       if owner_type == 'CompanyTeammate'
         owner.person == person
-      elsif owner_type == 'Organization' && owner.is_a?(Organization)
+      elsif owner_type.in?(['Company', 'Department', 'Team']) && owner.is_a?(Organization)
         # Organization owner: check if person belongs directly to owner organization
         person.teammates.exists?(organization: owner)
       else
@@ -178,7 +179,7 @@ class Goal < ApplicationRecord
         owner_teammate = owner.is_a?(CompanyTeammate) ? owner : CompanyTeammate.find_by(organization: company, person: owner.person)
         return false unless person_teammate && owner_teammate
         person_teammate.in_managerial_hierarchy_of?(owner_teammate)
-      elsif owner_type == 'Organization' && owner.is_a?(Organization)
+      elsif owner_type.in?(['Company', 'Department', 'Team']) && owner.is_a?(Organization)
         # Organization owner with only_creator_owner_and_managers:
         # - Direct members of owner organization can see
         # - Check if person belongs directly to owner organization
@@ -199,7 +200,7 @@ class Goal < ApplicationRecord
   end
   
   def manages_any_teammate_in_owner_org?(person)
-    return false unless owner_type == 'Organization' && owner.is_a?(Organization)
+    return false unless owner_type.in?(['Company', 'Department', 'Team']) && owner.is_a?(Organization)
     return false unless company
     
     # Get all teammates who belong directly to the owner organization
@@ -298,9 +299,8 @@ class Goal < ApplicationRecord
   def privacy_level_for_owner_type
     return unless owner_type && privacy_level
     
-    # Rails polymorphic associations use the base class name for STI, so
-    # Company/Department/Team all show up as "Organization" in owner_type
-    if owner_type == 'Organization' && owner.is_a?(Organization)
+    # Company/Department/Team owners have restricted privacy options
+    if owner_type.in?(['Company', 'Department', 'Team']) && owner.is_a?(Organization)
       if privacy_level == 'only_creator_and_owner'
         errors.add(:privacy_level, 'is not valid for Organization owner')
       end
@@ -335,15 +335,28 @@ class Goal < ApplicationRecord
       unless owner.type == 'CompanyTeammate' || owner.is_a?(CompanyTeammate)
         errors.add(:owner, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
       end
-    elsif owner_type == 'Organization'
-      # Check the actual type attribute for STI
+    elsif owner_type.in?(['Company', 'Department', 'Team'])
+      # Check the actual type attribute matches the specified owner_type
       org_type = owner.respond_to?(:type) ? owner.type : owner.class.name
-      unless org_type.in?(['Department', 'Team', 'Company']) || owner.is_a?(Department) || owner.is_a?(Team) || owner.is_a?(Company)
+      unless org_type == owner_type || owner.is_a?(Department) || owner.is_a?(Team) || owner.is_a?(Company)
         errors.add(:owner, 'must be a Department, Team, or Company')
       end
     else
-      # Reject any other owner types
+      # Reject any other owner types (including 'Organization' - must use explicit type)
       errors.add(:owner_type, 'must be CompanyTeammate, Company, Department, or Team')
+    end
+  end
+  
+  def set_explicit_owner_type
+    return unless owner.present?
+    return unless owner.respond_to?(:type)
+    
+    # Rails polymorphic associations use the base class name for STI models,
+    # so we need to set the explicit type (Company, Department, Team, CompanyTeammate)
+    # Only convert 'Organization' if owner is actually a Company/Department/Team
+    # Don't convert invalid types like 'Teammate' - let validation catch those
+    if owner_type == 'Organization' && owner.type.in?(['Company', 'Department', 'Team'])
+      self.owner_type = owner.type
     end
   end
   
