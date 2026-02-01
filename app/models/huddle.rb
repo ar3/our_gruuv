@@ -37,6 +37,10 @@ class Huddle < ApplicationRecord
     "#{company&.display_name || 'Unknown Company'} - #{team&.name || 'Unknown Team'} - #{huddle_display_day}"
   end
 
+  def display_name_without_organization
+    "#{team&.name || 'Unknown Team'} - #{huddle_display_day}"
+  end
+
   def slug
     "#{company&.name&.parameterize || 'unknown'}_#{team&.name&.parameterize || 'unknown'}_#{started_at.strftime('%Y-%m-%d')}"
   end

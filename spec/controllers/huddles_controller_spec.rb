@@ -13,6 +13,92 @@ RSpec.describe HuddlesController, type: :controller do
     session[:current_company_teammate_id] = teammate.id
   end
 
+  describe 'GET #new' do
+    context 'when user is not logged in' do
+      before do
+        session[:current_company_teammate_id] = nil
+      end
+
+      it 'redirects to root path' do
+        get :new
+        expect(response).to redirect_to(root_path)
+      end
+
+      it 'sets an error flash message' do
+        get :new
+        expect(flash[:error]).to eq('You must be logged in to access this page')
+      end
+    end
+
+    context 'when user is logged in' do
+      it 'returns a success response' do
+        get :new
+        expect(response).to be_successful
+      end
+
+      it 'assigns @current_person' do
+        get :new
+        expect(assigns(:current_person)).to eq(person)
+      end
+
+      it 'assigns @teams_by_company with teams from user companies' do
+        get :new
+        expect(assigns(:teams_by_company)).to be_a(Hash)
+        company_ids = assigns(:teams_by_company).keys.map(&:id)
+        expect(company_ids).to include(organization.id)
+        
+        company_teams = assigns(:teams_by_company).values.flatten
+        expect(company_teams.map(&:id)).to include(team.id)
+      end
+
+      context 'with multiple companies' do
+        let(:second_organization) { create(:organization, name: 'Second Org') }
+        let!(:second_team) { create(:team, name: 'Second Team', company: second_organization) }
+        let!(:second_teammate) { create(:teammate, person: person, organization: second_organization) }
+
+        it 'includes teams from all user companies' do
+          get :new
+          company_ids = assigns(:teams_by_company).keys.map(&:id)
+          expect(company_ids).to include(organization.id, second_organization.id)
+        end
+
+        it 'sorts companies by name' do
+          get :new
+          company_names = assigns(:teams_by_company).keys.map(&:name)
+          expect(company_names).to eq(company_names.sort)
+        end
+      end
+
+      context 'with archived teams' do
+        let!(:archived_team) { create(:team, name: 'Archived Team', company: organization, deleted_at: Time.current) }
+
+        it 'does not include archived teams' do
+          get :new
+          # Find the company in the result by ID since STI returns Company class
+          company_entry = assigns(:teams_by_company).find { |c, _| c.id == organization.id }
+          expect(company_entry).to be_present
+          teams = company_entry.last
+          expect(teams.map(&:id)).not_to include(archived_team.id)
+        end
+      end
+
+      context 'when user has no teams' do
+        let(:org_without_teams) { create(:organization, name: 'Empty Org') }
+        let(:person_without_teams) { create(:person, first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com') }
+        let!(:teammate_without_teams) { create(:teammate, person: person_without_teams, organization: org_without_teams) }
+
+        before do
+          session[:current_company_teammate_id] = teammate_without_teams.id
+        end
+
+        it 'assigns empty teams_by_company' do
+          get :new
+          expect(assigns(:teams_by_company)).to be_empty
+        end
+      end
+    end
+  end
+
   describe 'GET #show' do
     it 'assigns the requested huddle' do
       get :show, params: { id: huddle.id }

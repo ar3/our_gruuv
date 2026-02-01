@@ -1,5 +1,6 @@
 class HuddlesController < ApplicationController
   before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :direct_feedback, :post_start_announcement_to_slack, :notifications_debug]
+  before_action :authenticate_person!, only: [:new]
 
   def index
     @huddles = Huddle.active.recent.includes(team: :company).decorate
@@ -58,18 +59,23 @@ class HuddlesController < ApplicationController
     @huddle = Huddle.new
     @current_person = current_person
 
-    # Pre-populate with last company and team if user has participated in huddles
-    if @current_person
-      last_company = @current_person.last_huddle_company
-      last_team = @current_person.last_huddle_team
-
-      if last_company
-        @initial_company_selection = last_company.name
-        if last_team
-          @initial_team_selection = last_team.name
-        end
-      end
+    # Get all teams from all companies the current person is a part of
+    # Group teams by company for display
+    @teams_by_company = {}
+    
+    current_person.active_teammates
+                  .includes(organization: :teams)
+                  .where(type: 'CompanyTeammate')
+                  .each do |teammate|
+      company = teammate.organization
+      next unless company&.company?
+      
+      teams = company.teams.active.ordered
+      @teams_by_company[company] = teams if teams.any?
     end
+    
+    # Sort companies by name
+    @teams_by_company = @teams_by_company.sort_by { |company, _| company.name }.to_h
   end
 
   def create

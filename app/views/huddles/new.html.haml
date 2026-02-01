@@ -1,15 +1,6 @@
 - content_for :title, "New Huddle"
 
 .container.mt-4
-  :css
-    .form-select:disabled {
-      background-color: #f8f9fa;
-      color: #6c757d;
-      cursor: not-allowed;
-    }
-    .form-select.text-muted {
-      color: #6c757d !important;
-    }
   .row.justify-content-center
     .col-md-8
       .card
@@ -17,92 +8,38 @@
           %h2.mb-0 Start a Nat 20 Huddle
         .card-body
           %p.lead.mb-4
-            Help your team find their groove! Start a huddle to begin collecting structured feedback for continuous improvement.
+            Help your team find their groove! Select a team to start collecting structured feedback for continuous improvement.
           
-          - if @current_person
-            .alert.alert-info
-              %i.bi.bi-person-check.me-2
-              %strong Welcome, #{@current_person.full_name}!
+          .alert.alert-info.mb-4
+            %i.bi.bi-person-check.me-2
+            %strong Welcome, #{@current_person.display_name}!
+            %br
+            %small Select a team below to start a huddle.
+          
+          - if @teams_by_company.empty?
+            .alert.alert-warning
+              %i.bi.bi-exclamation-triangle.me-2
+              You are not a member of any companies with teams yet.
               %br
-              %small You're logged in. Your information will be used to create the huddle.
-          
-          = form_with model: @huddle, local: true, class: "needs-validation" do |form|
-            - if @huddle.errors.any?
-              .alert.alert-danger
-                %ul
-                  - @huddle.errors.full_messages.each do |msg|
-                    %li= msg
-            .row
-              .col-md-8
-                .mb-3{ class: @current_person.present? ? 'field-readonly' : '' }
-                  = form.label :email, "Your email", class: "form-label"
-                  = form.email_field :email, 
-                    value: @current_person&.email, 
-                    readonly: @current_person.present?, 
-                    class: "form-control", 
-                    required: true, 
-                    placeholder: "e.g., john@example.com"
-                  .form-text We'll use this to identify you in the huddle
-              .col-md-4
-                .mb-3
-                  .alert.alert-info.h-100
-                    %h6.mb-2 Coming Soon
-                    %small
-                      %strong SSO Integration:
-                      %br
-                      Google, Slack, Asana, and/or Jira single sign-on for seamless team access.
-
-            .organization-selection{ data: { controller: "organization-selection", organization_selection_initial_company_value: @initial_company_selection, organization_selection_initial_team_value: @initial_team_selection } }
-              .row
-                .col-md-8
-                  .mb-3
-                    = form.label :company_selection, "Company", class: "form-label"
-                    = form.select :company_selection, 
-                      options_for_select([["Select a company...", ""]] + Company.order(:name).pluck(:name, :name) + [["+ Create new company", "new"]]), 
-                      {}, 
-                      { class: "form-select", data: { organization_selection_target: "companySelect", action: "change->organization-selection#toggleNewCompany" } }
-                    .form-text Select an existing company or create a new one
-                    
-                    .mt-3.d-none{ data: { organization_selection_target: "newCompanyField" } }
-                      = form.label :new_company_name, "New company name", class: "form-label"
-                      = form.text_field :new_company_name, 
-                        class: "form-control", 
-                        placeholder: "e.g., Acme Corp",
-                        data: { organization_selection_target: "newCompanyInput" }
-                      .form-text Enter the name for your new company
-                .col-md-4
-                  .mb-3
-                    .alert.alert-success.h-100
-                      %h6.mb-2 Always Free
-                      %small
-                        There will always be a free version where you can use the Nat20 huddle system.
-
-              .row
-                .col-md-8
-                  .mb-3
-                    = form.label :team_selection, "Team", class: "form-label"
-                    = form.select :team_selection, 
-                      [["Select company first", ""]], 
-                      {}, 
-                      { class: "form-select", disabled: true, data: { organization_selection_target: "teamSelect", action: "change->organization-selection#toggleNewTeam" } }
-                    .form-text Select an existing team or create a new one
-                    
-                    .mt-3.d-none{ data: { organization_selection_target: "newTeamField" } }
-                      = form.label :new_team_name, "New team name", class: "form-label"
-                      = form.text_field :new_team_name, 
-                        class: "form-control", 
-                        placeholder: "e.g., Engineering Team",
-                        data: { organization_selection_target: "newTeamInput", action: "input->organization-selection#updateNewTeamName" }
-                      .form-text Enter the name for your new team
-                    
-                    = form.hidden_field :team_name, data: { organization_selection_target: "teamNameField" }
-                .col-md-4
-                  .mb-3
-                    .alert.alert-primary.h-100
-                      %h6.mb-2 For Any Team
-                      %small
-                        Continuous Improvement is fueled by actionable feedback... empower your team today.
+              %small Contact your administrator to be added to a team.
+          - else
+            %h5.mb-3 Select a Team
             
-            .d-grid.gap-2.d-md-flex.justify-content-md-end
-              = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
-              = form.submit "Start Huddle", class: "btn btn-primary"
+            - @teams_by_company.each do |company, teams|
+              .card.mb-3
+                .card-header.bg-light
+                  %h6.mb-0
+                    %i.bi.bi-building.me-2
+                    = company.name
+                .list-group.list-group-flush
+                  - teams.each do |team|
+                    = button_to start_huddle_from_team_huddles_path(team_id: team.id), method: :post, class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center", data: { turbo: false } do
+                      .d-flex.align-items-center
+                        %i.bi.bi-people.me-3.text-primary
+                        %span.fw-medium= team.name
+                      %span.badge.bg-primary.rounded-pill
+                        %i.bi.bi-play-fill.me-1
+                        Start Huddle
+          
+          .d-grid.gap-2.d-md-flex.justify-content-md-start.mt-4
+            = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary"
