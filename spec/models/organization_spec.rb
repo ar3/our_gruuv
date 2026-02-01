@@ -2,13 +2,12 @@ require 'rails_helper'
 
 RSpec.describe Organization, type: :model do
   let(:company) { create(:organization, :company) }
-  let(:team) { create(:organization, :team, parent: company) }
+  let(:standalone_team) { create(:team, company: company) }
   let(:person1) { create(:person) }
   let(:person2) { create(:person) }
   let(:teammate1) { create(:teammate, person: person1, organization: company) }
   let(:teammate2) { create(:teammate, person: person2, organization: company) }
-  let(:huddle_playbook) { create(:huddle_playbook, organization: team) }
-  let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
+  let(:huddle) { create(:huddle, team: standalone_team) }
   let!(:huddle_participant1) { create(:huddle_participant, huddle: huddle, teammate: teammate1) }
   let!(:huddle_participant2) { create(:huddle_participant, huddle: huddle, teammate: teammate2) }
 
@@ -17,16 +16,16 @@ RSpec.describe Organization, type: :model do
       expect(company.huddle_participants).to include(person1, person2)
     end
 
-    it 'includes participants from child organizations' do
+    it 'includes participants from teams in the organization' do
       expect(company.huddle_participants).to include(person1, person2)
     end
 
     it 'returns distinct participants' do
-      # Create another huddle with a different playbook to avoid validation issues
-      another_playbook = create(:huddle_playbook, organization: team)
-      another_huddle = create(:huddle, huddle_playbook: another_playbook)
+      # Create another team and huddle to avoid validation issues
+      another_team = create(:team, company: company)
+      another_huddle = create(:huddle, team: another_team)
       create(:huddle_participant, huddle: another_huddle, teammate: teammate1)
-      
+
       expect(company.huddle_participants.count).to eq(2) # person1 and person2, not duplicated
     end
 
@@ -71,7 +70,7 @@ RSpec.describe Organization, type: :model do
 
     it 'returns milestones for a person in the organization' do
       # Create a milestone for person1
-      certifier_teammate = create(:teammate, person: certifier, organization: company)
+      certifier_teammate = create(:company_teammate, person: certifier, organization: company)
       teammate_milestone = create(:teammate_milestone, 
         teammate: teammate1, 
         ability: ability, 
@@ -102,7 +101,7 @@ RSpec.describe Organization, type: :model do
       other_ability = create(:ability, organization: other_company)
       
       # Create milestones for both abilities
-      certifier_teammate = create(:teammate, person: certifier, organization: company)
+      certifier_teammate = create(:company_teammate, person: certifier, organization: company)
       milestone_in_company = create(:teammate_milestone, 
         teammate: teammate1, 
         ability: ability, 
@@ -280,15 +279,15 @@ RSpec.describe Organization, type: :model do
 
   describe 'archiving' do
     let(:department) { create(:organization, :department, parent: company) }
-    let(:team) { create(:organization, :team, parent: department) }
+    let(:sub_department) { create(:organization, :department, parent: department) }
 
     describe 'scopes' do
       describe '.active' do
         it 'returns only organizations without deleted_at' do
           archived_org = create(:organization, :department, parent: company, deleted_at: Time.current)
-          
+
           active_orgs = Organization.active
-          expect(active_orgs).to include(company, department, team)
+          expect(active_orgs).to include(company, department, sub_department)
           expect(active_orgs).not_to include(archived_org)
         end
       end
@@ -296,10 +295,10 @@ RSpec.describe Organization, type: :model do
       describe '.archived' do
         it 'returns only organizations with deleted_at' do
           archived_org = create(:organization, :department, parent: company, deleted_at: Time.current)
-          
+
           archived_orgs = Organization.archived
           expect(archived_orgs).to include(archived_org)
-          expect(archived_orgs).not_to include(company, department, team)
+          expect(archived_orgs).not_to include(company, department, sub_department)
         end
       end
     end
@@ -333,11 +332,13 @@ RSpec.describe Organization, type: :model do
 
     describe '#descendants' do
       it 'excludes archived children' do
-        archived_team = create(:organization, :team, parent: department, deleted_at: Time.current)
-        
+        # Ensure sub_department is created first
+        sub_department
+        archived_child = create(:organization, :department, parent: department, deleted_at: Time.current)
+
         descendants = department.descendants
-        expect(descendants.map(&:id)).to include(team.id)
-        expect(descendants.map(&:id)).not_to include(archived_team.id)
+        expect(descendants.map(&:id)).to include(sub_department.id)
+        expect(descendants.map(&:id)).not_to include(archived_child.id)
       end
     end
   end

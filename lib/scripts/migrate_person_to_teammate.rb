@@ -85,7 +85,7 @@ module Scripts
               huddle_feedback = HuddleFeedback.find(record_id)
               # Huddles don't directly have organization, need to find through playbook
               if huddle_feedback.huddle.huddle_playbook
-                teammate = Teammate.find_or_create_by(person_id: person_id, organization_id: huddle_feedback.huddle.huddle_playbook.organization_id) do |t|
+                teammate = Teammate.find_or_create_by(person_id: person_id, organization_id: huddle_feedback.huddle.huddle_playbook.company_id) do |t|
                   t.can_manage_employment = false
                   t.can_manage_maap = false
                   t.can_create_employment = false
@@ -97,7 +97,7 @@ module Scripts
               huddle_participant = HuddleParticipant.find(record_id)
               # Huddles don't directly have organization, need to find through playbook
               if huddle_participant.huddle.huddle_playbook
-                teammate = Teammate.find_or_create_by(person_id: person_id, organization_id: huddle_participant.huddle.huddle_playbook.organization_id) do |t|
+                teammate = Teammate.find_or_create_by(person_id: person_id, organization_id: huddle_participant.huddle.huddle_playbook.company_id) do |t|
                   t.can_manage_employment = false
                   t.can_manage_maap = false
                   t.can_create_employment = false

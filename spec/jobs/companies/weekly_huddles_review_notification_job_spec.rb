@@ -31,8 +31,8 @@ RSpec.describe Companies::WeeklyHuddlesReviewNotificationJob, type: :job do
     context 'when company has Slack configured and notification channel set' do
       it 'sends a Slack message with feedback stats' do
         # Create some test feedback for the past week
-        huddle1 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
-        huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
+        huddle1 = create(:huddle, huddle_playbook: create(:huddle_playbook, company: company), started_at: 1.week.ago)
+        huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, company: company), started_at: 1.week.ago)
         person1 = create(:person)
         person2 = create(:person)
         teammate1 = create(:teammate, person: person1, organization: company)
@@ -54,8 +54,8 @@ RSpec.describe Companies::WeeklyHuddlesReviewNotificationJob, type: :job do
 
       it 'updates existing notification if one exists for the current week' do
         # Create some test feedback for the past week
-        huddle1 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
-        huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
+        huddle1 = create(:huddle, huddle_playbook: create(:huddle_playbook, company: company), started_at: 1.week.ago)
+        huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, company: company), started_at: 1.week.ago)
         person1 = create(:person)
         person2 = create(:person)
         teammate1 = create(:teammate, person: person1, organization: company)
@@ -125,9 +125,9 @@ RSpec.describe Companies::WeeklyHuddlesReviewNotificationJob, type: :job do
   describe 'message content' do
     it 'includes correct feedback statistics' do
       # Create test data for the past week
-      huddle1 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
-      huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
-      huddle3 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
+      huddle1 = create(:huddle, huddle_playbook: create(:huddle_playbook, company: company), started_at: 1.week.ago)
+      huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, company: company), started_at: 1.week.ago)
+      huddle3 = create(:huddle, huddle_playbook: create(:huddle_playbook, company: company), started_at: 1.week.ago)
       person1 = create(:person)
       person2 = create(:person)
       teammate1 = create(:teammate, person: person1, organization: company)

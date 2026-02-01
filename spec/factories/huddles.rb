@@ -1,19 +1,18 @@
 FactoryBot.define do
   factory :huddle do
     started_at { 1.day.ago }
-    
-    after(:build) do |huddle|
-      # Create a huddle playbook if one doesn't exist
-      unless huddle.huddle_playbook
-        huddle.huddle_playbook = create(:huddle_playbook, organization: create(:organization))
-      end
-    end
+    team
 
-    after(:create) do |huddle|
-      # Ensure huddle has a playbook after creation
-      unless huddle.huddle_playbook
-        huddle.update!(huddle_playbook: create(:huddle_playbook, organization: create(:organization)))
+    trait :with_company do
+      transient do
+        company { nil }
+      end
+
+      after(:build) do |huddle, evaluator|
+        if evaluator.company
+          huddle.team = create(:team, company: evaluator.company)
+        end
       end
     end
   end
-end 
+end

@@ -205,9 +205,16 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Departments & Teams',
+            label: 'Departments',
             icon: 'bi-diagram-3',
-            path: organization_departments_and_teams_path(current_organization),
+            path: organization_departments_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
+            label: 'Teams',
+            icon: 'bi-people',
+            path: organization_teams_path(current_organization),
             policy_check: -> { policy(current_organization).show? },
             coming_soon: false
           },
@@ -230,13 +237,6 @@ module NavigationHelper
             icon: 'bi-slack',
             path: organization_slack_path(current_organization),
             policy_check: -> { policy(current_organization).manage_employment? },
-            coming_soon: false
-          },
-          {
-            label: 'Huddle Playbooks',
-            icon: 'bi-book',
-            path: organization_huddle_playbooks_path(current_organization),
-            policy_check: -> { policy(current_organization).show? },
             coming_soon: false
           },
           {

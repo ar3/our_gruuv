@@ -5,10 +5,10 @@ class Huddles::PostFeedbackJob < ApplicationJob
     huddle = Huddle.find(huddle_id)
     feedback = HuddleFeedback.find(feedback_id)
     
-    # Check if Slack is configured for this organization
+    # Check if Slack huddle channel is configured for this team
     unless huddle.slack_configured?
-      result = { success: false, error: "Slack not configured for organization #{huddle.organization&.id}" }
-      Rails.logger.info "Slack not configured for organization #{huddle.organization&.id}, skipping feedback"
+      result = { success: false, error: "Slack huddle channel not configured for team #{huddle.team&.id}" }
+      Rails.logger.info "Slack huddle channel not configured for team #{huddle.team&.id}, skipping feedback"
       return result
     end
     
@@ -36,7 +36,7 @@ class Huddles::PostFeedbackJob < ApplicationJob
     Rails.logger.info "Posting feedback for huddle #{huddle.id}, feedback #{feedback_id}"
     
     # Post new message in thread
-    result = SlackService.new(huddle.organization).post_message(feedback_notification.id)
+    result = SlackService.new(huddle.company).post_message(feedback_notification.id)
     
     if result[:success]
       { success: true, action: 'posted_feedback', huddle_id: huddle.id, feedback_id: feedback_id, notification_id: feedback_notification.id, message_id: result[:message_id] }

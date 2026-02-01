@@ -290,12 +290,13 @@ RSpec.describe Organizations::GoalsController, type: :controller do
                title: 'Department owned goal',
                started_at: 1.day.ago)
       end
-      let(:team) { create(:organization, :team, parent: company) }
-      let!(:team_goal) do
+      # NOTE: STI Team has been removed. Use nested departments for hierarchy testing.
+      let(:nested_department) { create(:organization, :department, parent: department, name: 'Nested Dept') }
+      let!(:nested_department_goal) do
         create(:goal,
                creator: creator_teammate,
-               owner: team,
-               title: 'Team owned goal',
+               owner: nested_department,
+               title: 'Nested department owned goal',
                started_at: 1.day.ago)
       end
 
@@ -305,7 +306,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
 
         goals = assigns(:goals)
         expect(goals).to include(company_goal)
-        expect(goals).not_to include(department_goal, team_goal)
+        expect(goals).not_to include(department_goal, nested_department_goal)
       end
 
       it 'finds department-owned goals when using Department_ID format in owner_id param' do
@@ -314,15 +315,15 @@ RSpec.describe Organizations::GoalsController, type: :controller do
 
         goals = assigns(:goals)
         expect(goals).to include(department_goal)
-        expect(goals).not_to include(company_goal, team_goal)
+        expect(goals).not_to include(company_goal, nested_department_goal)
       end
 
-      it 'finds team-owned goals when using Team_ID format in owner_id param' do
-        # This tests the STI type conversion: Team -> Organization
-        get :index, params: { organization_id: company.id, owner_id: "Team_#{team.id}" }
+      it 'finds nested department-owned goals when using Department_ID format in owner_id param' do
+        # This tests filtering nested departments
+        get :index, params: { organization_id: company.id, owner_id: "Department_#{nested_department.id}" }
 
         goals = assigns(:goals)
-        expect(goals).to include(team_goal)
+        expect(goals).to include(nested_department_goal)
         expect(goals).not_to include(company_goal, department_goal)
       end
 

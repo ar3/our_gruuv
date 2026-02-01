@@ -40,7 +40,7 @@
           
           - elsif @current_person
             / State 2: Logged in but not associated with huddle
-            - teammate = @current_person.teammates.find_by(organization: @huddle.organization)
+            - teammate = @current_person.teammates.find_by(organization: @huddle.company)
             - if teammate&.follower?
               .alert.alert-warning
                 %i.bi.bi-heart.me-2

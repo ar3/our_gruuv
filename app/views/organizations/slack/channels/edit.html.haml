@@ -50,6 +50,24 @@
             %small.form-text.text-muted
               Default Slack group for routing notifications
 
+          - if @teams.present?
+            %hr.my-4
+            %h6.mb-3
+              %i.bi.bi-people-fill.me-2
+              Team Huddle Channels
+            %p.text-muted.small
+              Select which Slack channel should receive huddle notifications for each team.
+
+            - @teams.each do |team|
+              .mb-3
+                = form.label "team_huddle_channels_#{team.id}", team.name, class: "form-label"
+                = form.select "team_huddle_channels[#{team.id}]",
+                              options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, team.huddle_channel_id),
+                              { prompt: 'Select channel', include_blank: 'None' },
+                              { class: 'form-select', id: "team_huddle_channels_#{team.id}" }
+                %small.form-text.text-muted
+                  Huddle notifications for #{team.name} will be posted to this channel
+
           .d-flex.justify-content-between.mt-4
             = link_to 'Cancel', channels_organization_slack_path(@organization), class: 'btn btn-outline-secondary'
             = form.submit 'Save Settings', class: 'btn btn-primary'

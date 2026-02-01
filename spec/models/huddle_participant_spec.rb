@@ -2,13 +2,13 @@ require 'rails_helper'
 
 RSpec.describe HuddleParticipant, type: :model do
   let(:company) { Company.create!(name: 'Test Company') }
-  let(:team) { Team.create!(name: 'Test Team', parent: company) }
+  let(:team) { create(:team, company: company, name: 'Test Team') }
   let(:huddle) do
-    playbook = create(:huddle_playbook, organization: team)
+    playbook = create(:huddle_playbook, company: company, team: team)
     Huddle.create!(huddle_playbook: playbook, started_at: Time.current)
   end
   let(:person) { Person.create!(full_name: 'John Doe', email: 'john@example.com') }
-  let(:teammate) { Teammate.create!(person: person, organization: team) }
+  let(:teammate) { Teammate.create!(person: person, organization: company) }
 
   before do
     # Clear any existing test data
@@ -104,12 +104,12 @@ RSpec.describe HuddleParticipant, type: :model do
     let!(:active_participant) { HuddleParticipant.create!(huddle: huddle, teammate: teammate, role: 'active') }
     let!(:observer_participant) { 
       person2 = Person.create!(full_name: 'Jane', email: 'jane@example.com')
-      teammate2 = Teammate.create!(person: person2, organization: team)
+      teammate2 = Teammate.create!(person: person2, organization: company)
       HuddleParticipant.create!(huddle: huddle, teammate: teammate2, role: 'observer') 
     }
     let!(:facilitator_participant) { 
       person3 = Person.create!(full_name: 'Bob', email: 'bob@example.com')
-      teammate3 = Teammate.create!(person: person3, organization: team)
+      teammate3 = Teammate.create!(person: person3, organization: company)
       HuddleParticipant.create!(huddle: huddle, teammate: teammate3, role: 'facilitator') 
     }
 

@@ -297,7 +297,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       # Create terminated employment tenure (started_at must be before ended_at)
       create(:employment_tenure, teammate: terminated_teammate, company: organization, started_at: 6.months.ago, ended_at: 1.month.ago)
       # Create huddle participation for huddle-only participant
-      huddle_playbook = create(:huddle_playbook, organization: organization)
+      huddle_playbook = create(:huddle_playbook, company: organization)
       huddle = create(:huddle, huddle_playbook: huddle_playbook)
       create(:huddle_participant, teammate: huddle_only_teammate, huddle: huddle)
     end

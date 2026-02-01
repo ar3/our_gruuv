@@ -203,11 +203,6 @@ RSpec.describe 'Horizontal Navigation', type: :request do
       expect(response.body).to include(organization_slack_path(organization))
     end
     
-    it 'includes Huddle Playbooks link' do
-      expect(response.body).to include('Huddle Playbooks')
-      expect(response.body).to include(organization_huddle_playbooks_path(organization))
-    end
-    
     it 'includes Check-ins Health link' do
       expect(response.body).to include('Check-ins Health')
       expect(response.body).to include(organization_check_ins_health_path(organization))

@@ -1,0 +1,61 @@
+- content_for :title, "Teams"
+
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.display_name}
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-people.me-2
+      Teams
+    .d-flex.align-items-center
+      - if policy(@organization).manage_departments_and_teams?
+        = link_to new_organization_team_path(@organization), class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus
+      - else
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need departments and teams management permission to create teams"}
+
+.row.justify-content-center
+  .col-lg-12
+    - if @teams.any?
+      .card
+        .card-body
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead
+                %tr
+                  %th Name
+                  %th Members
+                  %th Actions
+              %tbody
+                - @teams.each do |team|
+                  %tr
+                    %td
+                      = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
+                        %i.bi.bi-people.me-2
+                        = team.name
+                    %td
+                      %span.badge.bg-secondary
+                        = team.team_members.count
+                        = "member".pluralize(team.team_members.count)
+                    %td
+                      .d-flex.gap-2
+                        = link_to organization_team_path(@organization, team), class: "btn btn-sm btn-outline-primary" do
+                          %i.bi.bi-eye
+                        - if policy(team).update?
+                          = link_to edit_organization_team_path(@organization, team), class: "btn btn-sm btn-outline-secondary" do
+                            %i.bi.bi-pencil
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Teams Created
+        %p.mb-2
+          This organization doesn't have any teams yet.
+          Create your first team to get started!
+        - if policy(@organization).manage_departments_and_teams?
+          = link_to "Create First Team", new_organization_team_path(@organization), class: "btn btn-primary btn-sm"

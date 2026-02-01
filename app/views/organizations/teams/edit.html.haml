@@ -1,0 +1,18 @@
+- content_for :title, "Edit Team"
+
+- content_for :go_back_link do
+  = link_to organization_team_path(@organization, @team), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@team.name}
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0
+      %i.bi.bi-pencil.me-2
+      Edit Team
+
+.row.justify-content-center
+  .col-lg-8
+    .card
+      .card-body
+        = render 'form', team: @team

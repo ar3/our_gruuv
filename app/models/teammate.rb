@@ -44,6 +44,7 @@ class Teammate < ApplicationRecord
   # Employment state scopes
   scope :followers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
   scope :huddlers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
+  scope :employed, -> { where.not(first_employed_at: nil).where(last_terminated_at: nil) }
   scope :unassigned_employees, -> { where.not(first_employed_at: nil).where(last_terminated_at: nil) }
   scope :assigned_employees, -> { where.not(first_employed_at: nil).where(last_terminated_at: nil) }
   scope :terminated, -> { where.not(last_terminated_at: nil) }
@@ -99,10 +100,12 @@ class Teammate < ApplicationRecord
   end
   
   def has_huddle_participation?
-    # Check if person has participated in huddles within this organization or its descendants
-    organizations_to_check = organization.company? ? organization.self_and_descendants : [organization, organization.parent].compact
-    person.huddle_participants.joins(huddle: :huddle_playbook)
-          .where(huddle_playbooks: { organization_id: organizations_to_check })
+    # Check if person has participated in huddles within this organization (company)
+    company_id = organization.company? ? organization.id : organization.parent_id
+    return false unless company_id
+
+    person.huddle_participants.joins(huddle: :team)
+          .where(teams: { company_id: company_id })
           .exists?
   end
   

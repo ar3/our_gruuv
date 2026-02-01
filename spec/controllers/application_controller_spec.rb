@@ -106,7 +106,7 @@ RSpec.describe ApplicationController, type: :controller do
     let(:organization) { create(:organization, :company) }
     let(:person) { create(:person) }
     let(:teammate) { create(:company_teammate, person: person, organization: organization) }
-    let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization)) }
+    let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization)) }
 
     before do
       session[:current_company_teammate_id] = teammate.id

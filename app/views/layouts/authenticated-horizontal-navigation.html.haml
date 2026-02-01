@@ -40,7 +40,7 @@
                   - if current_company_teammate&.has_direct_reports? && policy(Organization).show?
                     %li= link_to "My Employees", organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'manager_lite'), class: "dropdown-item"
                   - if policy(current_organization).show?
-                    %li= link_to "Departments & Teams", organization_departments_and_teams_path(current_organization), class: "dropdown-item"
+                    %li= link_to "Departments", organization_departments_path(current_organization), class: "dropdown-item"
                   - if policy(current_company).view_goals?
                     %li= link_to "Goals", organization_goals_path(current_organization), class: "dropdown-item"
                   - if policy(current_company).view_abilities?
@@ -108,8 +108,6 @@
                 %ul.dropdown-menu
                   - if policy(current_organization).manage_employment?
                     %li= link_to "Slack Settings", organization_slack_path(current_organization), class: "dropdown-item"
-                  - if policy(current_organization).show?
-                    %li= link_to "Huddle Playbooks", organization_huddle_playbooks_path(current_organization), class: "dropdown-item"
                   - if policy(current_company).view_feedback_requests?
                     %li= link_to "Feedback Requests", organization_feedback_requests_path(current_organization), class: "dropdown-item"
                   - if policy(current_company).customize_company?
@@ -178,8 +176,6 @@
                       = link_to organization_path(current_organization), class: "dropdown-item text-primary" do
                         %i.bi.bi-building.me-2
                         = current_organization.display_name
-                        - if current_organization.team?
-                          %small.text-muted.ms-1= "(#{current_organization.parent&.name})"
                     %li
                       %hr.dropdown-divider
                   - else

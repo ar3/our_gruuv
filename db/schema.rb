@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_30_200000) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -487,24 +487,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_30_200000) do
     t.index ["teammate_id"], name: "index_huddle_participants_on_teammate_id"
   end
 
-  create_table "huddle_playbooks", force: :cascade do |t|
-    t.bigint "organization_id", null: false
-    t.string "special_session_name"
-    t.string "slack_channel"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["organization_id", "special_session_name"], name: "index_huddle_playbooks_on_org_and_special_session_name_unique", unique: true
-    t.index ["organization_id"], name: "index_huddle_playbooks_on_organization_id"
-  end
-
   create_table "huddles", force: :cascade do |t|
     t.datetime "started_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "expires_at", default: -> { "(CURRENT_TIMESTAMP + 'PT24H'::interval)" }, null: false
-    t.bigint "huddle_playbook_id"
+    t.bigint "team_id"
     t.index ["expires_at"], name: "index_huddles_on_expires_at"
-    t.index ["huddle_playbook_id"], name: "index_huddles_on_huddle_playbook_id"
+    t.index ["team_id"], name: "index_huddles_on_team_id"
   end
 
   create_table "incoming_webhooks", force: :cascade do |t|
@@ -983,6 +973,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_30_200000) do
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
   end
 
+  create_table "team_members", force: :cascade do |t|
+    t.bigint "team_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.bigint "migrate_from_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id"], name: "index_team_members_on_company_teammate_id"
+    t.index ["migrate_from_teammate_id"], name: "index_team_members_on_migrate_from_teammate_id", unique: true
+    t.index ["team_id", "company_teammate_id"], name: "index_team_members_on_team_id_and_company_teammate_id", unique: true
+    t.index ["team_id"], name: "index_team_members_on_team_id"
+  end
+
   create_table "teammate_identities", force: :cascade do |t|
     t.bigint "teammate_id", null: false
     t.string "provider", null: false
@@ -1045,6 +1047,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_30_200000) do
     t.index ["organization_id"], name: "index_teammates_on_organization_id"
     t.index ["person_id", "organization_id"], name: "index_person_org_access_on_person_and_org", unique: true
     t.index ["person_id"], name: "index_teammates_on_person_id"
+  end
+
+  create_table "teams", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "name", null: false
+    t.bigint "migrate_from_organization_id"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_teams_on_company_id"
+    t.index ["deleted_at"], name: "index_teams_on_deleted_at"
+    t.index ["migrate_from_organization_id"], name: "index_teams_on_migrate_from_organization_id", unique: true
   end
 
   create_table "third_party_object_associations", force: :cascade do |t|
@@ -1159,8 +1173,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_30_200000) do
   add_foreign_key "huddle_feedbacks", "teammates"
   add_foreign_key "huddle_participants", "huddles"
   add_foreign_key "huddle_participants", "teammates"
-  add_foreign_key "huddle_playbooks", "organizations"
-  add_foreign_key "huddles", "huddle_playbooks"
+  add_foreign_key "huddles", "teams"
   add_foreign_key "incoming_webhooks", "organizations"
   add_foreign_key "interest_submissions", "people"
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
@@ -1208,6 +1221,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_30_200000) do
   add_foreign_key "seats", "titles"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"
+  add_foreign_key "team_members", "teammates", column: "company_teammate_id"
+  add_foreign_key "team_members", "teams"
   add_foreign_key "teammate_identities", "teammates"
   add_foreign_key "teammate_milestones", "abilities"
   add_foreign_key "teammate_milestones", "teammates"
@@ -1215,6 +1230,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_30_200000) do
   add_foreign_key "teammate_milestones", "teammates", column: "published_by_teammate_id"
   add_foreign_key "teammates", "organizations"
   add_foreign_key "teammates", "people"
+  add_foreign_key "teams", "organizations", column: "company_id"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
   add_foreign_key "titles", "organizations"

@@ -118,14 +118,11 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   
   def show
     # Load teams if this is a company
-    @teams = @organization.children.teams.includes(:huddle_playbooks) if @organization.company?
-    
-    # Load playbooks for this organization
-    @playbooks = @organization.huddle_playbooks.includes(:huddles)
-    
+    @teams = @organization.teams.includes(:huddles) if @organization.company?
+
     # Load stats for the three pillars
     load_organization_stats
-    
+
   end
   
   def refresh_slack_profiles
@@ -223,7 +220,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     # Get all the stats we need
     @weekly_metrics = stats_service.weekly_stats
     @overall_metrics = stats_service.overall_stats
-    @playbook_metrics = stats_service.playbook_stats
+    @team_metrics = stats_service.team_stats
     
     # Prepare chart data
     @chart_data = prepare_chart_data(@weekly_metrics)
@@ -407,7 +404,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
         .where.not(id: @organization.employees.select(:id))
       
       @total_potential_employees = (access_people + huddle_people).uniq.count
-      @total_teams = @organization.children.teams.count
+      @total_teams = @organization.teams.count
       @total_departments = @organization.children.departments.count
       
       # Align stats (positions and assignments across all sub-organizations)
@@ -437,7 +434,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     # For now, we'll load basic stats - this will be expanded with the 9 pillar boxes
     if @organization.company?
       @total_employees = @organization.employees.count
-      @total_teams = @organization.children.teams.count
+      @total_teams = @organization.teams.count
       @total_departments = @organization.children.departments.count
       
       # Recent huddles for this organization

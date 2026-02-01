@@ -19,7 +19,7 @@
           = form_with url: submit_feedback_huddle_path(@huddle), method: :post, local: true do |form|
             .row.help-text
               .col-12
-                - teammate = @current_person&.teammates&.find_by(organization: @huddle.organization)
+                - teammate = @current_person&.teammates&.find_by(organization: @huddle.company)
                 - if teammate&.follower?
                   .alert.alert-warning
                     %i.bi.bi-heart.me-2

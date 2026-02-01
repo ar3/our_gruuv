@@ -13,7 +13,7 @@
           .btn-group{role: "group"}
             = link_to "Start New Huddle", new_huddle_path, class: "btn btn-primary"
         
-        - current_company_huddles = @huddles.select { |h| h.organization&.root_company == current_organization.root_company }
+        - current_company_huddles = @huddles.select { |h| h.company&.root_company == current_organization.root_company }
         - if current_company_huddles.any?
           .mb-4
             .row
@@ -44,57 +44,57 @@
               .text-warning
                 %small First, configure Slack
           .row
-            - if @recent_playbooks.empty?
+            - if @recent_teams.blank?
               .col-12
                 .text-center.py-3
                   %p.text-muted No recent huddles to quick start
             - else
-            - @recent_playbooks.each do |playbook|
-              .col-md-6.col-lg-4.mb-3
-                .card
-                  .card-body
-                    %h5.card-title= playbook.display_name
-                    %p.card-text
-                      %small.text-muted= playbook.organization.display_name
-                    
-                    - active_huddle_data = @playbook_active_huddles[playbook.id]
-                    - if active_huddle_data
-                      -# Show active huddle status and actions
-                      .mb-3
-                        .alert.alert-success.py-2
-                          %strong Active Huddle This Week
-                          %br
-                          %small
-                            Started: #{format_time_in_user_timezone(active_huddle_data[:huddle].started_at, format: '%B %d at %I:%M %p')}
-                          - if active_huddle_data[:slack_message_url]
+              - @recent_teams.each do |team|
+                .col-md-6.col-lg-4.mb-3
+                  .card
+                    .card-body
+                      %h5.card-title= team.display_name
+                      %p.card-text
+                        %small.text-muted= team.company.display_name
+
+                      - active_huddle_data = @team_active_huddles[team.id]
+                      - if active_huddle_data
+                        -# Show active huddle status and actions
+                        .mb-3
+                          .alert.alert-success.py-2
+                            %strong Active Huddle This Week
                             %br
-                            = link_to "View Slack Announcement", active_huddle_data[:slack_message_url], target: "_blank", class: "text-decoration-none"
-                        
-                        - if active_huddle_data[:participant]
-                          - if active_huddle_data[:has_feedback]
-                            = link_to "View Feedback", feedback_huddle_path(active_huddle_data[:huddle]), class: "btn btn-outline-info btn-sm w-100"
+                            %small
+                              Started: #{format_time_in_user_timezone(active_huddle_data[:huddle].started_at, format: '%B %d at %I:%M %p')}
+                            - if active_huddle_data[:slack_message_url]
+                              %br
+                              = link_to "View Slack Announcement", active_huddle_data[:slack_message_url], target: "_blank", class: "text-decoration-none"
+
+                          - if active_huddle_data[:participant]
+                            - if active_huddle_data[:has_feedback]
+                              = link_to "View Feedback", feedback_huddle_path(active_huddle_data[:huddle]), class: "btn btn-outline-info btn-sm w-100"
+                            - else
+                              = link_to "Give Feedback", feedback_huddle_path(active_huddle_data[:huddle]), class: "btn btn-warning btn-sm w-100"
                           - else
-                            = link_to "Give Feedback", feedback_huddle_path(active_huddle_data[:huddle]), class: "btn btn-warning btn-sm w-100"
-                        - else
-                          = link_to "Join Huddle", join_huddle_path(active_huddle_data[:huddle]), class: "btn btn-success btn-sm w-100"
-                    
-                    - elsif playbook.organization.slack_configured?
-                      -# Show start huddle button when no active huddle
-                      = form_with url: start_huddle_from_playbook_huddles_path, method: :post, local: true do |form|
-                        = form.hidden_field :playbook_id, value: playbook.id
-                        = form.submit "Start Huddle", class: "btn btn-primary btn-sm w-100"
-                    - else
-                      .text-warning
-                        %small First, configure Slack
+                            = link_to "Join Huddle", join_huddle_path(active_huddle_data[:huddle]), class: "btn btn-success btn-sm w-100"
+
+                      - elsif team.huddle_slack_configured?
+                        -# Show start huddle button when no active huddle
+                        = form_with url: start_huddle_from_team_huddles_path, method: :post, local: true do |form|
+                          = form.hidden_field :team_id, value: team.id
+                          = form.submit "Start Huddle", class: "btn btn-primary btn-sm w-100"
+                      - else
+                        .text-warning
+                          %small Configure huddle channel in Slack settings
         
-        - other_company_huddles = @huddles.reject { |h| h.organization&.root_company == current_organization.root_company }
+        - other_company_huddles = @huddles.reject { |h| h.company&.root_company == current_organization.root_company }
         - if other_company_huddles.any?
           %hr.my-4
           .mb-4
             %h3.text-muted Huddles happening at other companies
-            - other_company_huddles.group_by { |huddle| huddle.huddle_playbook&.organization&.root_company }.sort_by { |company, _| company&.name || '' }.each do |company, huddles|
+            - other_company_huddles.group_by { |huddle| huddle.company&.root_company }.sort_by { |company, _| company&.name || '' }.each do |company, huddles|
               .mb-4
-                %h4.text-primary.mb-3= company&.name || 'Unknown Organization'
+                %h4.text-primary.mb-3= company&.name || 'Unknown Company'
                 .row
                   - huddles.each do |huddle|
                     = render 'huddle_card', huddle: huddle
@@ -106,9 +106,9 @@
             = link_to "Start New Huddle", new_huddle_path, class: "btn btn-primary"
         
         - if @huddles.any?
-          - @huddles_by_organization.each do |company, huddles|
+          - @huddles_by_company.each do |company, huddles|
             .mb-4
-              %h3.text-primary.mb-3= company&.name || 'Unknown Organization'
+              %h3.text-primary.mb-3= company&.name || 'Unknown Company'
               .row
                 - huddles.each do |huddle|
                   = render 'huddle_card', huddle: huddle

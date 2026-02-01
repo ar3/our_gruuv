@@ -1,0 +1,22 @@
+= form_with model: team, url: (team.persisted? ? organization_team_path(@organization, team) : organization_teams_path(@organization)), local: true, class: "needs-validation" do |form|
+  - if team.errors.any?
+    .alert.alert-danger
+      %h6.alert-heading
+        %i.bi.bi-exclamation-triangle.me-2
+        = pluralize(team.errors.count, "error")
+        prohibited this team from being saved:
+      %ul.mb-0
+        - team.errors.full_messages.each do |message|
+          %li= message
+
+  .mb-3
+    = form.label :name, class: "form-label" do
+      %strong Team Name
+      %span.text-danger *
+    = form.text_field :name, class: "form-control", placeholder: "Enter team name", required: true, autofocus: true
+    .form-text
+      Give your team a descriptive name that identifies its purpose or members.
+
+  .d-flex.gap-2
+    = form.submit team.persisted? ? 'Update Team' : 'Create Team', class: "btn btn-primary"
+    = link_to 'Cancel', team.persisted? ? organization_team_path(@organization, team) : organization_teams_path(@organization), class: "btn btn-outline-secondary"

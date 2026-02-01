@@ -31,10 +31,12 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
   
   def edit
     # Uses @target_organization and @slack_channels/@slack_groups from before_actions
+    # Also load teams for this organization
+    @teams = @organization.teams.active.ordered
   end
 
   def update
-    attrs = params.require(:organization).permit(:kudos_channel_id, :slack_group_id)
+    attrs = params.require(:organization).permit(:kudos_channel_id, :slack_group_id, team_huddle_channels: {})
 
     # Update kudos and group associations
     if attrs.key?(:kudos_channel_id)
@@ -45,9 +47,20 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
       @target_organization.slack_group_id = attrs[:slack_group_id].presence
     end
 
+    # Update team huddle channels
+    if attrs[:team_huddle_channels].present?
+      attrs[:team_huddle_channels].each do |team_id, channel_id|
+        team = @organization.teams.find_by(id: team_id)
+        next unless team
+
+        team.huddle_channel_id = channel_id.presence
+      end
+    end
+
     redirect_to channels_organization_slack_path(@organization), notice: 'Channel settings updated successfully.'
   rescue StandardError
     load_slack_data
+    @teams = @organization.teams.active.ordered
     flash.now[:alert] = 'Unable to update channel settings.'
     render :edit, status: :unprocessable_entity
   end
@@ -115,6 +128,9 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
 
     # Build organization hierarchy (company, departments, teams)
     @organizations = [@organization] + @organization.descendants.to_a.sort_by { |o| [o.type, o.name] }
+
+    # Load teams for huddle channel configuration
+    @teams = @organization.teams.active.ordered
   end
 
   def load_target_organization

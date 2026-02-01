@@ -107,7 +107,7 @@
                 - if department
                   %i.bi.bi-building.me-2
                   = department.display_name
-                  = link_to organization_departments_and_team_path(@organization, department), class: "text-white ms-2", title: "View department" do
+                  = link_to organization_department_path(@organization, department), class: "text-white ms-2", title: "View department" do
                     %i.bi.bi-link-45deg
                 - else
                   %i.bi.bi-question-circle.me-2

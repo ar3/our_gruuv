@@ -48,8 +48,9 @@ class OrganizationPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
     
-    # For departments and teams, use the new permission
-    if record.department? || record.team?
+    # For departments, use the departments permission
+    # NOTE: STI Team has been removed. Use the standalone Team model.
+    if record.department?
       admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
     else
       # For companies, use employment management permission
@@ -61,8 +62,9 @@ class OrganizationPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
     
-    # For departments and teams, use the new permission
-    if record.department? || record.team?
+    # For departments, use the departments permission
+    # NOTE: STI Team has been removed. Use the standalone Team model.
+    if record.department?
       admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
     else
       # For companies, use employment management permission

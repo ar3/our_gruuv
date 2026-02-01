@@ -62,7 +62,7 @@ RSpec.describe 'Organizations::Positions', type: :request do
       get organization_positions_path(organization)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(organization_departments_and_team_path(organization, department))
+      expect(response.body).to include(organization_department_path(organization, department))
       expect(response.body).to include('bi-link-45deg')
     end
 

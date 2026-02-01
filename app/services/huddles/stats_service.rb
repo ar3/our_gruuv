@@ -26,28 +26,28 @@ module Huddles
       @overall_stats ||= calculate_overall_stats
     end
 
-    def playbook_stats
-      @playbook_stats ||= calculate_playbook_stats
+    def team_stats
+      @team_stats ||= calculate_team_stats
     end
 
     # Public method for accessing huddles in range (used in tests)
     def huddles_in_range
-      @huddles_in_range ||= Huddle.joins(huddle_playbook: :organization)
-                                   .where(organizations: { id: organization.self_and_descendants })
+      @huddles_in_range ||= Huddle.joins(team: :company)
+                                   .where(teams: { company_id: organization.id })
                                    .where(started_at: date_range.begin.beginning_of_day..date_range.end.end_of_day)
-                                   .includes(:huddle_feedbacks, :huddle_participants, huddle_playbook: :organization)
+                                   .includes(:huddle_feedbacks, :huddle_participants, team: :company)
                                    .order(started_at: :desc)
     end
 
     # Public methods for testing (used in specs)
     def calculate_feedback_stats
-      feedback_count = HuddleFeedback.joins(huddle: :huddle_playbook)
-                                    .where(huddles: { huddle_playbooks: { organization: organization.self_and_descendants } })
+      feedback_count = HuddleFeedback.joins(huddle: :team)
+                                    .where(teams: { company_id: organization.id })
                                     .where(created_at: date_range.begin..date_range.end)
                                     .count
 
-      unique_participants = HuddleFeedback.joins(huddle: :huddle_playbook)
-                                         .where(huddles: { huddle_playbooks: { organization: organization.self_and_descendants } })
+      unique_participants = HuddleFeedback.joins(huddle: :team)
+                                         .where(teams: { company_id: organization.id })
                                          .where(created_at: date_range.begin..date_range.end)
                                          .distinct
                                          .count(:teammate_id)
@@ -63,12 +63,12 @@ module Huddles
     def calculate_participation_stats
       total_participants = huddles_in_range.sum { |h| h.huddle_participants.count }
       total_feedbacks = huddles_in_range.sum { |h| h.huddle_feedbacks.count }
-      
+
       # Calculate distinct participants
       distinct_participants = huddles_in_range.flat_map(&:huddle_participants).map(&:teammate).map(&:person).uniq(&:id)
       distinct_participant_count = distinct_participants.count
       distinct_participant_names = distinct_participants.map(&:display_name).sort
-      
+
       participation_rate = total_participants > 0 ? (total_feedbacks.to_f / total_participants * 100).round(1) : 0
 
       {
@@ -83,10 +83,10 @@ module Huddles
     def calculate_rating_stats
       all_ratings = huddles_in_range.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
       average_rating = all_ratings.any? ? (all_ratings.sum.to_f / all_ratings.count).round(1) : 0
-      
+
       # Calculate rating distribution
       rating_distribution = all_ratings.tally
-      
+
       # Calculate conflict style distribution
       personal_conflict_styles = huddles_in_range.flat_map(&:huddle_feedbacks).map(&:personal_conflict_style).compact
       team_conflict_styles = huddles_in_range.flat_map(&:huddle_feedbacks).map(&:team_conflict_style).compact
@@ -101,12 +101,12 @@ module Huddles
 
     def calculate_weekly_stats
       huddles_by_week = huddles_in_range.group_by { |huddle| huddle.started_at.beginning_of_week }
-      
+
       weekly_stats = {}
       huddles_by_week.each do |week_start, huddles|
         participation_stats = calculate_participation_stats_for_huddles(huddles)
         rating_stats = calculate_rating_stats_for_huddles(huddles)
-        
+
         weekly_stats[week_start] = {
           total_huddles: huddles.count,
           **participation_stats,
@@ -114,7 +114,7 @@ module Huddles
           huddles: huddles
         }
       end
-      
+
       weekly_stats
     end
 
@@ -124,30 +124,30 @@ module Huddles
       )
     end
 
-    def calculate_playbook_stats
-      playbook_stats = {}
-      
-      huddles_in_range.group_by(&:huddle_playbook).each do |playbook, playbook_huddles|
-        next unless playbook # Skip huddles without playbooks
-        
-        participation_stats = calculate_participation_stats_for_huddles(playbook_huddles)
-        rating_stats = calculate_rating_stats_for_huddles(playbook_huddles)
-        weekly_trends = calculate_playbook_weekly_trends(playbook_huddles)
-        
-        playbook_stats[playbook.id] = {
-          id: playbook.id,
-          display_name: playbook.display_name,
-          organization_id: playbook.organization_id,
-          organization_name: playbook.organization.display_name,
-          total_huddles: playbook_huddles.count,
+    def calculate_team_stats
+      team_stats = {}
+
+      huddles_in_range.group_by(&:team).each do |team, team_huddles|
+        next unless team # Skip huddles without teams
+
+        participation_stats = calculate_participation_stats_for_huddles(team_huddles)
+        rating_stats = calculate_rating_stats_for_huddles(team_huddles)
+        weekly_trends = calculate_team_weekly_trends(team_huddles)
+
+        team_stats[team.id] = {
+          id: team.id,
+          display_name: team.display_name,
+          company_id: team.company&.id,
+          company_name: team.company&.display_name || 'Unknown Company',
+          total_huddles: team_huddles.count,
           **participation_stats,
           **rating_stats,
           weekly_trends: weekly_trends,
-          huddles: playbook_huddles
+          huddles: team_huddles
         }
       end
-      
-      playbook_stats
+
+      team_stats
     end
 
     private
@@ -163,11 +163,11 @@ module Huddles
     def calculate_participation_stats_for_huddles(huddles)
       total_participants = huddles.sum { |h| h.huddle_participants.count }
       total_feedbacks = huddles.sum { |h| h.huddle_feedbacks.count }
-      
+
       distinct_participants = huddles.flat_map(&:huddle_participants).map(&:teammate).map(&:person).uniq(&:id)
       distinct_participant_count = distinct_participants.count
       distinct_participant_names = distinct_participants.map(&:display_name).sort
-      
+
       participation_rate = total_participants > 0 ? (total_feedbacks.to_f / total_participants * 100).round(1) : 0
 
       {
@@ -182,9 +182,9 @@ module Huddles
     def calculate_rating_stats_for_huddles(huddles)
       all_ratings = huddles.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
       average_rating = all_ratings.any? ? (all_ratings.sum.to_f / all_ratings.count).round(1) : 0
-      
+
       rating_distribution = all_ratings.tally
-      
+
       personal_conflict_styles = huddles.flat_map(&:huddle_feedbacks).map(&:display_personal_conflict_style).compact
       team_conflict_styles = huddles.flat_map(&:huddle_feedbacks).map(&:display_team_conflict_style).compact
 
@@ -196,22 +196,22 @@ module Huddles
       }
     end
 
-    def calculate_playbook_weekly_trends(playbook_huddles)
-      huddles_by_week = playbook_huddles.group_by { |huddle| huddle.started_at.beginning_of_week }
-      
+    def calculate_team_weekly_trends(team_huddles)
+      huddles_by_week = team_huddles.group_by { |huddle| huddle.started_at.beginning_of_week }
+
       weekly_trends = {}
       huddles_by_week.each do |week_start, huddles|
         rating_stats = calculate_rating_stats_for_huddles(huddles)
         participation_stats = calculate_participation_stats_for_huddles(huddles)
-        
+
         weekly_trends[week_start] = {
           average_rating: rating_stats[:average_rating],
           participation_rate: participation_stats[:participation_rate],
           total_huddles: huddles.count
         }
       end
-      
+
       weekly_trends
     end
   end
-end 
+end

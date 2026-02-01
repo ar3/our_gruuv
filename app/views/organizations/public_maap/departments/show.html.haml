@@ -9,7 +9,7 @@
 
 - if current_person
   .mb-3
-    = link_to organization_departments_and_team_path(@organization, @department), class: "text-muted text-decoration-none" do
+    = link_to organization_department_path(@organization, @department), class: "text-muted text-decoration-none" do
       %i.bi.bi-lock.me-2
       View Authenticated Version
 

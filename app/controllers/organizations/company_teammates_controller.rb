@@ -21,7 +21,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     # Preload huddle associations to avoid N+1 queries
     HuddleParticipant.joins(:teammate)
                     .where(teammates: { id: @teammate.id, organization: organization })
-                    .includes(:huddle, huddle: :huddle_playbook)
+                    .includes(:huddle, huddle: :team)
                     .load
     HuddleFeedback.joins(:teammate)
                   .where(teammates: { id: @teammate.id, organization: organization })
@@ -756,7 +756,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     # Preload huddle associations to avoid N+1 queries
     HuddleParticipant.joins(:teammate)
                     .where(teammates: { id: @teammate.id, organization: organization })
-                    .includes(:huddle, huddle: :huddle_playbook)
+                    .includes(:huddle, huddle: :team)
                     .load
     HuddleFeedback.joins(:teammate)
                   .where(teammates: { id: @teammate.id, organization: organization })

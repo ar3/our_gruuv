@@ -1,0 +1,47 @@
+- content_for :title, "New Department"
+
+- content_for :go_back_link do
+  = link_to organization_departments_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Departments
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-plus-circle.me-2
+    New Department
+
+.row.justify-content-center
+  .col-lg-8
+    .card
+      .card-body
+        - if @department.parent.present?
+          .alert.alert-info.mb-3
+            %i.bi.bi-info-circle.me-2
+            Creating a child department under 
+            %strong= @department.parent.display_name
+        
+        = form_with model: @department, url: organization_departments_path(@organization), local: true, scope: :organization do |form|
+          - if @department.errors.any?
+            .alert.alert-danger
+              %h5= "#{pluralize(@department.errors.count, "error")} prohibited this department from being saved:"
+              %ul.mb-0
+                - @department.errors.full_messages.each do |message|
+                  %li= message
+          
+          .mb-3
+            = form.label :name, class: "form-label"
+            = form.text_field :name, class: "form-control", required: true
+          
+          = form.hidden_field :type, value: 'Department'
+          
+          .mb-3
+            = form.label :parent_id, "Parent Organization", class: "form-label"
+            = form.hidden_field :parent_id, value: @department.parent_id || @organization.id
+            - parent_org = @department.parent || @organization
+            .form-control-plaintext= parent_org.display_name
+            %small.form-text.text-muted The parent organization cannot be changed after creation.
+          
+          .d-flex.justify-content-between
+            = link_to "Cancel", organization_departments_path(@organization), class: "btn btn-secondary"
+            = form.submit "Create Department", class: "btn btn-primary"
+

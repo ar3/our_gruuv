@@ -489,7 +489,7 @@ RSpec.describe Person, type: :model do
     let(:person) { create(:person) }
     let(:huddle_playbook) { create(:huddle_playbook, special_session_name: 'Daily Standup') }
     let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
-    let(:teammate) { create(:teammate, person: person, organization: huddle_playbook.organization) }
+    let(:teammate) { create(:teammate, person: person, organization: huddle_playbook.company) }
     let!(:huddle_participant) { create(:huddle_participant, teammate: teammate, huddle: huddle) }
     let!(:huddle_feedback) { create(:huddle_feedback, teammate: teammate, huddle: huddle) }
 
@@ -522,7 +522,7 @@ RSpec.describe Person, type: :model do
       it 'handles multiple playbooks correctly' do
         second_playbook = create(:huddle_playbook, special_session_name: 'Weekly Retro')
         second_huddle = create(:huddle, huddle_playbook: second_playbook)
-        second_teammate = create(:teammate, person: person, organization: second_playbook.organization)
+        second_teammate = create(:teammate, person: person, organization: second_playbook.company)
         create(:huddle_participant, teammate: second_teammate, huddle: second_huddle)
         
         expect(person.total_huddle_playbooks).to eq(2)

@@ -2,13 +2,20 @@ class Organization < ApplicationRecord
   include PgSearch::Model
   
   # Single Table Inheritance
+  # NOTE: Team STI has been removed. Use the standalone Team model instead.
+  # We exclude 'Team' type from all queries to prevent STI errors since Team
+  # is no longer a subclass of Organization.
   self.inheritance_column = 'type'
+  
+  # Exclude legacy Team records from all Organization queries.
+  # Team has been de-STI'd to its own table (teams). Any remaining records
+  # with type='Team' in the organizations table are legacy data.
+  default_scope { where.not(type: 'Team') }
   
   # Associations
   belongs_to :parent, class_name: 'Organization', optional: true
   has_many :children, class_name: 'Organization', foreign_key: 'parent_id'
-  has_many :huddle_playbooks, dependent: :destroy
-  has_many :huddles, through: :huddle_playbooks
+  has_many :teams, foreign_key: :company_id, dependent: :destroy
   has_many :assignments, foreign_key: 'company_id', dependent: :destroy
   has_many :abilities, dependent: :destroy
   has_many :aspirations, dependent: :destroy
@@ -35,7 +42,6 @@ class Organization < ApplicationRecord
   
   # Scopes
   scope :companies, -> { where(type: 'Company') }
-  scope :teams, -> { where(type: 'Team') }
   scope :departments, -> { where(type: 'Department') }
   scope :ordered, -> { order(:name) }
   scope :active, -> { where(deleted_at: nil) }
@@ -60,10 +66,6 @@ class Organization < ApplicationRecord
   # Instance methods
   def company?
     type == 'Company'
-  end
-  
-  def team?
-    type == 'Team'
   end
   
   def department?
@@ -200,11 +202,15 @@ class Organization < ApplicationRecord
   end
 
   def huddle_participants
-    # People who have participated in huddles within this organization and all child organizations
+    # People who have participated in huddles within this organization's teams
     Person
-      .joins(teammates: { huddle_participants: { huddle: :huddle_playbook } })
-      .where(huddle_playbooks: { organization_id: self_and_descendants })
+      .joins(teammates: { huddle_participants: { huddle: :team } })
+      .where(teams: { company_id: id })
       .distinct(:id).order(:last_name)
+  end
+
+  def huddles
+    Huddle.joins(:team).where(teams: { company_id: id })
   end
 
   def just_huddle_participants
@@ -240,15 +246,14 @@ class Organization < ApplicationRecord
     descendants.count
   end
 
-  def recent_huddle_playbooks(include_descendants: false, weeks_back: 6)
+  def teams_with_recent_huddles(weeks_back: 6)
     start_date = weeks_back.weeks.ago
-    organizations_to_search = include_descendants ? self_and_descendants : [self]
-    
-    HuddlePlaybook.joins(:huddles)
-                  .where(organization: organizations_to_search)
-                  .where(huddles: { started_at: start_date..Time.current })
-                  .distinct
-                  .includes(:organization)
+
+    Team.joins(:huddles)
+        .where(company_id: id)
+        .where(huddles: { started_at: start_date..Time.current })
+        .distinct
+        .includes(:company)
   end
   
   # Permission helper methods

@@ -145,19 +145,19 @@
         .col-12
           .card
             .card-header.d-flex.justify-content-between.align-items-center
-              %h5.mb-0 Huddle Playbooks & Huddles
+              %h5.mb-0 Teams & Huddles
               - if @current_organization
                 .btn-group.btn-group-sm{role: "group"}
                   = link_to new_huddle_path, class: "btn btn-primary" do
                     %i.bi.bi-plus-circle.me-1
                     New Huddle
-                  = link_to new_organization_huddle_playbook_path(@current_organization), class: "btn btn-outline-primary" do
-                    %i.bi.bi-gear.me-1
-                    New Playbook
+                  = link_to organization_teams_path(@current_organization), class: "btn btn-outline-primary" do
+                    %i.bi.bi-people.me-1
+                    View Teams
             .card-body
               - if @organizations.any?
                 - @organizations.each do |organization|
-                  - if organization.huddle_playbooks.any?
+                  - if organization.teams.any?
                     .mb-4
                       %h6.text-muted
                         %i.bi.bi-building.me-1
@@ -166,65 +166,64 @@
                         %table.table.table-sm.table-borderless
                           %thead
                             %tr
-                              %th Alias
-                              %th Slack Channel
+                              %th Team
+                              %th Huddle Channel
                               %th Huddles
                               %th Recent Activity
                               %th Actions
                           %tbody
-                            - organization.huddle_playbooks.each do |playbook|
+                            - organization.teams.each do |team|
                               %tr
                                 %td
-                                  %strong= playbook.display_name
+                                  %strong= team.display_name
                                 %td
-                                  %code= playbook.slack_channel_or_organization_default
+                                  - if team.huddle_channel_id.present?
+                                    %code= team.huddle_channel&.display_name || team.huddle_channel_id
+                                  - else
+                                    %small.text-muted Not configured
                                 %td
-                                  %span.badge.bg-secondary= playbook.huddles.count
+                                  %span.badge.bg-secondary= team.huddles.count
                                 %td
-                                  - if playbook.huddles.any?
-                                    - latest_huddle = playbook.huddles.order(created_at: :desc).first
+                                  - if team.huddles.any?
+                                    - latest_huddle = team.huddles.order(created_at: :desc).first
                                     %small.text-muted
                                       Last: #{time_ago_in_words(latest_huddle.created_at)} ago
-                                      - if latest_huddle.participants.any?
+                                      - if latest_huddle.huddle_participants.any?
                                         %br
-                                        %span.badge.bg-success= "#{latest_huddle.participants.count} participants"
+                                        %span.badge.bg-success= "#{latest_huddle.huddle_participants.count} participants"
                                   - else
                                     %small.text-muted No huddles yet
                                 %td
                                   .btn-group.btn-group-sm{role: "group"}
-                                    = link_to new_huddle_path(huddle_playbook_id: playbook.id), class: "btn btn-outline-primary btn-sm" do
+                                    = link_to new_huddle_path(team_id: team.id), class: "btn btn-outline-primary btn-sm" do
                                       %i.bi.bi-plus-circle
-                                    - if playbook.huddles.any?
-                                      = link_to huddles_path(organization_id: organization.id, instruction_alias: playbook.special_session_name), class: "btn btn-outline-info btn-sm" do
+                                    - if team.huddles.any?
+                                      = link_to huddles_path(organization_id: organization.id, team_id: team.id), class: "btn btn-outline-info btn-sm" do
                                         %i.bi.bi-list
-                                    = link_to edit_organization_huddle_playbook_path(organization, playbook), class: "btn btn-outline-secondary btn-sm" do
-                                      %i.bi.bi-pencil
-                                    = link_to organization_huddle_playbook_path(organization, playbook), method: :delete, class: "btn btn-outline-danger btn-sm", data: { confirm: "Are you sure? This will affect all huddles using this playbook." } do
-                                      %i.bi.bi-trash
-                              - if playbook.huddles.any?
+                                    = link_to organization_team_path(organization, team), class: "btn btn-outline-secondary btn-sm" do
+                                      %i.bi.bi-eye
+                              - if team.huddles.any?
                                 %tr
                                   %td{colspan: "5"}
                                     .ms-3
                                       %small.text-muted Recent Huddles:
-                                      - playbook.huddles.order(created_at: :desc).limit(3).each do |huddle|
+                                      - team.huddles.order(created_at: :desc).limit(3).each do |huddle|
                                         %br
                                         = link_to huddle_path(huddle), class: "text-decoration-none" do
                                           %i.bi.bi-calendar-event.me-1
                                           = huddle.display_name
                                           %small.text-muted.ms-2= format_date_in_user_timezone(huddle.created_at, format: "%b %d, %Y")
-                                          - if huddle.participants.any?
-                                            %span.badge.bg-success.ms-1= huddle.participants.count
+                                          - if huddle.huddle_participants.any?
+                                            %span.badge.bg-success.ms-1= huddle.huddle_participants.count
                   - else
                     .text-center.py-3
-                      %p.text-muted No huddle playbooks found in any organization.
+                      %p.text-muted No teams found in any organization.
                       - if @current_organization
                         %small.text-muted
-                          = link_to "Create your first huddle playbook", new_organization_huddle_playbook_path(@current_organization), class: "text-decoration-none"
-                          , or 
-                          = link_to "create a huddle directly", new_huddle_path, class: "text-decoration-none"
+                          = link_to "Create a huddle", new_huddle_path, class: "text-decoration-none"
                           to get started.
                       - else
-                        %small.text-muted Switch to an organization to create huddle playbooks.
+                        %small.text-muted Switch to an organization to view teams.
               - else
                 .text-center.py-4
                   %p.text-muted No organizations found.

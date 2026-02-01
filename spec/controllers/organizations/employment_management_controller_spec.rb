@@ -227,7 +227,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
       
       it 'finds people with huddle participation but no employment' do
         huddle_person = create(:person)
-        huddle_playbook = create(:huddle_playbook, organization: organization)
+        huddle_playbook = create(:huddle_playbook, company: organization)
         huddle = create(:huddle, huddle_playbook: huddle_playbook)
         create(:huddle_participant, teammate: create(:teammate, person: huddle_person, organization: organization), huddle: huddle)
         

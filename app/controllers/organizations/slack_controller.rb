@@ -39,7 +39,7 @@ class Organizations::SlackController < Organizations::OrganizationNamespaceBaseC
     
     # Organization hierarchy summary
     @total_departments = @organization.children.departments.count
-    @total_teams = @organization.children.teams.count
+    @total_teams = @organization.teams.count
   end
   
   def test_connection

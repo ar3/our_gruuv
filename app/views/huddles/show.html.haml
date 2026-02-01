@@ -71,8 +71,8 @@
             .row
               .col-md-4.col-sm-12
                 %p
-                  %strong Playbook:
-                  = link_to @huddle.huddle_playbook&.display_name || 'Unknown Playbook', organization_huddle_playbook_path(@huddle.huddle_playbook&.organization, @huddle.huddle_playbook), class: "text-decoration-none"
+                  %strong Team:
+                  = @huddle.team&.display_name || 'Unknown Team'
               .col-md-4.col-sm-12
                 %p
                   %strong{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "started at #{format_time_in_user_timezone(@huddle.started_at)}"} Status:
@@ -103,8 +103,8 @@
                   - else
                     %p.text-muted.mb-2
                       %i.bi.bi-slack.me-2
-                      Slack is not installed for this organization. 
-                      = link_to "Install it now", organization_slack_path(@huddle.huddle_playbook&.organization&.root_company), class: "text-decoration-none"
+                      Slack is not installed for this company. 
+                      = link_to "Install it now", organization_slack_path(@huddle.company&.root_company), class: "text-decoration-none"
 
               .col-md-6.col-sm-12
                 - if @huddle.nat_20_score

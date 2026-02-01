@@ -43,7 +43,7 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       huddle = Huddle.last
       expect(huddle).to be_present
       # Compare by ID since STI types may differ (Organization vs Team)
-      expect(huddle.huddle_playbook.organization.id).to eq(existing_team.id)
+      expect(huddle.huddle_playbook.company.id).to eq(existing_team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: company.id)
@@ -91,7 +91,7 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       huddle = Huddle.last
       expect(huddle).to be_present
       # Compare by ID since STI types may differ
-      expect(huddle.huddle_playbook.organization.id).to eq(department_as_team.id)
+      expect(huddle.huddle_playbook.company.id).to eq(department_as_team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: department.id)
@@ -169,7 +169,7 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       expect(new_team).to be_present
       huddle = Huddle.last
       expect(huddle).to be_present
-      expect(huddle.huddle_playbook.organization.id).to eq(new_team.id)
+      expect(huddle.huddle_playbook.company.id).to eq(new_team.id)
       
       # Approach 2: Use JavaScript to trigger team creation
       # visit new_huddle_path(organization_id: company.id)
@@ -196,7 +196,7 @@ RSpec.describe 'Huddles Core Flow', type: :system do
   end
 
   describe 'Participants view huddle and feedback show details' do
-    let!(:huddle_playbook) { create(:huddle_playbook, organization: company) }
+    let!(:huddle_playbook) { create(:huddle_playbook, company: company) }
     let!(:huddle) { create(:huddle, huddle_playbook: huddle_playbook, started_at: Time.current) }
     let!(:participant) { create(:huddle_participant, huddle: huddle, teammate: teammate) }
 

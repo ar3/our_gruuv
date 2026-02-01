@@ -1,0 +1,76 @@
+- content_for :title, @team.name
+
+- content_for :go_back_link do
+  = link_to organization_teams_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Teams
+
+- content_for :header do
+  .d-flex.align-items-center.justify-content-between
+    .d-flex.align-items-center
+      %h1.mb-0.me-2
+        %i.bi.bi-people.me-2
+        = @team.name
+    .d-flex.align-items-center.gap-2
+      - if policy(@team).update?
+        = link_to edit_organization_team_path(@organization, @team), class: "btn btn-outline-secondary" do
+          %i.bi.bi-pencil.me-1
+          Edit
+        = link_to manage_members_organization_team_path(@organization, @team), class: "btn btn-outline-primary" do
+          %i.bi.bi-person-check.me-1
+          Manage Members
+      - if policy(@team).archive?
+        = button_to archive_organization_team_path(@organization, @team), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this team?" } do
+          %i.bi.bi-archive.me-1
+          Archive
+
+.row.justify-content-center
+  .col-lg-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-people.me-2
+          Team Members
+          %span.badge.bg-secondary.ms-2
+            = @team_members.count
+      .card-body
+        - if @team_members.any?
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead
+                %tr
+                  %th Name
+                  %th Email
+              %tbody
+                - @team_members.each do |team_member|
+                  - person = team_member.company_teammate.person
+                  %tr
+                    %td
+                      = link_to organization_company_teammate_path(@organization, team_member.company_teammate), class: "text-decoration-none" do
+                        = person.preferred_first_then_last_display_name
+                    %td
+                      = person.email
+        - else
+          .alert.alert-light.mb-0
+            %p.mb-0
+              %i.bi.bi-info-circle.me-2
+              No members have been added to this team yet.
+              - if policy(@team).update?
+                = link_to "Add members", manage_members_organization_team_path(@organization, @team), class: "alert-link"
+                to get started.
+
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-info-circle.me-2
+          Team Details
+      .card-body
+        .row
+          .col-md-6
+            %dl.row.mb-0
+              %dt.col-sm-4 Name
+              %dd.col-sm-8= @team.name
+              %dt.col-sm-4 Company
+              %dd.col-sm-8= @team.company.display_name
+              %dt.col-sm-4 Created
+              %dd.col-sm-8= @team.created_at.strftime('%B %d, %Y')

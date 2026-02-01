@@ -61,8 +61,6 @@
                     = link_to organization_path(current_organization), class: "dropdown-item text-primary" do
                       %i.bi.bi-building.me-2
                       = current_organization.display_name
-                      - if current_organization.team?
-                        %small.text-muted.ms-1= "(#{current_organization.parent&.name})"
                   %li
                     %hr.dropdown-divider
                 - else

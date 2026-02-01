@@ -7,12 +7,14 @@ FactoryBot.define do
       type { 'Company' }
     end
     
-    trait :team do
-      type { 'Team' }
+    trait :department do
+      type { 'Department' }
       association :parent, factory: [:organization, :company]
     end
     
-    trait :department do
+    # DEPRECATED: STI Team has been removed. Use create(:team, company: company) instead.
+    # This trait now creates a Department for backwards compatibility.
+    trait :team do
       type { 'Department' }
       association :parent, factory: [:organization, :company]
     end
@@ -23,4 +25,6 @@ FactoryBot.define do
       end
     end
   end
-end 
+end
+
+

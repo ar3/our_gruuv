@@ -94,6 +94,22 @@ RSpec.describe Teammate, type: :model do
         expect(result).not_to include(access1, access2)
       end
     end
+
+    describe '.employed' do
+      let(:person_employed) { create(:person) }
+      let(:person_not_employed) { create(:person) }
+      let(:person_terminated) { create(:person) }
+
+      let!(:employed_teammate) { create(:company_teammate, person: person_employed, organization: company, first_employed_at: 1.year.ago, last_terminated_at: nil) }
+      let!(:not_employed_teammate) { create(:company_teammate, person: person_not_employed, organization: company, first_employed_at: nil, last_terminated_at: nil) }
+      let!(:terminated_teammate) { create(:company_teammate, person: person_terminated, organization: company, first_employed_at: 1.year.ago, last_terminated_at: 1.day.ago) }
+
+      it 'returns only currently employed teammates' do
+        result = described_class.employed
+        expect(result).to include(employed_teammate)
+        expect(result).not_to include(not_employed_teammate, terminated_teammate)
+      end
+    end
   end
   
   describe 'instance methods' do

@@ -26,16 +26,13 @@
             %small.text-muted Total Participants All Time
         .row.text-center.mt-3
           .col-12
-            .h4.text-primary= organization.huddle_playbooks.count
-            %small.text-muted Total Playbooks
+            .h4.text-primary= organization.teams.count
+            %small.text-muted Total Teams
       .col-md-4.border-start.border-secondary
         .d-grid.gap-2
-          = link_to organization_huddle_playbooks_path(organization), class: "btn btn-outline-primary" do
+          = link_to organization_teams_path(organization), class: "btn btn-outline-primary" do
             %i.bi.bi-list.me-2
-            View All Playbooks
-          = link_to new_organization_huddle_playbook_path(organization), class: "btn btn-outline-primary" do
-            %i.bi.bi-plus.me-2
-            Create Playbook
+            View All Teams
           = link_to huddles_path(organization_id: organization.id), class: "btn btn-outline-primary" do
             %i.bi.bi-list.me-2
             View All Huddles

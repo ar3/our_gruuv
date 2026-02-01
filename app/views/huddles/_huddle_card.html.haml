@@ -21,7 +21,7 @@
       %p.card-text
         %strong
           Team:
-        = huddle.huddle_playbook&.organization&.display_name || 'Unknown Organization'
+        = huddle.company&.display_name || 'Unknown Company'
       %p.card-text
         - if participant
           = content_tag :span, participant.role.titleize, class: "badge bg-secondary ms-2"

@@ -73,10 +73,10 @@ class HuddlePolicy < ApplicationPolicy
   end
 
   def department_head?
-    # The department head is defined by the huddle's organization
+    # The department head is defined by the huddle's company
     return false unless viewing_teammate
     person = viewing_teammate.person
-    record.organization&.department_head == person
+    record.company&.department_head == person
   end
 
   class Scope < ApplicationPolicy::Scope

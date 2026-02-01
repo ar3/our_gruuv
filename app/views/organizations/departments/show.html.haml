@@ -1,21 +1,21 @@
-- content_for :title, @department_or_team.name
+- content_for :title, @department.name
 
 - content_for :go_back_link do
-  = link_to organization_departments_and_teams_path(@organization), class: "go-back-link" do
+  = link_to organization_departments_path(@organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to Departments & Teams
+    Back to Departments
 
 - content_for :header do
   .d-flex.align-items-center.justify-content-between
     %h1.mb-0
       %i.bi.bi-diagram-3.me-2
-      = @department_or_team.name
-    - if policy(@department_or_team).update?
-      = link_to edit_organization_departments_and_team_path(@organization, @department_or_team), class: "btn btn-outline-primary" do
+      = @department.name
+    - if policy(@department).update?
+      = link_to edit_organization_department_path(@organization, @department), class: "btn btn-outline-primary" do
         %i.bi.bi-pencil.me-2
         Edit
-    - if policy(@department_or_team).archive?
-      = link_to archive_organization_departments_and_team_path(@organization, @department_or_team), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this #{@department_or_team.type.downcase}?" } do
+    - if policy(@department).archive?
+      = link_to archive_organization_department_path(@organization, @department), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this department?" } do
         %i.bi.bi-archive.me-2
         Archive
 
@@ -30,14 +30,14 @@
         %dl.row
           %dt.col-sm-3 Type
           %dd.col-sm-9
-            %span.badge{class: @department_or_team.department? ? "bg-primary" : "bg-info"}
-              = @department_or_team.type
+            %span.badge.bg-primary
+              = @department.type
           %dt.col-sm-3 Parent
           %dd.col-sm-9
-            - if @department_or_team.parent
+            - if @department.parent
               -# Build hierarchy path from root to parent
               - hierarchy_path = []
-              - current_org = @department_or_team.parent
+              - current_org = @department.parent
               - while current_org
                 - hierarchy_path.unshift(current_org)
                 - current_org = current_org.parent
@@ -51,9 +51,9 @@
                   - else
                     %span= org.name
                 - else
-                  -# Departments and teams link to departments_and_teams show page
+                  -# Departments link to departments show page
                   - if policy(org).show?
-                    = link_to organization_departments_and_team_path(@organization, org), class: "text-decoration-none" do
+                    = link_to organization_department_path(@organization, org), class: "text-decoration-none" do
                       = org.name
                   - else
                     %span= org.name
@@ -86,7 +86,7 @@
                   %tr
                     %td
                       - if policy(descendant).show?
-                        = link_to organization_departments_and_team_path(@organization, descendant), class: "text-decoration-none" do
+                        = link_to organization_department_path(@organization, descendant), class: "text-decoration-none" do
                           = descendant.name
                       - else
                         %span= descendant.name
@@ -94,37 +94,7 @@
                       - child_count = descendant.children.active.count
                       - if child_count > 0
                         %span.text-muted
-                          = pluralize(child_count, 'department/team')
-                      - else
-                        %span.text-muted —
-
-    - if @child_teams.any?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-people.me-2
-            Teams (#{@child_teams.count})
-        .card-body
-          .table-responsive
-            %table.table.table-hover
-              %thead
-                %tr
-                  %th Name
-                  %th Children
-              %tbody
-                - @child_teams.each do |descendant|
-                  %tr
-                    %td
-                      - if policy(descendant).show?
-                        = link_to organization_departments_and_team_path(@organization, descendant), class: "text-decoration-none" do
-                          = descendant.name
-                      - else
-                        %span= descendant.name
-                    %td
-                      - child_count = descendant.children.active.count
-                      - if child_count > 0
-                        %span.text-muted
-                          = pluralize(child_count, 'department/team')
+                          = pluralize(child_count, 'sub-department')
                       - else
                         %span.text-muted —
 
@@ -286,24 +256,24 @@
                         = ability.name
                     %td= truncate(ability.description, length: 100)
 
-    - if @huddle_playbooks.any?
+    - if @teams&.any?
       .card.mb-4
         .card-header
           %h5.mb-0
             %i.bi.bi-people.me-2
-            Huddle Playbooks (#{@huddle_playbooks.count})
+            Teams with Huddles (#{@teams.count})
         .card-body
-          - @huddle_playbooks.each do |playbook|
+          - @teams.each do |team|
             .card.mb-3
               .card-body
                 %h6
-                  = link_to organization_huddle_playbook_path(@organization, playbook), class: "text-decoration-none" do
-                    = playbook.display_special_session_name
+                  = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
+                    = team.display_name
                 %p.text-muted.mb-0
-                  = pluralize(playbook.huddles.count, 'huddle')
+                  = pluralize(team.huddles.count, 'huddle')
                   = " created"
-                - if playbook.slack_channel.present?
+                - if team.huddle_channel_id.present?
                   %small.text-muted
                     %i.bi.bi-slack.me-1
-                    = playbook.slack_channel
+                    = team.huddle_channel&.display_name || team.huddle_channel_id
 

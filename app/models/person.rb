@@ -206,11 +206,12 @@ class Person < ApplicationRecord
   end
   
   def last_huddle_company
-    last_huddle&.organization&.root_company
+    last_huddle&.company
   end
   
+  # Returns the Team (new standalone model) from the last huddle
   def last_huddle_team
-    last_huddle&.organization&.team? ? last_huddle.organization : nil
+    last_huddle&.team
   end
   
   # Employment tenure checking methods
@@ -238,18 +239,18 @@ class Person < ApplicationRecord
 
 
   # Huddle participation methods
-  def huddle_playbook_stats
+  def huddle_team_stats
     huddle_participants.joins(:huddle)
-                       .includes(huddle: :huddle_playbook)
-                       .group_by { |p| p.huddle.huddle_playbook }
+                       .includes(huddle: :team)
+                       .group_by { |p| p.huddle.team }
   end
 
   def total_huddle_participations
     huddle_participants.count
   end
 
-  def total_huddle_playbooks
-    huddle_participants.joins(:huddle).distinct.count(:huddle_playbook_id)
+  def total_huddle_teams
+    huddle_participants.joins(:huddle).distinct.count(:team_id)
   end
 
   def total_feedback_given
@@ -264,25 +265,25 @@ class Person < ApplicationRecord
     huddle_feedbacks.where(huddle: huddle).exists?
   end
 
-  def huddle_stats_for_playbook(playbook)
-    playbook_participations = huddle_participants.joins(:huddle).where(huddles: { huddle_playbook: playbook })
-    
-    total_huddles_held = playbook.huddles.count
-    participations_count = playbook_participations.count
-    feedback_count = huddle_feedbacks.joins(:huddle).where(huddles: { huddle_playbook: playbook }).count
-    
-    # Calculate average rating for this person's feedback in this playbook
+  def huddle_stats_for_team(team)
+    team_participations = huddle_participants.joins(:huddle).where(huddles: { team: team })
+
+    total_huddles_held = team.huddles.count
+    participations_count = team_participations.count
+    feedback_count = huddle_feedbacks.joins(:huddle).where(huddles: { team: team }).count
+
+    # Calculate average rating for this person's feedback in this team
     ratings = huddle_feedbacks.joins(:huddle)
-                              .where(huddles: { huddle_playbook: playbook })
+                              .where(huddles: { team: team })
                               .pluck(:informed_rating, :connected_rating, :goals_rating, :valuable_rating)
-    
+
     average_rating = if ratings.any?
       total_ratings = ratings.flatten.sum
       (total_ratings.to_f / ratings.flatten.count).round(1)
     else
       0
     end
-    
+
     {
       total_huddles_held: total_huddles_held,
       participations_count: participations_count,

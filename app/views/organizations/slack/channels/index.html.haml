@@ -130,3 +130,42 @@
                           = link_to edit_channel_organization_slack_path(@organization, target_organization_id: org.id), class: "btn btn-sm btn-outline-primary" do
                             %i.bi.bi-pencil-square.me-1
                             Edit
+
+          / Section 3: Team Huddle Channels
+          - if @teams.present?
+            .card.mb-4
+              .card-header
+                %h6.mb-0
+                  %i.bi.bi-people-fill.me-2
+                  Team Huddle Channels
+              .card-body
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th{style: "width: 40%;"} Team
+                        %th{style: "width: 40%;"} Huddle Channel
+                        %th{style: "width: 20%;"} Status
+                    %tbody
+                      - @teams.each do |team|
+                        %tr{ data: { team_id: team.id } }
+                          %td
+                            %strong= team.name
+                          %td
+                            - huddle_channel = team.huddle_channel
+                            - if huddle_channel.present?
+                              = huddle_channel.display_name
+                            - else
+                              %span.text-muted None
+                          %td
+                            - if team.huddle_channel_id.present?
+                              %span.badge.bg-success
+                                %i.bi.bi-check-circle.me-1
+                                Configured
+                            - else
+                              %span.badge.bg-warning.text-dark
+                                %i.bi.bi-exclamation-triangle.me-1
+                                Not Configured
+                %p.text-muted.small.mt-2
+                  %i.bi.bi-info-circle.me-1
+                  Team huddle channels can be configured when editing organization channel settings above.

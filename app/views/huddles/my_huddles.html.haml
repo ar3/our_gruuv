@@ -8,9 +8,9 @@
         = link_to "Today's Huddles", huddles_path, class: "btn btn-outline-secondary"
       
       - if @huddles.any?
-        - @huddles_by_organization.each do |company, huddles|
+        - @huddles_by_company.each do |company, huddles|
           .mb-4
-            %h3.text-primary.mb-3= company&.name || 'Unknown Organization'
+            %h3.text-primary.mb-3= company&.name || 'Unknown Company'
             .row
               - huddles.each do |huddle|
                 = render 'huddle_card', huddle: huddle

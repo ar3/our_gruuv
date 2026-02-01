@@ -4,16 +4,10 @@ class Huddles::PostAnnouncementJob < ApplicationJob
   def perform(huddle_id)
     huddle = Huddle.find(huddle_id)
     
-    # Check if Slack is configured for this organization
+    # Check if Slack huddle channel is configured for this team
     unless huddle.slack_configured?
-      result = { success: false, error: "Slack not configured for organization #{huddle.organization&.id}" }
-      Rails.logger.info "Slack not configured for organization #{huddle.organization&.id}, skipping announcement"
-      return result
-    end
-    
-    if !huddle.slack_channel.present?
-      result = { success: false, error: "Slack channel not configured for organization #{huddle.organization&.id}" }
-      Rails.logger.info "Slack channel not configured for organization #{huddle.organization&.id}, skipping announcement"
+      result = { success: false, error: "Slack huddle channel not configured for team #{huddle.team&.id}" }
+      Rails.logger.info "Slack huddle channel not configured for team #{huddle.team&.id}, skipping announcement"
       return result
     end
 
@@ -35,7 +29,7 @@ class Huddles::PostAnnouncementJob < ApplicationJob
       Rails.logger.info "Updating existing announcement for huddle #{huddle.id}"
       
       # Update the existing message
-      result = SlackService.new(huddle.organization).update_message(notification.id)
+      result = SlackService.new(huddle.company).update_message(notification.id)
       
       if result[:success]
         { success: true, action: 'updated', huddle_id: huddle.id, notification_id: notification.id, message_id: result[:message_id] }
@@ -56,7 +50,7 @@ class Huddles::PostAnnouncementJob < ApplicationJob
       Rails.logger.info "Creating new announcement for huddle #{huddle.id}"
       
       # Post new message
-      result = SlackService.new(huddle.organization).post_message(notification.id)
+      result = SlackService.new(huddle.company).post_message(notification.id)
       
       if result[:success]
         { success: true, action: 'posted', huddle_id: huddle.id, notification_id: notification.id, message_id: result[:message_id] }

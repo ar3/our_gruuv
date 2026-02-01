@@ -136,8 +136,8 @@ RSpec.describe 'Slack Integration', type: :system do
       expect(huddle.display_name).to be_present
       
       # Verify the organization was created correctly
-      expect(huddle.organization.name).to eq('Test Team No Slack')
-      expect(huddle.organization.parent.name).to eq('Test Company No Slack')
+      expect(huddle.company.name).to eq('Test Team No Slack')
+      expect(huddle.company.parent.name).to eq('Test Company No Slack')
       
       # Approach 2: Check for redirect to huddle page instead of flash
       # teammate = CompanyTeammate.find_or_create_by!(person: person, organization: team)
@@ -167,7 +167,7 @@ RSpec.describe 'Slack Integration', type: :system do
   end
 
   describe 'Feedback Submission with Slack Notification' do
-    let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: team)) }
+    let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: team)) }
     let(:teammate) { CompanyTeammate.find_or_create_by!(person: person, organization: team) }
     let(:participant) { create(:huddle_participant, huddle: huddle, teammate: teammate, role: 'active') }
 

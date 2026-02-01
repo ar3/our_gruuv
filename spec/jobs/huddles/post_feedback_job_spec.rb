@@ -3,13 +3,21 @@ require 'rails_helper'
 RSpec.describe Huddles::PostFeedbackJob, type: :job do
   let(:organization) { create(:organization, name: 'Test Org') }
   let!(:slack_config) { create(:slack_configuration, organization: organization) }
-  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current) }
+  let(:team) { create(:team, company: organization) }
+  let(:slack_channel) { create(:third_party_object, organization: organization, third_party_source: 'slack', third_party_object_type: 'channel', third_party_id: 'C123', display_name: '#general') }
+  let(:huddle) { create(:huddle, team: team, started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
   let!(:teammate) { create(:teammate, person: person, organization: organization) }
   let!(:participant) { create(:huddle_participant, huddle: huddle, teammate: teammate, role: 'active') }
   let(:feedback) { create(:huddle_feedback, huddle: huddle, teammate: teammate) }
 
   before do
+    # Set up huddle channel for the team
+    team.third_party_object_associations.create!(
+      third_party_object: slack_channel,
+      association_type: 'huddle_channel'
+    )
+
     # Mock SlackService to avoid actual API calls
     allow_any_instance_of(SlackService).to receive(:post_message).and_return({
       success: true,
@@ -94,21 +102,22 @@ RSpec.describe Huddles::PostFeedbackJob, type: :job do
     end
 
     context 'when Slack is not configured' do
-      before do
-        slack_config.destroy!
-      end
+      let(:unconfigured_team) { create(:team, company: organization) }
+      let(:unconfigured_huddle) { create(:huddle, team: unconfigured_team, started_at: Time.current) }
+      # Reuse the existing teammate since person is already a teammate in this organization
+      let(:unconfigured_feedback) { create(:huddle_feedback, huddle: unconfigured_huddle, teammate: teammate) }
 
       it 'returns error result without creating notification' do
         expect {
-          described_class.perform_and_get_result(huddle.id, feedback.id)
-        }.not_to change { huddle.notifications.count }
+          described_class.perform_and_get_result(unconfigured_huddle.id, unconfigured_feedback.id)
+        }.not_to change { unconfigured_huddle.notifications.count }
 
-        result = described_class.perform_and_get_result(huddle.id, feedback.id)
-        
+        result = described_class.perform_and_get_result(unconfigured_huddle.id, unconfigured_feedback.id)
+
         expect(result).to include(
-          success: false,
-          error: "Slack not configured for organization #{organization.id}"
+          success: false
         )
+        expect(result[:error]).to include("Slack huddle channel not configured")
       end
     end
 

@@ -4,7 +4,7 @@ RSpec.describe HuddlePolicy, type: :policy do
   subject { described_class }
 
   let(:organization) { create(:organization, :company) }
-  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization)) }
+  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization)) }
   let(:person) { create(:person) }
   let(:facilitator) { create(:person) }
   let(:participant) { create(:person) }
@@ -105,8 +105,8 @@ RSpec.describe HuddlePolicy, type: :policy do
 
   describe "scope" do
     let(:organization2) { create(:organization, name: 'Test Org 2') }
-    let!(:huddle1) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization)) }
-    let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization2)) }
+    let!(:huddle1) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization)) }
+    let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization2)) }
     let!(:person_teammate) { CompanyTeammate.create!(person: person, organization: organization) }
     let!(:participant1) { create(:huddle_participant, huddle: huddle1, teammate: person_teammate, role: 'active') }
     let(:pundit_user_person) { OpenStruct.new(user: person_teammate, impersonating_teammate: nil) }

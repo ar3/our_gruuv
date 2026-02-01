@@ -1,62 +1,61 @@
 class Huddle < ApplicationRecord
   # Associations
-  belongs_to :huddle_playbook, optional: true
+  belongs_to :team
   has_many :huddle_participants, dependent: :destroy
   has_many :participants, through: :huddle_participants, source: :teammate
   has_many :huddle_feedbacks, dependent: :destroy
   has_many :notifications, as: :notifiable, dependent: :destroy
-  
+
   # Validations
   validates :started_at, presence: true
-  validate :unique_playbook_per_day
+  validates :team, presence: true
+  validate :unique_team_per_day
 
-  
+
   # Scopes
-  scope :active, -> { 
+  scope :active, -> {
     where('expires_at > ?', Time.current)
   }
   scope :recent, -> { order(started_at: :desc) }
   scope :participated_by, ->(person) {
     joins(huddle_participants: :teammate).where(teammates: { person: person })
   }
-  
+  scope :for_company, ->(company) {
+    joins(:team).where(teams: { company_id: company.id })
+  }
+
   # Instance methods
   def huddle_display_day
     started_at.strftime('%B %d, %Y')
   end
 
-  def display_name_without_organization
-    playbook_alias = huddle_playbook&.special_session_name
-    playbook_alias.present? ? "#{huddle_display_day} - #{playbook_alias}" : huddle_display_day
+  def company
+    team&.company
   end
-  
-  def organization
-    huddle_playbook&.organization
-  end
-  
+
   def display_name
-    "#{organization&.display_name || 'Unknown Organization'} - #{display_name_without_organization}"
+    "#{company&.display_name || 'Unknown Company'} - #{team&.name || 'Unknown Team'} - #{huddle_display_day}"
   end
 
   def slug
-    "#{organization&.name&.parameterize || 'unknown'}_#{started_at.strftime('%Y-%m-%d')}"
+    "#{company&.name&.parameterize || 'unknown'}_#{team&.name&.parameterize || 'unknown'}_#{started_at.strftime('%Y-%m-%d')}"
   end
-  
+
   def closed?
     # Huddle closes 24 hours after it was started
     expires_at < Time.current
   end
-  
+
   def slack_channel
-    huddle_playbook&.slack_channel_or_organization_default
+    team&.huddle_channel_id
   end
 
   def slack_configured?
-    slack_configuration.present?
+    team&.huddle_slack_configured? || false
   end
 
   def slack_configuration
-    huddle_playbook&.slack_configuration
+    team&.slack_configuration
   end
 
   def has_slack_announcement?
@@ -77,35 +76,34 @@ class Huddle < ApplicationRecord
   end
 
 
-  
   def department_head
-    organization.department_head
+    company&.department_head
   end
-  
+
   def facilitators
     huddle_participants.facilitators.includes(teammate: :person)
   end
-  
+
   def department_head_name
     dept_head = department_head
     dept_head&.display_name || 'Department Head'
   end
-  
+
   def facilitator_names
     facilitators.map { |p| p.teammate.person.display_name }
   end
-  
+
   def nat_20_score
     return nil if huddle_feedbacks.empty?
-    
+
     total_score = huddle_feedbacks.sum do |feedback|
-      feedback.informed_rating + feedback.connected_rating + 
+      feedback.informed_rating + feedback.connected_rating +
       feedback.goals_rating + feedback.valuable_rating
     end
-    
+
     (total_score.to_f / huddle_feedbacks.count).round(1)
   end
-  
+
   def feedback_anonymous?
     huddle_feedbacks.any?(&:anonymous)
   end
@@ -117,7 +115,7 @@ class Huddle < ApplicationRecord
 
   def average_rating_by_category
     return {} if huddle_feedbacks.empty?
-    
+
     {
       informed: huddle_feedbacks.average(:informed_rating).round(1),
       connected: huddle_feedbacks.average(:connected_rating).round(1),
@@ -128,15 +126,15 @@ class Huddle < ApplicationRecord
 
   def feedback_insights
     return [] if huddle_feedbacks.empty?
-    
+
     insights = []
-    
+
     # Check for common themes in appreciation
     appreciations = huddle_feedbacks.where.not(appreciation: [nil, '']).pluck(:appreciation)
     if appreciations.any?
       insights << "Participants shared #{appreciations.count} positive feedback items"
     end
-    
+
     # Check for improvement suggestions
     suggestions = huddle_feedbacks.where.not(change_suggestion: [nil, '']).pluck(:change_suggestion)
     if suggestions.any?
@@ -149,16 +147,16 @@ class Huddle < ApplicationRecord
     elsif participation_rate >= 80
       insights << "High participation rate (#{participation_rate}%) - great engagement!"
     end
-    
+
     insights
   end
 
   def team_conflict_style_distribution
     return {} if huddle_feedbacks.empty?
-    
+
     styles = huddle_feedbacks.where.not(team_conflict_style: [nil, '']).pluck(:team_conflict_style)
     distribution = styles.tally
-    
+
     # Sort by the desired order: Collaborative first, Avoiding last
     # Only include styles that actually appear in the feedback
     sorted_distribution = {}
@@ -167,16 +165,16 @@ class Huddle < ApplicationRecord
         sorted_distribution[style] = distribution[style]
       end
     end
-    
+
     sorted_distribution
   end
 
   def personal_conflict_style_distribution
     return {} if huddle_feedbacks.empty?
-    
+
     styles = huddle_feedbacks.where.not(personal_conflict_style: [nil, '']).pluck(:personal_conflict_style)
     distribution = styles.tally
-    
+
     # Sort by the desired order: Collaborative first, Avoiding last
     # Only include styles that actually appear in the feedback
     sorted_distribution = {}
@@ -185,36 +183,36 @@ class Huddle < ApplicationRecord
         sorted_distribution[style] = distribution[style]
       end
     end
-    
+
     sorted_distribution
   end
 
   def all_conflict_styles
     [
       'Collaborative',
-      'Competing', 
+      'Competing',
       'Compromising',
       'Accommodating',
       'Avoiding'
     ]
   end
-  
-    private
-  
-  def unique_playbook_per_day
-    return unless huddle_playbook_id && started_at
-    
-    # Check for existing huddles with the same playbook within 24 hours
+
+  private
+
+  def unique_team_per_day
+    return unless team_id && started_at
+
+    # Check for existing huddles with the same team within 24 hours
     existing_huddle = Huddle.where(
-      huddle_playbook_id: huddle_playbook_id
+      team_id: team_id
     ).where(
-      "started_at BETWEEN ? AND ?", 
-      started_at - 24.hours, 
+      "started_at BETWEEN ? AND ?",
+      started_at - 24.hours,
       started_at + 24.hours
     ).where.not(id: id).first
-    
+
     if existing_huddle
-      errors.add(:base, "A huddle with this playbook already exists within 24 hours")
+      errors.add(:base, "A huddle for this team already exists within 24 hours")
     end
   end
-end 
+end

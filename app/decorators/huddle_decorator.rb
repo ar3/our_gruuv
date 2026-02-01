@@ -18,4 +18,9 @@ class HuddleDecorator < Draper::Decorator
       end
     end
   end
+
+  # Display name without company - shows team name and date
+  def display_name_without_organization
+    "#{object.team&.name || 'Unknown Team'} - #{object.huddle_display_day}"
+  end
 end 

@@ -2,12 +2,11 @@ require 'rails_helper'
 
 RSpec.describe Huddle, type: :model do
   let(:company) { Company.create!(name: 'Acme Corp') }
-  let(:team) { Team.create!(name: 'Engineering', parent: company) }
-  let(:playbook) { create(:huddle_playbook, organization: team) }
-  let(:huddle) { create(:huddle, huddle_playbook: playbook, started_at: Time.current) }
+  let(:team) { create(:team, company: company, name: 'Engineering') }
+  let(:huddle) { create(:huddle, team: team, started_at: Time.current) }
 
   describe 'associations' do
-    it { should belong_to(:huddle_playbook).optional }
+    it { should belong_to(:team) }
     it { should have_many(:huddle_participants).dependent(:destroy) }
     it { should have_many(:participants).through(:huddle_participants).source(:teammate) }
     it { should have_many(:huddle_feedbacks).dependent(:destroy) }
@@ -15,77 +14,66 @@ RSpec.describe Huddle, type: :model do
 
   describe 'validations' do
     it { should validate_presence_of(:started_at) }
-    
-    describe 'unique organization per day' do
-      it 'allows multiple huddles for different organizations on the same day' do
-        other_team = Team.create!(name: 'Design', parent: company)
-        other_playbook = create(:huddle_playbook, organization: other_team)
-        other_huddle = Huddle.create!(huddle_playbook: other_playbook, started_at: Time.current)
-        
+    it { should validate_presence_of(:team) }
+
+    describe 'unique team per day' do
+      it 'allows multiple huddles for different teams on the same day' do
+        other_team = create(:team, company: company, name: 'Design')
+        other_huddle = Huddle.create!(team: other_team, started_at: Time.current)
+
         expect(huddle).to be_valid
       end
-      
-      it 'allows multiple huddles for the same organization on the same day' do
+
+      it 'prevents duplicate huddles with the same team within 24 hours' do
         # Ensure the existing huddle exists
         expect(huddle).to be_persisted
-        
-        # Create a different playbook for the same organization
-        different_playbook = create(:huddle_playbook, organization: team, special_session_name: 'Different Session')
-        duplicate_huddle = Huddle.new(huddle_playbook: different_playbook, started_at: Time.current)
-        expect(duplicate_huddle).to be_valid
-      end
 
-      it 'prevents duplicate huddles with the same playbook within 24 hours' do
-        # Ensure the existing huddle exists and has a playbook
-        expect(huddle).to be_persisted
-        expect(huddle.huddle_playbook).to be_present
-        
-        # Try to create another huddle with the same playbook within 24 hours
+        # Try to create another huddle with the same team within 24 hours
         duplicate_huddle = Huddle.new(
           started_at: Time.current + 12.hours, # Within 24 hours
-          huddle_playbook: huddle.huddle_playbook
+          team: huddle.team
         )
         expect(duplicate_huddle).not_to be_valid
-        expect(duplicate_huddle.errors[:base]).to include('A huddle with this playbook already exists within 24 hours')
+        expect(duplicate_huddle.errors[:base]).to include('A huddle for this team already exists within 24 hours')
       end
 
-      it 'allows huddles with the same playbook after 24 hours' do
+      it 'allows huddles with the same team after 24 hours' do
         # Ensure the existing huddle exists
         expect(huddle).to be_persisted
-        
-        # Try to create another huddle with the same playbook after 24 hours
+
+        # Try to create another huddle with the same team after 24 hours
         future_huddle = Huddle.new(
           started_at: Time.current + 25.hours, # After 24 hours
-          huddle_playbook: huddle.huddle_playbook
+          team: huddle.team
         )
         expect(future_huddle).to be_valid
       end
 
-      it 'allows huddles with different playbooks within 24 hours' do
+      it 'allows huddles for different teams within 24 hours' do
         # Ensure the existing huddle exists
         expect(huddle).to be_persisted
-        
-        # Create a different playbook
-        different_playbook = create(:huddle_playbook, organization: team, special_session_name: 'Different Session')
-        
-        # Try to create another huddle with a different playbook within 24 hours
+
+        # Create a different team
+        different_team = create(:team, company: company, name: 'Design')
+
+        # Try to create another huddle with a different team within 24 hours
         different_huddle = Huddle.new(
           started_at: Time.current + 12.hours, # Within 24 hours
-          huddle_playbook: different_playbook
+          team: different_team
         )
         expect(different_huddle).to be_valid
       end
-      
-      it 'allows huddles for the same organization on different days' do
-        tomorrow_huddle = Huddle.new(huddle_playbook: playbook, started_at: 1.day.from_now)
+
+      it 'allows huddles for the same team on different days' do
+        tomorrow_huddle = Huddle.new(team: team, started_at: 1.day.from_now)
         expect(tomorrow_huddle).to be_valid
       end
     end
   end
 
   describe 'scopes' do
-    let!(:old_huddle) { Huddle.create!(huddle_playbook: playbook, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
-    let!(:recent_huddle) { Huddle.create!(huddle_playbook: playbook, started_at: 1.hour.ago) }
+    let!(:old_huddle) { Huddle.create!(team: team, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
+    let!(:recent_huddle) { Huddle.create!(team: create(:team, company: company), started_at: 1.hour.ago) }
 
     describe '.active' do
       it 'returns huddles that expire in the future' do
@@ -103,28 +91,28 @@ RSpec.describe Huddle, type: :model do
   end
 
   describe '#display_name' do
-    context 'without alias' do
-      it 'returns organization name and date' do
-        expect(huddle.display_name).to include('Acme Corp > Engineering')
-        expect(huddle.display_name).to include(Time.current.strftime('%B %d, %Y'))
-      end
+    it 'returns company name, team name, and date' do
+      expect(huddle.display_name).to include('Acme Corp')
+      expect(huddle.display_name).to include('Engineering')
+      expect(huddle.display_name).to include(Time.current.strftime('%B %d, %Y'))
     end
+  end
 
-    context 'with alias' do
-      let(:huddle_with_alias) do
-        playbook = create(:huddle_playbook, organization: team, special_session_name: 'Sprint Planning')
-        Huddle.create!(huddle_playbook: playbook, started_at: Time.current)
-      end
+  describe '#team' do
+    it 'returns the team' do
+      expect(huddle.team).to eq(team)
+    end
+  end
 
-      it 'includes the alias in the display name' do
-        expect(huddle_with_alias.display_name).to include('Sprint Planning')
-      end
+  describe '#company' do
+    it 'returns the company from the team' do
+      expect(huddle.company).to eq(company)
     end
   end
 
   describe '#slug' do
     it 'returns a URL-friendly slug' do
-      expect(huddle.slug).to eq("engineering_#{Time.current.strftime('%Y-%m-%d')}")
+      expect(huddle.slug).to eq("acme-corp_engineering_#{Time.current.strftime('%Y-%m-%d')}")
     end
   end
 
@@ -138,7 +126,7 @@ RSpec.describe Huddle, type: :model do
     context 'with feedback from today' do
       before do
         person = Person.create!(email: 'test@example.com', full_name: 'Test User', unique_textable_phone_number: '+12345678900')
-        teammate = create(:teammate, person: person, organization: huddle.organization)
+        teammate = create(:teammate, person: person, organization: huddle.company)
         HuddleFeedback.create!(
           huddle: huddle,
           teammate: teammate,
@@ -155,11 +143,11 @@ RSpec.describe Huddle, type: :model do
     end
 
     context 'with feedback from expired huddle' do
-      let(:expired_huddle) { Huddle.create!(huddle_playbook: playbook, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
+      let(:expired_huddle) { Huddle.create!(team: team, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
 
       before do
         person = Person.create!(email: 'test@example.com', full_name: 'Test User', unique_textable_phone_number: '+12345678902')
-        teammate = create(:teammate, person: person, organization: expired_huddle.organization)
+        teammate = create(:teammate, person: person, organization: expired_huddle.company)
         HuddleFeedback.create!(
           huddle: expired_huddle,
           teammate: teammate,
@@ -177,8 +165,8 @@ RSpec.describe Huddle, type: :model do
   end
 
   describe '#department_head' do
-    it 'delegates to organization' do
-      expect(huddle.organization).to receive(:department_head)
+    it 'delegates to company' do
+      expect(huddle.company).to receive(:department_head)
       huddle.department_head
     end
   end
@@ -192,7 +180,7 @@ RSpec.describe Huddle, type: :model do
 
     context 'with feedback' do
       let(:person) { Person.create!(email: 'test@example.com', full_name: 'Test User', unique_textable_phone_number: '+12345678903') }
-      let(:teammate) { create(:teammate, person: person, organization: huddle.organization) }
+      let(:teammate) { create(:teammate, person: person, organization: huddle.company) }
 
       before do
         HuddleFeedback.create!(
@@ -211,7 +199,7 @@ RSpec.describe Huddle, type: :model do
 
       it 'handles multiple feedback submissions' do
         person2 = Person.create!(email: 'test2@example.com', full_name: 'Test User 2', unique_textable_phone_number: '+12345678901')
-        teammate2 = create(:teammate, person: person2, organization: huddle.organization)
+        teammate2 = create(:teammate, person: person2, organization: huddle.company)
         HuddleFeedback.create!(
           huddle: huddle,
           teammate: teammate2,
@@ -235,7 +223,7 @@ RSpec.describe Huddle, type: :model do
 
     context 'with anonymous feedback' do
       let(:person) { Person.create!(email: 'test@example.com', full_name: 'Test User') }
-      let(:teammate) { create(:teammate, person: person, organization: huddle.organization) }
+      let(:teammate) { create(:teammate, person: person, organization: huddle.company) }
 
       before do
         HuddleFeedback.create!(
@@ -256,7 +244,7 @@ RSpec.describe Huddle, type: :model do
 
     context 'with non-anonymous feedback' do
       let(:person) { Person.create!(email: 'test@example.com', full_name: 'Test User') }
-      let(:teammate) { create(:teammate, person: person, organization: huddle.organization) }
+      let(:teammate) { create(:teammate, person: person, organization: huddle.company) }
 
       before do
         HuddleFeedback.create!(
@@ -278,8 +266,8 @@ RSpec.describe Huddle, type: :model do
 
   describe 'conflict style distributions' do
     let(:organization) { create(:organization, name: 'Test Org') }
-    let(:playbook) { create(:huddle_playbook, organization: organization) }
-    let(:huddle) { create(:huddle, huddle_playbook: playbook) }
+    let(:team) { create(:team, company: organization) }
+    let(:huddle) { create(:huddle, team: team) }
     let(:person1) { create(:person, first_name: 'John', last_name: 'Doe') }
     let(:person2) { create(:person, first_name: 'Jane', last_name: 'Smith') }
     let(:person3) { create(:person, first_name: 'Bob', last_name: 'Johnson') }
@@ -349,114 +337,4 @@ RSpec.describe Huddle, type: :model do
       end
     end
   end
-
-  describe '#slack_announcement_url' do
-    let(:company) { Company.create!(name: 'Acme Corp') }
-    let(:team) { Team.create!(name: 'Engineering', parent: company) }
-    let(:playbook) { create(:huddle_playbook, organization: team) }
-    let(:huddle) { create(:huddle, huddle_playbook: playbook) }
-    let(:slack_config) { create(:slack_configuration, organization: company, workspace_name: 'Acme Corporation', workspace_subdomain: 'acmecorp') }
-
-    before do
-      slack_config
-    end
-
-    context 'when huddle has no announcement' do
-      it 'returns nil' do
-        expect(huddle.slack_announcement_url).to be_nil
-      end
-    end
-
-    context 'when huddle has announcement but no channel' do
-      let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: nil) }
-
-      before do
-        huddle.update(huddle_playbook: playbook)
-        huddle.notifications.create!(
-          notification_type: 'huddle_announcement',
-          status: 'sent_successfully',
-          message_id: '1234567890.123456',
-          metadata: { channel: 'general' }
-        )
-      end
-
-      it 'returns URL with default channel' do
-        # Since slack_channel_or_organization_default has a fallback, it will always return a value
-        expect(huddle.slack_announcement_url).to be_present
-        expect(huddle.slack_announcement_url).to include('acmecorp.slack.com')
-        expect(huddle.slack_announcement_url).to include('p1234567890123456')
-      end
-    end
-
-    context 'when huddle has announcement and channel' do
-      let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: '#general') }
-
-      before do
-        huddle.update(huddle_playbook: playbook)
-        huddle.notifications.create!(
-          notification_type: 'huddle_announcement',
-          status: 'sent_successfully',
-          message_id: '1234567890.123456',
-          metadata: { channel: 'general' }
-        )
-      end
-
-      it 'returns the correct Slack URL' do
-        expected_url = 'https://acmecorp.slack.com/archives/general/p1234567890123456'
-        expect(huddle.slack_announcement_url).to eq(expected_url)
-      end
-
-      it 'handles channel names with #' do
-        huddle.notifications.announcements.first.update!(metadata: { channel: 'engineering' })
-        expected_url = 'https://acmecorp.slack.com/archives/engineering/p1234567890123456'
-        expect(huddle.slack_announcement_url).to eq(expected_url)
-      end
-
-      it 'handles channel names without #' do
-        huddle.notifications.announcements.first.update!(metadata: { channel: 'engineering' })
-        expected_url = 'https://acmecorp.slack.com/archives/engineering/p1234567890123456'
-        expect(huddle.slack_announcement_url).to eq(expected_url)
-      end
-    end
-
-    context 'when workspace_subdomain is not set' do
-      let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: '#general') }
-
-      before do
-        slack_config.update(workspace_subdomain: nil)
-        huddle.update(huddle_playbook: playbook)
-        huddle.notifications.create!(
-          notification_type: 'huddle_announcement',
-          status: 'sent_successfully',
-          message_id: '1234567890.123456',
-          metadata: { channel: 'general' }
-        )
-      end
-
-      it 'returns nil when workspace_subdomain is missing' do
-        expect(huddle.slack_announcement_url).to be_nil
-      end
-    end
-
-    context 'when workspace_url is set explicitly' do
-      let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: '#general') }
-
-      before do
-        slack_config.update(workspace_url: 'https://custom-workspace.slack.com')
-        huddle.update(huddle_playbook: playbook)
-        huddle.notifications.create!(
-          notification_type: 'huddle_announcement',
-          status: 'sent_successfully',
-          message_id: '1234567890.123456',
-          metadata: { channel: 'general' }
-        )
-      end
-
-      it 'uses the explicit workspace_url' do
-        expected_url = 'https://custom-workspace.slack.com/archives/general/p1234567890123456'
-        expect(huddle.slack_announcement_url).to eq(expected_url)
-      end
-    end
-
-  end
-end 
+end

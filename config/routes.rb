@@ -161,9 +161,7 @@ Rails.application.routes.draw do
     
     # Person access permissions within organization context
     resources :person_accesses, only: [:new, :create, :edit, :update, :destroy], controller: 'organizations/person_accesses'
-    
-    resources :huddle_playbooks, module: :organizations
-    
+
     # Abilities management
     resources :abilities, module: :organizations do
       collection do
@@ -418,10 +416,19 @@ Rails.application.routes.draw do
       end
     end
     
-    # Departments and Teams management
-    resources :departments_and_teams, module: :organizations, except: [:destroy] do
+    # Departments management
+    resources :departments, module: :organizations, except: [:destroy] do
       member do
         patch :archive
+      end
+    end
+
+    # Teams management (new standalone model)
+    resources :teams, module: :organizations do
+      member do
+        patch :archive
+        get :manage_members
+        patch :update_members
       end
     end
     
@@ -489,7 +496,7 @@ Rails.application.routes.draw do
     end
     
     collection do
-      post :start_huddle_from_playbook
+      post :start_huddle_from_team
       post :post_weekly_summary
     end
   end

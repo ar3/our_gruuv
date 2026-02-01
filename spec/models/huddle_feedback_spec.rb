@@ -4,7 +4,7 @@ RSpec.describe HuddleFeedback, type: :model do
   let(:company) { Company.create!(name: 'Test Company') }
   let(:team) { Team.create!(name: 'Test Team', parent: company) }
   let(:huddle) do
-    playbook = create(:huddle_playbook, organization: team, special_session_name: 'test-huddle')
+    playbook = create(:huddle_playbook, company: team, special_session_name: 'test-huddle')
     Huddle.create!(huddle_playbook: playbook, started_at: Time.current)
   end
   let(:person) { Person.create!(full_name: 'John Doe', email: 'john@example.com') }
@@ -115,7 +115,7 @@ RSpec.describe HuddleFeedback, type: :model do
 
     it 'allows feedback from the same teammate for different huddles' do
       team2 = Team.create!(name: 'Test Team 2', parent: company)
-      playbook2 = create(:huddle_playbook, organization: team2, special_session_name: 'test-huddle-2')
+      playbook2 = create(:huddle_playbook, company: team2, special_session_name: 'test-huddle-2')
             huddle2 = Huddle.create!(huddle_playbook: playbook2, started_at: Time.current)
       HuddleFeedback.create!(valid_attributes)
       feedback2 = HuddleFeedback.new(valid_attributes.merge(huddle: huddle2))

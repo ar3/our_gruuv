@@ -1,0 +1,62 @@
+- content_for :title, "Manage Members - #{@team.name}"
+
+- content_for :go_back_link do
+  = link_to organization_team_path(@organization, @team), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@team.name}
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0
+      %i.bi.bi-person-check.me-2
+      Manage Members
+      %small.text-muted.ms-2
+        = @team.name
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-people.me-2
+      Select Team Members
+  .card-body
+    = form_with url: update_members_organization_team_path(@organization, @team), method: :patch, local: true do |form|
+      = hidden_field_tag :authenticity_token, form_authenticity_token
+
+      .d-flex.gap-2.mb-3
+        = form.submit 'Save Changes', class: 'btn btn-primary'
+        = link_to 'Cancel', organization_team_path(@organization, @team), class: 'btn btn-outline-secondary'
+
+      .mb-3
+        %label.form-label Select Employees
+        - if @teammates.any?
+          .mb-2
+            %small.text-muted
+              Select the employees who should be members of this team. Only active employees are shown.
+          - items_per_column = (@teammates.size / 3.0).ceil
+          - items_per_column = 1 if items_per_column.zero?
+          - teammate_columns = @teammates.each_slice(items_per_column).to_a
+          .row
+            - teammate_columns.each do |column_teammates|
+              .col-12.col-md-6.col-lg-4.mb-3
+                .list-group
+                  - column_teammates.each do |teammate|
+                    - checked = @team.team_members.exists?(company_teammate_id: teammate.id)
+                    - person = teammate.person
+                    - tooltip_text = "#{person.full_name.presence || 'No name'} - #{person.email}"
+                    .list-group-item
+                      .form-check
+                        = check_box_tag 'teammate_ids[]', teammate.id, checked,
+                                      class: 'form-check-input',
+                                      id: "teammate_#{teammate.id}",
+                                      data: { bs_toggle: 'tooltip', bs_title: tooltip_text }
+                        = label_tag "teammate_#{teammate.id}", class: 'form-check-label',
+                                    data: { bs_toggle: 'tooltip', bs_title: tooltip_text } do
+                          %strong= person.preferred_first_then_last_display_name
+        - else
+          .alert.alert-info.mb-0
+            %i.bi.bi-info-circle.me-2
+            No active employees found in this organization. Please ensure employees are created first.
+
+      .d-flex.gap-2.mt-3
+        = form.submit 'Save Changes', class: 'btn btn-primary'
+        = link_to 'Cancel', organization_team_path(@organization, @team), class: 'btn btn-outline-secondary'

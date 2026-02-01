@@ -15,7 +15,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:employment_tenure1) { create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: 1.year.ago) }
   let(:employment_tenure2) { create(:employment_tenure, teammate: employee2_teammate, company: company, position: position, started_at: 6.months.ago) }
-  let(:huddle_playbook) { create(:huddle_playbook, organization: team) }
+  let(:huddle_playbook) { create(:huddle_playbook, company: team) }
   let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
   let(:huddle_participation) { create(:huddle_participant, huddle: huddle, teammate: create(:teammate, person: huddle_participant, organization: team)) }
 

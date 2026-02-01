@@ -1,9 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller do
+RSpec.describe Organizations::DepartmentsController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:department) { create(:organization, :department, parent: organization) }
-  let(:team) { create(:organization, :team, parent: department) }
+  # NOTE: STI Team has been removed. Use nested departments for hierarchy testing.
+  let(:nested_department) { create(:organization, :department, parent: department, name: 'Nested Dept') }
   let(:current_person) { create(:person, og_admin: false) }
   let(:teammate) do
     existing = Teammate.find_by(person: current_person, organization: organization)
@@ -21,30 +22,31 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
     it 'loads active descendants with proper includes' do
       # Create the hierarchy
       department
-      team
+      nested_department
       
       get :index, params: { organization_id: organization.id }
       
       expect(response).to be_successful
-      expect(assigns(:departments_and_teams)).to be_present
+      expect(assigns(:departments)).to be_present
       expect(assigns(:hierarchy_tree)).to be_present
     end
 
     it 'excludes archived organizations' do
       archived_dept = create(:organization, :department, parent: organization, deleted_at: Time.current)
       department
+      nested_department
       
       get :index, params: { organization_id: organization.id }
       
-      expect(assigns(:departments_and_teams).map(&:id)).to include(department.id)
-      expect(assigns(:departments_and_teams).map(&:id)).not_to include(archived_dept.id)
+      expect(assigns(:departments).map(&:id)).to include(department.id)
+      expect(assigns(:departments).map(&:id)).not_to include(archived_dept.id)
     end
 
     it 'handles empty descendants gracefully' do
       get :index, params: { organization_id: organization.id }
       
       expect(response).to be_successful
-      expect(assigns(:departments_and_teams)).to be_empty
+      expect(assigns(:departments)).to be_empty
       expect(assigns(:hierarchy_tree)).to be_empty
     end
   end
@@ -59,7 +61,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
       seat = create(:seat, title: title)
       assignment = create(:assignment, company: organization, department: department)
       ability = create(:ability, organization: department)
-      playbook = create(:huddle_playbook, organization: department)
+      playbook = create(:huddle_playbook, company: department)
       
       get :show, params: { organization_id: organization.id, id: department.id }
       
@@ -118,48 +120,56 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
           }
         }.to change { Organization.departments.active.count }.by(1)
         
-        expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+        expect(response).to redirect_to(organization_departments_path(organization))
         created_dept = Organization.departments.active.find_by(name: 'New Department')
         expect(created_dept).to be_present
         expect(created_dept.type).to eq('Department')
       end
 
-      it 'creates a new team' do
+      # NOTE: STI Team has been removed. Team type requests are converted to Department.
+      # For actual teams, use the new Team model via /organizations/:id/teams
+      it 'converts Team type requests to Department' do
         expect {
           post :create, params: {
             organization_id: organization.id,
             organization: { name: 'New Team', type: 'Team', parent_id: organization.id }
           }
-        }.to change { Organization.teams.active.count }.by(1)
+        }.to change { Organization.departments.active.count }.by(1)
         
-        expect(response).to redirect_to(organization_departments_and_teams_path(organization))
-        created_team = Organization.teams.active.find_by(name: 'New Team')
-        expect(created_team).to be_present
-        expect(created_team.type).to eq('Team')
+        expect(response).to redirect_to(organization_departments_path(organization))
+        # Team type is converted to Department
+        created_dept = Organization.departments.active.find_by(name: 'New Team')
+        expect(created_dept).to be_present
+        expect(created_dept.type).to eq('Department')
       end
 
-      it 'fails validation when type is missing' do
+      # NOTE: Type now defaults to 'Department' when missing or blank
+      it 'defaults to Department when type is missing' do
         expect {
           post :create, params: {
             organization_id: organization.id,
             organization: { name: 'New Department', parent_id: organization.id }
           }
-        }.not_to change { Organization.count }
+        }.to change { Organization.departments.active.count }.by(1)
         
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(assigns(:department_or_team).errors[:type]).to include("can't be blank")
+        expect(response).to redirect_to(organization_departments_path(organization))
+        created_dept = Organization.departments.active.find_by(name: 'New Department')
+        expect(created_dept).to be_present
+        expect(created_dept.type).to eq('Department')
       end
 
-      it 'fails validation when type is blank' do
+      it 'defaults to Department when type is blank' do
         expect {
           post :create, params: {
             organization_id: organization.id,
             organization: { name: 'New Department', type: '', parent_id: organization.id }
           }
-        }.not_to change { Organization.count }
+        }.to change { Organization.departments.active.count }.by(1)
         
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(assigns(:department_or_team).errors[:type]).to include("can't be blank")
+        expect(response).to redirect_to(organization_departments_path(organization))
+        created_dept = Organization.departments.active.find_by(name: 'New Department')
+        expect(created_dept).to be_present
+        expect(created_dept.type).to eq('Department')
       end
     end
 
@@ -200,26 +210,18 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
       it 'sets available parents ordered by type and name' do
         dept_a = create(:organization, :department, parent: organization, name: 'A Department')
         dept_z = create(:organization, :department, parent: organization, name: 'Z Department')
-        team_a = create(:organization, :team, parent: organization, name: 'A Team')
-        team_z = create(:organization, :team, parent: organization, name: 'Z Team')
+        dept_b = create(:organization, :department, parent: organization, name: 'B Department')
         
-        get :edit, params: { organization_id: organization.id, id: team.id }
+        get :edit, params: { organization_id: organization.id, id: nested_department.id }
         
         available_parents = assigns(:available_parents)
         expect(available_parents).to be_present
-        # Should be ordered: Company, Departments (A-Z), Teams (A-Z)
+        # Should be ordered: Company first, then Departments alphabetically
         # Company should be first
         expect(available_parents.first.id).to eq(organization.id)
-        # Departments should come before teams
-        dept_indices = available_parents.each_with_index.select { |org, _| org.department? }.map(&:last)
-        team_indices = available_parents.each_with_index.select { |org, _| org.team? }.map(&:last)
-        expect(dept_indices.max).to be < team_indices.min if dept_indices.any? && team_indices.any?
         # Within departments, should be alphabetical
         depts = available_parents.select(&:department?)
         expect(depts.map(&:name)).to eq(depts.map(&:name).sort)
-        # Within teams, should be alphabetical
-        teams = available_parents.select(&:team?)
-        expect(teams.map(&:name)).to eq(teams.map(&:name).sort)
       end
 
       it 'excludes self and descendants from available parents' do
@@ -267,7 +269,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
         }
         
         department.reload
-        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+        expect(response).to redirect_to(organization_department_path(organization, department))
         expect(department.name).to eq('Updated Department Name')
       end
 
@@ -283,7 +285,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
           }
         }.to change { department.reload.parent_id }.from(original_parent_id).to(department2.id)
         
-        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+        expect(response).to redirect_to(organization_department_path(organization, department))
         expect(department.reload.parent_id).to eq(department2.id)
       end
 
@@ -300,7 +302,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
         }.to change { department2.reload.parent_id }.from(original_parent_id).to(organization.id)
         
         department2.reload
-        expect(response).to redirect_to(organization_departments_and_team_path(organization, department2))
+        expect(response).to redirect_to(organization_department_path(organization, department2))
         expect(department2.parent_id).to eq(organization.id)
       end
 
@@ -328,7 +330,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
         department.reload
         expect(department.type).to eq(original_type)
         expect(department.type).not_to eq('Team')
-        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+        expect(response).to redirect_to(organization_department_path(organization, department))
       end
 
       it 'allows changing name' do
@@ -340,7 +342,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
         
         department.reload
         expect(department.name).to eq('New Department Name')
-        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+        expect(response).to redirect_to(organization_department_path(organization, department))
       end
 
       it 'allows changing parent organization' do
@@ -356,7 +358,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
         department.reload
         expect(department.parent_id).to eq(department2.id)
         expect(department.parent_id).not_to eq(original_parent_id)
-        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+        expect(response).to redirect_to(organization_department_path(organization, department))
       end
     end
 
@@ -396,7 +398,7 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
         patch :archive, params: { organization_id: organization.id, id: department.id }
         
         expect(department.reload.deleted_at).to be_present
-        expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+        expect(response).to redirect_to(organization_departments_path(organization))
       end
     end
 

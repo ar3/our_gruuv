@@ -119,13 +119,13 @@ class TeammateStatus
   end
 
   def has_huddle_participation?
-    organizations_to_check = teammate.organization.company? ? 
-      teammate.organization.self_and_descendants : 
-      [teammate.organization, teammate.organization.parent].compact
-    
+    # Check if person has participated in huddles within this organization (company)
+    company_id = teammate.organization.company? ? teammate.organization.id : teammate.organization.parent_id
+    return false unless company_id
+
     teammate.person.huddle_participants
-             .joins(huddle: :huddle_playbook)
-             .where(huddle_playbooks: { organization_id: organizations_to_check })
+             .joins(huddle: :team)
+             .where(teams: { company_id: company_id })
              .exists?
   end
 

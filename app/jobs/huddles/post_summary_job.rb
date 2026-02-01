@@ -4,10 +4,10 @@ class Huddles::PostSummaryJob < ApplicationJob
   def perform(huddle_id)
     huddle = Huddle.find(huddle_id)
     
-    # Check if Slack is configured for this organization
+    # Check if Slack huddle channel is configured for this team
     unless huddle.slack_configured?
-      result = { success: false, error: "Slack not configured for organization #{huddle.organization&.id}" }
-      Rails.logger.info "Slack not configured for organization #{huddle.organization&.id}, skipping summary"
+      result = { success: false, error: "Slack huddle channel not configured for team #{huddle.team&.id}" }
+      Rails.logger.info "Slack huddle channel not configured for team #{huddle.team&.id}, skipping summary"
       return result
     end
     
@@ -38,7 +38,7 @@ class Huddles::PostSummaryJob < ApplicationJob
       Rails.logger.info "Updating existing summary for huddle #{huddle.id}"
       
       # Update the existing message
-      result = SlackService.new(huddle.organization).update_message(notification.id)
+      result = SlackService.new(huddle.company).update_message(notification.id)
       
       if result[:success]
         { success: true, action: 'updated_summary', huddle_id: huddle.id, notification_id: notification.id, message_id: result[:message_id] }
@@ -60,7 +60,7 @@ class Huddles::PostSummaryJob < ApplicationJob
       Rails.logger.info "Creating new summary for huddle #{huddle.id}"
       
       # Post new message in thread
-      result = SlackService.new(huddle.organization).post_message(notification.id)
+      result = SlackService.new(huddle.company).post_message(notification.id)
       
       if result[:success]
         { success: true, action: 'posted_summary', huddle_id: huddle.id, notification_id: notification.id, message_id: result[:message_id] }
