@@ -140,7 +140,7 @@ class AssignmentsQuery
       if using_distinct
         assignments.reorder('assignments.title')
       else
-        assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), 'assignments.title')
+        assignments.left_joins(:department).order(Arel.sql('COALESCE(departments.name, \'\')'), 'assignments.title')
       end
     when 'title'
       assignments.order('assignments.title')
