@@ -216,11 +216,11 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     # Get aspirations: company + department aspirations from position's title department and departments between title and company
     aspiration_org_ids = [company.id]
     if @active_position&.title&.department
-      # Get all departments from title's department up to company
+      # Get all departments from title's department up the department hierarchy
       current_dept = @active_position.title.department
-      while current_dept && current_dept != company
+      while current_dept
         aspiration_org_ids << current_dept.id
-        current_dept = current_dept.parent
+        current_dept = current_dept.parent_department
       end
     end
     @aspirations = Aspiration.where(company: company).ordered

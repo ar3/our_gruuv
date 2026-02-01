@@ -429,7 +429,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @managers = active_manager_teammates
     
     # Load all active employees (for manager selection)
-    org_hierarchy = company.company? ? company.self_and_descendants : [company, company.parent].compact
+    # Organizations no longer have parent hierarchy - use the company directly
+    org_hierarchy = [company]
     
     # Get all active employees (CompanyTeammates with active employment tenures in the organization hierarchy)
     all_active_teammate_ids = EmploymentTenure.active
@@ -449,17 +450,9 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   end
 
   def active_departments_for_organization
-    # Get all departments within the organization hierarchy
-    org_hierarchy = if @organization.company?
-      @organization.self_and_descendants
-    else
-      [@organization, @organization.parent].compact
-    end
-    
-    # Return Department organizations ordered by name
-    Organization.where(id: org_hierarchy.map(&:id))
-                .departments
-                .order(:name)
+    # Get active departments for the company (departments are now a separate model)
+    company = @organization.root_company || @organization
+    Department.where(company: company).active.order(:name)
   end
 
     def apply_preset_if_selected
@@ -737,12 +730,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       
       # Calculate management levels
       # Build a map of person_id -> their manager's person_id for active employment tenures
-      # Get all organizations within the organization hierarchy
-      org_hierarchy = if @organization.company?
-        @organization.self_and_descendants
-      else
-        [@organization, @organization.parent].compact
-      end
+      # Organizations no longer have parent hierarchy - use the organization directly
+      org_hierarchy = [@organization]
       
       person_to_manager = {}
       EmploymentTenure.active

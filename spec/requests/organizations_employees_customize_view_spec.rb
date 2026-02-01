@@ -51,7 +51,7 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
   end
 
   it 'renders department checkboxes when departments exist' do
-    department = create(:organization, type: 'Department', parent: organization)
+    department = create(:department, company: organization)
     
     get customize_view_organization_employees_path(organization)
     
@@ -79,7 +79,7 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
   end
 
   it 'preserves selected department filters' do
-    department = create(:organization, type: 'Department', parent: organization)
+    department = create(:department, company: organization)
     
     get customize_view_organization_employees_path(organization, department_id: department.id)
     

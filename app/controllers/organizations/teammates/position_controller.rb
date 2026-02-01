@@ -265,7 +265,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     @managers = active_manager_teammates
     
     # Load all active employees (for manager selection)
-    org_hierarchy = company.company? ? company.self_and_descendants : [company, company.parent].compact
+    # Organizations no longer have parent hierarchy - use the company directly
+    org_hierarchy = [company]
     manager_teammate_ids = @managers.map { |m| m.is_a?(CompanyTeammate) ? m.id : CompanyTeammate.find_by(organization: company, person: m)&.id }.compact
     
     # Get all active employees (CompanyTeammates with active employment tenures in the organization hierarchy)

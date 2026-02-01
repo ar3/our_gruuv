@@ -61,7 +61,7 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
     end
 
     it 'filters by company shows only assignments with nil department' do
-      department = create(:organization, :department, parent: organization)
+      department = create(:department, company: organization)
       assignment_in_dept = create(:assignment, company: organization, department: department, semantic_version: '1.0.0')
       assignment_no_dept = create(:assignment, company: organization, department: nil, semantic_version: '1.0.0')
 
@@ -73,7 +73,7 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
     end
 
     it 'filters by department' do
-      department = create(:organization, :department, parent: organization)
+      department = create(:department, company: organization)
       assignment_in_dept = create(:assignment, company: organization, department: department, semantic_version: '1.0.0')
       assignment_no_dept = create(:assignment, company: organization, department: nil, semantic_version: '1.0.0')
 
@@ -84,7 +84,7 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
     end
 
     it 'filters by both company and department' do
-      department = create(:organization, :department, parent: organization)
+      department = create(:department, company: organization)
       assignment_in_dept = create(:assignment, company: organization, department: department, semantic_version: '1.0.0')
       assignment_no_dept = create(:assignment, company: organization, department: nil, semantic_version: '1.0.0')
 
@@ -142,7 +142,7 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
     end
 
     it 'groups assignments by department in spotlight stats' do
-      department = create(:organization, :department, parent: organization)
+      department = create(:department, company: organization)
       assignment_with_dept = create(:assignment, company: organization, department: department)
       
       get :index, params: { organization_id: organization.id, spotlight: 'by_department' }
@@ -154,7 +154,7 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
     end
 
     it 'calculates spotlight stats using filtered assignments' do
-      department = create(:organization, :department, parent: organization)
+      department = create(:department, company: organization)
       assignment_with_dept_v1 = create(:assignment, company: organization, department: department, semantic_version: '1.0.0')
       assignment_with_dept_v2 = create(:assignment, company: organization, department: department, semantic_version: '2.0.0')
       

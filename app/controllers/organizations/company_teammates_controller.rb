@@ -371,10 +371,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         current = assignment.department
         dept_path = []
         while current
-          # Stop before including the company (which is already in the path)
-          break if current.company?
           dept_path.unshift(current.name)
-          current = current.parent
+          current = current.parent_department
         end
         path.concat(dept_path)
       end

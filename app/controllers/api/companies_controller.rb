@@ -4,7 +4,7 @@ class Api::CompaniesController < ApplicationController
     company = Company.find_by(name: company_name)
     
     if company
-      teams = company.children.where(type: 'Team').order(:name)
+      teams = company.teams.order(:name)
       render json: { teams: teams.map { |team| { name: team.name } } }
     else
       render json: { teams: [] }

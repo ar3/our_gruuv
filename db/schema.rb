@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_01_000007) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -729,12 +729,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000007) do
   create_table "organizations", force: :cascade do |t|
     t.string "name"
     t.string "type"
-    t.bigint "parent_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "deleted_at"
     t.index ["deleted_at"], name: "index_organizations_on_deleted_at"
-    t.index ["parent_id"], name: "index_organizations_on_parent_id"
   end
 
   create_table "page_visits", force: :cascade do |t|
@@ -1218,7 +1216,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000007) do
   add_foreign_key "observees", "observations"
   add_foreign_key "observees", "teammates"
   add_foreign_key "one_on_one_links", "teammates"
-  add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "page_visits", "people"
   add_foreign_key "person_identities", "people"
   add_foreign_key "position_assignments", "assignments"

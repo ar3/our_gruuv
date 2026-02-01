@@ -156,18 +156,13 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   
   def new
     @organization = Organization.new
-    @organization.parent_id = params[:parent_id] if params[:parent_id].present?
   end
   
   def create
     @organization = Organization.new(organization_params)
     
     if @organization.save
-      if @organization.parent.present?
-        redirect_to organization_path(@organization.parent), notice: 'Child organization was successfully created.'
-      else
-        redirect_to organizations_path, notice: 'Organization was successfully created.'
-      end
+      redirect_to organizations_path, notice: 'Organization was successfully created.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -405,12 +400,12 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       
       @total_potential_employees = (access_people + huddle_people).uniq.count
       @total_teams = @organization.teams.count
-      @total_departments = @organization.children.departments.count
+      @total_departments = @organization.departments.count
       
-      # Align stats (positions and assignments across all sub-organizations)
-      @total_positions = @organization.positions.count + @organization.children.sum { |child| child.positions.count }
-      @total_assignments = @organization.assignments.count + @organization.children.sum { |child| child.assignments.count }
-      @total_seats = @organization.seats.count + @organization.children.sum { |child| child.seats.count }
+      # Align stats (positions and assignments)
+      @total_positions = @organization.positions.count
+      @total_assignments = @organization.assignments.count
+      @total_seats = @organization.seats.count
       
       # Collaborate stats (huddles and ratings)
       this_week_start = Time.current.beginning_of_week(:monday)
@@ -435,14 +430,14 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     if @organization.company?
       @total_employees = @organization.employees.count
       @total_teams = @organization.teams.count
-      @total_departments = @organization.children.departments.count
+      @total_departments = @organization.departments.count
       
       # Recent huddles for this organization
       @recent_org_huddles = @organization.huddles.recent.limit(3)
       
       # Basic pillar stats (will be expanded)
-      @total_positions = @organization.positions.count + @organization.children.sum { |child| child.positions.count }
-      @total_assignments = @organization.assignments.count + @organization.children.sum { |child| child.assignments.count }
+      @total_positions = @organization.positions.count
+      @total_assignments = @organization.assignments.count
       @total_abilities = @organization.abilities.count
       
       # Observation statistics for dashboard

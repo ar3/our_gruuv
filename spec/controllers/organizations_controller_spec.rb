@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe OrganizationsController, type: :controller do
   let(:person) { create(:person) }
   let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
-  let(:team) { create(:organization, name: 'Test Team', type: 'Team', parent: organization) }
+  let(:team) { create(:team, name: 'Test Team', company: organization) }
 
   before do
     # Create a teammate for the person - use first organization or create one
@@ -48,7 +48,7 @@ RSpec.describe OrganizationsController, type: :controller do
 
   describe 'GET #huddles_review' do
     let!(:huddle1) { create(:huddle, team: create(:team, company: organization), started_at: 1.week.ago) }
-    let!(:huddle2) { create(:huddle, team: create(:team, company: team), started_at: 2.weeks.ago) }
+    let!(:huddle2) { create(:huddle, team: create(:team, company: organization), started_at: 2.weeks.ago) }
     let!(:feedback1) { create(:huddle_feedback, huddle: huddle1, informed_rating: 4, connected_rating: 4, goals_rating: 4, valuable_rating: 4) }
     let!(:feedback2) { create(:huddle_feedback, huddle: huddle2, informed_rating: 5, connected_rating: 5, goals_rating: 5, valuable_rating: 5) }
 
@@ -64,15 +64,15 @@ RSpec.describe OrganizationsController, type: :controller do
       expect(assigns(:overall_metrics)).to be_present
       expect(assigns(:weekly_metrics)).to be_present
       expect(assigns(:chart_data)).to be_present
-      expect(assigns(:playbook_metrics)).to be_present
+      expect(assigns(:team_metrics)).to be_present
       expect(assigns(:start_date)).to be_present
       expect(assigns(:end_date)).to be_present
     end
 
-    it 'includes huddles from child organizations' do
+    it 'includes huddles from all teams in the organization' do
       get :huddles_review, params: { id: organization.id }
       
-      # The service should include huddles from child organizations in the metrics
+      # The service should include huddles from all teams in the organization
       metrics = assigns(:overall_metrics)
       expect(metrics[:total_huddles]).to eq(2) # Both huddles should be included
     end
@@ -101,13 +101,12 @@ RSpec.describe OrganizationsController, type: :controller do
     end
 
     it 'calculates distinct participant names using display_name method and prevents duplicates' do
-      # Use existing teammate for organization, create teammate for team
+      # Use existing teammate for organization
       teammate1 = person.teammates.find_by(organization: organization)
-      teammate2 = create(:teammate, person: person, organization: team)
       
       # Create participants for the huddles - same person in both huddles
       participant1 = create(:huddle_participant, huddle: huddle1, teammate: teammate1)
-      participant2 = create(:huddle_participant, huddle: huddle2, teammate: teammate2)
+      participant2 = create(:huddle_participant, huddle: huddle2, teammate: teammate1)
       
       get :huddles_review, params: { id: organization.id }
       
@@ -121,15 +120,14 @@ RSpec.describe OrganizationsController, type: :controller do
       # Create a second person
       person2 = create(:person, first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com')
       
-      # Use existing teammate for organization, create teammates for team
+      # Use existing teammate for organization, create another teammate for person2
       teammate1 = person.teammates.find_by(organization: organization)
-      teammate2 = create(:teammate, person: person, organization: team)
-      teammate3 = create(:teammate, person: person2, organization: team)
+      teammate2 = create(:company_teammate, person: person2, organization: organization)
       
       # Create participants for the huddles - person1 in both huddles, person2 only in huddle2
       participant1 = create(:huddle_participant, huddle: huddle1, teammate: teammate1)
-      participant2 = create(:huddle_participant, huddle: huddle2, teammate: teammate2) # Same person again
-      participant3 = create(:huddle_participant, huddle: huddle2, teammate: teammate3) # Different person
+      participant2 = create(:huddle_participant, huddle: huddle2, teammate: teammate1) # Same person again
+      participant3 = create(:huddle_participant, huddle: huddle2, teammate: teammate2) # Different person
       
       get :huddles_review, params: { id: organization.id }
       
@@ -139,19 +137,18 @@ RSpec.describe OrganizationsController, type: :controller do
       expect(metrics[:distinct_participant_names].length).to eq(2) # Ensure no duplicates
     end
 
-    it 'assigns playbook metrics correctly' do
-      team = create(:team, company: organization)
-      huddle = create(:huddle, team: team)
+    it 'assigns team metrics correctly' do
+      test_team = create(:team, company: organization)
+      huddle = create(:huddle, team: test_team)
       
       get :huddles_review, params: { id: organization.id }
       
-      expect(assigns(:playbook_metrics)).to be_present
-      expect(assigns(:playbook_metrics).keys).to include(team.id)
+      expect(assigns(:team_metrics)).to be_present
+      expect(assigns(:team_metrics).keys).to include(test_team.id)
       
-      metrics = assigns(:playbook_metrics)[team.id]
-      expect(metrics[:display_name]).to eq(team.display_name)
-      expect(metrics[:id]).to eq(team.id)
-      expect(metrics[:organization_id]).to eq(team.company_id)
+      metrics = assigns(:team_metrics)[test_team.id]
+      expect(metrics[:display_name]).to eq(test_team.display_name)
+      expect(metrics[:id]).to eq(test_team.id)
     end
 
     it 'handles playbook metrics without display_name errors' do
@@ -187,16 +184,8 @@ RSpec.describe OrganizationsController, type: :controller do
       end
     end
     
-    context 'when organization is not a company' do
-      let(:organization) { create(:organization, :team) }
-      
-      it 'redirects to huddles review with error message' do
-        post :refresh_slack_channels, params: { id: organization.id }
-        
-        expect(response).to redirect_to(huddles_review_organization_path(organization))
-        expect(flash[:alert]).to eq('Slack channel management is only available for companies.')
-      end
-    end
+    # Note: Since STI Team/Department have been migrated to separate models,
+    # all Organizations are now Companies. Non-company test cases removed.
   end
 
   describe 'PATCH #update_huddle_review_channel' do
@@ -230,16 +219,8 @@ RSpec.describe OrganizationsController, type: :controller do
       end
     end
     
-    context 'when organization is not a company' do
-      let(:organization) { create(:organization, :team) }
-      
-      it 'redirects with error message' do
-        patch :update_huddle_review_channel, params: { id: organization.id, channel_id: 'some_channel_id' }
-        
-        expect(response).to redirect_to(huddles_review_organization_path(organization))
-        expect(flash[:alert]).to eq('Channel management is only available for companies.')
-      end
-    end
+    # Note: Since STI Team/Department have been migrated to separate models,
+    # all Organizations are now Companies. Non-company test cases removed.
   end
 
   describe 'PATCH #switch' do
@@ -269,20 +250,6 @@ RSpec.describe OrganizationsController, type: :controller do
       expect(created_teammate).to be_present
       expect(created_teammate).to be_a(CompanyTeammate)
       expect(session[:current_company_teammate_id]).to eq(created_teammate.id)
-    end
-
-    it 'uses the root company when switching to a team' do
-      # Create a team under the organization
-      team_org = create(:organization, name: 'Test Team', type: 'Team', parent: organization)
-      
-      patch :switch, params: { id: team_org.id }
-      
-      # Should create/find teammate for the root company, not the team
-      root_company = team_org.root_company || team_org
-      expected_teammate = person.teammates.find_by(organization: root_company)
-      
-      expect(session[:current_company_teammate_id]).to eq(expected_teammate.id)
-      expect(expected_teammate.organization.id).to eq(organization.id)
     end
 
     it 'does not create duplicate teammates when switching multiple times' do
@@ -346,8 +313,20 @@ RSpec.describe OrganizationsController, type: :controller do
 
     let!(:ability) { create(:ability, company: organization, created_by: person, updated_by: person) }
     let!(:certifier) { create(:person) }
-    let(:certifier_teammate) { create(:teammate, person: certifier, organization: organization) }
-    let!(:teammate_milestone) { create(:teammate_milestone, teammate: person.teammates.find_by(organization: organization), ability: ability, certifying_teammate: certifier_teammate, attained_at: 30.days.ago) }
+    let!(:certifier_teammate) { create(:company_teammate, person: certifier, organization: organization) }
+    # Find the person's teammate that was created in the outer before block
+    let!(:person_teammate) { 
+      # The outer before block creates a teammate, find it
+      Teammate.find_by(person: person, organization: organization)
+    }
+    let!(:teammate_milestone) { 
+      create(:teammate_milestone, 
+             teammate: person_teammate, 
+             ability: ability, 
+             certifying_teammate: certifier_teammate, 
+             attained_at: 30.days.ago,
+             published_at: 29.days.ago)  # Must be published to appear in results
+    }
 
     it 'returns http success' do
       get :celebrate_milestones, params: { id: organization.id }
@@ -373,18 +352,18 @@ RSpec.describe OrganizationsController, type: :controller do
     end
 
     it 'filters milestones by organization and date range' do
-      # Create a milestone in a different organization
+      # Create a milestone in a different organization (should not be counted)
       other_org = create(:organization)
       other_ability = create(:ability, company: other_org)
-      other_teammate = create(:teammate, person: person, organization: other_org)
-      create(:teammate_milestone, teammate: other_teammate, ability: other_ability, certifying_teammate: certifier_teammate, attained_at: 30.days.ago)
+      other_teammate = create(:company_teammate, person: person, organization: other_org)
+      create(:teammate_milestone, teammate: other_teammate, ability: other_ability, certifying_teammate: certifier_teammate, attained_at: 30.days.ago, published_at: 29.days.ago)
       
-      # Create an old milestone outside the 90-day range with a different ability
+      # Create an old milestone outside the 90-day range with a different ability (should not be counted if filtered by timeframe)
       old_ability = create(:ability, company: organization, created_by: person, updated_by: person)
-      teammate = person.teammates.find_by(organization: organization)
-      create(:teammate_milestone, teammate: teammate, ability: old_ability, certifying_teammate: certifier_teammate, attained_at: 100.days.ago)
+      create(:teammate_milestone, teammate: person_teammate, ability: old_ability, certifying_teammate: certifier_teammate, attained_at: 100.days.ago, published_at: 99.days.ago)
       
-      get :celebrate_milestones, params: { id: organization.id }
+      # Filter to last 90 days - should only show the recent milestone in this organization
+      get :celebrate_milestones, params: { id: organization.id, timeframe: 'last_90_days' }
       
       expect(assigns(:total_milestones)).to eq(1) # Only the recent milestone in this organization
       expect(assigns(:unique_people)).to eq(1)

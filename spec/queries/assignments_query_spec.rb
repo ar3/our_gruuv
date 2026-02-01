@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe AssignmentsQuery, type: :query do
   let(:organization) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: organization) }
+  let(:department) { create(:department, company: organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   
@@ -53,7 +53,7 @@ RSpec.describe AssignmentsQuery, type: :query do
     end
 
     context 'filtering by multiple departments' do
-      let(:department2) { create(:organization, :department, parent: organization) }
+      let(:department2) { create(:department, company: organization) }
       let(:assignment_department2) { create(:assignment, company: organization, department: department2) }
       
       it 'returns assignments from all selected departments' do

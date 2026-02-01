@@ -1,6 +1,6 @@
 class Company < Organization
   # Companies are the top-level organizations
-  validates :parent, absence: true
+  # Note: parent hierarchy has been removed - companies are standalone top-level organizations
 
   # Third party object associations
   has_one :huddle_review_notification_channel_association, 

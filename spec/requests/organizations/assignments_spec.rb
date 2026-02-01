@@ -420,9 +420,9 @@ RSpec.describe 'Organizations::Assignments', type: :request do
   end
 
   describe 'GET /organizations/:organization_id/assignments with department filters' do
-    let!(:department1) { create(:organization, type: 'Department', parent: organization) }
-    let!(:department2) { create(:organization, type: 'Department', parent: organization) }
-    let!(:department3) { create(:organization, type: 'Department', parent: organization) }
+    let!(:department1) { create(:department, company: organization) }
+    let!(:department2) { create(:department, company: organization) }
+    let!(:department3) { create(:department, company: organization) }
     let!(:assignment_dept1) { create(:assignment, company: organization, department: department1) }
     let!(:assignment_dept2) { create(:assignment, company: organization, department: department2) }
     let!(:assignment_no_dept) { create(:assignment, company: organization, department: nil) }

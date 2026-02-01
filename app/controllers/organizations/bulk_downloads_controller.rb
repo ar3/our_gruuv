@@ -579,20 +579,20 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # Count teammates
         teammates_count = org.teammates.count
         
-        # Count child departments and teams
-        child_departments_count = org.children.where(type: 'Department').count
-        child_teams_count = org.children.where(type: 'Team').count
+        # Count departments and teams
+        departments_count = org.departments.count
+        teams_count = org.teams.count
         
         csv << [
           org.id,
           org.name,
           org.type,
-          org.parent&.display_name || '',
+          '',  # No parent hierarchy anymore
           seats_count,
           titles_count,
           teammates_count,
-          child_departments_count,
-          child_teams_count,
+          departments_count,
+          teams_count,
           org.created_at&.to_s || '',
           org.updated_at&.to_s || ''
         ]

@@ -278,55 +278,54 @@ RSpec.describe Organization, type: :model do
   end
 
   describe 'archiving' do
-    let(:department) { create(:organization, :department, parent: company) }
-    let(:sub_department) { create(:organization, :department, parent: department) }
+    let(:other_company) { create(:organization, :company) }
 
     describe 'scopes' do
       describe '.active' do
         it 'returns only organizations without deleted_at' do
-          archived_org = create(:organization, :department, parent: company, deleted_at: Time.current)
+          archived_org = create(:organization, :company, deleted_at: Time.current)
 
           active_orgs = Organization.active
-          expect(active_orgs).to include(company, department, sub_department)
+          expect(active_orgs).to include(company, other_company)
           expect(active_orgs).not_to include(archived_org)
         end
       end
 
       describe '.archived' do
         it 'returns only organizations with deleted_at' do
-          archived_org = create(:organization, :department, parent: company, deleted_at: Time.current)
+          archived_org = create(:organization, :company, deleted_at: Time.current)
 
           archived_orgs = Organization.archived
           expect(archived_orgs).to include(archived_org)
-          expect(archived_orgs).not_to include(company, department, sub_department)
+          expect(archived_orgs).not_to include(company, other_company)
         end
       end
     end
 
     describe '#soft_delete!' do
       it 'sets deleted_at timestamp' do
-        expect(department.deleted_at).to be_nil
-        department.soft_delete!
-        expect(department.reload.deleted_at).to be_present
+        expect(other_company.deleted_at).to be_nil
+        other_company.soft_delete!
+        expect(other_company.reload.deleted_at).to be_present
       end
     end
 
     describe '#restore!' do
       it 'clears deleted_at timestamp' do
-        department.update!(deleted_at: Time.current)
-        department.restore!
-        expect(department.reload.deleted_at).to be_nil
+        other_company.update!(deleted_at: Time.current)
+        other_company.restore!
+        expect(other_company.reload.deleted_at).to be_nil
       end
     end
 
     describe '#archived?' do
       it 'returns true when deleted_at is present' do
-        department.update!(deleted_at: Time.current)
-        expect(department.archived?).to be true
+        other_company.update!(deleted_at: Time.current)
+        expect(other_company.archived?).to be true
       end
 
       it 'returns false when deleted_at is nil' do
-        expect(department.archived?).to be false
+        expect(other_company.archived?).to be false
       end
     end
 
@@ -335,7 +334,7 @@ RSpec.describe Organization, type: :model do
         # Since departments are now a separate model, Organization.descendants returns []
         # This test verifies the current behavior
         expect(company.descendants).to eq([])
-        expect(department.descendants).to eq([])
+        expect(other_company.descendants).to eq([])
       end
     end
   end

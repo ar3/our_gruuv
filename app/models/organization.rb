@@ -14,8 +14,6 @@ class Organization < ApplicationRecord
   default_scope { where.not(type: ['Team', 'Department']) }
   
   # Associations
-  belongs_to :parent, class_name: 'Organization', optional: true
-  has_many :children, class_name: 'Organization', foreign_key: 'parent_id'
   has_many :teams, foreign_key: :company_id, dependent: :destroy
   has_many :departments, foreign_key: :company_id, dependent: :destroy
   has_many :assignments, foreign_key: 'company_id', dependent: :destroy
@@ -71,8 +69,8 @@ class Organization < ApplicationRecord
   end
   
   def root_company
-    return self if company? && parent.nil?
-    return parent.root_company if parent
+    # Organizations no longer have parent hierarchy - each Organization is its own root
+    return self if company?
     nil
   end
   
@@ -83,11 +81,7 @@ class Organization < ApplicationRecord
   end
   
   def display_name
-    if parent
-      "#{parent.display_name} > #{name}"
-    else
-      name
-    end
+    name
   end
 
   def to_param
@@ -179,8 +173,8 @@ class Organization < ApplicationRecord
   end
   
   def ancestry_depth
-    return 0 if parent.nil?
-    parent.ancestry_depth + 1
+    # Organizations no longer have parent hierarchy
+    0
   end
   
   def employees

@@ -37,8 +37,8 @@ class Organizations::SlackController < Organizations::OrganizationNamespaceBaseC
                                  .where(third_party_source: 'slack', third_party_object_type: 'group')
                                  .count
     
-    # Organization hierarchy summary
-    @total_departments = @organization.children.where(type: 'Department').count
+    # Organization summary
+    @total_departments = @organization.departments.count
     @total_teams = @organization.teams.count
   end
   
