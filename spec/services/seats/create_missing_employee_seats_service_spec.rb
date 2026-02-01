@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
   let(:organization) { create(:organization, :company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:service) { described_class.new(organization) }

@@ -6,7 +6,7 @@ RSpec.describe Organizations::InsightsController, type: :controller do
   let(:person_teammate) { create(:teammate, person: person, organization: company, first_employed_at: 1.year.ago) }
   let(:department) { create(:organization, :department, parent: company, name: 'Engineering') }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level, department: department) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level, department: department) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, title: title, position_level: position_level) }
 
@@ -49,7 +49,7 @@ RSpec.describe Organizations::InsightsController, type: :controller do
 
     it 'groups seats by department' do
       dept2 = create(:organization, :department, parent: company, name: 'Product')
-      title2 = create(:title, organization: company, position_major_level: position_major_level, department: dept2, external_title: 'PM')
+      title2 = create(:title, company: company, position_major_level: position_major_level, department: dept2, external_title: 'PM')
       
       # Ensure title exists
       title
@@ -64,7 +64,7 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     end
 
     it 'counts seats without department' do
-      title_no_dept = create(:title, organization: company, position_major_level: position_major_level, department: nil, external_title: 'General')
+      title_no_dept = create(:title, company: company, position_major_level: position_major_level, department: nil, external_title: 'General')
       create(:seat, title: title_no_dept, seat_needed_by: Date.current)
       
       get :seats_titles_positions, params: { organization_id: company.id }
@@ -75,7 +75,7 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     it 'calculates total titles' do
       # Ensure title exists first
       title
-      create(:title, organization: company, position_major_level: position_major_level, external_title: 'Title 2')
+      create(:title, company: company, position_major_level: position_major_level, external_title: 'Title 2')
       
       get :seats_titles_positions, params: { organization_id: company.id }
       
@@ -93,7 +93,7 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     end
 
     it 'counts titles without department' do
-      title_no_dept = create(:title, organization: company, position_major_level: position_major_level, department: nil, external_title: 'General')
+      title_no_dept = create(:title, company: company, position_major_level: position_major_level, department: nil, external_title: 'General')
       
       get :seats_titles_positions, params: { organization_id: company.id }
       
@@ -115,7 +115,7 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       # Title with 1 position
       position
       # Title with 0 positions
-      title2 = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Title 2')
+      title2 = create(:title, company: company, position_major_level: position_major_level, external_title: 'Title 2')
       
       get :seats_titles_positions, params: { organization_id: company.id }
       
@@ -178,8 +178,8 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     end
 
     it 'calculates total abilities' do
-      create(:ability, organization: company, created_by: person, updated_by: person)
-      create(:ability, organization: company, created_by: person, updated_by: person)
+      create(:ability, company: company, created_by: person, updated_by: person)
+      create(:ability, company: company, created_by: person, updated_by: person)
       
       get :abilities, params: { organization_id: company.id }
       

@@ -6,7 +6,7 @@ RSpec.describe TitleSaveService, type: :service do
   let(:position_major_level2) { create(:position_major_level, major_level: 2, set_name: 'Engineering') }
   let(:position_level1) { create(:position_level, position_major_level: position_major_level1, level: '1.1') }
   let(:position_level2) { create(:position_level, position_major_level: position_major_level1, level: '1.2') }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level1) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level1) }
   let(:position1) { create(:position, title: title, position_level: position_level1) }
   let(:position2) { create(:position, title: title, position_level: position_level2) }
 

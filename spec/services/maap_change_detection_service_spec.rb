@@ -117,7 +117,7 @@ RSpec.describe MaapChangeDetectionService do
   end
   
   describe '#aspiration_changes_count' do
-    let(:aspiration) { create(:aspiration, organization: organization, name: 'Be Kind') }
+    let(:aspiration) { create(:aspiration, company: organization, name: 'Be Kind') }
     let(:previous_snapshot) { create(:maap_snapshot, created_at: 2.days.ago) }
     let(:snapshot) { create(:maap_snapshot, created_at: 1.day.ago) }
     

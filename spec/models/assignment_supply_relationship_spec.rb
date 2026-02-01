@@ -70,7 +70,7 @@ RSpec.describe AssignmentSupplyRelationship, type: :model do
     end
 
     it 'allows relationships within company hierarchy' do
-      department = create(:organization, :department, parent: company)
+      department = create(:department, company: company)
       department_assignment = create(:assignment, company: company, department: department)
       
       relationship = AssignmentSupplyRelationship.new(

@@ -5,9 +5,9 @@ RSpec.describe Observation, type: :model do
   let(:observer) { create(:person) }
   let(:teammate1) { create(:teammate, organization: company) }
   let(:teammate2) { create(:teammate, organization: company) }
-  let(:ability) { create(:ability, organization: company) }
+  let(:ability) { create(:ability, company: company) }
   let(:assignment) { create(:assignment, company: company) }
-  let(:aspiration) { create(:aspiration, organization: company) }
+  let(:aspiration) { create(:aspiration, company: company) }
 
   let(:observation) do
     build(:observation,

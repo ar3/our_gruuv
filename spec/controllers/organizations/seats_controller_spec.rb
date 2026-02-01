@@ -5,7 +5,7 @@ RSpec.describe Organizations::SeatsController, type: :controller do
   let(:company) { create(:organization, :company) }
   let(:person_teammate) { create(:teammate, person: person, organization: company, first_employed_at: 1.year.ago) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, title: title, position_level: position_level) }
   
@@ -100,9 +100,9 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       dept_a = create(:organization, :department, parent: company, name: 'Department A')
       dept_b = create(:organization, :department, parent: company, name: 'Department B')
       
-      title_a = create(:title, organization: company, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
-      title_b = create(:title, organization: company, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
-      title_no_dept = create(:title, organization: company, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
+      title_a = create(:title, company: company, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
+      title_b = create(:title, company: company, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
+      title_no_dept = create(:title, company: company, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
       
       seat_a = create(:seat, title: title_a, seat_needed_by: Date.current)
       seat_b = create(:seat, title: title_b, seat_needed_by: Date.current + 1.month)
@@ -130,10 +130,10 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       dept_a1 = create(:organization, :department, parent: dept_a, name: 'Department A.1')
       dept_b = create(:organization, :department, parent: company, name: 'Department B')
       
-      title_a = create(:title, organization: company, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
-      title_a1 = create(:title, organization: company, department: dept_a1, position_major_level: position_major_level, external_title: 'Title A1')
-      title_b = create(:title, organization: company, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
-      title_no_dept = create(:title, organization: company, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
+      title_a = create(:title, company: company, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
+      title_a1 = create(:title, company: company, department: dept_a1, position_major_level: position_major_level, external_title: 'Title A1')
+      title_b = create(:title, company: company, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
+      title_no_dept = create(:title, company: company, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
       
       create(:seat, title: title_a, seat_needed_by: Date.current)
       create(:seat, title: title_a1, seat_needed_by: Date.current)
@@ -160,8 +160,8 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     it 'sorts seats within each department by title then seat_needed_by' do
       dept = create(:organization, :department, parent: company, name: 'Department A')
       
-      title_z = create(:title, organization: company, department: dept, position_major_level: position_major_level, external_title: 'Z Title')
-      title_a = create(:title, organization: company, department: dept, position_major_level: position_major_level, external_title: 'A Title')
+      title_z = create(:title, company: company, department: dept, position_major_level: position_major_level, external_title: 'Z Title')
+      title_a = create(:title, company: company, department: dept, position_major_level: position_major_level, external_title: 'A Title')
       
       seat_z_later = create(:seat, title: title_z, seat_needed_by: Date.current + 2.months)
       seat_a_earlier = create(:seat, title: title_a, seat_needed_by: Date.current)
@@ -201,7 +201,7 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     end
 
     it 'calculates spotlight stats for position types' do
-      title2 = create(:title, organization: company, position_major_level: position_major_level, external_title: "Product Manager")
+      title2 = create(:title, company: company, position_major_level: position_major_level, external_title: "Product Manager")
       create(:seat, title: title, seat_needed_by: Date.current)
       # title2 has no seats
       
@@ -457,7 +457,7 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       end
 
       it 'creates seats for position types without seats' do
-        title2 = create(:title, organization: company, position_major_level: position_major_level, external_title: "Product Manager")
+        title2 = create(:title, company: company, position_major_level: position_major_level, external_title: "Product Manager")
         
         # Both title and title2 don't have seats, so 2 seats will be created
         expect {

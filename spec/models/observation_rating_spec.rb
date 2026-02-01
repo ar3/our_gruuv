@@ -3,9 +3,9 @@ require 'rails_helper'
 RSpec.describe ObservationRating, type: :model do
   let(:company) { create(:organization, :company) }
   let(:observation) { build(:observation, company: company).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save! } }
-  let(:ability) { create(:ability, organization: company) }
+  let(:ability) { create(:ability, company: company) }
   let(:assignment) { create(:assignment, company: company) }
-  let(:aspiration) { create(:aspiration, organization: company) }
+  let(:aspiration) { create(:aspiration, company: company) }
 
   let(:observation_rating) do
     build(:observation_rating, observation: observation, rateable: ability, rating: :agree)
@@ -62,7 +62,7 @@ RSpec.describe ObservationRating, type: :model do
     let!(:positive_rating1) { create(:observation_rating, observation: observation, rateable: ability, rating: :strongly_agree) }
     let!(:positive_rating2) { create(:observation_rating, observation: observation, rateable: assignment, rating: :agree) }
     let!(:negative_rating1) { create(:observation_rating, observation: observation, rateable: aspiration, rating: :disagree) }
-    let!(:negative_rating2) { create(:observation_rating, observation: observation, rateable: create(:ability, organization: company), rating: :strongly_disagree) }
+    let!(:negative_rating2) { create(:observation_rating, observation: observation, rateable: create(:ability, company: company), rating: :strongly_disagree) }
     let!(:neutral_rating) { create(:observation_rating, observation: observation, rateable: create(:assignment, company: company), rating: :na) }
 
     describe '.positive' do

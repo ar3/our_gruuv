@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Organizations::TitlesController, type: :controller do
   let(:organization) { create(:organization) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
   let(:person) { create(:person) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:source_position) { create(:position, title: title, position_level: position_level) }
@@ -413,7 +413,7 @@ RSpec.describe Organizations::TitlesController, type: :controller do
     end
 
     it 'only includes teammates with positions of this position type' do
-      other_title = create(:title, organization: organization)
+      other_title = create(:title, company: organization)
       other_position = create(:position, title: other_title, position_level: create(:position_level, position_major_level: other_title.position_major_level))
       other_employee_person = create(:person)
       other_employee_teammate = create(:teammate, person: other_employee_person, organization: organization)

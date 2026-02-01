@@ -43,7 +43,7 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       huddle = Huddle.last
       expect(huddle).to be_present
       # Compare by ID since STI types may differ (Organization vs Team)
-      expect(huddle.huddle_playbook.company.id).to eq(existing_team.id)
+      expect(huddle.team.company.id).to eq(existing_team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: company.id)
@@ -52,7 +52,7 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       # click_button 'Start Huddle'
       # huddle = Huddle.last
       # expect(huddle.name).to eq('Company Huddle')
-      # expect(huddle.huddle_playbook.organization).to eq(company)
+      # expect(huddle.team.organization).to eq(company)
       
       # Approach 3: Check for redirect to huddle page
       # visit new_huddle_path(organization_id: company.id)
@@ -91,7 +91,7 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       huddle = Huddle.last
       expect(huddle).to be_present
       # Compare by ID since STI types may differ
-      expect(huddle.huddle_playbook.company.id).to eq(department_as_team.id)
+      expect(huddle.team.company.id).to eq(department_as_team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: department.id)
@@ -169,7 +169,7 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       expect(new_team).to be_present
       huddle = Huddle.last
       expect(huddle).to be_present
-      expect(huddle.huddle_playbook.company.id).to eq(new_team.id)
+      expect(huddle.team.company.id).to eq(new_team.id)
       
       # Approach 2: Use JavaScript to trigger team creation
       # visit new_huddle_path(organization_id: company.id)
@@ -191,29 +191,29 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       # click_button 'Start Huddle'
       # new_team = Team.find_by(name: 'New Team')
       # expect(new_team).to be_present
-      # expect(Huddle.last.huddle_playbook.organization).to eq(new_team)
+      # expect(Huddle.last.team.organization).to eq(new_team)
     end
   end
 
   describe 'Participants view huddle and feedback show details' do
-    let!(:huddle_playbook) { create(:huddle_playbook, company: company) }
-    let!(:huddle) { create(:huddle, huddle_playbook: huddle_playbook, started_at: Time.current) }
+    let!(:team) { create(:team, company: company) }
+    let!(:huddle) { create(:huddle, team: team, started_at: Time.current) }
     let!(:participant) { create(:huddle_participant, huddle: huddle, teammate: teammate) }
 
     it 'shows feedback form on first feedback' do
       # Approach 1: Check for "Submit Feedback" link (based on HAML - line 123)
       visit huddle_path(huddle)
-      expect(page).to have_content(huddle_playbook.special_session_name)
+      expect(page).to have_content(team.special_session_name)
       expect(page).to have_link('Submit Feedback', href: feedback_huddle_path(huddle))
       
       # Approach 2: Find link by href
       # visit huddle_path(huddle)
-      # expect(page).to have_content(huddle_playbook.special_session_name)
+      # expect(page).to have_content(team.special_session_name)
       # expect(page).to have_css("a[href='#{feedback_huddle_path(huddle)}']")
       
       # Approach 3: Check for button or link with feedback text
       # visit huddle_path(huddle)
-      # expect(page).to have_content(huddle_playbook.special_session_name)
+      # expect(page).to have_content(team.special_session_name)
       # expect(page).to have_css('a, button', text: /feedback|submit/i)
     end
 

@@ -12,8 +12,8 @@ RSpec.describe EmployeesHelper, type: :helper do
   describe '#format_snapshot_changes' do
     context 'with employment changes' do
       let(:position_major_level) { create(:position_major_level) }
-      let(:title1) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
-      let(:title2) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 2') }
+      let(:title1) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+      let(:title2) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'Engineer 2') }
       let(:position_level1) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position_level2) { create(:position_level, position_major_level: position_major_level, level: '1.2') }
       let(:position1) { create(:position, title: title1, position_level: position_level1) }
@@ -158,7 +158,7 @@ RSpec.describe EmployeesHelper, type: :helper do
     end
     
     context 'with milestone changes' do
-      let(:ability) { create(:ability, organization: organization) }
+      let(:ability) { create(:ability, company: organization) }
       let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
@@ -448,7 +448,7 @@ RSpec.describe EmployeesHelper, type: :helper do
     end
     
     context 'with aspiration changes' do
-      let(:aspiration) { create(:aspiration, organization: organization, name: 'Be Kind') }
+      let(:aspiration) { create(:aspiration, company: organization, name: 'Be Kind') }
       let(:previous_snapshot) do
         create(:maap_snapshot,
           employee_teammate: person,
@@ -514,7 +514,7 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     context 'with position changes when current is "none"' do
       let(:position_major_level) { create(:position_major_level) }
-      let(:title1) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+      let(:title1) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
       let(:position_level1) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position1) { create(:position, title: title1, position_level: position_level1) }
       let(:snapshot) do
@@ -569,7 +569,7 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     context 'with employment_type and official_position_rating changes' do
       let(:position_major_level) { create(:position_major_level) }
-      let(:title1) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+      let(:title1) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
       let(:position_level1) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position1) { create(:position, title: title1, position_level: position_level1) }
       let(:previous_snapshot) do
@@ -741,7 +741,7 @@ RSpec.describe EmployeesHelper, type: :helper do
 
   describe '#format_snapshot_all_fields' do
     let(:position_major_level) { create(:position_major_level) }
-    let(:title) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer') }
+    let(:title) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'Engineer') }
     let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
     let(:position) { create(:position, title: title, position_level: position_level) }
     let(:assignment) { create(:assignment, company: organization) }

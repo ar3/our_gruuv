@@ -5,7 +5,7 @@ RSpec.describe SeatPolicy, type: :policy do
   subject { described_class }
 
   let(:organization) { create(:organization, :company) }
-  let(:title) { create(:title, organization: organization) }
+  let(:title) { create(:title, company: organization) }
   let(:seat) { create(:seat, title: title) }
   
   let(:maap_manager_person) { create(:person) }

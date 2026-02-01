@@ -106,8 +106,8 @@ RSpec.describe Person, type: :model do
         person.last_name = 'Doe'
       end
 
-      it 'returns preferred name' do
-        expect(person.display_name).to eq('Johnny')
+      it 'returns preferred name with last name' do
+        expect(person.display_name).to eq('Johnny Doe')
       end
     end
 
@@ -487,24 +487,25 @@ RSpec.describe Person, type: :model do
 
   describe 'huddle participation methods' do
     let(:person) { create(:person) }
-    let(:huddle_playbook) { create(:huddle_playbook, special_session_name: 'Daily Standup') }
-    let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
-    let(:teammate) { create(:teammate, person: person, organization: huddle_playbook.company) }
+    let(:company) { create(:organization, :company) }
+    let(:team) { create(:team, company: company) }
+    let(:huddle) { create(:huddle, team: team) }
+    let(:teammate) { create(:teammate, person: person, organization: company) }
     let!(:huddle_participant) { create(:huddle_participant, teammate: teammate, huddle: huddle) }
     let!(:huddle_feedback) { create(:huddle_feedback, teammate: teammate, huddle: huddle) }
 
-    describe '#huddle_playbook_stats' do
-      it 'groups huddle participations by playbook' do
-        stats = person.huddle_playbook_stats
-        expect(stats).to have_key(huddle_playbook)
-        expect(stats[huddle_playbook]).to include(huddle_participant)
+    describe '#huddle_team_stats' do
+      it 'groups huddle participations by team' do
+        stats = person.huddle_team_stats
+        expect(stats).to have_key(team)
+        expect(stats[team]).to include(huddle_participant)
       end
 
-      it 'includes huddle and playbook associations' do
-        stats = person.huddle_playbook_stats
-        playbook_participations = stats[huddle_playbook]
-        expect(playbook_participations.first.huddle).to eq(huddle)
-        expect(playbook_participations.first.huddle.huddle_playbook).to eq(huddle_playbook)
+      it 'includes huddle and team associations' do
+        stats = person.huddle_team_stats
+        team_participations = stats[team]
+        expect(team_participations.first.huddle).to eq(huddle)
+        expect(team_participations.first.huddle.team).to eq(team)
       end
     end
 
@@ -514,18 +515,17 @@ RSpec.describe Person, type: :model do
       end
     end
 
-    describe '#total_huddle_playbooks' do
-      it 'returns total count of distinct playbooks' do
-        expect(person.total_huddle_playbooks).to eq(1)
+    describe '#total_huddle_teams' do
+      it 'returns total count of distinct teams' do
+        expect(person.total_huddle_teams).to eq(1)
       end
 
-      it 'handles multiple playbooks correctly' do
-        second_playbook = create(:huddle_playbook, special_session_name: 'Weekly Retro')
-        second_huddle = create(:huddle, huddle_playbook: second_playbook)
-        second_teammate = create(:teammate, person: person, organization: second_playbook.company)
-        create(:huddle_participant, teammate: second_teammate, huddle: second_huddle)
+      it 'handles multiple teams correctly' do
+        second_team = create(:team, company: company)
+        second_huddle = create(:huddle, team: second_team)
+        create(:huddle_participant, teammate: teammate, huddle: second_huddle)
         
-        expect(person.total_huddle_playbooks).to eq(2)
+        expect(person.total_huddle_teams).to eq(2)
       end
     end
 
@@ -557,9 +557,9 @@ RSpec.describe Person, type: :model do
       end
     end
 
-    describe '#huddle_stats_for_playbook' do
-      it 'returns comprehensive stats for a specific playbook' do
-        stats = person.huddle_stats_for_playbook(huddle_playbook)
+    describe '#huddle_stats_for_team' do
+      it 'returns comprehensive stats for a specific team' do
+        stats = person.huddle_stats_for_team(team)
         
         expect(stats[:total_huddles_held]).to eq(1)
         expect(stats[:participations_count]).to eq(1)
@@ -568,9 +568,9 @@ RSpec.describe Person, type: :model do
         expect(stats[:average_rating]).to be > 0
       end
 
-      it 'handles playbook with no huddles' do
-        empty_playbook = create(:huddle_playbook)
-        stats = person.huddle_stats_for_playbook(empty_playbook)
+      it 'handles team with no huddles' do
+        empty_team = create(:team, company: company)
+        stats = person.huddle_stats_for_team(empty_team)
         
         expect(stats[:total_huddles_held]).to eq(0)
         expect(stats[:participations_count]).to eq(0)

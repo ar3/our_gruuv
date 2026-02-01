@@ -4,11 +4,11 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person, full_name: 'Manager Person') }
   let(:employee) { create(:person, full_name: 'Employee Person') }
-  let(:title) { create(:title, organization: organization, external_title: 'Software Engineer') }
+  let(:title) { create(:title, company: organization, external_title: 'Software Engineer') }
   let(:position_level) { create(:position_level, position_major_level: title.position_major_level, level: '1.2') }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:assignment) { create(:assignment, company: organization, title: 'Frontend Development') }
-  let(:aspiration) { create(:aspiration, organization: organization, name: 'Technical Skills') }
+  let(:aspiration) { create(:aspiration, company: organization, name: 'Technical Skills') }
 
   let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, can_manage_employment: true) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
@@ -467,10 +467,10 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
 
   describe 'GET #show' do
     context 'load_relevant_abilities' do
-      let(:ability_with_milestone) { create(:ability, name: 'Ability A', organization: organization) }
-      let(:ability_with_assignment) { create(:ability, name: 'Ability B', organization: organization) }
-      let(:ability_with_both) { create(:ability, name: 'Ability C', organization: organization) }
-      let(:ability_outside_hierarchy) { create(:ability, name: 'Outside Ability', organization: create(:organization, :company)) }
+      let(:ability_with_milestone) { create(:ability, name: 'Ability A', company: organization) }
+      let(:ability_with_assignment) { create(:ability, name: 'Ability B', company: organization) }
+      let(:ability_with_both) { create(:ability, name: 'Ability C', company: organization) }
+      let(:ability_outside_hierarchy) { create(:ability, name: 'Outside Ability', company: create(:organization, :company)) }
       let(:certifier) { create(:person) }
 
       before do
@@ -556,7 +556,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
 
       it 'includes abilities from departments within the organization hierarchy' do
         department = create(:organization, type: 'Department', parent: organization, name: 'Engineering Department')
-        ability_in_department = create(:ability, name: 'Department Ability', organization: department)
+        ability_in_department = create(:ability, name: 'Department Ability', company: department)
         certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_in_department, certifying_teammate: certifier_teammate, milestone_level: 2)
@@ -569,9 +569,9 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'sorts abilities alphabetically by name' do
-        ability_z = create(:ability, name: 'Z Ability', organization: organization)
-        ability_a = create(:ability, name: 'A Ability', organization: organization)
-        ability_m = create(:ability, name: 'M Ability', organization: organization)
+        ability_z = create(:ability, name: 'Z Ability', company: organization)
+        ability_a = create(:ability, name: 'A Ability', company: organization)
+        ability_m = create(:ability, name: 'M Ability', company: organization)
         
         certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance

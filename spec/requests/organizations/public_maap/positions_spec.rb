@@ -6,13 +6,13 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
   let(:position_major_level) { create(:position_major_level) }
   
   let!(:position_company) do
-    title = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Company Position Type')
+    title = create(:title, company: company, position_major_level: position_major_level, external_title: 'Company Position Type')
     position_level = create(:position_level, position_major_level: position_major_level)
     create(:position, title: title, position_level: position_level, position_summary: 'This is a company position')
   end
 
   let!(:position_department) do
-    title = create(:title, organization: department, position_major_level: position_major_level, external_title: 'Department Position Type')
+    title = create(:title, company: department, position_major_level: position_major_level, external_title: 'Department Position Type')
     position_level = create(:position_level, position_major_level: position_major_level)
     create(:position, title: title, position_level: position_level)
   end
@@ -162,7 +162,7 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
         let(:created_by) { create(:person) }
         let(:updated_by) { create(:person) }
         let!(:ability) do
-          create(:ability, organization: ability_org, name: 'Test Ability', created_by: created_by, updated_by: updated_by)
+          create(:ability, company: ability_org, name: 'Test Ability', created_by: created_by, updated_by: updated_by)
         end
 
         let!(:assignment_ability) do

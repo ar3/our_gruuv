@@ -131,7 +131,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           teammate = CompanyTeammate.create!(person: person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
           
           position_major_level = create(:position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level)
+          title = create(:title, company: organization, position_major_level: position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
           position = create(:position, title: title, position_level: position_level)
           
@@ -147,7 +147,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'includes milestone count' do
           person = create(:person, email: 'milestone@example.com')
           teammate = CompanyTeammate.create!(person: person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
-          ability = create(:ability, organization: organization)
+          ability = create(:ability, company: organization)
           create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, attained_at: 1.week.ago)
           create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 2, attained_at: 3.days.ago)
           
@@ -205,13 +205,13 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           teammate = CompanyTeammate.create!(person: person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
           
           position_major_level = create(:position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level)
+          title = create(:title, company: organization, position_major_level: position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
           position = create(:position, title: title, position_level: position_level)
           employment_tenure = create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.month.ago)
           
           assignment = create(:assignment, company: organization)
-          aspiration = create(:aspiration, organization: organization)
+          aspiration = create(:aspiration, company: organization)
           
           position_check_in = create(:position_check_in, :closed, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 5.days.ago)
           assignment_check_in = create(:assignment_check_in, :officially_completed, teammate: teammate, assignment: assignment, official_check_in_completed_at: 3.days.ago)
@@ -391,13 +391,13 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         end
 
         it 'includes ability data in CSV' do
-          ability = create(:ability, organization: organization, name: 'Test Ability')
+          ability = create(:ability, company: organization, name: 'Test Ability')
           get download_organization_bulk_downloads_path(organization, type: 'abilities')
           expect(response.body).to include('Test Ability')
         end
 
         it 'includes assignments with milestone requirements in CSV' do
-          ability = create(:ability, organization: organization, name: 'Test Ability')
+          ability = create(:ability, company: organization, name: 'Test Ability')
           assignment1 = create(:assignment, company: organization, title: 'Assignment One')
           assignment2 = create(:assignment, company: organization, title: 'Assignment Two')
           create(:assignment_ability, :same_organization, assignment: assignment1, ability: ability, milestone_level: 2)
@@ -413,7 +413,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         end
 
         it 'handles abilities with no assignments' do
-          ability = create(:ability, organization: organization, name: 'Test Ability')
+          ability = create(:ability, company: organization, name: 'Test Ability')
           
           get download_organization_bulk_downloads_path(organization, type: 'abilities')
           csv = CSV.parse(response.body, headers: true)
@@ -424,8 +424,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         end
 
         it 'includes milestone descriptions in CSV' do
-          ability = create(:ability,
-            organization: organization,
+          ability = create(:ability, company: organization,
             name: 'Test Ability',
             milestone_1_description: 'Basic understanding',
             milestone_2_description: 'Intermediate skills',
@@ -447,8 +446,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         end
 
         it 'handles abilities with partial milestone descriptions' do
-          ability = create(:ability,
-            organization: organization,
+          ability = create(:ability, company: organization,
             name: 'Test Ability',
             milestone_1_description: 'Basic understanding',
             milestone_2_description: 'Intermediate skills'
@@ -507,7 +505,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'includes position data in CSV' do
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
+          title = create(:title, company: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
           position = create(:position, title: title, position_level: position_level)
           get download_organization_bulk_downloads_path(organization, type: 'positions')
           expect(response.body).to include('Software Engineer')
@@ -516,7 +514,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'includes public position URL in CSV' do
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
+          title = create(:title, company: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
           position = create(:position, title: title, position_level: position_level)
           get download_organization_bulk_downloads_path(organization, type: 'positions')
           csv = CSV.parse(response.body, headers: true)
@@ -533,7 +531,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'includes number of active employment tenures in CSV' do
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
+          title = create(:title, company: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
           position = create(:position, title: title, position_level: position_level)
           teammate1 = create(:teammate, organization: organization)
           teammate2 = create(:teammate, organization: organization)
@@ -556,7 +554,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'includes assignments with min, max, and type in CSV' do
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
+          title = create(:title, company: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
           position = create(:position, title: title, position_level: position_level)
           assignment1 = create(:assignment, company: organization, title: 'Assignment 1')
           assignment2 = create(:assignment, company: organization, title: 'Assignment 2')
@@ -574,7 +572,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'handles assignments with missing energy values in CSV' do
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
+          title = create(:title, company: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
           position = create(:position, title: title, position_level: position_level)
           assignment = create(:assignment, company: organization, title: 'Assignment No Energy')
           create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: nil, max_estimated_energy: nil)
@@ -590,7 +588,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           PaperTrail.enabled = true
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
+          title = create(:title, company: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
           position = create(:position, title: title, position_level: position_level)
           # PaperTrail creates a version on create, so we should have at least 1
           position.update!(semantic_version: '1.1.0') # This will create another version
@@ -604,7 +602,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'includes title and position summary in separate columns' do
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer', position_summary: 'Base position type summary')
+          title = create(:title, company: organization, position_major_level: position_major_level, external_title: 'Software Engineer', position_summary: 'Base position type summary')
           position = create(:position, title: title, position_level: position_level, position_summary: 'Position-specific summary')
           get download_organization_bulk_downloads_path(organization, type: 'positions')
           csv = CSV.parse(response.body, headers: true)
@@ -616,7 +614,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'includes seats in CSV' do
           position_major_level = create(:position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
-          title = create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
+          title = create(:title, company: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
           position = create(:position, title: title, position_level: position_level)
           seat1 = create(:seat, title: title, seat_needed_by: Date.new(2024, 1, 1))
           seat2 = create(:seat, title: title, seat_needed_by: Date.new(2024, 6, 1))

@@ -4,9 +4,9 @@ RSpec.describe Observations::PublishService do
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
   let(:observee_teammate) { create(:teammate, organization: company) }
-  let(:ability) { create(:ability, organization: company) }
+  let(:ability) { create(:ability, company: company) }
   let(:assignment) { create(:assignment, company: company) }
-  let(:aspiration) { create(:aspiration, organization: company) }
+  let(:aspiration) { create(:aspiration, company: company) }
 
   describe '.call' do
     context 'with a valid draft observation' do

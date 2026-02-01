@@ -61,8 +61,7 @@ RSpec.describe 'Abilities Core Flow', type: :system do
 
   describe 'Assign milestone to employee' do
     let!(:ability) do
-      create(:ability,
-        organization: company,
+      create(:ability, company: company,
         name: 'Leadership',
         description: 'Ability to lead teams',
         milestone_1_description: 'Basic leadership',

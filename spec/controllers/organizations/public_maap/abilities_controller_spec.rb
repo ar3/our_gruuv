@@ -7,11 +7,11 @@ RSpec.describe Organizations::PublicMaap::AbilitiesController, type: :controller
   let(:updated_by) { create(:person) }
   
   let!(:ability_company) do
-    create(:ability, organization: company, name: 'Company Ability', created_by: created_by, updated_by: updated_by)
+    create(:ability, company: company, name: 'Company Ability', created_by: created_by, updated_by: updated_by)
   end
 
   let!(:ability_department) do
-    create(:ability, organization: department, name: 'Department Ability', created_by: created_by, updated_by: updated_by)
+    create(:ability, company: department, name: 'Department Ability', created_by: created_by, updated_by: updated_by)
   end
 
   let(:observer) { create(:person) }

@@ -33,26 +33,26 @@ FactoryBot.define do
 
     trait :with_ability do
       after(:build) do |rating|
-        rating.rateable = create(:ability, organization: rating.observation.company)
+        rating.rateable = create(:ability, company: rating.observation.company)
       end
     end
 
     trait :with_assignment do
       after(:build) do |rating|
-        rating.rateable = create(:assignment, organization: rating.observation.company)
+        rating.rateable = create(:assignment, company: rating.observation.company)
       end
     end
 
     trait :with_aspiration do
       after(:build) do |rating|
-        rating.rateable = create(:aspiration, organization: rating.observation.company)
+        rating.rateable = create(:aspiration, company: rating.observation.company)
       end
     end
 
     # Default to ability if no rateable specified
     after(:build) do |rating|
       if rating.rateable.nil?
-        rating.rateable = create(:ability, organization: rating.observation.company)
+        rating.rateable = create(:ability, company: rating.observation.company)
       end
     end
   end

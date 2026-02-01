@@ -4,7 +4,7 @@ RSpec.describe PositionAssignmentDecorator, type: :decorator do
   let(:company) { create(:organization, type: 'Company') }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:assignment) { create(:assignment, company: company, title: 'Code Review') }
   let(:position_assignment) { create(:position_assignment, position: position, assignment: assignment).decorate }

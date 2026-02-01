@@ -131,7 +131,7 @@ RSpec.describe 'About Me Page', type: :request do
     end
 
     context 'assignment check-in data loading' do
-      let(:title) { create(:title, organization: organization) }
+      let(:title) { create(:title, company: organization) }
       let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
       let(:position) { create(:position, title: title, position_level: position_level) }
 
@@ -1389,12 +1389,12 @@ RSpec.describe 'About Me Page', type: :request do
     end
 
     context 'when viewing own page and viewer (employee) has completed their side' do
-      let(:title) { create(:title, organization: organization) }
+      let(:title) { create(:title, company: organization) }
       let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:required_assignment) { create(:assignment, company: organization) }
-      let!(:aspiration1) { create(:aspiration, organization: organization, name: 'Aspiration 1') }
-      let!(:aspiration2) { create(:aspiration, organization: organization, name: 'Aspiration 2') }
+      let!(:aspiration1) { create(:aspiration, company: organization, name: 'Aspiration 1') }
+      let!(:aspiration2) { create(:aspiration, company: organization, name: 'Aspiration 2') }
 
       before do
         EmploymentTenure.where(teammate: teammate, company: organization, ended_at: nil).update_all(ended_at: 2.years.ago)

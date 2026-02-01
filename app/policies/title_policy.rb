@@ -40,7 +40,7 @@ class TitlePolicy < ApplicationPolicy
           # Include titles from root company and all its descendants
           # This allows viewing department titles when signed in to company
           org_ids = root_company.self_and_descendants.map(&:id)
-          scope.where(organization_id: org_ids)
+          scope.where(company_id: org_ids)
         else
           scope.none
         end
@@ -60,27 +60,27 @@ class TitlePolicy < ApplicationPolicy
 
   def user_has_maap_permission_for_record?
     return false unless viewing_teammate
-    return false unless record&.organization
+    return false unless record&.company
     viewing_teammate_org = viewing_teammate.organization
     return false unless viewing_teammate_org
     
     # Check if record's organization is in viewing_teammate's organization hierarchy
     orgs = viewing_teammate_org.self_and_descendants
-    return false unless orgs.include?(record.organization)
+    return false unless orgs.include?(record.company)
     
     viewing_teammate.can_manage_maap?
   end
 
   def user_is_active_company_teammate_in_same_company?
     return false unless viewing_teammate
-    return false unless record&.organization
+    return false unless record&.company
     
     # Check if viewing teammate is actively employed (assigned employee)
     return false unless viewing_teammate.assigned_employee?
     
     # Get root companies for both organizations
     viewing_teammate_root_company = viewing_teammate.organization.root_company
-    title_root_company = record.organization.root_company
+    title_root_company = record.company.root_company
     
     return false unless viewing_teammate_root_company
     return false unless title_root_company

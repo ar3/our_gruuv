@@ -11,7 +11,7 @@ RSpec.describe EmploymentTenure, type: :model do
     it { should belong_to(:teammate) }
     it { should belong_to(:company).class_name('Organization') }
     it { should belong_to(:position) }
-    it { should belong_to(:manager).class_name('Person').optional }
+    it { should belong_to(:manager_teammate).class_name('CompanyTeammate').optional }
   end
 
   describe 'validations' do
@@ -183,7 +183,7 @@ RSpec.describe EmploymentTenure, type: :model do
 
     it 'can include company with other associations' do
       # This test ensures complex includes work correctly
-      result = EmploymentTenure.includes(:company, :position, :manager).find(tenure.id)
+      result = EmploymentTenure.includes(:company, :position, :manager_teammate).find(tenure.id)
       expect(result.company.id).to eq(company.id)
       expect(result.position).to eq(tenure.position)
     end

@@ -4,7 +4,7 @@ RSpec.describe AspirationCheckIn, type: :model do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
-  let(:aspiration) { create(:aspiration, organization: organization) }
+  let(:aspiration) { create(:aspiration, company: organization) }
   
   describe 'associations' do
     it { should belong_to(:teammate) }
@@ -69,7 +69,7 @@ RSpec.describe AspirationCheckIn, type: :model do
     end
     
     describe '.ready_for_finalization' do
-      let(:different_aspiration) { create(:aspiration, organization: organization) }
+      let(:different_aspiration) { create(:aspiration, company: organization) }
       let(:manager_teammate) { create(:teammate, person: create(:person), organization: teammate.organization).reload.becomes(CompanyTeammate) }
       let!(:ready_check_in) { create(:aspiration_check_in, :ready_for_finalization, teammate: teammate, aspiration: different_aspiration, manager_completed_by_teammate: manager_teammate) }
       
@@ -146,7 +146,7 @@ RSpec.describe AspirationCheckIn, type: :model do
       end
       
       it 'returns nil when no previous check-in exists' do
-        different_aspiration = create(:aspiration, organization: organization)
+        different_aspiration = create(:aspiration, company: organization)
         check_in_with_no_history = create(:aspiration_check_in, teammate: teammate, aspiration: different_aspiration)
         expect(check_in_with_no_history.previous_check_in_summary).to be_nil
       end

@@ -57,7 +57,7 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
 
       it 'includes position information' do
         position_major_level = create(:position_major_level)
-        title = create(:title, organization: company, position_major_level: position_major_level)
+        title = create(:title, company: company, position_major_level: position_major_level)
         position_level = create(:position_level, position_major_level: position_major_level)
         position = create(:position, title: title, position_level: position_level)
         # Update the existing tenure's position

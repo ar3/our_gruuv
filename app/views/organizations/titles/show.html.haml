@@ -20,7 +20,7 @@
               %h5.mb-2
                 %i.bi.bi-building.me-2
                 Organization
-              %p= link_to @title.organization.display_name, organization_path(@title.organization), class: "text-decoration-none"
+              %p= link_to @title.company.display_name, organization_path(@title.company), class: "text-decoration-none"
             
               %h5.mb-2
                 %i.bi.bi-star.me-2
@@ -46,14 +46,14 @@
                   Positions
                 - @title.positions.each do |position|
                   .mb-2
-                    = link_to position.display_name, organization_position_path(position.title.organization, position), class: "text-decoration-none"
+                    = link_to position.display_name, organization_position_path(position.title.company, position), class: "text-decoration-none"
               - else
                 .alert.alert-info
                   %h6.mb-2
                     %i.bi.bi-info-circle.me-2
                     No Positions Yet
                   %p.mb-2 This title has no associated positions.
-                  = link_to "Create Position", new_organization_position_path(@title.organization, title_id: @title.id), class: "btn btn-info btn-sm"
+                  = link_to "Create Position", new_organization_position_path(@title.company, title_id: @title.id), class: "btn btn-info btn-sm"
               
               - if @title.published_url.present? || @title.draft_url.present?
                 %h5.mb-2.mt-3
@@ -77,10 +77,10 @@
               - if active_seats.any?
                 - active_seats.each do |seat|
                   .mb-2
-                    = link_to seat.display_name, organization_seat_path(@title.organization, seat), class: "text-decoration-none"
+                    = link_to seat.display_name, organization_seat_path(@title.company, seat), class: "text-decoration-none"
               - else
                 .alert.alert-info
-                  %p.mb-0= "#{@title.external_title} is not currently available at #{@title.organization.display_name}"
+                  %p.mb-0= "#{@title.external_title} is not currently available at #{@title.company.display_name}"
 
       / Comments Section
       = render 'shared/comment_summary', commentable: @title, organization: @organization
@@ -183,4 +183,4 @@
                           %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires MAAP management permission"}}
                 - else
                   %p.mb-3 Create the first position manually, then you can clone it for the remaining levels.
-                  = link_to "Create First Position", new_organization_position_path(@title.organization, title_id: @title.id), class: "btn btn-primary"
+                  = link_to "Create First Position", new_organization_position_path(@title.company, title_id: @title.id), class: "btn btn-primary"

@@ -4,8 +4,8 @@ RSpec.describe Comment, type: :model do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:assignment) { create(:assignment, company: organization) }
-  let(:ability) { create(:ability, organization: organization) }
-  let(:aspiration) { create(:aspiration, organization: organization) }
+  let(:ability) { create(:ability, company: organization) }
+  let(:aspiration) { create(:aspiration, company: organization) }
   
   let(:comment) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment) }
 

@@ -123,7 +123,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       let(:person) { create(:person) }
       let(:person_teammate) { create(:teammate, person: person, organization: organization) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-      let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+      let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:active_employment) { create(:employment_tenure, teammate: person_teammate, company: organization, position: position, started_at: 6.months.ago, ended_at: nil) }
@@ -195,12 +195,12 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       let(:person_teammate) { create(:teammate, person: person, organization: organization) }
       let(:other_organization_teammate) { create(:teammate, person: person, organization: other_organization) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-      let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+      let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:past_employment1) { create(:employment_tenure, teammate: person_teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: 6.months.ago) }
       let(:other_organization) { create(:organization, :company) }
-      let(:other_title) { create(:title, organization: other_organization, position_major_level: position_major_level) }
+      let(:other_title) { create(:title, company: other_organization, position_major_level: position_major_level) }
       let(:other_position) { create(:position, title: other_title, position_level: position_level) }
       let(:past_employment2) { create(:employment_tenure, teammate: other_organization_teammate, company: other_organization, position: other_position, started_at: 2.years.ago, ended_at: 1.year.ago) }
 
@@ -291,8 +291,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       let(:other_organization_teammate) { create(:teammate, person: person, organization: other_organization) }
       let(:other_organization) { create(:organization, :company) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-      let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
-      let(:other_title) { create(:title, organization: other_organization, position_major_level: position_major_level) }
+      let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
+      let(:other_title) { create(:title, company: other_organization, position_major_level: position_major_level) }
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position1) { create(:position, title: title, position_level: position_level) }
       let(:position2) { create(:position, title: other_title, position_level: position_level) }
@@ -684,7 +684,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           create(:employment_tenure, teammate: hierarchy_manager_teammate, company: organization, ended_at: nil)
           # Set manager as the manager of target person's active employment tenure
           target_employment = target_person.employment_tenures.find_by(company: organization)
-          target_employment.update!(manager: hierarchy_manager, ended_at: nil)
+          target_employment.update!(manager_teammate: hierarchy_manager_teammate, ended_at: nil)
           session[:current_company_teammate_id] = hierarchy_manager_teammate.id
           @current_company_teammate = nil if defined?(@current_company_teammate)
         end

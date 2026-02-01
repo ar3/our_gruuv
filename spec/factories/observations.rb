@@ -61,8 +61,8 @@ FactoryBot.define do
 
     trait :with_ratings do
       after(:create) do |observation|
-        create(:observation_rating, observation: observation, rateable: create(:ability, organization: observation.company), rating: :strongly_agree)
-        create(:observation_rating, observation: observation, rateable: create(:assignment, organization: observation.company), rating: :agree)
+        create(:observation_rating, observation: observation, rateable: create(:ability, company: observation.company), rating: :strongly_agree)
+        create(:observation_rating, observation: observation, rateable: create(:assignment, company: observation.company), rating: :agree)
       end
     end
   end

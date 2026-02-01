@@ -5,7 +5,7 @@ RSpec.describe 'Check-In Uncomplete Change Detection', type: :model do
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
   let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
-  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let(:employee_teammate) { create(:company_teammate, person: employee, organization: organization) }
   
   # Create assignments
   let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
@@ -50,8 +50,8 @@ RSpec.describe 'Check-In Uncomplete Change Detection', type: :model do
 
         # Create a snapshot without maap_data
         snapshot = MaapSnapshot.build_for_employee_without_maap_data(
-          employee_teammate: employee,
-          creator_teammate: manager,
+          employee_teammate: employee_teammate,
+          creator_teammate: manager_teammate,
           change_type: 'bulk_check_in_finalization',
           reason: 'Testing uncomplete change detection',
           form_params: form_params

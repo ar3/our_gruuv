@@ -7,7 +7,7 @@ RSpec.describe AspirationPolicy, type: :policy do
   let(:person) { create(:person) }
   let(:admin) { create(:person, :admin) }
   let(:maap_user) { create(:person) }
-  let(:aspiration) { create(:aspiration, organization: organization) }
+  let(:aspiration) { create(:aspiration, company: organization) }
 
   let(:maap_teammate) { CompanyTeammate.create!(person: maap_user, organization: organization, can_manage_maap: true) }
   let(:person_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_maap: false) }
@@ -127,9 +127,9 @@ RSpec.describe AspirationPolicy, type: :policy do
   end
 
   describe 'scope' do
-    let!(:aspiration1) { create(:aspiration, organization: organization) }
-    let!(:aspiration2) { create(:aspiration, organization: organization) }
-    let!(:other_org_aspiration) { create(:aspiration, organization: other_organization) }
+    let!(:aspiration1) { create(:aspiration, company: organization) }
+    let!(:aspiration2) { create(:aspiration, company: organization) }
+    let!(:other_org_aspiration) { create(:aspiration, company: other_organization) }
 
     context 'when user is a regular teammate' do
       it 'returns aspirations for that organization' do

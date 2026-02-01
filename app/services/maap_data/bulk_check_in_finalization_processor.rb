@@ -187,7 +187,7 @@ module MaapData
       
       milestones = @teammate.teammate_milestones.includes(:ability)
                .joins(:ability)
-               .where(abilities: { organization: @company })
+               .where(abilities: { company_id: @company.id })
       
       Rails.logger.info "BULK_CHECK_IN_PROCESSOR: Processing #{milestones.count} abilities"
       

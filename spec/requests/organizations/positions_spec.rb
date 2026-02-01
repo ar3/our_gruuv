@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Organizations::Positions', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:title) { create(:title, organization: organization) }
+  let(:title) { create(:title, company: organization) }
   let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
 
   before do
@@ -55,7 +55,7 @@ RSpec.describe 'Organizations::Positions', type: :request do
 
     it 'includes a link icon next to departments that links to the department show page' do
       department = create(:organization, :department, parent: organization, name: 'Engineering')
-      title_in_dept = create(:title, organization: organization, department: department,
+      title_in_dept = create(:title, company: organization, department: department,
         position_major_level: title.position_major_level, external_title: 'Engineer')
       create(:position, title: title_in_dept, position_level: position_level_1, semantic_version: '1.0.0')
 

@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe SeatHierarchyQuery do
   let(:organization) { create(:organization, :company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
   
   describe '#call' do
     context 'with no seats' do

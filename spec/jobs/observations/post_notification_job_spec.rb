@@ -10,7 +10,7 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
     obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
     obs.observees.build(teammate: observee_teammate)
     obs.save!
-    create(:observation_rating, observation: obs, rateable: create(:ability, organization: company), rating: :strongly_agree)
+    create(:observation_rating, observation: obs, rateable: create(:ability, company: company), rating: :strongly_agree)
     obs
   end
 

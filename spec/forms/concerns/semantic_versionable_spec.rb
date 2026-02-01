@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe FormSemanticVersionable, type: :form do
   # Use AspirationForm which includes the concern
   let(:organization) { create(:organization) }
-  let(:test_model) { build(:aspiration, organization: organization) }
+  let(:test_model) { build(:aspiration, company: organization) }
   let(:form) { AspirationForm.new(test_model) }
   let(:person) { create(:person) }
 
@@ -30,7 +30,7 @@ RSpec.describe FormSemanticVersionable, type: :form do
     end
 
     context 'for existing records' do
-      let(:existing_model) { create(:aspiration, organization: organization, semantic_version: '2.3.4') }
+      let(:existing_model) { create(:aspiration, company: organization, semantic_version: '2.3.4') }
       let(:form) { AspirationForm.new(existing_model) }
 
       before do
@@ -76,7 +76,7 @@ RSpec.describe FormSemanticVersionable, type: :form do
     end
 
     it 'validates version_type values for existing records' do
-      existing_model = create(:aspiration, organization: organization)
+      existing_model = create(:aspiration, company: organization)
       form = AspirationForm.new(existing_model)
       form.current_person = person
       form.name = 'Test'

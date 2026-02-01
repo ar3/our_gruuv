@@ -4,7 +4,7 @@ RSpec.describe Finalizers::AspirationCheckInFinalizer do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
-  let(:aspiration) { create(:aspiration, organization: organization) }
+  let(:aspiration) { create(:aspiration, company: organization) }
   let(:finalized_by_person) { create(:person) }
   let(:finalized_by) { create(:teammate, person: finalized_by_person, organization: organization).reload.becomes(CompanyTeammate) }
   let(:finalizer_teammate) { finalized_by }

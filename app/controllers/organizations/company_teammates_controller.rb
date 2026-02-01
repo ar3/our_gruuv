@@ -53,7 +53,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     # Filter milestones to only show those for abilities in this organization
     @teammate_milestones = @teammate&.teammate_milestones
                                 &.joins(:ability)
-                                &.where(abilities: { organization: organization })
+                                &.where(abilities: { company_id: organization.id })
                                 &.includes(:ability) || []
   end
 

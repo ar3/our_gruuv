@@ -126,7 +126,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         it 'includes positions data in CSV' do
           assignment = create(:assignment, company: organization, title: 'Position Test')
           position_major_level = create(:position_major_level)
-          title = create(:title, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
+          title = create(:title, company: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
           position = create(:position, title: title, position_level: position_level)
           create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: 10, max_estimated_energy: 20)
@@ -143,8 +143,8 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
           assignment = create(:assignment, company: organization, title: 'Multi Position Test')
           position_major_level1 = create(:position_major_level)
           position_major_level2 = create(:position_major_level)
-          title1 = create(:title, organization: organization, external_title: 'Backend Engineer', position_major_level: position_major_level1)
-          title2 = create(:title, organization: organization, external_title: 'Frontend Engineer', position_major_level: position_major_level2)
+          title1 = create(:title, company: organization, external_title: 'Backend Engineer', position_major_level: position_major_level1)
+          title2 = create(:title, company: organization, external_title: 'Frontend Engineer', position_major_level: position_major_level2)
           position_level1 = create(:position_level, level: '1.0', position_major_level: position_major_level1)
           position_level2 = create(:position_level, level: '3.0', position_major_level: position_major_level2)
           position1 = create(:position, title: title1, position_level: position_level1)
@@ -165,7 +165,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         it 'handles positions with missing energy values' do
           assignment = create(:assignment, company: organization, title: 'Energy Edge Cases')
           position_major_level = create(:position_major_level)
-          title = create(:title, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
+          title = create(:title, company: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
           position_level = create(:position_level, level: '1.0', position_major_level: position_major_level)
           position = create(:position, title: title, position_level: position_level)
           
@@ -182,7 +182,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
 
         it 'includes milestones data in CSV' do
           assignment = create(:assignment, company: organization, title: 'Milestone Test')
-          ability = create(:ability, organization: organization, name: 'Ruby Programming')
+          ability = create(:ability, company: organization, name: 'Ruby Programming')
           create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 3)
           
           get :download, params: { organization_id: organization.id, type: 'assignments' }
@@ -195,8 +195,8 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
 
         it 'includes multiple milestones separated by newlines' do
           assignment = create(:assignment, company: organization, title: 'Multi Milestone Test')
-          ability1 = create(:ability, organization: organization, name: 'Ruby Programming')
-          ability2 = create(:ability, organization: organization, name: 'JavaScript')
+          ability1 = create(:ability, company: organization, name: 'Ruby Programming')
+          ability2 = create(:ability, company: organization, name: 'JavaScript')
           create(:assignment_ability, assignment: assignment, ability: ability1, milestone_level: 2)
           create(:assignment_ability, assignment: assignment, ability: ability2, milestone_level: 4)
           
@@ -303,7 +303,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         end
 
         it 'includes assignments with milestone requirements in CSV' do
-          ability = create(:ability, organization: organization, name: 'Test Ability')
+          ability = create(:ability, company: organization, name: 'Test Ability')
           assignment1 = create(:assignment, company: organization, title: 'Assignment One')
           assignment2 = create(:assignment, company: organization, title: 'Assignment Two')
           create(:assignment_ability, :same_organization, assignment: assignment1, ability: ability, milestone_level: 2)
@@ -319,7 +319,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         end
 
         it 'handles abilities with no assignments' do
-          ability = create(:ability, organization: organization, name: 'Test Ability')
+          ability = create(:ability, company: organization, name: 'Test Ability')
           
           get :download, params: { organization_id: organization.id, type: 'abilities' }
           csv = CSV.parse(response.body, headers: true)
@@ -330,8 +330,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         end
 
         it 'includes milestone descriptions in CSV' do
-          ability = create(:ability,
-            organization: organization,
+          ability = create(:ability, company: organization,
             name: 'Test Ability',
             milestone_1_description: 'Basic understanding',
             milestone_2_description: 'Intermediate skills',
@@ -353,8 +352,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         end
 
         it 'handles abilities with partial milestone descriptions' do
-          ability = create(:ability,
-            organization: organization,
+          ability = create(:ability, company: organization,
             name: 'Test Ability',
             milestone_1_description: 'Basic understanding',
             milestone_2_description: 'Intermediate skills'

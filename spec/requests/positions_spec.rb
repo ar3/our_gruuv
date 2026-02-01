@@ -4,7 +4,7 @@ RSpec.describe "Positions", type: :request do
   let(:company) { create(:organization, type: 'Company') }
   let(:person) { create(:person) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   
   before do
     # Set up authentication and organization context

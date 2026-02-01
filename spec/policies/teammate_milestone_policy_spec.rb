@@ -6,7 +6,7 @@ RSpec.describe TeammateMilestonePolicy, type: :policy do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:teammate) { CompanyTeammate.find(create(:teammate, person: person, organization: organization).id) }
-  let(:ability) { create(:ability, organization: organization) }
+  let(:ability) { create(:ability, company: organization) }
   let(:teammate_milestone) { create(:teammate_milestone, teammate: teammate, ability: ability) }
   
   let(:other_person) { create(:person) }

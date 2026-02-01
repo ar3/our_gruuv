@@ -5,7 +5,7 @@ RSpec.describe 'Position Eligibility Management', type: :request do
   let(:person) { create(:person) }
   let!(:teammate) { create(:company_teammate, person: person, organization: company, can_manage_maap: true) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
   
@@ -76,8 +76,8 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       # Create required assignments with abilities
       assignment1 = create(:assignment, company: company)
       assignment2 = create(:assignment, company: company)
-      ability1 = create(:ability, organization: company)
-      ability2 = create(:ability, organization: company)
+      ability1 = create(:ability, company: company)
+      ability2 = create(:ability, company: company)
       
       # Create assignment abilities with milestone levels
       create(:assignment_ability, assignment: assignment1, ability: ability1, milestone_level: 2) # 2 points
@@ -104,7 +104,7 @@ RSpec.describe 'Position Eligibility Management', type: :request do
     it 'allows minimum mileage equal to required assignments total' do
       # Create required assignments with abilities
       assignment1 = create(:assignment, company: company)
-      ability1 = create(:ability, organization: company)
+      ability1 = create(:ability, company: company)
       
       # Create assignment ability with milestone level 2 (2 points)
       create(:assignment_ability, assignment: assignment1, ability: ability1, milestone_level: 2)

@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe PositionDecorator do
   let(:organization) { create(:organization) }
-  let(:title) { create(:title, organization: organization) }
+  let(:title) { create(:title, company: organization) }
   let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
   let(:position) { build(:position, title: title, position_level: position_level, semantic_version: '2.3.4') }
   let(:decorator) { PositionDecorator.new(position) }

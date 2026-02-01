@@ -3,18 +3,28 @@ require 'rails_helper'
 RSpec.describe ModelSemanticVersionable, type: :model do
   # Use Aspiration model which includes the concern
   let(:organization) { create(:organization) }
-  let(:aspiration) { create(:aspiration, organization: organization, semantic_version: '1.2.3') }
+  let(:aspiration) { create(:aspiration, company: organization, semantic_version: '1.2.3') }
 
   describe 'PaperTrail integration' do
+    before do
+      PaperTrail.enabled = true
+    end
+    
+    after do
+      PaperTrail.enabled = false
+    end
+    
     it 'enables PaperTrail versioning' do
       expect(aspiration).to respond_to(:versions)
     end
 
     it 'tracks version history' do
-      expect(aspiration.versions.count).to eq(1)
+      # With PaperTrail enabled, a newly created record has 1 version (creation)
+      new_aspiration = create(:aspiration, company: organization, semantic_version: '1.0.0')
+      expect(new_aspiration.versions.count).to eq(1)
       
-      aspiration.update!(name: 'Updated Name')
-      expect(aspiration.versions.count).to eq(2)
+      new_aspiration.update!(name: 'Updated Name')
+      expect(new_aspiration.versions.count).to eq(2)
     end
   end
 
@@ -144,7 +154,7 @@ RSpec.describe ModelSemanticVersionable, type: :model do
     it 'returns display_name_with_version when no versions exist' do
       # Clear versions by creating a new record
       new_aspiration = Aspiration.new(
-        organization: organization,
+        company: organization,
         name: 'New Aspiration',
         semantic_version: '1.0.0',
         sort_order: 1

@@ -10,13 +10,13 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
   let!(:employee1_teammate) { create(:company_teammate, person: employee1, organization: company) }
   let!(:employee2_teammate) { create(:company_teammate, person: employee2, organization: company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:employment_tenure1) { create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: 1.year.ago) }
   let(:employment_tenure2) { create(:employment_tenure, teammate: employee2_teammate, company: company, position: position, started_at: 6.months.ago) }
-  let(:huddle_playbook) { create(:huddle_playbook, company: team) }
-  let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
+  let(:team) { create(:team, company: team) }
+  let(:huddle) { create(:huddle, team: team) }
   let(:huddle_participation) { create(:huddle_participant, huddle: huddle, teammate: create(:teammate, person: huddle_participant, organization: team)) }
 
   before do
@@ -410,9 +410,9 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
 
     it 'sorts positions alphabetically by title external_title' do
       # Create multiple position types with different external titles
-      title_z = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Zebra Position')
-      title_a = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Alpha Position')
-      title_m = create(:title, organization: company, position_major_level: position_major_level, external_title: 'Middle Position')
+      title_z = create(:title, company: company, position_major_level: position_major_level, external_title: 'Zebra Position')
+      title_a = create(:title, company: company, position_major_level: position_major_level, external_title: 'Alpha Position')
+      title_m = create(:title, company: company, position_major_level: position_major_level, external_title: 'Middle Position')
       
       position_level_1 = create(:position_level, position_major_level: position_major_level, level: '1.0')
       position_level_2 = create(:position_level, position_major_level: position_major_level, level: '2.0')

@@ -4,7 +4,7 @@ RSpec.describe TitleMaturityService, type: :service do
   let(:company) { create(:organization, :company) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:service) { described_class.new(title) }
 
   describe '.calculate_phase' do
@@ -111,7 +111,7 @@ RSpec.describe TitleMaturityService, type: :service do
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
         # Set up phase 4: all required assignments have ability requirements
-        ability = create(:ability, organization: company)
+        ability = create(:ability, company: company)
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
         
@@ -133,7 +133,7 @@ RSpec.describe TitleMaturityService, type: :service do
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
         # Set up phase 4 partially: only some assignments have abilities
-        ability = create(:ability, organization: company)
+        ability = create(:ability, company: company)
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         # assignment2 has no abilities
         
@@ -157,8 +157,7 @@ RSpec.describe TitleMaturityService, type: :service do
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
         # Set up phase 4: all required assignments have ability requirements
-        ability = create(:ability, 
-          organization: company,
+        ability = create(:ability, company: company,
           milestone_1_description: 'Milestone 1',
           milestone_2_description: 'Milestone 2'
         )
@@ -183,8 +182,8 @@ RSpec.describe TitleMaturityService, type: :service do
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
         # Set up phase 4: all required assignments have ability requirements
-        ability1 = create(:ability, organization: company, milestone_1_description: 'Milestone 1', milestone_2_description: 'Milestone 2')
-        ability2 = create(:ability, organization: company, milestone_1_description: 'Milestone 1')  # Missing milestone_2
+        ability1 = create(:ability, company: company, milestone_1_description: 'Milestone 1', milestone_2_description: 'Milestone 2')
+        ability2 = create(:ability, company: company, milestone_1_description: 'Milestone 1')  # Missing milestone_2
         create(:assignment_ability, assignment: assignment1, ability: ability1, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability2, milestone_level: 1)
         
@@ -207,8 +206,7 @@ RSpec.describe TitleMaturityService, type: :service do
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
-        ability = create(:ability, 
-          organization: company,
+        ability = create(:ability, company: company,
           milestone_1_description: 'Milestone 1',
           milestone_2_description: 'Milestone 2'
         )
@@ -235,8 +233,8 @@ RSpec.describe TitleMaturityService, type: :service do
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
-        ability1 = create(:ability, organization: company, milestone_1_description: 'Milestone 1', milestone_2_description: 'Milestone 2')
-        ability2 = create(:ability, organization: company, milestone_1_description: 'Milestone 1', milestone_2_description: 'Milestone 2')
+        ability1 = create(:ability, company: company, milestone_1_description: 'Milestone 1', milestone_2_description: 'Milestone 2')
+        ability2 = create(:ability, company: company, milestone_1_description: 'Milestone 1', milestone_2_description: 'Milestone 2')
         create(:assignment_ability, assignment: assignment1, ability: ability1, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability2, milestone_level: 1)
         
@@ -264,8 +262,7 @@ RSpec.describe TitleMaturityService, type: :service do
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
-        ability = create(:ability, 
-          organization: company,
+        ability = create(:ability, company: company,
           milestone_1_description: 'Milestone 1',
           milestone_2_description: 'Milestone 2',
           updated_at: 7.months.ago
@@ -293,8 +290,7 @@ RSpec.describe TitleMaturityService, type: :service do
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
-        ability = create(:ability, 
-          organization: company,
+        ability = create(:ability, company: company,
           milestone_1_description: 'Milestone 1',
           milestone_2_description: 'Milestone 2',
           updated_at: 7.months.ago
@@ -322,8 +318,7 @@ RSpec.describe TitleMaturityService, type: :service do
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
-        ability = create(:ability, 
-          organization: company,
+        ability = create(:ability, company: company,
           milestone_1_description: 'Milestone 1',
           milestone_2_description: 'Milestone 2',
           updated_at: 1.month.ago
@@ -354,8 +349,7 @@ RSpec.describe TitleMaturityService, type: :service do
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
-        ability = create(:ability, 
-          organization: company,
+        ability = create(:ability, company: company,
           milestone_1_description: 'Milestone 1',
           milestone_2_description: 'Milestone 2',
           updated_at: 9.months.ago
@@ -387,8 +381,7 @@ RSpec.describe TitleMaturityService, type: :service do
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
-        ability = create(:ability, 
-          organization: company,
+        ability = create(:ability, company: company,
           milestone_1_description: 'Milestone 1',
           milestone_2_description: 'Milestone 2',
           updated_at: 1.month.ago
@@ -423,8 +416,7 @@ RSpec.describe TitleMaturityService, type: :service do
         EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
         create(:assignment_check_in, teammate: teammate, assignment: assignment1)
         
-        ability = create(:ability, 
-          organization: company,
+        ability = create(:ability, company: company,
           milestone_1_description: 'Milestone 1',
           milestone_2_description: 'Milestone 2',
           updated_at: 1.month.ago
@@ -464,8 +456,7 @@ RSpec.describe TitleMaturityService, type: :service do
       EmploymentTenure.create!(teammate: teammate, position: position1, company: company, started_at: 1.month.ago)
       create(:assignment_check_in, teammate: teammate, assignment: assignment1)
       
-      ability = create(:ability, 
-        organization: company,
+      ability = create(:ability, company: company,
         milestone_1_description: 'Milestone 1',
         milestone_2_description: 'Milestone 2',
         updated_at: 1.month.ago

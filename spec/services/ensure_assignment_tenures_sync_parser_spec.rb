@@ -14,7 +14,7 @@ RSpec.describe EnsureAssignmentTenuresSyncParser, type: :service do
 
   describe '#parse' do
     let!(:position_major_level) { create(:position_major_level) }
-    let!(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+    let!(:title) { create(:title, company: organization, position_major_level: position_major_level) }
     let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
     let!(:position) { create(:position, title: title, position_level: position_level) }
     let!(:assignment1) { create(:assignment, company: organization, title: 'Assignment 1') }

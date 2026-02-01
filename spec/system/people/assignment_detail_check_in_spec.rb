@@ -14,7 +14,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
   let!(:employee_person) { create(:person, full_name: 'John Doe', email: 'john@example.com') }
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let!(:title) { create(:title, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
+  let!(:title) { create(:title, company: company, external_title: 'Engineer', position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let!(:position) { create(:position, title: title, position_level: position_level) }
   let!(:employment_tenure) do

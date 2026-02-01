@@ -8,10 +8,10 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
   let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, employment_type: 'full_time', official_position_rating: 2) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:assignment_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 50, official_rating: 'meeting') }
-  let(:ability) { create(:ability, organization: organization) }
+  let(:ability) { create(:ability, company: organization) }
   let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
   let(:milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: manager_teammate, attained_at: Date.current) }
-  let(:aspiration) { create(:aspiration, organization: organization) }
+  let(:aspiration) { create(:aspiration, company: organization) }
   let(:aspiration_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_rating: 'exceeding', official_check_in_completed_at: Time.current, finalized_by_teammate: manager_teammate) }
 
   before do

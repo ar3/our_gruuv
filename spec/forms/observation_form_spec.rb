@@ -165,9 +165,9 @@ RSpec.describe ObservationForm, type: :form do
     end
 
     context 'with auto-added aspirations' do
-      let(:aspiration1) { create(:aspiration, organization: company, name: 'Company Growth', sort_order: 1) }
-      let(:aspiration2) { create(:aspiration, organization: company, name: 'Innovation', sort_order: 2) }
-      let(:aspiration3) { create(:aspiration, organization: company, name: 'Customer Satisfaction', sort_order: 3) }
+      let(:aspiration1) { create(:aspiration, company: company, name: 'Company Growth', sort_order: 1) }
+      let(:aspiration2) { create(:aspiration, company: company, name: 'Innovation', sort_order: 2) }
+      let(:aspiration3) { create(:aspiration, company: company, name: 'Customer Satisfaction', sort_order: 3) }
 
       before do
         aspiration1

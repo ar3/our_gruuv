@@ -154,7 +154,7 @@ RSpec.describe NavigationHelper, type: :helper do
       let(:direct_report) { create(:person) }
       let(:direct_report_teammate) { CompanyTeammate.find(create(:teammate, person: direct_report, organization: company, first_employed_at: 6.months.ago).id) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-      let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+      let(:title) { create(:title, company: company, position_major_level: position_major_level) }
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let!(:employment_tenure) do

@@ -35,7 +35,7 @@ RSpec.describe 'Organizations::FeedbackRequests Subject Selection', type: :reque
   end
   
   let(:position_major_level) { create(:position_major_level) }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:manager_tenure) do

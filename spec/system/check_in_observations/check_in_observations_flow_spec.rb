@@ -7,7 +7,7 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
   let!(:employee_person) { create(:person, full_name: 'John Doe', email: 'john@example.com') }
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let!(:assignment) { create(:assignment, company: company, title: 'Assignment 1') }
-  let!(:aspiration) { create(:aspiration, organization: company, name: 'Aspiration 1') }
+  let!(:aspiration) { create(:aspiration, company: company, name: 'Aspiration 1') }
   let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 2.months.ago) }
   let!(:check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
 

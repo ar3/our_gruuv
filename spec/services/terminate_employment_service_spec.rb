@@ -7,7 +7,7 @@ RSpec.describe TerminateEmploymentService, type: :service do
   let(:manager) { create(:person) }
   let(:manager_teammate) { create(:company_teammate, person: manager, organization: company) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:seat) { create(:seat, title: title, seat_needed_by: Date.current + 1.month) }

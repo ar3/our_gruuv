@@ -91,7 +91,7 @@ RSpec.describe AssignmentsQuery, type: :query do
     end
 
     context 'filtering by abilities' do
-      let(:ability) { create(:ability, organization: organization) }
+      let(:ability) { create(:ability, company: organization) }
       let(:assignment_with_abilities) { create(:assignment, company: organization) }
       let(:assignment_without_abilities) { create(:assignment, company: organization) }
       

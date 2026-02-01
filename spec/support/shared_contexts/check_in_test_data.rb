@@ -6,15 +6,15 @@ RSpec.shared_context 'check_in_test_data' do
   let(:support_department) { create(:organization, :department, name: 'Support', parent: company) }
 
   # 4 company-level aspirations
-  let(:company_aspiration_1) { create(:aspiration, organization: company, name: 'Company Growth', sort_order: 1) }
-  let(:company_aspiration_2) { create(:aspiration, organization: company, name: 'Innovation', sort_order: 2) }
-  let(:company_aspiration_3) { create(:aspiration, organization: company, name: 'Customer Satisfaction', sort_order: 3) }
-  let(:company_aspiration_4) { create(:aspiration, organization: company, name: 'Team Development', sort_order: 4) }
+  let(:company_aspiration_1) { create(:aspiration, company: company, name: 'Company Growth', sort_order: 1) }
+  let(:company_aspiration_2) { create(:aspiration, company: company, name: 'Innovation', sort_order: 2) }
+  let(:company_aspiration_3) { create(:aspiration, company: company, name: 'Customer Satisfaction', sort_order: 3) }
+  let(:company_aspiration_4) { create(:aspiration, company: company, name: 'Team Development', sort_order: 4) }
 
   # 1 aspiration per department
-  let(:sales_aspiration) { create(:aspiration, organization: sales_department, name: 'Sales Excellence', sort_order: 1) }
-  let(:product_aspiration) { create(:aspiration, organization: product_department, name: 'Product Innovation', sort_order: 1) }
-  let(:support_aspiration) { create(:aspiration, organization: support_department, name: 'Customer Support', sort_order: 1) }
+  let(:sales_aspiration) { create(:aspiration, company: sales_department, name: 'Sales Excellence', sort_order: 1) }
+  let(:product_aspiration) { create(:aspiration, company: product_department, name: 'Product Innovation', sort_order: 1) }
+  let(:support_aspiration) { create(:aspiration, company: support_department, name: 'Customer Support', sort_order: 1) }
 
   # Position major level and levels
   let(:position_major_level) { create(:position_major_level) }
@@ -24,10 +24,10 @@ RSpec.shared_context 'check_in_test_data' do
   let(:position_level_4) { create(:position_level, position_major_level: position_major_level, level: '4.0') }
 
   # 1 position type for company + 1 per department
-  let(:company_title) { create(:title, organization: company, external_title: 'Company Manager', position_major_level: position_major_level) }
-  let(:sales_title) { create(:title, organization: sales_department, external_title: 'Sales Rep', position_major_level: position_major_level) }
-  let(:product_title) { create(:title, organization: product_department, external_title: 'Product Manager', position_major_level: position_major_level) }
-  let(:support_title) { create(:title, organization: support_department, external_title: 'Support Specialist', position_major_level: position_major_level) }
+  let(:company_title) { create(:title, company: company, external_title: 'Company Manager', position_major_level: position_major_level) }
+  let(:sales_title) { create(:title, company: sales_department, external_title: 'Sales Rep', position_major_level: position_major_level) }
+  let(:product_title) { create(:title, company: product_department, external_title: 'Product Manager', position_major_level: position_major_level) }
+  let(:support_title) { create(:title, company: support_department, external_title: 'Support Specialist', position_major_level: position_major_level) }
 
   # 1 position per position type
   let(:company_position) { create(:position, title: company_title, position_level: position_level_1) }

@@ -9,7 +9,7 @@ RSpec.describe 'People::Assignments', type: :request do
   let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
   let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 1.month.ago, ended_at: nil) }
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let!(:title) { create(:title, organization: organization, external_title: 'Engineer', position_major_level: position_major_level) }
+  let!(:title) { create(:title, company: organization, external_title: 'Engineer', position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let!(:position) { create(:position, title: title, position_level: position_level) }
   let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, position: position, company: organization, manager: manager_person, started_at: 1.year.ago, ended_at: nil) }

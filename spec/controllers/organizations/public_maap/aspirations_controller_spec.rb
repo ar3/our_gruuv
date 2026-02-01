@@ -5,11 +5,11 @@ RSpec.describe Organizations::PublicMaap::AspirationsController, type: :controll
   let(:department) { create(:organization, :department, parent: company) }
   
   let!(:aspiration_company) do
-    create(:aspiration, organization: company, name: 'Company Aspiration')
+    create(:aspiration, company: company, name: 'Company Aspiration')
   end
 
   let!(:aspiration_department) do
-    create(:aspiration, organization: department, name: 'Department Aspiration')
+    create(:aspiration, company: department, name: 'Department Aspiration')
   end
 
   let(:observer) { create(:person) }

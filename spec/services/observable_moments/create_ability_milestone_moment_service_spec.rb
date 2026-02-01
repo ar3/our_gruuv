@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe ObservableMoments::CreateAbilityMilestoneMomentService do
   let(:company) { create(:organization, :company) }
-  let(:ability) { create(:ability, organization: company) }
+  let(:ability) { create(:ability, company: company) }
   let(:teammate) { create(:teammate, organization: company) }
   let(:certified_by) { create(:person) }
   let(:certifier_teammate) { create(:teammate, organization: company, person: certified_by) }

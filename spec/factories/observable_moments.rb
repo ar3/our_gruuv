@@ -63,7 +63,7 @@ FactoryBot.define do
       association :momentable, factory: :teammate_milestone
       after(:build) do |moment|
         if moment.momentable
-          moment.company = moment.momentable.ability.organization
+          moment.company = moment.momentable.ability.company
           moment.metadata = {
             ability_id: moment.momentable.ability_id,
             ability_name: moment.momentable.ability.name,

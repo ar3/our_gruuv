@@ -4,7 +4,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person, og_admin: false) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:manager) { create(:person) }
@@ -227,8 +227,8 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
       
       it 'finds people with huddle participation but no employment' do
         huddle_person = create(:person)
-        huddle_playbook = create(:huddle_playbook, company: organization)
-        huddle = create(:huddle, huddle_playbook: huddle_playbook)
+        team = create(:team, company: organization)
+        huddle = create(:huddle, team: team)
         create(:huddle_participant, teammate: create(:teammate, person: huddle_person, organization: organization), huddle: huddle)
         
         # Set up the organization instance variable

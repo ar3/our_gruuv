@@ -271,7 +271,7 @@ class Organizations::PositionsController < ApplicationController
     authorize @position, :manage_assignments?
     
     # Get position's company and all descendants
-    company = @position.title.organization.root_company
+    company = @position.title.company.root_company
     company_and_descendants = company.self_and_descendants
     
     # Load all assignments for the company

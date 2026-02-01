@@ -6,7 +6,7 @@ RSpec.describe 'Position Assignments Management', type: :request do
   let(:person) { create(:person) }
   let!(:teammate) { create(:teammate, person: person, organization: company, can_manage_maap: true) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
   

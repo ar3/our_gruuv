@@ -5,8 +5,8 @@ RSpec.describe 'Organizations::CelebrateMilestones', type: :request do
   let(:person) { create(:person) }
   let(:teammate) { CompanyTeammate.find(create(:teammate, person: person, organization: organization).id) }
   
-  let(:ability1) { create(:ability, organization: organization, name: 'Ruby Programming', created_by: person, updated_by: person) }
-  let(:ability2) { create(:ability, organization: organization, name: 'JavaScript', created_by: person, updated_by: person) }
+  let(:ability1) { create(:ability, company: organization, name: 'Ruby Programming', created_by: person, updated_by: person) }
+  let(:ability2) { create(:ability, company: organization, name: 'JavaScript', created_by: person, updated_by: person) }
   
   let(:person1) { create(:person, first_name: 'Alice', last_name: 'Smith') }
   let(:person2) { create(:person, first_name: 'Bob', last_name: 'Jones') }
@@ -708,7 +708,7 @@ RSpec.describe 'Organizations::CelebrateMilestones', type: :request do
       it 'only shows milestones from the current organization' do
         milestone_other_org = create(:teammate_milestone,
                                      teammate: other_teammate,
-                                     ability: create(:ability, organization: other_organization),
+                                     ability: create(:ability, company: other_organization),
                                      milestone_level: 1,
                                      published_at: Time.current,
                                      published_by_teammate: certifier_teammate,

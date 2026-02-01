@@ -93,10 +93,10 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     it 'calculates most_observed spotlight stats with counts and runners-up' do
       assignment1 = create(:assignment, company: company)
       assignment2 = create(:assignment, company: company)
-      ability1 = create(:ability, organization: company)
-      ability2 = create(:ability, organization: company)
-      aspiration1 = create(:aspiration, organization: company)
-      aspiration2 = create(:aspiration, organization: company)
+      ability1 = create(:ability, company: company)
+      ability2 = create(:ability, company: company)
+      aspiration1 = create(:aspiration, company: company)
+      aspiration2 = create(:aspiration, company: company)
       
       # Create observations with ratings - assignment1 should be most observed (2 observations)
       obs1 = build(:observation, observer: observer, company: company, observed_at: 10.days.ago)
@@ -751,9 +751,9 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     context 'auto-adding company aspirations' do
-      let(:company_aspiration_1) { create(:aspiration, organization: company, name: 'Company Growth', sort_order: 1) }
-      let(:company_aspiration_2) { create(:aspiration, organization: company, name: 'Innovation', sort_order: 2) }
-      let(:company_aspiration_3) { create(:aspiration, organization: company, name: 'Customer Satisfaction', sort_order: 3) }
+      let(:company_aspiration_1) { create(:aspiration, company: company, name: 'Company Growth', sort_order: 1) }
+      let(:company_aspiration_2) { create(:aspiration, company: company, name: 'Innovation', sort_order: 2) }
+      let(:company_aspiration_3) { create(:aspiration, company: company, name: 'Customer Satisfaction', sort_order: 3) }
 
       before do
         company_aspiration_1
@@ -817,7 +817,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
       it 'only adds root company aspirations, not department or team aspirations' do
         department = create(:organization, :department, parent: company)
-        department_aspiration = create(:aspiration, organization: department, name: 'Department Goal', sort_order: 1)
+        department_aspiration = create(:aspiration, company: department, name: 'Department Goal', sort_order: 1)
         
         get :new, params: { organization_id: company.id }
         observation = assigns(:observation)
@@ -1036,7 +1036,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     context 'with public privacy level and negative ratings' do
-      let(:ability) { create(:ability, organization: company) }
+      let(:ability) { create(:ability, company: company) }
       let(:public_params_with_negative_rating) do
         {
           organization_id: company.id,
@@ -1112,7 +1112,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     context 'with public privacy level but only positive ratings' do
-      let(:ability) { create(:ability, organization: company) }
+      let(:ability) { create(:ability, company: company) }
       let(:public_params_with_positive_rating) do
         {
           organization_id: company.id,
@@ -1397,7 +1397,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     context 'when adding rateable to public observation with existing negative rating' do
-      let(:ability) { create(:ability, organization: company) }
+      let(:ability) { create(:ability, company: company) }
       let(:assignment) { create(:assignment, company: company) }
       let(:public_draft) do
         obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_to_world)
@@ -1786,7 +1786,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     context 'with public privacy level and negative ratings' do
-      let(:ability) { create(:ability, organization: company) }
+      let(:ability) { create(:ability, company: company) }
       let(:draft_with_negative_rating) do
         obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
@@ -1846,9 +1846,9 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     context 'with na ratings' do
-      let(:ability) { create(:ability, organization: company) }
+      let(:ability) { create(:ability, company: company) }
       let(:assignment) { create(:assignment, company: company) }
-      let(:aspiration) { create(:aspiration, organization: company) }
+      let(:aspiration) { create(:aspiration, company: company) }
       let(:draft_with_na_ratings) do
         obs = build(:observation, observer: observer, company: company, published_at: nil, story: 'Test story')
         obs.observees.build(teammate: observee_teammate)
@@ -2205,8 +2205,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
   describe 'GET #filtered_observations' do
     let(:assignment) { create(:assignment, company: company) }
-    let(:aspiration) { create(:aspiration, organization: company) }
-    let(:ability) { create(:ability, organization: company) }
+    let(:aspiration) { create(:aspiration, company: company) }
+    let(:ability) { create(:ability, company: company) }
     
     let!(:published_observation) do
       obs = build(:observation, observer: observer, company: company, observed_at: 2.days.ago, story: 'Published observation story')

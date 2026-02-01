@@ -69,12 +69,21 @@ RSpec.describe Ability, type: :model do
   end
 
   describe 'versioning' do
+    before do
+      PaperTrail.enabled = true
+    end
+    
+    after do
+      PaperTrail.enabled = false
+    end
+    
     it 'has paper trail enabled' do
       expect(Ability.new).to respond_to(:versions)
     end
 
     it 'tracks basic version history' do
       ability = create(:ability, company: company, created_by: person, updated_by: person)
+      # With PaperTrail enabled, a newly created record has 1 version (creation)
       expect(ability.versions.count).to eq(1)
       
       ability.update!(name: 'Updated Name', updated_by: admin)

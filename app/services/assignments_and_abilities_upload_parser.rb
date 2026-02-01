@@ -392,7 +392,7 @@ class AssignmentsAndAbilitiesUploadParser
         Title,
         :external_title,
         position_title,
-        Title.joins(:organization).where(organizations: { id: organization.id })
+        Title.where(company_id: organization.id)
       )
       
       unless title

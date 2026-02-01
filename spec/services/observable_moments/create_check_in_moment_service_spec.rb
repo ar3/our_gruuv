@@ -175,7 +175,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
   end
   
   describe '.call for AspirationCheckIn' do
-    let(:aspiration) { create(:aspiration, organization: company) }
+    let(:aspiration) { create(:aspiration, company: company) }
     
     context 'when rating improved' do
       let!(:previous_check_in) do

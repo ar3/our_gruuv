@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Organizations::PositionsController, type: :controller do
   let(:person) { create(:person) }
   let(:organization) { create(:organization, :company) }
-  let(:title) { create(:title, organization: organization) }
+  let(:title) { create(:title, company: organization) }
   let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
 
   before do
@@ -54,7 +54,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
     end
 
     it 'combines major_version filter with title filter' do
-      other_title = create(:title, organization: organization)
+      other_title = create(:title, company: organization)
       other_position_level = create(:position_level, position_major_level: other_title.position_major_level)
       other_position = create(:position, title: other_title, position_level: other_position_level, semantic_version: '1.0.0')
 
@@ -83,13 +83,13 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       dept_c = create(:organization, :department, parent: organization, name: 'Department C')
       
       # Create titles for each department with unique external titles
-      title_a = create(:title, organization: organization, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
-      title_a1 = create(:title, organization: organization, department: dept_a1, position_major_level: position_major_level, external_title: 'Title A1')
-      title_a2 = create(:title, organization: organization, department: dept_a2, position_major_level: position_major_level, external_title: 'Title A2')
-      title_b = create(:title, organization: organization, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
-      title_b1 = create(:title, organization: organization, department: dept_b1, position_major_level: position_major_level, external_title: 'Title B1')
-      title_c = create(:title, organization: organization, department: dept_c, position_major_level: position_major_level, external_title: 'Title C')
-      title_no_dept = create(:title, organization: organization, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
+      title_a = create(:title, company: organization, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
+      title_a1 = create(:title, company: organization, department: dept_a1, position_major_level: position_major_level, external_title: 'Title A1')
+      title_a2 = create(:title, company: organization, department: dept_a2, position_major_level: position_major_level, external_title: 'Title A2')
+      title_b = create(:title, company: organization, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
+      title_b1 = create(:title, company: organization, department: dept_b1, position_major_level: position_major_level, external_title: 'Title B1')
+      title_c = create(:title, company: organization, department: dept_c, position_major_level: position_major_level, external_title: 'Title C')
+      title_no_dept = create(:title, company: organization, department: nil, position_major_level: position_major_level, external_title: 'Title No Dept')
       
       get :index, params: { organization_id: organization.id }
       
@@ -116,9 +116,9 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       position_major_level = create(:position_major_level)
       
       # Create titles with different names
-      title_z = create(:title, organization: organization, department: dept, external_title: 'Z Title', position_major_level: position_major_level)
-      title_a = create(:title, organization: organization, department: dept, external_title: 'A Title', position_major_level: position_major_level)
-      title_m = create(:title, organization: organization, department: dept, external_title: 'M Title', position_major_level: position_major_level)
+      title_z = create(:title, company: organization, department: dept, external_title: 'Z Title', position_major_level: position_major_level)
+      title_a = create(:title, company: organization, department: dept, external_title: 'A Title', position_major_level: position_major_level)
+      title_m = create(:title, company: organization, department: dept, external_title: 'M Title', position_major_level: position_major_level)
       
       get :index, params: { organization_id: organization.id }
       

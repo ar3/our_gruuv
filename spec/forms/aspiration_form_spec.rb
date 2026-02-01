@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe AspirationForm, type: :form do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
-  let(:aspiration) { build(:aspiration, organization: organization) }
+  let(:aspiration) { build(:aspiration, company: organization) }
   let(:form) { AspirationForm.new(aspiration) }
 
   before do
@@ -40,7 +40,7 @@ RSpec.describe AspirationForm, type: :form do
     end
 
     it 'requires version_type for existing records' do
-      existing_aspiration = create(:aspiration, organization: organization, semantic_version: '1.0.0')
+      existing_aspiration = create(:aspiration, company: organization, semantic_version: '1.0.0')
       form = AspirationForm.new(existing_aspiration)
       form.current_person = person
       params = { name: 'Updated', description: existing_aspiration.description, sort_order: existing_aspiration.sort_order, organization_id: existing_aspiration.organization_id, version_type: nil }
@@ -57,7 +57,7 @@ RSpec.describe AspirationForm, type: :form do
     end
 
     it 'validates version_type for existing records' do
-      existing_aspiration = create(:aspiration, organization: organization, semantic_version: '1.0.0')
+      existing_aspiration = create(:aspiration, company: organization, semantic_version: '1.0.0')
       form = AspirationForm.new(existing_aspiration)
       form.current_person = person
       params = { name: 'Updated', description: existing_aspiration.description, sort_order: existing_aspiration.sort_order, organization_id: existing_aspiration.organization_id, version_type: 'ready' }
@@ -110,7 +110,7 @@ RSpec.describe AspirationForm, type: :form do
     end
 
     context 'for existing records' do
-      let(:existing_aspiration) { create(:aspiration, organization: organization, semantic_version: '1.2.3') }
+      let(:existing_aspiration) { create(:aspiration, company: organization, semantic_version: '1.2.3') }
       let(:form) { AspirationForm.new(existing_aspiration) }
 
       before do

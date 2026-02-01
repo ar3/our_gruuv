@@ -151,7 +151,7 @@ RSpec.describe 'Organizations::Abilities', type: :request do
   end
 
   describe 'PATCH /organizations/:organization_id/abilities/:id' do
-    let(:ability) { create(:ability, organization: organization, semantic_version: '1.0.0') }
+    let(:ability) { create(:ability, company: organization, semantic_version: '1.0.0') }
 
     context 'when form is submitted with valid data' do
       it 'updates the ability successfully' do
@@ -189,10 +189,10 @@ RSpec.describe 'Organizations::Abilities', type: :request do
   end
 
   describe 'GET /organizations/:organization_id/abilities' do
-    let!(:ability_v1) { create(:ability, organization: organization, semantic_version: '1.0.0', name: 'Ability v1') }
-    let!(:ability_v1_2) { create(:ability, organization: organization, semantic_version: '1.2.3', name: 'Ability v1.2') }
-    let!(:ability_v2) { create(:ability, organization: organization, semantic_version: '2.0.0', name: 'Ability v2') }
-    let!(:ability_v0) { create(:ability, organization: organization, semantic_version: '0.1.0', name: 'Ability v0') }
+    let!(:ability_v1) { create(:ability, company: organization, semantic_version: '1.0.0', name: 'Ability v1') }
+    let!(:ability_v1_2) { create(:ability, company: organization, semantic_version: '1.2.3', name: 'Ability v1.2') }
+    let!(:ability_v2) { create(:ability, company: organization, semantic_version: '2.0.0', name: 'Ability v2') }
+    let!(:ability_v0) { create(:ability, company: organization, semantic_version: '0.1.0', name: 'Ability v0') }
 
     before do
       teammate

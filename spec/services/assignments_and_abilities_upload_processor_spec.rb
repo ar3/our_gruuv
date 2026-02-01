@@ -58,7 +58,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
       let!(:title) do
-        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+        create(:title, external_title: 'Software Engineer', company: organization, position_major_level: position_major_level)
       end
       let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
 
@@ -168,7 +168,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
 
     context 'with existing ability' do
       let!(:existing_ability) do
-        create(:ability, name: 'Communication', organization: organization, semantic_version: '2.1.0')
+        create(:ability, name: 'Communication', company: organization, semantic_version: '2.1.0')
       end
 
       it 'updates ability and increments version' do
@@ -380,7 +380,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
     context 'when PositionMajorLevel has no PositionLevels' do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:title) do
-        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+        create(:title, external_title: 'Software Engineer', company: organization, position_major_level: position_major_level)
       end
 
       let(:preview_actions) do
@@ -419,7 +419,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
       let!(:title) do
-        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+        create(:title, external_title: 'Software Engineer', company: organization, position_major_level: position_major_level)
       end
 
       context 'when position is created' do
@@ -502,7 +502,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
       let!(:title) do
-        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+        create(:title, external_title: 'Software Engineer', company: organization, position_major_level: position_major_level)
       end
       let!(:position) { create(:position, title: title, position_level: position_level) }
       let!(:assignment) { create(:assignment, title: 'Test Assignment', company: organization) }
@@ -695,7 +695,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
       let!(:title) do
-        create(:title, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+        create(:title, external_title: 'Software Engineer', company: organization, position_major_level: position_major_level)
       end
       let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
       let!(:seat1) { create(:seat, title: title, seat_needed_by: Date.current + 3.months) }

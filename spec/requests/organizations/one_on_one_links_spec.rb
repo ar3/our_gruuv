@@ -6,7 +6,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
   let(:employee_person) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level) }
+  let(:title) { create(:title, company: organization, external_title: 'Software Engineer', position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:manager_teammate) { create(:company_teammate, person: manager_person, organization: organization, can_manage_employment: true) }

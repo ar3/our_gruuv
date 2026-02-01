@@ -4,7 +4,7 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
   let(:observee_teammate) { create(:teammate, organization: company) }
-  let(:ability) { create(:ability, organization: company) }
+  let(:ability) { create(:ability, company: company) }
   let(:assignment) { create(:assignment, company: company) }
 
   describe '.call' do

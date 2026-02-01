@@ -211,7 +211,7 @@ class MaapSnapshot < ApplicationRecord
   def self.build_abilities_data(teammate)
     return [] unless teammate
     company = teammate.organization
-    TeammateMilestone.where(teammate: teammate).joins(:ability).where(abilities: { organization: company }).includes(:ability).map do |milestone|
+    TeammateMilestone.where(teammate: teammate).joins(:ability).where(abilities: { company_id: company.id }).includes(:ability).map do |milestone|
       {
         ability_id: milestone.ability_id,
         milestone_level: milestone.milestone_level,

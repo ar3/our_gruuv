@@ -8,12 +8,12 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let!(:assignment1) { create(:assignment, company: company, title: 'Assignment 1') }
   let!(:assignment2) { create(:assignment, company: company, title: 'Assignment 2') }
-  let!(:aspiration1) { create(:aspiration, organization: company, name: 'Aspiration 1') }
-  let!(:aspiration2) { create(:aspiration, organization: company, name: 'Aspiration 2') }
+  let!(:aspiration1) { create(:aspiration, company: company, name: 'Aspiration 1') }
+  let!(:aspiration2) { create(:aspiration, company: company, name: 'Aspiration 2') }
   
   # Create employment tenures (required for authorization)
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let!(:title) { create(:title, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
+  let!(:title) { create(:title, company: company, external_title: 'Engineer', position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let!(:position) { create(:position, title: title, position_level: position_level) }
   let!(:manager_employment_tenure) do

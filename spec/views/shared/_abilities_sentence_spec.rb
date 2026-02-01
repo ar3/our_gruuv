@@ -2,9 +2,9 @@ require 'rails_helper'
 
 RSpec.describe 'shared/_abilities_sentence', type: :view do
   let(:organization) { create(:organization, :company) }
-  let(:ability1) { create(:ability, organization: organization, name: 'Communication') }
-  let(:ability2) { create(:ability, organization: organization, name: 'Mentorship') }
-  let(:ability3) { create(:ability, organization: organization, name: 'Manager Development') }
+  let(:ability1) { create(:ability, company: organization, name: 'Communication') }
+  let(:ability2) { create(:ability, company: organization, name: 'Mentorship') }
+  let(:ability3) { create(:ability, company: organization, name: 'Manager Development') }
   let(:assignment) { create(:assignment, company: organization) }
   let(:assignment_ability1) { create(:assignment_ability, assignment: assignment, ability: ability1, milestone_level: 2) }
   let(:assignment_ability2) { create(:assignment_ability, assignment: assignment, ability: ability2, milestone_level: 2) }

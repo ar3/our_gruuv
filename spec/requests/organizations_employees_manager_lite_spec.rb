@@ -119,7 +119,7 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
       end
 
       let!(:aspiration_check_in) do
-        aspiration = create(:aspiration, organization: organization)
+        aspiration = create(:aspiration, company: organization)
         create(:aspiration_check_in,
           teammate: direct_report1_teammate,
           aspiration: aspiration,

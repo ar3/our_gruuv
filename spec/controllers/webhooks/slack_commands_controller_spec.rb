@@ -130,7 +130,7 @@ RSpec.describe Webhooks::SlackCommandsController, type: :controller do
                  display_name: channel_name)
         end
         let!(:playbook) do
-          create(:huddle_playbook,
+          create(:team,
                  organization: organization,
                  slack_channel: "##{channel_name}")
         end

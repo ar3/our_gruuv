@@ -47,8 +47,8 @@ RSpec.describe OrganizationsController, type: :controller do
   end
 
   describe 'GET #huddles_review' do
-    let!(:huddle1) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization), started_at: 1.week.ago) }
-    let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: team), started_at: 2.weeks.ago) }
+    let!(:huddle1) { create(:huddle, team: create(:team, company: organization), started_at: 1.week.ago) }
+    let!(:huddle2) { create(:huddle, team: create(:team, company: team), started_at: 2.weeks.ago) }
     let!(:feedback1) { create(:huddle_feedback, huddle: huddle1, informed_rating: 4, connected_rating: 4, goals_rating: 4, valuable_rating: 4) }
     let!(:feedback2) { create(:huddle_feedback, huddle: huddle2, informed_rating: 5, connected_rating: 5, goals_rating: 5, valuable_rating: 5) }
 
@@ -78,7 +78,7 @@ RSpec.describe OrganizationsController, type: :controller do
     end
 
     it 'filters by date range' do
-      old_huddle = create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization), started_at: 8.weeks.ago)
+      old_huddle = create(:huddle, team: create(:team, company: organization), started_at: 8.weeks.ago)
       
       get :huddles_review, params: { 
         id: organization.id, 
@@ -140,23 +140,23 @@ RSpec.describe OrganizationsController, type: :controller do
     end
 
     it 'assigns playbook metrics correctly' do
-      huddle_playbook = create(:huddle_playbook, company: organization)
-      huddle = create(:huddle, huddle_playbook: huddle_playbook)
+      team = create(:team, company: organization)
+      huddle = create(:huddle, team: team)
       
       get :huddles_review, params: { id: organization.id }
       
       expect(assigns(:playbook_metrics)).to be_present
-      expect(assigns(:playbook_metrics).keys).to include(huddle_playbook.id)
+      expect(assigns(:playbook_metrics).keys).to include(team.id)
       
-      metrics = assigns(:playbook_metrics)[huddle_playbook.id]
-      expect(metrics[:display_name]).to eq(huddle_playbook.display_name)
-      expect(metrics[:id]).to eq(huddle_playbook.id)
-      expect(metrics[:organization_id]).to eq(huddle_playbook.company_id)
+      metrics = assigns(:playbook_metrics)[team.id]
+      expect(metrics[:display_name]).to eq(team.display_name)
+      expect(metrics[:id]).to eq(team.id)
+      expect(metrics[:organization_id]).to eq(team.company_id)
     end
 
     it 'handles playbook metrics without display_name errors' do
-      huddle_playbook = create(:huddle_playbook, company: organization)
-      huddle = create(:huddle, huddle_playbook: huddle_playbook)
+      team = create(:team, company: organization)
+      huddle = create(:huddle, team: team)
       
       expect {
         get :huddles_review, params: { id: organization.id }
@@ -344,7 +344,7 @@ RSpec.describe OrganizationsController, type: :controller do
       PaperTrail.enabled = true
     end
 
-    let!(:ability) { create(:ability, organization: organization, created_by: person, updated_by: person) }
+    let!(:ability) { create(:ability, company: organization, created_by: person, updated_by: person) }
     let!(:certifier) { create(:person) }
     let(:certifier_teammate) { create(:teammate, person: certifier, organization: organization) }
     let!(:teammate_milestone) { create(:teammate_milestone, teammate: person.teammates.find_by(organization: organization), ability: ability, certifying_teammate: certifier_teammate, attained_at: 30.days.ago) }
@@ -375,12 +375,12 @@ RSpec.describe OrganizationsController, type: :controller do
     it 'filters milestones by organization and date range' do
       # Create a milestone in a different organization
       other_org = create(:organization)
-      other_ability = create(:ability, organization: other_org)
+      other_ability = create(:ability, company: other_org)
       other_teammate = create(:teammate, person: person, organization: other_org)
       create(:teammate_milestone, teammate: other_teammate, ability: other_ability, certifying_teammate: certifier_teammate, attained_at: 30.days.ago)
       
       # Create an old milestone outside the 90-day range with a different ability
-      old_ability = create(:ability, organization: organization, created_by: person, updated_by: person)
+      old_ability = create(:ability, company: organization, created_by: person, updated_by: person)
       teammate = person.teammates.find_by(organization: organization)
       create(:teammate_milestone, teammate: teammate, ability: old_ability, certifying_teammate: certifier_teammate, attained_at: 100.days.ago)
       

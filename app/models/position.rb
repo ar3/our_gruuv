@@ -24,7 +24,7 @@ class Position < ApplicationRecord
   
   # Scopes
   scope :ordered, -> { joins(:title, :position_level).order('titles.external_title, position_levels.level') }
-  scope :for_company, ->(company) { joins(title: :organization).where(organizations: { id: company.id }) }
+  scope :for_company, ->(company) { joins(:title).where(titles: { company_id: company.id }) }
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)

@@ -4,9 +4,9 @@ RSpec.describe UpdateAssignmentAbilityMilestones, type: :service do
   let(:company) { create(:organization, :company) }
   let!(:department) { create(:organization, :department, parent: company) }
   let(:assignment) { create(:assignment, company: company) }
-  let(:ability1) { create(:ability, organization: company) }
-  let(:ability2) { create(:ability, organization: department) }
-  let(:ability3) { create(:ability, organization: company) }
+  let(:ability1) { create(:ability, company: company) }
+  let(:ability2) { create(:ability, company: department) }
+  let(:ability3) { create(:ability, company: company) }
 
   describe '#call' do
     context 'when creating new associations' do
@@ -140,7 +140,7 @@ RSpec.describe UpdateAssignmentAbilityMilestones, type: :service do
 
     context 'when assignment and ability belong to different organizations' do
       let(:other_company) { create(:organization, :company) }
-      let(:other_ability) { create(:ability, organization: other_company) }
+      let(:other_ability) { create(:ability, company: other_company) }
 
       it 'returns error for cross-organization associations' do
         milestone_data = {

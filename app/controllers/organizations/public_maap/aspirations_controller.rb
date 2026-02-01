@@ -6,12 +6,12 @@ class Organizations::PublicMaap::AspirationsController < Organizations::PublicMa
     orgs_in_hierarchy = [company] + company.descendants.select { |org| org.department? }
     
     @aspirations = Aspiration
-      .where(organization: orgs_in_hierarchy)
-      .includes(:organization)
+      .where(company: orgs_in_hierarchy)
+      .includes(:company)
       .ordered
     
     # Group by organization for display
-    @aspirations_by_org = @aspirations.group_by(&:organization)
+    @aspirations_by_org = @aspirations.group_by(&:company)
   end
   
   def show

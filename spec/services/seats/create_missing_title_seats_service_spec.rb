@@ -9,8 +9,8 @@ RSpec.describe Seats::CreateMissingTitleSeatsService, type: :service do
   describe '#call' do
     context 'when titles have no seats' do
       it 'creates seats for titles without seats' do
-        title = create(:title, organization: organization, position_major_level: position_major_level)
-        title2 = create(:title, organization: organization, position_major_level: position_major_level, external_title: "Product Manager")
+        title = create(:title, company: organization, position_major_level: position_major_level)
+        title2 = create(:title, company: organization, position_major_level: position_major_level, external_title: "Product Manager")
         
         result = service.call
         
@@ -27,7 +27,7 @@ RSpec.describe Seats::CreateMissingTitleSeatsService, type: :service do
       end
 
       it 'creates seat with current date as seat_needed_by' do
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         result = service.call
         
         seat = Seat.find_by(title: title)
@@ -35,7 +35,7 @@ RSpec.describe Seats::CreateMissingTitleSeatsService, type: :service do
       end
 
       it 'creates seat in draft state' do
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         result = service.call
         
         seat = Seat.find_by(title: title)
@@ -45,9 +45,9 @@ RSpec.describe Seats::CreateMissingTitleSeatsService, type: :service do
 
     context 'when titles already have seats' do
       it 'skips titles that already have seats' do
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         create(:seat, title: title, seat_needed_by: Date.current)
-        title2 = create(:title, organization: organization, position_major_level: position_major_level, external_title: "Product Manager")
+        title2 = create(:title, company: organization, position_major_level: position_major_level, external_title: "Product Manager")
         
         result = service.call
         
@@ -75,7 +75,7 @@ RSpec.describe Seats::CreateMissingTitleSeatsService, type: :service do
 
     context 'when there are errors' do
       it 'handles validation errors gracefully' do
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         # Stub the seat creation to fail
         allow_any_instance_of(Seat).to receive(:save).and_return(false)
         allow_any_instance_of(Seat).to receive(:errors).and_return(double(full_messages: ['Validation error']))
@@ -90,7 +90,7 @@ RSpec.describe Seats::CreateMissingTitleSeatsService, type: :service do
 
     context 'when seat already exists for title and date' do
       it 'skips creating duplicate seat' do
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         create(:seat, title: title, seat_needed_by: Date.current)
         
         result = service.call

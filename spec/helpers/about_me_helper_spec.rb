@@ -534,7 +534,7 @@ RSpec.describe AboutMeHelper, type: :helper do
     let(:organization) { create(:organization, :company) }
     let(:person) { create(:person) }
     let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
-    let(:title) { create(:title, organization: organization) }
+    let(:title) { create(:title, company: organization) }
     let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
     let(:position) { create(:position, title: title, position_level: position_level) }
     let!(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil) }
@@ -653,7 +653,7 @@ RSpec.describe AboutMeHelper, type: :helper do
     let(:organization) { create(:organization, :company) }
     let(:person) { create(:person) }
     let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
-    let(:title) { create(:title, organization: organization) }
+    let(:title) { create(:title, company: organization) }
     let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
     let(:position) { create(:position, title: title, position_level: position_level) }
     let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil) }
@@ -1052,8 +1052,8 @@ RSpec.describe AboutMeHelper, type: :helper do
     let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
 
     context 'when teammate has never had any aspiration check-in finalized' do
-      let!(:aspiration1) { create(:aspiration, organization: organization) }
-      let!(:aspiration2) { create(:aspiration, organization: organization) }
+      let!(:aspiration1) { create(:aspiration, company: organization) }
+      let!(:aspiration2) { create(:aspiration, company: organization) }
 
       before do
         # Create open check-ins (not finalized)
@@ -1079,8 +1079,8 @@ RSpec.describe AboutMeHelper, type: :helper do
     end
 
     context 'when company has aspirations and teammate has finalized check-ins' do
-      let!(:aspiration1) { create(:aspiration, organization: organization) }
-      let!(:aspiration2) { create(:aspiration, organization: organization) }
+      let!(:aspiration1) { create(:aspiration, company: organization) }
+      let!(:aspiration2) { create(:aspiration, company: organization) }
       let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
       let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
 

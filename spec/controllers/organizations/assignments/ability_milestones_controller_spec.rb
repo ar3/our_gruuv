@@ -5,9 +5,9 @@ RSpec.describe Organizations::Assignments::AbilityMilestonesController, type: :c
   let(:company) { create(:organization, :company) }
   let(:department) { create(:organization, :department, parent: company) }
   let!(:assignment) { create(:assignment, company: company) }
-  let!(:ability1) { create(:ability, organization: company) }
-  let!(:ability2) { create(:ability, organization: department) }
-  let!(:ability3) { create(:ability, organization: company) }
+  let!(:ability1) { create(:ability, company: company) }
+  let!(:ability2) { create(:ability, company: department) }
+  let!(:ability3) { create(:ability, company: company) }
 
   before do
     sign_in_as_teammate(person, company)

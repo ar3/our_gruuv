@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe TeammateMilestone, type: :model do
   let(:organization) { create(:organization) }
-  let(:ability) { create(:ability, organization: organization) }
+  let(:ability) { create(:ability, company: organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:certifier_person) { create(:person) }
@@ -48,7 +48,7 @@ RSpec.describe TeammateMilestone, type: :model do
     it 'requires a certifying_teammate' do
       teammate_milestone.certifying_teammate = nil
       expect(teammate_milestone).not_to be_valid
-      expect(teammate_milestone.errors[:certifying_teammate]).to include('must exist')
+      expect(teammate_milestone.errors[:certifying_teammate]).to include("can't be blank")
     end
 
     it 'requires an attained_at date' do
@@ -66,7 +66,7 @@ RSpec.describe TeammateMilestone, type: :model do
     end
 
     it 'allows same milestone level for different abilities' do
-      other_ability = create(:ability, organization: organization)
+      other_ability = create(:ability, company: organization)
       create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
       other_milestone = build(:teammate_milestone, teammate: teammate, ability: other_ability, milestone_level: 3, certifying_teammate: certifier_teammate)
       
@@ -93,7 +93,10 @@ RSpec.describe TeammateMilestone, type: :model do
     end
 
     it 'belongs to a certifying_teammate' do
-      expect(teammate_milestone).to belong_to(:certifying_teammate).class_name('CompanyTeammate')
+      # The association is defined with optional: true but has a separate presence validation
+      # This tests the association without shoulda's automatic validation checking
+      expect(TeammateMilestone.reflect_on_association(:certifying_teammate)).to be_present
+      expect(TeammateMilestone.reflect_on_association(:certifying_teammate).options[:class_name]).to eq('CompanyTeammate')
     end
   end
 
@@ -123,7 +126,7 @@ RSpec.describe TeammateMilestone, type: :model do
 
     describe '.for_ability' do
       it 'returns milestones for specific ability' do
-        other_ability = create(:ability, organization: organization)
+        other_ability = create(:ability, company: organization)
         other_milestone = create(:teammate_milestone, teammate: teammate, ability: other_ability, milestone_level: 2, certifying_teammate: certifier_teammate)
 
         result = TeammateMilestone.for_ability(ability)
@@ -202,7 +205,7 @@ RSpec.describe TeammateMilestone, type: :model do
   end
 
   describe 'scopes for publishing' do
-    let(:other_ability) { create(:ability, organization: organization) }
+    let(:other_ability) { create(:ability, company: organization) }
     let!(:published_milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, published_at: Time.current, certifying_teammate: certifier_teammate) }
     let!(:unpublished_milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 2, published_at: nil, certifying_teammate: certifier_teammate) }
     let!(:public_profile_milestone) { create(:teammate_milestone, teammate: teammate, ability: other_ability, milestone_level: 1, public_profile_published_at: Time.current, certifying_teammate: certifier_teammate) }

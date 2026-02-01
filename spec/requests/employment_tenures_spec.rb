@@ -6,7 +6,7 @@ RSpec.describe "EmploymentTenures", type: :request do
   let(:organization) { company }
   let(:position) do
     position_major_level = create(:position_major_level)
-    title = create(:title, organization: company, position_major_level: position_major_level)
+    title = create(:title, company: company, position_major_level: position_major_level)
     position_level = create(:position_level, position_major_level: position_major_level)
     create(:position, title: title, position_level: position_level)
   end
@@ -54,7 +54,7 @@ RSpec.describe "EmploymentTenures", type: :request do
       let!(:active_tenure) { create(:employment_tenure, teammate: person_teammate, company: company, position: position, started_at: 6.months.ago) }
       let(:new_position) do
         position_major_level = create(:position_major_level)
-        title = create(:title, organization: company, position_major_level: position_major_level)
+        title = create(:title, company: company, position_major_level: position_major_level)
         position_level = create(:position_level, position_major_level: position_major_level)
         create(:position, title: title, position_level: position_level)
       end

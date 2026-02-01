@@ -3,8 +3,8 @@ require 'rails_helper'
 RSpec.describe AssignmentAbilityMilestonesForm, type: :form do
   let(:company) { create(:organization, :company) }
   let(:assignment) { create(:assignment, company: company) }
-  let(:ability1) { create(:ability, organization: company) }
-  let(:ability2) { create(:ability, organization: company) }
+  let(:ability1) { create(:ability, company: company) }
+  let(:ability2) { create(:ability, company: company) }
   let(:form) { AssignmentAbilityMilestonesForm.new(assignment) }
 
   describe 'validations' do

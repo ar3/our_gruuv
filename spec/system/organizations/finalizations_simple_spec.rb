@@ -10,7 +10,7 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
   
   # Create employment tenures (required for authorization)
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let!(:title) { create(:title, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
+  let!(:title) { create(:title, company: company, external_title: 'Engineer', position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let!(:position) { create(:position, title: title, position_level: position_level) }
   let!(:manager_employment_tenure) do

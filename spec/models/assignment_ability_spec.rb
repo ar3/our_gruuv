@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe AssignmentAbility, type: :model do
   let(:organization) { create(:organization) }
   let(:assignment) { create(:assignment, company: organization) }
-  let(:ability) { create(:ability, organization: organization) }
+  let(:ability) { create(:ability, company: organization) }
   let(:assignment_ability) { create(:assignment_ability, assignment: assignment, ability: ability) }
 
   describe 'validations' do
@@ -59,7 +59,7 @@ RSpec.describe AssignmentAbility, type: :model do
     end
 
     it 'allows same assignment for different abilities' do
-      other_ability = create(:ability, organization: organization)
+      other_ability = create(:ability, company: organization)
       create(:assignment_ability, assignment: assignment, ability: ability)
       other_assignment_ability = build(:assignment_ability, assignment: assignment, ability: other_ability)
       
@@ -80,11 +80,11 @@ RSpec.describe AssignmentAbility, type: :model do
   describe 'organization scoping validation' do
     it 'validates assignment and ability belong to same organization' do
       other_organization = create(:organization)
-      other_ability = create(:ability, organization: other_organization)
+      other_ability = create(:ability, company: other_organization)
       
       assignment_ability.ability = other_ability
       expect(assignment_ability).not_to be_valid
-      expect(assignment_ability.errors[:ability]).to include('must belong to the same organization hierarchy as the assignment')
+      expect(assignment_ability.errors[:ability]).to include('must belong to the same company as the assignment')
     end
 
     it 'allows assignment and ability from same organization' do
@@ -94,13 +94,13 @@ RSpec.describe AssignmentAbility, type: :model do
 
   describe 'scopes' do
     let!(:assignment_ability_1) { create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 1) }
-    let!(:assignment_ability_2) { create(:assignment_ability, assignment: assignment, ability: create(:ability, organization: organization), milestone_level: 3) }
-    let!(:assignment_ability_3) { create(:assignment_ability, assignment: assignment, ability: create(:ability, organization: organization), milestone_level: 5) }
+    let!(:assignment_ability_2) { create(:assignment_ability, assignment: assignment, ability: create(:ability, company: organization), milestone_level: 3) }
+    let!(:assignment_ability_3) { create(:assignment_ability, assignment: assignment, ability: create(:ability, company: organization), milestone_level: 5) }
 
     describe '.for_assignment' do
       it 'returns assignment abilities for specific assignment' do
         other_assignment = create(:assignment, company: organization, title: 'Other Assignment')
-        other_assignment_ability = create(:assignment_ability, assignment: other_assignment, ability: create(:ability, organization: organization))
+        other_assignment_ability = create(:assignment_ability, assignment: other_assignment, ability: create(:ability, company: organization))
 
         result = AssignmentAbility.for_assignment(assignment)
         expect(result).to include(assignment_ability_1, assignment_ability_2, assignment_ability_3)
@@ -110,7 +110,7 @@ RSpec.describe AssignmentAbility, type: :model do
 
     describe '.for_ability' do
       it 'returns assignment abilities for specific ability' do
-        other_ability = create(:ability, organization: organization)
+        other_ability = create(:ability, company: organization)
         other_assignment_ability = create(:assignment_ability, assignment: assignment, ability: other_ability)
 
         result = AssignmentAbility.for_ability(ability)

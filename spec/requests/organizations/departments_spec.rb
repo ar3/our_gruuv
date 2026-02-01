@@ -95,11 +95,11 @@ RSpec.describe 'Organizations::Departments', type: :request do
     end
 
     it 'displays department details' do
-      title = create(:title, organization: department)
+      title = create(:title, company: department)
       seat = create(:seat, title: title)
       assignment = create(:assignment, company: organization, department: department)
-      ability = create(:ability, organization: department)
-      playbook = create(:huddle_playbook, company: department)
+      ability = create(:ability, company: department)
+      playbook = create(:team, company: department)
       
       get organization_department_path(organization, department)
       
@@ -114,7 +114,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
 
     it 'displays seats with employment tenures and person information' do
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      title = create(:title, organization: department, position_major_level: position_major_level)
+      title = create(:title, company: department, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
       # Create seat first, then use :with_seat trait to ensure position matches
       seat = create(:seat, title: title, state: :filled)
@@ -141,7 +141,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
     end
 
     it 'handles seats without employment tenures gracefully' do
-      title = create(:title, organization: department)
+      title = create(:title, company: department)
       seat = create(:seat, title: title, state: :open)
       
       get organization_department_path(organization, department)
@@ -153,7 +153,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
 
     it 'handles seats with inactive employment tenures' do
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      title = create(:title, organization: department, position_major_level: position_major_level)
+      title = create(:title, company: department, position_major_level: position_major_level)
       # Create seat first, then use :with_seat trait to ensure position matches
       seat = create(:seat, title: title, state: :open)
       

@@ -98,7 +98,7 @@ RSpec.describe 'Assignments Core Flow', type: :system do
 
   describe 'Assign assignments to employee via assign-assignments-skip-check-in flow' do
     let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-    let!(:title) { create(:title, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
+    let!(:title) { create(:title, company: company, external_title: 'Engineer', position_major_level: position_major_level) }
     let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
     let!(:assignment1) { create(:assignment, company: company, title: 'Assignment 1') }
     let!(:assignment2) { create(:assignment, company: company, title: 'Assignment 2') }

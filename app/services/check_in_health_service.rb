@@ -156,7 +156,7 @@ class CheckInHealthService
     open_check_ins = AspirationCheckIn
       .where(teammate: teammate)
       .joins(:aspiration)
-      .where(aspirations: { organization: organization.self_and_descendants })
+      .where(aspirations: { company_id: organization.self_and_descendants.pluck(:id) })
       .open
 
     open_count = open_check_ins.count
@@ -205,7 +205,7 @@ class CheckInHealthService
     # Count milestones employee has attained
     attained_milestones = teammate.teammate_milestones
       .joins(:ability)
-      .where(abilities: { organization: organization.self_and_descendants })
+      .where(abilities: { company_id: organization.self_and_descendants.pluck(:id) })
 
     # Check if employee has attained each required milestone
     attained_count = required_milestones.count do |(ability_id, milestone_level)|

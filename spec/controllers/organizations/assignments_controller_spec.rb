@@ -108,7 +108,7 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
     end
 
     it 'filters by abilities with tri-state filter' do
-      ability = create(:ability, organization: organization)
+      ability = create(:ability, company: organization)
       assignment_with_abilities = create(:assignment, company: organization)
       create(:assignment_ability, assignment: assignment_with_abilities, ability: ability, milestone_level: 1)
       assignment_without_abilities = create(:assignment, company: organization)

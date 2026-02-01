@@ -18,7 +18,7 @@ module OrganizationsHelper
     end
     
     # Check milestone achievements (coming soon)
-    # if person.teammate_milestones.joins(:ability).where(abilities: { organization: organization }).exists?
+    # if person.teammate_milestones.joins(:ability).where(abilities: { company_id: organization.id }).exists?
     #   reasons << "Milestone"
     # end
     

@@ -32,7 +32,7 @@ RSpec.describe ObservableMoments::ObservationStoryTemplateService do
     end
     
     context 'for ability_milestone moment' do
-      let(:ability) { create(:ability, organization: company) }
+      let(:ability) { create(:ability, company: company) }
       let(:milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3) }
       let(:moment) { create(:observable_moment, :ability_milestone, momentable: milestone, company: company) }
       

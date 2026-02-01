@@ -7,7 +7,7 @@ RSpec.describe AbilityPolicy, type: :policy do
   let(:person) { create(:person) }
   let(:admin) { create(:person, :admin) }
   let(:maap_user) { create(:person) }
-  let(:ability) { create(:ability, organization: organization) }
+  let(:ability) { create(:ability, company: organization) }
 
   let(:maap_teammate) { CompanyTeammate.create!(person: maap_user, organization: organization, can_manage_maap: true) }
   let(:person_teammate) { CompanyTeammate.create!(person: person, organization: organization) }
@@ -130,9 +130,9 @@ RSpec.describe AbilityPolicy, type: :policy do
   end
 
   describe 'scope' do
-    let!(:ability1) { create(:ability, organization: organization) }
-    let!(:ability2) { create(:ability, organization: organization) }
-    let!(:other_org_ability) { create(:ability, organization: other_organization) }
+    let!(:ability1) { create(:ability, company: organization) }
+    let!(:ability2) { create(:ability, company: organization) }
+    let!(:other_org_ability) { create(:ability, company: other_organization) }
 
     context 'when user has MAAP permissions for organization' do
       it 'returns abilities for that organization' do

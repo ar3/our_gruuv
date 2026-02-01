@@ -3,8 +3,8 @@ require 'rails_helper'
 RSpec.describe SeatsQuery do
   let(:organization) { create(:organization, :company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
-  let(:title2) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Product Manager') }
+  let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
+  let(:title2) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'Product Manager') }
   
   let!(:draft_seat) { create(:seat, :draft, title: title, seat_needed_by: Date.current + 1.month) }
   let!(:open_seat) { create(:seat, :open, title: title, seat_needed_by: Date.current + 2.months) }

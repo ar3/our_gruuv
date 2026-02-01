@@ -7,8 +7,8 @@ RSpec.describe 'Position Update', type: :system, js: true do
   let(:employee_person) { create(:person, first_name: 'Employee', last_name: 'User') }
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let(:shared_major_level) { create(:position_major_level) }
-  let!(:title1) { create(:title, organization: company, position_major_level: shared_major_level, external_title: 'Software Engineer I') }
-  let!(:title2) { create(:title, organization: company, position_major_level: shared_major_level, external_title: 'Software Engineer II') }
+  let!(:title1) { create(:title, company: company, position_major_level: shared_major_level, external_title: 'Software Engineer I') }
+  let!(:title2) { create(:title, company: company, position_major_level: shared_major_level, external_title: 'Software Engineer II') }
   let!(:position_level1) { create(:position_level, position_major_level: shared_major_level) }
   let!(:position_level2) { create(:position_level, position_major_level: shared_major_level) }
   let!(:position) { Position.create!(title_id: title1.id, position_level_id: position_level1.id, position_summary: 'Test position') }
@@ -438,7 +438,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
 
   describe 'Position dropdown grouping' do
     let(:department) { create(:organization, :department, parent: company) }
-    let!(:dept_title) { create(:title, organization: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
+    let!(:dept_title) { create(:title, company: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
     let!(:dept_position) { create(:position, title_id: dept_title.id, position_level_id: position_level1.id) }
 
     it 'shows positions grouped by department with optgroups' do
@@ -540,7 +540,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
 
     context 'position dropdown grouping in start/restart form' do
       let(:department) { create(:organization, :department, parent: company) }
-      let!(:dept_title) { create(:title, organization: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
+      let!(:dept_title) { create(:title, company: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
       let!(:dept_position) { create(:position, title_id: dept_title.id, position_level_id: position_level1.id) }
 
       before do

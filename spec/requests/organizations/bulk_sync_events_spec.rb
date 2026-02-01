@@ -24,10 +24,10 @@ RSpec.describe 'Organizations::BulkSyncEvents', type: :request do
   describe 'GET /organizations/:organization_id/bulk_sync_events/:id' do
     context 'with UploadAssignmentsAndAbilities event' do
       let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
-      let(:ability) { create(:ability, organization: organization, name: 'Test Ability') }
+      let(:ability) { create(:ability, company: organization, name: 'Test Ability') }
       let(:position_major_level) { create(:position_major_level) }
       let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-      let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+      let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
       let(:position) { create(:position, title: title, position_level: position_level) }
       
       let(:bulk_sync_event) do

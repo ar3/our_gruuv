@@ -7,8 +7,8 @@ RSpec.describe CommentPolicy, type: :policy do
   let(:person) { create(:person) }
   let(:admin) { create(:person, :admin) }
   let(:assignment) { create(:assignment, company: organization) }
-  let(:ability) { create(:ability, organization: organization) }
-  let(:aspiration) { create(:aspiration, organization: organization) }
+  let(:ability) { create(:ability, company: organization) }
+  let(:aspiration) { create(:aspiration, company: organization) }
   let(:comment) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment) }
 
   let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }

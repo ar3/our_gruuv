@@ -1,21 +1,11 @@
 require 'rails_helper'
 
 RSpec.describe HuddleParticipant, type: :model do
-  let(:company) { Company.create!(name: 'Test Company') }
-  let(:team) { create(:team, company: company, name: 'Test Team') }
-  let(:huddle) do
-    playbook = create(:huddle_playbook, company: company, team: team)
-    Huddle.create!(huddle_playbook: playbook, started_at: Time.current)
-  end
-  let(:person) { Person.create!(full_name: 'John Doe', email: 'john@example.com') }
-  let(:teammate) { Teammate.create!(person: person, organization: company) }
-
-  before do
-    # Clear any existing test data
-    Huddle.destroy_all
-    Person.destroy_all
-    Company.destroy_all
-  end
+  let(:company) { create(:organization, :company) }
+  let(:team) { create(:team, company: company) }
+  let(:huddle) { create(:huddle, team: team) }
+  let(:person) { create(:person) }
+  let(:teammate) { create(:teammate, person: person, organization: company) }
 
   describe 'constants' do
     it 'defines ROLES constant' do

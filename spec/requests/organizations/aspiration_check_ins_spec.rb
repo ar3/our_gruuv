@@ -5,7 +5,7 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
   let(:manager_person) { create(:person) }
   let(:employee_person) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
-  let(:aspiration) { create(:aspiration, organization: organization, name: 'Test Aspiration') }
+  let(:aspiration) { create(:aspiration, company: organization, name: 'Test Aspiration') }
   
   let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization, can_manage_employment: true) }
 

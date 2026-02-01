@@ -54,7 +54,7 @@ class MilestonesQuery
 
   def base_scope
     TeammateMilestone.joins(:ability, :teammate, :certifying_teammate)
-                     .where(abilities: { organization: @organization })
+                     .where(abilities: { company_id: @organization.id })
                      .includes(:ability, :teammate, certifying_teammate: :person)
   end
 

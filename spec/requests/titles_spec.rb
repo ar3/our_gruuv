@@ -26,7 +26,7 @@ RSpec.describe "Titles", type: :request do
 
   describe "GET /edit" do
     let(:position_major_level) { create(:position_major_level) }
-    let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+    let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
 
     it "returns http success and renders without NoMethodError" do
       get "/organizations/#{organization.id}/titles/#{title.id}/edit"
@@ -52,7 +52,7 @@ RSpec.describe "Titles", type: :request do
 
   describe "PATCH /update" do
     let(:position_major_level) { create(:position_major_level) }
-    let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+    let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
     let(:department) { create(:organization, :department, parent: organization) }
 
     it "updates the title successfully" do
@@ -105,7 +105,7 @@ RSpec.describe "Titles", type: :request do
 
     it "renders edit with errors when update fails" do
       # Create another title with the same external_title to cause uniqueness validation error
-      create(:title, organization: organization, position_major_level: position_major_level, external_title: "Duplicate Title")
+      create(:title, company: organization, position_major_level: position_major_level, external_title: "Duplicate Title")
       
       patch "/organizations/#{organization.id}/titles/#{title.id}", params: {
         title: {

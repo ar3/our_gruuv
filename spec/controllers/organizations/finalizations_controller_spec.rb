@@ -64,7 +64,7 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
     end
 
     context 'position check-ins' do
-      let(:title) { create(:title, organization: organization) }
+      let(:title) { create(:title, company: organization) }
       let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:employment_tenure) do

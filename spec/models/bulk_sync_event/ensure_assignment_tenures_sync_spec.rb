@@ -47,7 +47,7 @@ RSpec.describe BulkSyncEvent::EnsureAssignmentTenuresSync, type: :model do
 
   describe '#generate_preview' do
     let!(:position_major_level) { create(:position_major_level) }
-    let!(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
+    let!(:title) { create(:title, company: organization, position_major_level: position_major_level) }
     let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
     let!(:position) { create(:position, title: title, position_level: position_level) }
     let!(:assignment) { create(:assignment, company: organization) }

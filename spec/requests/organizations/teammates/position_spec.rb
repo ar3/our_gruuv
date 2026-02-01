@@ -15,8 +15,8 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
   let(:new_manager) { create(:person) }
   let(:new_manager_teammate) { create(:company_teammate, person: new_manager, organization: organization) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:title) { create(:title, organization: organization, position_major_level: position_major_level) }
-  let(:new_title) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'New Position Type') }
+  let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
+  let(:new_title) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'New Position Type') }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:new_position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
@@ -537,7 +537,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
 
       it 'loads positions grouped by department' do
         department = create(:organization, :department, parent: organization)
-        dept_title = create(:title, organization: department, position_major_level: position_major_level)
+        dept_title = create(:title, company: department, position_major_level: position_major_level)
         dept_position = create(:position, title: dept_title, position_level: position_level)
         
         get organization_teammate_position_path(organization, teammate_without_employment)

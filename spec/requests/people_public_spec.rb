@@ -41,7 +41,7 @@ RSpec.describe 'Public Person View', type: :request do
       create(:observee, observation: observation, teammate: teammate)
       
       # Create a milestone with public_profile_published_at (factory will create certified_by automatically)
-      ability = create(:ability, organization: organization)
+      ability = create(:ability, company: organization)
       create(:teammate_milestone,
         teammate: teammate,
         ability: ability,
@@ -62,7 +62,7 @@ RSpec.describe 'Public Person View', type: :request do
     it 'only shows milestones with public_profile_published_at' do
       organization = create(:organization, :company)
       teammate = create(:teammate, person: person, organization: organization)
-      ability = create(:ability, organization: organization)
+      ability = create(:ability, company: organization)
       
       # Create a milestone with public_profile_published_at
       published_milestone = create(:teammate_milestone,

@@ -7,11 +7,11 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:certifier) { create(:person) }
   
-  let(:ability_with_milestone) { create(:ability, name: 'Ability A', organization: organization) }
-  let(:ability_with_assignment) { create(:ability, name: 'Ability B', organization: organization) }
-  let(:ability_with_both) { create(:ability, name: 'Ability C', organization: organization) }
-  let(:ability_outside_hierarchy) { create(:ability, name: 'Outside Ability', organization: create(:organization, :company)) }
-  let(:ability_in_department) { create(:ability, name: 'Department Ability', organization: department) }
+  let(:ability_with_milestone) { create(:ability, name: 'Ability A', company: organization) }
+  let(:ability_with_assignment) { create(:ability, name: 'Ability B', company: organization) }
+  let(:ability_with_both) { create(:ability, name: 'Ability C', company: organization) }
+  let(:ability_outside_hierarchy) { create(:ability, name: 'Outside Ability', company: create(:organization, :company)) }
+  let(:ability_in_department) { create(:ability, name: 'Department Ability', company: department) }
 
   describe '#call' do
     context 'when teammate is nil' do
@@ -141,9 +141,9 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
 
     context 'sorting' do
       it 'sorts abilities alphabetically by name' do
-        ability_z = create(:ability, name: 'Z Ability', organization: organization)
-        ability_a = create(:ability, name: 'A Ability', organization: organization)
-        ability_m = create(:ability, name: 'M Ability', organization: organization)
+        ability_z = create(:ability, name: 'Z Ability', company: organization)
+        ability_a = create(:ability, name: 'A Ability', company: organization)
+        ability_m = create(:ability, name: 'M Ability', company: organization)
         
         certifier_teammate = create(:teammate, person: certifier, organization: organization)
         create(:teammate_milestone, teammate: teammate, ability: ability_z, certifying_teammate: certifier_teammate, milestone_level: 1)

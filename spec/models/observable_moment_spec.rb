@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe ObservableMoment, type: :model do
   let(:company) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, organization: company, person: person) }
+  let(:teammate) { create(:company_teammate, organization: company, person: person) }
   let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: company) }
   
   describe 'associations' do
@@ -38,9 +38,19 @@ RSpec.describe ObservableMoment, type: :model do
   end
   
   describe 'scopes' do
-    let!(:moment1) { create(:observable_moment, :new_hire, company: company, occurred_at: 1.day.ago) }
-    let!(:moment2) { create(:observable_moment, :seat_change, company: company, occurred_at: 2.days.ago) }
-    let!(:moment3) { create(:observable_moment, :new_hire, company: company, processed_at: Time.current) }
+    # Create moments with explicit company to ensure they're all for the same company
+    let!(:moment1) do
+      tenure = create(:employment_tenure, company: company)
+      create(:observable_moment, moment_type: 'new_hire', company: company, momentable: tenure, occurred_at: 1.day.ago, primary_potential_observer: teammate)
+    end
+    let!(:moment2) do
+      tenure = create(:employment_tenure, company: company)
+      create(:observable_moment, moment_type: 'seat_change', company: company, momentable: tenure, occurred_at: 2.days.ago, primary_potential_observer: teammate)
+    end
+    let!(:moment3) do
+      tenure = create(:employment_tenure, company: company)
+      create(:observable_moment, moment_type: 'new_hire', company: company, momentable: tenure, processed_at: Time.current, primary_potential_observer: teammate)
+    end
     let!(:other_company) { create(:organization, :company) }
     let!(:moment4) { create(:observable_moment, :new_hire, company: other_company) }
     
@@ -60,8 +70,10 @@ RSpec.describe ObservableMoment, type: :model do
     
     describe '.recent' do
       it 'orders by occurred_at descending' do
-        expect(ObservableMoment.recent.first).to eq(moment1)
-        expect(ObservableMoment.recent.last).to eq(moment2)
+        # Get all moments from the test to ensure ordering is correct
+        recent_moments = ObservableMoment.recent.where(id: [moment1.id, moment2.id, moment3.id])
+        expect(recent_moments.first).to eq(moment3) # Most recent occurred_at
+        expect(recent_moments.last).to eq(moment2) # Oldest occurred_at
       end
     end
     
@@ -80,7 +92,7 @@ RSpec.describe ObservableMoment, type: :model do
     end
     
     describe '.for_observer' do
-      let(:observer_teammate) { create(:teammate, organization: company) }
+      let(:observer_teammate) { create(:company_teammate, organization: company) }
       let!(:moment_for_observer) { create(:observable_moment, :new_hire, company: company, primary_potential_observer: observer_teammate) }
       let!(:processed_moment) { create(:observable_moment, :new_hire, company: company, primary_potential_observer: observer_teammate, processed_at: Time.current) }
       
@@ -134,7 +146,7 @@ RSpec.describe ObservableMoment, type: :model do
       
       it 'returns appropriate display name for ability_milestone' do
         milestone = create(:teammate_milestone)
-        moment = create(:observable_moment, :ability_milestone, momentable: milestone, company: milestone.ability.organization)
+        moment = create(:observable_moment, :ability_milestone, momentable: milestone, company: milestone.ability.company)
         expect(moment.display_name).to include('Milestone')
       end
     end
@@ -163,7 +175,7 @@ RSpec.describe ObservableMoment, type: :model do
     
     describe '#reassign_to' do
       it 'updates primary_potential_observer' do
-        new_observer = create(:teammate, organization: company)
+        new_observer = create(:company_teammate, organization: company)
         moment.reassign_to(new_observer)
         expect(moment.reload.primary_potential_observer).to eq(new_observer)
       end

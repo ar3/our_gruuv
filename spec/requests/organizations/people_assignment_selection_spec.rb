@@ -7,7 +7,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:person_teammate) { teammate }
-  let!(:title) { create(:title, organization: organization) }
+  let!(:title) { create(:title, company: organization) }
   let!(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
   let!(:position) { create(:position, title: title, position_level: position_level) }
   

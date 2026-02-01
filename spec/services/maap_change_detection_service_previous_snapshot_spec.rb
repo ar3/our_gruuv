@@ -7,7 +7,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
   let(:person_teammate) { create(:teammate, person: person, organization: organization) }
   let(:assignment1) { create(:assignment, company: organization) }
   let(:assignment2) { create(:assignment, company: organization) }
-  let(:ability) { create(:ability, organization: organization) }
+  let(:ability) { create(:ability, company: organization) }
 
   describe 'first snapshot (no previous)' do
     let(:snapshot) do
@@ -311,7 +311,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
   end
 
   describe 'snapshots with different milestone ability_ids' do
-    let(:ability2) { create(:ability, organization: organization) }
+    let(:ability2) { create(:ability, company: organization) }
     
     let(:previous_snapshot) do
       create(:maap_snapshot,

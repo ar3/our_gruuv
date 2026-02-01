@@ -499,7 +499,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           seat.id,
           seat.display_name,
           seat.title.external_title,
-          seat.title.organization.display_name,
+          seat.title.company.display_name,
           seat.title&.department&.display_name || '',
           seat.team&.display_name || '',
           seat.state,

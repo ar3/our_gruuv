@@ -6,7 +6,7 @@ RSpec.describe 'MaapSnapshot Position Schema with Rated Position' do
   let(:manager) { create(:person) }
   let(:teammate) { create(:company_teammate, person: person, organization: organization) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:title) { create(:title, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+  let(:title) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, title: title, position_level: position_level) }
   # Seat is optional for employment tenures

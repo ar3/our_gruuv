@@ -56,7 +56,7 @@ RSpec.describe PeopleController, type: :controller do
     end
     
     let!(:milestone) do
-      ability = create(:ability, organization: organization)
+      ability = create(:ability, company: organization)
       create(:teammate_milestone, 
         teammate: teammate, 
         ability: ability,
@@ -67,7 +67,7 @@ RSpec.describe PeopleController, type: :controller do
     end
     
     let!(:other_milestone) do
-      ability = create(:ability, organization: other_organization)
+      ability = create(:ability, company: other_organization)
       create(:teammate_milestone,
         teammate: other_teammate,
         ability: ability,
@@ -112,7 +112,7 @@ RSpec.describe PeopleController, type: :controller do
 
     it 'only loads milestones with public_profile_published_at' do
       # Create a milestone without public_profile_published_at
-      ability = create(:ability, organization: organization)
+      ability = create(:ability, company: organization)
       unpublished_milestone = create(:teammate_milestone,
         teammate: teammate,
         ability: ability,

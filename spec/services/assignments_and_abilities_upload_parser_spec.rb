@@ -247,7 +247,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadParser, type: :service do
       let!(:position_major_level) { create(:position_major_level) }
       let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
       let!(:title) do
-        create(:title, external_title: 'Growth & Development Manager', organization: organization, position_major_level: position_major_level)
+        create(:title, external_title: 'Growth & Development Manager', company: organization, position_major_level: position_major_level)
       end
       let!(:seat) { create(:seat, title: title, seat_needed_by: Date.current + 3.months) }
 

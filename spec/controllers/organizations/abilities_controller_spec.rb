@@ -287,8 +287,7 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
     end
 
     let!(:existing_ability) { 
-      create(:ability, 
-        organization: organization, 
+      create(:ability, company: organization, 
         semantic_version: "1.0.0",
         milestone_1_description: 'Basic understanding',
         milestone_2_description: 'Intermediate skills'
@@ -401,10 +400,10 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
   end
 
   describe 'GET #index' do
-    let!(:ability_v1) { create(:ability, organization: organization, semantic_version: '1.0.0', name: 'Ability v1') }
-    let!(:ability_v1_2) { create(:ability, organization: organization, semantic_version: '1.2.3', name: 'Ability v1.2') }
-    let!(:ability_v2) { create(:ability, organization: organization, semantic_version: '2.0.0', name: 'Ability v2') }
-    let!(:ability_v0) { create(:ability, organization: organization, semantic_version: '0.1.0', name: 'Ability v0') }
+    let!(:ability_v1) { create(:ability, company: organization, semantic_version: '1.0.0', name: 'Ability v1') }
+    let!(:ability_v1_2) { create(:ability, company: organization, semantic_version: '1.2.3', name: 'Ability v1.2') }
+    let!(:ability_v2) { create(:ability, company: organization, semantic_version: '2.0.0', name: 'Ability v2') }
+    let!(:ability_v0) { create(:ability, company: organization, semantic_version: '0.1.0', name: 'Ability v0') }
 
     it 'returns all abilities when no filters applied' do
       get :index, params: { organization_id: organization.id }

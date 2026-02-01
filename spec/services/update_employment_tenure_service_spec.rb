@@ -9,8 +9,8 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
   let(:new_manager) { create(:person) }
   let(:new_manager_teammate) { create(:company_teammate, person: new_manager, organization: company) }
   let(:position_major_level) { create(:position_major_level) }
-  let(:current_title) { create(:title, organization: company, position_major_level: position_major_level, external_title: 'Current Engineer') }
-  let(:new_title) { create(:title, organization: company, position_major_level: position_major_level, external_title: 'New Engineer') }
+  let(:current_title) { create(:title, company: company, position_major_level: position_major_level, external_title: 'Current Engineer') }
+  let(:new_title) { create(:title, company: company, position_major_level: position_major_level, external_title: 'New Engineer') }
   let(:current_position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:new_position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:current_position) { create(:position, title: current_title, position_level: current_position_level) }

@@ -48,7 +48,7 @@ RSpec.describe Slack::ProcessHuddleCommandService, type: :service do
                display_name: channel_name)
       end
       let!(:playbook) do
-        create(:huddle_playbook,
+        create(:team,
                organization: organization,
                slack_channel: "##{channel_name}")
       end
@@ -69,7 +69,7 @@ RSpec.describe Slack::ProcessHuddleCommandService, type: :service do
           expect(result.ok?).to be true
           
           huddle = Huddle.last
-          expect(huddle.huddle_playbook).to eq(playbook)
+          expect(huddle.team).to eq(playbook)
           # Compare against time captured before service call, not current time after jobs run
           expect(huddle.started_at).to be_within(1.second).of(before_time)
           expect(huddle.expires_at).to be_within(1.second).of(24.hours.from_now(before_time))
@@ -93,7 +93,7 @@ RSpec.describe Slack::ProcessHuddleCommandService, type: :service do
       context 'when active huddle already exists' do
         let!(:existing_huddle) do
           create(:huddle,
-                 huddle_playbook: playbook,
+                 team: playbook,
                  started_at: 1.hour.ago,
                  expires_at: 23.hours.from_now)
         end
@@ -116,7 +116,7 @@ RSpec.describe Slack::ProcessHuddleCommandService, type: :service do
       context 'when expired huddle exists' do
         let!(:expired_huddle) do
           create(:huddle,
-                 huddle_playbook: playbook,
+                 team: playbook,
                  started_at: 2.days.ago,
                  expires_at: 1.day.ago)
         end
@@ -156,7 +156,7 @@ RSpec.describe Slack::ProcessHuddleCommandService, type: :service do
                display_name: channel_name)
       end
       let!(:playbook) do
-        create(:huddle_playbook,
+        create(:team,
                organization: organization,
                slack_channel: "##{channel_name}")
       end

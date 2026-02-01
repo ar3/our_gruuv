@@ -8,7 +8,7 @@ RSpec.describe 'Positions and Seats Complete Flow', type: :system do
   # Create teammate but NO employment - this makes them a "potential employee"
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let!(:title) { create(:title, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
+  let!(:title) { create(:title, company: company, external_title: 'Engineer', position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
 
   before do

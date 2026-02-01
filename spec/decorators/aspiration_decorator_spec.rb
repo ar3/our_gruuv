@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe AspirationDecorator do
   let(:organization) { create(:organization) }
-  let(:aspiration) { build(:aspiration, organization: organization, semantic_version: '1.2.3') }
+  let(:aspiration) { build(:aspiration, company: organization, semantic_version: '1.2.3') }
   let(:decorator) { AspirationDecorator.new(aspiration) }
 
   describe '#new_version_options' do

@@ -167,7 +167,7 @@ RSpec.describe 'Slack Integration', type: :system do
   end
 
   describe 'Feedback Submission with Slack Notification' do
-    let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: team)) }
+    let(:huddle) { create(:huddle, team: create(:team, company: team)) }
     let(:teammate) { CompanyTeammate.find_or_create_by!(person: person, organization: team) }
     let(:participant) { create(:huddle_participant, huddle: huddle, teammate: teammate, role: 'active') }
 

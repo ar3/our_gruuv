@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe PositionForm, type: :form do
   let(:organization) { create(:organization) }
-  let(:title) { create(:title, organization: organization) }
+  let(:title) { create(:title, company: organization) }
   let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
   let(:person) { create(:person) }
   let(:position) { build(:position, title: title, position_level: position_level) }

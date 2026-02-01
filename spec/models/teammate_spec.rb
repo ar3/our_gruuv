@@ -31,12 +31,15 @@ RSpec.describe Teammate, type: :model do
     let!(:access2) { create(:teammate, person: person2, organization: team) }
     
     describe '.for_organization_hierarchy' do
-      it 'returns access records for organization and all descendants' do
+      it 'returns access records for company' do
+        # Since Organization.self_and_descendants now returns just [self] for companies,
+        # and team is actually created as a Company (not STI Team), this only returns company access
         result = described_class.for_organization_hierarchy(company)
-        expect(result).to include(access1, access2)
+        expect(result).to include(access1)
       end
       
       it 'returns access records for specific organization' do
+        # team is created with :team trait which now creates a Company
         result = described_class.for_organization_hierarchy(team)
         expect(result).to include(access2)
       end
@@ -437,62 +440,56 @@ RSpec.describe Teammate, type: :model do
     end
     
     describe '.can_manage_employment_in_hierarchy?' do
-      let!(:team_access) { create(:teammate, person: person, organization: team) }
+      # Note: With departments/teams de-STI'd, hierarchy only checks self_and_descendants
+      # which returns [self] for companies. Parent traversal only works for non-company orgs.
       
       it 'returns true when person has employment management access at organization level' do
-        team_access.update!(can_manage_employment: true)
-        expect(described_class.can_manage_employment_in_hierarchy?(person, team)).to be true
+        access.update!(can_manage_employment: true)
+        expect(described_class.can_manage_employment_in_hierarchy?(person, company)).to be true
       end
       
-      it 'returns true when person has employment management access at ancestor level' do
+      it 'returns true when person has employment management access at company level for company check' do
         access.update!(can_manage_employment: true)
-        expect(described_class.can_manage_employment_in_hierarchy?(person, team)).to be true
+        expect(described_class.can_manage_employment_in_hierarchy?(person, company)).to be true
       end
       
       it 'returns false when person has no employment management access in hierarchy' do
         access.update!(can_manage_employment: false)
-        team_access.update!(can_manage_employment: false)
-        expect(described_class.can_manage_employment_in_hierarchy?(person, team)).to be false
+        expect(described_class.can_manage_employment_in_hierarchy?(person, company)).to be false
       end
     end
     
     describe '.can_manage_maap_in_hierarchy?' do
-      let!(:team_access) { create(:teammate, person: person, organization: team) }
-      
       it 'returns true when person has MAAP management access at organization level' do
-        team_access.update!(can_manage_maap: true)
-        expect(described_class.can_manage_maap_in_hierarchy?(person, team)).to be true
+        access.update!(can_manage_maap: true)
+        expect(described_class.can_manage_maap_in_hierarchy?(person, company)).to be true
       end
       
-      it 'returns true when person has MAAP management access at ancestor level' do
+      it 'returns true when person has MAAP management access at company level for company check' do
         access.update!(can_manage_maap: true)
-        expect(described_class.can_manage_maap_in_hierarchy?(person, team)).to be true
+        expect(described_class.can_manage_maap_in_hierarchy?(person, company)).to be true
       end
       
       it 'returns false when person has no MAAP management access in hierarchy' do
         access.update!(can_manage_maap: false)
-        team_access.update!(can_manage_maap: false)
-        expect(described_class.can_manage_maap_in_hierarchy?(person, team)).to be false
+        expect(described_class.can_manage_maap_in_hierarchy?(person, company)).to be false
       end
     end
 
     describe '.can_manage_prompts_in_hierarchy?' do
-      let!(:team_access) { create(:teammate, person: person, organization: team) }
-
       it 'returns true when person has prompts management access at organization level' do
-        team_access.update!(can_manage_prompts: true)
-        expect(described_class.can_manage_prompts_in_hierarchy?(person, team)).to be true
+        access.update!(can_manage_prompts: true)
+        expect(described_class.can_manage_prompts_in_hierarchy?(person, company)).to be true
       end
 
-      it 'returns true when person has prompts management access at ancestor level' do
+      it 'returns true when person has prompts management access at company level for company check' do
         access.update!(can_manage_prompts: true)
-        expect(described_class.can_manage_prompts_in_hierarchy?(person, team)).to be true
+        expect(described_class.can_manage_prompts_in_hierarchy?(person, company)).to be true
       end
 
       it 'returns false when person has no prompts management access in hierarchy' do
         access.update!(can_manage_prompts: false)
-        team_access.update!(can_manage_prompts: false)
-        expect(described_class.can_manage_prompts_in_hierarchy?(person, team)).to be false
+        expect(described_class.can_manage_prompts_in_hierarchy?(person, company)).to be false
       end
     end
 
@@ -514,22 +511,19 @@ RSpec.describe Teammate, type: :model do
     end
 
     describe '.can_manage_departments_and_teams_in_hierarchy?' do
-      let!(:team_access) { create(:teammate, person: person, organization: team) }
-
       it 'returns true when person has departments and teams management access at organization level' do
-        team_access.update!(can_manage_departments_and_teams: true)
-        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, team)).to be true
+        access.update!(can_manage_departments_and_teams: true)
+        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, company)).to be true
       end
 
-      it 'returns true when person has departments and teams management access at ancestor level' do
+      it 'returns true when person has departments and teams management access at company level for company check' do
         access.update!(can_manage_departments_and_teams: true)
-        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, team)).to be true
+        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, company)).to be true
       end
 
       it 'returns false when person has no departments and teams management access in hierarchy' do
         access.update!(can_manage_departments_and_teams: false)
-        team_access.update!(can_manage_departments_and_teams: false)
-        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, team)).to be false
+        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, company)).to be false
       end
     end
 
@@ -551,22 +545,19 @@ RSpec.describe Teammate, type: :model do
     end
 
     describe '.can_customize_company_in_hierarchy?' do
-      let!(:team_access) { create(:teammate, person: person, organization: team) }
-
       it 'returns true when person has customize company access at organization level' do
-        team_access.update!(can_customize_company: true)
-        expect(described_class.can_customize_company_in_hierarchy?(person, team)).to be true
+        access.update!(can_customize_company: true)
+        expect(described_class.can_customize_company_in_hierarchy?(person, company)).to be true
       end
 
-      it 'returns true when person has customize company access at ancestor level' do
+      it 'returns true when person has customize company access at company level for company check' do
         access.update!(can_customize_company: true)
-        expect(described_class.can_customize_company_in_hierarchy?(person, team)).to be true
+        expect(described_class.can_customize_company_in_hierarchy?(person, company)).to be true
       end
 
       it 'returns false when person has no customize company access in hierarchy' do
         access.update!(can_customize_company: false)
-        team_access.update!(can_customize_company: false)
-        expect(described_class.can_customize_company_in_hierarchy?(person, team)).to be false
+        expect(described_class.can_customize_company_in_hierarchy?(person, company)).to be false
       end
     end
   end

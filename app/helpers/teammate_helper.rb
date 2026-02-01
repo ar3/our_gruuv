@@ -323,7 +323,7 @@ module TeammateHelper
 
     # Milestone progress (simplified for now)
     milestone_progress = teammate.teammate_milestones.joins(:ability)
-                                .where(abilities: { organization: organization })
+                                .where(abilities: { company_id: organization.id })
 
     all_check_ins = position_check_ins + assignment_check_ins + aspiration_check_ins
 

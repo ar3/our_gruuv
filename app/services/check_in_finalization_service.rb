@@ -217,7 +217,7 @@ class CheckInFinalizationService
   end
   
   def build_abilities_data
-    @teammate.teammate_milestones.joins(:ability).where(abilities: { organization: @teammate.organization }).map do |milestone|
+    @teammate.teammate_milestones.joins(:ability).where(abilities: { company_id: @teammate.organization.id }).map do |milestone|
       {
         ability_id: milestone.ability_id,
         milestone_level: milestone.milestone_level,

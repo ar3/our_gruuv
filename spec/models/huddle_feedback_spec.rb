@@ -1,21 +1,12 @@
 require 'rails_helper'
 
 RSpec.describe HuddleFeedback, type: :model do
-  let(:company) { Company.create!(name: 'Test Company') }
-  let(:team) { Team.create!(name: 'Test Team', parent: company) }
-  let(:huddle) do
-    playbook = create(:huddle_playbook, company: team, special_session_name: 'test-huddle')
-    Huddle.create!(huddle_playbook: playbook, started_at: Time.current)
-  end
-  let(:person) { Person.create!(full_name: 'John Doe', email: 'john@example.com') }
-  let(:teammate) { Teammate.create!(person: person, organization: team) }
+  let(:company) { create(:organization, :company) }
+  let(:team) { create(:team, company: company) }
+  let(:huddle) { create(:huddle, team: team) }
+  let(:person) { create(:person) }
+  let(:teammate) { create(:teammate, person: person, organization: company) }
 
-  before do
-    # Clear any existing test data
-    Huddle.destroy_all
-    Person.destroy_all
-    Company.destroy_all
-  end
 
   describe 'associations' do
     it 'belongs to a huddle' do
@@ -107,16 +98,15 @@ RSpec.describe HuddleFeedback, type: :model do
 
     it 'allows feedback from different teammates for the same huddle' do
       person2 = Person.create!(full_name: 'Jane Smith', email: 'jane@example.com')
-      teammate2 = Teammate.create!(person: person2, organization: team)
+      teammate2 = Teammate.create!(person: person2, organization: company)
       HuddleFeedback.create!(valid_attributes)
       feedback2 = HuddleFeedback.new(valid_attributes.merge(teammate: teammate2))
       expect(feedback2).to be_valid
     end
 
     it 'allows feedback from the same teammate for different huddles' do
-      team2 = Team.create!(name: 'Test Team 2', parent: company)
-      playbook2 = create(:huddle_playbook, company: team2, special_session_name: 'test-huddle-2')
-            huddle2 = Huddle.create!(huddle_playbook: playbook2, started_at: Time.current)
+      team2 = create(:team, company: company)
+      huddle2 = Huddle.create!(team: team2, started_at: Time.current)
       HuddleFeedback.create!(valid_attributes)
       feedback2 = HuddleFeedback.new(valid_attributes.merge(huddle: huddle2))
       expect(feedback2).to be_valid
@@ -158,7 +148,7 @@ RSpec.describe HuddleFeedback, type: :model do
     let!(:anonymous_feedback) { HuddleFeedback.create!(valid_attributes.merge(anonymous: true)) }
     let!(:named_feedback) { 
       person2 = Person.create!(full_name: 'Jane', email: 'jane@example.com')
-      teammate2 = Teammate.create!(person: person2, organization: team)
+      teammate2 = Teammate.create!(person: person2, organization: company)
       HuddleFeedback.create!(valid_attributes.merge(teammate: teammate2, anonymous: false)) 
     }
 

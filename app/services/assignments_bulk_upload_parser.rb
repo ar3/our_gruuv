@@ -456,7 +456,7 @@ class AssignmentsBulkUploadParser
       Title,
       :external_title,
       external_title,
-      Title.joins(:organization).where(organizations: { id: org_ids })
+      Title.where(company_id: org_ids)
     )
     
     return nil unless title

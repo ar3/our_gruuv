@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe ObservationRatingDecorator, type: :decorator do
   let(:company) { create(:organization, :company) }
   let(:observation) { build(:observation, company: company).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save! } }
-  let(:ability) { create(:ability, organization: company) }
+  let(:ability) { create(:ability, company: company) }
   let(:observation_rating) do
     build(:observation_rating, observation: observation, rateable: ability, rating: :agree)
   end

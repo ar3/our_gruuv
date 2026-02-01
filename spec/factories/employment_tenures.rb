@@ -12,7 +12,7 @@ FactoryBot.define do
     after(:build) do |employment_tenure, evaluator|
       # Create a position with the correct relationships for this company
       position_major_level = create(:position_major_level)
-      title = create(:title, organization: employment_tenure.company, position_major_level: position_major_level)
+      title = create(:title, company: employment_tenure.company, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level)
       employment_tenure.position = create(:position, title: title, position_level: position_level)
       

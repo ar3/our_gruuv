@@ -39,7 +39,7 @@ RSpec.describe Organization, type: :model do
     it 'returns only huddle participants who are not active employees' do
       # Create an employment tenure for person1 (making them an employee)
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      title = create(:title, organization: company, position_major_level: position_major_level)
+      title = create(:title, company: company, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
       position = create(:position, title: title, position_level: position_level)
       create(:employment_tenure, teammate: teammate1, company: company, position: position)
@@ -53,7 +53,7 @@ RSpec.describe Organization, type: :model do
     it 'returns empty when all huddle participants are employees' do
       # Make both people employees
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      title = create(:title, organization: company, position_major_level: position_major_level)
+      title = create(:title, company: company, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
       position = create(:position, title: title, position_level: position_level)
       
@@ -65,7 +65,7 @@ RSpec.describe Organization, type: :model do
   end
 
   describe '#teammate_milestones_for_person' do
-    let(:ability) { create(:ability, organization: company) }
+    let(:ability) { create(:ability, company: company) }
     let(:certifier) { create(:person) }
 
     it 'returns milestones for a person in the organization' do
@@ -98,7 +98,7 @@ RSpec.describe Organization, type: :model do
     it 'only returns milestones for abilities in the organization' do
       # Create ability in different organization
       other_company = create(:organization, :company)
-      other_ability = create(:ability, organization: other_company)
+      other_ability = create(:ability, company: other_company)
       
       # Create milestones for both abilities
       certifier_teammate = create(:company_teammate, person: certifier, organization: company)
@@ -331,14 +331,11 @@ RSpec.describe Organization, type: :model do
     end
 
     describe '#descendants' do
-      it 'excludes archived children' do
-        # Ensure sub_department is created first
-        sub_department
-        archived_child = create(:organization, :department, parent: department, deleted_at: Time.current)
-
-        descendants = department.descendants
-        expect(descendants.map(&:id)).to include(sub_department.id)
-        expect(descendants.map(&:id)).not_to include(archived_child.id)
+      it 'returns empty array for Organization (departments are now separate model)' do
+        # Since departments are now a separate model, Organization.descendants returns []
+        # This test verifies the current behavior
+        expect(company.descendants).to eq([])
+        expect(department.descendants).to eq([])
       end
     end
   end

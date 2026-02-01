@@ -257,7 +257,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
       it 'shows positions section when there are position assignments' do
         position_major_level = create(:position_major_level)
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         position_level = create(:position_level, position_major_level: position_major_level)
         position = create(:position, title: title, position_level: position_level)
         create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: 20, max_estimated_energy: 40)
@@ -271,7 +271,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
       it 'shows required positions with energy percentage suffix' do
         position_major_level = create(:position_major_level)
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         position_level1 = create(:position_level, position_major_level: position_major_level, level: '1.0')
         position_level2 = create(:position_level, position_major_level: position_major_level, level: '2.0')
         position1 = create(:position, title: title, position_level: position_level1)
@@ -291,7 +291,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
       it 'shows suggested positions with energy percentage suffix' do
         position_major_level = create(:position_major_level)
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         position_level = create(:position_level, position_major_level: position_major_level)
         position = create(:position, title: title, position_level: position_level)
         create(:position_assignment, position: position, assignment: assignment, assignment_type: 'suggested', max_estimated_energy: 50)
@@ -305,7 +305,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
       it 'shows both required and suggested positions when both exist' do
         position_major_level = create(:position_major_level)
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         position_level1 = create(:position_level, position_major_level: position_major_level, level: '1.0')
         position_level2 = create(:position_level, position_major_level: position_major_level, level: '2.0')
         required_position = create(:position, title: title, position_level: position_level1)
@@ -330,7 +330,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
       it 'links positions to their show pages' do
         position_major_level = create(:position_major_level)
-        title = create(:title, organization: organization, position_major_level: position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
         position_level = create(:position_level, position_major_level: position_major_level)
         position = create(:position, title: title, position_level: position_level)
         create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required')

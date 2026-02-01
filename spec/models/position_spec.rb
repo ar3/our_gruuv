@@ -4,7 +4,7 @@ RSpec.describe Position, type: :model do
   let(:company) { create(:organization, type: 'Company') }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-  let(:title) { create(:title, organization: company, position_major_level: position_major_level) }
+  let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
 
   describe 'validations' do
@@ -49,7 +49,7 @@ RSpec.describe Position, type: :model do
       end
 
       it 'allows same position_level with different title' do
-        other_title = create(:title, external_title: 'Different Title', organization: company, position_major_level: position_major_level)
+        other_title = create(:title, external_title: 'Different Title', company: company, position_major_level: position_major_level)
         create(:position, title: title, position_level: position_level)
         
         new_position = build(:position, title: other_title, position_level: position_level)
@@ -86,8 +86,8 @@ RSpec.describe Position, type: :model do
 
   describe 'scopes' do
     it 'orders by title and position_level' do
-      type1 = create(:title, external_title: 'Zebra', organization: company, position_major_level: position_major_level)
-      type2 = create(:title, external_title: 'Alpha', organization: company, position_major_level: position_major_level)
+      type1 = create(:title, external_title: 'Zebra', company: company, position_major_level: position_major_level)
+      type2 = create(:title, external_title: 'Alpha', company: company, position_major_level: position_major_level)
       
       level1 = create(:position_level, level: '2.0', position_major_level: position_major_level)
       level2 = create(:position_level, level: '1.0', position_major_level: position_major_level)
@@ -101,7 +101,7 @@ RSpec.describe Position, type: :model do
 
     it 'filters by company' do
       other_company = create(:organization, type: 'Company')
-      other_title = create(:title, organization: other_company, position_major_level: position_major_level)
+      other_title = create(:title, company: other_company, position_major_level: position_major_level)
       other_position = create(:position, title: other_title, position_level: position_level)
       
       expect(Position.for_company(company)).to include(position)
@@ -162,7 +162,7 @@ RSpec.describe Position, type: :model do
 
   describe '#to_param' do
     it 'returns id-name-parameterized format based on display_name' do
-      title = create(:title, external_title: 'Software Engineer', organization: company, position_major_level: position_major_level)
+      title = create(:title, external_title: 'Software Engineer', company: company, position_major_level: position_major_level)
       position_level = create(:position_level, level: '1.2', position_major_level: position_major_level)
       position = create(:position, title: title, position_level: position_level)
       

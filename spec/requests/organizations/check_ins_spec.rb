@@ -6,7 +6,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
   let(:employee_person) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let(:title) { create(:title, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level) }
+  let(:title) { create(:title, company: organization, external_title: 'Software Engineer', position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization, can_manage_employment: true) }
@@ -242,7 +242,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         end
 
         it "saves aspiration check-ins and redirects back to check-ins page" do
-          aspiration = create(:aspiration, organization: organization, name: 'Test Aspiration')
+          aspiration = create(:aspiration, company: organization, name: 'Test Aspiration')
           check_in = AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration)
           
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
@@ -300,7 +300,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
   describe "GET /organizations/:org_id/company_teammates/:company_teammate_id/check_ins" do
     let!(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
     let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago) }
-    let!(:aspiration) { create(:aspiration, organization: organization, name: 'Test Aspiration') }
+    let!(:aspiration) { create(:aspiration, company: organization, name: 'Test Aspiration') }
     let!(:assignment_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
     let!(:aspiration_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
 

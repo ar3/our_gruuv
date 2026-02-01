@@ -127,7 +127,7 @@ RSpec.describe CheckInCompletionService, type: :service do
   end
 
   describe 'AspirationCheckIn' do
-    let(:aspiration) { create(:aspiration, organization: organization) }
+    let(:aspiration) { create(:aspiration, company: organization) }
     let(:check_in) { create(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration) }
 
     context 'when employee completes' do

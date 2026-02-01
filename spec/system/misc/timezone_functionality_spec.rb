@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Timezone Functionality', type: :system, js: true do
   let(:organization) { create(:organization, name: 'Test Org') }
-  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization), started_at: Time.zone.parse('2025-07-21 14:30:00 UTC')) }
+  let(:huddle) { create(:huddle, team: create(:team, company: organization), started_at: Time.zone.parse('2025-07-21 14:30:00 UTC')) }
 
   scenario 'User timezone is automatically detected when joining huddle' do
     visit join_huddle_path(huddle)
@@ -18,7 +18,7 @@ RSpec.describe 'Timezone Functionality', type: :system, js: true do
   scenario 'Times are displayed in user timezone on huddle cards' do
     # Create a huddle with a fixed date to avoid DST flakiness
     fixed_time = Time.zone.parse('2025-07-21 14:30:00 UTC')
-    today_huddle = create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization), started_at: fixed_time)
+    today_huddle = create(:huddle, team: create(:team, company: organization), started_at: fixed_time)
     
     # Create a person with timezone
     person = create(:person, 
@@ -41,7 +41,7 @@ RSpec.describe 'Timezone Functionality', type: :system, js: true do
   scenario 'Times are displayed in Eastern Time when user has no timezone' do
     # Create a huddle with a fixed date to avoid DST flakiness
     fixed_time = Time.zone.parse('2025-07-21 14:30:00 UTC')
-    today_huddle = create(:huddle, huddle_playbook: create(:huddle_playbook, company: organization), started_at: fixed_time)
+    today_huddle = create(:huddle, team: create(:team, company: organization), started_at: fixed_time)
     
     # Create a person without timezone
     person = create(:person, 

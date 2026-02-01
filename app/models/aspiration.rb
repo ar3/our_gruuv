@@ -31,6 +31,12 @@ class Aspiration < ApplicationRecord
   
   # Scope for finding aspirations for a department
   scope :for_department, ->(department) { where(department: department) }
+  
+  # Scope for finding aspirations within an organization hierarchy
+  scope :within_hierarchy, ->(organization) {
+    org_ids = organization.self_and_descendants.pluck(:id)
+    where(company_id: org_ids)
+  }
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)

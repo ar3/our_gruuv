@@ -23,7 +23,7 @@ class Seat < ApplicationRecord
   scope :ordered, -> { order(:seat_needed_by) }
   scope :active, -> { where(state: [:open, :filled]) }
   scope :available, -> { where(state: :open) }
-  scope :for_organization, ->(organization) { joins(:title).where(titles: { organization: organization }) }
+  scope :for_organization, ->(organization) { joins(:title).where(titles: { company_id: organization.id }) }
   scope :for_department, ->(department) { joins(:title).where(titles: { department_id: department.id }) }
 
   # Instance methods

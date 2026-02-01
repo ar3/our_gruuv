@@ -6,7 +6,7 @@ RSpec.describe Organizations::CompanyTeammates::Asana::OauthController, type: :c
   let(:employee) { create(:person, full_name: 'Employee Person') }
   let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, can_manage_employment: true) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
-  let(:title) { create(:title, organization: organization) }
+  let(:title) { create(:title, company: organization) }
   let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:employment_tenure) do

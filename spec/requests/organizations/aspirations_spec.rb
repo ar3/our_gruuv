@@ -6,7 +6,7 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
   let(:person) { create(:person) }
   let(:admin) { create(:person, :admin) }
   let(:maap_user) { create(:person) }
-  let(:aspiration) { create(:aspiration, organization: organization) }
+  let(:aspiration) { create(:aspiration, company: organization) }
 
   let(:person_teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: false) }
   let(:maap_user_teammate) { create(:teammate, person: maap_user, organization: organization, can_manage_maap: true) }

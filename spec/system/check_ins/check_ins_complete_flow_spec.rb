@@ -7,7 +7,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
   let!(:employee_person) { create(:person, full_name: 'John Doe', email: 'john@example.com') }
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
-  let!(:title) { create(:title, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
+  let!(:title) { create(:title, company: company, external_title: 'Engineer', position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let!(:position) { create(:position, title: title, position_level: position_level) }
   let!(:manager_employment_tenure) do
@@ -30,8 +30,8 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
   end
   let!(:assignment1) { create(:assignment, company: company, title: 'Assignment 1') }
   let!(:assignment2) { create(:assignment, company: company, title: 'Assignment 2') }
-  let!(:aspiration1) { create(:aspiration, organization: company, name: 'Aspiration 1') }
-  let!(:aspiration2) { create(:aspiration, organization: company, name: 'Aspiration 2') }
+  let!(:aspiration1) { create(:aspiration, company: company, name: 'Aspiration 1') }
+  let!(:aspiration2) { create(:aspiration, company: company, name: 'Aspiration 2') }
   let!(:assignment_tenure1) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, started_at: 6.months.ago) }
   let!(:assignment_tenure2) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, started_at: 3.months.ago) }
 
@@ -186,7 +186,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
   describe 'Role-based field visibility' do
     let!(:assignment) { create(:assignment, company: company, title: 'Test Assignment') }
     let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago) }
-    let!(:aspiration) { create(:aspiration, organization: company, name: 'Test Aspiration') }
+    let!(:aspiration) { create(:aspiration, company: company, name: 'Test Aspiration') }
     let!(:assignment_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
     let!(:aspiration_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
     

@@ -202,7 +202,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
     context 'with existing employment tenures' do
       let!(:existing_person) { create(:person, email: 'john.doe@company.com', first_name: 'John', last_name: 'Doe') }
       let!(:existing_person_teammate) { create(:teammate, person: existing_person, organization: organization) }
-      let!(:existing_title) { create(:title, organization: organization, external_title: 'Software Engineer') }
+      let!(:existing_title) { create(:title, company: organization, external_title: 'Software Engineer') }
       let!(:existing_position_level) { create(:position_level, position_major_level: existing_title.position_major_level) }
       let!(:existing_position) { create(:position, title: existing_title, position_level: existing_position_level) }
       let!(:existing_employment_tenure) { create(:employment_tenure, teammate: existing_person_teammate, company: organization, position: existing_position, started_at: Date.parse('2023-01-01')) }
@@ -354,7 +354,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
     describe '#create_employment_tenure' do
       let(:person) { create(:person, first_name: 'John', last_name: 'Doe') }
       let!(:teammate) { create(:company_teammate, person: person, organization: organization) }
-      let!(:title) { create(:title, organization: organization, external_title: 'Software Engineer') }
+      let!(:title) { create(:title, company: organization, external_title: 'Software Engineer') }
       let!(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
       let!(:position) { create(:position, title: title, position_level: position_level) }
       let!(:manager) { create(:person, first_name: 'Jane', last_name: 'Smith') }

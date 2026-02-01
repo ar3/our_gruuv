@@ -36,9 +36,10 @@ class RelevantAbilitiesQuery
   end
 
   def abilities_from_milestones(org_hierarchy)
+    org_ids = org_hierarchy.pluck(:id)
     @teammate.teammate_milestones
               .joins(:ability)
-              .where(abilities: { organization: org_hierarchy })
+              .where(abilities: { company_id: org_ids })
               .pluck(:ability_id)
   end
 
