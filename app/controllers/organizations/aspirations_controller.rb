@@ -4,8 +4,8 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
 
   def index
     authorize company, :view_aspirations?
-    # Show aspirations for the entire company hierarchy
-    @aspirations = policy_scope(Aspiration).where(organization: company.self_and_descendants).ordered
+    # Show aspirations for the company
+    @aspirations = policy_scope(Aspiration).for_company(company).ordered
     render layout: determine_layout
   end
 
@@ -23,24 +23,22 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   end
 
   def new
-    @aspiration = @organization.aspirations.build
+    @aspiration = Aspiration.new(company: company)
     @aspiration_decorator = AspirationDecorator.new(@aspiration)
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
     @form.instance_variable_set(:@form_data_empty, true)
+    @departments = Department.for_company(company).active.ordered
     authorize @aspiration
     render layout: determine_layout
   end
 
   def create
-    # Get the selected organization from params
-    selected_org_id = aspiration_params[:organization_id] || @organization.id
-    selected_org = Organization.find(selected_org_id)
-    
-    @aspiration = selected_org.aspirations.build
+    @aspiration = Aspiration.new(company: company)
     @aspiration_decorator = AspirationDecorator.new(@aspiration)
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
+    @departments = Department.for_company(company).active.ordered
     
     # Set flag for empty form data validation
     aspiration_params_hash = aspiration_params || {}
@@ -59,6 +57,7 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
     @aspiration_decorator = AspirationDecorator.new(@aspiration)
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
+    @departments = Department.for_company(company).active.ordered
     authorize @aspiration
     render layout: determine_layout
   end
@@ -67,16 +66,8 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
     @aspiration_decorator = AspirationDecorator.new(@aspiration)
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
+    @departments = Department.for_company(company).active.ordered
     authorize @aspiration
-
-    # Get the selected organization from params
-    selected_org_id = aspiration_params[:organization_id] || @aspiration.organization_id
-    selected_org = Organization.find(selected_org_id)
-    
-    # Update the aspiration with new organization if changed
-    if selected_org_id != @aspiration.organization_id
-      @aspiration.organization = selected_org
-    end
 
     # Set flag for empty form data validation
     aspiration_params_hash = aspiration_params || {}
@@ -102,10 +93,10 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   end
 
   def set_aspiration
-    @aspiration = @organization.aspirations.find(params[:id])
+    @aspiration = company.aspirations.find(params[:id])
   end
 
   def aspiration_params
-    params.require(:aspiration).permit(:name, :description, :sort_order, :organization_id, :version_type)
+    params.require(:aspiration).permit(:name, :description, :sort_order, :department_id, :version_type)
   end
 end

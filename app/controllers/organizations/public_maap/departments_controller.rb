@@ -1,69 +1,54 @@
 class Organizations::PublicMaap::DepartmentsController < Organizations::PublicMaap::BaseController
   def show
-    @department = Organization.find_by_param(params[:id])
+    @department = Department.find_by_param(params[:id])
     
     unless @department
       raise ActiveRecord::RecordNotFound, "Department not found"
     end
     
-    # Verify the department belongs to the organization's hierarchy
-    company = @organization.root_company || @organization
-    unless company.self_and_descendants.map(&:id).include?(@department.id)
+    # Verify the department belongs to this company
+    company = @organization.company? ? @organization : @organization.root_company
+    unless @department.company_id == company&.id
       raise ActiveRecord::RecordNotFound, "Department not found"
     end
     
     # Get all departments in scope (this department and its descendants)
-    departments_in_scope = @department.self_and_descendants.select { |org| org.department? || org.company? }
-    department_ids = departments_in_scope.map(&:id)
+    department_ids = @department.self_and_descendants.map(&:id)
     
-    # Load positions where title.organization is in the department scope (directly linked)
+    # Load positions where title.department is in the department scope
     @positions_direct = Position
-      .joins(title: :organization)
-      .where(organizations: { id: department_ids })
-      .includes(title: :organization, position_level: :position_major_level)
+      .joins(:title)
+      .where(titles: { department_id: department_ids })
+      .includes(title: [:company, :department], position_level: :position_major_level)
       .ordered
     
-    # Load positions where organization is the department's parent company (indirectly linked)
-    # These are positions that belong to the parent company but not specifically to the department
-    parent_org = @department.parent
-    if parent_org && parent_org.company?
-      @positions_indirect = Position
-        .joins(title: :organization)
-        .where(organizations: { id: parent_org.id })
-        .where.not(organizations: { id: department_ids })
-        .includes(title: :organization, position_level: :position_major_level)
-        .ordered
-    else
-      @positions_indirect = Position.none
-    end
+    # Load positions at company level (no department)
+    @positions_indirect = Position
+      .joins(:title)
+      .where(titles: { company_id: company.id, department_id: nil })
+      .includes(title: [:company, :department], position_level: :position_major_level)
+      .ordered
     
-    # Load assignments where department field points to this department or its descendants (directly linked)
+    # Load assignments where department is in scope
     @assignments_direct = Assignment
       .where(department_id: department_ids)
       .includes(:company, :department)
       .ordered
     
-    # Load assignments where company is the department but department field is nil or not in scope (indirectly linked)
+    # Load assignments at company level (no department)
     @assignments_indirect = Assignment
-      .where(company_id: department_ids)
-      .where.not(department_id: department_ids)
+      .where(company_id: company.id, department_id: nil)
       .includes(:company, :department)
       .ordered
     
-    # Load abilities where organization is in scope (directly linked)
+    # Load abilities where department is in scope
     @abilities_direct = Ability
-      .where(organization_id: department_ids)
+      .where(department_id: department_ids)
       .ordered
     
-    # Load abilities where organization is the department's parent company (indirectly linked)
-    if parent_org && parent_org.company?
-      @abilities_indirect = Ability
-        .where(organization_id: parent_org.id)
-        .where.not(organization_id: department_ids)
-        .ordered
-    else
-      @abilities_indirect = Ability.none
-    end
+    # Load abilities at company level (no department)
+    @abilities_indirect = Ability
+      .where(company_id: company.id, department_id: nil)
+      .ordered
   end
 end
-

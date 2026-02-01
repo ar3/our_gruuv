@@ -25,10 +25,10 @@ class AspirationPolicy < ApplicationPolicy
       else
         viewing_teammate_org = viewing_teammate.organization
         return scope.none unless viewing_teammate_org
-        # Allow all viewing_teammates to see aspirations for their organization and descendants
-        # This allows viewing department aspirations when signed in to company
-        org_ids = viewing_teammate_org.self_and_descendants.map(&:id)
-        scope.where(organization_id: org_ids)
+        
+        # Get the company for the viewing teammate's organization
+        company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
+        scope.where(company_id: company&.id)
       end
     end
   end
@@ -44,13 +44,13 @@ class AspirationPolicy < ApplicationPolicy
 
   def user_has_maap_permission_for_record?
     return false unless viewing_teammate
-    return false unless record&.organization
+    return false unless record&.company
     viewing_teammate_org = viewing_teammate.organization
     return false unless viewing_teammate_org
     
-    # Check if record's organization is in viewing_teammate's organization hierarchy
-    orgs = viewing_teammate_org.self_and_descendants
-    return false unless orgs.include?(record.organization)
+    # Check if record's company matches viewing_teammate's company
+    company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
+    return false unless company&.id == record.company_id
     
     viewing_teammate.can_manage_maap?
   end

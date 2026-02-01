@@ -165,9 +165,11 @@ class GlobalSearchQuery
   def scope_abilities_to_organization(abilities)
     return [] unless @current_organization
 
+    # Get the company for the current organization
+    company = @current_organization.company? ? @current_organization : @current_organization.root_company
+    
     abilities.select do |ability|
-      ability.organization == @current_organization ||
-      @current_organization.descendants.include?(ability.organization)
+      ability.company_id == company&.id
     end
   end
 end

@@ -1,81 +1,71 @@
 class Organizations::DepartmentsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
-  before_action :set_department, only: [:show, :edit, :update, :archive]
+  before_action :set_department, only: [
+    :show, :edit, :update, :archive,
+    :associate_abilities, :update_abilities_association,
+    :associate_aspirations, :update_aspirations_association,
+    :associate_titles, :update_titles_association,
+    :associate_assignments, :update_assignments_association
+  ]
   
   rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
 
   def index
     authorize @organization, :show?
-    # Get all active descendants (departments) with their hierarchy
-    # descendants returns an array, so filter it
-    all_descendants = @organization.descendants
-    @departments = all_descendants.select { |org| org.deleted_at.nil? }
     
-    # Build hierarchy using query service
-    query = DepartmentTeamHierarchyQuery.new(organization: @organization)
-    @hierarchy_tree = query.call
+    # Get all departments for this company
+    @departments = Department.for_company(company).active.ordered
     
-    # Keep old hierarchy for table view (temporary, will be removed in Phase 4)
-    @hierarchy = build_hierarchy(@organization)
+    # Build hierarchy tree
+    @hierarchy_tree = build_department_hierarchy
   end
 
   def show
     authorize @department, :show?
     
-    # Load direct children (descendants) - only active departments
-    # NOTE: STI Team has been removed. Use the standalone Team model for teams.
-    @descendants = @department.children.active.departments.includes(:children).order(:name)
-    @child_departments = @descendants
+    # Load child departments
+    @child_departments = @department.child_departments.active.ordered
     
-    # Load seats with active employment tenures (via titles)
-    @seats = Seat.for_organization(@department).includes(:title, employment_tenures: { teammate: :person })
+    # Load seats via titles with this department
+    @seats_as_department = Seat.for_department(@department).includes(:title, employment_tenures: { teammate: :person })
     
-    # Load seats directly linked via department_id
-    @seats_as_department = @department.seats_as_department.includes(:title, employment_tenures: { teammate: :person })
+    # Load titles for this department
+    @titles = Title.for_department(@department).includes(:positions).ordered
     
-    # Load teammates
-    @teammates = @department.teammates.includes(:person).order('people.last_name, people.first_name')
+    # Load assignments for this department
+    @assignments = Assignment.for_department(@department).ordered
     
-    # Load titles
-    @titles = @department.titles.includes(:positions).ordered
+    # Load abilities for this department
+    @abilities = Ability.for_department(@department).ordered
     
-    # Load assignments (where company or department matches)
-    @assignments = Assignment.where(
-      "(company_id = ? OR department_id = ?)",
-      @department.id,
-      @department.id
-    ).ordered
+    # Load aspirations for this department
+    @aspirations = Aspiration.for_department(@department).ordered
     
-    # Load abilities
-    @abilities = @department.abilities.ordered
-    
-    # Load teams (huddle_playbooks have been removed)
-    @teams = @department.teams.includes(:huddles).order(:name) if @department.respond_to?(:teams)
+    # Load teams for the company (teams are company-wide, not department-specific)
+    @teams = Team.for_company(company).active.ordered
   end
 
   def new
-    @department = Organization.new
-    @department.parent_id = params[:parent_id] || @organization.id
-    # NOTE: STI Team has been removed. Only allow Department type.
-    # For teams, use the new Team model via /organizations/:id/teams
-    @department.type = 'Department'
+    @department = Department.new(company: company)
+    
+    # Set parent department if provided
+    if params[:parent_department_id].present?
+      @department.parent_department = Department.find(params[:parent_department_id])
+    end
+    
     authorize @department, :create?
+    set_available_parents
   end
 
   def create
-    # NOTE: STI Team has been removed. Sanitize type parameter to prevent STI errors.
-    sanitized_params = department_params.dup
-    sanitized_params[:type] = 'Department' if sanitized_params[:type] == 'Team' || sanitized_params[:type].blank?
-    
-    @department = Organization.new(sanitized_params)
-    @department.parent_id ||= @organization.id
-    # Ensure parent_id is set for authorization check
-    @department.parent_id = @organization.id if @department.parent_id.nil?
+    @department = Department.new(department_params)
+    @department.company = company
     authorize @department, :create?
     
     if @department.save
       redirect_to organization_departments_path(@organization), notice: 'Department was successfully created.'
     else
+      set_available_parents
       render :new, status: :unprocessable_entity
     end
   end
@@ -88,34 +78,22 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
   def update
     authorize @department, :update?
     
-    params_hash = department_params
-    # Type cannot be changed - always use the current type
-    params_hash[:type] = @department.type
-    # Ensure parent_id is converted to integer if present
-    params_hash[:parent_id] = params_hash[:parent_id].to_i if params_hash[:parent_id].present?
-    
-    # Prevent circular references - don't allow self or descendants as parent
-    circular_reference_prevented = false
-    if params_hash[:parent_id].present?
-      if params_hash[:parent_id] == @department.id
-        # Self as parent
-        params_hash[:parent_id] = @department.parent_id
-        circular_reference_prevented = true
-      elsif @department.descendants.map(&:id).include?(params_hash[:parent_id])
-        # Descendant as parent (would create circular reference)
-        params_hash[:parent_id] = @department.parent_id
-        circular_reference_prevented = true
+    # Prevent circular references
+    update_params = department_params.dup
+    if update_params[:parent_department_id].present?
+      parent_id = update_params[:parent_department_id].to_i
+      
+      # Don't allow self as parent
+      if parent_id == @department.id
+        update_params.delete(:parent_department_id)
+      # Don't allow descendants as parent
+      elsif @department.descendants.map(&:id).include?(parent_id)
+        update_params.delete(:parent_department_id)
       end
     end
     
-    if @department.update(params_hash)
-      redirect_path = organization_department_path(@organization, @department)
-      notice_message = if circular_reference_prevented
-                         'Department was successfully updated. Note: The parent organization was not changed because it would create a circular reference.'
-                       else
-                         'Department was successfully updated.'
-                       end
-      redirect_to redirect_path, notice: notice_message
+    if @department.update(update_params)
+      redirect_to organization_department_path(@organization, @department), notice: 'Department was successfully updated.'
     else
       set_available_parents
       render :edit, status: :unprocessable_entity
@@ -129,84 +107,124 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
     redirect_to organization_departments_path(@organization), notice: 'Department was successfully archived.'
   end
 
+  # Abilities association
+  def associate_abilities
+    authorize @department, :update?
+    @unassociated_abilities = Ability.for_company(company).where(department_id: nil).ordered
+  end
+
+  def update_abilities_association
+    authorize @department, :update?
+    
+    ability_ids = params[:ability_ids] || []
+    abilities_to_associate = Ability.for_company(company).where(id: ability_ids, department_id: nil)
+    
+    count = abilities_to_associate.count
+    abilities_to_associate.update_all(department_id: @department.id)
+    
+    redirect_to organization_department_path(@organization, @department), 
+                notice: "#{count} #{'ability'.pluralize(count)} associated with #{@department.name}."
+  end
+
+  # Aspirations association
+  def associate_aspirations
+    authorize @department, :update?
+    @unassociated_aspirations = Aspiration.for_company(company).where(department_id: nil).ordered
+  end
+
+  def update_aspirations_association
+    authorize @department, :update?
+    
+    aspiration_ids = params[:aspiration_ids] || []
+    aspirations_to_associate = Aspiration.for_company(company).where(id: aspiration_ids, department_id: nil)
+    
+    count = aspirations_to_associate.count
+    aspirations_to_associate.update_all(department_id: @department.id)
+    
+    redirect_to organization_department_path(@organization, @department), 
+                notice: "#{count} #{'aspiration'.pluralize(count)} associated with #{@department.name}."
+  end
+
+  # Titles association
+  def associate_titles
+    authorize @department, :update?
+    @unassociated_titles = Title.for_company(company).where(department_id: nil).includes(:position_major_level).ordered
+  end
+
+  def update_titles_association
+    authorize @department, :update?
+    
+    title_ids = params[:title_ids] || []
+    titles_to_associate = Title.for_company(company).where(id: title_ids, department_id: nil)
+    
+    count = titles_to_associate.count
+    titles_to_associate.update_all(department_id: @department.id)
+    
+    redirect_to organization_department_path(@organization, @department), 
+                notice: "#{count} #{'title'.pluralize(count)} associated with #{@department.name}."
+  end
+
+  # Assignments association
+  def associate_assignments
+    authorize @department, :update?
+    @unassociated_assignments = Assignment.for_company(company).where(department_id: nil).ordered
+  end
+
+  def update_assignments_association
+    authorize @department, :update?
+    
+    assignment_ids = params[:assignment_ids] || []
+    assignments_to_associate = Assignment.for_company(company).where(id: assignment_ids, department_id: nil)
+    
+    count = assignments_to_associate.count
+    assignments_to_associate.update_all(department_id: @department.id)
+    
+    redirect_to organization_department_path(@organization, @department), 
+                notice: "#{count} #{'assignment'.pluralize(count)} associated with #{@department.name}."
+  end
+
   private
 
   def set_department
-    # Extract ID from params (handles both "123" and "123-name" formats)
-    id_from_params = params[:id].to_s.split('-').first.to_i
-    return if id_from_params.zero? # Invalid ID
-    
-    # First, check if the organization exists and is archived (fail fast)
-    # Use unscoped to find even archived records
-    potential_org = Organization.unscoped.find_by(id: id_from_params)
-    if potential_org
-      # If it exists but is archived, raise error immediately
-      if potential_org.deleted_at.present?
-        raise ActiveRecord::RecordNotFound
-      end
-      # If it exists but is not in the organization's hierarchy, also raise error
-      # Check if it's the organization itself or a descendant
-      unless potential_org.id == @organization.id || @organization.descendants.map(&:id).include?(potential_org.id)
-        raise ActiveRecord::RecordNotFound
-      end
-    end
-    
-    # Try to find in descendants first (descendants returns an array, already filtered for active)
-    all_descendants = @organization.descendants
-    @department = all_descendants.find { |org| org.id == id_from_params }
-    
-    # If not found, check if it's the organization itself (shouldn't happen for depts, but handle gracefully)
-    if !@department && @organization.id == id_from_params && @organization.deleted_at.nil?
-      @department = @organization
-    end
-    
+    @department = Department.find_by_param(params[:id])
     raise ActiveRecord::RecordNotFound unless @department
-  end
-
-  def build_hierarchy(org, level = 0)
-    children = org.children.active.includes(:children).order(:type, :name)
-    result = []
-    
-    children.each do |child|
-      result << {
-        organization: child,
-        level: level,
-        children: build_hierarchy(child, level + 1)
-      }
-    end
-    
-    result
+    raise ActiveRecord::RecordNotFound unless @department.company_id == company.id
+    raise ActiveRecord::RecordNotFound if @department.archived?
   end
 
   def department_params
-    # Type is permitted for creation but cannot be changed after creation (see update action)
-    # The form submits params using the model's param_key (e.g., :department)
-    # We need to handle both the model-specific key and :organization for backwards compatibility
-    param_key = if params.key?(:department)
-                  :department
-                elsif params.key?(:team)
-                  :team
-                else
-                  :organization
-                end
-    
-    params.require(param_key).permit(:name, :type, :parent_id)
+    params.require(:department).permit(:name, :parent_department_id)
   end
 
   def set_available_parents
-    # Get available parent organizations (company and all active descendants, excluding self and its descendants)
-    available_parents = [@organization] + @organization.descendants.select { |org| org.deleted_at.nil? }
-    # Exclude self and its descendants to prevent circular references
-    filtered_parents = available_parents.reject { |org| org.id == @department.id || @department.descendants.map(&:id).include?(org.id) }
-    # Order by type (Company=0, Department=1) then by name
-    @available_parents = filtered_parents.sort_by do |org|
-      type_order = case org.type
-                   when 'Company' then 0
-                   when 'Department' then 1
-                   else 2
-                   end
-      [type_order, org.name]
+    # Get all departments for this company, excluding self and descendants
+    all_departments = Department.for_company(company).active.ordered
+    
+    if @department.persisted?
+      descendant_ids = @department.descendants.map(&:id)
+      @available_parents = all_departments.reject { |d| d.id == @department.id || descendant_ids.include?(d.id) }
+    else
+      @available_parents = all_departments
     end
+  end
+
+  def build_department_hierarchy
+    # Build a tree structure for display
+    root_departments = Department.for_company(company).root_departments.active.ordered
+    root_departments.map { |dept| build_node(dept) }
+  end
+
+  def build_node(department)
+    {
+      department: department,
+      children: department.child_departments.active.ordered.map { |child| build_node(child) },
+      departments_count: count_descendants(department, type: :department),
+      depth: department.ancestry_depth
+    }
+  end
+
+  def count_descendants(department, type: nil)
+    department.descendants.count
   end
 
   def require_authentication

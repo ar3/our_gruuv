@@ -280,7 +280,7 @@ class AssignmentsBulkUploadProcessor
         Ability,
         :name,
         ability_name,
-        Ability.where(organization: organization)
+        Ability.where(company: organization)
       )
       
       unless ability
@@ -288,7 +288,7 @@ class AssignmentsBulkUploadProcessor
         ability = Ability.create!(
           name: ability_name,
           description: "Ability: #{ability_name}",
-          organization: organization,
+          company: organization,
           semantic_version: '0.0.1',
           created_by: @current_person,
           updated_by: @current_person

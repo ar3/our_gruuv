@@ -359,7 +359,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         csv << [
           ability.name || '',
           ability.description || '',
-          ability.organization&.display_name || '',
+          ability.department&.display_name || ability.company&.display_name || '',
           ability.semantic_version || '',
           assignments,
           ability.milestone_1_description || '',
@@ -543,7 +543,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         csv << [
           title.id,
           title.external_title,
-          title.organization.display_name,
+          title.company.display_name,
           title.position_major_level.major_level,
           positions_count,
           seats_count,

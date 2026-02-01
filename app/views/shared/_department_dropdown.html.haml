@@ -1,11 +1,9 @@
-- company = organization.root_company || organization
-- departments = company ? company.descendants.select { |org| org.type == 'Department' } : []
+- company = organization.company? ? organization : organization.root_company
+- departments = company ? Department.for_company(company).active.ordered : []
 - # Exclude specified IDs (for parent selection, exclude self and descendants)
 - exclude_ids = exclude_ids || []
 - departments = departments.reject { |dept| exclude_ids.include?(dept.id) }
-- # Sort departments so that children appear immediately after their parent
-- # display_name includes full hierarchy (e.g., "Company > c > 1"), so string sorting
-- # naturally groups children right after their parent: a, b, c, c > 1, c > 2, d
+- # Sort departments by display_name (which includes hierarchy path)
 - sorted_departments = departments.sort_by { |dept| dept.display_name }
 - # Build options: only departments (no company)
 - department_options = sorted_departments.map { |dept| [dept.display_name, dept.id] }
@@ -26,4 +24,3 @@
                 { class: 'form-select' }
   - if help_text.present?
     %small.form-text.text-muted= help_text
-

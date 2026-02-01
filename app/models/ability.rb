@@ -2,7 +2,8 @@ class Ability < ApplicationRecord
   include PgSearch::Model
   include ModelSemanticVersionable
 
-  belongs_to :organization
+  belongs_to :company, class_name: 'Organization'
+  belongs_to :department, optional: true
   belongs_to :created_by, class_name: 'Person'
   belongs_to :updated_by, class_name: 'Person'
   has_many :assignment_abilities, dependent: :destroy
@@ -14,12 +15,14 @@ class Ability < ApplicationRecord
   has_many :comments, as: :commentable, dependent: :destroy
 
   # Validations
-  validates :name, presence: true, uniqueness: { scope: :organization_id }
+  validates :name, presence: true, uniqueness: { scope: :company_id }
   validates :description, presence: true
+  validate :department_must_belong_to_company
 
   # Scopes
   scope :ordered, -> { order(:name) }
-  scope :for_organization, ->(org) { where(organization: org) }
+  scope :for_company, ->(company) { where(company_id: company.is_a?(Integer) ? company : company.id) }
+  scope :for_department, ->(department) { where(department: department) }
   scope :recent, -> { order(updated_at: :desc) }
 
   # Finder method that handles both id and id-name formats
@@ -124,4 +127,14 @@ class Ability < ApplicationRecord
     }
   
   multisearchable against: [:name, :description]
+
+  private
+
+  def department_must_belong_to_company
+    return unless department.present?
+    
+    if department.company_id != company_id
+      errors.add(:department, 'must belong to the same company')
+    end
+  end
 end

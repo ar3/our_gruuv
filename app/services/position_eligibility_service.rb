@@ -154,8 +154,10 @@ class PositionEligibilityService
   end
 
   def check_title_department_aspirational_values_check_ins(teammate, position, requirements)
-    organization = position.title.organization
-    aspirations = Aspiration.within_hierarchy(organization).ordered
+    # Get aspirations for the title's department (if any)
+    aspirations = position.title.department ? 
+      Aspiration.for_department(position.title.department).ordered : 
+      Aspiration.none
 
     check_aspiration_group(
       key: :title_department_aspirational_values_check_in_requirements,

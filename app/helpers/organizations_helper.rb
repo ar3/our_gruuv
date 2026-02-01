@@ -174,12 +174,14 @@ module OrganizationsHelper
   # Get department hierarchy display string
   def department_hierarchy_display(department)
     return '' unless department
+    return department.display_name if department.is_a?(Department)
     
+    # Fallback for Organization (legacy support)
     path = []
     current = department
     while current
       path.unshift(current.name)
-      current = current.parent
+      current = current.respond_to?(:parent_department) ? current.parent_department : current.parent
     end
     path.join(' > ')
   end

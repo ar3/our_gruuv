@@ -7,11 +7,11 @@ class Organizations::PublicMaap::PositionsController < Organizations::PublicMaap
     @positions = Position
       .joins(title: :organization)
       .where(organizations: { id: orgs_in_hierarchy })
-      .includes(title: :organization, position_level: :position_major_level)
+      .includes(title: [:company, :department], position_level: :position_major_level)
       .ordered
     
-    # Group by organization for display
-    @positions_by_org = @positions.group_by { |pos| pos.title.organization }
+    # Group by department for display
+    @positions_by_org = @positions.group_by { |pos| pos.title.department }
   end
   
   def show

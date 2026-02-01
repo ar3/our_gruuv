@@ -17,9 +17,9 @@
       = form.text_area :description, class: "form-control", rows: 3, placeholder: "Describe what this ability covers..."
   
     .mb-3
-      = form.label :organization_id, "Department", class: "form-label"
-      = form.select :organization_id, options_from_collection_for_select(@organization.self_and_descendants, :id, :display_name, @ability&.organization_id || @organization.id), {}, { class: "form-select" }
-      %small.form-text.text-muted The department this ability belongs to
+      = form.label :department_id, "Department", class: "form-label"
+      = form.select :department_id, options_from_collection_for_select(@departments, :id, :display_name, @form.model&.department_id), { include_blank: "Company-wide (no department)" }, { class: "form-select" }
+      %small.form-text.text-muted The department this ability belongs to (optional)
     
     .mb-4
       %h6.mb-3

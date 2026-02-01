@@ -10,14 +10,15 @@
     %h1.mb-0
       %i.bi.bi-diagram-3.me-2
       = @department.name
-    - if policy(@department).update?
-      = link_to edit_organization_department_path(@organization, @department), class: "btn btn-outline-primary" do
-        %i.bi.bi-pencil.me-2
-        Edit
-    - if policy(@department).archive?
-      = link_to archive_organization_department_path(@organization, @department), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this department?" } do
-        %i.bi.bi-archive.me-2
-        Archive
+    .d-flex.gap-2
+      - if policy(@department).update?
+        = link_to edit_organization_department_path(@organization, @department), class: "btn btn-outline-primary" do
+          %i.bi.bi-pencil.me-2
+          Edit
+      - if policy(@department).archive?
+        = link_to archive_organization_department_path(@organization, @department), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this department?" } do
+          %i.bi.bi-archive.me-2
+          Archive
 
 .row.justify-content-center
   .col-lg-12
@@ -31,42 +32,28 @@
           %dt.col-sm-3 Type
           %dd.col-sm-9
             %span.badge.bg-primary
-              = @department.type
-          %dt.col-sm-3 Parent
+              Department
+          %dt.col-sm-3 Company
           %dd.col-sm-9
-            - if @department.parent
+            = link_to organization_path(@department.company), class: "text-decoration-none" do
+              = @department.company.name
+          %dt.col-sm-3 Parent Department
+          %dd.col-sm-9
+            - if @department.parent_department
               -# Build hierarchy path from root to parent
-              - hierarchy_path = []
-              - current_org = @department.parent
-              - while current_org
-                - hierarchy_path.unshift(current_org)
-                - current_org = current_org.parent
+              - hierarchy_path = @department.ancestors_list.reverse
               -# Display hierarchy with links
-              - hierarchy_path.each_with_index do |org, index|
-                - if org.company?
-                  -# Root company links to organization show page
-                  - if policy(org).show?
-                    = link_to organization_path(org), class: "text-decoration-none" do
-                      = org.name
-                  - else
-                    %span= org.name
+              - hierarchy_path.each_with_index do |dept, index|
+                - if policy(dept).show?
+                  = link_to organization_department_path(@organization, dept), class: "text-decoration-none" do
+                    = dept.name
                 - else
-                  -# Departments link to departments show page
-                  - if policy(org).show?
-                    = link_to organization_department_path(@organization, org), class: "text-decoration-none" do
-                      = org.name
-                  - else
-                    %span= org.name
+                  %span= dept.name
                 - unless index == hierarchy_path.length - 1
                   %span.text-muted.mx-1
                     %i.bi.bi-chevron-right
             - else
-              -# No parent, show root company
-              - if policy(@organization).show?
-                = link_to organization_path(@organization), class: "text-decoration-none" do
-                  = @organization.name
-              - else
-                %span.text-muted= @organization.name
+              %span.text-muted (Root Department)
 
     - if @child_departments.any?
       .card.mb-4
@@ -82,77 +69,19 @@
                   %th Name
                   %th Children
               %tbody
-                - @child_departments.each do |descendant|
+                - @child_departments.each do |child_dept|
                   %tr
                     %td
-                      - if policy(descendant).show?
-                        = link_to organization_department_path(@organization, descendant), class: "text-decoration-none" do
-                          = descendant.name
+                      - if policy(child_dept).show?
+                        = link_to organization_department_path(@organization, child_dept), class: "text-decoration-none" do
+                          = child_dept.name
                       - else
-                        %span= descendant.name
+                        %span= child_dept.name
                     %td
-                      - child_count = descendant.children.active.count
+                      - child_count = child_dept.child_departments.active.count
                       - if child_count > 0
                         %span.text-muted
                           = pluralize(child_count, 'sub-department')
-                      - else
-                        %span.text-muted —
-
-    - if @teammates.any?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-person-check.me-2
-            Teammates (#{@teammates.count})
-        .card-body
-          .table-responsive
-            %table.table.table-hover
-              %thead
-                %tr
-                  %th Name
-                  %th Type
-              %tbody
-                - @teammates.each do |teammate|
-                  %tr
-                    %td
-                      = link_to internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none" do
-                        = teammate.person.display_name
-                    %td
-                      %span.badge.bg-secondary
-                        = teammate.type
-
-    - if @seats.any?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-person-badge.me-2
-            Seats (#{@seats.count})
-        .card-body
-          .table-responsive
-            %table.table.table-hover
-              %thead
-                %tr
-                  %th Seat
-                  %th Position Type
-                  %th Needed By
-                  %th State
-                  %th Filled By
-              %tbody
-                - @seats.each do |seat|
-                  - active_tenure = seat.employment_tenures.active.first
-                  %tr
-                    %td
-                      = link_to organization_seat_path(@organization, seat), class: "text-decoration-none" do
-                        = seat.display_name
-                    %td= seat.title.external_title
-                    %td= seat.seat_needed_by.strftime('%B %d, %Y')
-                    %td
-                      %span.badge{class: seat_state_badge_class(seat.state)}
-                        = seat.state.titleize
-                    %td
-                      - if active_tenure&.teammate&.person
-                        = link_to internal_organization_company_teammate_path(@organization, active_tenure.teammate), class: "text-decoration-none" do
-                          = active_tenure.teammate.person.display_name
                       - else
                         %span.text-muted —
 
@@ -161,7 +90,7 @@
         .card-header
           %h5.mb-0
             %i.bi.bi-person-badge.me-2
-            Seats (Directly Linked) (#{@seats_as_department.count})
+            Seats (#{@seats_as_department.count})
         .card-body
           .table-responsive
             %table.table.table-hover
@@ -191,13 +120,18 @@
                       - else
                         %span.text-muted —
 
-    - if @titles.any?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-briefcase.me-2
-            Titles (#{@titles.count})
-        .card-body
+    / Titles Section
+    .card.mb-4
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-briefcase.me-2
+          Titles (#{@titles.count})
+        - if policy(@department).update?
+          = link_to associate_titles_organization_department_path(@organization, @department), class: "btn btn-sm btn-outline-primary" do
+            %i.bi.bi-plus-circle.me-1
+            Associate Titles
+      .card-body
+        - if @titles.any?
           .table-responsive
             %table.table.table-hover
               %thead
@@ -213,14 +147,22 @@
                         = title.external_title
                     %td= title.position_major_level.description
                     %td= title.positions.count
+        - else
+          .text-muted.text-center.py-3
+            No titles associated with this department yet.
 
-    - if @assignments.any?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-list-task.me-2
-            Assignments (#{@assignments.count})
-        .card-body
+    / Assignments Section
+    .card.mb-4
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-list-task.me-2
+          Assignments (#{@assignments.count})
+        - if policy(@department).update?
+          = link_to associate_assignments_organization_department_path(@organization, @department), class: "btn btn-sm btn-outline-primary" do
+            %i.bi.bi-plus-circle.me-1
+            Associate Assignments
+      .card-body
+        - if @assignments.any?
           .table-responsive
             %table.table.table-hover
               %thead
@@ -234,14 +176,22 @@
                       = link_to organization_assignment_path(@organization, assignment), class: "text-decoration-none" do
                         = assignment.title
                     %td= truncate(assignment.tagline, length: 100)
+        - else
+          .text-muted.text-center.py-3
+            No assignments associated with this department yet.
 
-    - if @abilities.any?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-award.me-2
-            Abilities (#{@abilities.count})
-        .card-body
+    / Abilities Section
+    .card.mb-4
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-award.me-2
+          Abilities (#{@abilities.count})
+        - if policy(@department).update?
+          = link_to associate_abilities_organization_department_path(@organization, @department), class: "btn btn-sm btn-outline-primary" do
+            %i.bi.bi-plus-circle.me-1
+            Associate Abilities
+      .card-body
+        - if @abilities.any?
           .table-responsive
             %table.table.table-hover
               %thead
@@ -255,25 +205,35 @@
                       = link_to organization_ability_path(@organization, ability), class: "text-decoration-none" do
                         = ability.name
                     %td= truncate(ability.description, length: 100)
+        - else
+          .text-muted.text-center.py-3
+            No abilities associated with this department yet.
 
-    - if @teams&.any?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-people.me-2
-            Teams with Huddles (#{@teams.count})
-        .card-body
-          - @teams.each do |team|
-            .card.mb-3
-              .card-body
-                %h6
-                  = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
-                    = team.display_name
-                %p.text-muted.mb-0
-                  = pluralize(team.huddles.count, 'huddle')
-                  = " created"
-                - if team.huddle_channel_id.present?
-                  %small.text-muted
-                    %i.bi.bi-slack.me-1
-                    = team.huddle_channel&.display_name || team.huddle_channel_id
-
+    / Aspirations Section
+    .card.mb-4
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-star.me-2
+          Aspirations (#{@aspirations.count})
+        - if policy(@department).update?
+          = link_to associate_aspirations_organization_department_path(@organization, @department), class: "btn btn-sm btn-outline-primary" do
+            %i.bi.bi-plus-circle.me-1
+            Associate Aspirations
+      .card-body
+        - if @aspirations.any?
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Name
+                  %th Description
+              %tbody
+                - @aspirations.each do |aspiration|
+                  %tr
+                    %td
+                      = link_to organization_aspiration_path(@organization, aspiration), class: "text-decoration-none" do
+                        = aspiration.name
+                    %td= truncate(aspiration.description || '', length: 100)
+        - else
+          .text-muted.text-center.py-3
+            No aspirations associated with this department yet.

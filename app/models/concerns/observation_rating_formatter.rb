@@ -86,11 +86,11 @@ module ObservationRatingFormatter
   def public_url_for_rateable(rateable)
     case rateable.class.name
     when 'Ability'
-      Rails.application.routes.url_helpers.organization_public_maap_ability_url(rateable.organization, rateable)
+      Rails.application.routes.url_helpers.organization_public_maap_ability_url(rateable.company, rateable)
     when 'Assignment'
       Rails.application.routes.url_helpers.organization_public_maap_assignment_url(rateable.company, rateable)
     when 'Aspiration'
-      Rails.application.routes.url_helpers.organization_public_maap_aspiration_url(rateable.organization, rateable)
+      Rails.application.routes.url_helpers.organization_public_maap_aspiration_url(rateable.company, rateable)
     else
       '#'
     end

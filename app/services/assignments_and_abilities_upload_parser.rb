@@ -322,7 +322,7 @@ class AssignmentsAndAbilitiesUploadParser
         Ability,
         :name,
         ability_name,
-        Ability.where(organization: organization)
+        Ability.where(company: organization)
       )
       
       if existing_ability

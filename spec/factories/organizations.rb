@@ -7,16 +7,16 @@ FactoryBot.define do
       type { 'Company' }
     end
     
+    # DEPRECATED: STI Department has been removed. Use create(:department, company: company) instead.
+    # This trait is kept for backwards compatibility but creates a Company type.
     trait :department do
-      type { 'Department' }
-      association :parent, factory: [:organization, :company]
+      type { 'Company' }
     end
     
     # DEPRECATED: STI Team has been removed. Use create(:team, company: company) instead.
-    # This trait now creates a Department for backwards compatibility.
+    # This trait is kept for backwards compatibility but creates a Company type.
     trait :team do
-      type { 'Department' }
-      association :parent, factory: [:organization, :company]
+      type { 'Company' }
     end
     
     trait :with_slack_config do
@@ -25,6 +25,9 @@ FactoryBot.define do
       end
     end
   end
+
+  # Alias for easier factory creation
+  factory :company, parent: :organization do
+    type { 'Company' }
+  end
 end
-
-

@@ -26,10 +26,9 @@ class AbilityPolicy < ApplicationPolicy
         return scope.none unless viewing_teammate_org
         
         if viewing_teammate.can_manage_maap?
-          # Include abilities from viewing_teammate's organization and all its descendants
-          # This allows viewing department abilities when signed in to company
-          org_ids = viewing_teammate_org.self_and_descendants.map(&:id)
-          scope.where(organization_id: org_ids)
+          # Include abilities from viewing_teammate's company
+          company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
+          scope.where(company_id: company.id)
         else
           scope.none
         end
@@ -49,13 +48,13 @@ class AbilityPolicy < ApplicationPolicy
 
   def user_has_maap_permission_for_record?
     return false unless viewing_teammate
-    return false unless record&.organization
+    return false unless record&.company
     viewing_teammate_org = viewing_teammate.organization
     return false unless viewing_teammate_org
     
-    # Check if record's organization is in viewing_teammate's organization hierarchy
-    org_ids = viewing_teammate_org.self_and_descendants.map(&:id)
-    return false unless org_ids.include?(record.organization.id)
+    # Check if record's company matches viewing_teammate's company
+    company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
+    return false unless company.id == record.company_id
     
     viewing_teammate.can_manage_maap?
   end

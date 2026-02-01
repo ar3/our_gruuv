@@ -1,0 +1,74 @@
+- content_for :title, "Associate Titles with #{@department.name}"
+
+- content_for :go_back_link do
+  = link_to organization_department_path(@organization, @department), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@department.name}
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-briefcase.me-2
+    Associate Titles
+
+.row.justify-content-center
+  .col-lg-10
+    .card
+      .card-header
+        %h5.mb-0
+          Select titles to associate with 
+          %strong= @department.name
+      .card-body
+        - if @unassociated_titles.any?
+          = form_with url: update_titles_association_organization_department_path(@organization, @department), method: :patch, local: true do |form|
+            .mb-3
+              .form-check.mb-2
+                %input.form-check-input#select-all{type: "checkbox", "data-action": "click->bulk-select#toggleAll"}
+                %label.form-check-label.fw-bold{for: "select-all"}
+                  Select All
+              %hr
+              
+            .table-responsive
+              %table.table.table-hover
+                %thead
+                  %tr
+                    %th{style: "width: 40px;"}
+                    %th Title
+                    %th Major Level
+                    %th Positions
+                %tbody
+                  - @unassociated_titles.each do |title|
+                    %tr
+                      %td
+                        .form-check
+                          = check_box_tag "title_ids[]", title.id, false, class: "form-check-input bulk-select-item", id: "title_#{title.id}"
+                      %td
+                        %label.form-check-label{for: "title_#{title.id}"}
+                          = title.external_title
+                      %td
+                        %span.badge.bg-secondary
+                          = title.position_major_level.description
+                      %td
+                        = title.positions.count
+            
+            .d-flex.justify-content-between.mt-4
+              = link_to "Cancel", organization_department_path(@organization, @department), class: "btn btn-outline-secondary"
+              = form.submit "Associate Selected Titles", class: "btn btn-primary"
+        - else
+          .alert.alert-info
+            %i.bi.bi-info-circle.me-2
+            All titles are already associated with a department.
+          = link_to "Back to Department", organization_department_path(@organization, @department), class: "btn btn-outline-secondary"
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.bulk-select-item');
+    
+    if (selectAll) {
+      selectAll.addEventListener('change', function() {
+        checkboxes.forEach(function(checkbox) {
+          checkbox.checked = selectAll.checked;
+        });
+      });
+    }
+  });

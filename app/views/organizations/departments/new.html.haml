@@ -14,13 +14,13 @@
   .col-lg-8
     .card
       .card-body
-        - if @department.parent.present?
+        - if @department.parent_department.present?
           .alert.alert-info.mb-3
             %i.bi.bi-info-circle.me-2
             Creating a child department under 
-            %strong= @department.parent.display_name
+            %strong= @department.parent_department.display_name
         
-        = form_with model: @department, url: organization_departments_path(@organization), local: true, scope: :organization do |form|
+        = form_with model: @department, url: organization_departments_path(@organization), local: true, scope: :department do |form|
           - if @department.errors.any?
             .alert.alert-danger
               %h5= "#{pluralize(@department.errors.count, "error")} prohibited this department from being saved:"
@@ -32,16 +32,11 @@
             = form.label :name, class: "form-label"
             = form.text_field :name, class: "form-control", required: true
           
-          = form.hidden_field :type, value: 'Department'
-          
           .mb-3
-            = form.label :parent_id, "Parent Organization", class: "form-label"
-            = form.hidden_field :parent_id, value: @department.parent_id || @organization.id
-            - parent_org = @department.parent || @organization
-            .form-control-plaintext= parent_org.display_name
-            %small.form-text.text-muted The parent organization cannot be changed after creation.
+            = form.label :parent_department_id, "Parent Department (Optional)", class: "form-label"
+            = form.select :parent_department_id, options_from_collection_for_select(@available_parents, :id, :display_name, @department.parent_department_id), { include_blank: "None (Root Department)" }, { class: "form-select" }
+            %small.form-text.text-muted Leave blank to create a root-level department.
           
           .d-flex.justify-content-between
             = link_to "Cancel", organization_departments_path(@organization), class: "btn btn-secondary"
             = form.submit "Create Department", class: "btn btn-primary"
-

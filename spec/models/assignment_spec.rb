@@ -42,6 +42,24 @@ RSpec.describe Assignment, type: :model do
       
       expect(duplicate_assignment).to be_valid
     end
+
+    describe 'department_must_belong_to_company' do
+      it 'is valid when department belongs to the same company' do
+        company = create(:company)
+        department = create(:department, company: company)
+        assignment = build(:assignment, company: company, department: department)
+        expect(assignment).to be_valid
+      end
+
+      it 'is invalid when department belongs to a different company' do
+        company = create(:company)
+        other_company = create(:company)
+        department = create(:department, company: other_company)
+        assignment = build(:assignment, company: company, department: department)
+        expect(assignment).not_to be_valid
+        expect(assignment.errors[:department]).to include('must belong to the same company')
+      end
+    end
   end
 
   describe 'associations' do
@@ -108,33 +126,57 @@ RSpec.describe Assignment, type: :model do
 
   describe '#to_s' do
     it 'returns company and assignment title when no department' do
-      company = create(:organization, :company, name: 'Acme Corp')
+      company = create(:company, name: 'Acme Corp')
       assignment = create(:assignment, company: company, title: 'Product Manager', department: nil)
 
       expect(assignment.to_s).to eq("Acme Corp > Product Manager v#{assignment.semantic_version}")
     end
 
     it 'returns company, department, and assignment title when department is set' do
-      company = create(:organization, :company, name: 'Acme Corp')
-      department = create(:organization, :department, parent: company, name: 'Engineering')
+      company = create(:company, name: 'Acme Corp')
+      department = create(:department, company: company, name: 'Engineering')
       assignment = create(:assignment, company: company, department: department, title: 'Product Manager')
 
       expect(assignment.to_s).to eq("Acme Corp > Engineering > Product Manager v#{assignment.semantic_version}")
     end
 
     it 'returns full department hierarchy when department is nested' do
-      company = create(:organization, :company, name: 'Acme Corp')
-      parent_dept = create(:organization, :department, parent: company, name: 'Engineering')
-      department = create(:organization, :department, parent: parent_dept, name: 'Backend')
+      company = create(:company, name: 'Acme Corp')
+      parent_dept = create(:department, company: company, name: 'Engineering')
+      department = create(:department, company: company, parent_department: parent_dept, name: 'Backend')
       assignment = create(:assignment, company: company, department: department, title: 'Product Manager')
 
       expect(assignment.to_s).to eq("Acme Corp > Engineering > Backend > Product Manager v#{assignment.semantic_version}")
     end
   end
 
+  describe 'scopes' do
+    describe '.for_company' do
+      let(:other_company) { create(:company) }
+      let!(:assignment1) { create(:assignment, company: organization) }
+      let!(:assignment2) { create(:assignment, company: other_company) }
+
+      it 'returns assignments for specific company' do
+        expect(Assignment.for_company(organization)).to include(assignment1)
+        expect(Assignment.for_company(organization)).not_to include(assignment2)
+      end
+    end
+
+    describe '.for_department' do
+      let(:department) { create(:department, company: organization) }
+      let!(:dept_assignment) { create(:assignment, company: organization, department: department) }
+      let!(:no_dept_assignment) { create(:assignment, company: organization, department: nil) }
+
+      it 'returns assignments for specific department' do
+        expect(Assignment.for_department(department)).to include(dept_assignment)
+        expect(Assignment.for_department(department)).not_to include(no_dept_assignment)
+      end
+    end
+  end
+
   describe 'ability-related methods' do
-    let(:ability1) { create(:ability, organization: organization) }
-    let(:ability2) { create(:ability, organization: organization) }
+    let(:ability1) { create(:ability, company: organization) }
+    let(:ability2) { create(:ability, company: organization) }
 
     describe '#required_abilities' do
       it 'returns abilities ordered by milestone level' do

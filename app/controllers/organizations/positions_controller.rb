@@ -136,8 +136,8 @@ class Organizations::PositionsController < ApplicationController
     @position.title_id = params[:title_id]
     @title = Title.find(params[:title_id])
     
-    # Ensure the title belongs to the organization
-    unless @title.organization == @organization
+    # Ensure the title belongs to the company
+    unless @title.company_id == company.id
       redirect_to organization_positions_path(@organization), alert: 'Invalid title for this organization.'
       return
     end
@@ -165,8 +165,8 @@ class Organizations::PositionsController < ApplicationController
     @position.title_id = title_id
     @title = Title.find(title_id)
     
-    # Ensure the title belongs to the organization
-    unless @title.organization == @organization
+    # Ensure the title belongs to the company
+    unless @title.company_id == company.id
       redirect_to organization_positions_path(@organization), alert: 'Invalid title for this organization.'
       return
     end
@@ -274,8 +274,8 @@ class Organizations::PositionsController < ApplicationController
     company = @position.title.organization.root_company
     company_and_descendants = company.self_and_descendants
     
-    # Load all assignments in company hierarchy
-    @assignments = Assignment.where(company: company_and_descendants)
+    # Load all assignments for the company
+    @assignments = Assignment.where(company: position_company)
                             .includes(:department)
                             .ordered
     

@@ -22,7 +22,7 @@ module ObservableMoments
       
       ObservableMoments::BaseObservableMomentService.new(
         momentable: @teammate_milestone,
-        company: @teammate_milestone.ability.organization,
+        company: @teammate_milestone.ability.company,
         created_by: @created_by,
         primary_potential_observer: primary_observer,
         moment_type: :ability_milestone,

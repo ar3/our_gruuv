@@ -54,7 +54,7 @@ class Position < ApplicationRecord
   end
   
   def company
-    title.organization
+    title.company
   end
   
   def required_assignments

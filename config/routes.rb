@@ -420,6 +420,14 @@ Rails.application.routes.draw do
     resources :departments, module: :organizations, except: [:destroy] do
       member do
         patch :archive
+        get :associate_abilities
+        patch :update_abilities_association
+        get :associate_aspirations
+        patch :update_aspirations_association
+        get :associate_titles
+        patch :update_titles_association
+        get :associate_assignments
+        patch :update_assignments_association
       end
     end
 

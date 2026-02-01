@@ -14,7 +14,7 @@
   .col-lg-8
     .card
       .card-body
-        = form_with model: [@organization, @department], url: organization_department_path(@organization, @department), local: true, method: :patch do |form|
+        = form_with model: @department, url: organization_department_path(@organization, @department), local: true, method: :patch, scope: :department do |form|
           - if @department.errors.any?
             .alert.alert-danger
               %h5= "#{pluralize(@department.errors.count, "error")} prohibited this department from being saved:"
@@ -26,18 +26,11 @@
             = form.label :name, class: "form-label"
             = form.text_field :name, class: "form-control", required: true
           
-          = render 'shared/department_dropdown', 
-            form: form, 
-            organization: @organization, 
-            field_name: :parent_id, 
-            label_text: "Parent Organization", 
-            selected_department_id: @department.parent_id,
-            include_blank: false,
-            include_root_option: true,
-            exclude_ids: [@department.id] + @department.descendants.map(&:id),
-            help_text: "Select the parent organization for this department. Choose the company name to place this department at the root level."
+          .mb-3
+            = form.label :parent_department_id, "Parent Department", class: "form-label"
+            = form.select :parent_department_id, options_from_collection_for_select(@available_parents, :id, :display_name, @department.parent_department_id), { include_blank: "None (Root Department)" }, { class: "form-select" }
+            %small.form-text.text-muted Select the parent department, or leave blank to make this a root-level department.
           
           .d-flex.justify-content-between
             = link_to "Cancel", organization_department_path(@organization, @department), class: "btn btn-secondary"
             = form.submit "Update Department", class: "btn btn-primary"
-

@@ -1,9 +1,9 @@
-- org = node[:organization]
+- dept = node[:department]
 - children = node[:children]
 - departments_count = node[:departments_count] || 0
 - has_children = children.any?
-- node_id = "dept-node-#{org.id}"
-- children_id = "dept-children-#{org.id}"
+- node_id = "dept-node-#{dept.id}"
+- children_id = "dept-children-#{dept.id}"
 
 .tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
   .d-flex.align-items-center
@@ -22,30 +22,29 @@
                     #{pluralize(departments_count, 'department')} below
                   - else
                     No children
-            - if policy(org).show?
-              = link_to organization_department_path(@organization, org), class: "text-decoration-none fw-bold" do
-                = org.name
+            - if policy(dept).show?
+              = link_to organization_department_path(@organization, dept), class: "text-decoration-none fw-bold" do
+                = dept.name
             - else
-              %span.fw-bold= org.name
+              %span.fw-bold= dept.name
             %br
             %span.badge.bg-primary{style: "font-size: 0.75rem;"}
-              = org.type
-            - if org.archived?
+              Department
+            - if dept.archived?
               %span.badge.bg-secondary.ms-1{style: "font-size: 0.75rem;"}
                 Archived
           .flex-shrink-0.ms-2
             .btn-group.btn-group-sm
-              = link_to organization_department_path(@organization, org), class: "btn btn-outline-primary" do
+              = link_to organization_department_path(@organization, dept), class: "btn btn-outline-primary" do
                 %i.bi.bi-eye
-              - if policy(org).update?
-                = link_to edit_organization_department_path(@organization, org), class: "btn btn-outline-secondary" do
+              - if policy(dept).update?
+                = link_to edit_organization_department_path(@organization, dept), class: "btn btn-outline-secondary" do
                   %i.bi.bi-pencil
-              - if policy(org).archive?
-                = link_to archive_organization_department_path(@organization, org), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this department?" } do
+              - if policy(dept).archive?
+                = link_to archive_organization_department_path(@organization, dept), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this department?" } do
                   %i.bi.bi-archive
 
 - if has_children
   .collapse.show{id: children_id}
     - children.each do |child_node|
       = render 'organizations/departments/hierarchy_node', node: child_node, depth: depth + 1, organization: @organization
-

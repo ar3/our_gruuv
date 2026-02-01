@@ -7,10 +7,19 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def index
     authorize company, :view_abilities?
-    @abilities = policy_scope(Ability).for_organization(@organization)
+    @abilities = policy_scope(Ability).for_company(company)
     
     # Apply filters
     @abilities = @abilities.where("name ILIKE ?", "%#{params[:name]}%") if params[:name].present?
+    
+    # Filter by department
+    if params[:department_id].present?
+      if params[:department_id] == 'none'
+        @abilities = @abilities.where(department_id: nil)
+      else
+        @abilities = @abilities.where(department_id: params[:department_id])
+      end
+    end
     
     if params[:milestone_status].present?
       milestone_statuses = Array(params[:milestone_status])
@@ -58,29 +67,31 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
   end
 
   def new
-    @ability = Ability.new(organization: @organization)
+    @ability = Ability.new(company: company)
     @ability_decorator = AbilityDecorator.new(@ability)
     @form = AbilityForm.new(@ability)
     @form.current_person = current_person
+    @departments = Department.for_company(company).active.ordered
     authorize @ability
   end
 
   def create
     # Always authorize first
-    authorize Ability.new(organization: @organization)
+    authorize Ability.new(company: company)
     
     # Reform handles validation and parameter extraction
     # Handle case where no ability parameters are provided
     ability_params = params[:ability] || {}
     
-    @form = AbilityForm.new(Ability.new(organization: @organization))
+    @form = AbilityForm.new(Ability.new(company: company))
     @form.current_person = current_person
+    @departments = Department.for_company(company).active.ordered
     
     # Set flag for empty form data validation
     @form.instance_variable_set(:@form_data_empty, ability_params.empty?)
     
     if @form.validate(ability_params) && @form.save
-      redirect_to organization_ability_path(@form.model.organization, @form.model), 
+      redirect_to organization_ability_path(@organization, @form.model), 
                   notice: 'Ability was successfully created.'
     else
       @ability_decorator = AbilityDecorator.new(@form.model)
@@ -92,6 +103,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     @ability_decorator = AbilityDecorator.new(@ability)
     @form = AbilityForm.new(@ability)
     @form.current_person = current_person
+    @departments = Department.for_company(company).active.ordered
     authorize @ability
   end
 
@@ -102,6 +114,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     @ability_decorator = AbilityDecorator.new(@ability)
     @form = AbilityForm.new(@ability)
     @form.current_person = current_person
+    @departments = Department.for_company(company).active.ordered
     
     # Reform handles validation and parameter extraction
     # Handle case where no ability parameters are provided
@@ -111,7 +124,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     @form.instance_variable_set(:@form_data_empty, ability_params.empty?)
     
     if @form.validate(ability_params) && @form.save
-      redirect_to organization_ability_path(@form.model.organization, @form.model), 
+      redirect_to organization_ability_path(@organization, @form.model), 
                   notice: 'Ability was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
@@ -134,6 +147,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       category: params[:category],
       milestone_status: params[:milestone_status],
       major_version: params[:major_version],
+      department_id: params[:department_id],
       sort: params[:sort] || 'name',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'table',
@@ -143,6 +157,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     @current_sort = @current_filters[:sort]
     @current_view = @current_filters[:view]
     @current_spotlight = @current_filters[:spotlight]
+    @departments = Department.for_company(company).active.ordered
     
     # Preserve current params for return URL
     return_params = params.except(:controller, :action, :page).permit!.to_h
@@ -163,6 +178,6 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
   private
 
   def set_ability
-    @ability = @organization.abilities.find(params[:id])
+    @ability = company.abilities.find(params[:id])
   end
 end

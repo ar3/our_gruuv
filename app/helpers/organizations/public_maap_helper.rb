@@ -1,25 +1,26 @@
 module Organizations::PublicMaapHelper
-  # Build organization hierarchy structure for display
-  # Returns array of hashes with :organization, :level, and :children keys
-  # Only includes Company and Department types, excludes Teams
-  def build_organization_hierarchy(company)
+  # Build department hierarchy structure for display
+  # Returns array of hashes with :department, :level, and :children keys
+  def build_department_hierarchy(company)
     return [] unless company&.company?
     
-    build_hierarchy_recursive(company, 0)
+    root_departments = Department.for_company(company).root_departments.active.ordered
+    root_departments.map { |dept| build_hierarchy_node(dept, 0) }
   end
   
-  # Build full hierarchy path for an organization
-  # Returns array of organizations from root company down to the organization
+  # Build full hierarchy path for a department
+  # Returns array of departments from root down to the department
   def department_hierarchy_path(department)
     return [] unless department
+    return department.self_and_ancestors.reverse if department.is_a?(Department)
     
+    # Fallback for Organization (legacy support)
     path = []
     current = department
     
-    # Build path from department up to root
     while current
       path.unshift(current)
-      current = current.parent
+      current = current.respond_to?(:parent_department) ? current.parent_department : current.parent
     end
     
     path
@@ -27,31 +28,20 @@ module Organizations::PublicMaapHelper
   
   # Format hierarchy path as a string with > separators
   def department_hierarchy_display(department)
+    return '' unless department
+    return department.display_name if department.is_a?(Department)
+    
     path = department_hierarchy_path(department)
     path.map(&:name).join(' > ')
   end
   
   private
   
-  def build_hierarchy_recursive(org, level)
-    result = []
-    
-    # Query children directly from database to ensure we get all children
-    # Only include companies and departments, exclude teams
-    children = Organization.where(parent_id: org.id)
-                          .where(type: ['Company', 'Department'])
-                          .order(:name)
-    
-    children.each do |child|
-      child_hash = {
-        organization: child,
-        level: level,
-        children: build_hierarchy_recursive(child, level + 1)
-      }
-      result << child_hash
-    end
-    
-    result
+  def build_hierarchy_node(department, level)
+    {
+      department: department,
+      level: level,
+      children: department.child_departments.active.ordered.map { |child| build_hierarchy_node(child, level + 1) }
+    }
   end
 end
-

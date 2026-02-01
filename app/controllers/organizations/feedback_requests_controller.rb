@@ -211,7 +211,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     @assignments.each do |assignment|
       assignment.assignment_abilities.pluck(:ability_id).each { |id| ability_ids.add(id) }
     end
-    @abilities = Ability.where(id: ability_ids.to_a, organization: company.self_and_descendants).order(:name)
+    @abilities = Ability.where(id: ability_ids.to_a, company: company).order(:name)
     
     # Get aspirations: company + department aspirations from position's title department and departments between title and company
     aspiration_org_ids = [company.id]
@@ -223,7 +223,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
         current_dept = current_dept.parent
       end
     end
-    @aspirations = Aspiration.where(organization_id: aspiration_org_ids).ordered
+    @aspirations = Aspiration.where(company: company).ordered
     
     # Load currently selected focus items
     @selected_position = @feedback_request.feedback_request_questions.find_by(rateable_type: 'Position')&.rateable
@@ -264,8 +264,8 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     # Create placeholder questions (will be filled in feedback_prompt)
     position_attr = { rateable_type: 'Position', rateable_id: position.id } if position
     assignment_attrs = Assignment.where(id: assignment_ids, company: company.self_and_descendants).map { |a| { rateable_type: 'Assignment', rateable_id: a.id } }
-    ability_attrs = Ability.where(id: ability_ids, organization: company.self_and_descendants).map { |a| { rateable_type: 'Ability', rateable_id: a.id } }
-    aspiration_attrs = Aspiration.where(id: aspiration_ids, organization: company.self_and_descendants).map { |a| { rateable_type: 'Aspiration', rateable_id: a.id } }
+    ability_attrs = Ability.where(id: ability_ids, company: company).map { |a| { rateable_type: 'Ability', rateable_id: a.id } }
+    aspiration_attrs = Aspiration.where(id: aspiration_ids, company: company).map { |a| { rateable_type: 'Aspiration', rateable_id: a.id } }
     
     all_focus_items = [position_attr].compact + assignment_attrs + ability_attrs + aspiration_attrs
     

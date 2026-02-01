@@ -2,7 +2,8 @@ class AbilityForm < Reform::Form
   # Define form properties - Reform handles Rails integration automatically
   property :name
   property :description
-  property :organization_id
+  property :company_id
+  property :department_id
   property :version_type, virtual: true  # This is a form-only field, not on the model
   property :milestone_1_description
   property :milestone_2_description
@@ -13,7 +14,7 @@ class AbilityForm < Reform::Form
   # Use ActiveModel validations for now - we can upgrade to dry-validation later
   validates :name, presence: true
   validates :description, presence: true
-  validates :organization_id, presence: true
+  validates :company_id, presence: true
   validates :version_type, presence: true, unless: :new_form_without_data?
   validate :at_least_one_milestone_description
   validate :version_type_for_context

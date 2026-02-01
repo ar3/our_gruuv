@@ -310,7 +310,7 @@ class AssignmentsAndAbilitiesUploadProcessor
       Ability,
       :name,
       ability_name,
-      Ability.where(organization: organization)
+      Ability.where(company: organization)
     )
     
     if ability
@@ -327,7 +327,7 @@ class AssignmentsAndAbilitiesUploadProcessor
     ability = Ability.create!(
       name: ability_name,
       description: "Ability: #{ability_name}",
-      organization: organization,
+      company: organization,
       semantic_version: '0.0.1',
       created_by: @current_person,
       updated_by: @current_person
@@ -544,7 +544,7 @@ class AssignmentsAndAbilitiesUploadProcessor
       Ability,
       :name,
       name,
-      Ability.where(organization: organization)
+      Ability.where(company: organization)
     )
   end
 

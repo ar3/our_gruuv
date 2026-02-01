@@ -76,13 +76,17 @@ module PositionsHelper
   end
 
   def department_hierarchy_display(department)
-    return department.name unless department&.parent
+    return '' unless department
+    return department.display_name if department.is_a?(Department)
+    
+    # Fallback for Organization (legacy support)
+    return department.name unless department&.respond_to?(:parent_department) && department.parent_department
     
     path = []
     current = department
     while current
       path.unshift(current.name)
-      current = current.parent
+      current = current.respond_to?(:parent_department) ? current.parent_department : nil
     end
     path.join(' > ')
   end

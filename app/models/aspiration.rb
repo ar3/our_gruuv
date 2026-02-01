@@ -1,13 +1,15 @@
 class Aspiration < ApplicationRecord
   include ModelSemanticVersionable
 
-  belongs_to :organization
+  belongs_to :company, class_name: 'Organization'
+  belongs_to :department, optional: true
   has_many :observation_ratings, as: :rateable, dependent: :destroy
   has_many :observations, through: :observation_ratings
   has_many :comments, as: :commentable, dependent: :destroy
 
-  validates :name, presence: true, uniqueness: { scope: :organization_id }
+  validates :name, presence: true, uniqueness: { scope: :company_id }
   validates :sort_order, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validate :department_must_belong_to_company
 
   # Soft delete implementation following existing pattern
   default_scope { where(deleted_at: nil) }
@@ -24,10 +26,11 @@ class Aspiration < ApplicationRecord
   # Scope for ordering by sort_order
   scope :ordered, -> { order(:sort_order, :name) }
 
-  # Scope for finding aspirations within organization hierarchy
-  scope :within_hierarchy, ->(organization) {
-    where(organization: organization.self_and_descendants)
-  }
+  # Scope for finding aspirations for a company
+  scope :for_company, ->(company) { where(company_id: company.is_a?(Integer) ? company : company.id) }
+  
+  # Scope for finding aspirations for a department
+  scope :for_department, ->(department) { where(department: department) }
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)
@@ -41,5 +44,15 @@ class Aspiration < ApplicationRecord
 
   def to_param
     "#{id}-#{name.parameterize}"
+  end
+
+  private
+
+  def department_must_belong_to_company
+    return unless department.present?
+    
+    if department.company_id != company_id
+      errors.add(:department, 'must belong to the same company')
+    end
   end
 end

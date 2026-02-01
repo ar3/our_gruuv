@@ -4,7 +4,8 @@ class AspirationForm < Reform::Form
   # Define form properties - Reform handles Rails integration automatically
   property :name
   property :description
-  property :organization_id
+  property :company_id
+  property :department_id
   property :sort_order
   property :version_type, virtual: true
 
@@ -55,7 +56,7 @@ class AspirationForm < Reform::Form
   # Use ActiveModel validations for now - we can upgrade to dry-validation later
   validates :name, presence: true
   validates :sort_order, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :organization_id, presence: true
+  validates :company_id, presence: true
   validate :validate_uniqueness_of_name
   validate :form_data_present
 
@@ -99,16 +100,16 @@ class AspirationForm < Reform::Form
     @current_person = person
   end
 
-  # Helper method to get the organization for this form
-  def organization
-    return nil unless organization_id.present?
-    @organization ||= Organization.find(organization_id)
+  # Helper method to get the company for this form
+  def company
+    return nil unless company_id.present?
+    @company ||= Organization.find(company_id)
   end
 
-  # Helper method to set organization
-  def organization=(org)
-    self.organization_id = org.id
-    @organization = org
+  # Helper method to set company
+  def company=(org)
+    self.company_id = org.id
+    @company = org
   end
 
   def new_form_without_data?
@@ -141,11 +142,11 @@ class AspirationForm < Reform::Form
 
   # Custom validation method for uniqueness
   def validate_uniqueness_of_name
-    return unless name.present? && organization_id.present?
+    return unless name.present? && company_id.present?
     
     existing_aspiration = Aspiration.where(
       name: name,
-      organization_id: organization_id
+      company_id: company_id
     ).where.not(id: model.id).first
     
     if existing_aspiration

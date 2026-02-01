@@ -32,8 +32,7 @@ class Organizations::Assignments::AbilityMilestonesController < Organizations::A
   end
 
   def load_abilities_in_hierarchy
-    company_hierarchy = @assignment.company.self_and_descendants
-    @abilities = Ability.where(organization: company_hierarchy).order(:name)
+    @abilities = Ability.where(company: @assignment.company).order(:name)
   end
 
   def load_existing_associations

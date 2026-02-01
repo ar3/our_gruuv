@@ -3,29 +3,27 @@ class Organization < ApplicationRecord
   
   # Single Table Inheritance
   # NOTE: Team STI has been removed. Use the standalone Team model instead.
-  # We exclude 'Team' type from all queries to prevent STI errors since Team
-  # is no longer a subclass of Organization.
+  # NOTE: Department STI has been removed. Use the standalone Department model instead.
+  # We exclude 'Team' and 'Department' types from all queries to prevent STI errors since
+  # they are no longer subclasses of Organization.
   self.inheritance_column = 'type'
   
-  # Exclude legacy Team records from all Organization queries.
-  # Team has been de-STI'd to its own table (teams). Any remaining records
-  # with type='Team' in the organizations table are legacy data.
-  default_scope { where.not(type: 'Team') }
+  # Exclude legacy Team and Department records from all Organization queries.
+  # Both Team and Department have been de-STI'd to their own tables.
+  # Any remaining records with type='Team' or 'Department' in the organizations table are legacy data.
+  default_scope { where.not(type: ['Team', 'Department']) }
   
   # Associations
   belongs_to :parent, class_name: 'Organization', optional: true
   has_many :children, class_name: 'Organization', foreign_key: 'parent_id'
   has_many :teams, foreign_key: :company_id, dependent: :destroy
+  has_many :departments, foreign_key: :company_id, dependent: :destroy
   has_many :assignments, foreign_key: 'company_id', dependent: :destroy
-  has_many :abilities, dependent: :destroy
-  has_many :aspirations, dependent: :destroy
+  has_many :abilities, foreign_key: 'company_id', dependent: :destroy
+  has_many :aspirations, foreign_key: 'company_id', dependent: :destroy
   has_many :prompt_templates, foreign_key: 'company_id', dependent: :destroy
-  has_many :titles, dependent: :destroy
+  has_many :titles, foreign_key: 'company_id', dependent: :destroy
   has_many :seats, through: :titles
-  # Seats linked via title's department_id (department_id was moved from seats to titles)
-  def seats_as_department
-    Seat.for_department(self)
-  end
   has_many :seats_as_team, class_name: 'Seat', foreign_key: 'team_id', dependent: :nullify
   has_one :slack_configuration, dependent: :destroy
   has_many :third_party_objects, dependent: :destroy
@@ -42,7 +40,6 @@ class Organization < ApplicationRecord
   
   # Scopes
   scope :companies, -> { where(type: 'Company') }
-  scope :departments, -> { where(type: 'Department') }
   scope :ordered, -> { order(:name) }
   scope :active, -> { where(deleted_at: nil) }
   scope :archived, -> { where.not(deleted_at: nil) }
@@ -69,7 +66,8 @@ class Organization < ApplicationRecord
   end
   
   def department?
-    type == 'Department'
+    # This is now always false for Organization since Department is its own model
+    false
   end
   
   def root_company
@@ -171,11 +169,13 @@ class Organization < ApplicationRecord
   end
   
   def self_and_descendants
-    [self] + descendants
+    # For Company, this returns just the company since departments are separate
+    [self]
   end
   
   def descendants
-    children.active.flat_map { |child| [child] + child.descendants }
+    # For Company, descendants are empty since departments are now separate
+    []
   end
   
   def ancestry_depth
@@ -189,8 +189,8 @@ class Organization < ApplicationRecord
   end
   
   def positions
-    # Positions within this organization
-    Position.joins(:title).where(titles: { organization: self })
+    # Positions within this organization (via titles linked to this company)
+    Position.joins(:title).where(titles: { company_id: id })
   end
 
   def titles_count
@@ -219,13 +219,14 @@ class Organization < ApplicationRecord
   end
 
   def all_assignments_including_descendants
-    Assignment.where(company: self_and_descendants)
+    # With departments separated, assignments are directly linked to company
+    Assignment.where(company: self)
   end
 
   # Milestone-related methods
   def recent_milestones_count(days_back: 90)
     TeammateMilestone.joins(:ability)
-                   .where(abilities: { organization: self })
+                   .where(abilities: { company_id: id })
                    .where(attained_at: days_back.days.ago..Time.current)
                    .count
   end
@@ -239,11 +240,12 @@ class Organization < ApplicationRecord
     return TeammateMilestone.none unless teammate
     
     teammate.teammate_milestones.joins(:ability)
-            .where(abilities: { organization: self })
+            .where(abilities: { company_id: id })
   end
 
   def descendants_count
-    descendants.count
+    # With departments separated, this returns count of departments for the company
+    departments.active.count
   end
 
   def teams_with_recent_huddles(weeks_back: 6)
@@ -291,4 +293,4 @@ class Organization < ApplicationRecord
   def archived?
     deleted_at.present?
   end
-end 
+end

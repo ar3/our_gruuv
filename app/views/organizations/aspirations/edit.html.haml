@@ -21,7 +21,10 @@
                   - @form.errors.full_messages.each do |message|
                     %li= message
             
-            = render 'shared/organization_dropdown', form: form, selected_organization: @aspiration.organization
+            .mb-3
+              = form.label :department_id, "Department", class: "form-label"
+              = form.select :department_id, options_from_collection_for_select(@departments, :id, :display_name, @aspiration.department_id), { include_blank: "Company-wide (no department)" }, { class: "form-select" }
+              %small.form-text.text-muted The department this aspiration belongs to (optional)
             
             %div.mb-3
               = form.label :name, class: 'form-label'

@@ -31,13 +31,9 @@ class UpdateAbilityAssignmentMilestones
             return Result.err("Assignment with ID #{assignment_id} not found.")
           end
 
-          # Validate organization scoping (check both directions for hierarchy compatibility)
-          org_hierarchy_ids = @ability.organization.self_and_descendants.map(&:id)
-          company_hierarchy_ids = assignment.company.self_and_descendants.map(&:id)
-          
-          unless org_hierarchy_ids.include?(assignment.company_id) ||
-                 company_hierarchy_ids.include?(@ability.organization_id)
-            return Result.err("Assignment must belong to the same organization hierarchy as the ability.")
+          # Validate organization scoping - ability and assignment must belong to the same company
+          unless @ability.company_id == assignment.company_id
+            return Result.err("Assignment must belong to the same company as the ability.")
           end
 
           if existing_association

@@ -292,8 +292,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
                         .includes(:title, :position_level)
                         .ordered
     
-    # Group positions by department (title's organization)
-    @positions_by_department = positions.group_by { |pos| pos.title.organization }
+    # Group positions by department
+    @positions_by_department = positions.group_by { |pos| pos.title.department }
     
     # Keep flat array for backward compatibility
     @positions = positions

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_01_000007) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -18,7 +18,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
     t.string "name", null: false
     t.text "description", null: false
     t.string "semantic_version", default: "1.0.0", null: false
-    t.bigint "organization_id", null: false
+    t.bigint "company_id", null: false
     t.bigint "created_by_id", null: false
     t.bigint "updated_by_id", null: false
     t.datetime "created_at", null: false
@@ -28,9 +28,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
     t.text "milestone_3_description"
     t.text "milestone_4_description"
     t.text "milestone_5_description"
+    t.bigint "department_id"
+    t.index ["company_id"], name: "index_abilities_on_company_id"
     t.index ["created_by_id"], name: "index_abilities_on_created_by_id"
-    t.index ["name", "organization_id"], name: "index_abilities_on_name_and_organization_id", unique: true
-    t.index ["organization_id"], name: "index_abilities_on_organization_id"
+    t.index ["department_id"], name: "index_abilities_on_department_id"
+    t.index ["name", "company_id"], name: "index_abilities_on_name_and_company_id", unique: true
     t.index ["updated_by_id"], name: "index_abilities_on_updated_by_id"
   end
 
@@ -82,15 +84,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
   create_table "aspirations", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.bigint "organization_id", null: false
+    t.bigint "company_id", null: false
     t.integer "sort_order", default: 999, null: false
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "semantic_version", default: "0.0.1", null: false
+    t.bigint "department_id"
+    t.index ["company_id", "name"], name: "index_aspirations_on_company_id_and_name", unique: true
+    t.index ["company_id"], name: "index_aspirations_on_company_id"
     t.index ["deleted_at"], name: "index_aspirations_on_deleted_at"
-    t.index ["organization_id", "name"], name: "index_aspirations_on_organization_id_and_name", unique: true
-    t.index ["organization_id"], name: "index_aspirations_on_organization_id"
+    t.index ["department_id"], name: "index_aspirations_on_department_id"
     t.index ["sort_order"], name: "index_aspirations_on_sort_order"
   end
 
@@ -276,6 +280,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["responseable_type", "responseable_id"], name: "index_debug_responses_on_responseable"
+  end
+
+  create_table "departments", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "parent_department_id"
+    t.string "name", null: false
+    t.bigint "migrate_from_organization_id"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_departments_on_company_id"
+    t.index ["deleted_at"], name: "index_departments_on_deleted_at"
+    t.index ["migrate_from_organization_id"], name: "index_departments_on_migrate_from_organization_id", unique: true
+    t.index ["parent_department_id"], name: "index_departments_on_parent_department_id"
   end
 
   create_table "employment_tenures", force: :cascade do |t|
@@ -1090,7 +1108,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
   end
 
   create_table "titles", force: :cascade do |t|
-    t.bigint "organization_id", null: false
+    t.bigint "company_id", null: false
     t.bigint "position_major_level_id", null: false
     t.string "external_title", null: false
     t.text "alternative_titles"
@@ -1098,9 +1116,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "department_id"
+    t.index ["company_id", "position_major_level_id", "external_title"], name: "index_titles_on_company_level_title_unique", unique: true
+    t.index ["company_id"], name: "index_titles_on_company_id"
     t.index ["department_id"], name: "index_titles_on_department_id"
-    t.index ["organization_id", "position_major_level_id", "external_title"], name: "index_position_types_on_org_level_title_unique", unique: true
-    t.index ["organization_id"], name: "index_titles_on_organization_id"
     t.index ["position_major_level_id"], name: "index_titles_on_position_major_level_id"
   end
 
@@ -1123,14 +1141,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 
-  add_foreign_key "abilities", "organizations"
+  add_foreign_key "abilities", "departments"
+  add_foreign_key "abilities", "organizations", column: "company_id"
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
   add_foreign_key "addresses", "people"
   add_foreign_key "aspiration_check_ins", "aspirations"
   add_foreign_key "aspiration_check_ins", "maap_snapshots"
   add_foreign_key "aspiration_check_ins", "teammates"
-  add_foreign_key "aspirations", "organizations"
+  add_foreign_key "aspirations", "departments"
+  add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "assignment_abilities", "abilities"
   add_foreign_key "assignment_abilities", "assignments"
   add_foreign_key "assignment_check_ins", "assignments"
@@ -1141,8 +1161,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
   add_foreign_key "assignment_supply_relationships", "assignments", column: "supplier_assignment_id"
   add_foreign_key "assignment_tenures", "assignments"
   add_foreign_key "assignment_tenures", "teammates"
+  add_foreign_key "assignments", "departments"
   add_foreign_key "assignments", "organizations", column: "company_id"
-  add_foreign_key "assignments", "organizations", column: "department_id"
   add_foreign_key "bulk_downloads", "organizations", column: "company_id"
   add_foreign_key "bulk_downloads", "teammates", column: "downloaded_by_id"
   add_foreign_key "bulk_sync_events", "organizations"
@@ -1151,6 +1171,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
   add_foreign_key "comments", "organizations"
   add_foreign_key "comments", "people", column: "creator_id"
   add_foreign_key "company_label_preferences", "organizations", column: "company_id"
+  add_foreign_key "departments", "departments", column: "parent_department_id"
+  add_foreign_key "departments", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"
@@ -1233,8 +1255,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_31_100004) do
   add_foreign_key "teams", "organizations", column: "company_id"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
-  add_foreign_key "titles", "organizations"
-  add_foreign_key "titles", "organizations", column: "department_id"
+  add_foreign_key "titles", "departments"
+  add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "position_major_levels"
   add_foreign_key "user_preferences", "people"
 end

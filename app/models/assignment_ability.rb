@@ -33,14 +33,9 @@ class AssignmentAbility < ApplicationRecord
   def assignment_and_ability_same_organization
     return unless assignment && ability
 
-    # Check if ability's organization is in assignment's company hierarchy
-    company_hierarchy = assignment.company.self_and_descendants.map(&:id)
-    # OR check if assignment's company is in ability's organization hierarchy
-    ability_org_hierarchy = ability.organization.self_and_descendants.map(&:id)
-    
-    unless company_hierarchy.include?(ability.organization_id) || 
-           ability_org_hierarchy.include?(assignment.company_id)
-      errors.add(:ability, 'must belong to the same organization hierarchy as the assignment')
+    # Ability and assignment must belong to the same company
+    unless ability.company_id == assignment.company_id
+      errors.add(:ability, 'must belong to the same company as the assignment')
     end
   end
 end

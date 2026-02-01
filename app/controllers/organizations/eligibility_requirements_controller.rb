@@ -61,9 +61,12 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       assignment.assignment_abilities.includes(:ability).map(&:ability)
     end.uniq
 
-    company = @position.company.root_company || @position.company
-    @company_aspirations = Aspiration.within_hierarchy(company).ordered
-    @title_department_aspirations = Aspiration.within_hierarchy(@position.title.organization).ordered
+    position_company = @position.company
+    @company_aspirations = Aspiration.for_company(position_company).ordered
+    # Get aspirations for the title's department (if any)
+    @title_department_aspirations = @position.title.department ? 
+      Aspiration.for_department(@position.title.department).ordered : 
+      Aspiration.none
   end
 
   def selectable_teammates

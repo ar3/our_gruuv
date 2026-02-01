@@ -1,8 +1,8 @@
 class Title < ApplicationRecord
   # Associations
-  belongs_to :organization
+  belongs_to :company, class_name: 'Organization'
   belongs_to :position_major_level
-  belongs_to :department, class_name: 'Organization', optional: true
+  belongs_to :department, optional: true
   has_many :positions, dependent: :destroy
   has_many :seats, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
@@ -12,14 +12,17 @@ class Title < ApplicationRecord
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
 
   # Validations
-  validates :organization, presence: true
+  validates :company, presence: true
   validates :position_major_level, presence: true
   validates :external_title, presence: true
-  validates :external_title, uniqueness: { scope: [:organization_id, :position_major_level_id] }
-  validate :organization_must_be_company_or_department
+  validates :external_title, uniqueness: { scope: [:company_id, :position_major_level_id] }
+  validate :company_must_be_company_type
+  validate :department_must_belong_to_company
 
   # Scopes
   scope :ordered, -> { order(:external_title) }
+  scope :for_company, ->(company) { where(company_id: company.is_a?(Integer) ? company : company.id) }
+  scope :for_department, ->(department) { where(department: department) }
 
   # Instance methods
   def display_name
@@ -66,11 +69,19 @@ class Title < ApplicationRecord
 
   private
 
-  def organization_must_be_company_or_department
-    return unless organization
+  def company_must_be_company_type
+    return unless company
 
-    unless organization.company? || organization.department?
-      errors.add(:organization, 'must be a company or department')
+    unless company.company?
+      errors.add(:company, 'must be a company')
+    end
+  end
+
+  def department_must_belong_to_company
+    return unless department.present?
+    
+    if department.company_id != company_id
+      errors.add(:department, 'must belong to the same company')
     end
   end
 end

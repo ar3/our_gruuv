@@ -40,7 +40,7 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
   def create
     authorize @organization, :manage_maap?
     @title = Title.new(title_params)
-    @title.organization = @organization
+    @title.company = company
 
     result = TitleSaveService.create(title: @title, params: title_params)
     

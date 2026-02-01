@@ -2,12 +2,15 @@ class PositionPolicy < ApplicationPolicy
   def show?
     return true if admin_bypass?
     
-    # Users can view positions in their organization
+    # Users can view positions in their company
     return false unless viewing_teammate
     viewing_teammate_org = viewing_teammate.organization
     return false unless viewing_teammate_org
-    return false unless record.title.organization == viewing_teammate_org ||
-                        viewing_teammate_org.self_and_descendants.include?(record.title.organization)
+    
+    # Get the company for viewing teammate
+    company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
+    return false unless company
+    return false unless record.title.company_id == company.id
     
     true
   end
@@ -62,16 +65,12 @@ class PositionPolicy < ApplicationPolicy
     title = record.title
     return false unless title
     
-    # Ensure organization is loaded
-    position_org = title.organization
-    return false unless position_org
-    
-    # Get the company the position is associated with (root company)
-    company = position_org.company? ? position_org : position_org.root_company
-    return false unless company
+    # Get the company the position is associated with
+    position_company = title.company
+    return false unless position_company
     
     # Find the company teammate record for the viewing person and this company
-    company_teammate = CompanyTeammate.find_by(person: viewing_teammate.person, organization: company)
+    company_teammate = CompanyTeammate.find_by(person: viewing_teammate.person, organization: position_company)
     return false unless company_teammate
     
     # Check if the company teammate has can_manage_maap permission
@@ -81,8 +80,11 @@ class PositionPolicy < ApplicationPolicy
   def can_manage_assignments?
     return false unless viewing_teammate
     return false unless actual_organization
-    return false unless record.title.organization == actual_organization ||
-                        actual_organization.self_and_descendants.include?(record.title.organization)
+    
+    # Get the company for actual organization
+    company = actual_organization.company? ? actual_organization : actual_organization.root_company
+    return false unless company
+    return false unless record.title.company_id == company.id
     
     # Check if user can manage MAAP in the organization
     Teammate.can_manage_maap_in_hierarchy?(viewing_teammate.person, actual_organization)
@@ -94,12 +96,15 @@ class PositionPolicy < ApplicationPolicy
       person = viewing_teammate.person
       return scope.all if person.admin?
       
-      # Only show positions in user's organization
+      # Only show positions in user's company
       return scope.none unless actual_organization
       
-      orgs = actual_organization.self_and_descendants
+      # Get the company
+      company = actual_organization.company? ? actual_organization : actual_organization.root_company
+      return scope.none unless company
+      
       scope.joins(:title)
-           .where(titles: { organization: orgs })
+           .where(titles: { company_id: company.id })
     end
   end
 end

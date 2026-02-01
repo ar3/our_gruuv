@@ -66,7 +66,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   def abilities
     authorize company, :view_abilities?
     
-    @total_abilities = Ability.where(organization: company).count
+    @total_abilities = Ability.where(company: company).count
   end
   
   def goals

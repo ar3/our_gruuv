@@ -1,0 +1,74 @@
+- content_for :title, "Associate Aspirations with #{@department.name}"
+
+- content_for :go_back_link do
+  = link_to organization_department_path(@organization, @department), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@department.name}
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-star.me-2
+    Associate Aspirations
+
+.row.justify-content-center
+  .col-lg-10
+    .card
+      .card-header
+        %h5.mb-0
+          Select aspirations to associate with 
+          %strong= @department.name
+      .card-body
+        - if @unassociated_aspirations.any?
+          = form_with url: update_aspirations_association_organization_department_path(@organization, @department), method: :patch, local: true do |form|
+            .mb-3
+              .form-check.mb-2
+                %input.form-check-input#select-all{type: "checkbox", "data-action": "click->bulk-select#toggleAll"}
+                %label.form-check-label.fw-bold{for: "select-all"}
+                  Select All
+              %hr
+              
+            .table-responsive
+              %table.table.table-hover
+                %thead
+                  %tr
+                    %th{style: "width: 40px;"}
+                    %th Name
+                    %th Description
+                    %th Sort Order
+                %tbody
+                  - @unassociated_aspirations.each do |aspiration|
+                    %tr
+                      %td
+                        .form-check
+                          = check_box_tag "aspiration_ids[]", aspiration.id, false, class: "form-check-input bulk-select-item", id: "aspiration_#{aspiration.id}"
+                      %td
+                        %label.form-check-label{for: "aspiration_#{aspiration.id}"}
+                          = aspiration.name
+                      %td
+                        = truncate(aspiration.description || '', length: 80)
+                      %td
+                        %span.badge.bg-secondary
+                          = aspiration.sort_order
+            
+            .d-flex.justify-content-between.mt-4
+              = link_to "Cancel", organization_department_path(@organization, @department), class: "btn btn-outline-secondary"
+              = form.submit "Associate Selected Aspirations", class: "btn btn-primary"
+        - else
+          .alert.alert-info
+            %i.bi.bi-info-circle.me-2
+            All aspirations are already associated with a department.
+          = link_to "Back to Department", organization_department_path(@organization, @department), class: "btn btn-outline-secondary"
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.bulk-select-item');
+    
+    if (selectAll) {
+      selectAll.addEventListener('change', function() {
+        checkboxes.forEach(function(checkbox) {
+          checkbox.checked = selectAll.checked;
+        });
+      });
+    }
+  });
