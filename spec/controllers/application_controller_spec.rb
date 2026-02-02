@@ -103,7 +103,7 @@ RSpec.describe ApplicationController, type: :controller do
   end
 
   describe '#authorize' do
-    let(:organization) { create(:organization, :company) }
+    let(:organization) { create(:organization) }
     let(:person) { create(:person) }
     let(:teammate) { create(:company_teammate, person: person, organization: organization) }
     let(:huddle) { create(:huddle, team: create(:team, company: organization)) }

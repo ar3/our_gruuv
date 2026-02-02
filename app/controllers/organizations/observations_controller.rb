@@ -413,10 +413,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         # Pre-load the rateable association so it's available for @observation.assignments
         rating.rateable = rateable
       else
-        # If no rateable is explicitly passed, automatically add all company aspirations
-        # This makes it easy for users to rate any aspirations the story showcases
+        # If no rateable is explicitly passed, automatically add root company aspirations only
+        # (not department or team aspirations)
         root_company = organization.root_company || organization
-        company_aspirations = root_company.aspirations.ordered
+        company_aspirations = root_company.aspirations.where(department_id: nil).ordered
         
         company_aspirations.each do |aspiration|
           rating = @observation.observation_ratings.build(
@@ -1685,10 +1685,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         )
         rating.rateable = rateable
       else
-        # If no rateable is explicitly passed, automatically add all company aspirations
+        # If no rateable is explicitly passed, automatically add root company aspirations only
         root_company = organization.root_company || organization
-        company_aspirations = root_company.aspirations.ordered
-        
+        company_aspirations = root_company.aspirations.where(department_id: nil).ordered
+
         company_aspirations.each do |aspiration|
           rating = @observation.observation_ratings.build(
             rateable_type: 'Aspiration',

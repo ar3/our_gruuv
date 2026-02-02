@@ -1,15 +1,15 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::PublicMaap::AspirationsController, type: :controller do
-  let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
+  let(:company) { create(:organization) }
+  let(:department) { create(:department, company: company) }
   
   let!(:aspiration_company) do
     create(:aspiration, company: company, name: 'Company Aspiration')
   end
 
   let!(:aspiration_department) do
-    create(:aspiration, company: department, name: 'Department Aspiration')
+    create(:aspiration, company: company, department: department, name: 'Department Aspiration')
   end
 
   let(:observer) { create(:person) }
@@ -33,16 +33,13 @@ RSpec.describe Organizations::PublicMaap::AspirationsController, type: :controll
       expect(aspirations).to include(aspiration_department)
     end
 
-    it 'groups aspirations by organization' do
+    it 'groups aspirations by department' do
       get :index, params: { organization_id: company.id }
       aspirations_by_org = assigns(:aspirations_by_org)
       
-      # Find the organization key in the hash (may be Company/Department instance due to STI)
-      company_key = aspirations_by_org.keys.find { |org| org.id == company.id }
-      department_key = aspirations_by_org.keys.find { |org| org.id == department.id }
-      
-      expect(aspirations_by_org[company_key]).to include(aspiration_company)
-      expect(aspirations_by_org[department_key]).to include(aspiration_department)
+      # Aspirations are grouped by department (nil key = company-level aspirations)
+      expect(aspirations_by_org[nil]).to include(aspiration_company)
+      expect(aspirations_by_org[department]).to include(aspiration_department)
     end
   end
 

@@ -7,7 +7,7 @@
 - has_subordinates = children.any?
 - node_id = "employee-node-#{person.id}"
 - children_id = "employee-children-#{person.id}"
-- org_ids = organization.company? ? organization.self_and_descendants.map(&:id) : [organization.id]
+- org_ids = organization.self_and_descendants.map(&:id)
 - teammate = person.teammates.where(type: 'CompanyTeammate').find_by(organization_id: org_ids)
 - teammate_org = teammate&.organization || organization
 - active_seat = employment_tenure&.seat

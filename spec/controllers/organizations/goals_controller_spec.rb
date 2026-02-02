@@ -4,7 +4,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   include ActiveSupport::Testing::TimeHelpers
   
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:creator_teammate) { person.teammates.find_by(organization: company) }
   
   before do
@@ -41,7 +41,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
     
     it 'filters by timeframe: next' do
-      get :index, params: { organization_id: company.id, owner_type: 'Company', owner_id: company.id, timeframe: 'next' }
+      get :index, params: { organization_id: company.id, owner_type: 'Organization', owner_id: company.id, timeframe: 'next' }
       goals = assigns(:goals)
       expect(goals).to include(team_goal)
       expect(goals).not_to include(personal_goal, later_goal)
@@ -282,7 +282,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
                title: 'Company owned goal',
                started_at: 1.day.ago)
       end
-      let(:department) { create(:organization, :department, parent: company) }
+      let(:department) { create(:department, company: company) }
       let!(:department_goal) do
         create(:goal,
                creator: creator_teammate,
@@ -291,7 +291,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
                started_at: 1.day.ago)
       end
       # NOTE: STI Team has been removed. Use nested departments for hierarchy testing.
-      let(:nested_department) { create(:organization, :department, parent: department, name: 'Nested Dept') }
+      let(:nested_department) { create(:department, company: company, parent_department: department, name: 'Nested Dept') }
       let!(:nested_department_goal) do
         create(:goal,
                creator: creator_teammate,
@@ -300,9 +300,8 @@ RSpec.describe Organizations::GoalsController, type: :controller do
                started_at: 1.day.ago)
       end
 
-      it 'finds company-owned goals when using Company_ID format in owner_id param' do
-        # This tests the STI type conversion: Company -> Organization
-        get :index, params: { organization_id: company.id, owner_id: "Company_#{company.id}" }
+      it 'finds company-owned goals when using Organization_ID format in owner_id param' do
+        get :index, params: { organization_id: company.id, owner_id: "Organization_#{company.id}" }
 
         goals = assigns(:goals)
         expect(goals).to include(company_goal)
@@ -328,10 +327,9 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       end
 
       it 'preserves explicit owner_type when parsing owner_id param' do
-        get :index, params: { organization_id: company.id, owner_id: "Company_#{company.id}" }
+        get :index, params: { organization_id: company.id, owner_id: "Organization_#{company.id}" }
 
-        # The controller should preserve the explicit type (Company, Department, Team)
-        expect(assigns(:current_filters)[:owner_type]).to eq('Company')
+        expect(assigns(:current_filters)[:owner_type]).to eq('Organization')
         expect(assigns(:current_filters)[:owner_id]).to eq(company.id.to_s)
       end
     end
@@ -565,10 +563,12 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
     
     context 'with invalid owner types' do
-      let(:department) { create(:organization, :department, parent: company) }
-      let(:team_org) { create(:organization, :team, parent: company) }
-      let(:department_teammate) { create(:teammate, person: person, organization: department) }
-      let(:team_teammate) { create(:teammate, person: person, organization: team_org) }
+      let(:department) { create(:department, company: company) }
+      let(:team_org) { create(:team, company: company) }
+      let(:dept_person) { create(:person) }
+      let(:team_person) { create(:person) }
+      let(:department_teammate) { create(:teammate, person: dept_person, organization: company) }
+      let(:team_teammate) { create(:teammate, person: team_person, organization: company) }
       
       before do
         # Ensure teammates are actually DepartmentTeammate and TeamTeammate
@@ -613,11 +613,21 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     context 'when person has CompanyTeammate and also DepartmentTeammate/TeamTeammate' do
       let(:person_with_multiple_teammates) { create(:person) }
-      let(:department) { create(:organization, :department, parent: company) }
-      let(:team) { create(:organization, :team, parent: company) }
+      let(:department) { create(:department, company: company) }
+      let(:team) { create(:team, company: company) }
       let!(:company_teammate) { create(:company_teammate, person: person_with_multiple_teammates, organization: company) }
-      let!(:department_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: department, type: 'DepartmentTeammate') }
-      let!(:team_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: team, type: 'TeamTeammate') }
+      # Note: DepartmentTeammate/TeamTeammate are STI types - create in company and update type
+      let(:other_company) { create(:organization) }
+      let!(:department_teammate) do
+        t = create(:teammate, person: person_with_multiple_teammates, organization: other_company)
+        t.update_column(:type, 'DepartmentTeammate')
+        t
+      end
+      let!(:team_teammate) do
+        t = create(:teammate, person: person_with_multiple_teammates, organization: create(:organization))
+        t.update_column(:type, 'TeamTeammate')
+        t
+      end
       
       before do
         sign_in_as_teammate(person_with_multiple_teammates, company)
@@ -649,8 +659,13 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     context 'when current_teammate is nil' do
       let(:person_without_teammate) { create(:person) }
-      let(:department) { create(:organization, :department, parent: company) }
-      let(:department_teammate) { create(:teammate, person: person_without_teammate, organization: department, type: 'DepartmentTeammate') }
+      let(:department) { create(:department, company: company) }
+      let(:other_company) { create(:organization) }
+      let(:department_teammate) do
+        t = create(:teammate, person: person_without_teammate, organization: other_company)
+        t.update_column(:type, 'DepartmentTeammate')
+        t
+      end
       
       before do
         # Create a DepartmentTeammate but no CompanyTeammate for this person in the target company
@@ -700,11 +715,11 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
 
     it 'allows selecting an organization owner from params' do
-      get :bulk_new, params: { organization_id: company.id, owner_id: "Company_#{company.id}" }
+      get :bulk_new, params: { organization_id: company.id, owner_id: "Organization_#{company.id}" }
       expect(response).to have_http_status(:success)
       expect(assigns(:owner).id).to eq(company.id)
       expect(assigns(:owner)).to be_a(Organization)
-      expect(assigns(:owner_param)).to eq("Company_#{company.id}")
+      expect(assigns(:owner_param)).to eq("Organization_#{company.id}")
     end
   end
 
@@ -788,7 +803,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         expect {
           post :bulk_create, params: {
             organization_id: company.id,
-            owner_id: "Company_#{company.id}",
+            owner_id: "Organization_#{company.id}",
             bulk_goal_titles: "Company Goal"
           }
         }.to change(Goal, :count).by(1)
@@ -800,8 +815,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       end
 
       it 'sets privacy to everyone_in_company when owner is a Department' do
-        department = create(:organization, :department, parent: company)
-        create(:teammate, person: person, organization: department, type: 'DepartmentTeammate')
+        department = create(:department, company: company)
 
         expect {
           post :bulk_create, params: {
@@ -813,13 +827,12 @@ RSpec.describe Organizations::GoalsController, type: :controller do
 
         created_goal = Goal.last
         expect(created_goal.owner_id).to eq(department.id)
-        expect(created_goal.owner).to be_a(Organization)
+        expect(created_goal.owner).to be_a(Department)
         expect(created_goal.privacy_level).to eq('everyone_in_company')
       end
 
       it 'sets privacy to everyone_in_company when owner is a Team' do
-        team = create(:organization, :team, parent: company)
-        create(:teammate, person: person, organization: team, type: 'TeamTeammate')
+        team = create(:team, company: company)
 
         expect {
           post :bulk_create, params: {
@@ -831,7 +844,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
 
         created_goal = Goal.last
         expect(created_goal.owner_id).to eq(team.id)
-        expect(created_goal.owner).to be_a(Organization)
+        expect(created_goal.owner).to be_a(Team)
         expect(created_goal.privacy_level).to eq('everyone_in_company')
       end
     end
@@ -1032,10 +1045,12 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
     
     context 'with invalid owner types' do
-      let(:department) { create(:organization, :department, parent: company) }
-      let(:team_org) { create(:organization, :team, parent: company) }
-      let(:department_teammate) { create(:teammate, person: person, organization: department) }
-      let(:team_teammate) { create(:teammate, person: person, organization: team_org) }
+      let(:department) { create(:department, company: company) }
+      let(:team_org) { create(:team, company: company) }
+      let(:dept_person) { create(:person) }
+      let(:team_person) { create(:person) }
+      let(:department_teammate) { create(:teammate, person: dept_person, organization: company) }
+      let(:team_teammate) { create(:teammate, person: team_person, organization: company) }
       
       before do
         # Ensure teammates are actually DepartmentTeammate and TeamTeammate

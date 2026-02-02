@@ -2,9 +2,9 @@ require 'rails_helper'
 
 RSpec.describe Organizations::InsightsController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:person_teammate) { create(:teammate, person: person, organization: company, first_employed_at: 1.year.ago) }
-  let(:department) { create(:organization, :department, parent: company, name: 'Engineering') }
+  let(:department) { create(:department, company: company, name: 'Engineering') }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
   let(:title) { create(:title, company: company, position_major_level: position_major_level, department: department) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
@@ -48,7 +48,7 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     end
 
     it 'groups seats by department' do
-      dept2 = create(:organization, :department, parent: company, name: 'Product')
+      dept2 = create(:department, company: company, name: 'Product')
       title2 = create(:title, company: company, position_major_level: position_major_level, department: dept2, external_title: 'PM')
       
       # Ensure title exists

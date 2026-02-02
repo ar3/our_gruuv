@@ -1,8 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::PublicMaap::AbilitiesController, type: :controller do
-  let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
+  let(:company) { create(:organization) }
+  let(:department) { create(:department, company: company) }
   let(:created_by) { create(:person) }
   let(:updated_by) { create(:person) }
   
@@ -11,7 +11,7 @@ RSpec.describe Organizations::PublicMaap::AbilitiesController, type: :controller
   end
 
   let!(:ability_department) do
-    create(:ability, company: department, name: 'Department Ability', created_by: created_by, updated_by: updated_by)
+    create(:ability, company: company, department: department, name: 'Department Ability', created_by: created_by, updated_by: updated_by)
   end
 
   let(:observer) { create(:person) }
@@ -35,16 +35,13 @@ RSpec.describe Organizations::PublicMaap::AbilitiesController, type: :controller
       expect(abilities).to include(ability_department)
     end
 
-    it 'groups abilities by organization' do
+    it 'groups abilities by department' do
       get :index, params: { organization_id: company.id }
       abilities_by_org = assigns(:abilities_by_org)
       
-      # Find the organization key in the hash (may be Company/Department instance due to STI)
-      company_key = abilities_by_org.keys.find { |org| org.id == company.id }
-      department_key = abilities_by_org.keys.find { |org| org.id == department.id }
-      
-      expect(abilities_by_org[company_key]).to include(ability_company)
-      expect(abilities_by_org[department_key]).to include(ability_department)
+      # Abilities are grouped by department (nil key = company-level abilities)
+      expect(abilities_by_org[nil]).to include(ability_company)
+      expect(abilities_by_org[department]).to include(ability_department)
     end
   end
 

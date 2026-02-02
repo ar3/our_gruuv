@@ -756,8 +756,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     case owner_type
     when 'CompanyTeammate'
       CompanyTeammate.find_by(id: owner_id)
-    when 'Company', 'Department', 'Team', 'Organization'
+    when 'Organization'
       Organization.find_by(id: owner_id)
+    when 'Department'
+      Department.find_by(id: owner_id)
+    when 'Team'
+      Team.find_by(id: owner_id)
     else
       nil
     end
@@ -765,7 +769,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   def build_owner_param_for_bulk
     return nil unless @owner
-    owner_type = @owner.is_a?(CompanyTeammate) ? 'CompanyTeammate' : (@owner.respond_to?(:type) ? @owner.type : @owner.class.name)
+    owner_type = @owner.is_a?(CompanyTeammate) ? 'CompanyTeammate' : @owner.class.name
     "#{owner_type}_#{@owner.id}"
   end
   
@@ -951,30 +955,20 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       options << ["Teammate: #{teammate.person.display_name}", "CompanyTeammate_#{teammate.id}"]
     end
     
-    # Get departments and teams within the company where the user is a teammate
-    # Only include organizations that are descendants of the company
-    # Explicitly filter to only valid organization types (Department, Team, Company)
-    company_descendant_ids = company.self_and_descendants.pluck(:id)
-    associated_orgs = Organization.joins(:teammates)
-                                  .where(teammates: { person: current_person })
-                                  .where(id: company_descendant_ids)
-                                  .where(type: ['Department', 'Team', 'Company']) # Explicitly filter valid types
-                                  .where.not(id: company.id) # Exclude company as we'll add it separately if needed
-                                  .distinct
-                                  .order(:name)
-    
-    associated_orgs.each do |org|
-      # Explicitly check for valid types only
-      next unless org.type.in?(['Department', 'Team', 'Company'])
-      next unless org.display_name.present? && org.id.present?
-      
-      type_label = org.company? ? 'Company' : (org.department? ? 'Department' : 'Team')
-      options << ["#{type_label}: #{org.display_name}", "#{org.type}_#{org.id}"]
+    # Get departments and teams within the company (standalone models, not Organization STI)
+    Department.where(company: company).ordered.each do |dept|
+      next unless dept.display_name.present? && dept.id.present?
+      options << ["Department: #{dept.display_name}", "Department_#{dept.id}"]
     end
     
-    # Add company at the end
-    if company.company? && company.display_name.present? && company.id.present?
-      options << ["Company: #{company.display_name}", "Company_#{company.id}"]
+    Team.where(company: company).ordered.each do |t|
+      next unless t.display_name.present? && t.id.present?
+      options << ["Team: #{t.display_name}", "Team_#{t.id}"]
+    end
+    
+    # Add company (organization) at the end
+    if company.display_name.present? && company.id.present?
+      options << ["Organization: #{company.display_name}", "Organization_#{company.id}"]
     end
     
     # Filter out any options with blank/nil values or labels
@@ -990,7 +984,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   # Determines the appropriate privacy level based on owner type
   def privacy_level_for_owner(owner)
-    if owner.is_a?(Organization)
+    if owner.is_a?(Organization) || owner.is_a?(Department) || owner.is_a?(Team)
       'everyone_in_company'
     else
       'only_creator_owner_and_managers'

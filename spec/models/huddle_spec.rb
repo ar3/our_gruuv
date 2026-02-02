@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Huddle, type: :model do
-  let(:company) { Company.create!(name: 'Acme Corp') }
+  let(:company) { Organization.create!(name: 'Acme Corp') }
   let(:team) { create(:team, company: company, name: 'Engineering') }
   let(:huddle) { create(:huddle, team: team, started_at: Time.current) }
 

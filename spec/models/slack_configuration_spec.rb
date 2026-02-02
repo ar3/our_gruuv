@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe SlackConfiguration, type: :model do
-  let(:organization) { create(:organization, type: 'Company') }
+  let(:organization) { create(:organization) }
   
   describe 'associations' do
     it { should belong_to(:organization) }

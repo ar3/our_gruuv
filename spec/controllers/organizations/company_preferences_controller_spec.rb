@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { Company.find_or_create_by!(name: 'Test Company', type: 'Company') }
+  let(:company) { Organization.find_or_create_by!(name: 'Test Company') }
   
   before do
     teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
@@ -37,13 +37,9 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
     it 'requires customize_company permission' do
       teammate = CompanyTeammate.find_by(person: person, organization: company)
       teammate.update!(can_customize_company: false)
-      # Reload to ensure the change is picked up
-      teammate.reload
-      # Ensure person is not an OG admin
-      allow(person).to receive(:og_admin?).and_return(false)
-      expect {
-        get :edit, params: { organization_id: company.to_param }
-      }.to raise_error(Pundit::NotAuthorizedError)
+      get :edit, params: { organization_id: company.to_param }
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to be_present
     end
   end
 
@@ -134,16 +130,12 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
     it 'requires customize_company permission' do
       teammate = CompanyTeammate.find_by(person: person, organization: company)
       teammate.update!(can_customize_company: false)
-      # Reload to ensure the change is picked up
-      teammate.reload
-      # Ensure person is not an OG admin
-      allow(person).to receive(:og_admin?).and_return(false)
-      expect {
-        patch :update, params: {
-          organization_id: company.to_param,
-          preferences: { prompt: 'Reflection' }
-        }
-      }.to raise_error(Pundit::NotAuthorizedError)
+      patch :update, params: {
+        organization_id: company.to_param,
+        preferences: { prompt: 'Reflection' }
+      }
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to be_present
     end
   end
 end

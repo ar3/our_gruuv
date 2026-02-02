@@ -3,7 +3,7 @@ class Companies::RefreshSlackChannelsJob < ApplicationJob
 
   def perform(company_id)
     Rails.logger.info "RefreshSlackChannelsJob: Starting for company #{company_id}"
-    company = Company.find(company_id)
+    company = Organization.find(company_id)
     
     Rails.logger.info "RefreshSlackChannelsJob: Found company #{company.id} (#{company.name})"
     Rails.logger.info "RefreshSlackChannelsJob: Slack configured? #{company.slack_configured?}"

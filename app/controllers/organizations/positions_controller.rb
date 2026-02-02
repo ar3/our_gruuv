@@ -137,7 +137,7 @@ class Organizations::PositionsController < ApplicationController
     @title = Title.find(params[:title_id])
     
     # Ensure the title belongs to the company
-    unless @title.company_id == company.id
+    unless @title.company_id == @organization.id
       redirect_to organization_positions_path(@organization), alert: 'Invalid title for this organization.'
       return
     end
@@ -166,7 +166,7 @@ class Organizations::PositionsController < ApplicationController
     @title = Title.find(title_id)
     
     # Ensure the title belongs to the company
-    unless @title.company_id == company.id
+    unless @title.company_id == @organization.id
       redirect_to organization_positions_path(@organization), alert: 'Invalid title for this organization.'
       return
     end
@@ -270,12 +270,11 @@ class Organizations::PositionsController < ApplicationController
   def manage_assignments
     authorize @position, :manage_assignments?
     
-    # Get position's company and all descendants
+    # Get position's company (root organization)
     company = @position.title.company.root_company
-    company_and_descendants = company.self_and_descendants
     
     # Load all assignments for the company
-    @assignments = Assignment.where(company: position_company)
+    @assignments = Assignment.where(company: company)
                             .includes(:department)
                             .ordered
     
@@ -490,7 +489,7 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def set_related_data
-    @titles = Title.joins(:organization, :position_major_level)
+    @titles = Title.joins(:company, :position_major_level)
                    .where(organizations: { id: @organization.id })
                    .order('position_major_levels.major_level, titles.external_title')
     
@@ -499,7 +498,7 @@ class Organizations::PositionsController < ApplicationController
       @position_levels = @position.title.position_major_level.position_levels
       @title = @position.title
     elsif params[:title_id].present?
-      @title = Title.find_by(id: params[:title_id], organization: @organization)
+      @title = Title.find_by(id: params[:title_id], company: @organization)
       @position_levels = @title&.position_major_level&.position_levels || []
     else
       @position_levels = []

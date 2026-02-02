@@ -1,19 +1,15 @@
 class Organizations::PublicMaap::AssignmentsController < Organizations::PublicMaap::BaseController
   def index
-    # Get all assignments for this organization and its departments (exclude teams)
+    # Get all assignments for this organization (company)
     company = @organization.root_company || @organization
-    orgs_in_hierarchy = [company] + company.descendants.select { |org| org.department? }
     
     @assignments = Assignment
-      .where(company: orgs_in_hierarchy)
+      .where(company: company)
       .includes(:company, :department)
       .ordered
     
-    # Group by department for display
-    # If assignment has no department but company is a department, use company
-    @assignments_by_department = @assignments.group_by do |assignment|
-      assignment.department || (assignment.company.department? ? assignment.company : nil)
-    end
+    # Group by department for display (nil key = company-level assignments)
+    @assignments_by_department = @assignments.group_by(&:department)
   end
   
   def show

@@ -1,10 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Departments', type: :request do
-  let(:organization) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: organization) }
+  let(:organization) { create(:organization) }
+  let(:department) { create(:department, company: organization) }
   # NOTE: STI Team has been removed. Use nested departments for hierarchy testing.
-  let(:nested_department) { create(:organization, :department, parent: department, name: 'Nested Dept') }
+  let(:nested_department) { create(:department, company: organization, parent_department: department, name: 'Nested Dept') }
   let(:current_person) { create(:person) }
 
   before do
@@ -46,7 +46,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
       department
       nested_department
       # Create a deeply nested department
-      deeply_nested = create(:organization, :department, parent: nested_department, name: 'Deeply Nested')
+      deeply_nested = create(:department, company: organization, parent_department: nested_department, name: 'Deeply Nested')
       
       get organization_departments_path(organization)
       
@@ -66,7 +66,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
       department
       nested_department
       # Create a deeply nested department
-      deeply_nested = create(:organization, :department, parent: nested_department, name: 'Deeply Nested')
+      deeply_nested = create(:department, company: organization, parent_department: nested_department, name: 'Deeply Nested')
       
       get organization_departments_path(organization)
       
@@ -95,11 +95,10 @@ RSpec.describe 'Organizations::Departments', type: :request do
     end
 
     it 'displays department details' do
-      title = create(:title, company: department)
+      title = create(:title, company: organization, department: department)
       seat = create(:seat, title: title)
       assignment = create(:assignment, company: organization, department: department)
-      ability = create(:ability, company: department)
-      playbook = create(:team, company: department)
+      ability = create(:ability, company: organization, department: department)
       
       get organization_department_path(organization, department)
       
@@ -109,12 +108,12 @@ RSpec.describe 'Organizations::Departments', type: :request do
       expect(response.body).to include('Titles')
       expect(response.body).to include('Assignments')
       expect(response.body).to include('Abilities')
-      expect(response.body).to include('Huddle Playbooks')
+      expect(response.body).to include('Aspirations')
     end
 
     it 'displays seats with employment tenures and person information' do
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      title = create(:title, company: department, position_major_level: position_major_level)
+      title = create(:title, company: organization, department: department, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
       # Create seat first, then use :with_seat trait to ensure position matches
       seat = create(:seat, title: title, state: :filled)
@@ -141,7 +140,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
     end
 
     it 'handles seats without employment tenures gracefully' do
-      title = create(:title, company: department)
+      title = create(:title, company: organization, department: department)
       seat = create(:seat, title: title, state: :open)
       
       get organization_department_path(organization, department)
@@ -153,7 +152,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
 
     it 'handles seats with inactive employment tenures' do
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
-      title = create(:title, company: department, position_major_level: position_major_level)
+      title = create(:title, company: organization, department: department, position_major_level: position_major_level)
       # Create seat first, then use :with_seat trait to ensure position matches
       seat = create(:seat, title: title, state: :open)
       
@@ -179,7 +178,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
     end
 
     it 'excludes archived departments' do
-      archived_dept = create(:organization, :department, parent: organization, deleted_at: Time.current)
+      archived_dept = create(:department, company: organization, deleted_at: Time.current)
       
       get "/organizations/#{organization.to_param}/departments/#{archived_dept.to_param}"
       expect(response).to have_http_status(:not_found)
@@ -211,59 +210,56 @@ RSpec.describe 'Organizations::Departments', type: :request do
     it 'creates a new department with correct type' do
       expect {
         post organization_departments_path(organization), params: {
-          organization: { name: 'New Department', type: 'Department', parent_id: organization.id }
+          department: { name: 'New Department', parent_department_id: nil }
         }
-      }.to change { Organization.departments.active.count }.by(1)
+      }.to change { Department.where(company: organization).active.count }.by(1)
       
       expect(response).to redirect_to(organization_departments_path(organization))
-      created_dept = Organization.departments.active.find_by(name: 'New Department')
+      created_dept = Department.where(company: organization).active.find_by(name: 'New Department')
       expect(created_dept).to be_present
-      expect(created_dept.type).to eq('Department')
-      expect(created_dept.parent_id).to eq(organization.id)
+      expect(created_dept).to be_a(Department)
+      expect(created_dept.parent_department_id).to be_nil
     end
 
-    # NOTE: STI Team has been removed. Team type requests are converted to Department.
-    # For actual teams, use the new Team model via /organizations/:id/teams
+    # NOTE: STI Team has been removed. For actual teams, use the new Team model via /organizations/:id/teams
     it 'converts Team type requests to Department' do
       expect {
         post organization_departments_path(organization), params: {
-          organization: { name: 'New Team', type: 'Team', parent_id: organization.id }
+          department: { name: 'New Team', parent_department_id: nil }
         }
-      }.to change { Organization.departments.active.count }.by(1)
+      }.to change { Department.where(company: organization).active.count }.by(1)
       
       expect(response).to redirect_to(organization_departments_path(organization))
-      # Team type is converted to Department
-      created_dept = Organization.departments.active.find_by(name: 'New Team')
+      created_dept = Department.where(company: organization).active.find_by(name: 'New Team')
       expect(created_dept).to be_present
-      expect(created_dept.type).to eq('Department')
-      expect(created_dept.parent_id).to eq(organization.id)
+      expect(created_dept).to be_a(Department)
+      expect(created_dept.parent_department_id).to be_nil
     end
 
-    # NOTE: Type now defaults to 'Department' when missing or blank
     it 'defaults to Department when type is missing' do
       expect {
         post organization_departments_path(organization), params: {
-          organization: { name: 'New Department', parent_id: organization.id }
+          department: { name: 'New Department', parent_department_id: nil }
         }
-      }.to change { Organization.departments.active.count }.by(1)
+      }.to change { Department.where(company: organization).active.count }.by(1)
       
       expect(response).to redirect_to(organization_departments_path(organization))
-      created_dept = Organization.departments.active.find_by(name: 'New Department')
+      created_dept = Department.where(company: organization).active.find_by(name: 'New Department')
       expect(created_dept).to be_present
-      expect(created_dept.type).to eq('Department')
+      expect(created_dept).to be_a(Department)
     end
 
     it 'defaults to Department when type is blank' do
       expect {
         post organization_departments_path(organization), params: {
-          organization: { name: 'New Department', type: '', parent_id: organization.id }
+          department: { name: 'New Department Blank Type', parent_department_id: '' }
         }
-      }.to change { Organization.departments.active.count }.by(1)
+      }.to change { Department.where(company: organization).active.count }.by(1)
       
       expect(response).to redirect_to(organization_departments_path(organization))
-      created_dept = Organization.departments.active.find_by(name: 'New Department')
+      created_dept = Department.where(company: organization).active.find_by(name: 'New Department Blank Type')
       expect(created_dept).to be_present
-      expect(created_dept.type).to eq('Department')
+      expect(created_dept).to be_a(Department)
     end
   end
 
@@ -277,7 +273,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
     end
 
     it 'displays available parent organizations' do
-      department2 = create(:organization, :department, parent: organization)
+      department2 = create(:department, company: organization)
       
       get edit_organization_department_path(organization, department)
       
@@ -289,7 +285,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
     end
 
     it 'excludes self and descendants from available parents' do
-      department2 = create(:organization, :department, parent: department)
+      department2 = create(:department, company: organization, parent_department: department)
       
       get edit_organization_department_path(organization, department)
       
@@ -304,7 +300,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
   describe 'PATCH /organizations/:id/departments/:id' do
     it 'updates department name' do
       patch organization_department_path(organization, department), params: {
-        organization: { name: 'Updated Department Name' }
+        department: { name: 'Updated Department Name' }
       }
       
       department.reload
@@ -313,43 +309,40 @@ RSpec.describe 'Organizations::Departments', type: :request do
     end
 
     it 'updates parent organization' do
-      department2 = create(:organization, :department, parent: organization)
+      department2 = create(:department, company: organization)
       
       patch organization_department_path(organization, department), params: {
-        organization: { name: department.name, parent_id: department2.id }
+        department: { name: department.name, parent_department_id: department2.id }
       }
       
       expect(response).to redirect_to(organization_department_path(organization, department))
-      expect(department.reload.parent_id).to eq(department2.id)
+      expect(department.reload.parent_department_id).to eq(department2.id)
     end
 
     it 'allows changing parent to the root company' do
-      department2 = create(:organization, :department, parent: department)
+      department2 = create(:department, company: organization, parent_department: department)
       
       patch organization_department_path(organization, department2), params: {
-        organization: { name: department2.name, parent_id: organization.id }
+        department: { name: department2.name, parent_department_id: nil }
       }
       
       expect(response).to redirect_to(organization_department_path(organization, department2))
-      expect(department2.reload.parent_id).to eq(organization.id)
+      expect(department2.reload.parent_department_id).to be_nil
     end
 
     it 'prevents circular references by not allowing self as parent' do
-      original_parent_id = department.parent_id
-      
       patch organization_department_path(organization, department), params: {
-        organization: { name: department.name, parent_id: department.id }
+        department: { name: department.name, parent_department_id: department.id }
       }
       
-      # Should either fail validation or ignore the invalid parent_id
-      # The exact behavior depends on model validations
+      # Should either fail validation or ignore the invalid parent_department_id
       department.reload
-      expect(department.parent_id).not_to eq(department.id)
+      expect(department.parent_department_id).not_to eq(department.id)
     end
 
     it 'handles validation errors gracefully' do
       patch organization_department_path(organization, department), params: {
-        organization: { name: '' }
+        department: { name: '' }
       }
       
       expect(response).to have_http_status(:unprocessable_entity)

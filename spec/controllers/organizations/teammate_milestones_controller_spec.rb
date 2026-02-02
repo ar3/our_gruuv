@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
   render_views
 
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:ability) { create(:ability, company: organization, created_by: person, updated_by: person) }
 
@@ -149,7 +149,7 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
 
     it 'includes abilities from position required assignments in required_milestones' do
       # Ensure ability is created with proper organization and creators
-      ability.update!(organization: organization, created_by: person, updated_by: person)
+      ability.update!(company: organization, created_by: person, updated_by: person)
       
       # Ensure teammate has first_employed_at set so they're considered employed
       teammate.update!(first_employed_at: 1.month.ago)
@@ -287,7 +287,7 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
       observable_moment = ObservableMoments::BaseObservableMomentService.call(
         momentable: teammate_milestone,
         company: organization,
-        creator_teammate: person,
+        created_by: teammate,
         primary_potential_observer: teammate,
         moment_type: 'ability_milestone',
         occurred_at: Time.current

@@ -1,9 +1,9 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::PublicMaap::PositionsController, type: :controller do
-  let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
-  let(:team) { create(:organization, :team, parent: department) }
+  let(:company) { create(:organization) }
+  let(:department) { create(:department, company: company) }
+  let(:team) { create(:team, company: company) }
   let(:position_major_level) { create(:position_major_level) }
   
   let!(:position_company) do
@@ -13,7 +13,7 @@ RSpec.describe Organizations::PublicMaap::PositionsController, type: :controller
   end
 
   let!(:position_department) do
-    title = create(:title, company: department, position_major_level: position_major_level, external_title: 'Department Position Type')
+    title = create(:title, company: company, department: department, position_major_level: position_major_level, external_title: 'Department Position Type')
     position_level = create(:position_level, position_major_level: position_major_level)
     create(:position, title: title, position_level: position_level)
   end
@@ -32,30 +32,17 @@ RSpec.describe Organizations::PublicMaap::PositionsController, type: :controller
       expect(positions).to include(position_department)
     end
 
-    it 'groups positions by organization' do
+    it 'groups positions by department' do
       get :index, params: { organization_id: company.id }
       positions_by_org = assigns(:positions_by_org)
       
-      # Find the organization key in the hash (may be Company/Department instance due to STI)
-      company_key = positions_by_org.keys.find { |org| org.id == company.id }
-      department_key = positions_by_org.keys.find { |org| org.id == department.id }
-      
-      expect(positions_by_org[company_key]).to include(position_company)
-      expect(positions_by_org[department_key]).to include(position_department)
+      # Positions are grouped by department (nil key = company-level positions)
+      expect(positions_by_org[nil]).to include(position_company)
+      expect(positions_by_org[department]).to include(position_department)
     end
 
-    it 'excludes teams from hierarchy' do
-      # Teams can't have position types, so we'll verify that positions in teams aren't included
-      # by checking that only company and department positions are returned
-      get :index, params: { organization_id: company.id }
-      positions = assigns(:positions)
-      
-      # All positions should belong to company or department, not teams
-      position_orgs = positions.map { |pos| pos.title.organization }
-      team_orgs = position_orgs.select(&:team?)
-      
-      expect(team_orgs).to be_empty
-    end
+    # Note: This test was removed because Teams are no longer Organizations (STI removed).
+    # Titles belong to Organizations and optionally to Departments.
   end
 
   describe 'GET #show' do

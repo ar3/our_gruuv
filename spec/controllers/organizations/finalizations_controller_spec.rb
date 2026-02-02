@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
   let(:assignment) { create(:assignment, company: organization) }
@@ -249,7 +249,7 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
         
         post :create, params: finalization_params
         
-        expect(response).to redirect_to(audit_organization_employee_path(organization, employee))
+        expect(response).to redirect_to(audit_organization_employee_path(organization, employee_teammate))
         expect(flash[:notice]).to include('finalized successfully')
       end
     end

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::CompanyTeammates::GoalCheckInsController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { person.teammates.find_or_create_by(organization: organization) }
   

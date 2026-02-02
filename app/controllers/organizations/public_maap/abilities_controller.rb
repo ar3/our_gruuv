@@ -1,16 +1,15 @@
 class Organizations::PublicMaap::AbilitiesController < Organizations::PublicMaap::BaseController
   def index
-    # Get all abilities for this organization and its departments (exclude teams)
+    # Get all abilities for this organization (company)
     company = @organization.root_company || @organization
-    orgs_in_hierarchy = [company] + company.descendants.select { |org| org.department? }
     
     @abilities = Ability
-      .where(organization: orgs_in_hierarchy)
-      .includes(:organization)
+      .where(company: company)
+      .includes(:company, :department)
       .ordered
     
-    # Group by organization for display
-    @abilities_by_org = @abilities.group_by(&:organization)
+    # Group by department for display (nil key = company-level abilities)
+    @abilities_by_org = @abilities.group_by(&:department)
   end
   
   def show

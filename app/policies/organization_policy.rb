@@ -21,6 +21,18 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || viewing_teammate.can_manage_maap?
   end
 
+  def manage_assignments?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_maap?
+  end
+
+  def view_feedback_requests?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    admin_bypass? || true
+  end
+
   def manage_departments_and_teams?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
@@ -30,46 +42,25 @@ class OrganizationPolicy < ApplicationPolicy
   def create?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
-    
-    # Check type from record (for new records, type should be set from params)
-    record_type = record.type.presence
-    
-    # For new records without a type, check if parent is a company (likely creating department/team)
-    # For departments and teams, use the new permission
-    if record_type == 'Department' || record_type == 'Team' || (record.new_record? && record.parent_id.present? && Organization.find_by(id: record.parent_id)&.company?)
-      admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
-    else
-      # For companies, use employment management permission
-      admin_bypass? || viewing_teammate.can_manage_employment?
-    end
+
+    # Creating new organizations uses employment management permission
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
 
   def update?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
-    
-    # For departments, use the departments permission
-    # NOTE: STI Team has been removed. Use the standalone Team model.
-    if record.department?
-      admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
-    else
-      # For companies, use employment management permission
-      admin_bypass? || viewing_teammate.can_manage_employment?
-    end
+
+    # Use employment management permission for organizations
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
 
   def archive?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
-    
-    # For departments, use the departments permission
-    # NOTE: STI Team has been removed. Use the standalone Team model.
-    if record.department?
-      admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
-    else
-      # For companies, use employment management permission
-      admin_bypass? || viewing_teammate.can_manage_employment?
-    end
+
+    # Use employment management permission for organizations
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
 
   def destroy?
@@ -183,7 +174,6 @@ class OrganizationPolicy < ApplicationPolicy
 
   def customize_company?
     return false unless viewing_teammate
-    return false unless record.company? # Only companies can be customized
     return false unless organization_in_hierarchy?
     admin_bypass? || viewing_teammate.can_customize_company?
   end

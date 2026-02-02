@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::TeamsController, type: :controller do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:admin_person) { create(:person, og_admin: true) }
   let(:admin_teammate) { create(:company_teammate, person: admin_person, organization: company, first_employed_at: 1.year.ago, can_manage_departments_and_teams: true) }
   let(:team) { create(:team, company: company) }

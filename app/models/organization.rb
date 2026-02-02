@@ -1,18 +1,6 @@
 class Organization < ApplicationRecord
   include PgSearch::Model
-  
-  # Single Table Inheritance
-  # NOTE: Team STI has been removed. Use the standalone Team model instead.
-  # NOTE: Department STI has been removed. Use the standalone Department model instead.
-  # We exclude 'Team' and 'Department' types from all queries to prevent STI errors since
-  # they are no longer subclasses of Organization.
-  self.inheritance_column = 'type'
-  
-  # Exclude legacy Team and Department records from all Organization queries.
-  # Both Team and Department have been de-STI'd to their own tables.
-  # Any remaining records with type='Team' or 'Department' in the organizations table are legacy data.
-  default_scope { where.not(type: ['Team', 'Department']) }
-  
+
   # Associations
   has_many :teams, foreign_key: :company_id, dependent: :destroy
   has_many :departments, foreign_key: :company_id, dependent: :destroy
@@ -31,13 +19,30 @@ class Organization < ApplicationRecord
   has_many :upload_events, class_name: 'BulkSyncEvent', dependent: :destroy # Backward compatibility alias
   has_many :bulk_downloads, foreign_key: 'company_id', dependent: :destroy
   has_many :observations, foreign_key: :company_id, dependent: :destroy
-  
+
+  # Company-specific associations (formerly in Company STI subclass)
+  has_one :huddle_review_notification_channel_association,
+          -> { where(association_type: 'huddle_review_notification_channel') },
+          class_name: 'ThirdPartyObjectAssociation',
+          as: :associatable
+  has_one :huddle_review_notification_channel,
+          through: :huddle_review_notification_channel_association,
+          source: :third_party_object
+
+  has_one :maap_object_comment_channel_association,
+          -> { where(association_type: 'maap_object_comment_channel') },
+          class_name: 'ThirdPartyObjectAssociation',
+          as: :associatable
+  has_one :maap_object_comment_channel,
+          through: :maap_object_comment_channel_association,
+          source: :third_party_object
+
+  has_many :company_label_preferences, foreign_key: 'company_id', dependent: :destroy
+
   # Validations
   validates :name, presence: true
-  validates :type, presence: true
-  
+
   # Scopes
-  scope :companies, -> { where(type: 'Company') }
   scope :ordered, -> { order(:name) }
   scope :active, -> { where(deleted_at: nil) }
   scope :archived, -> { where.not(deleted_at: nil) }
@@ -59,19 +64,19 @@ class Organization < ApplicationRecord
   end
 
   # Instance methods
+  # All organizations are now effectively "companies" (no STI)
   def company?
-    type == 'Company'
+    true
   end
-  
+
   def department?
-    # This is now always false for Organization since Department is its own model
+    # This is always false for Organization since Department is its own model
     false
   end
-  
+
   def root_company
     # Organizations no longer have parent hierarchy - each Organization is its own root
-    return self if company?
-    nil
+    self
   end
   
   def department_head
@@ -263,17 +268,72 @@ class Organization < ApplicationRecord
     teammate&.can_create_employment? || false
   end
   
+  # Company-specific methods (formerly in Company STI subclass)
+  def huddle_review_notification_channel_id
+    huddle_review_notification_channel&.third_party_id
+  end
+
+  def huddle_review_notification_channel_id=(channel_id)
+    if channel_id.present?
+      channel = third_party_objects.slack_channels.find_by(third_party_id: channel_id)
+      if channel
+        # Remove existing association
+        huddle_review_notification_channel_association&.destroy
+
+        # Create new association
+        third_party_object_associations.create!(
+          third_party_object: channel,
+          association_type: 'huddle_review_notification_channel'
+        )
+      end
+    else
+      huddle_review_notification_channel_association&.destroy
+    end
+  end
+
+  def maap_object_comment_channel_id
+    maap_object_comment_channel&.third_party_id
+  end
+
+  def maap_object_comment_channel_id=(channel_id)
+    if channel_id.present?
+      channel = third_party_objects.slack_channels.find_by(third_party_id: channel_id)
+      if channel
+        # Remove existing association
+        maap_object_comment_channel_association&.destroy
+
+        # Create new association
+        third_party_object_associations.create!(
+          third_party_object: channel,
+          association_type: 'maap_object_comment_channel'
+        )
+      end
+    else
+      maap_object_comment_channel_association&.destroy
+    end
+  end
+
+  def label_for(key, default = nil)
+    preference = company_label_preferences.find_by(label_key: key.to_s)
+    if preference&.label_value.present?
+      preference.label_value
+    elsif default.present?
+      default
+    else
+      key.to_s.titleize
+    end
+  end
+
   # pg_search configuration
   pg_search_scope :search_by_full_text,
     against: {
-      name: 'A',
-      type: 'B'
+      name: 'A'
     },
     using: {
       tsearch: { prefix: true, any_word: true }
     }
-  
-  multisearchable against: [:name, :type]
+
+  multisearchable against: [:name]
 
   # Archiving methods (soft delete - NO default_scope)
   def soft_delete!

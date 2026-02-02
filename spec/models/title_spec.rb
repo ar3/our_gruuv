@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Title, type: :model do
-  let(:company) { create(:company) }
+  let(:company) { create(:organization) }
   let(:department) { create(:department, company: company) }
   let(:position_major_level) { create(:position_major_level) }
   let(:title) { create(:title, company: company, position_major_level: position_major_level) }
@@ -37,9 +37,9 @@ RSpec.describe Title, type: :model do
     end
 
     describe 'company type validation' do
-      it 'allows company type organizations' do
+      it 'allows organizations' do
         expect(title).to be_valid
-        expect(title.company.type).to eq('Company')
+        expect(title.company).to be_an(Organization)
       end
     end
 
@@ -50,7 +50,7 @@ RSpec.describe Title, type: :model do
       end
 
       it 'is invalid with a department from a different company' do
-        other_company = create(:company)
+        other_company = create(:organization)
         other_department = create(:department, company: other_company)
         title.department = other_department
         expect(title).not_to be_valid
@@ -60,7 +60,7 @@ RSpec.describe Title, type: :model do
 
     describe 'composite uniqueness' do
       it 'allows same external_title with different companies' do
-        other_company = create(:company)
+        other_company = create(:organization)
         create(:title, company: company, position_major_level: position_major_level, external_title: 'Software Engineer')
         
         new_title = build(:title, company: other_company, position_major_level: position_major_level, external_title: 'Software Engineer')
@@ -118,7 +118,7 @@ RSpec.describe Title, type: :model do
     end
 
     describe '.for_company' do
-      let(:other_company) { create(:company) }
+      let(:other_company) { create(:organization) }
       let!(:title1) { create(:title, company: company) }
       let!(:title2) { create(:title, company: other_company) }
 

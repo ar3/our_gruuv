@@ -1,24 +1,23 @@
 FactoryBot.define do
   factory :organization do
     sequence(:name) { |n| "Organization #{n}" }
-    type { 'Company' }
-    
+
+    # Backwards compatibility traits - no-op since STI type column was removed
+    # These traits are kept for test backwards compatibility
     trait :company do
-      type { 'Company' }
+      # No-op, all organizations are now "companies"
     end
-    
-    # DEPRECATED: STI Department has been removed. Use create(:department, company: company) instead.
-    # This trait is kept for backwards compatibility but creates a Company type.
+
+    # DEPRECATED: Use create(:department, company: organization) for real departments
     trait :department do
-      type { 'Company' }
+      # No-op - kept for backwards compatibility
     end
-    
-    # DEPRECATED: STI Team has been removed. Use create(:team, company: company) instead.
-    # This trait is kept for backwards compatibility but creates a Company type.
+
+    # DEPRECATED: Use create(:team, company: organization) for real teams
     trait :team do
-      type { 'Company' }
+      # No-op - kept for backwards compatibility
     end
-    
+
     trait :with_slack_config do
       after(:create) do |organization|
         create(:slack_configuration, organization: organization)
@@ -26,8 +25,6 @@ FactoryBot.define do
     end
   end
 
-  # Alias for easier factory creation
-  factory :company, parent: :organization do
-    type { 'Company' }
-  end
+  # Alias for easier factory creation - points to organization (Company STI removed)
+  factory :company, parent: :organization
 end

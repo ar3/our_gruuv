@@ -1,6 +1,5 @@
 class Organizations::Slack::ChannelsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
-  before_action :ensure_company_only
   before_action :authorize_slack_access
   before_action :load_slack_data, only: [:index, :edit, :edit_company]
   before_action :load_target_organization, only: [:edit, :update, :edit_company, :update_company]
@@ -66,23 +65,15 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
   end
 
   def edit_company
-    unless @target_organization.company?
-      redirect_to channels_organization_slack_path(@organization), alert: 'Company-only settings are only available for companies.' and return
-    end
     # Uses @target_organization and @slack_channels from before_actions
   end
 
   def update_company
-    unless @target_organization.company?
-      redirect_to channels_organization_slack_path(@organization), alert: 'Company-only settings are only available for companies.' and return
-    end
-
     attrs = params.require(:organization).permit(:huddle_review_channel_id, :maap_object_comment_channel_id)
 
-    company = Company.find(@target_organization.id)
-    company.huddle_review_notification_channel_id = attrs[:huddle_review_channel_id].presence if attrs.key?(:huddle_review_channel_id)
-    company.maap_object_comment_channel_id = attrs[:maap_object_comment_channel_id].presence if attrs.key?(:maap_object_comment_channel_id)
-    company.save!
+    @target_organization.huddle_review_notification_channel_id = attrs[:huddle_review_channel_id].presence if attrs.key?(:huddle_review_channel_id)
+    @target_organization.maap_object_comment_channel_id = attrs[:maap_object_comment_channel_id].presence if attrs.key?(:maap_object_comment_channel_id)
+    @target_organization.save!
 
     redirect_to channels_organization_slack_path(@organization), notice: 'Company-only channels updated successfully.'
   rescue StandardError => e
@@ -98,13 +89,7 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
       redirect_to root_path, alert: 'Please log in to access Slack integration.'
     end
   end
-  
-  def ensure_company_only
-    unless @organization.company?
-      redirect_to organization_path(@organization), alert: 'Channel associations are only available for companies.'
-    end
-  end
-  
+
   def authorize_slack_access
     # Allow if user can manage employment OR is an active company teammate
     unless policy(@organization).manage_employment? || current_company_teammate&.organization == @organization

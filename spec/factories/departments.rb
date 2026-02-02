@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :department do
     sequence(:name) { |n| "Department #{n}" }
-    association :company, factory: :company
+    association :company, factory: :organization
     parent_department { nil }
 
     trait :with_parent do

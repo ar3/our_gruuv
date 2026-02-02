@@ -26,9 +26,9 @@ FactoryBot.define do
 
     trait :same_organization do
       after(:build) do |assignment_ability|
-        # Ensure assignment and ability belong to same organization
-        if assignment_ability.assignment&.company && assignment_ability.ability&.organization
-          assignment_ability.ability.organization = assignment_ability.assignment.company
+        # Ensure assignment and ability belong to same company
+        if assignment_ability.assignment&.company && assignment_ability.ability&.company
+          assignment_ability.ability.company = assignment_ability.assignment.company
         end
       end
     end

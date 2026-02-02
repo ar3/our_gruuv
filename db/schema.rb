@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_02_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -516,11 +516,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
   end
 
   create_table "incoming_webhooks", force: :cascade do |t|
-    t.string "provider", null: false
-    t.string "event_type", null: false
-    t.string "status", default: "unprocessed", null: false
-    t.jsonb "payload", default: {}, null: false
-    t.jsonb "headers", default: {}, null: false
+    t.string "provider"
+    t.string "event_type"
+    t.string "status"
+    t.jsonb "payload"
+    t.jsonb "headers"
     t.bigint "organization_id"
     t.text "error_message"
     t.datetime "processed_at"
@@ -528,11 +528,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
     t.datetime "updated_at", null: false
     t.string "resultable_type"
     t.bigint "resultable_id"
-    t.index ["event_type"], name: "index_incoming_webhooks_on_event_type"
-    t.index ["organization_id"], name: "index_incoming_webhooks_on_organization_id"
-    t.index ["provider"], name: "index_incoming_webhooks_on_provider"
     t.index ["resultable_type", "resultable_id"], name: "index_incoming_webhooks_on_resultable"
-    t.index ["status"], name: "index_incoming_webhooks_on_status"
   end
 
   create_table "interest_submissions", force: :cascade do |t|
@@ -960,8 +956,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "seat_disclaimer", default: "This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time."
-    t.bigint "team_id"
     t.bigint "reports_to_seat_id"
+    t.bigint "team_id"
     t.index ["reports_to_seat_id"], name: "index_seats_on_reports_to_seat_id"
     t.index ["team_id"], name: "index_seats_on_team_id"
     t.index ["title_id", "seat_needed_by"], name: "index_seats_on_position_type_and_needed_by", unique: true
@@ -973,9 +969,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
     t.string "workspace_id", null: false
     t.string "workspace_name", null: false
     t.string "bot_token", null: false
-    t.string "default_channel", default: "#general"
-    t.string "bot_username", default: "Huddle Bot"
-    t.string "bot_emoji", default: ":huddle:"
+    t.string "default_channel", default: "#bot-test"
+    t.string "bot_username", default: "OG"
+    t.string "bot_emoji", default: ":sparkles:"
     t.datetime "installed_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -1023,7 +1019,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "teammate_id"
-    t.bigint "certifying_teammate_id"
+    t.bigint "certifying_teammate_id", default: -1
     t.text "certification_note"
     t.datetime "published_at"
     t.bigint "published_by_teammate_id"
@@ -1194,7 +1190,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
   add_foreign_key "huddle_participants", "huddles"
   add_foreign_key "huddle_participants", "teammates"
   add_foreign_key "huddles", "teams"
-  add_foreign_key "incoming_webhooks", "organizations"
   add_foreign_key "interest_submissions", "people"
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
   add_foreign_key "maap_snapshots", "teammates", column: "creator_company_teammate_id"
@@ -1235,8 +1230,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_01_000008) do
   add_foreign_key "prompt_templates", "organizations", column: "company_id"
   add_foreign_key "prompts", "prompt_templates"
   add_foreign_key "prompts", "teammates", column: "company_teammate_id"
-  add_foreign_key "seats", "organizations", column: "team_id"
   add_foreign_key "seats", "seats", column: "reports_to_seat_id"
+  add_foreign_key "seats", "teams"
   add_foreign_key "seats", "titles"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"

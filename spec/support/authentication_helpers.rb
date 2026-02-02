@@ -13,7 +13,7 @@ module AuthenticationHelpers
     else
       # Use first active teammate or create "OurGruuv Demo" teammate
       teammate ||= person.teammates.create!(
-        organization: Company.find_by!(name: 'OurGruuv Demo'),
+        organization: Organization.find_by!(name: 'OurGruuv Demo'),
         type: 'CompanyTeammate',
         first_employed_at: nil,
         last_terminated_at: nil

@@ -21,18 +21,10 @@ class Test::AuthController < ApplicationController
         organization = Organization.find(organization_id)
         root_company = organization.root_company || organization
         # Ensure we create/find CompanyTeammate for root company
-        if root_company.is_a?(Company)
-          ensure_company_teammate_for_person(person, root_company) || person.teammates.find_or_create_by!(organization: root_company) do |t|
-            t.type = 'CompanyTeammate'
-            t.first_employed_at = nil
-            t.last_terminated_at = nil
-          end
-        else
-          person.teammates.find_or_create_by!(organization: organization) do |t|
-            t.type = 'CompanyTeammate'
-            t.first_employed_at = nil
-            t.last_terminated_at = nil
-          end
+        ensure_company_teammate_for_person(person, root_company) || person.teammates.find_or_create_by!(organization: root_company) do |t|
+          t.type = 'CompanyTeammate'
+          t.first_employed_at = nil
+          t.last_terminated_at = nil
         end
       else
         ensure_teammate_for_person(person)

@@ -84,8 +84,8 @@ class GoalPolicy < ApplicationPolicy
       return true if record.owner == viewing_teammate || record.owner.person == person
     end
     
-    # User is direct member of owner organization (if owner is Company/Department/Team)
-    if record.owner_type.in?(['Company', 'Department', 'Team'])
+    # User is direct member of owner organization (if owner is Organization/Department/Team)
+    if record.owner_type.in?(['Organization', 'Department', 'Team'])
       teammate_org = viewing_teammate.organization
       # Check if viewing_teammate is directly in the owner organization (not just in the company hierarchy)
       # For everyone_in_company privacy, allow direct members of owner organization to update

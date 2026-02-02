@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::SeatsController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:person_teammate) { create(:teammate, person: person, organization: company, first_employed_at: 1.year.ago) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
   let(:title) { create(:title, company: company, position_major_level: position_major_level) }
@@ -97,8 +97,8 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     end
 
     it 'groups seats by department for table view' do
-      dept_a = create(:organization, :department, parent: company, name: 'Department A')
-      dept_b = create(:organization, :department, parent: company, name: 'Department B')
+      dept_a = create(:department, company: company, name: 'Department A')
+      dept_b = create(:department, company: company, name: 'Department B')
       
       title_a = create(:title, company: company, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
       title_b = create(:title, company: company, department: dept_b, position_major_level: position_major_level, external_title: 'Title B')
@@ -126,9 +126,9 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     end
 
     it 'sorts departments hierarchically' do
-      dept_a = create(:organization, :department, parent: company, name: 'Department A')
-      dept_a1 = create(:organization, :department, parent: dept_a, name: 'Department A.1')
-      dept_b = create(:organization, :department, parent: company, name: 'Department B')
+      dept_a = create(:department, company: company, name: 'Department A')
+      dept_a1 = create(:department, company: company, parent_department: dept_a, name: 'Department A.1')
+      dept_b = create(:department, company: company, name: 'Department B')
       
       title_a = create(:title, company: company, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
       title_a1 = create(:title, company: company, department: dept_a1, position_major_level: position_major_level, external_title: 'Title A1')
@@ -151,14 +151,14 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       # Then departments sorted hierarchically by display_name
       dept_names = dept_keys.compact.map(&:display_name)
       expect(dept_names).to eq([
-        "#{company.name} > Department A",
-        "#{company.name} > Department A > Department A.1",
-        "#{company.name} > Department B"
+        "Department A",
+        "Department A > Department A.1",
+        "Department B"
       ])
     end
 
     it 'sorts seats within each department by title then seat_needed_by' do
-      dept = create(:organization, :department, parent: company, name: 'Department A')
+      dept = create(:department, company: company, name: 'Department A')
       
       title_z = create(:title, company: company, department: dept, position_major_level: position_major_level, external_title: 'Z Title')
       title_a = create(:title, company: company, department: dept, position_major_level: position_major_level, external_title: 'A Title')
@@ -344,13 +344,13 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         person_teammate.update!(can_manage_maap: true)
       end
 
-      let(:department) { create(:organization, :department, parent: company) }
-      let(:team) { create(:organization, :team, parent: company) }
+      let(:department) { create(:department, company: company) }
+      let(:team) { create(:team, company: company) }
 
       it 'creates a seat with department, team, and reports_to_seat associations' do
-        # Ensure department and team have company as parent
-        expect(department.parent).to eq(company)
-        expect(team.parent).to eq(company)
+        # Ensure department and team belong to company
+        expect(department.company).to eq(company)
+        expect(team.company).to eq(company)
 
         # Create reports_to_seat inside the test to avoid counting it in the expectation
         reports_to_seat = create(:seat, title: title, seat_needed_by: Date.current + 6.months)
@@ -402,8 +402,8 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         person_teammate.update!(can_manage_maap: true)
       end
 
-      let(:department) { create(:organization, :department, parent: company) }
-      let(:team) { create(:organization, :team, parent: company) }
+      let(:department) { create(:department, company: company) }
+      let(:team) { create(:team, company: company) }
 
       it 'updates a seat with team and reports_to_seat associations' do
         # Set department on title

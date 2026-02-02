@@ -9,7 +9,6 @@ class Comments::PostNotificationJob < ApplicationJob
     return unless root_comment
     
     company = root_comment.organization.root_company || root_comment.organization
-    return unless company.is_a?(Company)
     return unless company.maap_object_comment_channel_id.present?
     
     channel = company.maap_object_comment_channel

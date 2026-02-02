@@ -6,30 +6,26 @@ class PublicMaap::IndexController < ApplicationController
     # A company has content if it has at least one position, assignment, ability, or aspiration
     company_ids_with_content = []
     
-    # Companies with positions
+    # Companies with positions (Title belongs_to :company)
     company_ids_with_content += Position
-      .joins(title: :organization)
-      .where(organizations: { type: 'Company' })
+      .joins(title: :company)
       .pluck('organizations.id')
     
     # Companies with assignments
     company_ids_with_content += Assignment
       .joins(:company)
-      .where(organizations: { type: 'Company' })
       .pluck('organizations.id')
     
     # Companies with abilities
     company_ids_with_content += Ability
-      .joins(:organization)
-      .where(organizations: { type: 'Company' })
+      .joins(:company)
       .pluck('organizations.id')
     
     # Companies with aspirations
-    company_ids_with_content += Aspiration.joins(:organization)
-      .where(organizations: { type: 'Company' })
+    company_ids_with_content += Aspiration.joins(:company)
       .pluck('organizations.id')
     
-    @companies = Organization.companies.where(id: company_ids_with_content.uniq).order(:name)
+    @companies = Organization.where(id: company_ids_with_content.uniq).order(:name)
   end
 end
 

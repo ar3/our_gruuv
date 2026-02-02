@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::GoalLinksController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:creator_teammate) { person.teammates.find_by(organization: company) }
   let(:goal1) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
   let(:goal2) { create(:goal, creator: creator_teammate, owner: creator_teammate) }

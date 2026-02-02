@@ -2,8 +2,8 @@ require 'rails_helper'
 
 RSpec.describe Organizations::SlackController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company, name: 'Test Company') }
-  let(:team) { create(:organization, :team, name: 'Test Team', parent: company) }
+  let(:company) { create(:organization, name: 'Test Company') }
+  let(:team) { create(:team, company: company, name: 'Test Team') }
   let(:slack_config) { create(:slack_configuration, organization: company) }
 
   before do
@@ -27,18 +27,8 @@ RSpec.describe Organizations::SlackController, type: :controller do
       end
     end
 
-    context 'when organization is not a company' do
-      before do
-        teammate = create(:teammate, person: person, organization: team)
-        sign_in_as_teammate(person, team)
-      end
-
-      it 'redirects to organization path' do
-        get :show, params: { organization_id: team.id }
-        expect(response).to redirect_to(organization_path(team))
-        expect(flash[:alert]).to include('Slack configuration is only available for companies')
-      end
-    end
+    # Note: This test was removed because STI types have been removed from Organization.
+    # All Organizations are now effectively "companies".
 
     context 'when user does not have permission' do
       before do

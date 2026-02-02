@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe UserPreferencesController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:user_preference) { UserPreference.for_person(person) }
   

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe PositionAssignment, type: :model do
-  let(:company) { create(:organization, type: 'Company') }
+  let(:company) { create(:organization) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:title) { create(:title, company: company, position_major_level: position_major_level) }

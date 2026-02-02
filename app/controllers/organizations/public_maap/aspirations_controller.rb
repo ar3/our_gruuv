@@ -1,17 +1,16 @@
 class Organizations::PublicMaap::AspirationsController < Organizations::PublicMaap::BaseController
   def index
-    # Get all aspirations for this organization and its departments (exclude teams)
+    # Get all aspirations for this organization (company)
     # Note: Aspirations don't have a public/private flag, so we show all
     company = @organization.root_company || @organization
-    orgs_in_hierarchy = [company] + company.descendants.select { |org| org.department? }
     
     @aspirations = Aspiration
-      .where(company: orgs_in_hierarchy)
-      .includes(:company)
+      .where(company: company)
+      .includes(:company, :department)
       .ordered
     
-    # Group by organization for display
-    @aspirations_by_org = @aspirations.group_by(&:company)
+    # Group by department for display (nil key = company-level aspirations)
+    @aspirations_by_org = @aspirations.group_by(&:department)
   end
   
   def show

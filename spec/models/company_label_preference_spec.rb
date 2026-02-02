@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe CompanyLabelPreference, type: :model do
-  let(:company) { Company.find_or_create_by!(name: 'Test Company', type: 'Company') }
+  let(:company) { Organization.find_or_create_by!(name: 'Test Company') }
 
   describe 'associations' do
     it { should belong_to(:company) }
@@ -28,20 +28,10 @@ RSpec.describe CompanyLabelPreference, type: :model do
     end
 
     it 'allows same label_key for different companies' do
-      company2 = Company.find_or_create_by!(name: 'Test Company 2', type: 'Company')
+      company2 = Organization.find_or_create_by!(name: 'Test Company 2')
       create(:company_label_preference, company: company, label_key: 'prompt')
       preference2 = build(:company_label_preference, company: company2, label_key: 'prompt')
       expect(preference2).to be_valid
-    end
-
-    # Note: The association validates company type, but this test may not catch it
-    # since the association uses class_name: 'Organization'. The validation happens
-    # at the database level through the foreign key constraint.
-    skip 'validates company must be Company type' do
-      department = create(:organization, type: 'Department', parent: company)
-      preference = build(:company_label_preference, company: department, label_key: 'prompt')
-      expect(preference).not_to be_valid
-      expect(preference.errors[:company]).to be_present
     end
   end
 
@@ -50,7 +40,7 @@ RSpec.describe CompanyLabelPreference, type: :model do
   skip 'scopes' do
     let!(:preference1) { create(:company_label_preference, company: company, label_key: 'prompt', label_value: 'Reflection') }
     let!(:preference2) { create(:company_label_preference, company: company, label_key: 'reflection', label_value: 'Thought') }
-    let(:company2) { Company.find_or_create_by!(name: 'Test Company 2', type: 'Company') }
+    let(:company2) { Organization.find_or_create_by!(name: 'Test Company 2') }
     let!(:preference3) { create(:company_label_preference, company: company2, label_key: 'prompt', label_value: 'Question') }
 
     describe '.for_company' do

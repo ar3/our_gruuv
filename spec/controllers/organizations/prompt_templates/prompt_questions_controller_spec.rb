@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::PromptTemplates::PromptQuestionsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:organization) { create(:organization, name: 'Test Company') }
   let(:template) { create(:prompt_template, company: organization) }
 
   before do

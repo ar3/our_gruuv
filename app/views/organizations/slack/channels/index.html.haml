@@ -30,52 +30,50 @@
             %i.bi.bi-exclamation-triangle.me-2
             Slack is not configured or no channels/groups found. Please refresh channels and groups.
         - else
-          / Section 1: Company-Only Channels (Huddle Review)
-          - if @organization.company?
-            .card.mb-4.border-primary
-              .card-header.bg-primary.text-white.d-flex.justify-content-between.align-items-center
-                %h6.mb-0
-                  %i.bi.bi-building.me-2
-                  Company Settings
-                = link_to edit_company_channel_organization_slack_path(@organization, target_organization_id: @organization.id), class: "btn btn-sm btn-light" do
-                  %i.bi.bi-pencil-square.me-1
-                  Edit
-              .card-body
-                - company_record = @organization.becomes(Company)
-                .mb-3
-                  .row.align-items-center
-                    .col-md-8
-                      %label.form-label Huddle Review Channel
-                      - if company_record.huddle_review_notification_channel_id.present?
-                        - channel = @slack_channels.find { |c| c.third_party_id == company_record.huddle_review_notification_channel_id }
-                        %p.mb-1
-                          = channel&.display_name || company_record.huddle_review_notification_channel_id
-                      - else
-                        %p.mb-1.text-muted None
-                      %small.form-text.text-muted
-                        Channel where weekly huddle review summaries will be posted
-                    .col-md-4.text-end
-                      - if company_record.huddle_review_notification_channel_id.present?
-                        %span.badge.bg-success
-                          %i.bi.bi-check-circle.me-1
-                          Configured
-                .mb-3
-                  .row.align-items-center
-                    .col-md-8
-                      %label.form-label MAAP Object Comment Channel
-                      - if company_record.maap_object_comment_channel_id.present?
-                        - channel = @slack_channels.find { |c| c.third_party_id == company_record.maap_object_comment_channel_id }
-                        %p.mb-1
-                          = channel&.display_name || company_record.maap_object_comment_channel_id
-                      - else
-                        %p.mb-1.text-muted None
-                      %small.form-text.text-muted
-                        Channel where notifications for new root-level comments will be posted
-                    .col-md-4.text-end
-                      - if company_record.maap_object_comment_channel_id.present?
-                        %span.badge.bg-success
-                          %i.bi.bi-check-circle.me-1
-                          Configured
+          / Section 1: Organization Settings (Huddle Review, Comments)
+          .card.mb-4.border-primary
+            .card-header.bg-primary.text-white.d-flex.justify-content-between.align-items-center
+              %h6.mb-0
+                %i.bi.bi-building.me-2
+                Organization Settings
+              = link_to edit_company_channel_organization_slack_path(@organization, target_organization_id: @organization.id), class: "btn btn-sm btn-light" do
+                %i.bi.bi-pencil-square.me-1
+                Edit
+            .card-body
+              .mb-3
+                .row.align-items-center
+                  .col-md-8
+                    %label.form-label Huddle Review Channel
+                    - if @organization.huddle_review_notification_channel_id.present?
+                      - channel = @slack_channels.find { |c| c.third_party_id == @organization.huddle_review_notification_channel_id }
+                      %p.mb-1
+                        = channel&.display_name || @organization.huddle_review_notification_channel_id
+                    - else
+                      %p.mb-1.text-muted None
+                    %small.form-text.text-muted
+                      Channel where weekly huddle review summaries will be posted
+                  .col-md-4.text-end
+                    - if @organization.huddle_review_notification_channel_id.present?
+                      %span.badge.bg-success
+                        %i.bi.bi-check-circle.me-1
+                        Configured
+              .mb-3
+                .row.align-items-center
+                  .col-md-8
+                    %label.form-label MAAP Object Comment Channel
+                    - if @organization.maap_object_comment_channel_id.present?
+                      - channel = @slack_channels.find { |c| c.third_party_id == @organization.maap_object_comment_channel_id }
+                      %p.mb-1
+                        = channel&.display_name || @organization.maap_object_comment_channel_id
+                    - else
+                      %p.mb-1.text-muted None
+                    %small.form-text.text-muted
+                      Channel where notifications for new root-level comments will be posted
+                  .col-md-4.text-end
+                    - if @organization.maap_object_comment_channel_id.present?
+                      %span.badge.bg-success
+                        %i.bi.bi-check-circle.me-1
+                        Configured
 
           / Section 2: Organization-Wide Channels (Kudos & Groups)
           .card.mb-4
@@ -105,7 +103,7 @@
                           - else
                             %strong= org.name
                           %br
-                          %small.text-muted= org.type.underscore.humanize
+                          %small.text-muted Organization
                         %td
                           - kudos_channel = org.kudos_channel
                           - if kudos_channel.present?

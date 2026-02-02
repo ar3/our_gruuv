@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::AssignmentsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:maap_person) { create(:person) }
   let(:no_permission_person) { create(:person) }
 
@@ -51,7 +51,7 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
     end
 
     it 'filters by multiple companies' do
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_assignment = create(:assignment, company: other_company, semantic_version: '1.0.0')
 
       get :index, params: { organization_id: organization.id, company: [organization.id] }

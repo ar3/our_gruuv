@@ -130,9 +130,7 @@ RSpec.describe Webhooks::SlackCommandsController, type: :controller do
                  display_name: channel_name)
         end
         let!(:playbook) do
-          create(:team,
-                 organization: organization,
-                 slack_channel: "##{channel_name}")
+          create(:team, company: organization)
         end
 
         before do
@@ -164,9 +162,9 @@ RSpec.describe Webhooks::SlackCommandsController, type: :controller do
 
         context 'when user has goals' do
           let!(:goal) do
-            create(:goal, 
-                   owner: teammate.person, 
-                   creator: teammate, 
+            create(:goal,
+                   owner: teammate,
+                   creator: teammate,
                    company: organization)
           end
 

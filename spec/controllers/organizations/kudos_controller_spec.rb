@@ -1,11 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::KudosController, type: :controller do
-  let(:company) { create(:organization, :company, name: 'Test Company') }
-  let(:department) { create(:organization, :department, parent: company) }
+  let(:company) { create(:organization, name: 'Test Company') }
+  let(:department) { create(:department, company: company) }
   let(:observer) { create(:person) }
   let(:observer_teammate) { create(:teammate, person: observer, organization: company) }
-  let(:observer_department_teammate) { create(:teammate, person: observer, organization: department) }
   let(:observee_person) { create(:person) }
   let(:observee_teammate) { create(:teammate, person: observee_person, organization: company) }
   let(:observation) do
@@ -18,7 +17,6 @@ RSpec.describe Organizations::KudosController, type: :controller do
 
   before do
     observer_teammate # Ensure observer teammate is created
-    observer_department_teammate # Ensure observer has teammate in department
   end
 
   describe 'GET #index' do
@@ -29,10 +27,9 @@ RSpec.describe Organizations::KudosController, type: :controller do
       obs
     end
 
-    let!(:department_observee_teammate) { create(:teammate, person: observee_person, organization: department) }
     let!(:department_observation) do
-      obs = build(:observation, observer: observer, company: department, privacy_level: :public_to_world, published_at: Time.current, observed_at: 1.day.ago)
-      obs.observees.build(teammate: department_observee_teammate)
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world, published_at: Time.current, observed_at: 1.day.ago)
+      obs.observees.build(teammate: observee_teammate)
       obs.save!
       obs
     end
@@ -270,10 +267,10 @@ RSpec.describe Organizations::KudosController, type: :controller do
         observation.soft_delete!
       end
 
-      it 'raises Pundit::NotAuthorizedError' do
-        expect {
-          get :show, params: { organization_id: company.id, date: '2025-10-05', id: observation.id }
-        }.to raise_error(Pundit::NotAuthorizedError)
+      it 'denies access (redirects with alert)' do
+        get :show, params: { organization_id: company.id, date: '2025-10-05', id: observation.id }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
       end
     end
   end

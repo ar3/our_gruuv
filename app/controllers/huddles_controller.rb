@@ -68,8 +68,8 @@ class HuddlesController < ApplicationController
                   .where(type: 'CompanyTeammate')
                   .each do |teammate|
       company = teammate.organization
-      next unless company&.company?
-      
+      next unless company
+
       teams = company.teams.active.ordered
       @teams_by_company[company] = teams if teams.any?
     end
@@ -623,7 +623,7 @@ class HuddlesController < ApplicationController
 
     # Guard against empty company name
     if company_name.blank?
-      error = ActiveRecord::RecordInvalid.new(Company.new)
+      error = ActiveRecord::RecordInvalid.new(Organization.new)
       capture_error_in_sentry(error, {
         method: 'find_or_create_team',
         validation_error: 'company_name_blank'
@@ -631,8 +631,8 @@ class HuddlesController < ApplicationController
       raise error
     end
 
-    # Find or create the company
-    company = Company.find_or_create_by!(name: company_name)
+    # Find or create the organization
+    company = Organization.find_or_create_by!(name: company_name)
 
     # Determine the team name
     final_team_name = if company_selection == 'new'

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::CompanyTeammates::Asana::OauthController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager) { create(:person, full_name: 'Manager Person') }
   let(:employee) { create(:person, full_name: 'Employee Person') }
   let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization, can_manage_employment: true) }

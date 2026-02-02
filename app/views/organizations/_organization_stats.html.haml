@@ -1,91 +1,90 @@
-- if organization.company?
-  .card.mb-4{ role: "region", "aria-labelledby": "organization-section" }
-    .card-header
-      %h5.mb-0{ id: "organization-section" }
-        %i.bi.bi-building.me-2
-        Organization
-    .card-body
-      .row
-        .col-md-8
-          .row.text-center
-            .col-6
-              .h4.text-primary= total_employees
-              %small.text-muted Active Employees
-            .col-6
-              .h4.text-info= total_potential_employees
-              %small.text-muted Potential Employees
-          .row.text-center.mt-3
-            .col-6
-              .h4.text-primary= total_teams
-              %small.text-muted Teams
-            .col-6
-              .h4.text-primary= total_departments
-              %small.text-muted Departments
-          .row.text-center.mt-3
-            .col-6
-              .h4.text-secondary= format_date_in_user_timezone(organization.created_at, format: "%b %Y")
-              %small.text-muted Created
-            .col-6
-              - if organization.slack_configured?
-                .h4.text-success
-                  %i.bi.bi-slack.me-1
-                  Connected
-                %small.text-muted Slack Status
-              - else
-                .h4.text-warning
-                  %i.bi.bi-slack.me-1
-                  Not Connected
-                %small.text-muted Slack Status
-        .col-md-4.border-start.border-secondary
-          .d-grid.gap-2
-            = link_to new_organization_path(parent_id: organization.id), class: "btn btn-primary" do
-              %i.bi.bi-plus-circle.me-2
-              Add Team/Department
-            - if policy(organization).create_employment?
-              = link_to organization_employment_management_index_path(organization), class: "btn btn-success" do
-                %i.bi.bi-person-plus.me-2
-                Add Employee
-            - else
-              .d-flex.align-items-center.gap-2
-                .flex-grow-1
-                  = link_to organization_employment_management_index_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
-                    %i.bi.bi-person-plus.me-2
-                    Add Employee
-                %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires employment creation permission" } }
-
-            - if policy(organization).manage_employment?
-              = link_to organization_employment_management_index_path(organization), class: "btn btn-outline-primary" do
-                %i.bi.bi-people-fill.me-2
-                Employment Management
-            - else
-              .d-flex.align-items-center.gap-2
-                .flex-grow-1
-                  = link_to organization_employment_management_index_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
-                    %i.bi.bi-people-fill.me-2
-                    Employment Management
-                %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires employment management permission" } }
-
-            - if policy(organization).manage_employment?
-              = link_to organization_bulk_sync_events_path(organization), class: "btn btn-outline-info" do
-                %i.bi.bi-arrow-repeat.me-2
-                Bulk Events
-            - else
-              .d-flex.align-items-center.gap-2
-                .flex-grow-1
-                  = link_to organization_bulk_sync_events_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
-                    %i.bi.bi-arrow-repeat.me-2
-                    Bulk Events
-                %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires employment management permission" } }
-            
-            = link_to organization_employees_path(organization), class: "btn btn-outline-primary" do
-              %i.bi.bi-people.me-2
-              View All Employees
-            
+.card.mb-4{ role: "region", "aria-labelledby": "organization-section" }
+  .card-header
+    %h5.mb-0{ id: "organization-section" }
+      %i.bi.bi-building.me-2
+      Organization
+  .card-body
+    .row
+      .col-md-8
+        .row.text-center
+          .col-6
+            .h4.text-primary= total_employees
+            %small.text-muted Active Employees
+          .col-6
+            .h4.text-info= total_potential_employees
+            %small.text-muted Potential Employees
+        .row.text-center.mt-3
+          .col-6
+            .h4.text-primary= total_teams
+            %small.text-muted Teams
+          .col-6
+            .h4.text-primary= total_departments
+            %small.text-muted Departments
+        .row.text-center.mt-3
+          .col-6
+            .h4.text-secondary= format_date_in_user_timezone(organization.created_at, format: "%b %Y")
+            %small.text-muted Created
+          .col-6
             - if organization.slack_configured?
-              = link_to organization_slack_path(organization), class: "btn btn-outline-primary" do
-                %i.bi.bi-slack.me-2
-                Slack Settings
+              .h4.text-success
+                %i.bi.bi-slack.me-1
+                Connected
+              %small.text-muted Slack Status
             - else
-              = link_to oauth_authorize_organization_slack_path(organization), class: "btn btn-outline-primary" do
-                %i.bi.bi-slack.me-2
-                Connect Slack
+              .h4.text-warning
+                %i.bi.bi-slack.me-1
+                Not Connected
+              %small.text-muted Slack Status
+      .col-md-4.border-start.border-secondary
+        .d-grid.gap-2
+          = link_to new_organization_path(parent_id: organization.id), class: "btn btn-primary" do
+            %i.bi.bi-plus-circle.me-2
+            Add Team/Department
+          - if policy(organization).create_employment?
+            = link_to organization_employment_management_index_path(organization), class: "btn btn-success" do
+              %i.bi.bi-person-plus.me-2
+              Add Employee
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                = link_to organization_employment_management_index_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
+                  %i.bi.bi-person-plus.me-2
+                  Add Employee
+              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires employment creation permission" } }
+
+          - if policy(organization).manage_employment?
+            = link_to organization_employment_management_index_path(organization), class: "btn btn-outline-primary" do
+              %i.bi.bi-people-fill.me-2
+              Employment Management
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                = link_to organization_employment_management_index_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
+                  %i.bi.bi-people-fill.me-2
+                  Employment Management
+              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires employment management permission" } }
+
+          - if policy(organization).manage_employment?
+            = link_to organization_bulk_sync_events_path(organization), class: "btn btn-outline-info" do
+              %i.bi.bi-arrow-repeat.me-2
+              Bulk Events
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                = link_to organization_bulk_sync_events_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
+                  %i.bi.bi-arrow-repeat.me-2
+                  Bulk Events
+              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires employment management permission" } }
+
+          = link_to organization_employees_path(organization), class: "btn btn-outline-primary" do
+            %i.bi.bi-people.me-2
+            View All Employees
+
+          - if organization.slack_configured?
+            = link_to organization_slack_path(organization), class: "btn btn-outline-primary" do
+              %i.bi.bi-slack.me-2
+              Slack Settings
+          - else
+            = link_to oauth_authorize_organization_slack_path(organization), class: "btn btn-outline-primary" do
+              %i.bi.bi-slack.me-2
+              Connect Slack

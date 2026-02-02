@@ -25,68 +25,67 @@
               = link_to "Reset to 6 Weeks", huddles_review_organization_path(@organization), class: "btn btn-outline-secondary"
       
       / Slack Channel Management Sidebar
-      - if @organization.company?
-        .row.mb-4
-          .col-12
-            .card
-              .card-header
-                %h5.mb-0
-                  %i.bi.bi-slack.me-2
-                  Weekly Notifications Setup
-              .card-body
-                - if !@organization.slack_configured?
-                  .alert.alert-warning
-                    %i.bi.bi-exclamation-triangle.me-2
-                    Slack must be configured to set up weekly notifications.
-                    = link_to "Configure Slack", organization_slack_path(@organization), class: "btn btn-sm btn-warning ms-2"
-                - else
-                  .row
-                    .col-md-5
-                      - slack_channels = @organization.third_party_objects.slack_channels.order(:display_name)
-                      - last_refresh = slack_channels.maximum(:updated_at)
-                      
-                      = form_with url: update_huddle_review_channel_organization_path(@organization), method: :patch, local: true, class: "row g-3" do |form|
-                        .col-md-6
-                          = form.label :channel_id, "Notification Channel", class: "form-label"
-                          = form.select :channel_id, 
-                                      options_from_collection_for_select(slack_channels, :third_party_id, :display_name, @organization.company? ? @organization.becomes(Company).huddle_review_notification_channel_id : nil),
-                                      { prompt: "Select Slack channel" },
-                                      { class: "form-select" }
-                        .col-md-3.d-flex.align-items-end
-                          = form.submit "Save Channel", class: "btn btn-primary"
-                      
-                    .col-md-3
-                      = form_with url: refresh_slack_channels_organization_path(@organization), method: :post, local: true, class: "d-inline" do |refresh_form|
-                        = refresh_form.submit "Refresh Channels", 
-                                              class: "btn btn-outline-secondary",
-                                              data: { confirm: "This will refresh the list of available Slack channels. Continue?" }
-                        %br/
-                        %small.text-muted
-                          %i.bi.bi-clock.me-1
-                          Channels last refreshed: #{last_refresh.present? ? last_refresh.strftime("%B %d, %Y at %I:%M %p") : "Never"}
-                  
-                    .col-md-4
-                      - if @organization.company? && @organization.becomes(Company).huddle_review_notification_channel
-                        = form_with url: trigger_weekly_notification_organization_path(@organization), method: :post, local: true, class: "d-inline" do |trigger_form|
-                          = trigger_form.submit "Send Weekly Notification", 
-                                               class: "btn btn-success w-100",
-                                               data: { confirm: "This will send a weekly notification to the selected channel. Continue?" }
-                         
-                        - week_start = Date.current.beginning_of_week(:monday)
-                        - existing_notification = Notification.where(notifiable: @organization, notification_type: 'huddle_summary', created_at: week_start..week_start.end_of_week).first
-                        - if existing_notification&.message_id.present?
-                          %small.text-muted.d-block.mt-1
-                            %i.bi.bi-check-circle.me-1
-                            Notification sent this week
-                            = link_to "View in Slack", "https://slack.com/app_redirect?channel=#{@organization.becomes(Company).huddle_review_notification_channel.third_party_id}&message_ts=#{existing_notification.message_id}", 
-                                      target: "_blank", 
-                                      class: "ms-1"
-                      - else
-                        %button.btn.btn-secondary.w-100{disabled: true}
-                          %i.bi.bi-send.me-2
-                          Send Weekly Notification
+      .row.mb-4
+        .col-12
+          .card
+            .card-header
+              %h5.mb-0
+                %i.bi.bi-slack.me-2
+                Weekly Notifications Setup
+            .card-body
+              - if !@organization.slack_configured?
+                .alert.alert-warning
+                  %i.bi.bi-exclamation-triangle.me-2
+                  Slack must be configured to set up weekly notifications.
+                  = link_to "Configure Slack", organization_slack_path(@organization), class: "btn btn-sm btn-warning ms-2"
+              - else
+                .row
+                  .col-md-5
+                    - slack_channels = @organization.third_party_objects.slack_channels.order(:display_name)
+                    - last_refresh = slack_channels.maximum(:updated_at)
+
+                    = form_with url: update_huddle_review_channel_organization_path(@organization), method: :patch, local: true, class: "row g-3" do |form|
+                      .col-md-6
+                        = form.label :channel_id, "Notification Channel", class: "form-label"
+                        = form.select :channel_id,
+                                    options_from_collection_for_select(slack_channels, :third_party_id, :display_name, @organization.huddle_review_notification_channel_id),
+                                    { prompt: "Select Slack channel" },
+                                    { class: "form-select" }
+                      .col-md-3.d-flex.align-items-end
+                        = form.submit "Save Channel", class: "btn btn-primary"
+
+                  .col-md-3
+                    = form_with url: refresh_slack_channels_organization_path(@organization), method: :post, local: true, class: "d-inline" do |refresh_form|
+                      = refresh_form.submit "Refresh Channels",
+                                            class: "btn btn-outline-secondary",
+                                            data: { confirm: "This will refresh the list of available Slack channels. Continue?" }
+                      %br/
+                      %small.text-muted
+                        %i.bi.bi-clock.me-1
+                        Channels last refreshed: #{last_refresh.present? ? last_refresh.strftime("%B %d, %Y at %I:%M %p") : "Never"}
+
+                  .col-md-4
+                    - if @organization.huddle_review_notification_channel
+                      = form_with url: trigger_weekly_notification_organization_path(@organization), method: :post, local: true, class: "d-inline" do |trigger_form|
+                        = trigger_form.submit "Send Weekly Notification",
+                                             class: "btn btn-success w-100",
+                                             data: { confirm: "This will send a weekly notification to the selected channel. Continue?" }
+
+                      - week_start = Date.current.beginning_of_week(:monday)
+                      - existing_notification = Notification.where(notifiable: @organization, notification_type: 'huddle_summary', created_at: week_start..week_start.end_of_week).first
+                      - if existing_notification&.message_id.present?
                         %small.text-muted.d-block.mt-1
-                          Configure a notification channel first
+                          %i.bi.bi-check-circle.me-1
+                          Notification sent this week
+                          = link_to "View in Slack", "https://slack.com/app_redirect?channel=#{@organization.huddle_review_notification_channel.third_party_id}&message_ts=#{existing_notification.message_id}",
+                                    target: "_blank",
+                                    class: "ms-1"
+                    - else
+                      %button.btn.btn-secondary.w-100{disabled: true}
+                        %i.bi.bi-send.me-2
+                        Send Weekly Notification
+                      %small.text-muted.d-block.mt-1
+                        Configure a notification channel first
       
       / Summary Cards
       .row.mb-4

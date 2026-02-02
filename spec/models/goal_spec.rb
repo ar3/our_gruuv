@@ -2,8 +2,8 @@ require 'rails_helper'
 
 RSpec.describe Goal, type: :model do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
-  let(:team) { create(:organization, :team, parent: company) }
+  let(:company) { create(:organization) }
+  let(:team) { create(:team, company: company) }
   let(:creator_teammate) { CompanyTeammate.find(create(:teammate, person: person, organization: company).id) }
   
   describe 'associations' do
@@ -165,10 +165,12 @@ RSpec.describe Goal, type: :model do
     end
     
     context 'owner type validation' do
-      let(:department) { create(:organization, :department, parent: company) }
-      let(:team_org) { create(:organization, :team, parent: company) }
-      let(:department_teammate) { create(:teammate, person: person, organization: department) }
-      let(:team_teammate) { create(:teammate, person: person, organization: team_org) }
+      let(:department) { create(:department, company: company) }
+      let(:team_org) { create(:team, company: company) }
+      let(:department_person) { create(:person) }
+      let(:team_person) { create(:person) }
+      let(:department_teammate) { create(:teammate, person: department_person, organization: company) }
+      let(:team_teammate) { create(:teammate, person: team_person, organization: company) }
       
       context 'with valid owner types' do
         it 'allows CompanyTeammate as owner' do
@@ -195,7 +197,7 @@ RSpec.describe Goal, type: :model do
           expect(goal).to be_valid
         end
         
-        it 'allows Company as owner' do
+        it 'allows Organization as owner' do
           goal = build(:goal, creator: creator_teammate, owner: company)
           goal.earliest_target_date = Date.today + 1.month
           goal.most_likely_target_date = Date.today + 2.months
@@ -695,27 +697,27 @@ RSpec.describe Goal, type: :model do
         it 'returns the company (via company_id)' do
           expect(goal.owner_company).to be_present
           expect(goal.owner_company.id).to eq(company.id)
-          expect(goal.owner_company.type).to eq('Company')
+          expect(goal.owner_company).to be_an(Organization)
         end
       end
       
       context 'with Organization owner' do
         let(:goal) { create(:goal, creator: creator_teammate, owner: company) }
         
-        it 'returns the organization when owner is a Company' do
+        it 'returns the organization when owner is an Organization' do
           expect(goal.owner_company).to be_present
           expect(goal.owner_company.id).to eq(company.id)
-          expect(goal.owner_company.type).to eq('Company')
+          expect(goal.owner_company).to be_an(Organization)
         end
       end
       
       context 'with Team owner' do
         let(:goal) { create(:goal, creator: creator_teammate, owner: team) }
         
-        it 'returns the root company when owner is a Team' do
+        it 'returns the company when owner is a Team' do
           expect(goal.owner_company).to be_present
           expect(goal.owner_company.id).to eq(company.id)
-          expect(goal.owner_company.type).to eq('Company')
+          expect(goal.owner_company).to be_an(Organization)
         end
       end
     end
@@ -1035,30 +1037,17 @@ RSpec.describe Goal, type: :model do
         expect(goal.owner_type).to eq('CompanyTeammate')
       end
       
-      it 'accepts Company as valid owner_type' do
-        goal = build(:goal, creator: creator_teammate, owner: company)
-        goal.owner_type = 'Company'
-        goal.earliest_target_date = Date.today + 1.month
-        goal.most_likely_target_date = Date.today + 2.months
-        goal.latest_target_date = Date.today + 3.months
-        
-        goal.save!
-        
-        expect(goal.owner_type).to eq('Company')
-        expect(goal.reload.owner_type).to eq('Company')
-      end
-      
-      it 'converts Organization to explicit type automatically' do
+      it 'accepts Organization as valid owner_type' do
         goal = build(:goal, creator: creator_teammate, owner: company)
         goal.owner_type = 'Organization'
         goal.earliest_target_date = Date.today + 1.month
         goal.most_likely_target_date = Date.today + 2.months
         goal.latest_target_date = Date.today + 3.months
         
-        expect(goal).to be_valid
         goal.save!
-        # The callback should convert Organization to the explicit type
-        expect(goal.owner_type).to eq('Company')
+        
+        expect(goal.owner_type).to eq('Organization')
+        expect(goal.reload.owner_type).to eq('Organization')
       end
     end
   end

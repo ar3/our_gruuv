@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::CommentsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:comment) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment) }
 

@@ -29,7 +29,7 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
   end
 
   def new
-    @title = Title.new(organization: @organization)
+    @title = Title.new(company: @organization)
     authorize @organization, :manage_maap?
   end
 

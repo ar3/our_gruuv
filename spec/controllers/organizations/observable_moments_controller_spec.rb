@@ -1,11 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::ObservableMomentsController, type: :controller do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, organization: company, person: person) }
+  # Use the teammate created by sign_in_as_teammate to avoid "Person has already been taken"
+  let(:teammate) { Teammate.find_by!(person: person, organization: company) }
   let(:other_person) { create(:person) }
-  let(:other_teammate) { create(:teammate, organization: company, person: other_person) }
+  # Find or create to avoid "Person has already been taken" when sign_in creates other_person's teammate
+  let(:other_teammate) { Teammate.find_by(person: other_person, organization: company) || create(:teammate, organization: company, person: other_person) }
   let(:observable_moment) do
     create(:observable_moment, :new_hire, company: company, primary_potential_observer: teammate)
   end
@@ -26,7 +28,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
       
       post :create_observation, params: { organization_id: company.id, id: observable_moment.id }
       
-      expect(response).to redirect_to(get_shit_done_organization_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
       expect(flash[:alert]).to be_present
     end
   end
@@ -45,7 +47,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
       
       get :reassign, params: { organization_id: company.id, id: observable_moment.id }
       
-      expect(response).to redirect_to(get_shit_done_organization_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
     end
   end
   
@@ -57,9 +59,9 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
         teammate_id: other_teammate.id
       }
       
-      expect(response).to redirect_to(get_shit_done_organization_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
       expect(flash[:notice]).to include('reassigned successfully')
-      expect(observable_moment.reload.primary_potential_observer).to eq(other_teammate)
+      expect(observable_moment.reload.primary_potential_observer_id).to eq(other_teammate.id)
     end
     
     it 'rejects invalid teammate_id' do
@@ -82,7 +84,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
         teammate_id: other_teammate.id
       }
       
-      expect(response).to redirect_to(get_shit_done_organization_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
     end
   end
   
@@ -92,7 +94,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
       
       patch :ignore, params: { organization_id: company.id, id: observable_moment.id }
       
-      expect(response).to redirect_to(get_shit_done_organization_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
       expect(flash[:notice]).to include('ignored')
       expect(observable_moment.reload.processed?).to be true
       expect(observable_moment.processed_by_teammate).to eq(teammate)
@@ -104,7 +106,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
       
       patch :ignore, params: { organization_id: company.id, id: observable_moment.id }
       
-      expect(response).to redirect_to(get_shit_done_organization_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
       expect(observable_moment.reload.processed?).to be false
     end
   end

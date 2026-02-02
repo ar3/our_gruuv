@@ -24,25 +24,17 @@
             - if @assignment.department.present?
               .mb-3
                 %h6.text-muted Department
-                - hierarchy_path = []
-                - current_org = @assignment.department
-                - while current_org
-                  - hierarchy_path.unshift(current_org)
-                  - current_org = current_org.parent
-                - hierarchy_path.each_with_index do |org, index|
-                  - if org.company?
-                    - if policy(org).show?
-                      = link_to org.name, organization_path(org), class: "text-decoration-none"
-                    - else
-                      %span= org.name
+                - if policy(@organization).show?
+                  = link_to @organization.name, organization_path(@organization), class: "text-decoration-none"
+                - else
+                  %span= @organization.name
+                - if @assignment.department.present?
+                  %span.text-muted.mx-1
+                    %i.bi.bi-chevron-right
+                  - if policy(@assignment.department).show?
+                    = link_to @assignment.department.name, organization_department_path(@organization, @assignment.department), class: "text-decoration-none"
                   - else
-                    - if policy(org).show?
-                      = link_to org.name, organization_department_path(@organization, org), class: "text-decoration-none"
-                    - else
-                      %span= org.name
-                  - unless index == hierarchy_path.length - 1
-                    %span.text-muted.mx-1
-                      %i.bi.bi-chevron-right
+                    %span= @assignment.department.name
             
             - if @assignment.tagline.present?
               .mb-3

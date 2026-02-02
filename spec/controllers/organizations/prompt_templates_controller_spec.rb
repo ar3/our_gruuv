@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::PromptTemplatesController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:organization) { create(:organization, name: 'Test Company') }
 
   before do
     # Create a teammate for the person in the organization with prompts management permissions
@@ -220,8 +220,8 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
   end
 
   describe 'root_company handling' do
-    let(:root_company) { create(:organization, :company) }
-    let(:team) { create(:organization, :team, parent: root_company) }
+    let(:root_company) { create(:organization) }
+    let(:team) { create(:team, company: root_company) }
     let!(:root_company_teammate) { create(:company_teammate, person: person, organization: root_company, can_manage_prompts: true) }
     let!(:root_template) { create(:prompt_template, company: root_company) }
 
@@ -256,7 +256,7 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
   end
 
   describe 'template not found' do
-    let(:other_company) { create(:organization, :company) }
+    let(:other_company) { create(:organization) }
     let(:other_template) { create(:prompt_template, company: other_company) }
 
     it 'redirects with alert when template not found' do

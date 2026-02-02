@@ -1,16 +1,16 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::PublicMaap::AssignmentsController, type: :controller do
-  let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
-  let(:team) { create(:organization, :team, parent: department) }
+  let(:company) { create(:organization) }
+  let(:department) { create(:department, company: company) }
+  let(:team) { create(:team, company: company) }
   
   let!(:assignment_company) do
     create(:assignment, company: company, title: 'Company Assignment')
   end
 
   let!(:assignment_department) do
-    create(:assignment, company: department, title: 'Department Assignment')
+    create(:assignment, company: company, department: department, title: 'Department Assignment')
   end
 
   let(:observer) { create(:person) }
@@ -42,14 +42,8 @@ RSpec.describe Organizations::PublicMaap::AssignmentsController, type: :controll
       expect(assignments_by_dept.values.flatten).to include(assignment_company, assignment_department)
     end
 
-    it 'excludes teams from hierarchy' do
-      team_assignment = create(:assignment, company: team, title: 'Team Assignment')
-      
-      get :index, params: { organization_id: company.id }
-      assignments = assigns(:assignments)
-      
-      expect(assignments).not_to include(team_assignment)
-    end
+    # Note: This test was removed because Teams are no longer Organizations (STI removed).
+    # Assignments belong to Organizations, not Teams.
   end
 
   describe 'GET #show' do

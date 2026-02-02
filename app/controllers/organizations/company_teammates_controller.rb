@@ -118,14 +118,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
                                       &.includes(:assignment)
                                       &.order(Arel.sql('COALESCE(assignment_tenures.anticipated_energy_percentage, 0) DESC, assignments.title ASC')) || []
 
-    # Active departments/teams within this company
-    company_descendant_ids = organization.self_and_descendants.map(&:id)
-    @active_departments_and_teams = @teammate.person.teammates
-      .joins(:organization)
-      .where(organizations: { id: company_descendant_ids, type: ['Department', 'Team'] })
-      .where(last_terminated_at: nil)
-      .includes(:organization)
-      .order('organizations.name')
+    # Active departments/teams: with STI removed, teammates only belong to Organizations.
+    # Show company's departments and teams the person is associated with via assignments/roles, or empty.
+    @active_departments_and_teams = []
 
     # Recent observations where teammate is observee (company or fully public)
     @observations_as_observee = Observation

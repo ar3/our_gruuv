@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::BulkDownloadsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:employment_person) { create(:person) }
   let(:employed_person) { create(:person) }
   let(:no_permission_person) { create(:person) }
@@ -95,7 +95,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         end
 
         it 'includes assignment data with department in CSV' do
-          department = create(:organization, :department, parent: organization)
+          department = create(:department, company: organization)
           assignment = create(:assignment, company: organization, department: department, title: 'Test Assignment', semantic_version: '1.0.0')
           # Make 3 updates to create version history
           assignment.update!(semantic_version: '1.1.0')

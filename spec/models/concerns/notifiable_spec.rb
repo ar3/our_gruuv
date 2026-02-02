@@ -6,7 +6,7 @@ class TestNotifiableModel < ApplicationRecord
   include Notifiable
   
   def company
-    @company ||= Organization.first || Organization.create!(name: 'Test Company', type: 'Company')
+    @company ||= Organization.first || Organization.create!(name: 'Test Company')
   end
 end
 

@@ -366,7 +366,7 @@ class ApplicationController < ActionController::Base
     return active_teammates.first if active_teammates.any?
     
     # No active teammates - create one in "OurGruuv Demo" organization
-    demo_org = Company.find_by(name: 'OurGruuv Demo')
+    demo_org = Organization.find_by(name: 'OurGruuv Demo')
     unless demo_org
       Rails.logger.error "OurGruuv Demo organization not found! Run db:seed to create it."
       raise "OurGruuv Demo organization not found. Please run db:seed."
@@ -395,8 +395,7 @@ class ApplicationController < ActionController::Base
     return active_teammates.first if active_teammates.any?
 
     root_company = teammate.organization.root_company || teammate.organization
-    return nil unless root_company.is_a?(Company)
-    
+
     # Find or create CompanyTeammate for root company... because the only way this is possible is if the person is a member of a department or team within a company.. this will make them a watcher of that company.
     teammate.person.teammates.find_or_create_by!(
       organization: root_company

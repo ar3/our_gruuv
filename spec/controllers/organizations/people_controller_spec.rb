@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:manager_access) { CompanyTeammate.create!(person: manager, organization: organization, can_manage_employment: true) }
   
@@ -72,7 +72,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       end
 
       context 'when user is from different organization' do
-        let(:other_organization) { create(:organization, :company) }
+        let(:other_organization) { create(:organization) }
         let(:other_org_person) { create(:person) }
         let(:other_org_teammate) { create(:teammate, person: other_org_person, organization: other_organization) }
 
@@ -199,7 +199,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:past_employment1) { create(:employment_tenure, teammate: person_teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: 6.months.ago) }
-      let(:other_organization) { create(:organization, :company) }
+      let(:other_organization) { create(:organization) }
       let(:other_title) { create(:title, company: other_organization, position_major_level: position_major_level) }
       let(:other_position) { create(:position, title: other_title, position_level: position_level) }
       let(:past_employment2) { create(:employment_tenure, teammate: other_organization_teammate, company: other_organization, position: other_position, started_at: 2.years.ago, ended_at: 1.year.ago) }
@@ -289,7 +289,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       let(:person) { create(:person) }
       let(:person_teammate) { create(:teammate, person: person, organization: organization) }
       let(:other_organization_teammate) { create(:teammate, person: person, organization: other_organization) }
-      let(:other_organization) { create(:organization, :company) }
+      let(:other_organization) { create(:organization) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
       let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
       let(:other_title) { create(:title, company: other_organization, position_major_level: position_major_level) }

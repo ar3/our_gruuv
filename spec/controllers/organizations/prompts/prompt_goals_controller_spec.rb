@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:organization) { create(:organization, name: 'Test Company') }
   let(:teammate) { CompanyTeammate.find_or_create_by!(person: person, organization: organization) }
   let(:template) { create(:prompt_template, company: organization, available_at: Date.current) }
   let(:prompt) { create(:prompt, company_teammate: teammate, prompt_template: template) }

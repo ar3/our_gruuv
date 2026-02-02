@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::Assignments::ConsumerAssignmentsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:maap_person) { create(:person) }
   let(:no_permission_person) { create(:person) }
   let(:assignment) { create(:assignment, company: organization) }

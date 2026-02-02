@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Position, type: :model do
-  let(:company) { create(:organization, type: 'Company') }
+  let(:company) { create(:organization) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:title) { create(:title, company: company, position_major_level: position_major_level) }
@@ -100,7 +100,7 @@ RSpec.describe Position, type: :model do
     end
 
     it 'filters by company' do
-      other_company = create(:organization, type: 'Company')
+      other_company = create(:organization)
       other_title = create(:title, company: other_company, position_major_level: position_major_level)
       other_position = create(:position, title: other_title, position_level: position_level)
       

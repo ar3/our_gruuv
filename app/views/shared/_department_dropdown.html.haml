@@ -1,4 +1,4 @@
-- company = organization.company? ? organization : organization.root_company
+- company = organization.root_company || organization
 - departments = company ? Department.for_company(company).active.ordered : []
 - # Exclude specified IDs (for parent selection, exclude self and descendants)
 - exclude_ids = exclude_ids || []

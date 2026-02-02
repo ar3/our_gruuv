@@ -75,11 +75,9 @@ class Comment < ApplicationRecord
     
     company = organization.root_company || organization
     return nil unless company.company?
+    return nil unless company.maap_object_comment_channel_id.present?
     
-    company_record = company.becomes(Company)
-    return nil unless company_record.maap_object_comment_channel_id.present?
-    
-    channel = company_record.maap_object_comment_channel
+    channel = company.maap_object_comment_channel
     channel_name = channel.display_name.gsub('#', '')
     
     slack_config = company.calculated_slack_config

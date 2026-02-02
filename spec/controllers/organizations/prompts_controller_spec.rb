@@ -3,7 +3,7 @@ require 'cgi'
 
 RSpec.describe Organizations::PromptsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:organization) { create(:organization, name: 'Test Company') }
   let(:template) { create(:prompt_template, company: organization, available_at: Date.current) }
   
   let(:teammate) do
@@ -103,7 +103,7 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
 
     it 'requires authorization' do
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_company_person = create(:person)
       sign_in_as_teammate(other_company_person, other_company)
       
@@ -170,12 +170,15 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
 
     context 'when user is not a CompanyTeammate' do
-      let(:team) { create(:organization, :team, parent: organization) }
-      let(:team_teammate) { create(:teammate, person: person, organization: team) }
+      let(:team) { create(:team, company: organization) }
+      let(:other_org) { create(:organization) }
+      let(:team_teammate) { create(:teammate, person: person, organization: other_org) }
 
       before do
         # Remove any existing CompanyTeammate for this person in the organization
         person.teammates.where(organization: organization).destroy_all
+        # Change the teammate type to TeamTeammate
+        team_teammate.update_column(:type, 'TeamTeammate')
         # Sign in as team teammate (not CompanyTeammate)
         session[:current_company_teammate_id] = team_teammate.id
       end
@@ -510,7 +513,7 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
 
     it 'requires authorization' do
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_company_person = create(:person)
       sign_in_as_teammate(other_company_person, other_company)
       
@@ -675,7 +678,7 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
 
     context 'when template belongs to different company' do
-      let(:other_company) { create(:organization, :company) }
+      let(:other_company) { create(:organization) }
       let(:other_template) { create(:prompt_template, company: other_company) }
 
       it 'redirects with alert' do

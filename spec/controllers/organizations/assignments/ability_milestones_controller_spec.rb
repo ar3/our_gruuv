@@ -2,11 +2,11 @@ require 'rails_helper'
 
 RSpec.describe Organizations::Assignments::AbilityMilestonesController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
+  let(:company) { create(:organization) }
+  let(:department) { create(:department, company: company) }
   let!(:assignment) { create(:assignment, company: company) }
   let!(:ability1) { create(:ability, company: company) }
-  let!(:ability2) { create(:ability, company: department) }
+  let!(:ability2) { create(:ability, company: company, department: department) }
   let!(:ability3) { create(:ability, company: company) }
 
   before do

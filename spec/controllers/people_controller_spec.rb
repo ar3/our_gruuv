@@ -5,14 +5,14 @@ RSpec.describe PeopleController, type: :controller do
 
   before do
     # Create a teammate for the person - use default organization
-    teammate = create(:teammate, person: person, organization: create(:organization, :company))
+    teammate = create(:teammate, person: person, organization: create(:organization))
     sign_in_as_teammate(person, teammate.organization)
   end
 
 
   describe 'GET #public' do
-    let(:organization) { create(:organization, :company) }
-    let(:other_organization) { create(:organization, :company) }
+    let(:organization) { create(:organization) }
+    let(:other_organization) { create(:organization) }
     let(:teammate) { create(:teammate, person: person, organization: organization) }
     let(:other_teammate) { create(:teammate, person: person, organization: other_organization) }
     

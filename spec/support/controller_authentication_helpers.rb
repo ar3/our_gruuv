@@ -22,7 +22,7 @@ module ControllerAuthenticationHelpers
       teammate = person.active_teammates.first
       if teammate.nil?
         teammate = person.teammates.create!(
-          organization: Company.find_by!(name: 'OurGruuv Demo'),
+          organization: Organization.find_by!(name: 'OurGruuv Demo'),
           type: 'CompanyTeammate',
           first_employed_at: nil,
           last_terminated_at: nil

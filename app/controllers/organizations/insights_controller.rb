@@ -11,7 +11,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @seats_by_department = seats
       .joins(title: :department)
       .where.not(titles: { department_id: nil })
-      .group('organizations.name')
+      .group('departments.name')
       .count
     @seats_no_department = seats.joins(:title).where(titles: { department_id: nil }).count
     
@@ -21,17 +21,17 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @filled_seats_by_department = build_department_breakdown(open_and_filled_seats.where(state: :filled))
     
     # Title statistics
-    titles = Title.where(organization: company)
+    titles = Title.where(company: company)
     @total_titles = titles.count
     @titles_by_department = titles
       .joins(:department)
       .where.not(department_id: nil)
-      .group('organizations.name')
+      .group('departments.name')
       .count
     @titles_no_department = titles.where(department_id: nil).count
     
     # Position statistics
-    positions = Position.joins(:title).where(titles: { organization_id: company.id })
+    positions = Position.joins(:title).where(titles: { company_id: company.id })
     @total_positions = positions.count
     
     # Titles by position count
@@ -81,7 +81,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     result = seats_scope
       .joins(title: :department)
       .where.not(titles: { department_id: nil })
-      .group('organizations.name')
+      .group('departments.name')
       .count
     
     no_dept_count = seats_scope.joins(:title).where(titles: { department_id: nil }).count

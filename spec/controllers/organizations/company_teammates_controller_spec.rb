@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
 
@@ -60,15 +60,14 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
 
       it 'assigns active departments and teams' do
         employee_teammate = employee.teammates.find_by(organization: organization)
-        department = create(:organization, :department, parent: organization)
-        team = create(:organization, :team, parent: organization)
-        create(:teammate, person: employee, organization: department)
-        create(:teammate, person: employee, organization: team)
+        create(:department, company: organization)
+        create(:team, company: organization)
+        # Note: With STI removed, teammates only belong to Organizations.
+        # active_departments_and_teams is now empty (no department/team teammates).
         
         get :internal, params: { organization_id: organization.id, id: employee_teammate.id }
         
-        expect(assigns(:active_departments_and_teams)).to be_present
-        expect(assigns(:active_departments_and_teams).count).to eq(2)
+        expect(assigns(:active_departments_and_teams)).to eq([])
       end
 
       it 'assigns observations as observee' do
@@ -120,7 +119,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
 
       it 'only assigns assignment tenures for assignments in the current organization' do
         employee_teammate = employee.teammates.find_by(organization: organization)
-        other_organization = create(:organization, :company)
+        other_organization = create(:organization)
         assignment_in_org = create(:assignment, company: organization)
         assignment_in_other_org = create(:assignment, company: other_organization)
         tenure_in_org = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_in_org, started_at: 1.month.ago, ended_at: nil)

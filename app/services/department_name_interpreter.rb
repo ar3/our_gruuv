@@ -12,7 +12,7 @@ class DepartmentNameInterpreter
 
   def interpret
     return nil if @department_name.blank?
-    return nil unless @company&.company?
+    return nil unless @company
 
     # If department name exactly matches company name (case-insensitive), return nil
     # This means the assignment belongs to the company directly, not a department
@@ -56,7 +56,7 @@ class DepartmentNameInterpreter
   # Preview method that returns hierarchy info without creating departments
   def preview
     return { valid: false, error_message: 'Department name is blank' } if @department_name.blank?
-    return { valid: false, error_message: 'Company is required' } unless @company&.company?
+    return { valid: false, error_message: 'Company is required' } unless @company
 
     # If department name exactly matches company name (case-insensitive), return nil
     if @department_name.strip.downcase == @company.name.downcase
@@ -119,8 +119,9 @@ class DepartmentNameInterpreter
     org_ids = parent.self_and_descendants.map(&:id)
     
     # Find existing department by exact name match (case-insensitive)
-    department = Organization.where(id: org_ids, type: 'Department')
-                            .find_by("LOWER(name) = ?", name.downcase)
+    # Department is now a standalone model, not STI
+    department = Department.where(company: @company)
+                           .find_by("LOWER(name) = ?", name.downcase)
 
     if department
       {
@@ -131,10 +132,9 @@ class DepartmentNameInterpreter
       }
     else
       # Create new department
-      new_dept = Organization.create!(
+      new_dept = Department.create!(
         name: name,
-        parent: parent,
-        type: 'Department'
+        company: @company
       )
       {
         name: name,
@@ -152,14 +152,11 @@ class DepartmentNameInterpreter
       will_create: true,
       existing_id: nil
     } unless parent.present?
-    
-    # Search within parent's descendants (including parent itself)
-    org_ids = parent.self_and_descendants.map(&:id)
-    
+
     # Find existing department by exact name match (case-insensitive)
-    # Also check that it's a direct child of the parent
-    department = Organization.where(id: org_ids, type: 'Department', parent_id: parent.id)
-                            .find_by("LOWER(name) = ?", name.downcase)
+    # Department is now a standalone model, not STI
+    department = Department.where(company: @company)
+                           .find_by("LOWER(name) = ?", name.downcase)
 
     if department
       {

@@ -123,9 +123,8 @@ RSpec.describe Comment, type: :model do
       let(:slack_channel) { create(:third_party_object, :slack_channel, organization: organization) }
       
       before do
-        # Create the association on the company (organization is already a Company)
-        company_record = organization.becomes(Company)
-        company_record.third_party_object_associations.create!(
+        # Create the association on the organization
+        organization.third_party_object_associations.create!(
           third_party_object: slack_channel,
           association_type: 'maap_object_comment_channel'
         )
@@ -137,9 +136,8 @@ RSpec.describe Comment, type: :model do
       end
 
       it 'returns Slack URL when slack_message_id is present' do
-        # The organization should be a Company and have the association
         company = comment.organization.root_company || comment.organization
-        expect(company.is_a?(Company) || company.company?).to be true
+        expect(company.company?).to be true
         expect(comment.slack_url).to be_present
         expect(comment.slack_url).to include('slack.com')
       end

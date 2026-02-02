@@ -1,16 +1,15 @@
 class Organizations::PublicMaap::PositionsController < Organizations::PublicMaap::BaseController
   def index
-    # Get all positions for this organization and its departments (exclude teams)
+    # Get all positions for this organization (company)
     company = @organization.root_company || @organization
-    orgs_in_hierarchy = [company] + company.descendants.select { |org| org.department? }
     
     @positions = Position
-      .joins(title: :organization)
-      .where(organizations: { id: orgs_in_hierarchy })
+      .joins(:title)
+      .where(titles: { company_id: company.id })
       .includes(title: [:company, :department], position_level: :position_major_level)
       .ordered
     
-    # Group by department for display
+    # Group by department for display (nil key = company-level positions)
     @positions_by_org = @positions.group_by { |pos| pos.title.department }
   end
   

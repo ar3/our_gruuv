@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe OrganizationsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:organization) { create(:organization, name: 'Test Company') }
   let(:team) { create(:team, name: 'Test Team', company: organization) }
 
   before do
@@ -204,13 +204,13 @@ RSpec.describe OrganizationsController, type: :controller do
         
         # Check that the association was created
         organization.reload
-        company = organization.becomes(Company)
+        company = organization
         expect(company.huddle_review_notification_channel).to eq(slack_channel)
       end
       
       it 'handles invalid channel_id gracefully' do
         # Mock the save to return false for invalid channel_id
-        allow_any_instance_of(Company).to receive(:save).and_return(false)
+        allow_any_instance_of(Organization).to receive(:save).and_return(false)
         
         patch :update_huddle_review_channel, params: { id: organization.id, channel_id: 'invalid_channel_id' }
         

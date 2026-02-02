@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager) { create(:person, full_name: 'Manager Person') }
   let(:employee) { create(:person, full_name: 'Employee Person') }
   let(:title) { create(:title, company: organization, external_title: 'Software Engineer') }
@@ -470,7 +470,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       let(:ability_with_milestone) { create(:ability, name: 'Ability A', company: organization) }
       let(:ability_with_assignment) { create(:ability, name: 'Ability B', company: organization) }
       let(:ability_with_both) { create(:ability, name: 'Ability C', company: organization) }
-      let(:ability_outside_hierarchy) { create(:ability, name: 'Outside Ability', company: create(:organization, :company)) }
+      let(:ability_outside_hierarchy) { create(:ability, name: 'Outside Ability', company: create(:organization)) }
       let(:certifier) { create(:person) }
 
       before do
@@ -555,8 +555,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes abilities from departments within the organization hierarchy' do
-        department = create(:organization, type: 'Department', parent: organization, name: 'Engineering Department')
-        ability_in_department = create(:ability, name: 'Department Ability', company: department)
+        department = create(:department, company: organization, name: 'Engineering Department')
+        ability_in_department = create(:ability, name: 'Department Ability', company: organization, department: department)
         certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_in_department, certifying_teammate: certifier_teammate, milestone_level: 2)
@@ -979,6 +979,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
 
       before do
         other_employment
+        # Make other_teammate_ct the manager of manager_teammate so they're in the hierarchy above the employee
+        manager_teammate.employment_tenures.where(company: organization).update_all(manager_teammate_id: other_teammate_ct.id)
         sign_in_as_teammate(other_teammate, organization)
       end
 

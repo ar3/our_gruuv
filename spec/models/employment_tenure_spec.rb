@@ -178,7 +178,7 @@ RSpec.describe EmploymentTenure, type: :model do
       # This test ensures we use the right association name in includes
       result = EmploymentTenure.includes(:company).find(tenure.id)
       expect(result.company.id).to eq(company.id)
-      expect(result.company).to be_a(Organization) # Company inherits from Organization
+      expect(result.company).to be_a(Organization)
     end
 
     it 'can include company with other associations' do

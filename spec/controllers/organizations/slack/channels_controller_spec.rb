@@ -2,11 +2,11 @@ require 'rails_helper'
 
 RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company, name: 'Test Company') }
-  let(:department1) { create(:organization, :department, name: 'Department 1', parent: company) }
-  let(:department2) { create(:organization, :department, name: 'Department 2', parent: company) }
-  let(:team1) { create(:organization, :team, name: 'Team 1', parent: department1) }
-  let(:team2) { create(:organization, :team, name: 'Team 2', parent: department2) }
+  let(:company) { create(:organization, name: 'Test Company') }
+  let(:department1) { create(:department, company: company, name: 'Department 1') }
+  let(:department2) { create(:department, company: company, name: 'Department 2') }
+  let(:team1) { create(:team, company: company, name: 'Team 1') }
+  let(:team2) { create(:team, company: company, name: 'Team 2') }
   let(:slack_config) { create(:slack_configuration, organization: company) }
   let(:mock_slack_service) { instance_double(SlackService) }
   let(:mock_channels_service) { instance_double(SlackChannelsService) }
@@ -33,8 +33,10 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       team1
       team2
       get :index, params: { organization_id: company.id }
+      # Note: Departments and Teams are no longer Organizations (STI removed)
+      # The organizations list now only contains the company itself
       org_ids = assigns(:organizations).map(&:id)
-      expect(org_ids).to include(company.id, department1.id, department2.id, team1.id, team2.id)
+      expect(org_ids).to include(company.id)
     end
 
     it 'loads channels and groups' do
@@ -100,29 +102,17 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       expect(company.reload.slack_group_id).to eq(group1.third_party_id)
     end
 
-    it 'updates kudos and group for a department' do
-      patch :update, params: {
-        organization_id: company.id,
-        target_organization_id: department1.id,
-        organization: {
-          kudos_channel_id: channel3.third_party_id,
-          slack_group_id: group2.third_party_id
-        }
-      }
-      expect(response).to redirect_to(channels_organization_slack_path(company))
-
-      expect(department1.reload.kudos_channel_id).to eq(channel3.third_party_id)
-      expect(department1.reload.slack_group_id).to eq(group2.third_party_id)
-    end
+    # Note: Department-specific update tests removed - Departments are no longer Organizations (STI removed).
+    # Slack channel settings apply to Organizations (companies) only.
 
     it 'clears kudos and group when values are blank' do
-      department1.kudos_channel_id = channel1.third_party_id
-      department1.slack_group_id = group1.third_party_id
-      department1.save!
+      company.kudos_channel_id = channel1.third_party_id
+      company.slack_group_id = group1.third_party_id
+      company.save!
 
       patch :update, params: {
         organization_id: company.id,
-        target_organization_id: department1.id,
+        target_organization_id: company.id,
         organization: {
           kudos_channel_id: '',
           slack_group_id: ''
@@ -130,8 +120,8 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       }
       expect(response).to redirect_to(channels_organization_slack_path(company))
 
-      expect(department1.reload.kudos_channel_id).to be_nil
-      expect(department1.reload.slack_group_id).to be_nil
+      expect(company.reload.kudos_channel_id).to be_nil
+      expect(company.reload.slack_group_id).to be_nil
     end
   end
 
@@ -143,15 +133,11 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       get :edit_company, params: { organization_id: company.id, target_organization_id: company.id }
       expect(response).to have_http_status(:success)
       expect(assigns(:target_organization).id).to eq(company.id)
-      expect(assigns(:target_organization)).to be_a(Company)
+      expect(assigns(:target_organization)).to be_a(Organization)
     end
 
-    it 'redirects if target is not a company' do
-      department1
-      get :edit_company, params: { organization_id: company.id, target_organization_id: department1.id }
-      expect(response).to redirect_to(channels_organization_slack_path(company))
-      expect(flash[:alert]).to include('Company-only settings are only available for companies')
-    end
+    # Note: This test was removed because STI types have been removed from Organization.
+    # Departments are no longer Organizations, so this redirect case no longer applies.
 
     it 'updates huddle review channel for company' do
       patch :update_company, params: {
@@ -164,14 +150,13 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       expect(response).to redirect_to(channels_organization_slack_path(company))
       expect(flash[:notice]).to include('Company-only channels updated successfully.')
 
-      company_record = Company.find(company.id)
-      expect(company_record.huddle_review_notification_channel_id).to eq(channel1.third_party_id)
+      company.reload
+      expect(company.huddle_review_notification_channel_id).to eq(channel1.third_party_id)
     end
 
     it 'clears huddle review channel when value is blank' do
-      company_record = Company.find(company.id)
-      company_record.huddle_review_notification_channel_id = channel1.third_party_id
-      company_record.save!
+      company.huddle_review_notification_channel_id = channel1.third_party_id
+      company.save!
 
       patch :update_company, params: {
         organization_id: company.id,
@@ -182,8 +167,8 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       }
       expect(response).to redirect_to(channels_organization_slack_path(company))
 
-      company_record.reload
-      expect(company_record.huddle_review_notification_channel_id).to be_nil
+      company.reload
+      expect(company.huddle_review_notification_channel_id).to be_nil
     end
   end
 end

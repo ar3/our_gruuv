@@ -9,7 +9,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
     @person = @teammate.person
     @employment_tenure = EmploymentTenure.new
-    @companies = Organization.companies.order(:name)
+    @companies = Organization.order(:name)
   end
 
   def change
@@ -151,7 +151,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     # For adding historical employment records
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
     @employment_tenure = EmploymentTenure.new
-    @companies = Organization.companies.order(:name)
+    @companies = Organization.order(:name)
   end
 
   def employment_summary

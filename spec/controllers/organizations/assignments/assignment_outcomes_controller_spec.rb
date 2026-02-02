@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::Assignments::AssignmentOutcomesController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:assignment_outcome) { create(:assignment_outcome, assignment: assignment, description: 'Original Description', outcome_type: 'quantitative') }
   

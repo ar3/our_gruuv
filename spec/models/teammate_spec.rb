@@ -2,8 +2,8 @@ require 'rails_helper'
 
 RSpec.describe Teammate, type: :model do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
-  let(:team) { create(:organization, :team, parent: company) }
+  let(:company) { create(:organization) }
+  let(:team) { create(:team, company: company) }
   
   describe 'associations' do
     it { should belong_to(:person) }
@@ -26,22 +26,22 @@ RSpec.describe Teammate, type: :model do
     let(:person2) { create(:person) }
     let(:person3) { create(:person) }
     let(:person4) { create(:person) }
+    let(:other_company) { create(:organization) }
     
     let!(:access1) { create(:teammate, person: person, organization: company) }
-    let!(:access2) { create(:teammate, person: person2, organization: team) }
+    let!(:access2) { create(:teammate, person: person2, organization: other_company) }
     
     describe '.for_organization_hierarchy' do
       it 'returns access records for company' do
-        # Since Organization.self_and_descendants now returns just [self] for companies,
-        # and team is actually created as a Company (not STI Team), this only returns company access
         result = described_class.for_organization_hierarchy(company)
         expect(result).to include(access1)
+        expect(result).not_to include(access2)
       end
       
       it 'returns access records for specific organization' do
-        # team is created with :team trait which now creates a Company
-        result = described_class.for_organization_hierarchy(team)
+        result = described_class.for_organization_hierarchy(other_company)
         expect(result).to include(access2)
+        expect(result).not_to include(access1)
       end
     end
     
@@ -56,7 +56,7 @@ RSpec.describe Teammate, type: :model do
     end
     
     describe '.with_maap_management' do
-      let!(:maap_access) { create(:teammate, :maap_manager, person: person4, organization: team) }
+      let!(:maap_access) { create(:teammate, :maap_manager, person: person4, organization: other_company) }
       
       it 'returns only access records with MAAP management' do
         result = described_class.with_maap_management

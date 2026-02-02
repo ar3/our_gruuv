@@ -26,22 +26,22 @@ FactoryBot.define do
       # Set company_id from creator's organization
       if goal.creator && goal.company_id.nil?
         company = goal.creator.organization.root_company || goal.creator.organization
-        goal.company_id = company.id if company&.company?
+        goal.company_id = company.id if company
       end
       
-      # Explicitly set owner_type based on owner's actual type
-      # Use explicit types (CompanyTeammate, Company, Department, Team) instead of base class
+      # Explicitly set owner_type based on owner's actual class
+      # Use explicit types (CompanyTeammate, Organization, Department, Team) instead of base class
       if goal.owner.present?
-        if goal.owner.respond_to?(:type)
-          if goal.owner.type == 'CompanyTeammate'
-            goal.owner_type = 'CompanyTeammate'
-          elsif goal.owner.type.in?(['Department', 'Team', 'Company'])
-            goal.owner_type = goal.owner.type
-          end
-        elsif goal.owner.is_a?(CompanyTeammate)
+        if goal.owner.is_a?(CompanyTeammate)
           goal.owner_type = 'CompanyTeammate'
+        elsif goal.owner.is_a?(Department)
+          goal.owner_type = 'Department'
+        elsif goal.owner.is_a?(Team)
+          goal.owner_type = 'Team'
         elsif goal.owner.is_a?(Organization)
-          goal.owner_type = goal.owner.type
+          goal.owner_type = 'Organization'
+        elsif goal.owner.respond_to?(:type) && goal.owner.type == 'CompanyTeammate'
+          goal.owner_type = 'CompanyTeammate'
         end
       end
     end
@@ -50,22 +50,20 @@ FactoryBot.define do
       # Ensure owner_type is set correctly after creation as well
       # This handles cases where owner is set during creation
       if goal.owner.present?
-        correct_owner_type = if goal.owner.respond_to?(:type)
-          if goal.owner.type == 'CompanyTeammate'
-            'CompanyTeammate'
-          elsif goal.owner.type.in?(['Department', 'Team', 'Company'])
-            goal.owner.type
-          else
-            nil
-          end
-        elsif goal.owner.is_a?(CompanyTeammate)
+        correct_owner_type = if goal.owner.is_a?(CompanyTeammate)
           'CompanyTeammate'
+        elsif goal.owner.is_a?(Department)
+          'Department'
+        elsif goal.owner.is_a?(Team)
+          'Team'
         elsif goal.owner.is_a?(Organization)
-          goal.owner.type
+          'Organization'
+        elsif goal.owner.respond_to?(:type) && goal.owner.type == 'CompanyTeammate'
+          'CompanyTeammate'
         else
           nil
         end
-        
+
         if correct_owner_type && goal.owner_type != correct_owner_type
           goal.update_column(:owner_type, correct_owner_type)
         end
@@ -89,7 +87,7 @@ FactoryBot.define do
     end
     
     trait :with_company_owner do
-      association :owner, factory: :company
+      association :owner, factory: :organization
     end
     
     trait :with_department_owner do

@@ -347,8 +347,8 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         'Created At', 'Updated At'
       ]
       
-      Ability.includes(:organization, assignment_abilities: :assignment)
-             .where(organization: company.self_and_descendants)
+      Ability.includes(:company, assignment_abilities: :assignment)
+             .where(company: company)
              .order(:name)
              .find_each do |ability|
         # Format assignments: "<assignment name> - Milestone <milestone level>" separated by newlines
@@ -383,11 +383,11 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       ]
       
       Position.includes(
-        title: [:organization, :seats, :department],
+        title: [:company, :seats, :department],
         position_level: [],
         position_assignments: :assignment
       )
-              .joins(title: :organization)
+              .joins(title: :company)
               .where(organizations: { id: company.self_and_descendants.map(&:id) })
               .order('titles.external_title, position_levels.level')
               .find_each do |position|
@@ -482,8 +482,8 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       
       org_ids = company.self_and_descendants.map(&:id)
       Seat.joins(:title)
-          .where(titles: { organization_id: org_ids })
-          .includes(:title, :department, :team, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person })
+          .where(titles: { company_id: org_ids })
+          .includes(:title, :team, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person })
           .order('titles.external_title, seats.seat_needed_by')
           .find_each do |seat|
         # Reports to seat display name
@@ -524,8 +524,8 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       ]
       
       org_ids = company.self_and_descendants.map(&:id)
-      Title.where(organization_id: org_ids)
-           .includes(:organization, :position_major_level, :positions, :seats)
+      Title.where(company_id: org_ids)
+           .includes(:company, :position_major_level, :positions, :seats)
            .order(:external_title)
            .find_each do |title|
         # Count positions
@@ -558,43 +558,42 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
   def download_departments_and_teams_csv
     CSV.generate(headers: true) do |csv|
       csv << [
-        'Organization ID', 'Name', 'Type', 'Parent Organization',
+        'Department ID', 'Name', 'Parent Organization',
         'Number of Seats', 'Number of Titles', 'Number of Teammates',
-        'Number of Child Departments', 'Number of Child Teams',
         'Created At', 'Updated At'
       ]
-      
-      org_ids = company.self_and_descendants.map(&:id)
-      Organization.where(type: ['Department', 'Team'])
-                  .where(id: org_ids)
-                  .includes(:parent, :seats, :titles, :teammates, :children)
-                  .order(:type, :name)
-                  .find_each do |org|
-        # Count seats (both through titles and direct associations)
-        seats_count = org.seats.count + org.seats_as_department.count + org.seats_as_team.count
-        
-        # Count titles
-        titles_count = org.titles.count
-        
-        # Count teammates
-        teammates_count = org.teammates.count
-        
-        # Count departments and teams
-        departments_count = org.departments.count
-        teams_count = org.teams.count
-        
+
+      # Export departments (standalone model)
+      company.departments.active.order(:name).find_each do |dept|
         csv << [
-          org.id,
-          org.name,
-          org.type,
-          '',  # No parent hierarchy anymore
-          seats_count,
-          titles_count,
-          teammates_count,
-          departments_count,
-          teams_count,
-          org.created_at&.to_s || '',
-          org.updated_at&.to_s || ''
+          dept.id,
+          dept.name,
+          company.name,
+          dept.seats.count,
+          dept.titles.count,
+          dept.teammates.count,
+          dept.created_at&.to_s || '',
+          dept.updated_at&.to_s || ''
+        ]
+      end
+
+      csv << [] # Empty row separator
+
+      csv << [
+        'Team ID', 'Name', 'Parent Organization',
+        'Number of Members',
+        'Created At', 'Updated At'
+      ]
+
+      # Export teams (standalone model)
+      company.teams.active.order(:name).find_each do |team|
+        csv << [
+          team.id,
+          team.name,
+          company.name,
+          team.team_members.count,
+          team.created_at&.to_s || '',
+          team.updated_at&.to_s || ''
         ]
       end
     end

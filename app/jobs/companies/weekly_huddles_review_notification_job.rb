@@ -3,7 +3,7 @@ class Companies::WeeklyHuddlesReviewNotificationJob < ApplicationJob
 
   def perform(company_id)
     begin
-      company = Company.find(company_id)
+      company = Organization.find(company_id)
       
       unless company.slack_configured?
         return { success: false, error: 'Slack is not configured for this company' }
@@ -37,7 +37,7 @@ class Companies::WeeklyHuddlesReviewNotificationJob < ApplicationJob
           original_message_id: existing_notification.id,
           metadata: { 
             channel: company.huddle_review_notification_channel.third_party_id,
-            notifiable_type: 'Company',
+            notifiable_type: 'Organization',
             notifiable_id: company.id
           },
           rich_message: message[:blocks],
@@ -55,7 +55,7 @@ class Companies::WeeklyHuddlesReviewNotificationJob < ApplicationJob
           status: 'preparing_to_send',
           metadata: { 
             channel: company.huddle_review_notification_channel.third_party_id,
-            notifiable_type: 'Company',
+            notifiable_type: 'Organization',
             notifiable_id: company.id
           },
           rich_message: message[:blocks],

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::SearchController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
 
   before do

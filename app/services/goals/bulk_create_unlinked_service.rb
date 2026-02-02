@@ -81,15 +81,11 @@ module Goals
     end
 
     def set_owner_on_goal(goal, owner_record)
-      if owner_record.respond_to?(:type) && owner_record.type == 'CompanyTeammate'
+      if owner_record.is_a?(CompanyTeammate)
         goal.owner_type = 'CompanyTeammate'
-      elsif owner_record.is_a?(CompanyTeammate)
-        goal.owner_type = 'CompanyTeammate'
-      elsif owner_record.is_a?(Organization)
-        # Store explicit type (Company, Department, or Team)
-        goal.owner_type = owner_record.type
       else
-        goal.owner_type = owner_record.class.base_class.name
+        # Organization, Department, Team - use class name
+        goal.owner_type = owner_record.class.name
       end
       goal.owner_id = owner_record.id
     end

@@ -2,8 +2,8 @@ require 'rails_helper'
 
 RSpec.describe Organizations::EmployeesController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
-  let(:team) { create(:organization, :team, parent: company) }
+  let(:company) { create(:organization) }
+  let(:team) { create(:team, company: company) }
   let(:employee1) { create(:person) }
   let(:employee2) { create(:person) }
   let(:huddle_participant) { create(:person) }
@@ -15,9 +15,8 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
   let(:position) { create(:position, title: title, position_level: position_level) }
   let(:employment_tenure1) { create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: 1.year.ago) }
   let(:employment_tenure2) { create(:employment_tenure, teammate: employee2_teammate, company: company, position: position, started_at: 6.months.ago) }
-  let(:team) { create(:team, company: team) }
   let(:huddle) { create(:huddle, team: team) }
-  let(:huddle_participation) { create(:huddle_participant, huddle: huddle, teammate: create(:teammate, person: huddle_participant, organization: team)) }
+  let(:huddle_participation) { create(:huddle_participant, huddle: huddle, teammate: create(:teammate, person: huddle_participant, organization: company)) }
 
   before do
     employment_tenure1
@@ -84,7 +83,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
     end
 
     it 'handles organizations with no employees gracefully' do
-      empty_company = create(:organization, :company)
+      empty_company = create(:organization)
       # Create teammate for person in empty_company and switch session to it
       empty_teammate = create(:teammate, person: person, organization: empty_company)
       session[:current_company_teammate_id] = empty_teammate.id
@@ -210,7 +209,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       end
 
       it 'only shows MAAP snapshots for the specific organization' do
-        other_company = create(:organization, :company)
+        other_company = create(:organization)
         other_employee_tm = create(:company_teammate, person: employee1, organization: other_company)
         other_creator_tm = create(:company_teammate, person: maap_manager, organization: other_company)
         other_snapshot = create(:maap_snapshot, employee_company_teammate: other_employee_tm, creator_company_teammate: other_creator_tm, company: other_company)
@@ -224,7 +223,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
 
     context 'when user does not have MAAP management permissions' do
       # User from another org cannot view this org's audit
-      let(:other_org) { create(:organization, :company) }
+      let(:other_org) { create(:organization) }
       let(:other_org_user) { create(:person) }
       let!(:other_org_teammate) { create(:company_teammate, person: other_org_user, organization: other_org, first_employed_at: 1.year.ago) }
 

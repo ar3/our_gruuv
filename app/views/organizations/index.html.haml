@@ -56,8 +56,8 @@
                       - @organizations.each do |organization|
                         %tr{class: organization == @current_organization ? "table-primary" : ""}
                           %td
-                            %span.badge{class: organization.company? ? "bg-primary" : "bg-secondary"}
-                              = organization.type
+                            %span.badge.bg-primary
+                              Organization
                           %td
                             = link_to organization_path(organization), class: "text-decoration-none" do
                               %strong= organization.name
@@ -117,8 +117,8 @@
                       - @followable_organizations.each do |organization|
                         %tr
                           %td
-                            %span.badge{class: organization.company? ? "bg-primary" : "bg-secondary"}
-                              = organization.type
+                            %span.badge.bg-primary
+                              Organization
                           %td
                             = link_to organization_path(organization), class: "text-decoration-none" do
                               %strong= organization.name

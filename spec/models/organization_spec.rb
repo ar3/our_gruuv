@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organization, type: :model do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:standalone_team) { create(:team, company: company) }
   let(:person1) { create(:person) }
   let(:person2) { create(:person) }
@@ -30,7 +30,7 @@ RSpec.describe Organization, type: :model do
     end
 
     it 'returns empty when no huddles exist' do
-      empty_company = create(:organization, :company)
+      empty_company = create(:organization)
       expect(empty_company.huddle_participants).to be_empty
     end
   end
@@ -97,7 +97,7 @@ RSpec.describe Organization, type: :model do
 
     it 'only returns milestones for abilities in the organization' do
       # Create ability in different organization
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_ability = create(:ability, company: other_company)
       
       # Create milestones for both abilities
@@ -133,18 +133,18 @@ RSpec.describe Organization, type: :model do
 
   describe '#to_param' do
     it 'returns id-name-parameterized format' do
-      company = create(:organization, :company, name: 'Test Company')
+      company = create(:organization, name: 'Test Company')
       expect(company.to_param).to eq("#{company.id}-test-company")
     end
 
     it 'handles special characters in name' do
-      company = create(:organization, :company, name: 'Test & Company!')
+      company = create(:organization, name: 'Test & Company!')
       expect(company.to_param).to eq("#{company.id}-test-company")
     end
   end
 
   describe '.find_by_param' do
-    let(:company) { create(:organization, :company, name: 'Test Company') }
+    let(:company) { create(:organization, name: 'Test Company') }
 
     it 'finds by numeric id' do
       found = Organization.find_by_param(company.id.to_s)
@@ -278,12 +278,12 @@ RSpec.describe Organization, type: :model do
   end
 
   describe 'archiving' do
-    let(:other_company) { create(:organization, :company) }
+    let(:other_company) { create(:organization) }
 
     describe 'scopes' do
       describe '.active' do
         it 'returns only organizations without deleted_at' do
-          archived_org = create(:organization, :company, deleted_at: Time.current)
+          archived_org = create(:organization, deleted_at: Time.current)
 
           active_orgs = Organization.active
           expect(active_orgs).to include(company, other_company)
@@ -293,7 +293,7 @@ RSpec.describe Organization, type: :model do
 
       describe '.archived' do
         it 'returns only organizations with deleted_at' do
-          archived_org = create(:organization, :company, deleted_at: Time.current)
+          archived_org = create(:organization, deleted_at: Time.current)
 
           archived_orgs = Organization.archived
           expect(archived_orgs).to include(archived_org)

@@ -45,19 +45,9 @@ RSpec.describe Organizations::Slack::TeammatesController, type: :controller do
       end
     end
 
-    context 'when organization is not a company' do
-      let(:team) { create(:organization, :team, parent: company) }
-
-      before do
-        teammate = create(:teammate, person: person, organization: team)
-        sign_in_as_teammate(person, team)
-      end
-
-      it 'redirects to organization path' do
-        get :index, params: { organization_id: team.id }
-        expect(response).to redirect_to(organization_path(team))
-      end
-    end
+    # Note: This test was removed because STI types have been removed from Organization.
+    # All Organizations are now effectively "companies", so the "not a company" case
+    # no longer exists for Organization IDs.
   end
 
   describe 'PATCH #update' do

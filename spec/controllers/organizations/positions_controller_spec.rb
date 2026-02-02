@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::PositionsController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:title) { create(:title, company: organization) }
   let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
 
@@ -75,12 +75,12 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       position_major_level = create(:position_major_level)
       
       # Create departments with hierarchy
-      dept_a = create(:organization, :department, parent: organization, name: 'Department A')
-      dept_a1 = create(:organization, :department, parent: dept_a, name: 'Department A.1')
-      dept_a2 = create(:organization, :department, parent: dept_a, name: 'Department A.2')
-      dept_b = create(:organization, :department, parent: organization, name: 'Department B')
-      dept_b1 = create(:organization, :department, parent: dept_b, name: 'Department B.1')
-      dept_c = create(:organization, :department, parent: organization, name: 'Department C')
+      dept_a = create(:department, company: organization, name: 'Department A')
+      dept_a1 = create(:department, company: organization, parent_department: dept_a, name: 'Department A.1')
+      dept_a2 = create(:department, company: organization, parent_department: dept_a, name: 'Department A.2')
+      dept_b = create(:department, company: organization, name: 'Department B')
+      dept_b1 = create(:department, company: organization, parent_department: dept_b, name: 'Department B.1')
+      dept_c = create(:department, company: organization, name: 'Department C')
       
       # Create titles for each department with unique external titles
       title_a = create(:title, company: organization, department: dept_a, position_major_level: position_major_level, external_title: 'Title A')
@@ -102,17 +102,17 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       # Then departments sorted hierarchically by display_name
       dept_names = dept_keys.compact.map(&:display_name)
       expect(dept_names).to eq([
-        "#{organization.name} > Department A",
-        "#{organization.name} > Department A > Department A.1",
-        "#{organization.name} > Department A > Department A.2",
-        "#{organization.name} > Department B",
-        "#{organization.name} > Department B > Department B.1",
-        "#{organization.name} > Department C"
+        "Department A",
+        "Department A > Department A.1",
+        "Department A > Department A.2",
+        "Department B",
+        "Department B > Department B.1",
+        "Department C"
       ])
     end
 
     it 'sorts titles alphanumerically within each department' do
-      dept = create(:organization, :department, parent: organization, name: 'Department A')
+      dept = create(:department, company: organization, name: 'Department A')
       position_major_level = create(:position_major_level)
       
       # Create titles with different names

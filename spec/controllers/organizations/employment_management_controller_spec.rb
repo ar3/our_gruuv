@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::EmploymentManagementController, type: :controller do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person, og_admin: false) }
   let(:position_major_level) { create(:position_major_level) }
   let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
@@ -71,7 +71,8 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
       it 'sets up wizard data' do
         get :new, params: { organization_id: organization.id }
         expect(assigns(:positions).pluck(:id)).to eq(organization.positions.pluck(:id))
-        expect(assigns(:managers).pluck(:id)).to eq(organization.employees.pluck(:id))
+        # Managers are teammates; compare by person_id to employees (people)
+        expect(assigns(:managers).map(&:person_id).sort).to eq(organization.employees.pluck(:id).sort)
         expect(assigns(:employment_tenure)).to be_a(EmploymentTenure)
       end
     end

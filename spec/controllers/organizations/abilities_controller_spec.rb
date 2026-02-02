@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Organizations::AbilitiesController, type: :controller do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:organization) { create(:organization, name: 'Test Company') }
 
   before do
     # Create a teammate for the person in the organization with MAAP management permissions
@@ -208,7 +208,7 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
         ability: {
           name: 'Test Ability', # Valid name
           description: '', # Invalid: empty description
-          organization_id: organization.id,
+          company_id: organization.id,
           version_type: 'ready',
           milestone_1_description: 'Basic understanding'
           # Missing other milestone descriptions
@@ -222,7 +222,7 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
       form = assigns(:form)
       expect(form.name).to eq('Test Ability')
       expect(form.description).to eq('')
-      expect(form.organization_id).to eq(organization.id.to_s)
+      expect(form.company_id).to eq(organization.id.to_s)
       expect(form.version_type).to eq('ready')
       expect(form.milestone_1_description).to eq('Basic understanding')
     end

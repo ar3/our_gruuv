@@ -7,7 +7,7 @@ RSpec.describe ImpersonationsController, type: :controller do
 
   before do
     # Create teammates for admin and regular person
-    admin_teammate = create(:teammate, person: admin, organization: create(:organization, :company))
+    admin_teammate = create(:teammate, person: admin, organization: create(:organization))
     sign_in_as_teammate(admin, admin_teammate.organization)
   end
 
@@ -15,7 +15,7 @@ RSpec.describe ImpersonationsController, type: :controller do
     context 'when admin tries to impersonate a regular person' do
       before do
         # Create teammate for regular_person so impersonation can work
-        create(:teammate, person: regular_person, organization: create(:organization, :company))
+        create(:teammate, person: regular_person, organization: create(:organization))
       end
 
       it 'starts impersonation' do
@@ -35,7 +35,7 @@ RSpec.describe ImpersonationsController, type: :controller do
     context 'when admin tries to impersonate another admin' do
       before do
         # Create teammate for other_admin so impersonation can be attempted
-        create(:teammate, person: other_admin, organization: create(:organization, :company))
+        create(:teammate, person: other_admin, organization: create(:organization))
       end
 
       it 'allows impersonation (admin-to-admin prevention not implemented yet)' do
@@ -54,7 +54,7 @@ RSpec.describe ImpersonationsController, type: :controller do
 
     context 'when non-admin tries to impersonate' do
       before do
-        regular_teammate = create(:teammate, person: regular_person, organization: create(:organization, :company))
+        regular_teammate = create(:teammate, person: regular_person, organization: create(:organization))
         sign_in_as_teammate(regular_person, regular_teammate.organization)
       end
 
@@ -72,7 +72,7 @@ RSpec.describe ImpersonationsController, type: :controller do
       before do
         # Create teammate for regular_person and set up impersonation
         admin_teammate = admin.active_teammates.first
-        regular_teammate = create(:teammate, person: regular_person, organization: create(:organization, :company))
+        regular_teammate = create(:teammate, person: regular_person, organization: create(:organization))
         # Set up impersonation: impersonating_teammate_id stores original user (admin)
         session[:impersonating_teammate_id] = admin_teammate.id
         # current_company_teammate_id stores impersonated user (regular_person)
@@ -93,7 +93,7 @@ RSpec.describe ImpersonationsController, type: :controller do
     end
 
     context 'when non-admin is impersonating (e.g., admin impersonated them)' do
-      let(:regular_person_org) { create(:organization, :company) }
+      let(:regular_person_org) { create(:organization) }
       let(:regular_person_teammate) { create(:teammate, person: regular_person, organization: regular_person_org) }
       let(:admin_teammate) { admin.active_teammates.first }
 
