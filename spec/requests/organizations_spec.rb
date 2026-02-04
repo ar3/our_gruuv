@@ -13,6 +13,12 @@ RSpec.describe "Organizations", type: :request do
       get organizations_path
       expect(response).to have_http_status(:success)
     end
+
+    it "returns http success when organizations have teams (exercises Teams & Huddles section)" do
+      create(:team, company: organization)
+      get organizations_path
+      expect(response).to have_http_status(:success)
+    end
   end
 
   describe "GET /show" do

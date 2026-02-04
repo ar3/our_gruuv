@@ -2,9 +2,9 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   before_action :require_authentication, except: [:pundit_healthcheck]
   
   def index
-    # Eager load teams, huddles, huddle_channel, and huddle_participants to avoid N+1 in "Teams & Huddles" section
+    # Eager load teams and huddles (Team#huddle_channel is a method, not an association, so it cannot be included)
     @organizations = current_company_teammate.person.available_organizations
-      .includes(teams: [:huddle_channel, { huddles: :huddle_participants }])
+      .includes(teams: [{ huddles: :huddle_participants }])
     @followable_organizations = current_company_teammate.person.followable_organizations
       .includes(:assignments, :abilities)
     # Preload which followable orgs have positions (Organization#positions is a method, not association)
