@@ -499,16 +499,27 @@ module GoalsHelper
     end
   end
   
-  # Returns the owner's profile image or organization initials
+  # Returns the owner's profile image or organization initials, wrapped with a tooltip showing the full owner name
   # For CompanyTeammate owners: shows their profile image or initials
   # For Organization owners: shows organization initials
   def goal_owner_image(goal, size: 48)
+    inner = goal_owner_image_content(goal, size: size)
+    tooltip_title = goal_owner_display_name(goal)
+    content_tag :span,
+                inner,
+                'data-bs-toggle': 'tooltip',
+                'data-bs-title': tooltip_title,
+                title: tooltip_title
+  end
+
+  # Inner content for goal owner image (avatar or initials). Use goal_owner_image for the version with tooltip.
+  def goal_owner_image_content(goal, size: 48)
     return organization_initials_circle('?', size: size) unless goal.owner
-    
+
     if goal.owner_type == 'CompanyTeammate'
       teammate = goal.owner
       profile_url = teammate.profile_image_url
-      
+
       if profile_url.present?
         image_tag profile_url,
                   class: "rounded-circle",
@@ -523,7 +534,7 @@ module GoalsHelper
           content_tag :span, initials, class: "fw-bold", style: "font-size: #{size * 0.4}px;"
         end
       end
-    elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
+    elsif goal.owner_type.in?(['Company', 'Department', 'Team', 'Organization'])
       org = goal.owner
       # Get initials from organization name (first letter of each word, max 2)
       name = org.display_name || org.name || 'Org'

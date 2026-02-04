@@ -340,8 +340,9 @@ class Goal < ApplicationRecord
     end
   end
   
+  # Normalize UI "Company" to stored "Organization" so polymorphic owner never constantizes Company
   def set_explicit_owner_type
-    # No longer needed since Organization doesn't have STI type
+    self.owner_type = 'Organization' if owner_type == 'Company'
   end
 
   def set_company_id

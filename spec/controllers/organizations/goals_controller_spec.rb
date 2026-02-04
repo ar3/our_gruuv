@@ -185,13 +185,12 @@ RSpec.describe Organizations::GoalsController, type: :controller do
                most_likely_target_date: Date.today + 2.months)
       end
 
-      it 'filters to only show active goals with everyone_in_company privacy' do
+      it 'shows all public goals (draft, active, completed) with everyone_in_company privacy' do
         get :index, params: { organization_id: company.id, owner_id: 'everyone_in_company' }
         
         goals = assigns(:goals)
-        expect(goals).to include(public_goal, other_public_goal)
+        expect(goals).to include(public_goal, other_public_goal, draft_public_goal)
         expect(goals).not_to include(private_goal)  # Wrong privacy level
-        expect(goals).not_to include(draft_public_goal)  # Not active (not started)
       end
 
       it 'sets the owner_id in current_filters to everyone_in_company' do

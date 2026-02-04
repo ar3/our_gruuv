@@ -110,6 +110,26 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(goal.owner_id).to eq(teammate.id)
       expect(goal.owner).to be_a(CompanyTeammate)
     end
+
+    it 'creates goal with Company (Organization) owner when owner_id is Company_ID format' do
+      expect {
+        post organization_goals_path(organization), params: {
+          goal: {
+            title: 'Company-Wide Goal',
+            description: 'Test',
+            goal_type: 'inspirational_objective',
+            privacy_level: 'everyone_in_company',
+            owner_id: "Company_#{organization.id}"
+          }
+        }
+      }.to change(Goal, :count).by(1)
+
+      created = Goal.last
+      expect(created.owner_type).to eq('Organization')
+      expect(created.owner_id).to eq(organization.id)
+      expect(created.owner).to eq(organization)
+      expect(created.privacy_level).to eq('everyone_in_company')
+    end
     
     context 'when current_teammate is missing' do
       let(:person_without_teammate) { create(:person) }
@@ -143,6 +163,37 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
   
+  describe 'GET /organizations/:organization_id/goals/:id/edit and PATCH update' do
+    it 'edits goal with Organization owner and shows Company as selected in owner dropdown' do
+      company_goal = create(:goal, creator: teammate, owner: organization, title: 'Company Goal', started_at: 1.week.ago, privacy_level: 'everyone_in_company')
+      get edit_organization_goal_path(organization, company_goal)
+
+      expect(response).to have_http_status(:success)
+      # Dropdown uses "Company_ID" for the company option; edit view must show it as selected when goal.owner_type is Organization
+      expect(response.body).to include("value=\"Company_#{organization.id}\"")
+      expect(response.body).to include('Company Goal')
+    end
+
+    it 'updates goal preserving Organization owner when owner_id is Company_ID' do
+      company_goal = create(:goal, creator: teammate, owner: organization, title: 'Company Goal', started_at: 1.week.ago, privacy_level: 'everyone_in_company')
+      patch organization_goal_path(organization, company_goal), params: {
+        goal: {
+          title: 'Updated Company Goal',
+          description: company_goal.description,
+          goal_type: company_goal.goal_type,
+          privacy_level: 'everyone_in_company',
+          owner_id: "Company_#{organization.id}"
+        }
+      }
+
+      expect(response).to redirect_to(organization_goal_path(organization, company_goal))
+      company_goal.reload
+      expect(company_goal.title).to eq('Updated Company Goal')
+      expect(company_goal.owner_type).to eq('Organization')
+      expect(company_goal.owner_id).to eq(organization.id)
+    end
+  end
+
   describe 'GET /organizations/:organization_id/goals/:id/done' do
     it 'renders the done page' do
       get done_organization_goal_path(organization, goal)

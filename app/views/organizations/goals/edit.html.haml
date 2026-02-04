@@ -75,7 +75,7 @@
                   = form.label :owner_id, class: 'form-label' do
                     Owner
                     %span.text-danger *
-                  - current_owner_value = "#{@goal.owner_type}_#{@goal.owner_id}"
+                  - current_owner_value = (@goal.owner_type == 'Organization') ? "Company_#{@goal.owner_id}" : "#{@goal.owner_type}_#{@goal.owner_id}"
                   = form.select :owner_id, 
                     available_goal_owners,
                     { selected: current_owner_value },

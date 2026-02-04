@@ -600,6 +600,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       params[:owner_type] = owner_type
       params[:owner_id] = owner_id
     end
+    # Dropdown uses "Company" label but Goal stores owner_type as Organization
+    params[:owner_type] = 'Organization' if params[:owner_type] == 'Company'
     
     # Default to logged in user if no owner is selected
     unless params[:owner_type].present? && params[:owner_id].present?
