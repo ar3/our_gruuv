@@ -11,7 +11,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Check for special filters
     @everyone_in_company_filter = params[:owner_id] == 'everyone_in_company'
     @created_by_me_filter = params[:owner_id] == 'created_by_me'
-    
+
     # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
     if !@everyone_in_company_filter && !@created_by_me_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
@@ -58,11 +58,13 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       show_deleted: params[:show_deleted] == '1',
       show_completed: params[:show_completed] == '1'
     )
-    
+
     # Apply owner or special filter
     if @everyone_in_company_filter
-      # Filter for active goals with "everyone_in_company" privacy level
-      @goals = @goals.where(privacy_level: 'everyone_in_company').active
+      # Filter for goals with "everyone_in_company" privacy level (ignore owner).
+      # Do not apply .active here — FilterQuery already applied show_deleted/show_completed;
+      # we want to show all public goals (draft, active, completed) per user prefs.
+      @goals = @goals.where(privacy_level: 'everyone_in_company')
     elsif @created_by_me_filter
       # Filter for goals created by the current teammate
       @goals = @goals.where(creator: current_teammate)
@@ -80,7 +82,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Calculate spotlight stats for goals_overview (before other filters)
     if spotlight_param == 'goals_overview'
       if @everyone_in_company_filter
-        all_goals_for_filter = policy_scope(Goal).where(privacy_level: 'everyone_in_company').active
+        all_goals_for_filter = policy_scope(Goal).where(privacy_level: 'everyone_in_company')
       elsif @created_by_me_filter
         all_goals_for_filter = policy_scope(Goal).where(creator: current_teammate)
       else
@@ -98,7 +100,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @goals = apply_goal_type_filter(@goals, params[:goal_type])
     @goals = apply_status_filter(@goals, params[:status])
     @goals = apply_spotlight_filter(@goals, spotlight_param)
-    
+
     # Apply sorting
     @goals = apply_sorting(@goals, params[:sort], params[:direction])
     
@@ -160,7 +162,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Performance check for visualizations
     @goal_count = @goals.count
     @show_performance_warning = @goal_count > 100 && %w[network tree nested timeline].include?(@view_style)
-    
+
     # Store filter/sort params for view
     @current_filters = {
       timeframe: params[:timeframe],

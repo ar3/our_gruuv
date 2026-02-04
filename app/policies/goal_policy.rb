@@ -38,7 +38,7 @@ class GoalPolicy < ApplicationPolicy
         # Use organization from viewing_teammate
         company = actual_organization&.root_company || actual_organization
         return scope.none unless company
-        
+
         # Filter by company_id - don't filter by deleted/completed here,
         # let the controller handle that based on user preferences
         scope.where(company_id: company.id)

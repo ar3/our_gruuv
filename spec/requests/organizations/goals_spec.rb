@@ -1154,6 +1154,58 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).not_to include('Private Goal')
     end
 
+    it 'when "All goals visible to everyone at Organization" is selected, shows all public goals in the org and ignores owner' do
+      organization.update!(name: 'Acme Corp')
+      other_person = create(:person)
+      other_teammate = other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
+      department = create(:department, company: organization, name: 'Engineering')
+      team = create(:team, company: organization, name: 'Product')
+
+      # Public goals with different owners — all should appear (owner is ignored)
+      public_teammate_goal = create(:goal, creator: teammate, owner: teammate, title: 'Public Teammate Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      public_other_teammate_goal = create(:goal, creator: other_teammate, owner: other_teammate, title: 'Public Other Teammate Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      public_company_goal = create(:goal, creator: teammate, owner: organization, title: 'Public Company Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      public_department_goal = create(:goal, creator: teammate, owner: department, title: 'Public Department Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      public_team_goal = create(:goal, creator: teammate, owner: team, title: 'Public Team Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+
+      # Private goal — must not appear
+      private_goal = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: 'everyone_in_company')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Public Teammate Goal')
+      expect(response.body).to include('Public Other Teammate Goal')
+      expect(response.body).to include('Public Company Goal')
+      expect(response.body).to include('Public Department Goal')
+      expect(response.body).to include('Public Team Goal')
+      expect(response.body).not_to include('Private Goal')
+    end
+
+    it 'when "All goals visible to everyone" is selected, includes public draft goals (does not require started_at)' do
+      organization.update!(name: 'Acme Corp')
+      public_draft = create(:goal, creator: teammate, owner: teammate, title: 'Public Draft Goal', privacy_level: 'everyone_in_company', started_at: nil)
+      public_started = create(:goal, creator: teammate, owner: teammate, title: 'Public Started Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: 'everyone_in_company')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Public Draft Goal')
+      expect(response.body).to include('Public Started Goal')
+    end
+
+    it 'when "All goals visible to everyone" is selected with show_completed=1, includes public completed goals' do
+      organization.update!(name: 'Acme Corp')
+      public_completed = create(:goal, creator: teammate, owner: teammate, title: 'Public Completed Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago, completed_at: 1.day.ago)
+      public_active = create(:goal, creator: teammate, owner: teammate, title: 'Public Active Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: 'everyone_in_company', show_completed: '1')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Public Completed Goal')
+      expect(response.body).to include('Public Active Goal')
+    end
+
     it 'displays "All goals visible to everyone at <Company name>" label when everyone_in_company filter is selected' do
       organization.update!(name: 'Acme Corp')
 
