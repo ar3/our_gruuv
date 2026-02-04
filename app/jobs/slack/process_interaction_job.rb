@@ -73,6 +73,7 @@ class Slack::ProcessInteractionJob < ApplicationJob
     team_id = private_metadata['team_id'] || private_metadata[:team_id]
     channel_id = private_metadata['channel_id'] || private_metadata[:channel_id]
     message_ts = private_metadata['message_ts'] || private_metadata[:message_ts]
+    message_thread_ts = private_metadata['message_thread_ts'] || private_metadata[:message_thread_ts]
     message_user_id = private_metadata['message_user_id'] || private_metadata[:message_user_id]
     triggering_user_id = private_metadata['triggering_user_id'] || private_metadata[:triggering_user_id]
     
@@ -99,6 +100,7 @@ class Slack::ProcessInteractionJob < ApplicationJob
       team_id: team_id,
       channel_id: channel_id,
       message_ts: message_ts,
+      message_thread_ts: message_thread_ts.presence,
       message_user_id: message_user_id,
       triggering_user_id: triggering_user_id,
       notes: notes

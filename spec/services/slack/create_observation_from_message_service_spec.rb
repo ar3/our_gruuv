@@ -118,7 +118,7 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           allow(mock_slack_service).to receive(:get_message).and_return({ success: false, error: 'Channel not found' })
         end
 
-        it 'still creates observation with link only (no quoted message content)' do
+        it 'still creates observation with link and placeholder note' do
           result = service.call
 
           expect(result.ok?).to be true
@@ -128,6 +128,29 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           expect(observation.story).to include("==========")
           expect(observation.story).to include("Link to message: #{permalink}")
           expect(observation.story).not_to include("> Hello from Slack.")
+          expect(observation.story).to include("invite the OG Bot to this channel")
+        end
+      end
+
+      context 'when message is a thread reply (message_thread_ts present)' do
+        let(:message_thread_ts) { '1234567890.000000' }
+        let(:service_with_thread) do
+          described_class.new(
+            organization: organization,
+            team_id: team_id,
+            channel_id: channel_id,
+            message_ts: message_ts,
+            message_thread_ts: message_thread_ts,
+            message_user_id: observee_slack_id,
+            triggering_user_id: observer_slack_id,
+            notes: notes
+          )
+        end
+
+        it 'calls get_message with thread_ts' do
+          expect(mock_slack_service).to receive(:get_message).with(channel_id, message_ts, thread_ts: message_thread_ts).and_return({ success: true, text: message_text })
+
+          service_with_thread.call
         end
       end
 

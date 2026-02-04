@@ -623,10 +623,19 @@ class SlackService
     end
   end
 
-  # Get message content from a channel
-  def get_message(channel_id, message_ts)
+  # Get message content from a channel (or from a thread when thread_ts is provided)
+  def get_message(channel_id, message_ts, thread_ts: nil)
     return { success: false, error: "Slack not configured" } unless slack_configured?
 
+    if thread_ts.present?
+      get_message_via_replies(channel_id, message_ts, thread_ts)
+    else
+      get_message_via_history(channel_id, message_ts)
+    end
+  end
+
+  # Fetch a top-level channel message via conversations.history
+  def get_message_via_history(channel_id, message_ts)
     begin
       response = @client.conversations_history(
         channel: channel_id,
@@ -645,11 +654,42 @@ class SlackService
         { success: false, error: response['error'] || 'Message not found' }
       end
     rescue Slack::Web::Api::Errors::SlackError => e
-      Rails.logger.error "Slack: Error getting message - #{e.message}"
+      Rails.logger.error "Slack: Error getting message (history) - #{e.message}"
       store_slack_response('conversations_history', { channel: channel_id, message_ts: message_ts }, { error: e.message })
       { success: false, error: e.message }
     rescue => e
-      Rails.logger.error "Slack: Unexpected error getting message - #{e.message}"
+      Rails.logger.error "Slack: Unexpected error getting message (history) - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
+  # Fetch a thread reply via conversations.replies
+  def get_message_via_replies(channel_id, message_ts, thread_ts)
+    begin
+      response = @client.conversations_replies(
+        channel: channel_id,
+        ts: thread_ts,
+        limit: 100
+      )
+
+      store_slack_response('conversations_replies', { channel: channel_id, ts: thread_ts }, response)
+
+      if response['ok'] && response['messages']&.any?
+        message = response['messages'].find { |m| m['ts'] == message_ts }
+        if message
+          { success: true, text: message['text'], message: message }
+        else
+          { success: false, error: 'Message not found in thread' }
+        end
+      else
+        { success: false, error: response['error'] || 'Thread not found' }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error getting message (replies) - #{e.message}"
+      store_slack_response('conversations_replies', { channel: channel_id, ts: thread_ts }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error getting message (replies) - #{e.message}"
       { success: false, error: "Unexpected error: #{e.message}" }
     end
   end

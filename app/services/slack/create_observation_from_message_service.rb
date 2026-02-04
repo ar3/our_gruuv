@@ -1,9 +1,12 @@
 class Slack::CreateObservationFromMessageService
-  def initialize(organization:, team_id:, channel_id:, message_ts:, message_user_id:, triggering_user_id:, notes:)
+  PLACEHOLDER_WHEN_CONTENT_UNAVAILABLE = "<delete or replace this with the content from the slack message... if you want OG to put the content in here, invite the OG Bot to this channel and we'll be able to do this for you automatically in the future>"
+
+  def initialize(organization:, team_id:, channel_id:, message_ts:, message_user_id:, triggering_user_id:, notes:, message_thread_ts: nil)
     @organization = organization
     @team_id = team_id
     @channel_id = channel_id
     @message_ts = message_ts
+    @message_thread_ts = message_thread_ts
     @message_user_id = message_user_id
     @triggering_user_id = triggering_user_id
     @notes = notes
@@ -30,8 +33,8 @@ class Slack::CreateObservationFromMessageService
     end
     slack_message_permalink = permalink_result[:permalink]
 
-    # 4. Attempt to get message content (non-blocking - if it fails, we just skip it)
-    message_result = @slack_service.get_message(@channel_id, @message_ts)
+    # 4. Attempt to get message content (non-blocking - if it fails, we add a placeholder)
+    message_result = @slack_service.get_message(@channel_id, @message_ts, thread_ts: @message_thread_ts)
     message_text = message_result[:success] ? message_result[:text] : nil
 
     # 5. Build observation story
@@ -41,6 +44,8 @@ class Slack::CreateObservationFromMessageService
     if message_text.present?
       quoted_message = message_text.lines.map { |line| "> #{line.chomp}" }.join("\n")
       story_content += "\n\n#{quoted_message}"
+    else
+      story_content += "\n\n#{PLACEHOLDER_WHEN_CONTENT_UNAVAILABLE}"
     end
 
     # 6. Create draft observation

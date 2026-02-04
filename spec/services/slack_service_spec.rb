@@ -597,6 +597,45 @@ RSpec.describe SlackService do
       end
     end
 
+    context 'when thread_ts is provided (thread reply)' do
+      let(:thread_ts) { '1234567890.000000' }
+      let(:replies_response) do
+        {
+          'ok' => true,
+          'messages' => [
+            { 'type' => 'message', 'text' => 'Parent message', 'ts' => thread_ts },
+            { 'type' => 'message', 'text' => 'Thread reply content.', 'ts' => message_ts }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_client).to receive(:conversations_replies).and_return(replies_response)
+      end
+
+      it 'uses conversations_replies and returns the matching message text' do
+        result = slack_service.get_message(channel_id, message_ts, thread_ts: thread_ts)
+
+        expect(result[:success]).to be true
+        expect(result[:text]).to eq('Thread reply content.')
+        expect(mock_client).to have_received(:conversations_replies).with(
+          channel: channel_id,
+          ts: thread_ts,
+          limit: 100
+        )
+      end
+
+      it 'stores replies response in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'conversations_replies',
+          { channel: channel_id, ts: thread_ts },
+          hash_including('ok' => true, 'messages' => kind_of(Array))
+        )
+
+        slack_service.get_message(channel_id, message_ts, thread_ts: thread_ts)
+      end
+    end
+
     context 'when Slack API fails' do
       before do
         allow(mock_client).to receive(:conversations_history).and_raise(Slack::Web::Api::Errors::SlackError.new('Channel not found'))
