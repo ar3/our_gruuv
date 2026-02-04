@@ -1056,7 +1056,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       other_teammate = other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
 
       my_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Goal')
-      other_goal = create(:goal, creator: other_teammate, owner: other_teammate, 
+      other_goal = create(:goal, creator: other_teammate, owner: other_teammate,
                           privacy_level: 'everyone_in_company', title: 'Other Goal')
 
       get organization_goals_path(organization, owner_id: 'created_by_me')
@@ -1064,6 +1064,103 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('My Goal')
       expect(response.body).not_to include('Other Goal')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/goals index by owner/filter type' do
+    it 'loads the index with default (current teammate) and shows only that teammate\'s goals' do
+      my_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Teammate Goal', started_at: 1.week.ago)
+      other_person = create(:person)
+      other_teammate = other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
+      other_goal = create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Teammate Goal', started_at: 1.week.ago)
+
+      get organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('My Teammate Goal')
+      expect(response.body).not_to include('Other Teammate Goal')
+    end
+
+    it 'loads the index for a specific CompanyTeammate and shows only that teammate\'s goals' do
+      other_person = create(:person)
+      other_teammate = other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
+      other_goal = create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Teammate Goal', started_at: 1.week.ago)
+      my_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Teammate Goal', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: "CompanyTeammate_#{other_teammate.id}")
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Other Teammate Goal')
+      expect(response.body).not_to include('My Teammate Goal')
+    end
+
+    it 'loads the index for Organization (Company) owner and shows only company-owned goals' do
+      company_goal = create(:goal, creator: teammate, owner: organization, title: 'Company-Wide Goal', started_at: 1.week.ago)
+      teammate_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Personal Goal', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: "Company_#{organization.id}")
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Company-Wide Goal')
+      expect(response.body).not_to include('My Personal Goal')
+    end
+
+    it 'loads the index for Department owner and shows only department-owned goals' do
+      department = create(:department, company: organization, name: 'Engineering')
+      department_goal = create(:goal, creator: teammate, owner: department, title: 'Department Goal', started_at: 1.week.ago)
+      teammate_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Personal Goal', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: "Department_#{department.id}")
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Department Goal')
+      expect(response.body).not_to include('My Personal Goal')
+    end
+
+    it 'loads the index for Team owner and shows only team-owned goals' do
+      team = create(:team, company: organization, name: 'Product Team')
+      team_goal = create(:goal, creator: teammate, owner: team, title: 'Team Goal', started_at: 1.week.ago)
+      teammate_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Personal Goal', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: "Team_#{team.id}")
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Team Goal')
+      expect(response.body).not_to include('My Personal Goal')
+    end
+
+    it 'loads the index for "created_by_me" and shows only goals created by current teammate' do
+      my_goal = create(:goal, creator: teammate, owner: teammate, title: 'Created By Me', started_at: 1.week.ago)
+      other_person = create(:person)
+      other_teammate = other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
+      other_goal = create(:goal, creator: other_teammate, owner: other_teammate, title: 'Created By Other', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: 'created_by_me')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Created By Me')
+      expect(response.body).not_to include('Created By Other')
+    end
+
+    it 'loads the index for "All goals visible to everyone at <Company>" and shows only public (everyone_in_company) goals' do
+      organization.update!(name: 'Acme Corp') # ensure display_name for dropdown
+      public_goal = create(:goal, creator: teammate, owner: teammate, title: 'Public Goal', privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      private_goal = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: 'everyone_in_company')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Public Goal')
+      expect(response.body).not_to include('Private Goal')
+    end
+
+    it 'displays "All goals visible to everyone at <Company name>" label when everyone_in_company filter is selected' do
+      organization.update!(name: 'Acme Corp')
+
+      get organization_goals_path(organization, owner_id: 'everyone_in_company')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('All goals visible to everyone at Acme Corp')
     end
   end
 
