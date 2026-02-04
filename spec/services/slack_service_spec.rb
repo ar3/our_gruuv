@@ -545,6 +545,95 @@ RSpec.describe SlackService do
     end
   end
 
+  describe '#get_message' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+    let(:channel_id) { 'C123456' }
+    let(:message_ts) { '1234567890.123456' }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when Slack is configured' do
+      let(:messages_response) do
+        {
+          'ok' => true,
+          'messages' => [
+            {
+              'type' => 'message',
+              'text' => 'Hello, this is the message content.',
+              'ts' => message_ts
+            }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_client).to receive(:conversations_history).and_return(messages_response)
+      end
+
+      it 'returns message text successfully' do
+        result = slack_service.get_message(channel_id, message_ts)
+
+        expect(result[:success]).to be true
+        expect(result[:text]).to eq('Hello, this is the message content.')
+        expect(mock_client).to have_received(:conversations_history).with(
+          channel: channel_id,
+          latest: message_ts,
+          oldest: message_ts,
+          inclusive: true,
+          limit: 1
+        )
+      end
+
+      it 'stores response in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'conversations_history',
+          { channel: channel_id, message_ts: message_ts },
+          hash_including('ok' => true, 'messages' => kind_of(Array))
+        )
+
+        slack_service.get_message(channel_id, message_ts)
+      end
+    end
+
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:conversations_history).and_raise(Slack::Web::Api::Errors::SlackError.new('Channel not found'))
+      end
+
+      it 'returns error hash' do
+        result = slack_service.get_message(channel_id, message_ts)
+
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Channel not found')
+      end
+
+      it 'stores error in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'conversations_history',
+          { channel: channel_id, message_ts: message_ts },
+          hash_including(error: 'Channel not found')
+        )
+
+        slack_service.get_message(channel_id, message_ts)
+      end
+    end
+
+    context 'when Slack is not configured' do
+      before do
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
+      end
+
+      it 'returns error hash' do
+        result = slack_service.get_message(channel_id, message_ts)
+
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Slack not configured')
+      end
+    end
+  end
+
   describe '#open_create_observation_modal' do
     let(:mock_client) { instance_double(Slack::Web::Client) }
     let(:trigger_id) { '1234567890.123456.abcdef' }

@@ -61,6 +61,10 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
       success: true,
       permalink: 'https://slack.com/archives/C123456/p1234567890123456'
     })
+    allow_any_instance_of(SlackService).to receive(:get_message).and_return({
+      success: true,
+      text: 'Slack message content'
+    })
     allow_any_instance_of(SlackService).to receive(:post_message_to_thread).and_return({
       success: true,
       message_id: '1234567890.123457'
@@ -103,6 +107,10 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
           allow_any_instance_of(SlackService).to receive(:get_message_permalink).and_return({
             success: true,
             permalink: 'https://slack.com/archives/C123456/p1234567890123456'
+          })
+          allow_any_instance_of(SlackService).to receive(:get_message).and_return({
+            success: true,
+            text: 'Slack message content'
           })
           allow_any_instance_of(SlackService).to receive(:post_message_to_thread).and_return({
             success: true,

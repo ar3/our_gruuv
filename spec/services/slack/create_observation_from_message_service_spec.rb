@@ -13,6 +13,7 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
   let(:message_ts) { '1234567890.123456' }
   let(:notes) { 'This is a test note' }
   let(:permalink) { 'https://slack.com/archives/C123456/p1234567890123456' }
+  let(:message_text) { "Hello from Slack.\nThis is line two." }
   
   let(:service) do
     described_class.new(
@@ -31,6 +32,7 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
   before do
     allow(SlackService).to receive(:new).with(organization).and_return(mock_slack_service)
     allow(mock_slack_service).to receive(:get_message_permalink).and_return({ success: true, permalink: permalink })
+    allow(mock_slack_service).to receive(:get_message).and_return({ success: true, text: message_text })
     allow(mock_slack_service).to receive(:store_slack_response)
   end
 
@@ -45,7 +47,7 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: observee_slack_id)
         end
 
-        it 'creates a draft observation with notes and permalink' do
+        it 'creates a draft observation with notes, permalink, and quoted message content' do
           result = service.call
 
           expect(result.ok?).to be true
@@ -54,7 +56,10 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           expect(observation.observer).to eq(observer_person)
           expect(observation.company.id).to eq(organization.id)
           expect(observation.story).to include(notes)
-          expect(observation.story).to include(permalink)
+          expect(observation.story).to include("==========")
+          expect(observation.story).to include("Link to message: #{permalink}")
+          expect(observation.story).to include("> Hello from Slack.")
+          expect(observation.story).to include("> This is line two.")
           expect(observation.privacy_level).to eq('observed_and_managers')
           expect(observation.published_at).to be_nil
           expect(observation.draft?).to be true
@@ -88,19 +93,41 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           observation = result.value
           expect(observation.observees.count).to eq(0)
           expect(observation.story).to include(notes)
-          expect(observation.story).to include(permalink)
+          expect(observation.story).to include("Link to message: #{permalink}")
+          expect(observation.story).to include("> Hello from Slack.")
         end
       end
 
       context 'when notes are empty' do
         let(:notes) { '' }
 
-        it 'creates observation with only permalink in story' do
+        it 'creates observation with permalink and quoted message in story' do
           result = service.call
 
           expect(result.ok?).to be true
           observation = result.value
-          expect(observation.story).to eq("Original Slack message: #{permalink}")
+          expect(observation.story).to include("==========")
+          expect(observation.story).to include("Link to message: #{permalink}")
+          expect(observation.story).to include("> Hello from Slack.")
+          expect(observation.story).to include("> This is line two.")
+        end
+      end
+
+      context 'when get_message fails' do
+        before do
+          allow(mock_slack_service).to receive(:get_message).and_return({ success: false, error: 'Channel not found' })
+        end
+
+        it 'still creates observation with link only (no quoted message content)' do
+          result = service.call
+
+          expect(result.ok?).to be true
+          observation = result.value
+          expect(observation).to be_persisted
+          expect(observation.story).to include(notes)
+          expect(observation.story).to include("==========")
+          expect(observation.story).to include("Link to message: #{permalink}")
+          expect(observation.story).not_to include("> Hello from Slack.")
         end
       end
 

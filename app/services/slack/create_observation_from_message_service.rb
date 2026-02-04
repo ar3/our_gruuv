@@ -30,15 +30,24 @@ class Slack::CreateObservationFromMessageService
     end
     slack_message_permalink = permalink_result[:permalink]
 
-    # 4. Build observation story
-    story_content = @notes.present? ? "#{@notes}\n\n" : ""
-    story_content += "Original Slack message: #{slack_message_permalink}"
+    # 4. Attempt to get message content (non-blocking - if it fails, we just skip it)
+    message_result = @slack_service.get_message(@channel_id, @message_ts)
+    message_text = message_result[:success] ? message_result[:text] : nil
 
-    # 5. Create draft observation
+    # 5. Build observation story
+    story_content = @notes.present? ? "#{@notes}\n\n" : ""
+    story_content += "==========\n\n"
+    story_content += "Link to message: #{slack_message_permalink}"
+    if message_text.present?
+      quoted_message = message_text.lines.map { |line| "> #{line.chomp}" }.join("\n")
+      story_content += "\n\n#{quoted_message}"
+    end
+
+    # 6. Create draft observation
     observation = @organization.observations.build(
       observer: observer_teammate.person,
       story: story_content,
-      privacy_level: :observed_and_managers, # Default to a safe internal level
+      privacy_level: :observed_and_managers,
       observed_at: Time.current,
       published_at: nil # Ensure it's a draft
     )
