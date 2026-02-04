@@ -78,7 +78,7 @@
                       - else
                         %span= child_dept.name
                     %td
-                      - child_count = child_dept.child_departments.active.count
+                      - child_count = (@child_department_counts_by_id && @child_department_counts_by_id[child_dept.id]).to_i
                       - if child_count > 0
                         %span.text-muted
                           = pluralize(child_count, 'sub-department')

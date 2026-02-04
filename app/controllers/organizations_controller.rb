@@ -2,8 +2,16 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   before_action :require_authentication, except: [:pundit_healthcheck]
   
   def index
+    # Eager load teams, huddles, huddle_channel, and huddle_participants to avoid N+1 in "Teams & Huddles" section
     @organizations = current_company_teammate.person.available_organizations
+      .includes(teams: [:huddle_channel, { huddles: :huddle_participants }])
     @followable_organizations = current_company_teammate.person.followable_organizations
+      .includes(:assignments, :abilities)
+    # Preload which followable orgs have positions (Organization#positions is a method, not association)
+    followable_ids = @followable_organizations.select(:id).reorder(nil)
+    @org_ids_with_positions = Position.joins(:title).where(titles: { company_id: followable_ids }).distinct.pluck('titles.company_id').to_set
+    # Preload current person's teammates per organization for "My Organizations" table (avoid find_by per row)
+    @teammates_by_organization_id = current_person.teammates.where(organization: @organizations).index_by(&:organization_id)
     @current_organization = current_company_teammate.organization
   end
   
@@ -29,12 +37,13 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       rails_env: Rails.env
     }
     
-    # Collect teammate debug info for each organization
+    # Preload teammates for all orgs (and root companies) in one query to avoid N+1
+    root_company_ids = @organizations.map { |org| (org.root_company || org).id }.uniq
+    teammates_by_root_id = current_person.teammates.where(organization_id: root_company_ids).index_by(&:organization_id)
     @teammate_debug_info = {}
     @organizations.each do |org|
       root_company = org.root_company || org
-      teammate = current_person.teammates.find_by(organization: root_company)
-      
+      teammate = teammates_by_root_id[root_company.id]
       @teammate_debug_info[org.id] = {
         teammate_id: teammate&.id,
         teammate_type: teammate&.class&.name,

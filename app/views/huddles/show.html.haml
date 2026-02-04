@@ -441,7 +441,7 @@
                                 %th Private Notes
                             %tbody
                               - @huddle.huddle_participants.includes(company_teammate: :person).each do |participant|
-                                - feedback = @huddle.huddle_feedbacks.joins(:company_teammate).find_by(teammates: { person: participant.teammate.person })
+                                - feedback = @huddle_feedbacks_by_person_id && @huddle_feedbacks_by_person_id[participant.teammate.person.id]
                                 - has_facilitator_note = feedback&.private_facilitator.present?
                                 - has_dept_head_note = feedback&.private_department_head.present?
                                 - rating_score = feedback ? feedback.nat_20_score : nil

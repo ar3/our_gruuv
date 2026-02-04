@@ -3,8 +3,21 @@ class HuddlesController < ApplicationController
   before_action :authenticate_person!, only: [:new]
 
   def index
-    @huddles = Huddle.active.recent.includes(team: :company).decorate
+    # Eager load company, participants, feedbacks so card partial avoids N+1 (counts and find_bys)
+    @huddles = Huddle.active.recent.includes(:huddle_participants, :huddle_feedbacks, team: :company).decorate
     @huddles_by_company = @huddles.group_by { |huddle| huddle.company&.root_company }.sort_by { |company, _| company&.name || '' }
+    # Preload current user's participant and feedback per huddle (avoid find_by per card)
+    if current_person.present?
+      @participant_by_huddle_id = HuddleParticipant.joins(:company_teammate)
+        .where(huddle: @huddles, teammates: { person: current_person })
+        .index_by(&:huddle_id)
+      @feedback_by_huddle_id = HuddleFeedback.joins(:company_teammate)
+        .where(huddle: @huddles, teammates: { person: current_person })
+        .index_by(&:huddle_id)
+    else
+      @participant_by_huddle_id = {}
+      @feedback_by_huddle_id = {}
+    end
 
     # Get teams with recent huddles for the current organization
     if current_organization
@@ -47,6 +60,12 @@ class HuddlesController < ApplicationController
 
     # Check if current user has already submitted feedback
     @existing_feedback = @huddle.huddle_feedbacks.joins(:company_teammate).find_by(teammates: { person: current_person })
+
+    # Preload all feedbacks indexed by person_id to avoid N+1 in participants table
+    @huddle_feedbacks_by_person_id = @huddle.huddle_feedbacks
+      .includes(:company_teammate)
+      .joins(:company_teammate)
+      .index_by { |f| f.company_teammate.person_id }
 
     # Set up variables for the Evolve section
     @current_person = current_person

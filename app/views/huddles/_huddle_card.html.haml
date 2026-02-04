@@ -1,5 +1,5 @@
-- participant = current_person.present? && huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: current_person })
-- existing_feedback = current_person.present? && huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: current_person })
+- participant = @participant_by_huddle_id && @participant_by_huddle_id[huddle.id]
+- existing_feedback = @feedback_by_huddle_id && @feedback_by_huddle_id[huddle.id]
 .col-md-6.col-lg-4.mb-3
   .card.h-100
     .card-body.position-relative
@@ -38,7 +38,7 @@
         .col-6
           %p.card-text
             %strong Feedback:
-            = feedback_participation_badge(huddle.huddle_feedbacks.count, huddle.huddle_participants.count)
+            = feedback_participation_badge(huddle.huddle_feedbacks.size, huddle.huddle_participants.size)
       
       .mt-3
         - if participant

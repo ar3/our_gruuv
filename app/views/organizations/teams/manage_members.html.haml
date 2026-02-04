@@ -40,7 +40,7 @@
               .col-12.col-md-6.col-lg-4.mb-3
                 .list-group
                   - column_teammates.each do |teammate|
-                    - checked = @team.team_members.exists?(company_teammate_id: teammate.id)
+                    - checked = @member_teammate_ids.include?(teammate.id)
                     - person = teammate.person
                     - tooltip_text = "#{person.full_name.presence || 'No name'} - #{person.email}"
                     .list-group-item

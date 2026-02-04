@@ -104,6 +104,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @view_style = params[:view] || 'hierarchical-collapsible'
     @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible].include?(@view_style)
     
+    # Eager load links and owner (with person for CompanyTeammate) for table/cards/list to avoid N+1
+    if @view_style.in?(%w[table cards list])
+      @goals = @goals.includes(:outgoing_links, :incoming_links, owner: :person)
+    end
+    
     # For check-in view, filter to eligible goals and load check-ins
     if @view_style == 'check-in'
       @goals = @goals.check_in_eligible.includes(:goal_check_ins, :recent_check_ins)

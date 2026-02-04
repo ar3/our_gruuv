@@ -80,7 +80,7 @@
                                 = button_to switch_organization_path(organization), method: :patch, class: "btn btn-outline-primary", form: { style: "display: inline;" } do
                                   %i.bi.bi-arrow-right-circle.me-1
                                   Switch
-                              - teammate = current_person.teammates.find_by(organization: organization)
+                              - teammate = @teammates_by_organization_id && @teammates_by_organization_id[organization.id]
                               - if teammate&.follower?
                                 = button_to unfollow_organization_path(organization), method: :delete, class: "btn btn-outline-warning", form: { style: "display: inline;" }, data: { confirm: "Stop following #{organization.name}?" } do
                                   %i.bi.bi-heart-fill.me-1
@@ -124,15 +124,15 @@
                               %strong= organization.name
                           %td
                             .badge-group
-                              - if organization.assignments.exists?
+                              - if organization.assignments.any?
                                 %span.badge.bg-info.me-1
                                   %i.bi.bi-clipboard-check.me-1
                                   Assignments
-                              - if organization.abilities.exists?
+                              - if organization.abilities.any?
                                 %span.badge.bg-success.me-1
                                   %i.bi.bi-award.me-1
                                   Abilities
-                              - if organization.positions.exists?
+                              - if @org_ids_with_positions && @org_ids_with_positions.include?(organization.id)
                                 %span.badge.bg-warning.me-1
                                   %i.bi.bi-briefcase.me-1
                                   Positions
@@ -182,15 +182,15 @@
                                   - else
                                     %small.text-muted Not configured
                                 %td
-                                  %span.badge.bg-secondary= team.huddles.count
+                                  %span.badge.bg-secondary= team.huddles.size
                                 %td
                                   - if team.huddles.any?
-                                    - latest_huddle = team.huddles.order(created_at: :desc).first
+                                    - latest_huddle = team.huddles.max_by(&:created_at)
                                     %small.text-muted
                                       Last: #{time_ago_in_words(latest_huddle.created_at)} ago
                                       - if latest_huddle.huddle_participants.any?
                                         %br
-                                        %span.badge.bg-success= "#{latest_huddle.huddle_participants.count} participants"
+                                        %span.badge.bg-success= "#{latest_huddle.huddle_participants.size} participants"
                                   - else
                                     %small.text-muted No huddles yet
                                 %td
@@ -207,14 +207,14 @@
                                   %td{colspan: "5"}
                                     .ms-3
                                       %small.text-muted Recent Huddles:
-                                      - team.huddles.order(created_at: :desc).limit(3).each do |huddle|
+                                      - team.huddles.sort_by(&:created_at).reverse.first(3).each do |huddle|
                                         %br
                                         = link_to huddle_path(huddle), class: "text-decoration-none" do
                                           %i.bi.bi-calendar-event.me-1
                                           = huddle.display_name
                                           %small.text-muted.ms-2= format_date_in_user_timezone(huddle.created_at, format: "%b %d, %Y")
                                           - if huddle.huddle_participants.any?
-                                            %span.badge.bg-success.ms-1= huddle.huddle_participants.count
+                                            %span.badge.bg-success.ms-1= huddle.huddle_participants.size
                   - else
                     .text-center.py-3
                       %p.text-muted No teams found in any organization.

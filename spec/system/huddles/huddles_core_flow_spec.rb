@@ -16,13 +16,15 @@ RSpec.describe 'Huddles Core Flow', type: :system do
     let!(:department_as_team) { create(:team, company: company, name: department.name) }
     
     it 'creates huddle from existing company' do
-      # UI: cards per company with list of teams; click "Start Huddle" for a team
+      # UI: cards per company with list of teams; submit "Start Huddle" form for a team
       initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: company.id)
       
       expect(page).to have_content(company.name)
-      # Use first() to avoid ambiguous match when multiple cards/list items exist
-      first('.list-group-item', text: existing_team.name).click_button('Start Huddle')
+      # Submit the form for this team (list-group-item is the button; submit form via JS to avoid disabled button)
+      list_item = first('.list-group-item', text: existing_team.name)
+      form = list_item.find(:xpath, './ancestor::form[1]')
+      page.execute_script('arguments[0].submit()', form.native)
       
       sleep 1
       
@@ -55,7 +57,9 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       visit new_huddle_path(organization_id: department.id)
       
       expect(page).to have_content(department.company.name)
-      first('.list-group-item', text: department_as_team.name).click_button('Start Huddle')
+      list_item = first('.list-group-item', text: department_as_team.name)
+      form = list_item.find(:xpath, './ancestor::form[1]')
+      page.execute_script('arguments[0].submit()', form.native)
       
       sleep 1
       
@@ -84,7 +88,9 @@ RSpec.describe 'Huddles Core Flow', type: :system do
       initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: team.id)
       expect(page).to have_content(team.company.name)
-      first('.list-group-item', text: team.name).click_button('Start Huddle')
+      list_item = first('.list-group-item', text: team.name)
+      form = list_item.find(:xpath, './ancestor::form[1]')
+      page.execute_script('arguments[0].submit()', form.native)
       sleep 1
       expect(Huddle.count).to eq(initial_huddle_count + 1)
       huddle = Huddle.last

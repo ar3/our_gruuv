@@ -25,6 +25,8 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
     
     # Load child departments
     @child_departments = @department.child_departments.active.ordered
+    # Preload child counts per department to avoid N+1 in view
+    @child_department_counts_by_id = Department.where(parent_department_id: @child_departments.select(:id)).active.group(:parent_department_id).count
     
     # Load seats via titles with this department
     @seats_as_department = Seat.for_department(@department).includes(:title, employment_tenures: { company_teammate: :person })

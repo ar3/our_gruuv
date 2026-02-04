@@ -62,6 +62,9 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
       .merge(CompanyTeammate.employed)
       .order(Arel.sql('people.last_name, COALESCE(people.preferred_name, people.first_name)'))
     
+    # Preload member IDs to avoid N+1 (exists? per teammate in view)
+    @member_teammate_ids = @team.team_members.pluck(:company_teammate_id).to_set
+    
     @return_url = params[:return_url] || organization_team_path(@organization, @team)
     @return_text = params[:return_text] || 'Back'
   end
