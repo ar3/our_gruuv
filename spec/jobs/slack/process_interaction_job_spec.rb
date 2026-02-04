@@ -175,7 +175,7 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
         context 'when observation creation fails' do
           before do
             # Make observer not found by removing the teammate identity
-            TeammateIdentity.where(teammate: observer_teammate, provider: 'slack').destroy_all
+            TeammateIdentity.where(company_teammate: observer_teammate, provider: 'slack').destroy_all
           end
 
           it 'marks webhook as failed with error message' do

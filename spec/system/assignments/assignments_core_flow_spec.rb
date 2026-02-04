@@ -2,9 +2,10 @@ require 'rails_helper'
 
 RSpec.describe 'Assignments Core Flow', type: :system do
   let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
+  let(:department) { create(:organization, :department) }
   let(:person) { create(:person) }
   let!(:company_teammate) { CompanyTeammate.create!(person: person, organization: company, can_manage_employment: true, can_manage_maap: true) }
+  let!(:department_teammate) { CompanyTeammate.create!(person: person, organization: department, can_manage_employment: true, can_manage_maap: true) }
   let!(:employee_person) { create(:person, full_name: 'John Doe', email: 'john@example.com') }
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
 
@@ -62,6 +63,10 @@ RSpec.describe 'Assignments Core Flow', type: :system do
   end
 
   describe 'CRUD assignment on department' do
+    before do
+      sign_in_as(person, department)
+    end
+
     it 'creates, views, updates, and deletes an assignment on a department' do
       # Create
       visit new_organization_assignment_path(department)

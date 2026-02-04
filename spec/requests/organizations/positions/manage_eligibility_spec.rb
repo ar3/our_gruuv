@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Position Eligibility Management', type: :request do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:person) { create(:person) }
   let!(:teammate) { create(:company_teammate, person: person, organization: company, can_manage_maap: true) }
   let(:position_major_level) { create(:position_major_level) }

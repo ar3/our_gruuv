@@ -48,9 +48,10 @@ RSpec.describe Slack::ProcessHuddleCommandService, type: :service do
                display_name: channel_name)
       end
       let!(:playbook) do
-        create(:team,
-               organization: organization,
-               slack_channel: "##{channel_name}")
+        team = create(:team, company: organization)
+        team.huddle_channel_id = channel_id
+        team.save!
+        team
       end
 
       context 'when no active huddle exists' do
@@ -156,9 +157,10 @@ RSpec.describe Slack::ProcessHuddleCommandService, type: :service do
                display_name: channel_name)
       end
       let!(:playbook) do
-        create(:team,
-               organization: organization,
-               slack_channel: "##{channel_name}")
+        team = create(:team, company: organization)
+        team.huddle_channel_id = channel_id
+        team.save!
+        team
       end
 
       before do

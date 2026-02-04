@@ -4,7 +4,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
-  let(:person_teammate) { create(:teammate, person: person, organization: organization) }
+  let(:person_teammate) { create(:company_teammate, person: person, organization: organization) }
+  let(:manager_teammate) { create(:company_teammate, person: manager, organization: organization) }
   let(:assignment1) { create(:assignment, company: organization) }
   let(:assignment2) { create(:assignment, company: organization) }
   let(:ability) { create(:ability, company: organization) }
@@ -12,8 +13,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
   describe 'first snapshot (no previous)' do
     let(:snapshot) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         maap_data: {
@@ -35,7 +36,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'ability_id' => ability.id,
               'milestone_level' => 2,
-              'certifying_teammate_id' => create(:teammate, person: manager, organization: organization).id,
+              'certifying_teammate_id' => manager_teammate.id,
               'attained_at' => '2025-06-01'
             }
           ],
@@ -120,8 +121,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
   describe 'multiple snapshots in sequence' do
     let(:snapshot1) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         created_at: 3.days.ago,
@@ -148,8 +149,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
 
     let(:snapshot2) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         created_at: 2.days.ago,
@@ -176,8 +177,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
 
     let(:snapshot3) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         created_at: 1.day.ago,
@@ -234,8 +235,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
   describe 'snapshots with different assignment IDs' do
     let(:previous_snapshot) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         created_at: 2.days.ago,
@@ -256,8 +257,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
 
     let(:snapshot) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         created_at: 1.day.ago,
@@ -315,8 +316,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
     
     let(:previous_snapshot) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'milestone_management',
         created_at: 2.days.ago,
@@ -338,8 +339,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
 
     let(:snapshot) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'milestone_management',
         created_at: 1.day.ago,
@@ -350,13 +351,13 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'ability_id' => ability.id,
               'milestone_level' => 2,  # Changed from 1
-              'certifying_teammate_id' => create(:teammate, person: manager, organization: organization).id,
+              'certifying_teammate_id' => manager_teammate.id,
               'attained_at' => '2025-06-01'
             },
             {
               'ability_id' => ability2.id,  # New milestone
               'milestone_level' => 3,
-              'certifying_teammate_id' => create(:teammate, person: manager, organization: organization).id,
+              'certifying_teammate_id' => manager_teammate.id,
               'attained_at' => '2025-06-15'
             }
           ],
@@ -390,8 +391,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
   describe 'edge cases' do
     let(:snapshot) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         maap_data: {
@@ -416,7 +417,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
 
     it 'handles previous snapshot with missing keys' do
       previous_snapshot = create(:maap_snapshot, :exploration,
-        creator_teammate: manager,
+        creator_company_teammate: manager_teammate,
         company: organization
       )
 
@@ -437,8 +438,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
     
     let(:previous_snapshot) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         created_at: 2.days.ago,
@@ -465,8 +466,8 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
 
     let(:snapshot) do
       create(:maap_snapshot,
-        employee_teammate: person,
-        creator_teammate: manager,
+        employee_company_teammate: person_teammate,
+        creator_company_teammate: manager_teammate,
         company: organization,
         change_type: 'assignment_management',
         created_at: 1.day.ago,

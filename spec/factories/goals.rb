@@ -8,8 +8,8 @@ FactoryBot.define do
     most_likely_target_date { Date.today + 2.months }
     privacy_level { 'only_creator' }
     
-    association :creator, factory: :teammate
-    association :owner, factory: :teammate
+    association :creator, factory: :company_teammate
+    association :owner, factory: :company_teammate
     
     # Set company_id based on creator's organization
     after(:build) do |goal|
@@ -40,8 +40,6 @@ FactoryBot.define do
           goal.owner_type = 'Team'
         elsif goal.owner.is_a?(Organization)
           goal.owner_type = 'Organization'
-        elsif goal.owner.respond_to?(:type) && goal.owner.type == 'CompanyTeammate'
-          goal.owner_type = 'CompanyTeammate'
         end
       end
     end
@@ -58,8 +56,6 @@ FactoryBot.define do
           'Team'
         elsif goal.owner.is_a?(Organization)
           'Organization'
-        elsif goal.owner.respond_to?(:type) && goal.owner.type == 'CompanyTeammate'
-          'CompanyTeammate'
         else
           nil
         end

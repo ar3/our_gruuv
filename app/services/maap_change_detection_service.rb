@@ -586,7 +586,7 @@ class MaapChangeDetectionService
     return false unless current_user
     
     # Handle both Teammate and Person objects
-    if current_user.is_a?(Teammate)
+    if current_user.is_a?(CompanyTeammate)
       current_user.person&.og_admin?
     elsif current_user.is_a?(Person)
       current_user.og_admin?

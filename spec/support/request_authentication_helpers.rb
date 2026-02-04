@@ -9,41 +9,21 @@ module RequestAuthenticationHelpers
   def sign_in_as_teammate_for_request(person, organization = nil)
     # Find or create teammate for the specified organization
     teammate = if organization
-      # Find existing teammate or create new one
-      existing_teammate = person.teammates.find_by(organization: organization)
-      if existing_teammate
-        # Ensure it's a CompanyTeammate - update type if needed
-        if existing_teammate.type != 'CompanyTeammate'
-          existing_teammate.update_column(:type, 'CompanyTeammate')
-          existing_teammate = existing_teammate.reload
-        end
-        existing_teammate
-      else
-        # Create new CompanyTeammate
-        person.teammates.create!(
-          organization: organization,
-          type: 'CompanyTeammate',
-          first_employed_at: nil,
-          last_terminated_at: nil
-        )
+      person.company_teammates.find_or_create_by!(organization: organization) do |t|
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
       end
     else
-      # Use first active teammate or create "OurGruuv Demo" teammate
-      teammate = person.active_teammates.first
-      if teammate.nil?
-        teammate = person.teammates.create!(
+      ct = person.active_teammates.first
+      if ct.nil?
+        person.company_teammates.create!(
           organization: Organization.find_by!(name: 'OurGruuv Demo'),
-          type: 'CompanyTeammate',
           first_employed_at: nil,
           last_terminated_at: nil
         )
+      else
+        ct
       end
-      # Ensure it's a CompanyTeammate
-      if teammate.type != 'CompanyTeammate'
-        teammate.update_column(:type, 'CompanyTeammate')
-        teammate = teammate.reload
-      end
-      teammate
     end
     
     # Stub current_company_teammate for request specs

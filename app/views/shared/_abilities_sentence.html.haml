@@ -22,7 +22,7 @@
     %span='… needing Abilities such as – '
   
   - assignment_abilities.each_with_index do |aa, index|
-    - ability_path = public_view ? organization_public_maap_ability_path(aa.ability.organization, aa.ability) : organization_ability_path(aa.ability.organization, aa.ability)
+    - ability_path = public_view ? organization_public_maap_ability_path(aa.ability.company, aa.ability) : organization_ability_path(aa.ability.company, aa.ability)
     - milestone_text = milestone_level_display(aa.milestone_level).downcase
     - ability_name = aa.ability.name
     - parenthetical = show_milestone_parentheticals ? " (M#{aa.milestone_level})" : ""

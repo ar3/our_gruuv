@@ -5,8 +5,7 @@ module AuthenticationHelpers
     teammate = person.active_teammates.first
     if organization
       # Find or create teammate for the specified organization
-      teammate = person.teammates.find_or_create_by!(organization: organization) do |t|
-        t.type = 'CompanyTeammate'
+      teammate = person.company_teammates.find_or_create_by!(organization: organization) do |t|
         t.first_employed_at = nil
         t.last_terminated_at = nil
       end
@@ -76,8 +75,7 @@ module AuthenticationHelpers
   
   def sign_in_and_visit(person, organization, target_path)
     # Ensure person has a teammate for the organization
-    teammate = person.teammates.find_or_create_by!(organization: organization) do |t|
-      t.type = 'CompanyTeammate'
+    teammate = person.company_teammates.find_or_create_by!(organization: organization) do |t|
       t.first_employed_at = nil
       t.last_terminated_at = nil
     end

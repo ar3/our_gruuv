@@ -119,13 +119,9 @@ RSpec.describe 'Organizations::Departments', type: :request do
       seat = create(:seat, title: title, state: :filled)
       
       # Find or create a teammate
-      teammate = Teammate.find_or_create_by(person: current_person, organization: organization) do |t|
-        t.type = 'CompanyTeammate'
-      end
-      teammate.update_column(:type, 'CompanyTeammate') if teammate.type != 'CompanyTeammate'
-      # Use :with_seat trait to ensure position matches seat's title
+      teammate = CompanyTeammate.find_or_create_by(person: current_person, organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
       employment_tenure = create(:employment_tenure, :with_seat,
-        teammate: teammate, 
+        company_teammate: teammate, 
         company: organization, 
         seat: seat,
         started_at: 1.year.ago,
@@ -157,13 +153,9 @@ RSpec.describe 'Organizations::Departments', type: :request do
       seat = create(:seat, title: title, state: :open)
       
       # Find or create an ended employment tenure (inactive)
-      teammate = Teammate.find_or_create_by(person: current_person, organization: organization) do |t|
-        t.type = 'CompanyTeammate'
-      end
-      teammate.update_column(:type, 'CompanyTeammate') if teammate.type != 'CompanyTeammate'
-      # Use :with_seat trait to ensure position matches seat's title
+      teammate = CompanyTeammate.find_or_create_by(person: current_person, organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
       employment_tenure = create(:employment_tenure, :with_seat, :inactive,
-        teammate: teammate, 
+        company_teammate: teammate, 
         company: organization, 
         seat: seat,
         started_at: 2.years.ago,

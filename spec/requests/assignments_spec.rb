@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Assignments", type: :request do
-  let(:company) { create(:organization, type: 'Company') }
+  let(:company) { create(:organization) }
   let(:person) { create(:person, og_admin: true) }
   let(:assignment) { create(:assignment, company: company) }
   

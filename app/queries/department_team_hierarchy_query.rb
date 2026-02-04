@@ -3,42 +3,40 @@ class DepartmentTeamHierarchyQuery
     @organization = organization
   end
 
-  # Returns an array of root organization nodes, each with nested children
-  # Each node is a hash with: organization, children (array of child nodes), departments_count
-  # NOTE: STI Team has been removed. Use the standalone Team model for teams.
+  # Returns an array of root department nodes, each with nested children
+  # Each node is a hash with: organization (Department), children (array of child nodes), departments_count
+  # Uses Department model (Organization no longer has parent/children).
   def call
     return [] unless @organization
 
-    # Get all active child organizations (departments only - STI Team removed)
-    children = @organization.children.active.departments.includes(:children).order(:name)
+    # Root departments for this company
+    root_departments = @organization.departments.active.root_departments.includes(:child_departments).order(:name)
 
-    # Build tree structure starting from direct children
-    children.map do |child|
-      build_tree_node(child)
+    root_departments.map do |dept|
+      build_tree_node(dept)
     end
   end
 
   private
 
-  def build_tree_node(org)
-    children = org.children.active.departments.includes(:children).order(:name)
+  def build_tree_node(dept)
+    children = dept.child_departments.active.includes(:child_departments).order(:name)
     child_nodes = children.map do |child|
       build_tree_node(child)
     end
 
-    # Calculate counts
-    departments_count = count_departments(org)
+    departments_count = count_departments(dept)
 
     {
-      organization: org,
+      organization: dept,
       children: child_nodes,
       departments_count: departments_count
     }
   end
 
-  def count_departments(org)
-    org.children.active.departments.count + 
-      org.children.active.sum { |child| count_departments(child) }
+  def count_departments(dept)
+    dept.child_departments.active.count +
+      dept.child_departments.active.sum { |child| count_departments(child) }
   end
 end
 

@@ -111,8 +111,8 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
       @slack_groups = []
     end
 
-    # Build organization hierarchy (company, departments, teams)
-    @organizations = [@organization] + @organization.descendants.to_a.sort_by { |o| [o.type, o.name] }
+    # Build list: company plus its departments (for kudos/slack group per org)
+    @organizations = [@organization] + @organization.departments.active.ordered.to_a
 
     # Load teams for huddle channel configuration
     @teams = @organization.teams.active.ordered
@@ -120,13 +120,13 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
 
   def load_target_organization
     target_id = params[:target_organization_id].to_i
-    allowed_ids = [@organization.id] + @organization.descendants.pluck(:id)
+    allowed_ids = [@organization.id] + @organization.departments.pluck(:id)
 
     unless allowed_ids.include?(target_id)
       redirect_to channels_organization_slack_path(@organization), alert: 'Organization not found.' and return
     end
 
-    @target_organization = Organization.find_by(id: target_id)
+    @target_organization = Organization.find_by(id: target_id) || Department.find_by(id: target_id, company: @organization)
     unless @target_organization
       redirect_to channels_organization_slack_path(@organization), alert: 'Organization not found.' and return
     end

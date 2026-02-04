@@ -273,7 +273,7 @@ RSpec.describe GoalLinkForm, type: :form do
         created_goals.each do |goal|
           expect(goal.goal_type).to eq('stepping_stone_activity')
           expect(goal.most_likely_target_date).to be_present
-          expect(goal.owner).to be_a(Teammate)
+          expect(goal.owner).to be_a(CompanyTeammate)
           expect(goal.owner.id).to eq(goal1.owner.id)
           expect(goal.privacy_level).to eq(goal1.privacy_level)
           

@@ -43,7 +43,7 @@ module ObservableMoments
         if @created_by.is_a?(CompanyTeammate) && @created_by.organization_id == @employment_tenure.company_id
           @created_by
         elsif @created_by.is_a?(CompanyTeammate)
-          @created_by.person.teammates.find_by(organization: @employment_tenure.company, type: 'CompanyTeammate')
+          @created_by.person.teammates.find_by(organization: @employment_tenure.company)
         else
           @created_by.teammates.find_by(organization: @employment_tenure.company)
         end

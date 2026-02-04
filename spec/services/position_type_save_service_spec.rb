@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe TitleSaveService, type: :service do
-  let(:company) { create(:organization, type: 'Company') }
+  let(:company) { create(:organization, :company) }
   let(:position_major_level1) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
   let(:position_major_level2) { create(:position_major_level, major_level: 2, set_name: 'Engineering') }
   let(:position_level1) { create(:position_level, position_major_level: position_major_level1, level: '1.1') }
@@ -11,7 +11,7 @@ RSpec.describe TitleSaveService, type: :service do
   let(:position2) { create(:position, title: title, position_level: position_level2) }
 
   describe '.create' do
-    let(:new_title) { Title.new(organization: company, position_major_level: position_major_level1) }
+    let(:new_title) { Title.new(company: company, position_major_level: position_major_level1) }
     let(:params) { { external_title: 'Test Title' } }
 
     it 'creates a title successfully' do

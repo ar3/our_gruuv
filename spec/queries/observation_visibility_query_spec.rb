@@ -4,34 +4,34 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
   let(:observee_person) { create(:person) }
-  let(:observee_teammate) { create(:teammate, person: observee_person, organization: company) }
+  let(:observee_teammate) { create(:company_teammate, person: observee_person, organization: company) }
   let(:manager_person) { create(:person) }
   let(:admin_person) { create(:person) }
   let(:random_person) { create(:person) }
 
   let!(:observation1) { build(:observation, observer: observer, company: company, privacy_level: :observer_only).tap { |obs| obs.observees.build(teammate: observee_teammate); obs.save!; obs.publish! } }
-  let!(:observation2) { build(:observation, observer: observee_person, company: company, privacy_level: :observed_only).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save!; obs.publish! } }
+  let!(:observation2) { build(:observation, observer: observee_person, company: company, privacy_level: :observed_only).tap { |obs| obs.observees.build(teammate: create(:company_teammate, organization: company)); obs.save!; obs.publish! } }
   let!(:observation3) { build(:observation, observer: manager_person, company: company, privacy_level: :managers_only).tap { |obs| obs.observees.build(teammate: observee_teammate); obs.save!; obs.publish! } }
   let!(:observation4) { build(:observation, observer: observer, company: company, privacy_level: :observed_and_managers).tap { |obs| obs.observees.build(teammate: observee_teammate); obs.save!; obs.publish! } }
-  let!(:observation5) { build(:observation, observer: random_person, company: company, privacy_level: :public_to_world).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save!; obs.publish! } }
+  let!(:observation5) { build(:observation, observer: random_person, company: company, privacy_level: :public_to_world).tap { |obs| obs.observees.build(teammate: create(:company_teammate, organization: company)); obs.save!; obs.publish! } }
 
   before do
     # Set up real management hierarchy
-    observer_teammate = create(:teammate, person: observer, organization: company)
-    create(:employment_tenure, teammate: observer_teammate, company: company)
+    observer_teammate = create(:company_teammate, person: observer, organization: company)
+    create(:employment_tenure, company_teammate: observer_teammate, company: company)
     
     manager_teammate = CompanyTeammate.create!(person: manager_person, organization: company)
-    create(:employment_tenure, teammate: manager_teammate, company: company)
-    create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
+    create(:employment_tenure, company_teammate: manager_teammate, company: company)
+    create(:employment_tenure, company_teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
     
     # Admin has employment management permissions
-    admin_teammate = create(:teammate, person: admin_person, organization: company)
+    admin_teammate = create(:company_teammate, person: admin_person, organization: company)
     admin_teammate.update!(can_manage_employment: true)
-    create(:employment_tenure, teammate: admin_teammate, company: company)
+    create(:employment_tenure, company_teammate: admin_teammate, company: company)
     
     # Random person also has a teammate for testing
-    random_teammate = create(:teammate, person: random_person, organization: company)
-    create(:employment_tenure, teammate: random_teammate, company: company)
+    random_teammate = create(:company_teammate, person: random_person, organization: company)
+    create(:employment_tenure, company_teammate: random_teammate, company: company)
   end
 
   describe '#visible_observations' do
@@ -60,7 +60,7 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
       end
 
       it 'excludes soft-deleted observations from others' do
-        soft_deleted = build(:observation, observer: random_person, company: company, privacy_level: :public_to_world).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save!; obs.publish!; obs.soft_delete! }
+        soft_deleted = build(:observation, observer: random_person, company: company, privacy_level: :public_to_world).tap { |obs| obs.observees.build(teammate: create(:company_teammate, organization: company)); obs.save!; obs.publish!; obs.soft_delete! }
         results = query.visible_observations
         expect(results).not_to include(soft_deleted)
       end
@@ -105,16 +105,16 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         # New rules only check direct manager relationships via employment_tenures
         grand_manager = create(:person)
         grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
-        manager_teammate = Teammate.find_by(person: manager_person, organization: company)
+        manager_teammate = CompanyTeammate.find_by(person: manager_person, organization: company)
         
-        create(:employment_tenure, teammate: grand_manager_teammate, company: company)
+        create(:employment_tenure, company_teammate: grand_manager_teammate, company: company)
         # Update existing manager tenure to have grand_manager as manager
-        manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
+        manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: company)
         manager_tenure.update!(manager_teammate: grand_manager_teammate)
         
         indirect_observee = create(:person)
-        indirect_observee_teammate = create(:teammate, person: indirect_observee, organization: company)
-        create(:employment_tenure, teammate: indirect_observee_teammate, company: company, manager_teammate: manager_teammate)
+        indirect_observee_teammate = create(:company_teammate, person: indirect_observee, organization: company)
+        create(:employment_tenure, company_teammate: indirect_observee_teammate, company: company, manager_teammate: manager_teammate)
         
         indirect_observation = build(:observation, observer: observer, company: company, privacy_level: :managers_only).tap do |obs|
           obs.observees.build(teammate: indirect_observee_teammate)
@@ -153,7 +153,7 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
 
     context 'for admin with can_manage_employment' do
       let(:query) { described_class.new(admin_person, company) }
-      let(:admin_teammate) { Teammate.find_by(person: admin_person, organization: company) || create(:teammate, person: admin_person, organization: company) }
+      let(:admin_teammate) { CompanyTeammate.find_by(person: admin_person, organization: company) || create(:company_teammate, person: admin_person, organization: company) }
 
       before do
         admin_teammate # Ensure admin has a teammate record
@@ -440,11 +440,11 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
       it 'does not allow indirect managers (only direct managers via employment_tenures)' do
         grand_manager = create(:person)
         grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
-        manager_teammate = Teammate.find_by(person: manager_person, organization: company)
+        manager_teammate = CompanyTeammate.find_by(person: manager_person, organization: company)
         
-        create(:employment_tenure, teammate: grand_manager_teammate, company: company)
+        create(:employment_tenure, company_teammate: grand_manager_teammate, company: company)
         # Update existing manager tenure to have grand_manager as manager
-        manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
+        manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: company)
         manager_tenure.update!(manager_teammate: grand_manager_teammate)
         
         grand_manager_query = described_class.new(grand_manager, company)
@@ -686,11 +686,11 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
       direct_report = create(:person)
       direct_report_teammate = CompanyTeammate.create!(person: direct_report, organization: company)
       indirect_report = create(:person)
-      indirect_report_teammate = create(:teammate, person: indirect_report, organization: company)
+      indirect_report_teammate = create(:company_teammate, person: indirect_report, organization: company)
       
-      manager_teammate = Teammate.find_by(person: manager_person, organization: company)
-      create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: manager_teammate)
-      create(:employment_tenure, teammate: indirect_report_teammate, company: company, manager_teammate: direct_report_teammate)
+      manager_teammate = CompanyTeammate.find_by(person: manager_person, organization: company)
+      create(:employment_tenure, company_teammate: direct_report_teammate, company: company, manager_teammate: manager_teammate)
+      create(:employment_tenure, company_teammate: indirect_report_teammate, company: company, manager_teammate: direct_report_teammate)
       
       teammate_ids = query.send(:managed_teammate_ids_for_person)
       expect(teammate_ids).to include(direct_report_teammate.id)

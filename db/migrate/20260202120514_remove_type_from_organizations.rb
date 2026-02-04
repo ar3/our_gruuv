@@ -1,21 +1,17 @@
 class RemoveTypeFromOrganizations < ActiveRecord::Migration[8.0]
   def up
-    # Remove any legacy Team/Department records that might still exist
-    # These have been migrated to their own tables
-    execute <<-SQL
-      DELETE FROM organizations WHERE type IN ('Team', 'Department');
-    SQL
-
-    # Remove the STI type column
+    # Only remove the STI type column. Do not delete Team/Department organization rows:
+    # teammates.organization_id still references organizations, so deleting would violate FK.
+    # Legacy Team/Department org cleanup (if any) can be done in a later migration
+    # after reassigning or removing dependent teammates.
     remove_column :organizations, :type
   end
 
   def down
     add_column :organizations, :type, :string
 
-    # Set all existing records to Company type
     execute <<-SQL
-      UPDATE organizations SET type = 'Company';
+      UPDATE organizations SET type = 'Company' WHERE type IS NULL;
     SQL
   end
 end

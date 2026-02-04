@@ -54,7 +54,7 @@ class EnsureAssignmentTenuresSyncProcessor
     assignment_id = tenure_data['assignment_id']
     anticipated_energy_percentage = tenure_data['anticipated_energy_percentage']
 
-    teammate = Teammate.find_by(id: teammate_id)
+    teammate = CompanyTeammate.find_by(id: teammate_id)
     unless teammate
       results[:failures] << {
         'type' => 'assignment_tenure_creation',
@@ -78,7 +78,7 @@ class EnsureAssignmentTenuresSyncProcessor
 
     # Double-check if assignment tenure already exists (in case it was created between preview and processing)
     existing_tenure = AssignmentTenure.active
-      .find_by(teammate: teammate, assignment: assignment)
+      .find_by(company_teammate: teammate, assignment: assignment)
 
     if existing_tenure
       results[:summary][:skipped_existing] += 1

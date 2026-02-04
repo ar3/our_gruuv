@@ -19,14 +19,6 @@
               = form.label :name, class: "form-label"
               = form.text_field :name, class: "form-control", required: true
             
-            .mb-3
-              = form.label :type, "Organization Type", class: "form-label"
-              = form.select :type, options_for_select([['Company', 'Company'], ['Team', 'Team']], @organization.type), { prompt: 'Select organization type' }, { class: "form-select", required: true }
-            
-            .mb-3
-              = form.label :parent_id, "Parent Organization (optional)", class: "form-label"
-              = form.select :parent_id, options_from_collection_for_select(Organization.companies.where.not(id: @organization.id), :id, :name, @organization.parent_id), { prompt: 'Select parent organization (leave blank for top-level)' }, { class: "form-select" }
-            
             .d-flex.justify-content-between
               = link_to "Cancel", organizations_path, class: "btn btn-secondary"
               = form.submit "Update Organization", class: "btn btn-primary"

@@ -492,7 +492,7 @@ module GoalsHelper
     
     if goal.owner_type == 'CompanyTeammate'
       goal.owner.person&.display_name || 'Unknown'
-    elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
+    elsif goal.owner_type.in?(['Company', 'Department', 'Team', 'Organization'])
       goal.owner.display_name || goal.owner.name || 'Unknown'
     else
       'Unknown'

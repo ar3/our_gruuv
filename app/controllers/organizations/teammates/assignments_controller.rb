@@ -9,7 +9,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     
     # Load all check-ins (full history)
     @check_ins = AssignmentCheckIn
-      .where(teammate: @teammate, assignment: @assignment)
+      .where(company_teammate: @teammate, assignment: @assignment)
       .includes(:manager_completed_by_teammate, :finalized_by_teammate)
       .order(check_in_started_on: :desc)
     
@@ -19,7 +19,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     
     # Load tenure history
     @tenure_history = AssignmentTenure
-      .where(teammate: @teammate, assignment: @assignment)
+      .where(company_teammate: @teammate, assignment: @assignment)
       .order(started_at: :desc)
     
     # Load current/open check-in

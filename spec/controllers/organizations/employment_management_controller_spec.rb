@@ -50,7 +50,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
         teammate = person.teammates.find_by(organization: organization)
         teammate.update!(can_create_employment: false)
         # Verify the permission is actually removed
-        expect(Teammate.can_create_employment?(person, organization)).to be false
+        expect(CompanyTeammate.can_create_employment?(person, organization)).to be false
       end
       
       it 'allows access to view but not create' do
@@ -71,8 +71,8 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
       it 'sets up wizard data' do
         get :new, params: { organization_id: organization.id }
         expect(assigns(:positions).pluck(:id)).to eq(organization.positions.pluck(:id))
-        # Managers are teammates; compare by person_id to employees (people)
-        expect(assigns(:managers).map(&:person_id).sort).to eq(organization.employees.pluck(:id).sort)
+        # Managers are teammates; compare by person_id to employees (company teammates' person_ids)
+        expect(assigns(:managers).map(&:person_id).sort).to eq(organization.employees.pluck(:person_id).sort)
         expect(assigns(:employment_tenure)).to be_a(EmploymentTenure)
       end
     end
@@ -176,7 +176,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
         teammate = person.teammates.find_by(organization: organization)
         teammate.update!(can_create_employment: false)
         # Verify the permission is actually removed
-        expect(Teammate.can_create_employment?(person, organization)).to be false
+        expect(CompanyTeammate.can_create_employment?(person, organization)).to be false
       end
       
       it 'denies access' do

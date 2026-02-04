@@ -39,7 +39,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
         moment = result.value
         expect(moment.moment_type).to eq('check_in_completed')
         expect(moment.momentable).to eq(current_check_in)
-        expect(moment.primary_potential_observer).to be_a(Teammate)
+        expect(moment.primary_potential_observer).to be_a(CompanyTeammate)
         expect(moment.primary_potential_observer.id).to eq(finalizer_teammate.id)
         expect(moment.metadata['official_rating']).to eq('2')
         expect(moment.metadata['previous_rating']).to eq('1')

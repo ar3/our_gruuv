@@ -1,14 +1,9 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::GoalLinks', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
-  let(:teammate) do
-    person.teammates.find_or_initialize_by(organization: organization).tap do |t|
-      t.type = 'CompanyTeammate' unless t.persisted?
-      t.save! unless t.persisted?
-    end
-  end
+  let(:teammate) { person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil } }
   let(:goal1) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 1') }
   let(:goal2) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 2') }
   let(:goal3) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 3') }
@@ -114,12 +109,7 @@ RSpec.describe 'Organizations::GoalLinks', type: :request do
     context 'when user is not authorized' do
       let!(:goal_link) { create(:goal_link, parent: goal1, child: goal2) }
       let(:other_person) { create(:person) }
-      let(:other_teammate) do
-        other_person.teammates.find_or_initialize_by(organization: organization).tap do |t|
-          t.type = 'CompanyTeammate' unless t.persisted?
-          t.save! unless t.persisted?
-        end
-      end
+      let(:other_teammate) { other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil } }
       
       before do
         other_teammate # Ensure teammate exists before signing in

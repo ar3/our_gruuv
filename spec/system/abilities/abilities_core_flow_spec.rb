@@ -29,8 +29,8 @@ RSpec.describe 'Abilities Core Flow', type: :system do
       expect(page).to have_content('Ability to write Ruby applications')
       
       ability = Ability.last
-      expect(ability.organization.id).to eq(company.id)
-      expect(ability.organization.class.base_class).to eq(Organization)
+      expect(ability.company.id).to eq(company.id)
+      expect(ability.company.class).to eq(Organization)
       expect(ability.name).to eq('Ruby Programming')
       
       # View
@@ -66,21 +66,21 @@ RSpec.describe 'Abilities Core Flow', type: :system do
         description: 'Ability to lead teams',
         milestone_1_description: 'Basic leadership',
         milestone_2_description: 'Team leadership',
-        creator_teammate: person,
+        created_by: person,
         updated_by: person
       )
     end
 
     before do
       # Create active employment for employee so they can be viewed
-      employment_tenure = create(:employment_tenure, teammate: employee_teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+      employment_tenure = create(:employment_tenure, company_teammate: employee_teammate, company: company, started_at: 1.year.ago, ended_at: nil)
       employee_teammate.update!(first_employed_at: 1.year.ago)
       
       # Set manager relationship so person can view employee's complete picture
       employment_tenure.update!(manager_teammate: company_teammate)
       
       # Ensure manager also has active employment
-      create(:employment_tenure, teammate: company_teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+      create(:employment_tenure, company_teammate: company_teammate, company: company, started_at: 1.year.ago, ended_at: nil)
       company_teammate.update!(first_employed_at: 1.year.ago)
     end
 
@@ -89,13 +89,15 @@ RSpec.describe 'Abilities Core Flow', type: :system do
       visit celebrate_milestones_organization_path(company)
       expect(page).to have_content('Recent Milestones')
       
-      # Create milestone directly (since UI may not be fully implemented)
+      # Create milestone directly and publish so it appears on celebrate page
       milestone = TeammateMilestone.create!(
-        teammate: employee_teammate,
+        company_teammate: employee_teammate,
         ability: ability,
         milestone_level: 2,
-        certifying_teammate: create(:teammate, person: person, organization: organization),
-        attained_at: Date.current
+        certifying_teammate: company_teammate,
+        attained_at: Date.current,
+        published_at: Time.current,
+        published_by_teammate_id: company_teammate.id
       )
       
       # Verify milestone appears on celebrate milestones page

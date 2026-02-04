@@ -12,7 +12,7 @@ class SeatHierarchyQuery
 
     # Get all seats for this organization
     seats = Seat.for_organization(@organization)
-               .includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person })
+               .includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { company_teammate: :person })
                .order('titles.external_title ASC, seats.seat_needed_by ASC')
 
     # Build seat data hash and parent-child map

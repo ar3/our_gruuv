@@ -92,7 +92,7 @@ module Debug
 
       if current_teammate
         current_teammate_id = current_teammate.id
-        current_teammate_type = current_teammate.type
+        current_teammate_type = current_teammate.class.name
         current_teammate_org = current_teammate.organization
         current_teammate_permissions = {
           can_manage_employment: current_teammate.can_manage_employment?,
@@ -102,10 +102,10 @@ module Debug
         }
 
         current_person = current_teammate.person
-        all_teammates = current_person.teammates.includes(:organization).map do |t|
+        all_teammates = current_person.company_teammates.includes(:organization).map do |t|
           {
             id: t.id,
-            type: t.type,
+            type: t.class.name,
             organization_id: t.organization_id,
             organization_name: t.organization.name,
             can_manage_employment: t.can_manage_employment?,

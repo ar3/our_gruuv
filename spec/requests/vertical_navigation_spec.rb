@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Vertical Navigation', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { CompanyTeammate.find_or_create_by!(person: person, organization: organization) }
   let(:user_preference) { UserPreference.for_person(person) }
@@ -25,17 +25,17 @@ RSpec.describe 'Vertical Navigation', type: :request do
     allow_any_instance_of(OrganizationPolicy).to receive(:show?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:customize_company?).and_return(true)
-    # Mock CompanyPolicy methods
-    allow_any_instance_of(CompanyPolicy).to receive(:view_prompts?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_prompt_templates?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_observations?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_seats?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_goals?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_abilities?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_assignments?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_aspirations?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_bulk_sync_events?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:customize_company?).and_return(true)
+    # Mock OrganizationPolicy methods (organization-scoped permissions)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_prompt_templates?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_observations?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_seats?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_goals?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_abilities?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_assignments?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_aspirations?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_bulk_sync_events?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:customize_company?).and_return(true)
     # Mock Huddle policy
     allow_any_instance_of(HuddlePolicy).to receive(:show?).and_return(true)
   end
@@ -83,6 +83,8 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         company_policy_double = double(
+          show?: true,
+          manage_employment?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -92,16 +94,15 @@ RSpec.describe 'Vertical Navigation', type: :request do
           view_assignments?: true,
           view_aspirations?: true,
           view_bulk_sync_events?: true,
+          view_feedback_requests?: true,
           customize_company?: true
         )
-        policy_double = double(show?: true, create?: true, view_check_ins?: true)
+        policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
         
         allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
           case record
           when Organization
-            org_policy_double
-          when Company
-            company_policy_double
+            record.company? ? company_policy_double : org_policy_double
           else
             policy_double
           end
@@ -135,6 +136,8 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         company_policy_double = double(
+          show?: true,
+          manage_employment?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -144,16 +147,15 @@ RSpec.describe 'Vertical Navigation', type: :request do
           view_assignments?: true,
           view_aspirations?: true,
           view_bulk_sync_events?: true,
+          view_feedback_requests?: true,
           customize_company?: true
         )
-        policy_double = double(show?: true, create?: true, view_check_ins?: true)
+        policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
         
         allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
           case record
           when Organization
-            org_policy_double
-          when Company
-            company_policy_double
+            record.company? ? company_policy_double : org_policy_double
           else
             policy_double
           end
@@ -200,6 +202,8 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         company_policy_double = double(
+          show?: true,
+          manage_employment?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -209,16 +213,15 @@ RSpec.describe 'Vertical Navigation', type: :request do
           view_assignments?: true,
           view_aspirations?: true,
           view_bulk_sync_events?: true,
+          view_feedback_requests?: true,
           customize_company?: true
         )
-        policy_double = double(show?: true, create?: true, view_check_ins?: true)
+        policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
         
         allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
           case record
           when Organization
-            org_policy_double
-          when Company
-            company_policy_double
+            record.company? ? company_policy_double : org_policy_double
           else
             policy_double
           end

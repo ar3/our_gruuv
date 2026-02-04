@@ -18,108 +18,31 @@ RSpec.describe 'Archive and Restore Observations', type: :system do
     sign_in_as(observer, company)
   end
 
+  # Archive/restore behavior (status, redirect, DB) is covered by
+  # spec/requests/organizations/observations_spec.rb. This keeps minimal UX smoke for show page.
   describe 'Archive from show page' do
-    it 'shows Archive button for published observation' do
-      visit organization_observation_path(company, observation)
-      
-      expect(page).to have_button('Archive')
-      expect(page).not_to have_button('Restore')
-    end
-
     it 'allows observer to archive observation', js: true do
       visit organization_observation_path(company, observation)
-      
       expect(page).to have_button('Archive')
-      
-      # Click the Archive button - confirm dialog may not appear in test environment
-      # The important part is testing the redirect behavior
+
       click_button 'Archive'
-      
-      # Wait for redirect
+
       expect(page).to have_current_path(organization_observation_path(company, observation), wait: 5)
       expect(page).to have_content('Observation was successfully archived.')
       expect(page).to have_button('Restore')
-      expect(page).to have_content('Archived')
       expect(observation.reload.soft_deleted?).to be true
-    end
-
-    it 'shows Archive button even for observations older than 24 hours' do
-      observation.update_column(:created_at, 2.days.ago)
-      
-      visit organization_observation_path(company, observation)
-      
-      expect(page).to have_button('Archive')
-    end
-
-    it 'shows Restore button when observation is archived' do
-      observation.soft_delete!
-      visit organization_observation_path(company, observation)
-      
-      expect(page).to have_button('Restore')
-      expect(page).not_to have_button('Archive')
-      expect(page).to have_content('Archived')
     end
 
     it 'allows observer to restore archived observation' do
       observation.soft_delete!
       visit organization_observation_path(company, observation)
-      
+      expect(page).to have_button('Restore')
+
       click_button 'Restore'
-      
+
       expect(page).to have_current_path(organization_observation_path(company, observation))
       expect(page).to have_content('Observation was successfully restored.')
       expect(observation.reload.soft_deleted?).to be false
-    end
-  end
-
-  describe 'Archive from get shit done page' do
-    let(:draft_observation) do
-      obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :observed_only)
-      obs.observees.build(teammate: observee_teammate)
-      obs.save!
-      obs
-    end
-
-    it 'shows Archive button for draft observations' do
-      visit organization_get_shit_done_path(company)
-      
-      # Expand the observation drafts section
-      find('[data-bs-target="#observationDraftsSection"]').click
-      
-      within('#observationDraftsSection') do
-        expect(page).to have_button('Archive')
-        expect(page).to have_content(draft_observation.story || 'No story yet')
-      end
-    end
-
-    it 'allows observer to archive draft observation' do
-      visit organization_get_shit_done_path(company)
-      
-      # Expand the observation drafts section
-      find('[data-bs-target="#observationDraftsSection"]').click
-      
-      within('#observationDraftsSection') do
-        expect(page).to have_button('Archive')
-        
-        accept_confirm do
-          click_button 'Archive'
-        end
-      end
-      
-      expect(draft_observation.reload.soft_deleted?).to be true
-    end
-
-    it 'shows Archive button even for draft observations older than 24 hours' do
-      draft_observation.update_column(:created_at, 2.days.ago)
-      
-      visit organization_get_shit_done_path(company)
-      
-      # Expand the observation drafts section
-      find('[data-bs-target="#observationDraftsSection"]').click
-      
-      within('#observationDraftsSection') do
-        expect(page).to have_button('Archive')
-      end
     end
   end
 

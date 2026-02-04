@@ -5,7 +5,7 @@ RSpec.describe 'Organizations::Employees#acknowledge_snapshots', type: :request 
   # so the user lands on the correct audit URL. Using person can send them to the wrong place
   # because audit routes expect teammate id in modern usage.
 
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   # Create another person first so employee and employee_teammate get different ids (person.id != teammate.id),
   # which is the normal case and is when the redirect-to-person bug sends the user to the wrong place.
   let!(:_other_person) { create(:person) }

@@ -38,7 +38,7 @@ class SeatsQuery
 
   def base_scope
     Seat.for_organization(organization)
-        .includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person })
+        .includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { company_teammate: :person })
   end
 
   def filter_by_state(seats)

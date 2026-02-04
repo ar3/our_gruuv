@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'InterestSubmissions#index', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:other_person) { create(:person) }
   

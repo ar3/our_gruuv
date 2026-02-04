@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'People::Assignments', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager_person) { create(:person) }
   let(:employee_person) { create(:person) }
   let!(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
@@ -18,7 +18,7 @@ RSpec.describe 'People::Assignments', type: :request do
     # Set up manager with employment management permissions BEFORE signing in
     manager_teammate.update!(can_manage_employment: true, first_employed_at: 1.year.ago)
     # Create employment tenure if it doesn't exist
-    EmploymentTenure.find_or_create_by!(teammate: manager_teammate, company: organization) do |et|
+    EmploymentTenure.find_or_create_by!(company_teammate: manager_teammate, company: organization) do |et|
       et.position = position
       et.started_at = 1.year.ago
       et.ended_at = nil

@@ -10,10 +10,9 @@ module ControllerAuthenticationHelpers
     # Find or create teammate for the specified organization
     teammate = if organization
       # Check if teammate already exists first to avoid validation errors
-      person.teammates.find_by(organization: organization) || 
+      person.teammates.find_by(organization: organization) ||
         person.teammates.create!(
           organization: organization,
-          type: 'CompanyTeammate',
           first_employed_at: nil,
           last_terminated_at: nil
         )
@@ -23,7 +22,6 @@ module ControllerAuthenticationHelpers
       if teammate.nil?
         teammate = person.teammates.create!(
           organization: Organization.find_by!(name: 'OurGruuv Demo'),
-          type: 'CompanyTeammate',
           first_employed_at: nil,
           last_terminated_at: nil
         )

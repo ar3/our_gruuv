@@ -171,8 +171,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       end
       let!(:other_person) { create(:person) }
       let!(:other_teammate) do
-        other_person.teammates.find_or_create_by!(organization: company) do |t|
-          t.type = 'CompanyTeammate'
+        other_person.company_teammates.find_or_create_by!(organization: company) do |t|
           t.first_employed_at = nil
           t.last_terminated_at = nil
         end
@@ -214,8 +213,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     context 'with created_by_me filter' do
       let!(:other_person) { create(:person) }
       let!(:other_teammate) do
-        other_person.teammates.find_or_create_by!(organization: company) do |t|
-          t.type = 'CompanyTeammate'
+        other_person.company_teammates.find_or_create_by!(organization: company) do |t|
           t.first_employed_at = nil
           t.last_terminated_at = nil
         end
@@ -458,8 +456,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     it 'uses owner from query string params when provided' do
       other_person = create(:person)
-      other_teammate = other_person.teammates.find_or_create_by!(organization: company) do |t|
-        t.type = 'CompanyTeammate'
+      other_teammate = other_person.company_teammates.find_or_create_by!(organization: company) do |t|
         t.first_employed_at = nil
         t.last_terminated_at = nil
       end
@@ -473,8 +470,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     it 'uses owner_type and owner_id from query string params when provided separately' do
       other_person = create(:person)
-      other_teammate = other_person.teammates.find_or_create_by!(organization: company) do |t|
-        t.type = 'CompanyTeammate'
+      other_teammate = other_person.company_teammates.find_or_create_by!(organization: company) do |t|
         t.first_employed_at = nil
         t.last_terminated_at = nil
       end
@@ -562,77 +558,14 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(goal.owner_type).to eq('CompanyTeammate')
     end
     
-    context 'with invalid owner types' do
-      let(:department) { create(:department, company: company) }
-      let(:team_org) { create(:team, company: company) }
-      let(:dept_person) { create(:person) }
-      let(:team_person) { create(:person) }
-      let(:department_teammate) { create(:teammate, person: dept_person, organization: company) }
-      let(:team_teammate) { create(:teammate, person: team_person, organization: company) }
-      
+    context 'when person has CompanyTeammate' do
+      let(:person_with_teammate) { create(:person) }
+      let!(:company_teammate) { create(:company_teammate, person: person_with_teammate, organization: company) }
+
       before do
-        # Ensure teammates are actually DepartmentTeammate and TeamTeammate
-        department_teammate.update_column(:type, 'DepartmentTeammate')
-        team_teammate.update_column(:type, 'TeamTeammate')
+        sign_in_as_teammate(person_with_teammate, company)
       end
-      
-      it 'does not allow creating goal with DepartmentTeammate as owner' do
-        invalid_attributes = valid_attributes.merge(
-          owner_type: 'CompanyTeammate',
-          owner_id: department_teammate.id
-        )
-        
-        expect {
-          post :create, params: { organization_id: company.id, goal: invalid_attributes }
-        }.not_to change(Goal, :count)
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to render_template(:new)
-        # Check for errors on owner_id (form validation) or owner (model validation)
-        form_errors = assigns(:form).errors
-        expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
-      end
-      
-      it 'does not allow creating goal with TeamTeammate as owner' do
-        invalid_attributes = valid_attributes.merge(
-          owner_type: 'CompanyTeammate',
-          owner_id: team_teammate.id
-        )
-        
-        expect {
-          post :create, params: { organization_id: company.id, goal: invalid_attributes }
-        }.not_to change(Goal, :count)
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to render_template(:new)
-        # Check for errors on owner_id (form validation) or owner (model validation)
-        form_errors = assigns(:form).errors
-        expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
-      end
-    end
-    
-    context 'when person has CompanyTeammate and also DepartmentTeammate/TeamTeammate' do
-      let(:person_with_multiple_teammates) { create(:person) }
-      let(:department) { create(:department, company: company) }
-      let(:team) { create(:team, company: company) }
-      let!(:company_teammate) { create(:company_teammate, person: person_with_multiple_teammates, organization: company) }
-      # Note: DepartmentTeammate/TeamTeammate are STI types - create in company and update type
-      let(:other_company) { create(:organization) }
-      let!(:department_teammate) do
-        t = create(:teammate, person: person_with_multiple_teammates, organization: other_company)
-        t.update_column(:type, 'DepartmentTeammate')
-        t
-      end
-      let!(:team_teammate) do
-        t = create(:teammate, person: person_with_multiple_teammates, organization: create(:organization))
-        t.update_column(:type, 'TeamTeammate')
-        t
-      end
-      
-      before do
-        sign_in_as_teammate(person_with_multiple_teammates, company)
-      end
-      
+
       it 'correctly finds CompanyTeammate when creating a goal' do
         expect {
           post :create, params: { organization_id: company.id, goal: valid_attributes }
@@ -659,18 +592,8 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     context 'when current_teammate is nil' do
       let(:person_without_teammate) { create(:person) }
-      let(:department) { create(:department, company: company) }
-      let(:other_company) { create(:organization) }
-      let(:department_teammate) do
-        t = create(:teammate, person: person_without_teammate, organization: other_company)
-        t.update_column(:type, 'DepartmentTeammate')
-        t
-      end
-      
+
       before do
-        # Create a DepartmentTeammate but no CompanyTeammate for this person in the target company
-        department_teammate
-        # Sign in as person - this will create a CompanyTeammate for the session
         sign_in_as_teammate(person_without_teammate, company)
         # The controller will find the CompanyTeammate created by sign_in_as_teammate
         # To test the nil scenario, we need to stub the form's current_teammate to be nil
@@ -1043,75 +966,8 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(response).to render_template(:edit)
       expect(assigns(:form).errors).to be_present
     end
-    
-    context 'with invalid owner types' do
-      let(:department) { create(:department, company: company) }
-      let(:team_org) { create(:team, company: company) }
-      let(:dept_person) { create(:person) }
-      let(:team_person) { create(:person) }
-      let(:department_teammate) { create(:teammate, person: dept_person, organization: company) }
-      let(:team_teammate) { create(:teammate, person: team_person, organization: company) }
-      
-      before do
-        # Ensure teammates are actually DepartmentTeammate and TeamTeammate
-        department_teammate.update_column(:type, 'DepartmentTeammate')
-        team_teammate.update_column(:type, 'TeamTeammate')
-      end
-      
-      it 'does not allow updating goal to have DepartmentTeammate as owner' do
-        patch :update, params: { 
-          organization_id: company.id, 
-          id: goal.id,
-          goal: {
-            title: goal.title,
-            description: goal.description,
-            goal_type: goal.goal_type,
-            earliest_target_date: goal.earliest_target_date,
-            most_likely_target_date: goal.most_likely_target_date,
-            latest_target_date: goal.latest_target_date,
-            privacy_level: goal.privacy_level,
-            owner_type: 'CompanyTeammate',
-            owner_id: department_teammate.id
-          }
-        }
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to render_template(:edit)
-        # Check for errors on owner_id (form validation) or owner (model validation)
-        form_errors = assigns(:form).errors
-        expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
-        goal.reload
-        expect(goal.owner).not_to eq(department_teammate)
-      end
-      
-      it 'does not allow updating goal to have TeamTeammate as owner' do
-        patch :update, params: { 
-          organization_id: company.id, 
-          id: goal.id,
-          goal: {
-            title: goal.title,
-            description: goal.description,
-            goal_type: goal.goal_type,
-            earliest_target_date: goal.earliest_target_date,
-            most_likely_target_date: goal.most_likely_target_date,
-            latest_target_date: goal.latest_target_date,
-            privacy_level: goal.privacy_level,
-            owner_type: 'CompanyTeammate',
-            owner_id: team_teammate.id
-          }
-        }
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to render_template(:edit)
-        # Check for errors on owner_id (form validation) or owner (model validation)
-        form_errors = assigns(:form).errors
-        expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
-        goal.reload
-        expect(goal.owner).not_to eq(team_teammate)
-      end
-    end
   end
-  
+
   describe 'DELETE #destroy' do
     let!(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     
@@ -1170,7 +1026,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     context 'when user is not authorized' do
       let(:other_person) { create(:person) }
-      let(:other_teammate) { other_person.teammates.find_by(organization: company) }
+      let(:other_teammate) { other_person.company_teammates.find_by(organization: company) }
       let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil, privacy_level: 'only_creator') }
       
       before do
@@ -1337,7 +1193,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     context 'when user is not authorized to view goal' do
       let(:other_person) { create(:person) }
-      let(:other_teammate) { other_person.teammates.find_by(organization: company) }
+      let(:other_teammate) { other_person.company_teammates.find_by(organization: company) }
       let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, privacy_level: 'only_creator') }
       
       before do
@@ -1361,7 +1217,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   describe 'authorization' do
     let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     let(:other_person) { create(:person) }
-    let(:other_teammate) { other_person.teammates.find_by(organization: company) }
+    let(:other_teammate) { other_person.company_teammates.find_by(organization: company) }
     
     context 'when user is not authorized' do
       before do

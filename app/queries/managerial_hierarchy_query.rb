@@ -16,7 +16,7 @@ class ManagerialHierarchyQuery
 
     collect_managers = lambda do |person, org, visited, managers_list, level = 0|
       # Get active employment tenures for this person in this organization
-      tenures = EmploymentTenure.joins(:teammate)
+      tenures = EmploymentTenure.joins(:company_teammate)
                                .where(teammates: { person: person, organization: org })
                                .active
                                .includes(:manager_teammate, :company, :position)
@@ -31,7 +31,7 @@ class ManagerialHierarchyQuery
         # Only process if we haven't already added this manager
         if !visited.include?(manager.id)
           visited.add(manager.id)
-          manager_tenure = EmploymentTenure.joins(:teammate)
+          manager_tenure = EmploymentTenure.joins(:company_teammate)
                                           .where(teammates: { person: manager, organization: org })
                                           .active
                                           .includes(:position)

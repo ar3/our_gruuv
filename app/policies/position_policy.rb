@@ -7,7 +7,7 @@ class PositionPolicy < ApplicationPolicy
     viewing_teammate_org = viewing_teammate.organization
     return false unless viewing_teammate_org
     
-    # Get the company for viewing teammate
+    # Get the company for viewing employee
     company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
     return false unless company
     return false unless record.title.company_id == company.id
@@ -19,7 +19,7 @@ class PositionPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate
     
-    # Only admins or users with can_manage_maap permission on company teammate record can create positions
+    # Only admins or users with can_manage_maap permission on company employee record can create positions
     viewing_teammate.person.admin? || can_manage_maap_for_position_company?
   end
 
@@ -27,7 +27,7 @@ class PositionPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate
     
-    # Only admins or users with can_manage_maap permission on company teammate record can update positions
+    # Only admins or users with can_manage_maap permission on company employee record can update positions
     viewing_teammate.person.admin? || can_manage_maap_for_position_company?
   end
 
@@ -35,7 +35,7 @@ class PositionPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate
     
-    # Only admins or users with can_manage_maap permission on company teammate record can destroy positions
+    # Only admins or users with can_manage_maap permission on company employee record can destroy positions
     viewing_teammate.person.admin? || can_manage_maap_for_position_company?
   end
 
@@ -51,7 +51,7 @@ class PositionPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate
     
-    # Only admins or users with can_manage_maap permission on company teammate record can manage eligibility
+    # Only admins or users with can_manage_maap permission on company employee record can manage eligibility
     viewing_teammate.person.admin? || can_manage_maap_for_position_company?
   end
 
@@ -81,13 +81,13 @@ class PositionPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless actual_organization
     
-    # Get the company for actual organization
+    # Get the company for actual company
     company = actual_organization.company? ? actual_organization : actual_organization.root_company
     return false unless company
     return false unless record.title.company_id == company.id
     
-    # Check if user can manage MAAP in the organization
-    Teammate.can_manage_maap_in_hierarchy?(viewing_teammate.person, actual_organization)
+    # Check if user can manage MAAP in the company
+    CompanyTeammate.can_manage_maap_in_hierarchy?(viewing_teammate.person, actual_organization)
   end
 
   class Scope < ApplicationPolicy::Scope

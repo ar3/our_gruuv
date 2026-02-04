@@ -1,4 +1,10 @@
 module Organizations::PublicMaapHelper
+  # Build organization/department hierarchy for public MAAP views
+  # Returns array of hashes with :organization, :level, and :children keys (expected by _organization_hierarchy_item partial)
+  def build_organization_hierarchy(company)
+    build_department_hierarchy(company).map { |item| department_node_to_organization_node(item) }
+  end
+
   # Build department hierarchy structure for display
   # Returns array of hashes with :department, :level, and :children keys
   def build_department_hierarchy(company)
@@ -36,7 +42,15 @@ module Organizations::PublicMaapHelper
   end
   
   private
-  
+
+  def department_node_to_organization_node(item)
+    {
+      organization: item[:department],
+      level: item[:level],
+      children: (item[:children] || []).map { |c| department_node_to_organization_node(c) }
+    }
+  end
+
   def build_hierarchy_node(department, level)
     {
       department: department,

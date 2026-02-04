@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe NavigationHelper, type: :helper do
   let(:company) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: company) }
+  let(:teammate) { create(:company_teammate, person: person, organization: company) }
 
   describe '#pending_get_shit_done_count' do
     it 'returns 0 when teammate is nil' do
@@ -16,7 +16,7 @@ RSpec.describe NavigationHelper, type: :helper do
       
       observable_moment = create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
       observable_moment.reload
-      create(:maap_snapshot, employee: person, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
+      create(:maap_snapshot, employee_company_teammate: company_teammate, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
       create(:observation, observer: person, company: company, published_at: nil)
       # Goal needs to meet check_in_eligible criteria
       goal = create(:goal, owner: company_teammate, company: company, started_at: Time.current, deleted_at: nil, completed_at: nil, most_likely_target_date: 1.month.from_now, goal_type: 'quantitative_key_result')
@@ -92,7 +92,7 @@ RSpec.describe NavigationHelper, type: :helper do
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
-          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true)
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true)
         elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
           double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true)
         elsif record.is_a?(CompanyTeammate)
@@ -114,7 +114,7 @@ RSpec.describe NavigationHelper, type: :helper do
     end
 
     it 'uses company_label_plural for prompts navigation label' do
-      company = Company.find_or_create_by!(name: 'Test Company', type: 'Company')
+      company = create(:organization, :company, name: 'Test Company')
       helper.instance_variable_set(:@current_organization, company)
       helper.instance_variable_set(:@current_company, company)
       
@@ -125,7 +125,7 @@ RSpec.describe NavigationHelper, type: :helper do
     end
 
     context 'when company has custom label preference' do
-      let(:company) { Company.find_or_create_by!(name: 'Test Company', type: 'Company') }
+      let(:company) { create(:organization, :company, name: 'Test Company') }
 
       before do
         create(:company_label_preference, company: company, label_key: 'prompt', label_value: 'Reflection')
@@ -150,16 +150,16 @@ RSpec.describe NavigationHelper, type: :helper do
 
     context 'when teammate has direct reports' do
       let(:manager_person) { create(:person) }
-      let(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager_person, organization: company, first_employed_at: 1.year.ago).id) }
+      let(:manager_teammate) { create(:company_teammate, person: manager_person, organization: company, first_employed_at: 1.year.ago) }
       let(:direct_report) { create(:person) }
-      let(:direct_report_teammate) { CompanyTeammate.find(create(:teammate, person: direct_report, organization: company, first_employed_at: 6.months.ago).id) }
+      let(:direct_report_teammate) { create(:company_teammate, person: direct_report, organization: company, first_employed_at: 6.months.ago) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
       let(:title) { create(:title, company: company, position_major_level: position_major_level) }
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let!(:employment_tenure) do
         create(:employment_tenure,
-          teammate: direct_report_teammate,
+          company_teammate: direct_report_teammate,
           company: company,
           position: position,
           manager_teammate: manager_teammate,
@@ -199,7 +199,7 @@ RSpec.describe NavigationHelper, type: :helper do
 
     context 'when teammate has no direct reports' do
       let(:teammate_without_reports) do
-        teammate_without = CompanyTeammate.find(create(:teammate, person: create(:person), organization: company, first_employed_at: 1.year.ago).id)
+        teammate_without = create(:company_teammate, person: create(:person), organization: company, first_employed_at: 1.year.ago)
         # Ensure no direct reports exist
         EmploymentTenure.where(manager_teammate: teammate_without, ended_at: nil).update_all(ended_at: Time.current)
         teammate_without

@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
   let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
+  let(:department) { create(:department, company: company) }
   let(:position_major_level) { create(:position_major_level) }
   
   let!(:position_company) do
@@ -12,7 +12,7 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
   end
 
   let!(:position_department) do
-    title = create(:title, company: department, position_major_level: position_major_level, external_title: 'Department Position Type')
+    title = create(:title, company: company, department: department, position_major_level: position_major_level, external_title: 'Department Position Type')
     position_level = create(:position_level, position_major_level: position_major_level)
     create(:position, title: title, position_level: position_level)
   end

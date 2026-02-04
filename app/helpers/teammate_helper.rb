@@ -136,8 +136,10 @@ module TeammateHelper
           manager_teammates = CompanyTeammate.where(id: manager_teammate_ids).includes(:person).order('people.last_name, people.first_name')
           if manager_teammates.count == 1
             manager_teammates.first.person.display_name
-          else
+          elsif manager_teammates.count > 1
             manager_teammates.map { |mt| mt.person.display_name }.join(', ')
+          else
+            'Unknown Manager'
           end
         else
           'All Teammates'
@@ -344,6 +346,7 @@ module TeammateHelper
   end
 
   def pending_acknowledgements_count(person, organization)
+    return 0 unless person
     teammate = person.teammates.find_by(organization: organization)
     return 0 unless teammate
     
@@ -459,10 +462,13 @@ module TeammateHelper
     }
   end
 
+  EMPTY_ACKNOWLEDGEMENT_SUMMARY = { position: 0, assignments: 0, aspirations: 0, milestones: 0, bulk: 0, total: 0 }.freeze
+
   def acknowledgement_summary_by_type(person, organization)
+    return EMPTY_ACKNOWLEDGEMENT_SUMMARY.dup unless person
     # MaapSnapshots don't have explicit type fields, so we'll infer from change_type
     teammate = person.teammates.find_by(organization: organization)
-    return {} unless teammate
+    return EMPTY_ACKNOWLEDGEMENT_SUMMARY.dup unless teammate
     
     snapshots = MaapSnapshot.for_employee_teammate(teammate)
                             .for_company(organization)

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::FeedbackRequests Subject Selection', type: :request do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:manager_person) { create(:person) }
   let(:manager_teammate) do
     CompanyTeammate.find_or_create_by!(person: manager_person, organization: company) do |t|

@@ -60,8 +60,8 @@ class UnassignedEmployeeUploadProcessor
         department_name = department_data['name']
         next if department_name.blank?
 
-        # Check if department already exists
-        existing_department = Organization.departments.find_by(name: department_name, parent: organization)
+        # Check if department already exists (Department model belongs to company)
+        existing_department = organization.departments.find_by(name: department_name)
         
         if existing_department
           # Department already exists, no action needed
@@ -73,10 +73,8 @@ class UnassignedEmployeeUploadProcessor
           }
         else
           # Create new department
-          department = Organization.departments.create!(
-            name: department_name,
-            parent: organization,
-            type: 'Department'
+          department = organization.departments.create!(
+            name: department_name
           )
 
           results[:successes] << {
@@ -255,10 +253,9 @@ class UnassignedEmployeeUploadProcessor
     end
   end
 
-  def create_teammate_relationship(person, organization, type, start_date = nil)
+  def create_teammate_relationship(person, organization, _type, start_date = nil)
     teammate = person.teammates.create!(
       organization: organization,
-      type: 'CompanyTeammate',
       first_employed_at: start_date || Time.current
     )
     
@@ -372,15 +369,15 @@ class UnassignedEmployeeUploadProcessor
   def find_or_create_position(job_title)
     return nil if job_title.blank?
 
-    # Find existing title
-    title = Title.find_by(external_title: job_title, organization: organization)
+    # Find existing title (Title belongs_to :company)
+    title = Title.find_by(external_title: job_title, company: organization)
     
     if title.nil?
       # Create new title
       position_major_level = PositionMajorLevel.first || PositionMajorLevel.create!(set_name: 'Engineering', major_level: 'Standard')
       title = Title.create!(
         external_title: job_title,
-        organization: organization,
+        company: organization,
         position_major_level: position_major_level
       )
     end

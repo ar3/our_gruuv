@@ -17,9 +17,9 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     # Get all tenures, then group by teammate and take the first one for each, preserving order
     all_tenures = EmploymentTenure
       .active
-      .joins(:position, teammate: :person)
+      .joins(:position, company_teammate: :person)
       .where(positions: { title_id: @title.id })
-      .includes(teammate: :person, position: [:title, :position_level])
+      .includes(company_teammate: :person, position: [:title, :position_level])
       .order('people.last_name, people.first_name, employment_tenures.started_at DESC')
     
     # Group by teammate_id and take the first (most recent) tenure for each teammate

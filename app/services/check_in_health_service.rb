@@ -26,7 +26,7 @@ class CheckInHealthService
   def position_health
     # Find most recent closed position check-in with official_rating
     latest_finalized = PositionCheckIn
-      .where(teammate: teammate)
+      .where(company_teammate: teammate)
       .closed
       .where.not(official_rating: nil)
       .order(official_check_in_completed_at: :desc)
@@ -34,7 +34,7 @@ class CheckInHealthService
 
     # Find open position check-in
     open_check_in = PositionCheckIn
-      .where(teammate: teammate)
+      .where(company_teammate: teammate)
       .open
       .first
 
@@ -89,7 +89,7 @@ class CheckInHealthService
     # Count assignments with completed check-ins in last 90 days
     completed_count = active_assignments.to_a.count do |tenure|
       check_in = AssignmentCheckIn
-        .where(teammate: teammate, assignment: tenure.assignment)
+        .where(company_teammate: teammate, assignment: tenure.assignment)
         .closed
         .where.not(official_check_in_completed_at: nil)
         .where('official_check_in_completed_at >= ?', DAYS_THRESHOLD.days.ago)
@@ -101,7 +101,7 @@ class CheckInHealthService
 
     # Count open/unacknowledged check-ins
     open_check_ins = AssignmentCheckIn
-      .where(teammate: teammate)
+      .where(company_teammate: teammate)
       .joins(:assignment)
       .where(assignments: { company: organization.self_and_descendants })
       .open
@@ -141,7 +141,7 @@ class CheckInHealthService
     # Observations can rate aspirations, so we check observation_ratings
     teammate_observations = Observation
       .joins(:observees)
-      .where(observees: { teammate: teammate })
+      .where(observees: { teammate_id: teammate.id })
       .where('observed_at >= ?', DAYS_THRESHOLD.days.ago)
 
     rated_aspiration_ids = teammate_observations
@@ -154,7 +154,7 @@ class CheckInHealthService
 
     # Count open/unacknowledged aspiration check-ins
     open_check_ins = AspirationCheckIn
-      .where(teammate: teammate)
+      .where(company_teammate: teammate)
       .joins(:aspiration)
       .where(aspirations: { company_id: organization.self_and_descendants.pluck(:id) })
       .open

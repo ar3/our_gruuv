@@ -99,7 +99,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     
     # Get all active assignment tenures for this teammate
     active_tenures = AssignmentTenure.joins(:assignment)
-                                    .where(teammate: @teammate)
+                                    .where(company_teammate: @teammate)
                                     .where(ended_at: nil)
                                     .includes(:assignment)
     
@@ -132,7 +132,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
           check_ins << check_in if check_in
         else
           # No active tenure - create blank check-in if one doesn't exist
-          open_check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: assignment).open.first
+          open_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
           if open_check_in.nil?
             check_in = AssignmentCheckIn.create!(
               teammate: @teammate,
@@ -153,7 +153,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     # Also include assignments that have ever had a check-in (even if no active tenure or position assignment)
     # This ensures we show all assignments with check-in history
     assignments_with_check_in_history = AssignmentCheckIn
-      .where(teammate: @teammate)
+      .where(company_teammate: @teammate)
       .joins(:assignment)
       .where(assignments: { company: organization.self_and_descendants })
       .select(:assignment_id)
@@ -166,7 +166,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       
       # Find or create an open check-in for this assignment
       assignment = Assignment.find(assignment_id)
-      open_check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: assignment).open.first
+      open_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
       if open_check_in.nil?
         check_in = AssignmentCheckIn.create!(
           teammate: @teammate,
@@ -236,7 +236,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       assignment = Assignment.find(assignment_id)
       
       # First, try to find an existing open check-in (it may have been created without a tenure)
-      check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: assignment).open.first
+      check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
       
       # If no open check-in exists, try to find or create one (requires tenure)
       check_in ||= AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)

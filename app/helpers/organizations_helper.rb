@@ -160,7 +160,7 @@ module OrganizationsHelper
         # Stop before including the company (which is already in the path)
         break if current.company?
         dept_path.unshift(current.name)
-        current = current.parent
+        current = current.respond_to?(:parent_department) ? current.parent_department : current.parent
       end
       path.concat(dept_path)
     end
@@ -218,6 +218,6 @@ module OrganizationsHelper
   # Check if assignment has any check-ins or tenures
   def has_check_in_or_tenure_history?(assignment, teammate)
     teammate.assignment_tenures.where(assignment: assignment).exists? ||
-      AssignmentCheckIn.where(teammate: teammate, assignment: assignment).exists?
+      AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).exists?
   end
 end

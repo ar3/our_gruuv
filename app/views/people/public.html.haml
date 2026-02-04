@@ -68,8 +68,8 @@
             - @milestones.group_by(&:ability).each do |ability, ability_milestones|
               .mb-3.pb-3.border-bottom
                 %h6.mb-2
-                  = link_to ability.name, organization_public_maap_ability_path(ability.organization, ability), class: "text-decoration-none"
-                  %small.text-muted.ms-2 (#{ability.organization.display_name})
+                  = link_to ability.name, organization_public_maap_ability_path(ability.company, ability), class: "text-decoration-none"
+                  %small.text-muted.ms-2 (#{ability.company.display_name})
                 - ability_milestones.sort_by(&:milestone_level).each do |milestone|
                   .d-flex.justify-content-between.align-items-center.mb-1
                     %div

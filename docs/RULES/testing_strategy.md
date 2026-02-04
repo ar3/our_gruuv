@@ -263,13 +263,22 @@ bundle exec rspec spec/system/abilities/
 bundle exec rspec spec/system/aspirations/
 bundle exec rspec spec/system/assignments/
 bundle exec rspec spec/system/check_ins/
+bundle exec rspec spec/system/check_in_observations/
 bundle exec rspec spec/system/finalization/
+bundle exec rspec spec/system/get_shit_done/
 bundle exec rspec spec/system/goals/
 bundle exec rspec spec/system/huddles/
 bundle exec rspec spec/system/misc/
+bundle exec rspec spec/system/observable_moments/
 bundle exec rspec spec/system/observations/
+bundle exec rspec spec/system/organizations/
+bundle exec rspec spec/system/people/
 bundle exec rspec spec/system/positions_and_seats/
 bundle exec rspec spec/system/teammates/
+bundle exec rspec spec/system/audit/
+bundle exec rspec spec/system/vertical_navigation_spec.rb
+bundle exec rspec spec/system/check_ins_save_and_redirect_spec.rb
+bundle exec rspec spec/system/teammate_profile_links_spec.rb
 ```
 
 ### Run Specific Feature
@@ -277,6 +286,15 @@ bundle exec rspec spec/system/teammates/
 # All check-in tests
 bundle exec rspec spec/models/concerns/check_in_behavior_spec.rb spec/requests/organizations/check_ins_spec.rb spec/system/position_check_in_happy_path_spec.rb
 ```
+
+### CI / Parallelization
+
+To reduce full-suite wall-clock time and surface failures faster:
+
+- **Split jobs**: Run unit + request segments in one CI job, and system specs in a separate job. Unit and request specs are faster and more reliable; run them first so most failures are caught without starting the browser.
+- **Segment order**: Run Model → Controller → Request specs first (no browser). Then run system spec folders (Abilities, Aspirations, Assignments, Check-ins, etc.) in the order listed in "Segment Order" below. Optionally run system specs only on main/nightly.
+- **Parallel segments**: Independent segments can be run in parallel (e.g. models + services + jobs in one job; requests + controllers in another; system in a third). Use a CI matrix or the `parallel_tests` gem to run multiple segments concurrently. Ensure each segment runs in isolation (clean DB, no shared state).
+- **Tags**: System specs use `type: :system` (and often `js: true`). Tag slow or flaky examples if you need to run a fast subset (e.g. `rspec --tag ~slow`).
 
 ### Full Suite Run Tracking
 
@@ -328,13 +346,20 @@ bundle exec rspec spec/models/concerns/check_in_behavior_spec.rb spec/requests/o
    - System Specs - Check-ins (`spec/system/check_ins/`)
    - System Specs - Check-in Observations (`spec/system/check_in_observations/`)
    - System Specs - Finalization (`spec/system/finalization/`)
+   - System Specs - Get Shit Done (`spec/system/get_shit_done/`)
    - System Specs - Goals (`spec/system/goals/`)
    - System Specs - Huddles (`spec/system/huddles/`)
    - System Specs - Misc (`spec/system/misc/`)
+   - System Specs - Observable Moments (`spec/system/observable_moments/`)
    - System Specs - Observations (`spec/system/observations/`)
+   - System Specs - Organizations (`spec/system/organizations/`)
+   - System Specs - People (`spec/system/people/`)
    - System Specs - Positions and Seats (`spec/system/positions_and_seats/`)
    - System Specs - Teammates (`spec/system/teammates/`)
    - System Specs - Audit (`spec/system/audit/`)
+   - System Specs - vertical_navigation (`spec/system/vertical_navigation_spec.rb`)
+   - System Specs - check_ins_save_and_redirect (`spec/system/check_ins_save_and_redirect_spec.rb`)
+   - System Specs - teammate_profile_links (`spec/system/teammate_profile_links_spec.rb`)
    - ENM Specs (`spec/enm/`)
    
    **Do not stop after a few segments - continue until ALL segments are complete.**

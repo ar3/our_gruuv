@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe TeamMember, type: :model do
   describe 'associations' do
     it { should belong_to(:team) }
-    it { should belong_to(:company_teammate).class_name('Teammate') }
+    it { should belong_to(:company_teammate).class_name('CompanyTeammate') }
   end
 
   describe 'validations' do

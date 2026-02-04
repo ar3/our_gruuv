@@ -37,7 +37,7 @@
               %small.text-muted Slack Status
       .col-md-4.border-start.border-secondary
         .d-grid.gap-2
-          = link_to new_organization_path(parent_id: organization.id), class: "btn btn-primary" do
+          = link_to new_organization_path, class: "btn btn-primary" do
             %i.bi.bi-plus-circle.me-2
             Add Team/Department
           - if policy(organization).create_employment?

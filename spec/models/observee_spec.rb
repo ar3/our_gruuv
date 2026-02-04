@@ -11,12 +11,12 @@ RSpec.describe Observee, type: :model do
 
   describe 'associations' do
     it { should belong_to(:observation) }
-    it { should belong_to(:teammate) }
+    it { should belong_to(:company_teammate) }
   end
 
   describe 'validations' do
     it { should validate_presence_of(:observation) }
-    it { should validate_presence_of(:teammate) }
+    it { should validate_presence_of(:company_teammate) }
     
     it 'validates uniqueness of teammate_id scoped to observation_id' do
       observee.save!
@@ -31,7 +31,7 @@ RSpec.describe Observee, type: :model do
       
       observee.teammate = other_teammate
       expect(observee).not_to be_valid
-      expect(observee.errors[:teammate]).to include('must be in the same company as the observation')
+      expect(observee.errors[:company_teammate]).to include('must be in the same company as the observation')
     end
 
     it 'allows teammate from same company' do

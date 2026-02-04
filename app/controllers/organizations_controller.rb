@@ -16,7 +16,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @debug_info = {
       session_teammate_id: session[:current_company_teammate_id],
       current_teammate_id: current_company_teammate&.id,
-      current_teammate_type: current_company_teammate&.type,
+      current_teammate_type: current_company_teammate&.class&.name,
       current_person_id: current_person&.id,
       current_organization_id: current_organization&.id,
       current_organization_name: current_organization&.name,
@@ -37,7 +37,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       
       @teammate_debug_info[org.id] = {
         teammate_id: teammate&.id,
-        teammate_type: teammate&.type,
+        teammate_type: teammate&.class&.name,
         teammate_exists: teammate.present?,
         root_company_id: root_company.id,
         root_company_name: root_company.name,
@@ -189,10 +189,9 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     root_company = @organization.root_company || @organization
     
     # Find or create teammate for the root_company
-    teammate = current_company_teammate.person.teammates.find_or_create_by!(
+    teammate = current_company_teammate.person.company_teammates.find_or_create_by!(
       organization: root_company
     ) do |t|
-      t.type = 'CompanyTeammate'
       t.first_employed_at = nil
       t.last_terminated_at = nil
     end
@@ -278,7 +277,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @recent_milestones = query.call
     
     # Group by person for easier display
-    @milestones_by_person = @recent_milestones.group_by { |milestone| milestone.teammate.person }
+    @milestones_by_person = @recent_milestones.group_by { |milestone| milestone.company_teammate.person }
     
     # Get counts for the page
     @total_milestones = @recent_milestones.count
@@ -362,7 +361,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   end
   
   def organization_params
-    params.require(:organization).permit(:name, :type, :parent_id)
+    params.require(:organization).permit(:name)
   end
   
   def require_authentication
@@ -476,22 +475,22 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     
     if teammate
       # Check for check-ins ready for finalization (manager perspective)
-      position_ready = PositionCheckIn.where(teammate: teammate).ready_for_finalization.exists?
-      assignment_ready = AssignmentCheckIn.where(teammate: teammate).ready_for_finalization.exists?
-      aspiration_ready = AspirationCheckIn.where(teammate: teammate).ready_for_finalization.exists?
+      position_ready = PositionCheckIn.where(company_teammate: teammate).ready_for_finalization.exists?
+      assignment_ready = AssignmentCheckIn.where(company_teammate: teammate).ready_for_finalization.exists?
+      aspiration_ready = AspirationCheckIn.where(company_teammate: teammate).ready_for_finalization.exists?
       @ready_for_finalization_count = [position_ready, assignment_ready, aspiration_ready].count(true)
       
       # Check for finalized check-in awaiting acknowledgement (employee perspective)
       # Find latest closed check-in within last 7 days that may need acknowledgement
-      @finalized_check_in_exists = PositionCheckIn.where(teammate: teammate)
+      @finalized_check_in_exists = PositionCheckIn.where(company_teammate: teammate)
                                                    .closed
                                                    .where('official_check_in_completed_at > ?', 7.days.ago)
                                                    .exists? ||
-                                  AssignmentCheckIn.where(teammate: teammate)
+                                  AssignmentCheckIn.where(company_teammate: teammate)
                                                    .closed
                                                    .where('official_check_in_completed_at > ?', 7.days.ago)
                                                    .exists? ||
-                                  AspirationCheckIn.where(teammate: teammate)
+                                  AspirationCheckIn.where(company_teammate: teammate)
                                                   .closed
                                                   .where('official_check_in_completed_at > ?', 7.days.ago)
                                                   .exists?

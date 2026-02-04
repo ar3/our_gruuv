@@ -11,7 +11,7 @@ class Test::AuthController < ApplicationController
     redirect_to = params[:redirect_to]
     
     teammate = if teammate_id.present?
-      found_teammate = Teammate.find(teammate_id)
+      found_teammate = CompanyTeammate.find(teammate_id)
       # Ensure it's a CompanyTeammate for root company
       ensure_company_teammate(found_teammate) || found_teammate
     elsif person_id.present?
@@ -21,8 +21,7 @@ class Test::AuthController < ApplicationController
         organization = Organization.find(organization_id)
         root_company = organization.root_company || organization
         # Ensure we create/find CompanyTeammate for root company
-        ensure_company_teammate_for_person(person, root_company) || person.teammates.find_or_create_by!(organization: root_company) do |t|
-          t.type = 'CompanyTeammate'
+        ensure_company_teammate_for_person(person, root_company) || person.company_teammates.find_or_create_by!(organization: root_company) do |t|
           t.first_employed_at = nil
           t.last_terminated_at = nil
         end

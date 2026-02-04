@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Titles", type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let!(:teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: true) }
 
@@ -53,7 +53,7 @@ RSpec.describe "Titles", type: :request do
   describe "PATCH /update" do
     let(:position_major_level) { create(:position_major_level) }
     let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
-    let(:department) { create(:organization, :department, parent: organization) }
+    let(:department) { create(:department, company: organization) }
 
     it "updates the title successfully" do
       patch "/organizations/#{organization.id}/titles/#{title.id}", params: {

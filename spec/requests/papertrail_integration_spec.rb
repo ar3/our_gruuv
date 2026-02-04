@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'PaperTrail Integration', type: :request do
-  let(:organization) { create(:organization, type: 'Company') }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let!(:teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: true) }
 

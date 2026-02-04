@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Organizations::AspirationCheckIns", type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager_person) { create(:person) }
   let(:employee_person) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
@@ -27,7 +27,7 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
     context "aspiration check-in" do
       context "when marking as draft" do
         it "saves data but does not mark as completed" do
-          check_in = AspirationCheckIn.find_by(teammate: employee_teammate, aspiration: aspiration)
+          check_in = AspirationCheckIn.find_by(company_teammate: employee_teammate, aspiration: aspiration)
           
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
@@ -56,7 +56,7 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
       
       context "when marking as complete" do
         it "saves data and marks as completed" do
-          check_in = AspirationCheckIn.find_by(teammate: employee_teammate, aspiration: aspiration)
+          check_in = AspirationCheckIn.find_by(company_teammate: employee_teammate, aspiration: aspiration)
           
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
@@ -90,7 +90,7 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
         end
         
         it "marks employee side as complete" do
-          check_in = AspirationCheckIn.find_by(teammate: employee_teammate, aspiration: aspiration)
+          check_in = AspirationCheckIn.find_by(company_teammate: employee_teammate, aspiration: aspiration)
           
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
@@ -114,7 +114,7 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
       
       context "when toggling from draft to complete" do
         it "properly updates completion status" do
-          check_in = AspirationCheckIn.find_by(teammate: employee_teammate, aspiration: aspiration)
+          check_in = AspirationCheckIn.find_by(company_teammate: employee_teammate, aspiration: aspiration)
           
           # First: Save as draft
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
@@ -159,7 +159,7 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
       
       context "when toggling from complete back to draft" do
         it "unmarks completion" do
-          check_in = AspirationCheckIn.find_by(teammate: employee_teammate, aspiration: aspiration)
+          check_in = AspirationCheckIn.find_by(company_teammate: employee_teammate, aspiration: aspiration)
           
           # First: Mark as complete
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
@@ -207,7 +207,7 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
       it "requires authentication" do
         allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(nil)
         
-        check_in = AspirationCheckIn.find_by(teammate: employee_teammate, aspiration: aspiration)
+        check_in = AspirationCheckIn.find_by(company_teammate: employee_teammate, aspiration: aspiration)
         
         patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: {

@@ -73,7 +73,7 @@ class RefreshSlackSyncParser
   def find_slack_identity_updates(slack_users)
     # Find all existing Slack identities for organization teammates
     existing_identities = TeammateIdentity.slack
-                                         .joins(:teammate)
+                                         .joins(:company_teammate)
                                          .where(teammates: { organization: organization })
                                          .includes(:teammate, :teammate => :person)
 
@@ -209,7 +209,7 @@ class RefreshSlackSyncParser
     # Find Slack identities that are deleted, bots, or disabled
     # and check if associated teammate is active
     existing_identities = TeammateIdentity.slack
-                                         .joins(:teammate)
+                                         .joins(:company_teammate)
                                          .where(teammates: { organization: organization })
                                          .includes(:teammate, :teammate => :person)
 

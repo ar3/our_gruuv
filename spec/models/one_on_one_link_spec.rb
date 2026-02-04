@@ -6,7 +6,7 @@ RSpec.describe OneOnOneLink, type: :model do
   let(:teammate) { create(:teammate, person: person, organization: organization) }
 
   describe 'associations' do
-    it { should belong_to(:teammate) }
+    it { should belong_to(:company_teammate) }
   end
 
   describe 'validations' do

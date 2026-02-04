@@ -8,7 +8,7 @@ RSpec.describe Huddle, type: :model do
   describe 'associations' do
     it { should belong_to(:team) }
     it { should have_many(:huddle_participants).dependent(:destroy) }
-    it { should have_many(:participants).through(:huddle_participants).source(:teammate) }
+    it { should have_many(:participants).through(:huddle_participants).source(:company_teammate) }
     it { should have_many(:huddle_feedbacks).dependent(:destroy) }
   end
 

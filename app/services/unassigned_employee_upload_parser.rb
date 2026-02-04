@@ -463,7 +463,8 @@ class UnassignedEmployeeUploadParser
       action = 'create'
       
       if department_data['name'].present?
-        existing_department = Organization.departments.find_by(name: department_data['name'])
+        # Parser does not receive organization; look up department by name (first match)
+        existing_department = Department.find_by(name: department_data['name'])
       end
       
       if existing_department

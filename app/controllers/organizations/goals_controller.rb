@@ -756,7 +756,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     case owner_type
     when 'CompanyTeammate'
       CompanyTeammate.find_by(id: owner_id)
-    when 'Organization'
+    when 'Organization', 'Company'
       Organization.find_by(id: owner_id)
     when 'Department'
       Department.find_by(id: owner_id)
@@ -924,7 +924,6 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     company_descendant_ids = company.self_and_descendants.pluck(:id)
     current_teammate = current_person.teammates
                                      .where(organization_id: company_descendant_ids)
-                                     .where(type: 'CompanyTeammate')
                                      .first
     if current_teammate && current_person&.display_name.present?
       options << ["Teammate: #{current_person.display_name}", "CompanyTeammate_#{current_teammate.id}"]
@@ -936,7 +935,6 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Find the current person's CompanyTeammate in the company to use as manager_teammate_id
     current_manager_teammate = current_person.teammates
                                              .where(organization_id: company.id)
-                                             .where(type: 'CompanyTeammate')
                                              .first
     
     managed_teammates = if current_manager_teammate
@@ -966,9 +964,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       options << ["Team: #{t.display_name}", "Team_#{t.id}"]
     end
     
-    # Add company (organization) at the end
+    # Add company (organization) at the end - use "Company" for user-facing label; form converts to Organization when saving
     if company.display_name.present? && company.id.present?
-      options << ["Organization: #{company.display_name}", "Organization_#{company.id}"]
+      options << ["Company: #{company.display_name}", "Company_#{company.id}"]
     end
     
     # Filter out any options with blank/nil values or labels

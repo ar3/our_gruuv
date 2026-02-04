@@ -5,10 +5,10 @@ RSpec.describe EmploymentTenure, type: :model do
   let(:company) { create(:organization, :company) }
   let(:position) { create(:position) }
   let(:manager) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: company) }
+  let(:teammate) { create(:company_teammate, person: person, organization: company) }
 
   describe 'associations' do
-    it { should belong_to(:teammate) }
+    it { should belong_to(:company_teammate) }
     it { should belong_to(:company).class_name('Organization') }
     it { should belong_to(:position) }
     it { should belong_to(:manager_teammate).class_name('CompanyTeammate').optional }
@@ -39,7 +39,7 @@ RSpec.describe EmploymentTenure, type: :model do
   describe 'overlapping tenures validation' do
     let!(:existing_tenure) do
       create(:employment_tenure, 
-        teammate: teammate, 
+        company_teammate: teammate, 
         company: company, 
         started_at: 1.month.ago, 
         ended_at: nil)
@@ -47,7 +47,7 @@ RSpec.describe EmploymentTenure, type: :model do
 
     it 'prevents overlapping active tenures for same person and company' do
       overlapping_tenure = build(:employment_tenure, 
-        teammate: teammate, 
+        company_teammate: teammate, 
         company: company, 
         started_at: 2.weeks.ago, 
         ended_at: nil)
@@ -59,7 +59,7 @@ RSpec.describe EmploymentTenure, type: :model do
     it 'allows overlapping tenures for different companies' do
       other_company = create(:organization, :company)
       overlapping_tenure = build(:employment_tenure, 
-        teammate: teammate, 
+        company_teammate: teammate, 
         company: other_company, 
         started_at: 2.weeks.ago, 
         ended_at: nil)
@@ -69,9 +69,9 @@ RSpec.describe EmploymentTenure, type: :model do
 
     it 'allows overlapping tenures for different people' do
       other_person = create(:person)
-      other_teammate = create(:teammate, person: other_person, organization: company)
+      other_teammate = create(:company_teammate, person: other_person, organization: company)
       overlapping_tenure = build(:employment_tenure, 
-        teammate: other_teammate, 
+        company_teammate: other_teammate, 
         company: company, 
         started_at: 2.weeks.ago, 
         ended_at: nil)
@@ -83,7 +83,7 @@ RSpec.describe EmploymentTenure, type: :model do
       existing_tenure.update!(ended_at: 1.week.ago)
       
       new_tenure = build(:employment_tenure, 
-        teammate: teammate, 
+        company_teammate: teammate, 
         company: company, 
         started_at: 3.days.ago, 
         ended_at: nil)
@@ -113,9 +113,9 @@ RSpec.describe EmploymentTenure, type: :model do
     describe '.most_recent_for_person_and_company' do
       let(:person) { create(:person) }
       let(:company) { create(:organization, :company) }
-      let(:teammate) { create(:teammate, person: person, organization: company) }
-      let!(:old_tenure) { create(:employment_tenure, teammate: teammate, company: company, started_at: 2.years.ago, ended_at: 1.year.ago) }
-      let!(:new_tenure) { create(:employment_tenure, teammate: teammate, company: company, started_at: 1.year.ago) }
+      let(:teammate) { create(:company_teammate, person: person, organization: company) }
+      let!(:old_tenure) { create(:employment_tenure, company_teammate: teammate, company: company, started_at: 2.years.ago, ended_at: 1.year.ago) }
+      let!(:new_tenure) { create(:employment_tenure, company_teammate: teammate, company: company, started_at: 1.year.ago) }
 
       it 'returns the most recent employment tenure for a person and company' do
         result = EmploymentTenure.most_recent_for_teammate_and_company(teammate, company)
@@ -127,9 +127,9 @@ RSpec.describe EmploymentTenure, type: :model do
   describe '.most_recent_for' do
     let(:person) { create(:person) }
     let(:company) { create(:organization, :company) }
-    let(:teammate) { create(:teammate, person: person, organization: company) }
-    let!(:old_tenure) { create(:employment_tenure, teammate: teammate, company: company, started_at: 2.years.ago, ended_at: 1.year.ago) }
-    let!(:new_tenure) { create(:employment_tenure, teammate: teammate, company: company, started_at: 1.year.ago) }
+    let(:teammate) { create(:company_teammate, person: person, organization: company) }
+    let!(:old_tenure) { create(:employment_tenure, company_teammate: teammate, company: company, started_at: 2.years.ago, ended_at: 1.year.ago) }
+    let!(:new_tenure) { create(:employment_tenure, company_teammate: teammate, company: company, started_at: 1.year.ago) }
 
     it 'returns the most recent employment tenure for a person and company' do
       result = EmploymentTenure.most_recent_for(teammate, company)
@@ -171,8 +171,8 @@ RSpec.describe EmploymentTenure, type: :model do
   describe 'association includes and queries' do
     let(:person) { create(:person) }
     let(:company) { create(:organization, :company) }
-    let(:teammate) { create(:teammate, person: person, organization: company) }
-    let!(:tenure) { create(:employment_tenure, teammate: teammate, company: company) }
+    let(:teammate) { create(:company_teammate, person: person, organization: company) }
+    let!(:tenure) { create(:employment_tenure, company_teammate: teammate, company: company) }
 
     it 'can include company association correctly' do
       # This test ensures we use the right association name in includes

@@ -19,14 +19,14 @@ RSpec.describe 'Public Person View', type: :request do
     end
 
     it 'renders successfully when person has teammates but no observations or milestones' do
-      create(:teammate, person: person, organization: create(:organization, :company))
+      create(:teammate, person: person, organization: create(:organization))
       get public_person_path(person)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('John D.')
     end
 
     it 'renders successfully with observations and milestones' do
-      organization = create(:organization, :company)
+      organization = create(:organization)
       teammate = create(:teammate, person: person, organization: organization)
       
       # Create a public observation
@@ -60,7 +60,7 @@ RSpec.describe 'Public Person View', type: :request do
     end
 
     it 'only shows milestones with public_profile_published_at' do
-      organization = create(:organization, :company)
+      organization = create(:organization)
       teammate = create(:teammate, person: person, organization: organization)
       ability = create(:ability, company: organization)
       
@@ -98,7 +98,7 @@ RSpec.describe 'Public Person View', type: :request do
     end
 
     it 'shows profile image from teammate_identity when available' do
-      organization = create(:organization, :company)
+      organization = create(:organization)
       teammate = create(:teammate, person: person, organization: organization)
       create(:teammate_identity, teammate: teammate, profile_image_url: 'https://example.com/teammate-image.jpg')
       
@@ -114,7 +114,7 @@ RSpec.describe 'Public Person View', type: :request do
       old_identity.update_column(:updated_at, 2.days.ago)
       
       # Create a newer teammate_identity
-      organization = create(:organization, :company)
+      organization = create(:organization)
       teammate = create(:teammate, person: person, organization: organization)
       new_identity = create(:teammate_identity, teammate: teammate, profile_image_url: 'https://example.com/new-image.jpg')
       new_identity.update_column(:updated_at, 1.day.ago)
@@ -132,8 +132,8 @@ RSpec.describe 'Public Person View', type: :request do
     end
 
     it 'shows all world-public observations across organizations' do
-      org1 = create(:organization, :company)
-      org2 = create(:organization, :company)
+      org1 = create(:organization)
+      org2 = create(:organization)
       teammate1 = create(:teammate, person: person, organization: org1)
       teammate2 = create(:teammate, person: person, organization: org2)
       
@@ -178,7 +178,7 @@ RSpec.describe 'Public Person View', type: :request do
     end
 
     it 'shows teammate link when logged in user shares organization' do
-      organization = create(:organization, :company)
+      organization = create(:organization)
       # Create a logged-in user in the same organization
       logged_in_person = create(:person)
       logged_in_teammate = create(:teammate, person: logged_in_person, organization: organization)
@@ -209,12 +209,12 @@ RSpec.describe 'Public Person View', type: :request do
     it 'does not show teammate link when user is in different organization' do
       # Create logged-in user in a different organization
       logged_in_person = create(:person)
-      other_organization = create(:organization, :company)
+      other_organization = create(:organization)
       logged_in_teammate = create(:teammate, person: logged_in_person, organization: other_organization)
       create(:employment_tenure, teammate: logged_in_teammate, company: other_organization, started_at: 1.year.ago)
       
       # Person being viewed is in a different organization
-      person_organization = create(:organization, :company)
+      person_organization = create(:organization)
       person_teammate = create(:teammate, person: person, organization: person_organization)
       create(:employment_tenure, teammate: person_teammate, company: person_organization, started_at: 1.year.ago)
       

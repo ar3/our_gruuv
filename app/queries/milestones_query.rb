@@ -53,9 +53,9 @@ class MilestonesQuery
   private
 
   def base_scope
-    TeammateMilestone.joins(:ability, :teammate, :certifying_teammate)
+    TeammateMilestone.joins(:ability, :company_teammate, :certifying_teammate)
                      .where(abilities: { company_id: @organization.id })
-                     .includes(:ability, :teammate, certifying_teammate: :person)
+                     .includes(:ability, :company_teammate, certifying_teammate: :person)
   end
 
   def filter_by_published(milestones)
@@ -111,7 +111,7 @@ class MilestonesQuery
 
   def filter_by_person(milestones)
     return milestones unless params[:person].present?
-    milestones.joins(teammate: :person).where(people: { id: params[:person] })
+    milestones.joins(company_teammate: :person).where(people: { id: params[:person] })
   end
 
   def apply_sort(milestones)
@@ -123,9 +123,9 @@ class MilestonesQuery
     when 'attained_at_asc'
       milestones.order(attained_at: :asc)
     when 'person_name_asc'
-      milestones.joins(teammate: :person).order('people.last_name ASC, people.first_name ASC')
+      milestones.joins(company_teammate: :person).order('people.last_name ASC, people.first_name ASC')
     when 'person_name_desc'
-      milestones.joins(teammate: :person).order('people.last_name DESC, people.first_name DESC')
+      milestones.joins(company_teammate: :person).order('people.last_name DESC, people.first_name DESC')
     when 'ability_name_asc'
       milestones.joins(:ability).order('abilities.name ASC')
     when 'ability_name_desc'

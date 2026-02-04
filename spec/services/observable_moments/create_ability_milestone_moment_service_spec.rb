@@ -3,12 +3,12 @@ require 'rails_helper'
 RSpec.describe ObservableMoments::CreateAbilityMilestoneMomentService do
   let(:company) { create(:organization, :company) }
   let(:ability) { create(:ability, company: company) }
-  let(:teammate) { create(:teammate, organization: company) }
+  let(:teammate) { create(:company_teammate, organization: company) }
   let(:certified_by) { create(:person) }
-  let(:certifier_teammate) { create(:teammate, organization: company, person: certified_by) }
+  let(:certifier_teammate) { create(:company_teammate, organization: company, person: certified_by) }
   let(:milestone) do
     create(:teammate_milestone,
-           teammate: teammate,
+           company_teammate: teammate,
            ability: ability,
            certifying_teammate: certifier_teammate,
            milestone_level: 3)
@@ -26,7 +26,7 @@ RSpec.describe ObservableMoments::CreateAbilityMilestoneMomentService do
       expect(moment.moment_type).to eq('ability_milestone')
       expect(moment.momentable).to eq(milestone)
       expect(moment.primary_potential_observer).to eq(certifier_teammate)
-      expect(moment.company).to eq(ability.organization)
+      expect(moment.company).to eq(ability.company)
       expect(moment.metadata['ability_id']).to eq(ability.id)
       expect(moment.metadata['ability_name']).to eq(ability.name)
       expect(moment.metadata['milestone_level']).to eq(3)

@@ -58,7 +58,7 @@ RSpec.describe FormSemanticVersionable, type: :form do
     it 'requires version_type for new records' do
       form.name = 'Test'
       form.sort_order = 1
-      form.organization_id = organization.id
+      form.company_id = organization.id
       form.version_type = nil
       form.instance_variable_set(:@form_data_empty, false)
       expect(form).not_to be_valid
@@ -68,7 +68,7 @@ RSpec.describe FormSemanticVersionable, type: :form do
     it 'validates version_type values for new records' do
       form.name = 'Test'
       form.sort_order = 1
-      form.organization_id = organization.id
+      form.company_id = organization.id
       form.version_type = 'invalid'
       form.instance_variable_set(:@form_data_empty, false)
       expect(form).not_to be_valid

@@ -15,28 +15,28 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
     
     # Load ALL check-ins for display (ready for finalization + incomplete ones)
     # Ready to finalize
-    @ready_position_check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
-    @ready_assignment_check_ins = AssignmentCheckIn.where(teammate: @teammate).ready_for_finalization
-    @ready_aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).ready_for_finalization
+    @ready_position_check_in = PositionCheckIn.where(company_teammate: @teammate).ready_for_finalization.first
+    @ready_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).ready_for_finalization
+    @ready_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).ready_for_finalization
     
     # Partially complete (for display in read-only rows)
-    @incomplete_position_check_ins = PositionCheckIn.where(teammate: @teammate)
+    @incomplete_position_check_ins = PositionCheckIn.where(company_teammate: @teammate)
                                                     .open
                                                     .where.not(employee_completed_at: nil, manager_completed_at: nil)
                                                     .where.not(id: @ready_position_check_in&.id)
     
-    @incomplete_assignment_check_ins = AssignmentCheckIn.where(teammate: @teammate)
+    @incomplete_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate)
                                                           .open
                                                           .where.not(id: @ready_assignment_check_ins.map(&:id))
                                                           .where("(employee_completed_at IS NOT NULL AND manager_completed_at IS NULL) OR (employee_completed_at IS NULL AND manager_completed_at IS NOT NULL)")
     
-    @incomplete_aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate)
+    @incomplete_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate)
                                                            .open
                                                            .where.not(id: @ready_aspiration_check_ins.map(&:id))
                                                            .where("(employee_completed_at IS NOT NULL AND manager_completed_at IS NULL) OR (employee_completed_at IS NULL AND manager_completed_at IS NOT NULL)")
     
     # Load already finalized check-ins for acknowledgment view
-    @finalized_position_check_in = PositionCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last
+    @finalized_position_check_in = PositionCheckIn.where(company_teammate: @teammate).closed.order(:official_check_in_completed_at).last
   end
   
   def create

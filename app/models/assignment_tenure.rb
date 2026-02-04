@@ -1,5 +1,7 @@
 class AssignmentTenure < ApplicationRecord
-  belongs_to :teammate
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
   belongs_to :assignment
 
   validates :started_at, presence: true
@@ -12,10 +14,10 @@ class AssignmentTenure < ApplicationRecord
   scope :active, -> { where(ended_at: nil) }
   scope :active_and_given_energy, -> { where(ended_at: nil).where('anticipated_energy_percentage > ?', 0) }
   scope :inactive, -> { where.not(ended_at: nil) }
-  scope :for_teammate, ->(teammate) { where(teammate: teammate) }
+  scope :for_teammate, ->(company_teammate) { where(company_teammate: company_teammate) }
   scope :for_assignment, ->(assignment) { where(assignment_id: assignment.id) }
-  scope :most_recent_for_teammate_and_assignment, ->(teammate, assignment) { 
-    for_teammate(teammate).for_assignment(assignment).order(started_at: :desc).limit(1) 
+  scope :most_recent_for_teammate_and_assignment, ->(company_teammate, assignment) {
+    for_teammate(company_teammate).for_assignment(assignment).order(started_at: :desc).limit(1)
   }
 
   def active?
@@ -26,8 +28,8 @@ class AssignmentTenure < ApplicationRecord
     !active?
   end
 
-  def self.most_recent_for(teammate, assignment)
-    most_recent_for_teammate_and_assignment(teammate, assignment).first
+  def self.most_recent_for(company_teammate, assignment)
+    most_recent_for_teammate_and_assignment(company_teammate, assignment).first
   end
 
   private
@@ -42,7 +44,7 @@ class AssignmentTenure < ApplicationRecord
     # Only check for overlaps with active tenures
     end_date_for_comparison = ended_at || Date.current + 1.day
     overlapping_tenures = AssignmentTenure
-      .where(teammate_id: teammate.id, assignment_id: assignment.id)
+      .where(teammate_id: company_teammate.id, assignment_id: assignment.id)
       .where.not(id: id) # Exclude current record if updating
       .where('ended_at IS NULL') # Only check active tenures
       .where('started_at < ?', end_date_for_comparison)

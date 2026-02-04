@@ -822,6 +822,27 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'DELETE /organizations/:organization_id/observations/:id (archive)' do
+    let(:observation) { create(:observation, observer: person, company: organization) }
+
+    context 'when user is the observer' do
+      it 'archives the observation (soft delete) and redirects' do
+        delete organization_observation_path(organization, observation)
+
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(organization_observation_path(organization, observation))
+        expect(observation.reload.soft_deleted?).to be true
+      end
+
+      it 'sets a success notice after redirect' do
+        delete organization_observation_path(organization, observation)
+        follow_redirect!
+
+        expect(flash[:notice]).to eq('Observation was successfully archived.')
+      end
+    end
+  end
+
   describe 'PATCH /organizations/:organization_id/observations/:id/restore' do
     let(:observation) do
       obs = create(:observation, observer: person, company: organization)

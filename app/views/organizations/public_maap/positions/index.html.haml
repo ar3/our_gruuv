@@ -21,8 +21,8 @@
     .card-header
       %h5.mb-0 Positions by Organization
     .card-body
-      / Show company-level positions
-      - company_positions = @positions_by_org[company] || []
+      / Show company-level positions (key is nil when grouped by title.department)
+      - company_positions = @positions_by_org[nil] || []
       - if company_positions.any?
         %h6.mb-3= company.name
         %ul.list-unstyled.ms-3

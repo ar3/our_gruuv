@@ -3,11 +3,11 @@ require 'rails_helper'
 RSpec.describe Organizations::PublicMaapHelper, type: :helper do
   describe '#build_organization_hierarchy' do
     let(:company) { create(:organization, :company, name: 'Company') }
-    let(:department1) { create(:organization, :department, parent: company, name: 'Department 1') }
-    let(:department2) { create(:organization, :department, parent: company, name: 'Department 2') }
-    let(:sub_department) { create(:organization, :department, parent: department1, name: 'Sub Department') }
-    let(:team1) { create(:organization, :team, parent: department1, name: 'Team 1') }
-    let(:team2) { create(:organization, :team, parent: company, name: 'Team 2') }
+    let(:department1) { create(:department, company: company, name: 'Department 1') }
+    let(:department2) { create(:department, company: company, name: 'Department 2') }
+    let(:sub_department) { create(:department, company: company, parent_department: department1, name: 'Sub Department') }
+    let(:team1) { create(:team, company: company, name: 'Team 1') }
+    let(:team2) { create(:team, company: company, name: 'Team 2') }
 
     it 'returns empty array for nil company' do
       expect(helper.build_organization_hierarchy(nil)).to eq([])
@@ -18,7 +18,6 @@ RSpec.describe Organizations::PublicMaapHelper, type: :helper do
     end
 
     it 'includes companies and departments' do
-      # Ensure all organizations are created
       company
       department1
       department2
@@ -30,7 +29,6 @@ RSpec.describe Organizations::PublicMaapHelper, type: :helper do
     end
 
     it 'excludes teams' do
-      # Ensure all organizations are created
       company
       department1
       department2
@@ -44,7 +42,6 @@ RSpec.describe Organizations::PublicMaapHelper, type: :helper do
     end
 
     it 'includes nested departments' do
-      # Ensure all organizations are created
       company
       department1
       sub_department
@@ -52,18 +49,15 @@ RSpec.describe Organizations::PublicMaapHelper, type: :helper do
       
       hierarchy = helper.build_organization_hierarchy(company)
       
-      # Find department1 in hierarchy
       dept1_item = hierarchy.find { |item| item[:organization].id == department1.id }
       expect(dept1_item).to be_present
       
-      # Check its children
       child_org_ids = dept1_item[:children].map { |item| item[:organization].id }
       expect(child_org_ids).to include(sub_department.id)
       expect(child_org_ids).not_to include(team1.id)
     end
 
     it 'sets correct level for top-level departments' do
-      # Ensure all organizations are created
       company
       department1
       
@@ -74,7 +68,6 @@ RSpec.describe Organizations::PublicMaapHelper, type: :helper do
     end
 
     it 'sets correct level for nested departments' do
-      # Ensure all organizations are created
       company
       department1
       sub_department
@@ -87,12 +80,11 @@ RSpec.describe Organizations::PublicMaapHelper, type: :helper do
     end
 
     it 'handles deep nesting' do
-      # Ensure all organizations are created
       company
       department1
       sub_department
       
-      deep_dept = create(:organization, :department, parent: sub_department, name: 'Deep Department')
+      deep_dept = create(:department, company: company, parent_department: sub_department, name: 'Deep Department')
       
       hierarchy = helper.build_organization_hierarchy(company)
       dept1_item = hierarchy.find { |item| item[:organization].id == department1.id }

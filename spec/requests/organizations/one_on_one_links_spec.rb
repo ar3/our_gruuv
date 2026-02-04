@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Organizations::OneOnOneLinks", type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager_person) { create(:person) }
   let(:employee_person) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }

@@ -449,7 +449,7 @@ class AssignmentsAndAbilitiesUploadProcessor
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new Title: #{position_title} with PositionMajorLevel: #{position_major_level.set_name} (major_level: #{position_major_level.major_level})"
       title = Title.create!(
         external_title: position_title,
-        organization: organization,
+        company: organization,
         position_major_level: position_major_level
       )
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created Title: #{title.external_title} (id: #{title.id})"
@@ -498,30 +498,10 @@ class AssignmentsAndAbilitiesUploadProcessor
     
     dept_name = department_names.first
     Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for assignment #{assignment.title} with department: #{dept_name}"
-    
-    # Find or create department by exact name match
-    # Get organization IDs from hierarchy (self_and_descendants returns an array)
-    org_ids = organization.self_and_descendants.map(&:id)
-    base_scope = Organization.where(id: org_ids, type: 'Department')
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Searching in #{org_ids.length} organizations"
-    
-    # Find department by exact name match (case-insensitive)
-    department = base_scope.find_by("LOWER(name) = ?", dept_name.downcase)
-    
-    if department
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found existing department: #{department.name} (id: #{department.id})"
-    else
-      # Create new department
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new department: #{dept_name}"
-      department = Organization.create!(
-        name: dept_name,
-        parent: organization,
-        type: 'Department'
-      )
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created department: #{department.name} (id: #{department.id})"
-    end
-    
-    # Set department_id
+
+    department = find_or_create_department_by_name(dept_name)
+    return unless department
+
     Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Setting assignment #{assignment.title} department_id to #{department.id} (#{department.name})"
     assignment.update!(department_id: department.id)
   end
@@ -566,34 +546,25 @@ class AssignmentsAndAbilitiesUploadProcessor
     
     dept_name = department_names.first
     Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for title #{title.external_title} with department: #{dept_name}"
-    
-    # Find or create department by exact name match
-    org_ids = organization.self_and_descendants.map(&:id)
-    base_scope = Organization.where(id: org_ids, type: 'Department')
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Searching in #{org_ids.length} organizations"
-    
-    # Find department by exact name match (case-insensitive)
-    department = base_scope.find_by("LOWER(name) = ?", dept_name.downcase)
-    
+
+    department = find_or_create_department_by_name(dept_name)
+    return unless department
+
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating title #{title.external_title} with department_id: #{department.id}"
+    title.update!(department_id: department.id)
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updated title #{title.external_title} with department_id: #{department.id} (#{department.name})"
+  end
+
+  def find_or_create_department_by_name(dept_name)
+    department = Department.where(company: organization).find_by("LOWER(name) = ?", dept_name.downcase)
     if department
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found existing department: #{department.name} (id: #{department.id})"
     else
-      # Create new department
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new department: #{dept_name}"
-      department = Organization.create!(
-        name: dept_name,
-        parent: organization,
-        type: 'Department'
-      )
+      department = Department.create!(name: dept_name, company: organization)
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created department: #{department.name} (id: #{department.id})"
     end
-    
-    # Update title's department_id (department_id was moved from seats to titles)
-    # All seats for this title will derive their department from the title
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating title #{title.external_title} with department_id: #{department.id}"
-    
-    title.update!(department_id: department.id)
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updated title #{title.external_title} with department_id: #{department.id} (#{department.name})"
+    department
   end
 end
 

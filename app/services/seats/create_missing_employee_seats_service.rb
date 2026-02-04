@@ -11,7 +11,7 @@ module Seats
         active_employment_tenures = EmploymentTenure.active
                                                      .where(company: @organization)
                                                      .where(seat_id: nil)
-                                                     .includes(:position, :teammate)
+                                                     .includes(:position, :company_teammate)
         
         # Preload title_ids to ensure correct grouping
         position_ids = active_employment_tenures.map(&:position_id).uniq

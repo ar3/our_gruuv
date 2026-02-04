@@ -13,6 +13,7 @@ class DepartmentNameInterpreter
   def interpret
     return nil if @department_name.blank?
     return nil unless @company
+    return nil unless @company.is_a?(Organization)
 
     # If department name exactly matches company name (case-insensitive), return nil
     # This means the assignment belongs to the company directly, not a department
@@ -57,6 +58,7 @@ class DepartmentNameInterpreter
   def preview
     return { valid: false, error_message: 'Department name is blank' } if @department_name.blank?
     return { valid: false, error_message: 'Company is required' } unless @company
+    return { valid: false, error_message: 'Company must be an Organization' } unless @company.is_a?(Organization)
 
     # If department name exactly matches company name (case-insensitive), return nil
     if @department_name.strip.downcase == @company.name.downcase
@@ -115,13 +117,8 @@ class DepartmentNameInterpreter
   end
 
   def find_or_create_department_info(name, parent)
-    # Search within parent's descendants (including parent itself)
-    org_ids = parent.self_and_descendants.map(&:id)
-    
-    # Find existing department by exact name match (case-insensitive)
-    # Department is now a standalone model, not STI
-    department = Department.where(company: @company)
-                           .find_by("LOWER(name) = ?", name.downcase)
+    scope = department_scope_for_parent(parent)
+    department = scope.find_by("LOWER(name) = ?", name.downcase)
 
     if department
       {
@@ -131,11 +128,8 @@ class DepartmentNameInterpreter
         existing_id: department.id
       }
     else
-      # Create new department
-      new_dept = Department.create!(
-        name: name,
-        company: @company
-      )
+      attrs = parent.is_a?(Department) ? { company: parent.company, parent_department: parent } : { company: parent, parent_department: nil }
+      new_dept = Department.create!(attrs.merge(name: name))
       {
         name: name,
         department: new_dept,
@@ -153,10 +147,8 @@ class DepartmentNameInterpreter
       existing_id: nil
     } unless parent.present?
 
-    # Find existing department by exact name match (case-insensitive)
-    # Department is now a standalone model, not STI
-    department = Department.where(company: @company)
-                           .find_by("LOWER(name) = ?", name.downcase)
+    scope = department_scope_for_parent(parent)
+    department = scope.find_by("LOWER(name) = ?", name.downcase)
 
     if department
       {
@@ -172,6 +164,14 @@ class DepartmentNameInterpreter
         will_create: true,
         existing_id: nil
       }
+    end
+  end
+
+  def department_scope_for_parent(parent)
+    if parent.is_a?(Department)
+      Department.where(company: parent.company, parent_department_id: parent.id)
+    else
+      Department.where(company: parent, parent_department_id: nil)
     end
   end
 end

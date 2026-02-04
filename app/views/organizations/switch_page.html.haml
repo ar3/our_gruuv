@@ -157,7 +157,7 @@
                     %div
                       %strong= organization.display_name
                       %br
-                      %small.text-muted= organization.type.titleize
+                      %small.text-muted Organization
                 %td
                   - connection_reasons = get_connection_reasons(current_person, organization)
                   - if connection_reasons.any?

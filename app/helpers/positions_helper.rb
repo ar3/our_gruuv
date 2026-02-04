@@ -54,8 +54,8 @@ module PositionsHelper
       }
     end
     
-    # Recursively build department structure
-    company.children.active.departments.order(:name).each do |department|
+    # Recursively build department structure (root departments only at top level)
+    company.departments.active.where(parent_department_id: nil).order(:name).each do |department|
       department_assignments = assignments_by_org[department] || []
       
       # Recursively get children departments with assignments
@@ -96,7 +96,7 @@ module PositionsHelper
   def build_department_children(assignments_by_org, department)
     result = []
     
-    department.children.active.departments.order(:name).each do |child_dept|
+    department.child_departments.active.order(:name).each do |child_dept|
       child_assignments = assignments_by_org[child_dept] || []
       grandchild_nodes = build_department_children(assignments_by_org, child_dept)
       

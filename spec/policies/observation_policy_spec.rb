@@ -142,7 +142,7 @@ RSpec.describe ObservationPolicy, type: :policy do
         # Create employment tenure for grand_manager first
         create(:employment_tenure, teammate: grand_manager_teammate, company: company)
         # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
-        manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
+        manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: company)
         manager_tenure.destroy
         create(:employment_tenure, teammate: manager_teammate, company: company, manager_teammate: grand_manager_teammate)
         # Reload manager and grand_manager teammates to clear association cache
@@ -198,7 +198,7 @@ RSpec.describe ObservationPolicy, type: :policy do
         # Set up hierarchy: observee -> manager -> grand_manager
         create(:employment_tenure, teammate: grand_manager_teammate, company: company)
         # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
-        manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
+        manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: company)
         manager_tenure.destroy
         create(:employment_tenure, teammate: manager_teammate, company: company, manager_teammate: grand_manager_teammate)
         # Reload teammates to clear association cache
@@ -448,7 +448,7 @@ RSpec.describe ObservationPolicy, type: :policy do
           # Set up hierarchy: observee -> manager -> grand_manager
           create(:employment_tenure, teammate: grand_manager_teammate, company: company)
           # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
-          manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
+          manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: company)
           manager_tenure.destroy
           create(:employment_tenure, teammate: manager_teammate, company: company, manager: grand_manager)
           # Reload teammates to clear association cache
@@ -494,7 +494,7 @@ RSpec.describe ObservationPolicy, type: :policy do
           # Set up hierarchy: observee -> manager -> grand_manager
           create(:employment_tenure, teammate: grand_manager_teammate, company: company)
           # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
-          manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
+          manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: company)
           manager_tenure.destroy
           create(:employment_tenure, teammate: manager_teammate, company: company, manager: grand_manager)
           # Reload teammates to clear association cache

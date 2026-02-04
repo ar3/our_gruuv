@@ -7,7 +7,7 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     authorize @organization, :check_ins_health?
     
     # Get all active employees (teammates with active employment)
-    active_teammates = Teammate.for_organization_hierarchy(@organization)
+    active_teammates = CompanyTeammate.for_organization_hierarchy(@organization)
       .where.not(first_employed_at: nil)
       .where(last_terminated_at: nil)
       .includes(:person, :employment_tenures, :organization)

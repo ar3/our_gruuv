@@ -244,7 +244,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
 
     before do
       # Update existing teammate to have permission
-      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate = CompanyTeammate.find_by(person: person, organization: organization)
       teammate.update(can_manage_maap: true)
     end
 
@@ -260,7 +260,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
     end
 
     it 'requires MAAP permission' do
-      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate = CompanyTeammate.find_by(person: person, organization: organization)
       teammate.update(can_manage_maap: false)
       
       get :manage_assignments, params: { organization_id: organization.id, id: position.id }
@@ -270,7 +270,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
     end
 
     it 'allows access with MAAP permission even without employment management permission' do
-      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate = CompanyTeammate.find_by(person: person, organization: organization)
       teammate.update(can_manage_maap: true, can_manage_employment: false)
       
       get :manage_assignments, params: { organization_id: organization.id, id: position.id }
@@ -295,7 +295,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
 
     before do
       # Update existing teammate to have permission
-      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate = CompanyTeammate.find_by(person: person, organization: organization)
       teammate.update(can_manage_maap: true)
     end
 
@@ -376,7 +376,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
     end
 
     it 'requires update permission' do
-      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate = CompanyTeammate.find_by(person: person, organization: organization)
       teammate.update(can_manage_maap: false)
       
       patch :update_assignments, params: {

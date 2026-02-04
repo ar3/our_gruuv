@@ -39,7 +39,7 @@
               %tr
                 %td
                   = link_to aspiration.name, organization_aspiration_path(@organization, aspiration), class: "text-decoration-none"
-                %td= aspiration.organization.display_name
+                %td= aspiration.company.display_name
                 %td= aspiration.description.to_s[0..100]
                 %td= aspiration.sort_order
                 %td

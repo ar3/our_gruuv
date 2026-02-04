@@ -1,8 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe HuddleDecorator, type: :decorator do
-  let(:company) { Company.create!(name: 'Test Company') }
-  let(:team) { Team.create!(name: 'Test Team', company: company) }
+  let(:company) { create(:organization, :company, name: 'Test Company') }
+  let(:team) { create(:team, name: 'Test Team', company: company) }
 
   describe '#status_with_time' do
     context 'when huddle is active' do

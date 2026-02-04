@@ -14,7 +14,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     @return_text = params[:return_text] || "Back to Check-ins"
     
     @check_ins = PositionCheckIn
-      .where(teammate: @teammate)
+      .where(company_teammate: @teammate)
       .includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure)
       .order(check_in_started_on: :desc)
     
@@ -22,7 +22,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     @employment_tenures = @teammate.employment_tenures
       .includes(:position, :manager_teammate, :seat)
       .order(started_at: :desc)
-    @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
+    @open_check_in = PositionCheckIn.where(company_teammate: @teammate).open.first
     
     # Load inactive tenures to determine Start vs Restart
     @inactive_tenures = @teammate.employment_tenures.inactive.order(ended_at: :desc)
@@ -63,13 +63,13 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     
     # Load check-ins for the view (in case validation fails and we render :show)
     @check_ins = PositionCheckIn
-                   .where(teammate: @teammate)
+                   .where(company_teammate: @teammate)
                    .includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure)
                    .order(check_in_started_on: :desc)
     @employment_tenures = @teammate.employment_tenures
       .includes(:position, :manager_teammate, :seat)
       .order(started_at: :desc)
-    @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
+    @open_check_in = PositionCheckIn.where(company_teammate: @teammate).open.first
     
     # Load inactive tenures for view consistency
     @inactive_tenures = @teammate.employment_tenures.inactive.order(ended_at: :desc)
@@ -181,8 +181,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date
       @person = @teammate.person
-      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
-      @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
+      @check_ins = PositionCheckIn.where(company_teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
+      @open_check_in = PositionCheckIn.where(company_teammate: @teammate).open.first
       load_form_data
       @employment_tenure = EmploymentTenure.new
       @employment_tenure.errors.add(:position_id, "can't be blank") unless position_id.present?
@@ -200,8 +200,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date
       @person = @teammate.person
-      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
-      @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
+      @check_ins = PositionCheckIn.where(company_teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
+      @open_check_in = PositionCheckIn.where(company_teammate: @teammate).open.first
       load_form_data
       @employment_tenure = EmploymentTenure.new
       @employment_tenure.errors.add(:position_id, "does not exist")
@@ -243,8 +243,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date
       @person = @teammate.person
-      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
-      @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
+      @check_ins = PositionCheckIn.where(company_teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
+      @open_check_in = PositionCheckIn.where(company_teammate: @teammate).open.first
       load_form_data
       render :show, status: :unprocessable_entity
     end
@@ -271,7 +271,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     
     # Get all active employees (CompanyTeammates with active employment tenures in the organization hierarchy)
     all_active_teammate_ids = EmploymentTenure.active
-                                              .joins(:teammate)
+                                              .joins(:company_teammate)
                                               .where(company: org_hierarchy, teammates: { organization: org_hierarchy })
                                               .distinct
                                               .pluck('teammates.id')
@@ -286,15 +286,14 @@ class Organizations::Teammates::PositionController < Organizations::Organization
                                     .joins(:person)
                                     .order('people.last_name, people.first_name')
     
-    # Load positions - get all positions for company and descendant departments
-    orgs_in_hierarchy = [company] + company.descendants.select { |org| org.department? }
-    positions = Position.joins(title: :organization)
-                        .where(organizations: { id: orgs_in_hierarchy })
+    # Load positions - all positions for company (titles under this org or its departments)
+    positions = Position.joins(title: :company)
+                        .where(titles: { company_id: company.id })
                         .includes(:title, :position_level)
                         .ordered
     
-    # Group positions by department
-    @positions_by_department = positions.group_by { |pos| pos.title.department }
+    # Group positions by department (nil = company-level; Department = that department)
+    @positions_by_department = positions.group_by { |pos| pos.title.department || company }
     
     # Keep flat array for backward compatibility
     @positions = positions

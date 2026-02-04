@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::BulkSyncEvents', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:admin) { create(:person, :admin) }
   let(:maap_manager) { create(:person) }

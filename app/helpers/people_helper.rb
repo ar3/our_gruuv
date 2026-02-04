@@ -193,7 +193,7 @@ module PeopleHelper
     return nil unless teammate
     
     recent_check_ins = AssignmentCheckIn
-      .where(teammate: teammate, assignment: assignment_data[:assignment])
+      .where(company_teammate: teammate, assignment: assignment_data[:assignment])
       .where.not(official_check_in_completed_at: nil)
       .order(official_check_in_completed_at: :desc)
       .limit(1)

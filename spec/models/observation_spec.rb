@@ -31,7 +31,7 @@ RSpec.describe Observation, type: :model do
     it { should belong_to(:observation_trigger).optional }
     it { should belong_to(:observable_moment).optional }
     it { should have_many(:observees).dependent(:destroy) }
-    it { should have_many(:observed_teammates).through(:observees).source(:teammate) }
+    it { should have_many(:observed_teammates).through(:observees).source(:company_teammate) }
     it { should have_many(:observation_ratings).dependent(:destroy) }
     it { should have_many(:abilities).through(:observation_ratings).source(:rateable) }
     it { should have_many(:assignments).through(:observation_ratings).source(:rateable) }

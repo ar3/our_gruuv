@@ -49,7 +49,7 @@ class Organizations::AssignmentsController < ApplicationController
     authorize @assignment
     
     # Load current holders (teammates with active assignment tenures)
-    active_tenures = @assignment.assignment_tenures.active.includes(teammate: :person)
+    active_tenures = @assignment.assignment_tenures.active.includes(company_teammate: :person)
     @current_holders = active_tenures.map(&:teammate).uniq
     
     # Sort by last name, preferred name, first name
@@ -77,7 +77,7 @@ class Organizations::AssignmentsController < ApplicationController
     
     # Number of total finalized check-ins of this assignment
     @finalized_check_ins_count = AssignmentCheckIn
-      .joins(:teammate)
+      .joins(:company_teammate)
       .where(assignment: @assignment)
       .closed
       .count
@@ -96,7 +96,7 @@ class Organizations::AssignmentsController < ApplicationController
     
     # Number of teammates with finalized check-ins
     @teammates_with_finalized_check_ins_count = AssignmentCheckIn
-      .joins(:teammate)
+      .joins(:company_teammate)
       .where(assignment: @assignment)
       .closed
       .select(:teammate_id)
@@ -106,7 +106,7 @@ class Organizations::AssignmentsController < ApplicationController
     # Most popular official_rating (if >5 teammates with finalized check-ins)
     if @teammates_with_finalized_check_ins_count > 5
       finalized_check_ins = AssignmentCheckIn
-        .joins(:teammate)
+        .joins(:company_teammate)
         .where(assignment: @assignment)
         .closed
         .where.not(official_rating: nil)
@@ -120,7 +120,7 @@ class Organizations::AssignmentsController < ApplicationController
     # Most popular employee_personal_alignment (if >5 teammates with finalized check-ins)
     if @teammates_with_finalized_check_ins_count > 5
       finalized_check_ins = AssignmentCheckIn
-        .joins(:teammate)
+        .joins(:company_teammate)
         .where(assignment: @assignment)
         .closed
         .where.not(employee_personal_alignment: nil)

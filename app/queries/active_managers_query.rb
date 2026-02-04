@@ -20,7 +20,7 @@ class ActiveManagersQuery
     if @require_active_teammate
       # Get CompanyTeammate IDs who are active (have active employment tenures themselves)
       active_teammate_ids = EmploymentTenure.active
-                                             .joins(:teammate)
+                                             .joins(:company_teammate)
                                              .where(company: org_hierarchy, teammates: { organization: org_hierarchy })
                                              .distinct
                                              .pluck('teammates.id')
@@ -47,7 +47,7 @@ class ActiveManagersQuery
 
     if @require_active_teammate
       active_teammate_ids = EmploymentTenure.active
-                                            .joins(:teammate)
+                                            .joins(:company_teammate)
                                             .where(company: org_hierarchy, teammates: { organization: org_hierarchy })
                                             .distinct
                                             .pluck('teammates.id')

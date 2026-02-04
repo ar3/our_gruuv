@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'ChangeLogs#new', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:admin_person) { create(:person, :admin) }
   let(:regular_person) { create(:person) }
 

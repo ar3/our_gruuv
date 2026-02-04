@@ -9,7 +9,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
     
     # Load all check-ins (full history)
     @check_ins = AspirationCheckIn
-      .where(teammate: @teammate, aspiration: @aspiration)
+      .where(company_teammate: @teammate, aspiration: @aspiration)
       .includes(:manager_completed_by_teammate, :finalized_by_teammate)
       .order(check_in_started_on: :desc)
     

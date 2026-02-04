@@ -19,11 +19,11 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @teammate_identities = @teammate&.teammate_identities || []
 
     # Preload huddle associations to avoid N+1 queries
-    HuddleParticipant.joins(:teammate)
+    HuddleParticipant.joins(:company_teammate)
                     .where(teammates: { id: @teammate.id, organization: organization })
                     .includes(:huddle, huddle: :team)
                     .load
-    HuddleFeedback.joins(:teammate)
+    HuddleFeedback.joins(:company_teammate)
                   .where(teammates: { id: @teammate.id, organization: organization })
                   .includes(:huddle)
                   .load
@@ -551,7 +551,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @current_milestones = @teammate&.teammate_milestones&.includes(:ability) || []
     @current_maap_data = {
       assignments: @teammate&.assignment_tenures&.active&.includes(:assignment) || [],
-      check_ins: AssignmentCheckIn.joins(:teammate).where(teammate: @teammate, assignments: { company: organization }).includes(:assignment),
+      check_ins: AssignmentCheckIn.joins(:company_teammate).where(company_teammate: @teammate, assignments: { company: organization }).includes(:assignment),
       milestones: @teammate&.teammate_milestones&.includes(:ability) || [],
       aspirations: organization.aspirations.includes(:ability) # Aspirations belong to organization, not teammate
     }
@@ -568,7 +568,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       active_tenure = @teammate.assignment_tenures.where(assignment: assignment).active.first
       most_recent_tenure = @teammate.assignment_tenures.where(assignment: assignment).order(:started_at).last
       
-      open_check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: assignment).open.first
+      open_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
       
       {
         assignment: assignment,
@@ -585,7 +585,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
                          .includes(:assignment)
     
     @check_ins = AssignmentCheckIn.joins(:assignment)
-                                  .where(teammate: @teammate, assignments: { company: organization })
+                                  .where(company_teammate: @teammate, assignments: { company: organization })
                                   .includes(:assignment)
   end
 
@@ -651,7 +651,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def check_in_has_changes?(assignment, proposed_data)
-    current_check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: assignment).open.first
+    current_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
     
     # Only check for changes in fields the current user is authorized to modify
     
@@ -747,11 +747,11 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @teammates = @teammate.person.teammates.includes(:organization)
     
     # Preload huddle associations to avoid N+1 queries
-    HuddleParticipant.joins(:teammate)
+    HuddleParticipant.joins(:company_teammate)
                     .where(teammates: { id: @teammate.id, organization: organization })
                     .includes(:huddle, huddle: :team)
                     .load
-    HuddleFeedback.joins(:teammate)
+    HuddleFeedback.joins(:company_teammate)
                   .where(teammates: { id: @teammate.id, organization: organization })
                   .includes(:huddle)
                   .load
@@ -1093,7 +1093,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @assignment_check_ins_data = relevant_assignments.map do |assignment|
       check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
       latest_finalized = AssignmentCheckIn
-        .where(teammate: @teammate, assignment: assignment)
+        .where(company_teammate: @teammate, assignment: assignment)
         .closed
         .order(official_check_in_completed_at: :desc)
         .first
@@ -1122,7 +1122,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @aspiration_check_ins_data = @company_aspirations.map do |aspiration|
       check_in = AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
       latest_finalized = AspirationCheckIn
-        .where(teammate: @teammate, aspiration: aspiration)
+        .where(company_teammate: @teammate, aspiration: aspiration)
         .closed
         .order(official_check_in_completed_at: :desc)
         .first

@@ -6,7 +6,7 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
   let(:nested_department) { create(:department, company: organization, parent_department: department, name: 'Nested Dept') }
   let(:current_person) { create(:person, og_admin: false) }
   let(:teammate) do
-    existing = Teammate.find_by(person: current_person, organization: organization)
+    existing = CompanyTeammate.find_by(person: current_person, organization: organization)
     existing || create(:teammate, person: current_person, organization: organization)
   end
 

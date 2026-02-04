@@ -2,7 +2,7 @@ class Huddle < ApplicationRecord
   # Associations
   belongs_to :team
   has_many :huddle_participants, dependent: :destroy
-  has_many :participants, through: :huddle_participants, source: :teammate
+  has_many :participants, through: :huddle_participants, source: :company_teammate
   has_many :huddle_feedbacks, dependent: :destroy
   has_many :notifications, as: :notifiable, dependent: :destroy
 
@@ -85,7 +85,7 @@ class Huddle < ApplicationRecord
   end
 
   def facilitators
-    huddle_participants.facilitators.includes(teammate: :person)
+    huddle_participants.facilitators.includes(company_teammate: :person)
   end
 
   def department_head_name

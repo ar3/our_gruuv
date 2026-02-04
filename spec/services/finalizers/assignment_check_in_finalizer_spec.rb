@@ -5,7 +5,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
   let(:manager_person) { create(:person) }
   let(:employee) { create(:person) }
   let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: organization) }
-  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let(:employee_teammate) { create(:company_teammate, person: employee, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   
   let!(:assignment_tenure) do
@@ -61,7 +61,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         
         new_tenure = AssignmentTenure.last
         expect(new_tenure.assignment).to eq(assignment)
-        expect(new_tenure.teammate).to be_a(Teammate)
+        expect(new_tenure.teammate).to be_a(CompanyTeammate)
         expect(new_tenure.teammate.id).to eq(employee_teammate.id)
         expect(new_tenure.anticipated_energy_percentage).to eq(80)
         expect(new_tenure.started_at).to eq(Date.current)
@@ -207,7 +207,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
     
     context 'when no active tenure exists (first check-in)' do
       before do
-        AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
       end
       
       it 'creates the first tenure successfully' do
@@ -220,7 +220,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         
         new_tenure = AssignmentTenure.last
         expect(new_tenure.assignment).to eq(assignment)
-        expect(new_tenure.teammate).to be_a(Teammate)
+        expect(new_tenure.teammate).to be_a(CompanyTeammate)
         expect(new_tenure.teammate.id).to eq(employee_teammate.id)
         expect(new_tenure.anticipated_energy_percentage).to eq(80)
         expect(new_tenure.started_at).to eq(Date.current)
@@ -303,7 +303,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         
         new_tenure = AssignmentTenure.last
         expect(new_tenure.assignment).to eq(assignment)
-        expect(new_tenure.teammate).to be_a(Teammate)
+        expect(new_tenure.teammate).to be_a(CompanyTeammate)
         expect(new_tenure.teammate.id).to eq(employee_teammate.id)
         expect(new_tenure.anticipated_energy_percentage).to eq(80)
         expect(new_tenure.started_at).to eq(Date.current)
@@ -369,7 +369,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
       
       context 'when there is no active tenure' do
         before do
-          AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+          AssignmentTenure.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
         end
         
         it 'does not create a new tenure' do

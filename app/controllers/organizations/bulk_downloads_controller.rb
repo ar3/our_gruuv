@@ -168,21 +168,21 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         
         # Last finalized check-ins
         last_position_check_in = PositionCheckIn
-          .where(teammate: teammate)
+          .where(company_teammate: teammate)
           .where.not(official_check_in_completed_at: nil)
           .order(official_check_in_completed_at: :desc)
           .first
         last_position_finalized = last_position_check_in&.official_check_in_completed_at&.to_s || ''
         
         last_assignment_check_in = AssignmentCheckIn
-          .where(teammate: teammate)
+          .where(company_teammate: teammate)
           .where.not(official_check_in_completed_at: nil)
           .order(official_check_in_completed_at: :desc)
           .first
         last_assignment_finalized = last_assignment_check_in&.official_check_in_completed_at&.to_s || ''
         
         last_aspiration_check_in = AspirationCheckIn
-          .where(teammate: teammate)
+          .where(company_teammate: teammate)
           .where.not(official_check_in_completed_at: nil)
           .order(official_check_in_completed_at: :desc)
           .first
@@ -198,7 +198,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # Number of published observations where they are the observee
         published_observations_count = Observation
           .joins(:observees)
-          .where(observees: { teammate: teammate })
+          .where(observees: { teammate_id: teammate.id })
           .where.not(published_at: nil)
           .count
         
@@ -483,7 +483,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       org_ids = company.self_and_descendants.map(&:id)
       Seat.joins(:title)
           .where(titles: { company_id: org_ids })
-          .includes(:title, :team, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person })
+          .includes(:title, :team, :reports_to_seat, :reporting_seats, employment_tenures: { company_teammate: :person })
           .order('titles.external_title, seats.seat_needed_by')
           .find_each do |seat|
         # Reports to seat display name

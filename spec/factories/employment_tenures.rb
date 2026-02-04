@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :employment_tenure do
-    association :teammate
+    association :company_teammate, factory: :company_teammate
     association :company, factory: [:organization, :company]
     started_at { 1.month.ago }
     ended_at { nil } # Default to active employment

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:assignment) { create(:assignment, company: organization, title: 'Supplier Assignment') }
   let(:consumer1) { create(:assignment, company: organization, title: 'Consumer Assignment 1') }
   let(:consumer2) { create(:assignment, company: organization, title: 'Consumer Assignment 2') }

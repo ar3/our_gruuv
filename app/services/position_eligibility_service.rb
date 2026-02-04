@@ -54,7 +54,7 @@ class PositionEligibilityService
     results = requirements.map do |requirement|
       ability_id = requirement['ability_id'] || requirement[:ability_id]
       minimum_level = requirement['minimum_milestone_level'] || requirement[:minimum_milestone_level]
-      highest_level = TeammateMilestone.where(teammate: teammate, ability_id: ability_id).maximum(:milestone_level)
+      highest_level = TeammateMilestone.where(company_teammate: teammate, ability_id: ability_id).maximum(:milestone_level)
 
       {
         ability_id: ability_id,
@@ -206,7 +206,7 @@ class PositionEligibilityService
   def months_with_position_check_in_rating(teammate, minimum_rating, minimum_months)
     cutoff_date = minimum_months.months.ago.to_date
     check_ins = PositionCheckIn.closed
-                               .where(teammate: teammate)
+                               .where(company_teammate: teammate)
                                .where('check_in_started_on >= ?', cutoff_date)
 
     qualifying_check_ins = check_ins.select do |check_in|
@@ -309,7 +309,7 @@ class PositionEligibilityService
   def assignment_meets_check_in_requirement?(teammate, assignment, minimum_rating, minimum_months)
     cutoff_date = minimum_months.months.ago.to_date
     check_ins = AssignmentCheckIn.closed
-                                 .where(teammate: teammate, assignment: assignment)
+                                 .where(company_teammate: teammate, assignment: assignment)
                                  .where('check_in_started_on >= ?', cutoff_date)
 
     qualifying_check_ins = check_ins.select do |check_in|
@@ -324,7 +324,7 @@ class PositionEligibilityService
   def aspiration_meets_check_in_requirement?(teammate, aspiration, minimum_rating, minimum_months)
     cutoff_date = minimum_months.months.ago.to_date
     check_ins = AspirationCheckIn.closed
-                                 .where(teammate: teammate, aspiration: aspiration)
+                                 .where(company_teammate: teammate, aspiration: aspiration)
                                  .where('check_in_started_on >= ?', cutoff_date)
 
     qualifying_check_ins = check_ins.select do |check_in|

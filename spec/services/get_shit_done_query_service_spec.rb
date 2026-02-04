@@ -69,7 +69,7 @@ RSpec.describe GetShitDoneQueryService do
       observable_moment = create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
       observable_moment.reload # Ensure associations are loaded
       
-      create(:maap_snapshot, employee: person, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
+      create(:maap_snapshot, employee_company_teammate: company_teammate, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
       create(:observation, observer: person, company: company, published_at: nil)
       # Goal needs to meet check_in_eligible criteria
       goal = create(:goal, owner: company_teammate, company: company, started_at: Time.current, deleted_at: nil, completed_at: nil, most_likely_target_date: 1.month.from_now, goal_type: 'quantitative_key_result')

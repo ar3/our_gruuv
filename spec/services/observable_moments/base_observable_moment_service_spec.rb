@@ -3,7 +3,8 @@ require 'rails_helper'
 RSpec.describe ObservableMoments::BaseObservableMomentService do
   let(:company) { create(:organization, :company) }
   let(:created_by) { create(:person) }
-  let(:primary_observer) { create(:teammate, organization: company) }
+  let(:creator_teammate) { create(:company_teammate, person: created_by, organization: company) }
+  let(:primary_observer) { create(:company_teammate, organization: company) }
   let(:employment_tenure) { create(:employment_tenure, company: company) }
   
   describe '.call' do
@@ -11,7 +12,7 @@ RSpec.describe ObservableMoments::BaseObservableMomentService do
       result = ObservableMoments::BaseObservableMomentService.call(
         momentable: employment_tenure,
         company: company,
-        creator_company_teammate: creator_teammate,
+        created_by: creator_teammate,
         primary_potential_observer: primary_observer,
         moment_type: :new_hire,
         occurred_at: Time.current,
@@ -32,7 +33,7 @@ RSpec.describe ObservableMoments::BaseObservableMomentService do
       result = ObservableMoments::BaseObservableMomentService.call(
         momentable: nil,
         company: company,
-        creator_company_teammate: creator_teammate,
+        created_by: creator_teammate,
         primary_potential_observer: primary_observer,
         moment_type: :new_hire
       )
@@ -46,7 +47,7 @@ RSpec.describe ObservableMoments::BaseObservableMomentService do
         ObservableMoments::BaseObservableMomentService.call(
           momentable: nil,
           company: company,
-          creator_company_teammate: creator_teammate,
+          created_by: creator_teammate,
           primary_potential_observer: primary_observer,
           moment_type: :new_hire
         )

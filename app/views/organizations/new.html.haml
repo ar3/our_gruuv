@@ -4,19 +4,9 @@
   .row.justify-content-center
     .col-md-8
       .card
-        .card-header.d-flex.justify-content-between.align-items-center
+        .card-header
           %h3.mb-0 New Organization
-          - if @organization.parent.present?
-            = link_to organization_path(@organization.parent), class: "btn btn-outline-secondary btn-sm" do
-              %i.bi.bi-arrow-left.me-2
-              Back to Parent
         .card-body
-          - if @organization.parent.present?
-            .alert.alert-info.mb-3
-              %i.bi.bi-info-circle.me-2
-              Creating a child organization under 
-              %strong= @organization.parent.display_name
-          
           = form_with model: @organization, url: organizations_path, local: true do |form|
             - if @organization.errors.any?
               .alert.alert-danger
@@ -28,14 +18,6 @@
             .mb-3
               = form.label :name, class: "form-label"
               = form.text_field :name, class: "form-control", required: true
-            
-            .mb-3
-              = form.label :type, "Organization Type", class: "form-label"
-              = form.select :type, options_for_select([['Company', 'Company'], ['Team', 'Team']], @organization.type), { prompt: 'Select organization type' }, { class: "form-select", required: true }
-            
-            .mb-3
-              = form.label :parent_id, "Parent Organization (optional)", class: "form-label"
-              = form.select :parent_id, options_from_collection_for_select(Organization.companies, :id, :name, @organization.parent_id), { prompt: 'Select parent organization (leave blank for top-level)' }, { class: "form-select" }
             
             .d-flex.justify-content-between
               = link_to "Cancel", organizations_path, class: "btn btn-secondary"

@@ -3,7 +3,9 @@ module CheckInBehavior
   
   included do
     # Common associations
-    belongs_to :teammate
+    belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+    alias_method :teammate, :company_teammate
+    alias_method :teammate=, :company_teammate=
     belongs_to :finalized_by_teammate, class_name: 'CompanyTeammate', optional: true
     belongs_to :maap_snapshot, optional: true
     
@@ -12,7 +14,7 @@ module CheckInBehavior
     
     # Common scopes
     scope :recent, -> { order(check_in_started_on: :desc) }
-    scope :for_teammate, ->(teammate) { where(teammate: teammate) }
+    scope :for_teammate, ->(company_teammate) { where(company_teammate: company_teammate) }
     scope :open, -> { where(official_check_in_completed_at: nil) }
     scope :closed, -> { where.not(official_check_in_completed_at: nil) }
     scope :employee_completed, -> { where.not(employee_completed_at: nil) }

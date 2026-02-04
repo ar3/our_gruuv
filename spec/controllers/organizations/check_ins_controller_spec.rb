@@ -90,7 +90,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
           actual_energy_percentage: nil
         )
         # Ensure no tenure exists
-        AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
         
         patch :update, params: {
           organization_id: organization.id,
@@ -115,8 +115,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
 
       it 'creates assignment check-in when updating if none exists and no tenure exists' do
         # Ensure no check-in and no tenure exist
-        AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment).destroy_all
-        AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
         
         patch :update, params: {
           organization_id: organization.id,
@@ -133,7 +133,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
 
         expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         
-        check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+        check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
         expect(check_in).to be_present
         expect(check_in.manager_rating).to eq('meeting')
         expect(check_in.manager_private_notes).to eq('Created without tenure')
@@ -260,7 +260,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
           actual_energy_percentage: nil
         )
         # Ensure no tenure exists
-        AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
         
         patch :update, params: {
           organization_id: organization.id,
@@ -648,7 +648,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         create(:position_assignment, position: position, assignment: suggested_assignment, assignment_type: 'suggested')
         
         # Don't create assignment_tenure for these tests - we want to test position-based loading
-        AssignmentTenure.where(teammate: employee_teammate, assignment: [required_assignment, suggested_assignment]).destroy_all
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: [required_assignment, suggested_assignment]).destroy_all
       end
 
       it 'loads check-ins for required assignments' do

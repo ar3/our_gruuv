@@ -39,14 +39,14 @@ class HuddlesController < ApplicationController
     end
 
     # Check if user is a participant, if not redirect to join page
-    @existing_participant = HuddleParticipant.joins(:teammate).find_by(huddle: @huddle, teammates: { person: current_person })
+    @existing_participant = HuddleParticipant.joins(:company_teammate).find_by(huddle: @huddle, teammates: { person: current_person })
     unless @existing_participant
       redirect_to join_huddle_path(@huddle)
       return
     end
 
     # Check if current user has already submitted feedback
-    @existing_feedback = @huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: current_person })
+    @existing_feedback = @huddle.huddle_feedbacks.joins(:company_teammate).find_by(teammates: { person: current_person })
 
     # Set up variables for the Evolve section
     @current_person = current_person
@@ -65,7 +65,6 @@ class HuddlesController < ApplicationController
     
     current_person.active_teammates
                   .includes(organization: :teams)
-                  .where(type: 'CompanyTeammate')
                   .each do |teammate|
       company = teammate.organization
       next unless company
@@ -270,7 +269,7 @@ class HuddlesController < ApplicationController
     @current_person = current_person
 
     # Set existing participant if user is logged in
-    @existing_participant = HuddleParticipant.joins(:teammate).find_by(huddle: @huddle, teammates: { person: @current_person }) if @current_person
+    @existing_participant = HuddleParticipant.joins(:company_teammate).find_by(huddle: @huddle, teammates: { person: @current_person }) if @current_person
 
     # Store return path for post-auth redirect
     if @current_person.nil?
@@ -358,7 +357,7 @@ class HuddlesController < ApplicationController
     authorize @huddle, :direct_feedback?
 
     # Check if user is already a participant
-    @existing_participant = HuddleParticipant.joins(:teammate).find_by(huddle: @huddle, teammates: { person: current_person })
+    @existing_participant = HuddleParticipant.joins(:company_teammate).find_by(huddle: @huddle, teammates: { person: current_person })
 
     unless @existing_participant
       # Find or create follower teammate for this person and company
@@ -392,10 +391,10 @@ class HuddlesController < ApplicationController
     @current_person = current_person
 
     # Check if user is a participant
-    @existing_participant = HuddleParticipant.joins(:teammate).find_by(huddle: @huddle, teammates: { person: @current_person })
+    @existing_participant = HuddleParticipant.joins(:company_teammate).find_by(huddle: @huddle, teammates: { person: @current_person })
 
     # Check if user has already submitted feedback
-    @existing_feedback = @huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: @current_person })
+    @existing_feedback = @huddle.huddle_feedbacks.joins(:company_teammate).find_by(teammates: { person: @current_person })
 
     # Check if this is first time giving feedback
     @is_first_time_feedback = @current_person.total_feedback_given == 0
@@ -407,10 +406,10 @@ class HuddlesController < ApplicationController
     @current_person = current_person
 
     # Check if user is a participant
-    @existing_participant = HuddleParticipant.joins(:teammate).find_by(huddle: @huddle, teammates: { person: @current_person })
+    @existing_participant = HuddleParticipant.joins(:company_teammate).find_by(huddle: @huddle, teammates: { person: @current_person })
 
     # Check if user has already submitted feedback
-    @existing_feedback = @huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: @current_person })
+    @existing_feedback = @huddle.huddle_feedbacks.joins(:company_teammate).find_by(teammates: { person: @current_person })
 
     if @existing_feedback
       # Update existing feedback
@@ -720,8 +719,8 @@ class HuddlesController < ApplicationController
 
       if latest_huddle
         # Check if current user has participated
-        current_participant = latest_huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: current_person })
-        has_feedback = latest_huddle.huddle_feedbacks.joins(:teammate).exists?(teammates: { person: current_person })
+        current_participant = latest_huddle.huddle_participants.joins(:company_teammate).find_by(teammates: { person: current_person })
+        has_feedback = latest_huddle.huddle_feedbacks.joins(:company_teammate).exists?(teammates: { person: current_person })
 
         active_huddles[team.id] = {
           huddle: latest_huddle,

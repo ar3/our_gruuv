@@ -77,7 +77,7 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
 
       it 'excludes teammates with ended employment tenures' do
         # End the employment tenure for direct_report1
-        EmploymentTenure.where(teammate: direct_report1_teammate, manager_teammate: manager_teammate).update_all(ended_at: 1.day.ago)
+        EmploymentTenure.where(company_teammate: direct_report1_teammate, manager_teammate: manager_teammate).update_all(ended_at: 1.day.ago)
         
         query = CompanyTeammatesQuery.new(organization, { manager_teammate_id: manager_teammate.id }, current_person: manager)
         results = query.call
@@ -108,7 +108,7 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
 
       it 'handles teammates with no employment tenures' do
         # Remove all employment tenures for direct_report1
-        EmploymentTenure.where(teammate: direct_report1_teammate).destroy_all
+        EmploymentTenure.where(company_teammate: direct_report1_teammate).destroy_all
         
         query = CompanyTeammatesQuery.new(organization, { manager_teammate_id: manager_teammate.id }, current_person: manager)
         results = query.call
@@ -257,14 +257,14 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
     end
 
     it 'includes department_id when present' do
-      department = create(:organization, type: 'Department', parent: organization)
+      department = create(:department, company: organization)
       query = CompanyTeammatesQuery.new(organization, { department_id: department.id })
       expect(query.current_filters[:department_id]).to include(department.id.to_s)
     end
 
     it 'includes multiple department_ids when present' do
-      department = create(:organization, type: 'Department', parent: organization)
-      department2 = create(:organization, type: 'Department', parent: organization)
+      department = create(:department, company: organization)
+      department2 = create(:department, company: organization)
       query = CompanyTeammatesQuery.new(organization, { department_id: [department.id, department2.id] })
       expect(query.current_filters[:department_id]).to include(department.id.to_s, department2.id.to_s)
     end
@@ -372,15 +372,15 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
     end
 
       it 'combines manager filter with organization filter' do
-      child_org = create(:organization, parent: organization)
-      child_teammate = CompanyTeammate.find(create(:teammate, person: direct_report1, organization: child_org).id)
+      child_org = create(:organization, :company)
+      child_teammate = create(:company_teammate, person: direct_report1, organization: child_org)
       manager_in_child_org = CompanyTeammate.create!(person: manager, organization: child_org)
-      create(:employment_tenure, teammate: child_teammate, company: child_org, manager_teammate: manager_in_child_org, ended_at: nil)
+      create(:employment_tenure, company_teammate: child_teammate, company: child_org, manager_teammate: manager_in_child_org, ended_at: nil)
       
-      query = CompanyTeammatesQuery.new(organization, { manager_teammate_id: manager_in_child_org.id, organization_id: child_org.id }, current_person: manager)
+      # Query scoped to child_org so we get teammates in that org matching the manager filter
+      query = CompanyTeammatesQuery.new(child_org, { manager_teammate_id: manager_in_child_org.id, organization_id: child_org.id }, current_person: manager)
       results = query.call
       
-      # Should only include direct reports in the specified organization
       expect(results).to include(child_teammate)
       expect(results).not_to include(direct_report1_teammate) # Different organization
       expect(results).not_to include(direct_report2_teammate) # Different organization
@@ -448,26 +448,16 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
       expect { query.call }.not_to raise_error
     end
 
-    it 'excludes TeamTeammate objects from results' do
-      # Create a company with a team descendant
+    it 'returns only CompanyTeammate records for the hierarchy' do
       company = create(:organization, :company)
-      team = create(:organization, type: 'Team', parent: company)
-      
-      # Create a CompanyTeammate in the company
       company_person = create(:person)
-      company_teammate = CompanyTeammate.find(create(:teammate, person: company_person, organization: company).id)
-      
-      # Create a TeamTeammate in the team (same person, different teammate type)
-      team_teammate = TeamTeammate.find(create(:teammate, type: 'TeamTeammate', person: company_person, organization: team).id)
-      
+      company_teammate = create(:company_teammate, person: company_person, organization: company)
+
       query = CompanyTeammatesQuery.new(company, {})
       results = query.call
-      
-      # Should include CompanyTeammate
+
       expect(results).to include(company_teammate)
-      # Should NOT include TeamTeammate
       expect(results.map(&:class).uniq).to eq([CompanyTeammate])
-      expect(results).not_to include(team_teammate)
     end
   end
 end

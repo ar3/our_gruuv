@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Organizations::Prompts', type: :request do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:template) { create(:prompt_template, :available, company: organization) }
   
   let(:teammate) do
@@ -222,7 +222,7 @@ RSpec.describe 'Organizations::Prompts', type: :request do
     end
 
     it 'requires authorization' do
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_company_person = create(:person)
       sign_in_as_teammate_for_request(other_company_person, other_company)
       
@@ -274,7 +274,7 @@ RSpec.describe 'Organizations::Prompts', type: :request do
     end
 
     it 'requires authorization' do
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_company_person = create(:person)
       sign_in_as_teammate_for_request(other_company_person, other_company)
       

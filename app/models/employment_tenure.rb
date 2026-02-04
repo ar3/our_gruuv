@@ -1,5 +1,7 @@
 class EmploymentTenure < ApplicationRecord
-  belongs_to :teammate
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
   belongs_to :company, class_name: 'Organization'
   belongs_to :position
   belongs_to :manager_teammate, class_name: 'CompanyTeammate', optional: true
@@ -34,10 +36,10 @@ class EmploymentTenure < ApplicationRecord
 
   scope :active, -> { where(ended_at: nil) }
   scope :inactive, -> { where.not(ended_at: nil) }
-  scope :for_teammate, ->(teammate) { where(teammate: teammate) }
+  scope :for_teammate, ->(company_teammate) { where(company_teammate: company_teammate) }
   scope :for_company, ->(company) { where(company: company) }
-  scope :most_recent_for_teammate_and_company, ->(teammate, company) { 
-    for_teammate(teammate).for_company(company).order(started_at: :desc).limit(1) 
+  scope :most_recent_for_teammate_and_company, ->(company_teammate, company) {
+    for_teammate(company_teammate).for_company(company).order(started_at: :desc).limit(1)
   }
 
   def active?
@@ -48,8 +50,8 @@ class EmploymentTenure < ApplicationRecord
     !active?
   end
 
-  def self.most_recent_for(teammate, company)
-    most_recent_for_teammate_and_company(teammate, company).first
+  def self.most_recent_for(company_teammate, company)
+    most_recent_for_teammate_and_company(company_teammate, company).first
   end
 
   def position_rating_display
@@ -113,7 +115,7 @@ class EmploymentTenure < ApplicationRecord
     # If this is a new record (not persisted), we need to check for any active tenures
     # If this is an update, we've already excluded this record with where.not(id: id)
     other_active_tenures = EmploymentTenure
-      .where(teammate: teammate, company: company)
+      .where(company_teammate: company_teammate, company: company)
       .where.not(id: id) # Exclude current record if updating
       .where(ended_at: nil) # Only check active tenures
 

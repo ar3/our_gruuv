@@ -2,10 +2,10 @@ require 'rails_helper'
 
 RSpec.describe ObservableMoments::CreateGoalCheckInMomentService do
   let(:company) { create(:organization, :company) }
-  let(:goal_owner) { create(:teammate, organization: company) }
+  let(:goal_owner) { create(:company_teammate, organization: company) }
   let(:goal) { create(:goal, owner: goal_owner, company: company) }
   let(:confidence_reporter) { create(:person) }
-  let!(:reporter_teammate) { create(:teammate, organization: company, person: confidence_reporter) }
+  let!(:reporter_teammate) { create(:company_teammate, organization: company, person: confidence_reporter) }
   let(:created_by) { confidence_reporter }
   
   describe '.call' do
@@ -36,7 +36,7 @@ RSpec.describe ObservableMoments::CreateGoalCheckInMomentService do
         moment = result.value
         expect(moment.moment_type).to eq('goal_check_in')
         expect(moment.momentable).to eq(current_check_in)
-        expect(moment.primary_potential_observer).to be_a(Teammate)
+        expect(moment.primary_potential_observer).to be_a(CompanyTeammate)
         expect(moment.primary_potential_observer.id).to eq(reporter_teammate.id)
         expect(moment.metadata['confidence_percentage']).to eq(75)
         expect(moment.metadata['previous_confidence_percentage']).to eq(50)

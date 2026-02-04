@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe DepartmentNameInterpreter do
-  let(:company) { create(:organization, type: 'Company', name: 'Acme Corp') }
+  let(:company) { create(:organization, :company, name: 'Acme Corp') }
 
   describe '#initialize' do
     it 'stores department name and company' do
@@ -35,8 +35,8 @@ RSpec.describe DepartmentNameInterpreter do
         expect(interpreter.interpret).to be_nil
       end
 
-      it 'returns nil if company is not a Company type' do
-        department = create(:organization, type: 'Department', name: 'Dept', parent: company)
+      it 'returns nil if company is not an Organization' do
+        department = create(:department, company: company, name: 'Dept')
         interpreter = described_class.new('Engineering', department)
         expect(interpreter.interpret).to be_nil
       end
@@ -73,12 +73,13 @@ RSpec.describe DepartmentNameInterpreter do
 
         expect(department).to be_present
         expect(department.name).to eq('Engineering')
-        expect(department.type).to eq('Department')
-        expect(department.parent).to eq(company)
+        expect(department).to be_a(Department)
+        expect(department.company).to eq(company)
+        expect(department.parent_department).to be_nil
       end
 
       it 'finds existing department if it exists' do
-        existing_dept = create(:organization, type: 'Department', name: 'Engineering', parent: company)
+        existing_dept = create(:department, company: company, name: 'Engineering')
         
         interpreter = described_class.new('Engineering', company)
         department = interpreter.interpret
@@ -88,7 +89,7 @@ RSpec.describe DepartmentNameInterpreter do
       end
 
       it 'is case-insensitive when finding existing department' do
-        existing_dept = create(:organization, type: 'Department', name: 'Engineering', parent: company)
+        existing_dept = create(:department, company: company, name: 'Engineering')
         
         interpreter = described_class.new('engineering', company)
         department = interpreter.interpret
@@ -106,8 +107,9 @@ RSpec.describe DepartmentNameInterpreter do
 
           expect(department).to be_present
           expect(department.name).to eq('Engineering')
-          expect(department.type).to eq('Department')
-          expect(department.parent).to eq(company)
+          expect(department).to be_a(Department)
+          expect(department.company).to eq(company)
+          expect(department.parent_department).to be_nil
         end
 
         it 'creates hierarchy: Company > Engineering > Backend' do
@@ -116,11 +118,9 @@ RSpec.describe DepartmentNameInterpreter do
 
           expect(department).to be_present
           expect(department.name).to eq('Backend')
-          expect(department.type).to eq('Department')
-          
-          # Check parent chain
-          expect(department.parent.name).to eq('Engineering')
-          expect(department.parent.parent).to eq(company)
+          expect(department).to be_a(Department)
+          expect(department.parent_department.name).to eq('Engineering')
+          expect(department.parent_department.company).to eq(company)
         end
 
         it 'creates hierarchy: Company > Sales > North America' do
@@ -129,16 +129,14 @@ RSpec.describe DepartmentNameInterpreter do
 
           expect(department).to be_present
           expect(department.name).to eq('North America')
-          expect(department.type).to eq('Department')
-          
-          # Check parent chain
-          expect(department.parent.name).to eq('Sales')
-          expect(department.parent.parent).to eq(company)
+          expect(department).to be_a(Department)
+          expect(department.parent_department.name).to eq('Sales')
+          expect(department.parent_department.company).to eq(company)
         end
 
         it 'finds existing departments in hierarchy' do
-          engineering = create(:organization, type: 'Department', name: 'Engineering', parent: company)
-          backend = create(:organization, type: 'Department', name: 'Backend', parent: engineering)
+          engineering = create(:department, company: company, name: 'Engineering')
+          backend = create(:department, company: company, parent_department: engineering, name: 'Backend')
           
           interpreter = described_class.new('Acme Corp > Engineering > Backend', company)
           department = interpreter.interpret
@@ -148,14 +146,14 @@ RSpec.describe DepartmentNameInterpreter do
         end
 
         it 'creates missing departments in existing hierarchy' do
-          engineering = create(:organization, type: 'Department', name: 'Engineering', parent: company)
+          engineering = create(:department, company: company, name: 'Engineering')
           
           interpreter = described_class.new('Acme Corp > Engineering > Frontend', company)
           department = interpreter.interpret
 
           expect(department).to be_present
           expect(department.name).to eq('Frontend')
-          expect(department.parent.id).to eq(engineering.id)
+          expect(department.parent_department.id).to eq(engineering.id)
         end
 
         it 'is case-insensitive when matching company name' do
@@ -164,7 +162,8 @@ RSpec.describe DepartmentNameInterpreter do
 
           expect(department).to be_present
           expect(department.name).to eq('Engineering')
-          expect(department.parent).to eq(company)
+          expect(department.company).to eq(company)
+          expect(department.parent_department).to be_nil
         end
 
         it 'handles extra whitespace around delimiters' do
@@ -173,7 +172,7 @@ RSpec.describe DepartmentNameInterpreter do
 
           expect(department).to be_present
           expect(department.name).to eq('Backend')
-          expect(department.parent.name).to eq('Engineering')
+          expect(department.parent_department.name).to eq('Engineering')
         end
       end
 
@@ -252,8 +251,8 @@ RSpec.describe DepartmentNameInterpreter do
         interpreter = described_class.new('Engineering', company)
         department = interpreter.interpret
 
-        expect(department).to be_a(Organization)
-        expect(department.type).to eq('Department')
+        expect(department).to be_a(Department)
+        expect(department.company).to eq(company)
       end
 
       it 'stores the department in the department attribute' do
@@ -280,7 +279,7 @@ RSpec.describe DepartmentNameInterpreter do
       end
 
       it 'shows existing departments as will_create: false' do
-        existing_dept = create(:organization, type: 'Department', name: 'Engineering', parent: company)
+        existing_dept = create(:department, company: company, name: 'Engineering')
         
         interpreter = described_class.new('Engineering', company)
         preview = interpreter.preview

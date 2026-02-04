@@ -40,7 +40,7 @@
           %dd.col-sm-9
             %span.badge.bg-primary= @ability.semantic_version
           %dt.col-sm-3 Department:
-          %dd.col-sm-9= @ability.organization.display_name
+          %dd.col-sm-9= @ability.company.display_name
           %dt.col-sm-3 Created:
           %dd.col-sm-9= format_time_in_user_timezone(@ability.created_at)
           %dt.col-sm-3 Updated:
@@ -91,7 +91,7 @@
             %strong= @ability.semantic_version
           .d-flex.justify-content-between
             %span Department:
-            %strong= @ability.organization.display_name
+            %strong= @ability.company.display_name
           .d-flex.justify-content-between
             %span Created:
             %strong= format_date_in_user_timezone(@ability.created_at, format: "%b %d, %Y")

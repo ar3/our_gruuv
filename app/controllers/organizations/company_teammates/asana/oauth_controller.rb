@@ -194,7 +194,7 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
       end
       
       @organization = Organization.find(org_id)
-      @teammate = Teammate.find(teammate_id)
+      @teammate = CompanyTeammate.find(teammate_id)
     else
       redirect_to root_path, alert: 'Invalid OAuth callback: missing state parameter'
     end

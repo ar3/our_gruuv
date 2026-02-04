@@ -2,61 +2,60 @@ require 'set'
 
 class Person < ApplicationRecord
   include PgSearch::Model
-  
+
   # Associations
   has_many :person_identities, dependent: :destroy
   has_many :observations, foreign_key: :observer_id, dependent: :destroy
-  # has_many :maap_snapshots, foreign_key: :employee_id, dependent: :destroy # DEPRECATED: Now through teammates
   has_many :page_visits, dependent: :destroy
   has_one :user_preference, dependent: :destroy
 
-  has_many :teammates, dependent: :destroy
+  has_many :company_teammates, class_name: 'CompanyTeammate', dependent: :destroy
+  has_many :teammates, class_name: 'CompanyTeammate', foreign_key: 'person_id', dependent: :destroy
   has_many :addresses, dependent: :destroy
-  
-  # Associations through teammates
-  has_many :huddle_participants, through: :teammates, source: :huddle_participants
-  has_many :huddle_feedbacks, through: :teammates, source: :huddle_feedbacks
-  has_many :employment_tenures, through: :teammates, source: :employment_tenures
-  has_many :slack_identities, -> { where(provider: 'slack') }, through: :teammates, source: :teammate_identities
-  
+
+  # Associations through company_teammates
+  has_many :huddle_participants, through: :company_teammates, source: :huddle_participants
+  has_many :huddle_feedbacks, through: :company_teammates, source: :huddle_feedbacks
+  has_many :employment_tenures, through: :company_teammates, source: :employment_tenures
+  has_many :slack_identities, -> { where(provider: 'slack') }, through: :company_teammates, source: :teammate_identities
+
   # Callbacks
   before_save :normalize_phone_number
-  
+
   # Validations
   validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :gender_identity, inclusion: { 
-    in: %w[man woman non_binary genderqueer genderfluid agender two_spirit prefer_not_to_say other], 
-    allow_blank: true 
+  validates :gender_identity, inclusion: {
+    in: %w[man woman non_binary genderqueer genderfluid agender two_spirit prefer_not_to_say other],
+    allow_blank: true
   }
-  validates :pronouns, inclusion: { 
-    in: %w[he/him she/her they/them he/they she/they other prefer_not_to_say], 
-    allow_blank: true 
+  validates :pronouns, inclusion: {
+    in: %w[he/him she/her they/them he/they she/they other prefer_not_to_say],
+    allow_blank: true
   }
   validate :ensure_valid_timezone
 
-  
   # Virtual attribute for full name - getter and setter methods
   def full_name
     parts = [preferred_name || first_name, middle_name, last_name, suffix].compact
     parts.join(' ')
   end
-  
+
   def full_name=(value)
     @full_name = value
     parse_full_name
   end
-  
+
   def casual_name
     return preferred_name if preferred_name.present?
     parts = [
-      first_name, 
-      last_name.present? ? "#{last_name[0]}." : nil, 
+      first_name,
+      last_name.present? ? "#{last_name[0]}." : nil,
       suffix].compact
     parts.join(' ')
   end
+
   # Instance methods
-  
   def to_s
     preferred_first_then_last_display_name
   end
@@ -64,7 +63,7 @@ class Person < ApplicationRecord
   def display_name
     preferred_first_then_last_display_name
   end
-  
+
   def max_two_initials
     first_initial = preferred_name[0] if preferred_name.present?
     first_initial = first_name[0] if first_initial.nil? && first_name.present?
@@ -114,32 +113,26 @@ class Person < ApplicationRecord
   end
 
   def latest_profile_image_url
-    # Check all person_identities and teammate_identities for profile images
-    # Return the most recently updated one
     all_identities = []
-    
-    # Get all person_identities with profile images
+
     person_identities.where.not(profile_image_url: nil).find_each do |identity|
       all_identities << { url: identity.profile_image_url, updated_at: identity.updated_at }
     end
-    
-    # Get all teammate_identities with profile images through all teammates
-    teammates.includes(:teammate_identities).find_each do |teammate|
+
+    company_teammates.includes(:teammate_identities).find_each do |teammate|
       teammate.teammate_identities.where.not(profile_image_url: nil).find_each do |identity|
         all_identities << { url: identity.profile_image_url, updated_at: identity.updated_at }
       end
     end
-    
-    # Return the most recently updated profile image
+
     return nil if all_identities.empty?
     all_identities.max_by { |i| i[:updated_at] }[:url]
   end
-  
+
   def timezone_or_default
     timezone.present? ? timezone : 'Eastern Time (US & Canada)'
   end
-  
-  # Safely set timezone with validation
+
   def safe_timezone=(value)
     if value.blank?
       self.timezone = nil
@@ -150,85 +143,88 @@ class Person < ApplicationRecord
       self.timezone = 'Eastern Time (US & Canada)'
     end
   end
-  
-
-
-
 
   # Admin methods
   def admin?
     og_admin?
   end
 
-
-  # Organization context methods
-  def available_organizations
-    # Return organizations where person has active teammates (not terminated)
-    Organization.joins(:teammates)
-                .where(teammates: { person: self, last_terminated_at: nil })
-                .order(:type, :name)
-  end
-  
-  def active_teammates
-    teammates.where(last_terminated_at: nil)
-  end
-  
+  # Company context methods
   def available_companies
-    Organization.companies.order(:type, :name)
+    Organization.joins(:company_teammates)
+                .where(teammates: { person_id: id, last_terminated_at: nil })
+                .order(:name)
   end
-  
+
+  def available_organizations
+    available_companies
+  end
+
   def followable_organizations
-    # Return organizations that have assignments, abilities, or positions
+    followable_companies
+  end
+
+  def active_employees
+    company_teammates.where(last_terminated_at: nil)
+  end
+
+  def active_teammates
+    company_teammates.where(last_terminated_at: nil)
+  end
+
+  def all_companies
+    Organization.order(:name)
+  end
+
+  def followable_companies
     Organization.joins("LEFT JOIN assignments ON assignments.company_id = organizations.id")
-                .joins("LEFT JOIN abilities ON abilities.organization_id = organizations.id")
-                .joins("LEFT JOIN positions ON positions.title_id IN (SELECT id FROM titles WHERE organization_id = organizations.id)")
+                .joins("LEFT JOIN abilities ON abilities.company_id = organizations.id")
+                .joins("LEFT JOIN positions ON positions.title_id IN (SELECT id FROM titles WHERE company_id = organizations.id)")
                 .where("assignments.id IS NOT NULL OR abilities.id IS NOT NULL OR positions.id IS NOT NULL")
                 .distinct
-                .order(:type, :name)
+                .order(:name)
   end
-  
-  def can_follow_organization?(organization)
-    # Check if organization has content and person is not already a teammate
-    has_content = organization.assignments.exists? ||
-                  organization.abilities.exists? ||
-                  organization.positions.exists?
-    
-    not_already_teammate = !teammates.exists?(organization: organization)
-    
-    has_content && not_already_teammate
+
+  def can_follow_company?(company)
+    has_content = company.assignments.exists? ||
+                  company.abilities.exists? ||
+                  company.positions.exists?
+
+    not_already_employee = !company_teammates.exists?(organization: company)
+
+    has_content && not_already_employee
   end
-  
+
   def last_huddle
-    Huddle.joins(huddle_participants: :teammate)
-          .where(teammates: { person: self })
+    Huddle.joins(huddle_participants: :company_teammate)
+          .where(teammates: { person_id: id })
           .recent
           .first
   end
-  
+
   def last_huddle_company
-    last_huddle&.company
+    last_huddle&.team&.company
   end
-  
-  # Returns the Team (new standalone model) from the last huddle
+
   def last_huddle_team
     last_huddle&.team
   end
-  
+
   # Employment tenure checking methods
-  def active_employment_tenure_in?(organization)
-    teammate = teammates.find_by(organization: organization)
-    teammate&.employment_tenures&.active&.where(company: organization)&.exists? || false
+  def active_employment_tenure_in?(company)
+    teammate = company_teammates.find_by(organization: company)
+    teammate&.employment_tenures&.active&.where(company: company)&.exists? || false
   end
 
-  def employment_status_text_for(organization)
-    teammate = teammates.find_by(organization: organization)
-    return "Never been employed at #{organization.display_name}" unless teammate
-    
-    tenures = teammate.employment_tenures.where(company: organization).order(started_at: :desc)
-    
+  def employment_status_text_for(company)
+    teammate = company_teammates.find_by(organization: company)
+    return "Never been employed at #{company.display_name}" unless teammate
+
+    tenures = teammate.employment_tenures.where(company: company).order(started_at: :desc)
+
     if tenures.empty?
-      "Never been employed at #{organization.display_name}"
-    elsif active_employment_tenure_in?(organization)
+      "Never been employed at #{company.display_name}"
+    elsif active_employment_tenure_in?(company)
       current_tenure = tenures.active.first
       "#{current_tenure.position.display_name}"
     else
@@ -237,6 +233,9 @@ class Person < ApplicationRecord
     end
   end
 
+  def active_employment_tenure_for(company)
+    company_teammates.find_by(organization: company)&.active_employment_tenure
+  end
 
   # Huddle participation methods
   def huddle_team_stats
@@ -272,7 +271,6 @@ class Person < ApplicationRecord
     participations_count = team_participations.count
     feedback_count = huddle_feedbacks.joins(:huddle).where(huddles: { team: team }).count
 
-    # Calculate average rating for this person's feedback in this team
     ratings = huddle_feedbacks.joins(:huddle)
                               .where(huddles: { team: team })
                               .pluck(:informed_rating, :connected_rating, :goals_rating, :valuable_rating)
@@ -292,27 +290,27 @@ class Person < ApplicationRecord
       average_rating: average_rating
     }
   end
-  
+
   # Identity methods
   def google_identity
     person_identities.google.first
   end
-  
+
   def email_identity
     person_identities.email.first
   end
-  
+
   def has_google_identity?
     person_identities.google.exists?
   end
-  
+
   def has_email_identity?
     person_identities.email.exists?
   end
-  
+
   def find_or_create_email_identity
     person_identities.email.find_or_create_by!(email: email) do |identity|
-      identity.uid = email # Use email as UID for email identities
+      identity.uid = email
     end
   end
 
@@ -329,45 +327,38 @@ class Person < ApplicationRecord
   end
 
   def can_disconnect_identity?(identity)
-    return false if identity.email? # Don't allow disconnecting email identity
+    return false if identity.email?
     return false if identity.google? && person_identities.google.count == 1
     true
   end
-  
-  # Active employment tenure convenience methods
-  def active_employment_tenure_for(organization)
-    company = organization.root_company || organization
-    teammates.find_by(organization: company)&.active_employment_tenure
-  end
 
-  
+  # Active employment tenure convenience methods (active_employment_tenure_for defined above)
+
   private
-  
+
   def normalize_phone_number
-    # Convert empty strings to nil to avoid unique constraint violations
     self.unique_textable_phone_number = nil if unique_textable_phone_number.blank?
   end
-  
+
   def ensure_valid_timezone
     return if timezone.blank?
-    
+
     unless TimezoneService.valid_timezone?(timezone)
       self.timezone = TimezoneService::DEFAULT_TIMEZONE
     end
   end
-  
+
   def parse_full_name
     return unless @full_name.present?
-    
-    # Use FullNameParser for consistent name parsing
+
     name_parts = FullNameParser.new(@full_name)
-    
+
     self.first_name = name_parts.first_name
     self.middle_name = name_parts.middle_name
     self.last_name = name_parts.last_name
     self.suffix = name_parts.suffix
   end
-  
+
   # pg_search configuration
   pg_search_scope :search_by_full_text,
     against: {
@@ -382,7 +373,7 @@ class Person < ApplicationRecord
     using: {
       tsearch: { prefix: true, any_word: true }
     }
-  
+
   multisearchable against: [:first_name, :last_name, :middle_name, :preferred_name, :suffix, :email, :unique_textable_phone_number],
     associated_against: {
       slack_identities: [:name]

@@ -1,8 +1,10 @@
 class HuddleParticipant < ApplicationRecord
   # Associations
   belongs_to :huddle
-  belongs_to :teammate
-  
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
+
   # Constants
   ROLES = HuddleConstants::ROLES
   ROLE_LABELS = HuddleConstants::ROLE_LABELS

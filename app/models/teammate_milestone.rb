@@ -1,13 +1,15 @@
 class TeammateMilestone < ApplicationRecord
   # Associations
-  belongs_to :teammate
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
   belongs_to :ability
   belongs_to :certifying_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :published_by_teammate, class_name: 'CompanyTeammate', optional: true
   has_one :observable_moment, as: :momentable, dependent: :destroy
 
   # Validations
-  validates :teammate, presence: true
+  validates :company_teammate, presence: true
   validates :ability, presence: true
   validates :milestone_level, presence: true, 
             numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 5 }
@@ -18,7 +20,7 @@ class TeammateMilestone < ApplicationRecord
 
   # Scopes
   scope :by_milestone_level, -> { order(:milestone_level) }
-  scope :for_teammate, ->(teammate) { where(teammate: teammate) }
+  scope :for_teammate, ->(company_teammate) { where(company_teammate: company_teammate) }
   scope :for_ability, ->(ability) { where(ability: ability) }
   scope :recent, -> { order(attained_at: :desc) }
   scope :published, -> { where.not(published_at: nil) }
@@ -51,14 +53,14 @@ class TeammateMilestone < ApplicationRecord
     
     # Add the employee (receiver)
     viewers << {
-      person: teammate.person,
+      person: company_teammate.person,
       role: 'Employee (Milestone Recipient)'
     }
     
     # Add managers in the hierarchy
     managers = ManagerialHierarchyQuery.new(
-      person: teammate.person,
-      organization: teammate.organization
+      person: company_teammate.person,
+      organization: company_teammate.organization
     ).call
     
     managers.each do |manager|
@@ -69,14 +71,14 @@ class TeammateMilestone < ApplicationRecord
     end
     
     # Add people with manage_employment permission in the organization
-    employment_managers = teammate.organization.teammates
+    employment_managers = company_teammate.organization.company_teammates
                                   .where(can_manage_employment: true, last_terminated_at: nil)
                                   .includes(:person)
     
     employment_managers.each do |manager_teammate|
       # Don't duplicate if already in managers list
       next if managers.any? { |m| m[:person_id] == manager_teammate.person_id }
-      next if manager_teammate.person_id == teammate.person_id
+      next if manager_teammate.person_id == company_teammate.person_id
       
       viewers << {
         person: manager_teammate.person,

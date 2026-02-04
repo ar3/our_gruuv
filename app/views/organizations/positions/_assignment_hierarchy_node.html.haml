@@ -11,7 +11,7 @@
         %i.bi.bi-arrow-return-right.me-2.text-muted
       = org.name
       - if org.department?
-        = link_to organization_department_path(org.root_company, org), target: "_blank", rel: "noopener noreferrer", class: "ms-2", title: "View department" do
+        = link_to organization_department_path(org.respond_to?(:root_company) ? org.root_company : org.company, org), target: "_blank", rel: "noopener noreferrer", class: "ms-2", title: "View department" do
           %i.bi.bi-box-arrow-up-right
   
   - if assignments.any?
@@ -35,7 +35,7 @@
                 - if assignment.department
                   %br
                   %small.text-muted= department_hierarchy_display(assignment.department)
-                  = link_to organization_department_path(assignment.department.root_company, assignment.department), target: "_blank", rel: "noopener noreferrer", class: "ms-2", title: "View department" do
+                  = link_to organization_department_path(assignment.department.company, assignment.department), target: "_blank", rel: "noopener noreferrer", class: "ms-2", title: "View department" do
                     %i.bi.bi-box-arrow-up-right
               %td
                 = form.select "position_assignments[#{assignment.id}][min_estimated_energy]",

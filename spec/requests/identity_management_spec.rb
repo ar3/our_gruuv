@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Identity Management', type: :request do
-  let(:company) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:company) { create(:organization, :company, name: 'Test Company') }
   let(:person) { create(:person) }
   let(:google_identity) { create(:person_identity, person: person, provider: 'google_oauth2', email: 'test@gmail.com') }
 

@@ -92,7 +92,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     it 'eager loads check-in data when using check_in_status display' do
       # Ensure we have at least one direct report (update existing tenure instead of creating new one)
       direct_report_teammate.update!(first_employed_at: 1.month.ago)
-      existing_tenure = EmploymentTenure.find_by(teammate: direct_report_teammate, company: organization)
+      existing_tenure = EmploymentTenure.find_by(company_teammate: direct_report_teammate, company: organization)
       if existing_tenure
         existing_tenure.update!(manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
       else
@@ -133,7 +133,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       # Create many direct reports (need at least 26 for page 2 with 25 items per page)
       30.times do |i|
         person = create(:person, first_name: "Employee#{i}", last_name: "Test")
-        teammate = create(:teammate, person: person, organization: organization, first_employed_at: 1.month.ago)
+        teammate = create(:company_teammate, person: person, organization: organization, first_employed_at: 1.month.ago)
         create(:employment_tenure, teammate: teammate, company: organization, manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
       end
       
@@ -261,10 +261,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     let(:terminated_employee) { create(:person) }
     let(:huddle_only_participant) { create(:person) }
 
-    let!(:active_teammate) { create(:teammate, person: active_employee, organization: organization, first_employed_at: 1.month.ago) }
-    let!(:unassigned_teammate) { create(:teammate, person: unassigned_employee, organization: organization, first_employed_at: 2.months.ago) }
-    let!(:terminated_teammate) { create(:teammate, person: terminated_employee, organization: organization, first_employed_at: 6.months.ago, last_terminated_at: 1.month.ago) }
-    let!(:huddle_only_teammate) { create(:teammate, person: huddle_only_participant, organization: organization, first_employed_at: nil, last_terminated_at: nil) }
+    let!(:active_teammate) { create(:company_teammate, person: active_employee, organization: organization, first_employed_at: 1.month.ago) }
+    let!(:unassigned_teammate) { create(:company_teammate, person: unassigned_employee, organization: organization, first_employed_at: 2.months.ago) }
+    let!(:terminated_teammate) { create(:company_teammate, person: terminated_employee, organization: organization, first_employed_at: 6.months.ago, last_terminated_at: 1.month.ago) }
+    let!(:huddle_only_teammate) { create(:company_teammate, person: huddle_only_participant, organization: organization, first_employed_at: nil, last_terminated_at: nil) }
 
     before do
       # Create employment tenure for active employee
@@ -332,7 +332,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       it 'returns unique teammates even when joins might create duplicates' do
         # Create a teammate with multiple employment tenures
         person_with_multiple_tenures = create(:person)
-        teammate_with_tenures = create(:teammate, person: person_with_multiple_tenures, organization: organization, first_employed_at: 3.months.ago)
+        teammate_with_tenures = create(:company_teammate, person: person_with_multiple_tenures, organization: organization, first_employed_at: 3.months.ago)
         
       # Create multiple employment tenures (started_at must be before ended_at)
       create(:employment_tenure, teammate: teammate_with_tenures, company: organization, started_at: 3.months.ago, ended_at: 2.months.ago)
@@ -349,7 +349,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
   end
 
   describe 'vertical_hierarchy view' do
-    let(:company_org) { create(:organization, :company) }
+    let(:company_org) { create(:organization) }
     let(:employee_person) { create(:person) }
     let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company_org, first_employed_at: 1.month.ago) }
     let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: company_org, started_at: 1.month.ago, ended_at: nil) }
@@ -395,7 +395,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
     it 'handles organization hierarchy without error' do
       # Create a company with a team
-      company = create(:organization, :company)
+      company = create(:organization)
       team = create(:team, company: company)
       
       # Create a person with CompanyTeammate
@@ -422,8 +422,8 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     let(:employee1) { create(:person) }
     let(:employee2) { create(:person) }
     
-    let!(:teammate1) { create(:teammate, person: employee1, organization: organization, first_employed_at: 1.month.ago) }
-    let!(:teammate2) { create(:teammate, person: employee2, organization: organization, first_employed_at: 1.month.ago) }
+    let!(:teammate1) { create(:company_teammate, person: employee1, organization: organization, first_employed_at: 1.month.ago) }
+    let!(:teammate2) { create(:company_teammate, person: employee2, organization: organization, first_employed_at: 1.month.ago) }
 
     before do
       create(:employment_tenure, teammate: teammate1, company: organization, started_at: 1.month.ago, ended_at: nil)

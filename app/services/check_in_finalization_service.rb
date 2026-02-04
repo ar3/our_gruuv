@@ -79,7 +79,7 @@ class CheckInFinalizationService
   end
   
   def finalize_position
-    check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
+    check_in = PositionCheckIn.where(company_teammate: @teammate).ready_for_finalization.first
     return Result.err("Position check-in not ready") unless check_in
     
     Finalizers::PositionCheckInFinalizer.new(

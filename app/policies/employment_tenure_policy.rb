@@ -54,7 +54,7 @@ class EmploymentTenurePolicy < ApplicationPolicy
       if person&.admin?
         scope.all
       else
-        scope.joins(:teammate).where(teammates: { person: person })
+        scope.joins(:company_teammate).where(teammates: { person: person })
       end
     end
   end

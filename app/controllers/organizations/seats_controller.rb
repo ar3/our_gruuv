@@ -219,7 +219,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   private
 
   def set_seat
-    @seat = Seat.includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person }).find(params[:id])
+    @seat = Seat.includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { company_teammate: :person }).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     flash[:error] = "Seat not found"
     redirect_to organization_seats_path(organization)
@@ -233,7 +233,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     
     # Load seats with their active employment tenures and teammates
     all_seats = Seat.for_organization(organization)
-                    .includes(:title, employment_tenures: { teammate: :person })
+                    .includes(:title, employment_tenures: { company_teammate: :person })
                     .order('titles.external_title ASC, seats.seat_needed_by ASC')
     
     # Exclude current seat if editing (can't report to itself)
@@ -285,7 +285,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def calculate_spotlight_stats
     # Calculate employee seat statistics
-    active_teammates = Teammate.for_organization_hierarchy(organization)
+    active_teammates = CompanyTeammate.for_organization_hierarchy(organization)
                                 .where.not(first_employed_at: nil)
                                 .where(last_terminated_at: nil)
     

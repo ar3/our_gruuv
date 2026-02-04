@@ -107,7 +107,7 @@ RSpec.describe TrackMissingResourceJob, type: :job do
 
     context 'when an error occurs' do
       before do
-        allow(MissingResource).to receive(:find_or_create_by).and_raise(ActiveRecord::RecordInvalid.new(MissingResource.new))
+        allow(MissingResource).to receive(:find_or_initialize_by).and_raise(ActiveRecord::RecordInvalid.new(MissingResource.new))
       end
 
       it 'logs the error and does not raise' do

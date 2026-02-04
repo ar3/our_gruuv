@@ -13,7 +13,7 @@ class OrganizationHierarchyQuery
     # For companies, include descendants; for teams/departments, just the organization
     org_ids = @organization.company? ? @organization.self_and_descendants.map(&:id) : [@organization.id]
     
-    tenures = EmploymentTenure.joins(:teammate)
+    tenures = EmploymentTenure.joins(:company_teammate)
                              .joins('INNER JOIN people ON teammates.person_id = people.id')
                              .where(company_id: org_ids)
                             .where(teammates: { organization_id: org_ids })
@@ -51,7 +51,7 @@ class OrganizationHierarchyQuery
 
         # Ensure manager node exists (in case manager's tenure isn't in this org)
         unless nodes_hash[manager_id]
-          manager_tenure = EmploymentTenure.joins(:teammate)
+          manager_tenure = EmploymentTenure.joins(:company_teammate)
                                           .where(teammates: { person: manager_person, organization_id: org_ids })
                                           .active
                                           .includes(:position)

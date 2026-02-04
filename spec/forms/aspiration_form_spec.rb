@@ -12,28 +12,28 @@ RSpec.describe AspirationForm, type: :form do
 
   describe 'validations' do
     it 'requires name' do
-      params = { name: nil, sort_order: 1, organization_id: organization.id, version_type: 'ready' }
+      params = { name: nil, sort_order: 1, company_id: organization.id, version_type: 'ready' }
       form.instance_variable_set(:@form_data_empty, false)
       expect(form.validate(params)).to be false
       expect(form.errors[:name]).to include("can't be blank")
     end
 
     it 'requires sort_order' do
-      params = { name: 'Test', sort_order: nil, organization_id: organization.id, version_type: 'ready' }
+      params = { name: 'Test', sort_order: nil, company_id: organization.id, version_type: 'ready' }
       form.instance_variable_set(:@form_data_empty, false)
       expect(form.validate(params)).to be false
       expect(form.errors[:sort_order]).to include("can't be blank")
     end
 
-    it 'requires organization_id' do
-      params = { name: 'Test', sort_order: 1, organization_id: nil, version_type: 'ready' }
+    it 'requires company_id' do
+      params = { name: 'Test', sort_order: 1, company_id: nil, version_type: 'ready' }
       form.instance_variable_set(:@form_data_empty, false)
       expect(form.validate(params)).to be false
-      expect(form.errors[:organization_id]).to include("can't be blank")
+      expect(form.errors[:company_id]).to include("can't be blank")
     end
 
     it 'requires version_type for new records' do
-      params = { name: 'Test', sort_order: 1, organization_id: organization.id, version_type: nil }
+      params = { name: 'Test', sort_order: 1, company_id: organization.id, version_type: nil }
       form.instance_variable_set(:@form_data_empty, false)
       expect(form.validate(params)).to be false
       expect(form.errors[:version_type]).to include("can't be blank")
@@ -43,14 +43,14 @@ RSpec.describe AspirationForm, type: :form do
       existing_aspiration = create(:aspiration, company: organization, semantic_version: '1.0.0')
       form = AspirationForm.new(existing_aspiration)
       form.current_person = person
-      params = { name: 'Updated', description: existing_aspiration.description, sort_order: existing_aspiration.sort_order, organization_id: existing_aspiration.organization_id, version_type: nil }
+      params = { name: 'Updated', description: existing_aspiration.description, sort_order: existing_aspiration.sort_order, company_id: existing_aspiration.company_id, version_type: nil }
       form.instance_variable_set(:@form_data_empty, false)
       expect(form.validate(params)).to be false
       expect(form.errors[:version_type]).to include("can't be blank")
     end
 
     it 'validates version_type for new records' do
-      params = { name: 'Test', sort_order: 1, organization_id: organization.id, version_type: 'invalid' }
+      params = { name: 'Test', sort_order: 1, company_id: organization.id, version_type: 'invalid' }
       form.instance_variable_set(:@form_data_empty, false)
       expect(form.validate(params)).to be false
       expect(form.errors[:version_type]).to be_present
@@ -60,7 +60,7 @@ RSpec.describe AspirationForm, type: :form do
       existing_aspiration = create(:aspiration, company: organization, semantic_version: '1.0.0')
       form = AspirationForm.new(existing_aspiration)
       form.current_person = person
-      params = { name: 'Updated', description: existing_aspiration.description, sort_order: existing_aspiration.sort_order, organization_id: existing_aspiration.organization_id, version_type: 'ready' }
+      params = { name: 'Updated', description: existing_aspiration.description, sort_order: existing_aspiration.sort_order, company_id: existing_aspiration.company_id, version_type: 'ready' }
       form.instance_variable_set(:@form_data_empty, false)
       expect(form.validate(params)).to be false
       expect(form.errors[:version_type]).to be_present
@@ -73,7 +73,7 @@ RSpec.describe AspirationForm, type: :form do
         params = {
           name: 'Test',
           sort_order: 1,
-          organization_id: organization.id,
+          company_id: organization.id,
           version_type: 'ready'
         }
         form.instance_variable_set(:@form_data_empty, false)
@@ -86,7 +86,7 @@ RSpec.describe AspirationForm, type: :form do
         params = {
           name: 'Test',
           sort_order: 1,
-          organization_id: organization.id,
+          company_id: organization.id,
           version_type: 'nearly_ready'
         }
         form.instance_variable_set(:@form_data_empty, false)
@@ -99,7 +99,7 @@ RSpec.describe AspirationForm, type: :form do
         params = {
           name: 'Test',
           sort_order: 1,
-          organization_id: organization.id,
+          company_id: organization.id,
           version_type: 'early_draft'
         }
         form.instance_variable_set(:@form_data_empty, false)
@@ -123,7 +123,7 @@ RSpec.describe AspirationForm, type: :form do
           name: 'Updated',
           description: existing_aspiration.description,
           sort_order: existing_aspiration.sort_order,
-          organization_id: existing_aspiration.organization_id,
+          company_id: existing_aspiration.company_id,
           version_type: 'fundamental'
         }
         expect(form.validate(params)).to be true
@@ -136,7 +136,7 @@ RSpec.describe AspirationForm, type: :form do
           name: 'Updated',
           description: existing_aspiration.description,
           sort_order: existing_aspiration.sort_order,
-          organization_id: existing_aspiration.organization_id,
+          company_id: existing_aspiration.company_id,
           version_type: 'clarifying'
         }
         expect(form.validate(params)).to be true
@@ -149,7 +149,7 @@ RSpec.describe AspirationForm, type: :form do
           name: 'Updated',
           description: existing_aspiration.description,
           sort_order: existing_aspiration.sort_order,
-          organization_id: existing_aspiration.organization_id,
+          company_id: existing_aspiration.company_id,
           version_type: 'insignificant'
         }
         expect(form.validate(params)).to be true

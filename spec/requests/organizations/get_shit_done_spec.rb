@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::GetShitDone', type: :request do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: company) }
   let(:other_person) { create(:person) }

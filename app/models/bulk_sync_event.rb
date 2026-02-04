@@ -238,7 +238,7 @@ class BulkSyncEvent < ApplicationRecord
       action = success_record['action'] || 'created'
       
       teammate_link = if success_record['teammate_id']
-        teammate = Teammate.find_by(id: success_record['teammate_id'])
+        teammate = CompanyTeammate.find_by(id: success_record['teammate_id'])
         if teammate
           "<a href='#{routes.internal_organization_company_teammate_path(org, teammate)}' class='text-decoration-none'>#{teammate_name}</a>"
         else

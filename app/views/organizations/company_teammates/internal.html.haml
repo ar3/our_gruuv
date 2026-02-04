@@ -364,7 +364,7 @@
               .list-group-item
                 %strong
                   = link_to dept_team_teammate.organization.name, organization_department_path(@current_organization, dept_team_teammate.organization), class: "text-decoration-none"
-                %span.badge.bg-info.ms-2= dept_team_teammate.organization.type
+                %span.badge.bg-info.ms-2 Organization
         - else
           %p.text-muted No active departments or teams.
 

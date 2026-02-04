@@ -42,7 +42,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
   def set_teammate
     teammate_id = params[:teammate_id].presence || current_company_teammate&.id
-    @teammate = Teammate.find(teammate_id)
+    @teammate = CompanyTeammate.find(teammate_id)
   end
 
   def set_selectable_teammates
@@ -75,9 +75,9 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     teammates = []
     teammates << current_company_teammate if current_company_teammate
 
-    if Teammate.can_manage_employment_in_hierarchy?(current_person, organization)
+    if CompanyTeammate.can_manage_employment_in_hierarchy?(current_person, organization)
       teammates.concat(
-        Teammate.for_organization_hierarchy(organization)
+        CompanyTeammate.for_organization_hierarchy(organization)
                 .where(last_terminated_at: nil)
                 .includes(:person)
       )
@@ -87,7 +87,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       org_ids = organization.company? ? organization.self_and_descendants.map(&:id) : [organization.id]
 
       teammates.concat(
-        Teammate.where(organization_id: org_ids, person_id: report_person_ids, last_terminated_at: nil)
+        CompanyTeammate.where(organization_id: org_ids, person_id: report_person_ids, last_terminated_at: nil)
                 .includes(:person)
       )
     end

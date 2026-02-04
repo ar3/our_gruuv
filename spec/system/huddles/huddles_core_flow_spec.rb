@@ -2,8 +2,8 @@ require 'rails_helper'
 
 RSpec.describe 'Huddles Core Flow', type: :system do
   let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
-  let(:team) { create(:organization, :team, parent: company) }
+  let(:department) { create(:department, company: company) }
+  let(:team) { create(:team, company: company) }
   let(:person) { create(:person, full_name: 'User') }
   let!(:teammate) { CompanyTeammate.create!(person: person, organization: company) }
 
@@ -12,38 +12,24 @@ RSpec.describe 'Huddles Core Flow', type: :system do
   end
 
   describe 'Create huddle from existing company, department, or team' do
-    let!(:existing_team) { create(:organization, :team, parent: company, name: 'Existing Team') }
-    let!(:department_as_team) { create(:organization, :team, parent: company, name: department.name) }
+    let!(:existing_team) { create(:team, company: company, name: 'Existing Team') }
+    let!(:department_as_team) { create(:team, company: company, name: department.name) }
     
     it 'creates huddle from existing company' do
-      # Approach 2: Fill email if needed, select company, wait for teams, select team, submit
+      # UI: cards per company with list of teams; click "Start Huddle" for a team
       initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: company.id)
       
-      # Ensure email is filled (should be pre-filled if signed in)
-      if page.has_field?('Your email')
-        email_field = page.find_field('Your email')
-        email_field.fill(with: person.email) if email_field.value.blank?
-      end
+      expect(page).to have_content(company.name)
+      # Use first() to avoid ambiguous match when multiple cards/list items exist
+      first('.list-group-item', text: existing_team.name).click_button('Start Huddle')
       
-      select company.name, from: 'Company'
-      # Wait for team dropdown to be enabled and populated via JavaScript
-      expect(page).to have_select('Team', disabled: false, wait: 10)
-      # Wait for teams to load
-      expect(page).to have_css('select[name="huddle[team_selection]"] option:not([value=""])', wait: 10)
-      # Select the existing team
-      select existing_team.name, from: 'Team'
-      click_button 'Start Huddle'
-      
-      # Wait a moment for the request to complete
       sleep 1
       
-      # Verify huddle was created
       expect(Huddle.count).to eq(initial_huddle_count + 1)
       huddle = Huddle.last
       expect(huddle).to be_present
-      # Compare by ID since STI types may differ (Organization vs Team)
-      expect(huddle.team.company.id).to eq(existing_team.id)
+      expect(huddle.team.id).to eq(existing_team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: company.id)
@@ -64,34 +50,19 @@ RSpec.describe 'Huddles Core Flow', type: :system do
     end
 
     it 'creates huddle from existing department' do
-      # Approach 2: Departments are teams, so use team with same name
-      # Since departments might not be in teams list, we created department_as_team above
+      # Department belongs to company; UI shows company cards with teams
       initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: department.id)
       
-      # Fill email if needed
-      if page.has_field?('Your email')
-        email_field = page.find_field('Your email')
-        email_field.fill(with: person.email) if email_field.value.blank?
-      end
-      
-      select department.parent.name, from: 'Company'
-      # Wait for team dropdown to be enabled and populated
-      expect(page).to have_select('Team', disabled: false, wait: 10)
-      # Wait for teams to load
-      expect(page).to have_css('select[name="huddle[team_selection]"] option:not([value=""])', wait: 10)
-      # Select the team (not department, as departments aren't in teams list)
-      select department_as_team.name, from: 'Team'
-      click_button 'Start Huddle'
+      expect(page).to have_content(department.company.name)
+      first('.list-group-item', text: department_as_team.name).click_button('Start Huddle')
       
       sleep 1
       
-      # Verify huddle was created
       expect(Huddle.count).to eq(initial_huddle_count + 1)
       huddle = Huddle.last
       expect(huddle).to be_present
-      # Compare by ID since STI types may differ
-      expect(huddle.team.company.id).to eq(department_as_team.id)
+      expect(huddle.team.id).to eq(department_as_team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: department.id)
@@ -110,14 +81,15 @@ RSpec.describe 'Huddles Core Flow', type: :system do
     end
 
     it 'creates huddle from existing team' do
-      # Attempt 1: Select company and team
+      initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: team.id)
-      select team.parent.name, from: 'Company'
-      expect(page).to have_select('Team', wait: 5)
-      select team.name, from: 'Team'
-      click_button 'Start Huddle'
-      # Either the page shows the team name or a huddle was created
-      expect(page.has_content?(team.name) || Huddle.last.present?).to be true
+      expect(page).to have_content(team.company.name)
+      first('.list-group-item', text: team.name).click_button('Start Huddle')
+      sleep 1
+      expect(Huddle.count).to eq(initial_huddle_count + 1)
+      huddle = Huddle.last
+      expect(huddle).to be_present
+      expect(huddle.team.id).to eq(team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: team.id)
@@ -137,39 +109,23 @@ RSpec.describe 'Huddles Core Flow', type: :system do
   end
 
   describe 'Create huddle and create new team in huddle creation flow' do
-    it 'creates new team during huddle creation' do
-      # Approach 1: Fill email, select company, wait for teams, create new team, submit
+    xit 'creates new team during huddle creation' do
+      # New huddle UI no longer has Company/Team dropdowns or "Create new team" - it shows cards with existing teams only
       initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: company.id)
       
-      # Ensure email is filled
-      if page.has_field?('Your email')
-        email_field = page.find_field('Your email')
-        email_field.fill(with: person.email) if email_field.value.blank?
+      expect(page).to have_content(company.name)
+      # Current UI only lists existing teams; no in-flow "create new team"
+      within(first('.card', text: company.name)) do
+        first('.list-group-item').click_button('Start Huddle')
       end
       
-      select company.name, from: 'Company'
-      # Wait for team dropdown to be enabled and populated
-      expect(page).to have_select('Team', disabled: false, wait: 10)
-      # Wait for teams to load (including "+ Create new team" option)
-      expect(page).to have_css('select[name="huddle[team_selection]"] option[value="new"]', wait: 10)
-      # Select "+ Create new team" option
-      select '+ Create new team', from: 'Team'
-      # Wait for new team name field to be visible
-      expect(page).to have_field('New team name', visible: true, wait: 5)
-      fill_in 'New team name', with: 'New Team'
-      click_button 'Start Huddle'
-      
-      # Wait for request to complete
       sleep 1
       
-      # Verify new team and huddle were created
       expect(Huddle.count).to eq(initial_huddle_count + 1)
-      new_team = Team.find_by(name: 'New Team', parent: company)
-      expect(new_team).to be_present
       huddle = Huddle.last
       expect(huddle).to be_present
-      expect(huddle.team.company.id).to eq(new_team.id)
+      expect(huddle.team.company_id).to eq(company.id)
       
       # Approach 2: Use JavaScript to trigger team creation
       # visit new_huddle_path(organization_id: company.id)
@@ -203,17 +159,17 @@ RSpec.describe 'Huddles Core Flow', type: :system do
     it 'shows feedback form on first feedback' do
       # Approach 1: Check for "Submit Feedback" link (based on HAML - line 123)
       visit huddle_path(huddle)
-      expect(page).to have_content(team.special_session_name)
+      expect(page).to have_content(team.name)
       expect(page).to have_link('Submit Feedback', href: feedback_huddle_path(huddle))
       
       # Approach 2: Find link by href
       # visit huddle_path(huddle)
-      # expect(page).to have_content(team.special_session_name)
+      # expect(page).to have_content(team.name)
       # expect(page).to have_css("a[href='#{feedback_huddle_path(huddle)}']")
       
       # Approach 3: Check for button or link with feedback text
       # visit huddle_path(huddle)
-      # expect(page).to have_content(team.special_session_name)
+      # expect(page).to have_content(team.name)
       # expect(page).to have_css('a, button', text: /feedback|submit/i)
     end
 

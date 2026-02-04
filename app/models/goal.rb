@@ -1,7 +1,7 @@
 class Goal < ApplicationRecord
   # Associations
-  belongs_to :owner, polymorphic: true
-  belongs_to :creator, class_name: 'Teammate'
+  belongs_to :owner, polymorphic: true, optional: true # presence validated in owner_presence (avoids constantize when owner_type is Teammate)
+  belongs_to :creator, class_name: 'CompanyTeammate'
   belongs_to :company, class_name: 'Organization'
   
   has_many :outgoing_links, class_name: 'GoalLink', foreign_key: 'parent_id', dependent: :destroy
@@ -34,15 +34,16 @@ class Goal < ApplicationRecord
     everyone_in_company: 'everyone_in_company'
   }
   
-  # Validations
-  validates :title, :goal_type, :privacy_level, :owner, :creator, presence: true
+  # Validations (owner_type_valid before presence so invalid owner_type doesn't constantize removed Teammate)
+  validate :owner_type_valid
+  validates :title, :goal_type, :privacy_level, :creator, presence: true
+  validate :owner_presence
   validates :title, exclusion: { in: [nil, ''], message: "can't be blank" }
   # Target dates are optional - they can be set via timeframe selection or explicitly
   
   validate :title_not_blank_after_strip
   validate :date_ordering
   validate :privacy_level_for_owner_type
-  validate :owner_type_valid
   
   # Scopes
   scope :for_teammate, ->(teammate_or_collection) {
@@ -228,7 +229,7 @@ class Goal < ApplicationRecord
     return [] unless company
     
     EmploymentTenure.active
-      .where(teammate: owner, company: company)
+      .where(company_teammate: owner, company: company)
       .where.not(manager_teammate_id: nil)
       .includes(manager_teammate: :person)
       .map { |tenure| tenure.manager_teammate&.person }
@@ -308,32 +309,25 @@ class Goal < ApplicationRecord
     end
   end
   
-  def owner_type_valid
-    return unless owner_type && owner
+  def owner_presence
+    return if owner_type == 'Teammate' # already invalid; avoid constantize when checking owner
+    errors.add(:owner, 'must exist') if owner.blank?
+  end
 
-    # Only allow CompanyTeammate, Organization, Department, or Team as owner types
-    # Reject 'Teammate' - it must be 'CompanyTeammate'
+  def owner_type_valid
+    return unless owner_type
+
+    # Reject legacy Teammate type before accessing owner (avoids constantize)
     if owner_type == 'Teammate'
-      # Check if the actual owner is a CompanyTeammate, DepartmentTeammate, or TeamTeammate
-      if owner.respond_to?(:type)
-        if owner.type == 'CompanyTeammate'
-          # Owner is CompanyTeammate but owner_type is 'Teammate' - reject
-          errors.add(:owner_type, 'must be CompanyTeammate, not Teammate')
-        elsif owner.type.in?(['DepartmentTeammate', 'TeamTeammate'])
-          # Owner is DepartmentTeammate or TeamTeammate - reject
-          errors.add(:owner, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
-        end
-      else
-        errors.add(:owner_type, 'must be CompanyTeammate, not Teammate')
-      end
+      errors.add(:owner_type, 'must be CompanyTeammate, not Teammate')
       return
     end
 
+    return unless owner
+
     if owner_type == 'CompanyTeammate'
-      # Check the actual type, not just is_a? since polymorphic associations may not preserve STI type
-      # Reject if owner is not a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)
-      unless owner.type == 'CompanyTeammate' || owner.is_a?(CompanyTeammate)
-        errors.add(:owner, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
+      unless owner.is_a?(CompanyTeammate)
+        errors.add(:owner, 'must be a CompanyTeammate')
       end
     elsif owner_type.in?(['Organization', 'Department', 'Team'])
       # Check the actual class matches the specified owner_type

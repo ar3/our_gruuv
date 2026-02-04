@@ -75,7 +75,7 @@ class TeammateMilestonePolicy < ApplicationPolicy
       
       if viewing_teammate.can_manage_employment?
         # If they have manage_employment, show all milestones in their organization
-        scope.joins(:teammate)
+        scope.joins(:company_teammate)
              .where(teammates: { organization_id: viewing_teammate.organization_id })
       else
         # Otherwise, only show their own milestones and milestones for their reports
@@ -87,7 +87,7 @@ class TeammateMilestonePolicy < ApplicationPolicy
           organization: viewing_teammate.organization
         ).call
         
-        report_teammate_ids = Teammate
+        report_teammate_ids = CompanyTeammate
           .where(organization: viewing_teammate.organization, person_id: reports.map { |r| r[:person_id] })
           .pluck(:id)
         

@@ -69,7 +69,7 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:employment_tenure) do
         # Use the existing employment_tenure from the before block, or find/create one
-        EmploymentTenure.find_by(teammate: employee_teammate, company: organization) ||
+        EmploymentTenure.find_by(company_teammate: employee_teammate, company: organization) ||
           create(:employment_tenure,
             teammate: employee_teammate,
             company: organization,

@@ -28,7 +28,7 @@ module Finalizers
       
       # Close any other active tenures (shouldn't exist, but handle data integrity issues)
       other_active_tenures = EmploymentTenure
-        .where(teammate: @teammate, company: company, ended_at: nil)
+        .where(company_teammate: @teammate, company: company, ended_at: nil)
         .where.not(id: current_tenure.id)
       
       if other_active_tenures.exists?

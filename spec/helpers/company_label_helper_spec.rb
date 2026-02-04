@@ -1,9 +1,9 @@
 require 'rails_helper'
 
 RSpec.describe CompanyLabelHelper, type: :helper do
-  let(:company) { Company.find_or_create_by!(name: 'Test Company', type: 'Company') }
+  let(:company) { create(:organization, :company, name: 'Test Company') }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: company) }
+  let(:teammate) { create(:company_teammate, person: person, organization: company) }
 
   before do
     # Define the controller methods that are available in helpers
@@ -45,7 +45,7 @@ RSpec.describe CompanyLabelHelper, type: :helper do
     end
 
     context 'when organization is not a company' do
-      let(:department) { create(:organization, type: 'Department', parent: company) }
+      let(:department) { create(:department, company: company, name: 'Dept') }
 
       before do
         helper.instance_variable_set(:@current_organization, department)

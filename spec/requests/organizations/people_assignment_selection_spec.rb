@@ -119,8 +119,8 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
           }
         }.to change(AssignmentTenure, :count).by(2)
         
-        tenure1 = AssignmentTenure.find_by(teammate: teammate, assignment: optional_assignment1)
-        tenure2 = AssignmentTenure.find_by(teammate: teammate, assignment: optional_assignment2)
+        tenure1 = AssignmentTenure.find_by(company_teammate: teammate, assignment: optional_assignment1)
+        tenure2 = AssignmentTenure.find_by(company_teammate: teammate, assignment: optional_assignment2)
         
         expect(tenure1).to be_present
         expect(tenure1.started_at).to eq(Date.current)

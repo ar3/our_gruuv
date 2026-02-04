@@ -1,6 +1,8 @@
 class TeammateIdentity < ApplicationRecord
-  belongs_to :teammate
-  
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
+
   # Validations
   validates :provider, presence: true
   validates :uid, presence: true
@@ -69,7 +71,7 @@ class TeammateIdentity < ApplicationRecord
   def self.find_teammate_by_slack_id(slack_user_id, organization)
     slack
       .where(uid: slack_user_id)
-      .joins(:teammate)
+      .joins(:company_teammate)
       .where(teammates: { organization: organization })
       .first
       &.teammate
@@ -77,7 +79,7 @@ class TeammateIdentity < ApplicationRecord
   
   def self.find_teammate_by_provider_id(provider, uid, organization)
     where(provider: provider, uid: uid)
-      .joins(:teammate)
+      .joins(:company_teammate)
       .where(teammates: { organization: organization })
       .first
       &.teammate

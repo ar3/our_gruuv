@@ -444,11 +444,10 @@ class EmploymentDataUploadProcessor
 
   def find_or_create_teammate(person, organization)
     # Find or create teammate for person and organization
-    teammate = Teammate.find_or_create_by(person_id: person.id, organization_id: organization.id) do |t|
+    teammate = CompanyTeammate.find_or_create_by(person_id: person.id, organization_id: organization.id) do |t|
       t.can_manage_employment = false
       t.can_manage_maap = false
       t.can_create_employment = false
-      t.type = 'CompanyTeammate'
     end
     teammate
   end

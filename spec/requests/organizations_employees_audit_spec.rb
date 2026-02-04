@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Employees#audit', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:employee) { create(:person) }
   let(:manager) { create(:person) }
   let(:maap_manager) { create(:person) }
@@ -61,7 +61,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     end
     
     it 'only shows MAAP snapshots for the specific organization' do
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_employee_tm = create(:company_teammate, person: employee, organization: other_company)
       other_creator_tm = create(:company_teammate, person: maap_manager, organization: other_company)
       other_snapshot = create(:maap_snapshot, employee_company_teammate: other_employee_tm, creator_company_teammate: other_creator_tm, company: other_company)
@@ -113,7 +113,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
   
   describe 'when user does not have MAAP management permissions' do
     # User from another org cannot view this org's audit (policy: viewing_teammate.organization != record.organization)
-    let(:other_org) { create(:organization, :company) }
+    let(:other_org) { create(:organization) }
     let(:other_org_person) { create(:person) }
     let!(:other_org_teammate) { create(:company_teammate, person: other_org_person, organization: other_org, first_employed_at: 1.year.ago) }
 
@@ -217,7 +217,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
   
   describe 'authorization edge cases' do
     context 'when employee does not exist in organization' do
-      let(:other_organization) { create(:organization, :company) }
+      let(:other_organization) { create(:organization) }
       let(:other_employee) { create(:person) }
       let!(:other_employee_teammate) { create(:company_teammate, person: other_employee, organization: other_organization, first_employed_at: 1.year.ago) }
       let!(:other_employee_employment) { create(:employment_tenure, teammate: other_employee_teammate, company: other_organization, started_at: 1.year.ago) }

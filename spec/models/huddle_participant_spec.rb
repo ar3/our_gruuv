@@ -48,7 +48,7 @@ RSpec.describe HuddleParticipant, type: :model do
     it 'requires a teammate' do
       participant = HuddleParticipant.new(huddle: huddle, role: 'active')
       expect(participant).not_to be_valid
-      expect(participant.errors[:teammate]).to include('must exist')
+      expect(participant.errors[:company_teammate]).to include('must exist')
     end
 
     it 'requires a role' do
@@ -94,12 +94,12 @@ RSpec.describe HuddleParticipant, type: :model do
     let!(:active_participant) { HuddleParticipant.create!(huddle: huddle, teammate: teammate, role: 'active') }
     let!(:observer_participant) { 
       person2 = Person.create!(full_name: 'Jane', email: 'jane@example.com')
-      teammate2 = Teammate.create!(person: person2, organization: company)
+      teammate2 = CompanyTeammate.create!(person: person2, organization: company)
       HuddleParticipant.create!(huddle: huddle, teammate: teammate2, role: 'observer') 
     }
     let!(:facilitator_participant) { 
       person3 = Person.create!(full_name: 'Bob', email: 'bob@example.com')
-      teammate3 = Teammate.create!(person: person3, organization: company)
+      teammate3 = CompanyTeammate.create!(person: person3, organization: company)
       HuddleParticipant.create!(huddle: huddle, teammate: teammate3, role: 'facilitator') 
     }
 

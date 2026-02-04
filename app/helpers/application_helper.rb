@@ -94,7 +94,7 @@ module ApplicationHelper
     return '' if time.nil?
     
     user ||= current_person if respond_to?(:current_person)
-    user = user.person if user.is_a?(Teammate)
+    user = user.person if user.is_a?(CompanyTeammate)
     
     format ||= '%B %d, %Y at %I:%M %p %Z'
     timezone_name = user&.timezone.present? ? user.timezone : 'Eastern Time (US & Canada)'

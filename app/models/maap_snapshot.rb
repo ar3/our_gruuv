@@ -143,7 +143,7 @@ class MaapSnapshot < ApplicationRecord
   def self.build_position_data(teammate)
     return nil unless teammate
     company = teammate.organization
-    active_employment = EmploymentTenure.where(teammate: teammate).active.where(company: company).first
+    active_employment = EmploymentTenure.where(company_teammate: teammate).active.where(company: company).first
     return nil unless active_employment
     
     # Find most recent closed employment tenure
@@ -211,7 +211,7 @@ class MaapSnapshot < ApplicationRecord
   def self.build_abilities_data(teammate)
     return [] unless teammate
     company = teammate.organization
-    TeammateMilestone.where(teammate: teammate).joins(:ability).where(abilities: { company_id: company.id }).includes(:ability).map do |milestone|
+    TeammateMilestone.where(company_teammate: teammate).joins(:ability).where(abilities: { company_id: company.id }).includes(:ability).map do |milestone|
       {
         ability_id: milestone.ability_id,
         milestone_level: milestone.milestone_level,

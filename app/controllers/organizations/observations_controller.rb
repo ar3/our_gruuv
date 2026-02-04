@@ -46,7 +46,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
 
     # Load teammate for "involving" filter pill when that filter is active
     @involving_teammate = if params[:involving_teammate_id].present?
-      Teammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
+      CompanyTeammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
     end
     
     # Calculate spotlight statistics from all observations (not filtered, not paginated)
@@ -212,7 +212,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @modal_title = "Observations"
       end
     elsif @observee_ids.any?
-      teammate = Teammate.find(@observee_ids.first)
+      teammate = CompanyTeammate.find(@observee_ids.first)
       @modal_title = "Observations for #{teammate.person.display_name}"
     else
       @modal_title = "Observations"
@@ -1943,7 +1943,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     # Find most observed person (observee) with count
     person_results = base_relation
-      .joins(observees: :teammate)
+      .joins(observees: :company_teammate)
       .group('teammates.person_id')
       .order('COUNT(observations.id) DESC')
       .limit(2)

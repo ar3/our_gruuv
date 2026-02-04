@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
-  let(:organization) { create(:organization, type: 'Company') }
+  let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:bulk_sync_event) { create(:upload_assignments_and_abilities, organization: organization, creator: person, initiator: person) }
   let(:processor) { described_class.new(bulk_sync_event, organization) }
@@ -60,7 +60,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       let!(:title) do
         create(:title, external_title: 'Software Engineer', company: organization, position_major_level: position_major_level)
       end
-      let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
+      let!(:department) { create(:department, company: organization, name: 'Engineering') }
 
       it 'processes successfully and returns true' do
         expect(processor.process).to be true
@@ -77,7 +77,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
 
       it 'creates new abilities with version 0.0.1' do
         expect { processor.process }.to change(Ability, :count).by(2)
-        ability = Ability.find_by(name: 'Communication', organization: organization)
+        ability = Ability.find_by(name: 'Communication', company: organization)
         expect(ability).to be_present
         expect(ability.semantic_version).to eq('0.0.1')
       end
@@ -85,7 +85,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       it 'creates assignment-ability links' do
         expect { processor.process }.to change(AssignmentAbility, :count).by(1)
         assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
-        ability = Ability.find_by(name: 'Communication', organization: organization)
+        ability = Ability.find_by(name: 'Communication', company: organization)
         expect(AssignmentAbility.find_by(assignment: assignment, ability: ability)).to be_present
       end
 
@@ -136,9 +136,9 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         preview_actions['assignments'].first['department_names'] = ['New Department']
         bulk_sync_event.update!(preview_actions: preview_actions)
         
-        expect { processor.process }.to change(Organization.departments, :count).by(1)
+        expect { processor.process }.to change(Department, :count).by(1)
         assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
-        new_department = Organization.departments.find_by(name: 'New Department', parent: organization)
+        new_department = Department.find_by(name: 'New Department', company: organization)
         expect(assignment.department_id).to eq(new_department.id)
       end
     end
@@ -311,7 +311,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         parser.parse
         parser.enhanced_preview_actions
       end
-      let!(:department) { create(:organization, type: 'Department', name: 'Partner Services', parent: organization) }
+      let!(:department) { create(:department, company: organization, name: 'Partner Services') }
 
       before do
         bulk_sync_event.update!(preview_actions: preview_actions, status: 'preview')
@@ -697,7 +697,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       let!(:title) do
         create(:title, external_title: 'Software Engineer', company: organization, position_major_level: position_major_level)
       end
-      let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
+      let!(:department) { create(:department, company: organization, name: 'Engineering') }
       let!(:seat1) { create(:seat, title: title, seat_needed_by: Date.current + 3.months) }
       let!(:seat2) { create(:seat, title: title, seat_needed_by: Date.current + 4.months) }
 
@@ -847,8 +847,8 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         end
 
         it 'creates department and updates seats' do
-          expect { processor.process }.to change(Organization.departments, :count).by(1)
-          new_department = Organization.departments.find_by(name: 'New Department', parent: organization)
+          expect { processor.process }.to change(Department, :count).by(1)
+          new_department = Department.find_by(name: 'New Department', company: organization)
           expect(new_department).to be_present
           
           seat1.reload
@@ -885,8 +885,8 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         end
 
         it 'creates department and updates seats' do
-          expect { processor.process }.to change(Organization.departments, :count).by(1)
-          new_department = Organization.departments.find_by(name: 'Non-existent Department', parent: organization)
+          expect { processor.process }.to change(Department, :count).by(1)
+          new_department = Department.find_by(name: 'Non-existent Department', company: organization)
           expect(new_department).to be_present
           
           seat1.reload
@@ -898,7 +898,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
 
       context 'with multiple seats for same position type' do
         let!(:seat3) { create(:seat, title: title, seat_needed_by: Date.current + 5.months) }
-        let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
+        let!(:department) { create(:department, company: organization, name: 'Engineering') }
 
         let(:preview_actions) do
           {

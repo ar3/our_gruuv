@@ -4,20 +4,20 @@ RSpec.describe TeammateMilestone, type: :model do
   let(:organization) { create(:organization) }
   let(:ability) { create(:ability, company: organization) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization) }
   let(:certifier_person) { create(:person) }
-  let(:certifier_teammate) { CompanyTeammate.find(create(:teammate, person: certifier_person, organization: organization).id) }
-  let(:teammate_milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, certifying_teammate: certifier_teammate) }
+  let(:certifier_teammate) { create(:company_teammate, person: certifier_person, organization: organization) }
+  let(:teammate_milestone) { create(:teammate_milestone, company_teammate: teammate, ability: ability, certifying_teammate: certifier_teammate) }
 
   describe 'validations' do
     it 'is valid with valid attributes' do
       expect(teammate_milestone).to be_valid
     end
 
-    it 'requires a teammate' do
-      teammate_milestone.teammate = nil
+    it 'requires a company_teammate' do
+      teammate_milestone.company_teammate = nil
       expect(teammate_milestone).not_to be_valid
-      expect(teammate_milestone.errors[:teammate]).to include('must exist')
+      expect(teammate_milestone.errors[:company_teammate]).to include("can't be blank")
     end
 
     it 'requires an ability' do
@@ -58,8 +58,8 @@ RSpec.describe TeammateMilestone, type: :model do
     end
 
     it 'enforces unique teammate-ability-milestone combinations' do
-      create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
-      duplicate = build(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
+      create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
+      duplicate = build(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
       
       expect(duplicate).not_to be_valid
       expect(duplicate.errors[:milestone_level]).to include('has already been taken for this teammate and ability')
@@ -67,8 +67,8 @@ RSpec.describe TeammateMilestone, type: :model do
 
     it 'allows same milestone level for different abilities' do
       other_ability = create(:ability, company: organization)
-      create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
-      other_milestone = build(:teammate_milestone, teammate: teammate, ability: other_ability, milestone_level: 3, certifying_teammate: certifier_teammate)
+      create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
+      other_milestone = build(:teammate_milestone, company_teammate: teammate, ability: other_ability, milestone_level: 3, certifying_teammate: certifier_teammate)
       
       expect(other_milestone).to be_valid
     end
@@ -76,8 +76,8 @@ RSpec.describe TeammateMilestone, type: :model do
     it 'allows same milestone level for different people' do
       other_person = create(:person)
       other_teammate = create(:teammate, person: other_person, organization: organization)
-      create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
-      other_milestone = build(:teammate_milestone, teammate: other_teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
+      create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
+      other_milestone = build(:teammate_milestone, company_teammate: other_teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate)
       
       expect(other_milestone).to be_valid
     end
@@ -85,7 +85,7 @@ RSpec.describe TeammateMilestone, type: :model do
 
   describe 'associations' do
     it 'belongs to a teammate' do
-      expect(teammate_milestone).to belong_to(:teammate)
+      expect(teammate_milestone).to belong_to(:company_teammate)
     end
 
     it 'belongs to an ability' do
@@ -101,9 +101,9 @@ RSpec.describe TeammateMilestone, type: :model do
   end
 
   describe 'scopes' do
-    let!(:milestone_1) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: certifier_teammate) }
-    let!(:milestone_3) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate) }
-    let!(:milestone_5) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 5, certifying_teammate: certifier_teammate) }
+    let!(:milestone_1) { create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: certifier_teammate) }
+    let!(:milestone_3) { create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: certifier_teammate) }
+    let!(:milestone_5) { create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 5, certifying_teammate: certifier_teammate) }
 
     describe '.by_milestone_level' do
       it 'orders by milestone level ascending' do
@@ -116,7 +116,7 @@ RSpec.describe TeammateMilestone, type: :model do
       it 'returns milestones for specific teammate' do
         other_person = create(:person)
         other_teammate = create(:teammate, person: other_person, organization: organization)
-        other_milestone = create(:teammate_milestone, teammate: other_teammate, ability: ability, milestone_level: 2, certifying_teammate: certifier_teammate)
+        other_milestone = create(:teammate_milestone, company_teammate: other_teammate, ability: ability, milestone_level: 2, certifying_teammate: certifier_teammate)
 
         result = TeammateMilestone.for_teammate(teammate)
         expect(result).to include(milestone_1, milestone_3, milestone_5)
@@ -127,7 +127,7 @@ RSpec.describe TeammateMilestone, type: :model do
     describe '.for_ability' do
       it 'returns milestones for specific ability' do
         other_ability = create(:ability, company: organization)
-        other_milestone = create(:teammate_milestone, teammate: teammate, ability: other_ability, milestone_level: 2, certifying_teammate: certifier_teammate)
+        other_milestone = create(:teammate_milestone, company_teammate: teammate, ability: other_ability, milestone_level: 2, certifying_teammate: certifier_teammate)
 
         result = TeammateMilestone.for_ability(ability)
         expect(result).to include(milestone_1, milestone_3, milestone_5)
@@ -206,9 +206,9 @@ RSpec.describe TeammateMilestone, type: :model do
 
   describe 'scopes for publishing' do
     let(:other_ability) { create(:ability, company: organization) }
-    let!(:published_milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, published_at: Time.current, certifying_teammate: certifier_teammate) }
-    let!(:unpublished_milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 2, published_at: nil, certifying_teammate: certifier_teammate) }
-    let!(:public_profile_milestone) { create(:teammate_milestone, teammate: teammate, ability: other_ability, milestone_level: 1, public_profile_published_at: Time.current, certifying_teammate: certifier_teammate) }
+    let!(:published_milestone) { create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 1, published_at: Time.current, certifying_teammate: certifier_teammate) }
+    let!(:unpublished_milestone) { create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 2, published_at: nil, certifying_teammate: certifier_teammate) }
+    let!(:public_profile_milestone) { create(:teammate_milestone, company_teammate: teammate, ability: other_ability, milestone_level: 1, public_profile_published_at: Time.current, certifying_teammate: certifier_teammate) }
 
     describe '.published' do
       it 'returns only published milestones' do

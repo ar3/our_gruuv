@@ -1,8 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Teammate View Security', type: :request do
-  let(:organization) { create(:organization, :company) }
-  let(:other_organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
+  let(:other_organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:person_teammate) { create(:teammate, person: person, organization: organization) }
 
@@ -138,9 +138,7 @@ RSpec.describe 'Teammate View Security', type: :request do
       let(:own_person_without_employment) { create(:person) }
       let(:own_person_without_employment_teammate) do
         # Find or create to avoid duplicate person issues
-        own_person_without_employment.teammates.find_or_create_by!(organization: organization) do |t|
-          t.type = 'CompanyTeammate'
-        end
+        own_person_without_employment.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
       end
 
       before do

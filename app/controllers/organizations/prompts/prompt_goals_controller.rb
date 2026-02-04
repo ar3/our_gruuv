@@ -71,15 +71,7 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
         privacy_level: 'only_creator_and_owner'
       )
       
-      # Explicitly set owner_type and owner_id to preserve STI type
-      # Rails polymorphic associations don't preserve STI types, so we need to set them explicitly
-      if owner_teammate.respond_to?(:type) && owner_teammate.type == 'CompanyTeammate'
-        goal.owner_type = 'CompanyTeammate'
-      elsif owner_teammate.is_a?(CompanyTeammate)
-        goal.owner_type = 'CompanyTeammate'
-      else
-        goal.owner_type = owner_teammate.class.base_class.name
-      end
+      goal.owner_type = owner_teammate.is_a?(CompanyTeammate) ? 'CompanyTeammate' : owner_teammate.class.name
       goal.owner_id = owner_teammate.id
       
       if goal.save

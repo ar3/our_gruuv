@@ -1,13 +1,13 @@
 require 'rails_helper'
 
-# NOTE: STI Team has been removed. This query now only handles Department hierarchy.
+# Uses Department model (Organization no longer has parent/children).
 RSpec.describe DepartmentTeamHierarchyQuery do
   let(:company) { create(:organization, :company) }
-  let(:department1) { create(:organization, :department, parent: company, name: 'Dept 1') }
-  let(:department2) { create(:organization, :department, parent: company, name: 'Dept 2') }
-  let(:nested_dept1) { create(:organization, :department, parent: department1, name: 'Nested Dept 1') }
-  let(:nested_dept2) { create(:organization, :department, parent: department1, name: 'Nested Dept 2') }
-  let(:nested_dept3) { create(:organization, :department, parent: department2, name: 'Nested Dept 3') }
+  let(:department1) { create(:department, company: company, name: 'Dept 1') }
+  let(:department2) { create(:department, company: company, name: 'Dept 2') }
+  let(:nested_dept1) { create(:department, company: company, parent_department: department1, name: 'Nested Dept 1') }
+  let(:nested_dept2) { create(:department, company: company, parent_department: department1, name: 'Nested Dept 2') }
+  let(:nested_dept3) { create(:department, company: company, parent_department: department2, name: 'Nested Dept 3') }
 
   describe '#call' do
     it 'returns empty array when organization has no children' do
@@ -47,7 +47,7 @@ RSpec.describe DepartmentTeamHierarchyQuery do
     end
 
     it 'excludes archived organizations' do
-      archived_dept = create(:organization, :department, parent: company, deleted_at: Time.current)
+      archived_dept = create(:department, company: company, deleted_at: Time.current)
       department1
       
       query = described_class.new(organization: company)

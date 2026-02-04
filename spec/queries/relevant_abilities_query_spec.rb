@@ -2,16 +2,16 @@ require 'rails_helper'
 
 RSpec.describe RelevantAbilitiesQuery, type: :query do
   let(:organization) { create(:organization, :company) }
-  let(:department) { create(:organization, type: 'Department', parent: organization, name: 'Engineering') }
+  let(:department) { create(:department, company: organization, name: 'Engineering') }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization) }
   let(:certifier) { create(:person) }
   
   let(:ability_with_milestone) { create(:ability, name: 'Ability A', company: organization) }
   let(:ability_with_assignment) { create(:ability, name: 'Ability B', company: organization) }
   let(:ability_with_both) { create(:ability, name: 'Ability C', company: organization) }
   let(:ability_outside_hierarchy) { create(:ability, name: 'Outside Ability', company: create(:organization, :company)) }
-  let(:ability_in_department) { create(:ability, name: 'Department Ability', company: department) }
+  let(:ability_in_department) { create(:ability, name: 'Department Ability', company: organization, department: department) }
 
   describe '#call' do
     context 'when teammate is nil' do
@@ -23,7 +23,7 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
 
     context 'when employee has milestone attainments' do
       it 'includes abilities where employee has milestones' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         milestone = create(:teammate_milestone, teammate: teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 2)
         
         query = RelevantAbilitiesQuery.new(teammate: teammate, organization: organization)
@@ -37,7 +37,7 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
       end
 
       it 'includes all milestone attainments for each ability' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         milestone1 = create(:teammate_milestone, teammate: teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 1, attained_at: 6.months.ago)
         milestone2 = create(:teammate_milestone, teammate: teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 3, attained_at: 1.month.ago)
         
@@ -97,7 +97,7 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
 
     context 'when employee has both milestones and assignment requirements' do
       it 'includes abilities with both and deduplicates correctly' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         milestone = create(:teammate_milestone, teammate: teammate, ability: ability_with_both, certifying_teammate: certifier_teammate, milestone_level: 2)
         assignment = create(:assignment, company: organization, title: 'Test Assignment')
         create(:assignment_tenure, teammate: teammate, assignment: assignment, ended_at: nil)
@@ -115,7 +115,7 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
 
     context 'organization hierarchy scoping' do
       it 'only includes abilities from organization hierarchy' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         create(:teammate_milestone, teammate: teammate, ability: ability_outside_hierarchy, certifying_teammate: certifier_teammate, milestone_level: 1)
         create(:teammate_milestone, teammate: teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 1)
         
@@ -128,7 +128,7 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
       end
 
       it 'includes abilities from departments within the organization hierarchy' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         milestone = create(:teammate_milestone, teammate: teammate, ability: ability_in_department, certifying_teammate: certifier_teammate, milestone_level: 2)
         
         query = RelevantAbilitiesQuery.new(teammate: teammate, organization: organization)
@@ -145,7 +145,7 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
         ability_a = create(:ability, name: 'A Ability', company: organization)
         ability_m = create(:ability, name: 'M Ability', company: organization)
         
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:company_teammate, person: certifier, organization: organization)
         create(:teammate_milestone, teammate: teammate, ability: ability_z, certifying_teammate: certifier_teammate, milestone_level: 1)
         create(:teammate_milestone, teammate: teammate, ability: ability_a, certifying_teammate: certifier_teammate, milestone_level: 1)
         create(:teammate_milestone, teammate: teammate, ability: ability_m, certifying_teammate: certifier_teammate, milestone_level: 1)

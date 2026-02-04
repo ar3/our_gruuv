@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe TeammateIdentity, type: :model do
   describe 'associations' do
-    it { should belong_to(:teammate) }
+    it { should belong_to(:company_teammate) }
   end
 
   describe 'validations' do
@@ -221,7 +221,7 @@ RSpec.describe TeammateIdentity, type: :model do
     describe '.find_teammate_by_slack_id' do
       it 'finds teammate by Slack user ID in specific organization' do
         found_teammate = TeammateIdentity.find_teammate_by_slack_id('U1234567890', organization)
-        expect(found_teammate).to be_a(Teammate)
+        expect(found_teammate).to be_a(CompanyTeammate)
         expect(found_teammate.id).to eq(teammate.id)
       end
 
@@ -242,13 +242,13 @@ RSpec.describe TeammateIdentity, type: :model do
 
       it 'finds teammate by provider and UID in specific organization' do
         found_teammate = TeammateIdentity.find_teammate_by_provider_id('jira', 'jira_user_123', organization)
-        expect(found_teammate).to be_a(Teammate)
+        expect(found_teammate).to be_a(CompanyTeammate)
         expect(found_teammate.id).to eq(teammate.id)
       end
 
       it 'finds teammate by Slack provider' do
         found_teammate = TeammateIdentity.find_teammate_by_provider_id('slack', 'U1234567890', organization)
-        expect(found_teammate).to be_a(Teammate)
+        expect(found_teammate).to be_a(CompanyTeammate)
         expect(found_teammate.id).to eq(teammate.id)
       end
 

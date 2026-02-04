@@ -2,13 +2,13 @@ require 'rails_helper'
 
 RSpec.describe Comments::PostNotificationJob, type: :job do
   let(:company) { create(:organization, :company) }
-  let(:organization) { create(:organization, parent: company) }
+  let(:organization) { company }
   let(:person) { create(:person) }
   let(:assignment) { create(:assignment, company: company) }
   let(:slack_channel) { create(:third_party_object, :slack_channel, organization: company) }
   
   before do
-    create(:teammate, person: person, organization: company)
+    create(:company_teammate, person: person, organization: company)
     # Create the association
     company.third_party_object_associations.create!(
       third_party_object: slack_channel,

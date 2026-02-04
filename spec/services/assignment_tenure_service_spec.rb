@@ -62,7 +62,7 @@ RSpec.describe AssignmentTenureService, type: :service do
         expect(active_tenure.ended_at.to_date).to eq(new_start_date)
 
         # Check new tenure was created
-        new_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
+        new_tenure = AssignmentTenure.where(company_teammate: teammate, assignment: assignment).active.first
         expect(new_tenure.anticipated_energy_percentage).to eq(75)
         expect(new_tenure.started_at).to eq(new_start_date)
       end
@@ -82,7 +82,7 @@ RSpec.describe AssignmentTenureService, type: :service do
         expect(active_tenure.ended_at.to_date).to eq(same_day)
 
         # New tenure should start on the same day
-        new_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
+        new_tenure = AssignmentTenure.where(company_teammate: teammate, assignment: assignment).active.first
         expect(new_tenure.started_at).to eq(same_day)
       end
     end
@@ -124,7 +124,7 @@ RSpec.describe AssignmentTenureService, type: :service do
           )
         }.to change { AssignmentTenure.count }.by(1)
 
-        new_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
+        new_tenure = AssignmentTenure.where(company_teammate: teammate, assignment: assignment).active.first
         expect(new_tenure.anticipated_energy_percentage).to eq(30)
         expect(new_tenure.started_at).to eq(start_date)
       end

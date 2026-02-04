@@ -112,7 +112,7 @@
                     %strong Current Nat 20 Score:
                     = nat_20_badge(@huddle.nat_20_score)
                 - if current_person
-                  - participant = @huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: current_person })
+                  - participant = @huddle.huddle_participants.joins(:company_teammate).find_by(teammates: { person: current_person })
                   - if participant
                     %hr
                     %p
@@ -440,8 +440,8 @@
                                 %th Rating
                                 %th Private Notes
                             %tbody
-                              - @huddle.huddle_participants.includes(teammate: :person).each do |participant|
-                                - feedback = @huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: participant.teammate.person })
+                              - @huddle.huddle_participants.includes(company_teammate: :person).each do |participant|
+                                - feedback = @huddle.huddle_feedbacks.joins(:company_teammate).find_by(teammates: { person: participant.teammate.person })
                                 - has_facilitator_note = feedback&.private_facilitator.present?
                                 - has_dept_head_note = feedback&.private_department_head.present?
                                 - rating_score = feedback ? feedback.nat_20_score : nil
@@ -515,7 +515,7 @@
       .mt-4
         .d-flex.justify-content-between
           = link_to "← Back to All Huddles", huddles_path, class: "btn btn-outline-secondary"
-          - if current_person && @huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: current_person })
+          - if current_person && @huddle.huddle_participants.joins(:company_teammate).find_by(teammates: { person: current_person })
             = link_to "View All My Huddles", my_huddles_path, class: "btn btn-outline-primary"
 
 :javascript

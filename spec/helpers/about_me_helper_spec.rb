@@ -130,8 +130,8 @@ RSpec.describe AboutMeHelper, type: :helper do
 
       context 'when company is derived from root_company' do
         let(:root_company) { create(:organization, :company) }
-        let(:department) { create(:organization, :department, parent: root_company) }
-        let(:department_teammate) { CompanyTeammate.create!(person: person, organization: department) }
+        # Organization no longer has department/parent; use root_company as org so helper uses root_company for prompts
+        let(:department_teammate) { CompanyTeammate.create!(person: person, organization: root_company) }
         let!(:prompt_template) do
           create(:prompt_template, company: root_company, available_at: 1.day.ago)
         end
@@ -1024,7 +1024,7 @@ RSpec.describe AboutMeHelper, type: :helper do
           expect(assignment_ids.count).to eq(3)
           
           # Verify all check-ins exist and are recent
-          check_in = AssignmentCheckIn.where(teammate: teammate, assignment: shared_assignment).closed.order(official_check_in_completed_at: :desc).first
+          check_in = AssignmentCheckIn.where(company_teammate: teammate, assignment: shared_assignment).closed.order(official_check_in_completed_at: :desc).first
           expect(check_in).to be_present
           cutoff_date = 90.days.ago
           expect(check_in.official_check_in_completed_at).to be >= cutoff_date

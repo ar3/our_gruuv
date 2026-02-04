@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Search', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
 
@@ -141,7 +141,7 @@ RSpec.describe 'Organizations::Search', type: :request do
 
     context 'when user is authenticated but not a teammate' do
       let(:other_person) { create(:person) }
-      let(:other_organization) { create(:organization, :company) }
+      let(:other_organization) { create(:organization) }
       let(:other_teammate) { create(:teammate, person: other_person, organization: other_organization) }
 
       before do

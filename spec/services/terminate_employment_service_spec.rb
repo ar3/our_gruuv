@@ -148,8 +148,8 @@ RSpec.describe TerminateEmploymentService, type: :service do
     end
 
     context 'when teammate is not a CompanyTeammate' do
-      let(:department) { create(:organization, :department, parent: company) }
-      let(:dept_teammate) { create(:teammate, person: person, organization: department) }
+      let(:department) { create(:department, company: company) }
+      let(:dept_teammate) { create(:company_teammate, person: person, organization: company) }
       let(:dept_tenure) do
         EmploymentTenure.create!(
           teammate: dept_teammate,

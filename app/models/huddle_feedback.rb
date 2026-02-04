@@ -1,8 +1,10 @@
 class HuddleFeedback < ApplicationRecord
   # Associations
   belongs_to :huddle
-  belongs_to :teammate
-  
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
+
   # Validations
   validates :informed_rating, :connected_rating, :goals_rating, :valuable_rating,
             presence: true, inclusion: { in: 0..5 }

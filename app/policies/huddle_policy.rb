@@ -61,7 +61,7 @@ class HuddlePolicy < ApplicationPolicy
   def user_participant
     return nil unless viewing_teammate
     person = viewing_teammate.person
-    @user_participant ||= record.huddle_participants.joins(:teammate).find_by(teammates: { person: person })
+    @user_participant ||= record.huddle_participants.joins(:company_teammate).find_by(teammates: { person_id: person.id })
   end
 
   def facilitator_or_department_head?
@@ -84,7 +84,7 @@ class HuddlePolicy < ApplicationPolicy
       return scope.active unless viewing_teammate
       person = viewing_teammate.person
       return scope.active unless person
-      scope.joins(huddle_participants: :teammate).where(teammates: { person: person })
+      scope.joins(huddle_participants: :company_teammate).where(teammates: { person_id: person.id })
     end
   end
 end

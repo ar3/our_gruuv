@@ -34,7 +34,7 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
     context 'when person has no direct reports' do
       it 'returns empty array' do
         # Create employment tenure for person without managing anyone
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: nil)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: nil)
         
         query = described_class.new(person: person, organization: company)
         expect(query.call).to eq([])
@@ -42,7 +42,7 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
     end
 
     context 'when person has a direct report' do
-      let!(:employment_tenure) { create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: person_teammate) }
+      let!(:employment_tenure) { create(:employment_tenure, company_teammate: direct_report_teammate, company: company, manager_teammate: person_teammate) }
 
       it 'returns the direct report' do
         query = described_class.new(person: person, organization: company)
@@ -73,11 +73,11 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
 
     context 'when person has multiple direct reports' do
       let(:report2) { create(:person) }
-      let(:report2_teammate) { create(:teammate, person: report2, organization: company) }
+      let(:report2_teammate) { create(:company_teammate, person: report2, organization: company) }
 
       before do
-        create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
-        create(:employment_tenure, teammate: report2_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: report2_teammate, company: company, manager_teammate: person_teammate)
       end
 
       it 'returns all direct reports' do
@@ -91,8 +91,8 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
 
       it 'only includes active employment tenures' do
         inactive_report = create(:person)
-        inactive_report_teammate = create(:teammate, person: inactive_report, organization: company)
-        create(:employment_tenure, teammate: inactive_report_teammate, company: company, manager_teammate: person_teammate, ended_at: 1.week.ago)
+        inactive_report_teammate = create(:company_teammate, person: inactive_report, organization: company)
+        create(:employment_tenure, company_teammate: inactive_report_teammate, company: company, manager_teammate: person_teammate, ended_at: 1.week.ago)
         
         query = described_class.new(person: person, organization: company)
         results = query.call
@@ -104,8 +104,8 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
 
     context 'when direct report has reports (grand reports)' do
       before do
-        create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
-        create(:employment_tenure, teammate: grand_report_teammate, company: company, manager_teammate: direct_report_teammate)
+        create(:employment_tenure, company_teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: grand_report_teammate, company: company, manager_teammate: direct_report_teammate)
       end
 
       it 'returns both direct report and grand report' do
@@ -130,12 +130,12 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
 
     context 'when employee chain goes deeper' do
       let(:great_grand_report) { create(:person) }
-      let(:great_grand_report_teammate) { create(:teammate, person: great_grand_report, organization: company) }
+      let(:great_grand_report_teammate) { create(:company_teammate, person: great_grand_report, organization: company) }
 
       before do
-        create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
-        create(:employment_tenure, teammate: grand_report_teammate, company: company, manager_teammate: direct_report_teammate)
-        create(:employment_tenure, teammate: great_grand_report_teammate, company: company, manager_teammate: grand_report_teammate)
+        create(:employment_tenure, company_teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: grand_report_teammate, company: company, manager_teammate: direct_report_teammate)
+        create(:employment_tenure, company_teammate: great_grand_report_teammate, company: company, manager_teammate: grand_report_teammate)
       end
 
       it 'returns all reports in the chain' do
@@ -159,11 +159,11 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
     context 'when teammate is not associated with the company' do
       let(:other_company) { create(:organization, :company) }
       let(:report_other_company) { create(:person) }
-      let(:report_other_company_teammate) { create(:teammate, person: report_other_company, organization: other_company) }
+      let(:report_other_company_teammate) { create(:company_teammate, person: report_other_company, organization: other_company) }
 
       before do
         # Create employment tenure where person is manager, but teammate is in different company
-        create(:employment_tenure, teammate: report_other_company_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: report_other_company_teammate, company: company, manager_teammate: person_teammate)
       end
 
       it 'does not include reports whose teammate is not associated with the company' do
@@ -176,22 +176,17 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
     end
 
     context 'when organization is a company with descendants' do
-      let(:department) { create(:organization, :department, parent: company) }
+      let(:department) { create(:department, company: company) }
       let(:department_report) { create(:person) }
-      let(:department_report_teammate) { create(:teammate, person: department_report, organization: department) }
+      let(:department_report_teammate) { create(:company_teammate, person: department_report, organization: company) }
 
       before do
-        create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
-        # Department report's employment tenure is in the company, but teammate is in department
-        create(:employment_tenure, teammate: department_report_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: department_report_teammate, company: company, manager_teammate: person_teammate)
       end
 
       it 'includes reports from descendant organizations when teammate matches company' do
-        # But wait - the teammate is in department, not company, so it should be filtered out
-        # unless we also create a teammate in the company
-        company_teammate = create(:teammate, person: department_report, organization: company)
-        create(:employment_tenure, teammate: company_teammate, company: company, manager_teammate: person_teammate)
-        
+        # department_report_teammate is already in company with manager person_teammate (from before block)
         query = described_class.new(person: person, organization: company)
         results = query.call
 
@@ -203,12 +198,12 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
     context 'when person manages people in different organizations' do
       let(:other_company) { create(:organization, :company) }
       let(:other_company_report) { create(:person) }
-      let(:other_company_report_teammate) { create(:teammate, person: other_company_report, organization: other_company) }
+      let(:other_company_report_teammate) { create(:company_teammate, person: other_company_report, organization: other_company) }
       let(:person_other_company_teammate) { CompanyTeammate.create!(person: person, organization: other_company) }
 
       before do
-        create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
-        create(:employment_tenure, teammate: other_company_report_teammate, company: other_company, manager_teammate: person_other_company_teammate)
+        create(:employment_tenure, company_teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: other_company_report_teammate, company: other_company, manager_teammate: person_other_company_teammate)
       end
 
       it 'only returns reports from the specified organization' do
@@ -224,8 +219,8 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
     context 'when report appears multiple times in chain' do
       it 'does not duplicate reports' do
         # Create a scenario where someone could appear multiple times
-        create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
-        create(:employment_tenure, teammate: grand_report_teammate, company: company, manager_teammate: direct_report_teammate)
+        create(:employment_tenure, company_teammate: direct_report_teammate, company: company, manager_teammate: person_teammate)
+        create(:employment_tenure, company_teammate: grand_report_teammate, company: company, manager_teammate: direct_report_teammate)
         
         query = described_class.new(person: person, organization: company)
         results = query.call
@@ -247,9 +242,9 @@ RSpec.describe EmployeeHierarchyQuery, type: :query do
 
       before do
         # Natalie manages Amy
-        create(:employment_tenure, teammate: amy_teammate, company: company, manager_teammate: natalie_teammate)
+        create(:employment_tenure, company_teammate: amy_teammate, company: company, manager_teammate: natalie_teammate)
         # Amy manages Tulay
-        create(:employment_tenure, teammate: tulay_teammate, company: company, manager_teammate: amy_teammate)
+        create(:employment_tenure, company_teammate: tulay_teammate, company: company, manager_teammate: amy_teammate)
       end
 
       it 'shows Tulay in Natalie employee hierarchy' do

@@ -1,5 +1,7 @@
 class OneOnOneLink < ApplicationRecord
-  belongs_to :teammate
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
   has_one :external_project_cache, as: :cacheable, dependent: :destroy
 
   # Validations

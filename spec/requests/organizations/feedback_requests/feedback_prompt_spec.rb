@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::FeedbackRequests::FeedbackPrompt', type: :request do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:requestor_person) { create(:person) }
   let(:requestor_teammate) do
     CompanyTeammate.find_or_create_by!(person: requestor_person, organization: company) do |t|

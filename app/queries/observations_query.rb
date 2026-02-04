@@ -126,7 +126,7 @@ class ObservationsQuery
 
     if params[:exclude_observer_as_observee].present? &&
        (params[:exclude_observer_as_observee] == true || params[:exclude_observer_as_observee].to_s == 'true')
-      observer_teammate_ids = Teammate.where(organization: organization, person_id: params[:observer_id]).select(:id)
+      observer_teammate_ids = CompanyTeammate.where(organization: organization, person_id: params[:observer_id]).select(:id)
       self_observation_ids = Observation.joins(:observees)
                                        .where(observer_id: params[:observer_id])
                                        .where(observees: { teammate_id: observer_teammate_ids })
@@ -140,7 +140,7 @@ class ObservationsQuery
   def filter_by_involving_teammate(observations)
     return observations unless params[:involving_teammate_id].present?
 
-    teammate = Teammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
+    teammate = CompanyTeammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
     return observations unless teammate
 
     observed_ids = Observee.where(teammate_id: teammate.id).select(:observation_id)

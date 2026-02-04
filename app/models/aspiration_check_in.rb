@@ -1,7 +1,9 @@
 class AspirationCheckIn < ApplicationRecord
   include CheckInBehavior
   
-  belongs_to :teammate
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
   belongs_to :aspiration
   belongs_to :manager_completed_by_teammate, class_name: 'CompanyTeammate', optional: true
   
@@ -52,7 +54,7 @@ class AspirationCheckIn < ApplicationRecord
 
   def previous_finalized_check_in
     @previous_finalized_check_in ||= AspirationCheckIn
-      .where(teammate: teammate, aspiration: aspiration)
+      .where(company_teammate: teammate, aspiration: aspiration)
       .closed
       .order(:official_check_in_completed_at)
       .last
@@ -67,11 +69,11 @@ class AspirationCheckIn < ApplicationRecord
 
   # Find or create open check-in for a teammate and aspiration
   def self.find_or_create_open_for(teammate, aspiration)
-    open_check_in = where(teammate: teammate, aspiration: aspiration).open.first
+    open_check_in = where(company_teammate: teammate, aspiration: aspiration).open.first
     return open_check_in if open_check_in
     
     create!(
-      teammate: teammate,
+      company_teammate: teammate,
       aspiration: aspiration,
       check_in_started_on: Date.current
     )
@@ -79,7 +81,7 @@ class AspirationCheckIn < ApplicationRecord
   
   # Find the latest finalized check-in for a teammate and aspiration
   def self.latest_finalized_for(teammate, aspiration)
-    where(teammate: teammate, aspiration: aspiration)
+    where(company_teammate: teammate, aspiration: aspiration)
       .closed
       .order(official_check_in_completed_at: :desc)
       .first
@@ -91,7 +93,7 @@ class AspirationCheckIn < ApplicationRecord
     return unless open?
     
     existing_open = AspirationCheckIn
-      .where(teammate: teammate, aspiration: aspiration)
+      .where(company_teammate: teammate, aspiration: aspiration)
       .open
       .where.not(id: id)
     

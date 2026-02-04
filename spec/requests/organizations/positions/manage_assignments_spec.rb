@@ -2,9 +2,9 @@ require 'rails_helper'
 
 RSpec.describe 'Position Assignments Management', type: :request do
   let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
+  let(:department) { create(:department, company: company) }
   let(:person) { create(:person) }
-  let!(:teammate) { create(:teammate, person: person, organization: company, can_manage_maap: true) }
+  let!(:teammate) { create(:company_teammate, person: person, organization: company, can_manage_maap: true) }
   let(:position_major_level) { create(:position_major_level) }
   let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
@@ -244,11 +244,8 @@ RSpec.describe 'Position Assignments Management', type: :request do
   end
 
   describe 'hierarchy permission checking' do
-    let(:team) { create(:organization, :team, parent: department) }
     let(:person_with_multiple_teammates) { create(:person) }
-    let!(:company_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: company, can_manage_maap: true, can_manage_employment: false) }
-    let!(:department_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: department, can_manage_maap: false, can_manage_employment: false) }
-    let!(:team_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: team, can_manage_maap: false, can_manage_employment: false) }
+    let!(:company_teammate) { create(:company_teammate, person: person_with_multiple_teammates, organization: company, can_manage_maap: true, can_manage_employment: false) }
 
     before do
       sign_in_as_teammate_for_request(person_with_multiple_teammates, company)

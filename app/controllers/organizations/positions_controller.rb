@@ -115,8 +115,8 @@ class Organizations::PositionsController < ApplicationController
       @employees_with_position = EmploymentTenure
         .active
         .where(position: @position, company: @position.company)
-        .joins(teammate: :person)
-        .includes(teammate: :person)
+        .joins(company_teammate: :person)
+        .includes(company_teammate: :person)
         .order('people.last_name, people.first_name')
     end
     render layout: determine_layout

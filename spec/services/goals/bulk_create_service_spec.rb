@@ -58,7 +58,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
           expect(goal.most_likely_target_date).to eq(Date.current + 90.days)
           expect(goal.earliest_target_date).to be_nil
           expect(goal.latest_target_date).to be_nil
-          expect(goal.owner).to be_a(Teammate)
+          expect(goal.owner).to be_a(CompanyTeammate)
           expect(goal.owner.id).to eq(linking_goal.owner.id)
           expect(goal.privacy_level).to eq(linking_goal.privacy_level)
           # Approach 1: Compare by ID instead of object identity (STI issue)
@@ -156,7 +156,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
           expect(goal.goal_type).to eq('inspirational_objective')
           # Objectives don't get target dates set (they're objectives, not non-objectives)
           expect(goal.most_likely_target_date).to be_nil
-          expect(goal.owner).to be_a(Teammate)
+          expect(goal.owner).to be_a(CompanyTeammate)
           expect(goal.owner.id).to eq(linking_goal.owner.id)
           expect(goal.privacy_level).to eq(linking_goal.privacy_level)
         end

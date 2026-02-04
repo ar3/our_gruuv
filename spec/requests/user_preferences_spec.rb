@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'User Preferences', type: :request do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:user_preference) { UserPreference.for_person(person) }
   
   before do
@@ -78,7 +78,7 @@ RSpec.describe 'User Preferences', type: :request do
     
     context 'authorization' do
       let(:other_person) { create(:person) }
-      let(:other_organization) { create(:organization, :company) }
+      let(:other_organization) { create(:organization) }
       let(:other_preference) { UserPreference.for_person(other_person) }
       
       before do

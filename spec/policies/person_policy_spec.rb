@@ -325,7 +325,7 @@ RSpec.describe PersonPolicy, type: :policy do
       create(:employment_tenure, teammate: grand_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
       grand_manager_teammate.update!(first_employed_at: 1.year.ago)
       # Update existing manager's employment to have grand manager as manager
-      manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: organization)
+      manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: organization)
       manager_tenure.update!(manager_teammate: grand_manager_teammate)
       # Reload teammates to clear association cache
       manager_teammate.reload

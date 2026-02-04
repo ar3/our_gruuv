@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe GoalsHelper, type: :helper do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
-  let(:creator_teammate) { create(:teammate, person: person, organization: company) }
+  let(:creator_teammate) { create(:company_teammate, person: person, organization: company) }
   
   describe '#goal_category_label' do
     it 'returns "Vision" for vision goals' do
@@ -103,7 +103,7 @@ RSpec.describe GoalsHelper, type: :helper do
     end
 
     context 'with department owner' do
-      let(:department) { create(:organization, :department, parent: company, name: 'Engineering') }
+      let(:department) { create(:department, company: company, name: 'Engineering') }
       
       it 'returns department display name' do
         goal = create(:goal, creator: creator_teammate, owner: department, privacy_level: 'everyone_in_company')

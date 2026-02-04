@@ -102,7 +102,7 @@ RSpec.describe PositionCheckIn, type: :model do
       expect(result).to be_present
       expect(result.open?).to be true
       expect(result.officially_completed?).to be false
-      expect(PositionCheckIn.where(teammate: teammate).open.count).to eq(1)
+      expect(PositionCheckIn.where(company_teammate: teammate).open.count).to eq(1)
     end
 
     it 'excludes finalized check-ins from open scope' do
@@ -114,7 +114,7 @@ RSpec.describe PositionCheckIn, type: :model do
         finalized_by_teammate: finalized_by
       )
       
-      open_check_ins = PositionCheckIn.where(teammate: teammate).open
+      open_check_ins = PositionCheckIn.where(company_teammate: teammate).open
       expect(open_check_ins).not_to include(finalized_check_in)
       expect(finalized_check_in.open?).to be false
     end
@@ -373,7 +373,7 @@ RSpec.describe PositionCheckIn, type: :model do
     let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
     let(:position) { create(:position, title: title, position_level: position_level) }
     let(:employment_tenure) do
-      EmploymentTenure.find_by(teammate: teammate, company: organization) ||
+      EmploymentTenure.find_by(company_teammate: teammate, company: organization) ||
         create(:employment_tenure,
           teammate: teammate,
           company: organization,

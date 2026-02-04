@@ -102,7 +102,7 @@ RSpec.describe Organizations::PromptTemplates::PromptQuestionsController, type: 
         id: question.id
       }
       expect(assigns(:prompt_question)).to eq(question)
-      expect(assigns(:versions)).to be_present
+      expect(assigns(:versions)).to eq(question.versions.order(created_at: :desc))
     end
   end
 

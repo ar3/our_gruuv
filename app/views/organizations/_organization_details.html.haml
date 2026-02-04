@@ -11,11 +11,7 @@
           = organization.name
         %p
           %strong Type:
-          = organization.type.underscore.humanize
-        - if organization.parent
-          %p
-            %strong Parent:
-            = link_to organization.parent.name, organization_path(organization.parent)
+          Organization
       .col-md-6
         %p
           %strong Created:

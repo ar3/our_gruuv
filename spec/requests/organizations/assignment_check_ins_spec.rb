@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager_person) { create(:person) }
   let(:employee_person) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
@@ -31,7 +31,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
     context "assignment check-in" do
       context "when marking as draft" do
         it "saves data but does not mark as completed" do
-          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
           
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
@@ -60,7 +60,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       
       context "when marking as complete" do
         it "saves data and marks as completed" do
-          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
           
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
@@ -94,7 +94,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
         end
         
         it "marks employee side as complete" do
-          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
           
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
@@ -121,7 +121,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       
       context "when toggling from draft to complete" do
         it "properly updates completion status" do
-          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
           redirect_path = organization_company_teammate_check_ins_path(organization, employee_teammate)
           
           # First: Save as draft
@@ -167,7 +167,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       
       context "when toggling from complete back to draft" do
         it "unmarks completion" do
-          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
           redirect_path = organization_company_teammate_check_ins_path(organization, employee_teammate)
           
           # First: Mark as complete
@@ -214,8 +214,8 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       context "when no assignment tenure exists" do
         before do
           # Destroy the tenure and create a check-in without a tenure
-          AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
-          AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment).destroy_all
+          AssignmentTenure.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
+          AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
           # Create check-in directly (matching load_or_build_assignment_check_ins behavior)
           AssignmentCheckIn.create!(
             teammate: employee_teammate,
@@ -226,7 +226,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
         end
 
         it "saves assignment check-in data successfully without tenure" do
-          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
           expect(check_in).to be_present
           expect(AssignmentTenure.most_recent_for(employee_teammate, assignment)).to be_nil
           
@@ -256,7 +256,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
 
         it "creates new check-in when updating if none exists and no tenure exists" do
           # Destroy the check-in we created in before block
-          AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment).destroy_all
+          AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).destroy_all
           
           patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
@@ -273,7 +273,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                   redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
                 }
           
-          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
           expect(check_in).to be_present
           expect(check_in.manager_rating).to eq("exceeding")
           expect(check_in.manager_private_notes).to eq("Created without tenure")
@@ -288,7 +288,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       it "requires authentication" do
         sign_out_teammate_for_request
         
-        check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+        check_in = AssignmentCheckIn.find_by(company_teammate: employee_teammate, assignment: assignment)
         
         patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: {

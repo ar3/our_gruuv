@@ -317,7 +317,7 @@ RSpec.describe OrganizationsController, type: :controller do
     # Find the person's teammate that was created in the outer before block
     let!(:person_teammate) { 
       # The outer before block creates a teammate, find it
-      Teammate.find_by(person: person, organization: organization)
+      CompanyTeammate.find_by(person: person, organization: organization)
     }
     let!(:teammate_milestone) { 
       create(:teammate_milestone, 

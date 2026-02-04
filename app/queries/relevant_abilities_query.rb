@@ -46,7 +46,7 @@ class RelevantAbilitiesQuery
   def abilities_from_active_assignments(org_hierarchy)
     AssignmentAbility
       .joins(assignment: :assignment_tenures)
-      .where(assignment_tenures: { teammate: @teammate, ended_at: nil })
+      .where(assignment_tenures: { teammate_id: @teammate.id, ended_at: nil })
       .where(assignments: { company: org_hierarchy })
       .pluck(:ability_id)
   end
@@ -79,7 +79,7 @@ class RelevantAbilitiesQuery
   def assignment_requirements_for(ability)
     AssignmentAbility
       .joins(assignment: :assignment_tenures)
-      .where(assignment_tenures: { teammate: @teammate, ended_at: nil })
+      .where(assignment_tenures: { teammate_id: @teammate.id, ended_at: nil })
       .where(ability: ability)
       .includes(assignment: :assignment_tenures)
   end

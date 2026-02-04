@@ -10,7 +10,7 @@ class Observation < ApplicationRecord
   belongs_to :observable_moment, optional: true
   belongs_to :feedback_request_question, optional: true
   has_many :observees, dependent: :destroy
-  has_many :observed_teammates, through: :observees, source: :teammate
+  has_many :observed_teammates, through: :observees, source: :company_teammate
   has_many :observation_ratings, dependent: :destroy
   has_many :abilities, through: :observation_ratings, source: :rateable, source_type: 'Ability'
   has_many :assignments, through: :observation_ratings, source: :rateable, source_type: 'Assignment'

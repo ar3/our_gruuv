@@ -18,7 +18,7 @@
           %i.bi.bi-people.me-2
           = @target_organization.name
         %span.badge.bg-secondary
-          = @target_organization.type.underscore.humanize
+          Organization
       .card-body
         = form_with model: @target_organization,
                     url: channel_organization_slack_path(@organization, target_organization_id: @target_organization.id),
@@ -30,7 +30,7 @@
             %p.mb-0
               %strong= @target_organization.name
               %br
-              %small.text-muted= @target_organization.type.underscore.humanize
+              %small.text-muted Organization
 
           .mb-4
             = form.label :kudos_channel_id, "Kudos Channel", class: "form-label"

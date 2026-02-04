@@ -36,7 +36,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         observation
         get :index, params: { organization_id: company.id, involving_teammate_id: observee_teammate.id }
         expect(assigns(:involving_teammate).id).to eq(observee_teammate.id)
-        expect(assigns(:involving_teammate)).to be_a(Teammate)
+        expect(assigns(:involving_teammate)).to be_a(CompanyTeammate)
       end
 
       it 'filters observations to those involving the teammate (observer or observee)' do

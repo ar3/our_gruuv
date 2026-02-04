@@ -446,7 +446,7 @@ RSpec.describe Person, type: :model do
         # Create a circular reference scenario (should not cause infinite loop)
         # This shouldn't happen in real data, but we should handle it gracefully
         # Update existing direct_manager tenure to have employee as manager (circular)
-        direct_manager_tenure = EmploymentTenure.find_by(teammate: direct_manager_teammate, company: company)
+        direct_manager_tenure = EmploymentTenure.find_by(company_teammate: direct_manager_teammate, company: company)
         direct_manager_tenure.update!(manager_teammate: employee_teammate)
       end
 

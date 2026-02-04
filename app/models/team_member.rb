@@ -1,7 +1,7 @@
 class TeamMember < ApplicationRecord
   # Associations
   belongs_to :team
-  belongs_to :company_teammate, class_name: 'Teammate'
+  belongs_to :company_teammate, class_name: 'CompanyTeammate'
 
   # Delegations
   delegate :person, to: :company_teammate

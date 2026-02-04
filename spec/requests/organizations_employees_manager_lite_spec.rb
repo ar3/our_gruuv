@@ -88,8 +88,8 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
 
     context 'with check-in data' do
       let!(:employment_tenure) do
-        EmploymentTenure.find_by(teammate: direct_report1_teammate, company: organization) ||
-        create(:employment_tenure, teammate: direct_report1_teammate, company: organization, manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
+        EmploymentTenure.find_by(company_teammate: direct_report1_teammate, company: organization) ||
+        create(:employment_tenure, company_teammate: direct_report1_teammate, company: organization, manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
       end
 
       let!(:position_check_in) do
@@ -101,7 +101,8 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
           manager_completed_at: 20.days.ago,
           official_check_in_completed_at: 20.days.ago,
           official_rating: 2,
-          finalized_by: manager
+          manager_completed_by_teammate: manager_teammate,
+          finalized_by_teammate: manager_teammate
         )
       end
 
@@ -114,7 +115,9 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
           employee_completed_at: 25.days.ago,
           manager_completed_at: 20.days.ago,
           official_check_in_completed_at: 20.days.ago,
-          official_rating: 'meeting'
+          official_rating: 'meeting',
+          manager_completed_by_teammate: manager_teammate,
+          finalized_by_teammate: manager_teammate
         )
       end
 
@@ -128,7 +131,8 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
           manager_completed_at: 20.days.ago,
           official_check_in_completed_at: 20.days.ago,
           official_rating: 'meeting',
-          finalized_by: manager
+          manager_completed_by_teammate: manager_teammate,
+          finalized_by_teammate: manager_teammate
         )
       end
 

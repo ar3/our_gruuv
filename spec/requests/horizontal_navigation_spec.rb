@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Horizontal Navigation', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { CompanyTeammate.find_or_create_by!(person: person, organization: organization) }
   let(:user_preference) { UserPreference.for_person(person) }
@@ -24,17 +24,6 @@ RSpec.describe 'Horizontal Navigation', type: :request do
     allow_any_instance_of(OrganizationPolicy).to receive(:show?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:customize_company?).and_return(true)
-    # Mock CompanyPolicy (inherits from OrganizationPolicy, but Pundit will use CompanyPolicy for current_company)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_prompts?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_prompt_templates?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_observations?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_seats?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_goals?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_abilities?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_assignments?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_aspirations?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:view_bulk_sync_events?).and_return(true)
-    allow_any_instance_of(CompanyPolicy).to receive(:customize_company?).and_return(true)
     # Mock Huddle policy
     allow_any_instance_of(HuddlePolicy).to receive(:show?).and_return(true)
   end

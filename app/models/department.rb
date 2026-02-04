@@ -74,6 +74,11 @@ class Department < ApplicationRecord
     parent_department_id.nil?
   end
 
+  # For helpers that expect organization-like API (e.g. CompanyLabelHelper)
+  def root_company
+    company
+  end
+
   def display_name
     parent_department ? "#{parent_department.display_name} > #{name}" : name
   end
@@ -106,6 +111,55 @@ class Department < ApplicationRecord
 
   def company?
     false
+  end
+
+  # Slack group association (same pattern as Organization for channels edit)
+  def slack_group_association
+    third_party_object_associations.where(association_type: 'slack_group').first
+  end
+
+  def slack_group
+    slack_group_association&.third_party_object
+  end
+
+  def slack_group_id
+    slack_group&.third_party_id
+  end
+
+  def slack_group_id=(group_id)
+    if group_id.present?
+      group = company.third_party_objects.where(third_party_source: 'slack', third_party_object_type: 'group').find_by(third_party_id: group_id)
+      if group
+        slack_group_association&.destroy
+        third_party_object_associations.create!(third_party_object: group, association_type: 'slack_group')
+      end
+    else
+      slack_group_association&.destroy
+    end
+  end
+
+  def kudos_channel_association
+    third_party_object_associations.where(association_type: 'observation_kudos_channel').first
+  end
+
+  def kudos_channel
+    kudos_channel_association&.third_party_object
+  end
+
+  def kudos_channel_id
+    kudos_channel&.third_party_id
+  end
+
+  def kudos_channel_id=(channel_id)
+    if channel_id.present?
+      channel = company.third_party_objects.slack_channels.find_by(third_party_id: channel_id)
+      if channel
+        kudos_channel_association&.destroy
+        third_party_object_associations.create!(third_party_object: channel, association_type: 'observation_kudos_channel')
+      end
+    else
+      kudos_channel_association&.destroy
+    end
   end
 
   private

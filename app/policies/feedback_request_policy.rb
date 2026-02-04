@@ -98,7 +98,7 @@ class FeedbackRequestPolicy < ApplicationPolicy
         "(requestor_teammate_id = ? OR subject_of_feedback_teammate_id = ? OR id IN (?))",
         viewing_teammate.id,
         viewing_teammate.id,
-        FeedbackRequestResponder.where(teammate: viewing_teammate).select(:feedback_request_id)
+        FeedbackRequestResponder.where(company_teammate: viewing_teammate).select(:feedback_request_id)
       )
     end
   end

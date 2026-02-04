@@ -255,7 +255,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     
     # Get all assignment tenures (including ended) for this teammate
     all_tenures = AssignmentTenure
-      .where(teammate: teammate)
+      .where(company_teammate: teammate)
       .joins(:assignment)
       .where(assignments: { company: organization.self_and_descendants })
       .includes(assignment: :assignment_abilities)
@@ -332,7 +332,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     
     # Get all assignments that require this ability
     assignment_tenures = AssignmentTenure
-      .where(teammate: teammate)
+      .where(company_teammate: teammate)
       .joins(assignment: :assignment_abilities)
       .where(assignment_abilities: { ability: ability })
       .where(assignments: { company: organization.self_and_descendants })
@@ -412,7 +412,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     
     if assignment_ids.any?
       evidence[:assignment_check_ins] = AssignmentCheckIn
-        .where(teammate: teammate, assignment_id: assignment_ids)
+        .where(company_teammate: teammate, assignment_id: assignment_ids)
         .closed
         .order(official_check_in_completed_at: :desc)
         .limit(5)

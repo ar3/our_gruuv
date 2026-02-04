@@ -24,15 +24,15 @@ class EmployeeHierarchyQuery
       manager_teammate = CompanyTeammate.find_by(person: person, organization_id: org_ids)
       return unless manager_teammate
       
-      managed_tenures = EmploymentTenure.joins(:teammate)
+      managed_tenures = EmploymentTenure.joins(:company_teammate)
                                        .where(manager_teammate: manager_teammate)
                                        .where(company_id: org_ids)
                                        .where(teammates: { organization_id: org_ids }) # Ensure teammate is associated with the company
                                        .active
-                                       .includes(:teammate, :company, :position)
+                                       .includes(:company_teammate, :company, :position)
 
       managed_tenures.each do |tenure|
-        employee = tenure.teammate.person
+        employee = tenure.company_teammate.person
         next unless employee
 
         # Only process if we haven't already added this employee

@@ -109,7 +109,7 @@ module AboutMeHelper
 
   def assignments_check_in_status_indicator(teammate, organization)
     # Check if teammate has ever had any assignment check-in finalized
-    has_any_finalized = AssignmentCheckIn.where(teammate: teammate).closed.exists?
+    has_any_finalized = AssignmentCheckIn.where(company_teammate: teammate).closed.exists?
     return :yellow unless has_any_finalized
     
     relevant_assignments = relevant_assignments_for_about_me(teammate, organization)
@@ -122,7 +122,7 @@ module AboutMeHelper
     
     all_recent = relevant_assignment_ids.all? do |assignment_id|
       latest_finalized = AssignmentCheckIn
-        .where(teammate: teammate, assignment_id: assignment_id)
+        .where(company_teammate: teammate, assignment_id: assignment_id)
         .closed
         .order(official_check_in_completed_at: :desc)
         .first
@@ -132,7 +132,7 @@ module AboutMeHelper
     
     none_recent = relevant_assignment_ids.none? do |assignment_id|
       latest_finalized = AssignmentCheckIn
-        .where(teammate: teammate, assignment_id: assignment_id)
+        .where(company_teammate: teammate, assignment_id: assignment_id)
         .closed
         .order(official_check_in_completed_at: :desc)
         .first
@@ -151,7 +151,7 @@ module AboutMeHelper
 
   def aspirations_check_in_status_indicator(teammate, organization)
     # Check if teammate has ever had any aspiration check-in finalized
-    has_any_finalized = AspirationCheckIn.where(teammate: teammate).closed.exists?
+    has_any_finalized = AspirationCheckIn.where(company_teammate: teammate).closed.exists?
     return :yellow unless has_any_finalized
     
     company_aspirations = Aspiration.within_hierarchy(organization)

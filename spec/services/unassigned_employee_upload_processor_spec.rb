@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
-  let(:organization) { create(:organization, type: 'Company') }
+  let(:organization) { create(:organization, :company) }
   let(:upload_event) { create(:upload_event, organization: organization, filename: 'test.csv') }
   let(:processor) { described_class.new(upload_event, organization) }
 
@@ -48,13 +48,13 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
           end
 
       it 'creates new departments' do
-        expect { processor.process }.to change(Organization.departments, :count).by(1)
+        expect { processor.process }.to change(Department, :count).by(1)
       end
 
       it 'creates teammate relationships' do
         # Creates teammates for John Doe, Jane Smith, and Bob Johnson (as manager)
         # Total: 3 teammates
-        expect { processor.process }.to change(Teammate, :count).by(3)
+        expect { processor.process }.to change(CompanyTeammate, :count).by(3)
       end
 
       it 'creates employment tenures for employees' do
@@ -73,11 +73,11 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         jane_teammate = jane.teammates.find_by(organization: organization)
         
         expect(john_teammate).to be_present
-        expect(john_teammate.type).to eq('CompanyTeammate')
+        expect(john_teammate).to be_a(CompanyTeammate)
         expect(john_teammate.first_employed_at).to eq(Date.parse('2024-01-15'))
         
         expect(jane_teammate).to be_present
-        expect(jane_teammate.type).to eq('CompanyTeammate')
+        expect(jane_teammate).to be_a(CompanyTeammate)
         expect(jane_teammate.first_employed_at).to eq(Date.parse('2024-01-10'))
       end
 
@@ -135,7 +135,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
 
       it 'creates teammate relationship for existing person' do
         # Creates teammates for John (existing), Jane Smith, and Bob Johnson (as manager)
-        expect { processor.process }.to change(Teammate, :count).by(3)
+        expect { processor.process }.to change(CompanyTeammate, :count).by(3)
         
         existing_teammate = existing_person.teammates.find_by(organization: organization)
         expect(existing_teammate).to be_present
@@ -158,8 +158,8 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         
         update_success = processor.results[:successes].find { |s| s[:type] == 'unassigned_employee' && s[:action] == 'updated' }
         expect(update_success).to be_present
-        # display_name returns preferred_name when set, which is "John" from the CSV
-        expect(update_success[:name]).to eq('John')
+        # display_name returns preferred_name + last_name when both set (e.g. "John Doe")
+        expect(update_success[:name]).to eq('John Doe')
       end
 
       it 'includes employment tenure actions in results' do
@@ -168,10 +168,9 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         employment_tenure_successes = processor.results[:successes].select { |s| s[:type] == 'employment_tenure' }
         expect(employment_tenure_successes.count).to eq(2)
         
-        # display_name returns preferred_name when set, which is "John" from the CSV
-        john_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'John' }
-        # Jane's preferred name is "Jane" from the CSV
-        jane_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'Jane' }
+        # person_name in results is person.display_name (e.g. "John Doe", "Jane Smith")
+        john_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'John Doe' }
+        jane_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'Jane Smith' }
         
         expect(john_tenure_success).to be_present
         expect(john_tenure_success[:action]).to eq('created')
@@ -184,10 +183,10 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
     end
 
     context 'with existing departments' do
-      let!(:existing_department) { create(:organization, type: 'Department', parent: organization, name: 'Engineering') }
+      let!(:existing_department) { create(:department, company: organization, name: 'Engineering') }
 
       it 'does not create duplicate departments' do
-        expect { processor.process }.not_to change(Organization.departments, :count)
+        expect { processor.process }.not_to change(Department, :count)
       end
 
       it 'includes exists action in results' do
@@ -201,7 +200,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
 
     context 'with existing employment tenures' do
       let!(:existing_person) { create(:person, email: 'john.doe@company.com', first_name: 'John', last_name: 'Doe') }
-      let!(:existing_person_teammate) { create(:teammate, person: existing_person, organization: organization) }
+      let!(:existing_person_teammate) { create(:company_teammate, person: existing_person, organization: organization) }
       let!(:existing_title) { create(:title, company: organization, external_title: 'Software Engineer') }
       let!(:existing_position_level) { create(:position_level, position_major_level: existing_title.position_major_level) }
       let!(:existing_position) { create(:position, title: existing_title, position_level: existing_position_level) }
@@ -216,8 +215,8 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
       it 'includes exists action for employment tenure in results' do
         processor.process
         
-        # display_name returns preferred_name when set, which is "John" from the CSV
-        employment_tenure_success = processor.results[:successes].find { |s| s[:type] == 'employment_tenure' && s[:person_name] == 'John' }
+        # person_name in results is person.display_name (e.g. "John Doe")
+        employment_tenure_success = processor.results[:successes].find { |s| s[:type] == 'employment_tenure' && s[:person_name] == 'John Doe' }
         expect(employment_tenure_success).to be_present
         expect(employment_tenure_success[:action]).to eq('exists')
       end
@@ -309,7 +308,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         expect(teammate).to be_persisted
         expect(teammate.person).to eq(person)
         expect(teammate.organization).to eq(organization)
-        expect(teammate.type).to eq('CompanyTeammate')
+        expect(teammate).to be_a(CompanyTeammate)
         expect(teammate.first_employed_at).to eq(Date.parse('2024-01-15'))
       end
 
@@ -333,13 +332,13 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         end
 
         it 'does not create new teammate' do
-          expect { processor.send(:ensure_teammate_relationship, person, organization) }.not_to change(Teammate, :count)
+          expect { processor.send(:ensure_teammate_relationship, person, organization) }.not_to change(CompanyTeammate, :count)
         end
       end
 
       context 'when teammate relationship does not exist' do
         it 'creates new teammate relationship' do
-          expect { processor.send(:ensure_teammate_relationship, person, organization) }.to change(Teammate, :count).by(1)
+          expect { processor.send(:ensure_teammate_relationship, person, organization) }.to change(CompanyTeammate, :count).by(1)
         end
 
         it 'returns created teammate' do

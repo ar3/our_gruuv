@@ -165,7 +165,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       expect(page).to have_content('Position information was successfully updated')
       expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
       
-      new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
+      new_tenure = EmploymentTenure.where(company_teammate: employee_teammate, company: company).order(:created_at).last
       expect(new_tenure.manager_teammate.person).to eq(non_manager_employee)
     end
 
@@ -233,7 +233,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       expect(page).to have_content('Position information was successfully updated')
       expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
       
-      new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
+      new_tenure = EmploymentTenure.where(company_teammate: employee_teammate, company: company).order(:created_at).last
       expect(new_tenure.manager_teammate.person).to eq(new_manager)
     end
   end
@@ -253,7 +253,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       
       # Verify new tenure was created
       expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
-      new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
+      new_tenure = EmploymentTenure.where(company_teammate: employee_teammate, company: company).order(:created_at).last
       expect(new_tenure.manager_teammate.person).to eq(new_manager)
       expect(new_tenure.position).to eq(new_position)
       expect(new_tenure.employment_type).to eq('part_time')
@@ -347,7 +347,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       expect(current_tenure.ended_at).to be_nil
       
       # Verify no new tenure was created (seat change only)
-      expect(EmploymentTenure.where(teammate: employee_teammate, company: company).count).to eq(1)
+      expect(EmploymentTenure.where(company_teammate: employee_teammate, company: company).count).to eq(1)
     end
 
     it 'allows clearing seat when changing position' do
@@ -363,7 +363,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       
       # Verify new tenure was created with new position and no seat
       expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
-      new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
+      new_tenure = EmploymentTenure.where(company_teammate: employee_teammate, company: company).order(:created_at).last
       expect(new_tenure.position).to eq(new_position)
       expect(new_tenure.seat).to be_nil
       
@@ -437,8 +437,8 @@ RSpec.describe 'Position Update', type: :system, js: true do
   end
 
   describe 'Position dropdown grouping' do
-    let(:department) { create(:organization, :department, parent: company) }
-    let!(:dept_title) { create(:title, company: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
+    let(:department) { create(:department, company: company) }
+    let!(:dept_title) { create(:title, company: company, department: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
     let!(:dept_position) { create(:position, title_id: dept_title.id, position_level_id: position_level1.id) }
 
     it 'shows positions grouped by department with optgroups' do
@@ -477,7 +477,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
         click_button 'Start Employment'
         
         expect(page).to have_content('Employment was successfully started')
-        expect(EmploymentTenure.where(teammate: teammate_without_employment, company: company).active.count).to eq(1)
+        expect(EmploymentTenure.where(company_teammate: teammate_without_employment, company: company).active.count).to eq(1)
       end
     end
 
@@ -512,7 +512,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
         click_button 'Restart Employment'
         
         expect(page).to have_content('Employment was successfully started')
-        new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: company).active.first
+        new_tenure = EmploymentTenure.where(company_teammate: teammate_without_employment, company: company).active.first
         expect(new_tenure.started_at.to_date).to eq(restart_date)
       end
     end
@@ -539,8 +539,8 @@ RSpec.describe 'Position Update', type: :system, js: true do
     end
 
     context 'position dropdown grouping in start/restart form' do
-      let(:department) { create(:organization, :department, parent: company) }
-      let!(:dept_title) { create(:title, company: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
+      let(:department) { create(:department, company: company) }
+      let!(:dept_title) { create(:title, company: company, department: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
       let!(:dept_position) { create(:position, title_id: dept_title.id, position_level_id: position_level1.id) }
 
       before do

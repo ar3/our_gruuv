@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe UnassignedEmployeeUploadProcessorJob, type: :job do
-  let(:organization) { create(:organization, type: 'Company') }
+  let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:upload_event) { create(:upload_employees, organization: organization, creator: person, initiator: person) }
 
@@ -124,8 +124,8 @@ RSpec.describe UnassignedEmployeeUploadProcessorJob, type: :job do
         expect {
           described_class.perform_and_get_result(upload_event.id, organization.id)
         }.to change(Person, :count).by_at_least(1)
-         .and change(Organization.departments, :count).by(1)
-         .and change(Teammate, :count).by_at_least(1) # Allow for more teammates if manager is created
+         .and change(Department, :count).by(1)
+         .and change(CompanyTeammate, :count).by_at_least(1) # Allow for more teammates if manager is created
          .and change(EmploymentTenure, :count).by(1)
 
         expect(upload_event.reload.status).to eq('completed')

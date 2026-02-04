@@ -1,15 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe 'Slack Integration', type: :system do
-  let(:company) { create(:organization, name: 'Test Company', type: 'Company') }
-  let(:team) { create(:organization, name: 'Test Team', type: 'Team', parent: company) }
+  let(:company) { create(:organization, name: 'Test Company') }
+  let(:team) { create(:organization, name: 'Test Team') }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
 
   before do
     # Ensure "OurGruuv Demo" organization exists (required for teammate creation)
-    Company.find_or_create_by!(name: 'OurGruuv Demo') do |org|
-      org.type = 'Company'
-    end
+    Organization.find_or_create_by!(name: 'OurGruuv Demo')
     
     # Ensure person has a teammate (required for authentication)
     teammate = person.teammates.find_by(organization: team) || 
@@ -68,23 +66,20 @@ RSpec.describe 'Slack Integration', type: :system do
   end
 
   describe 'Huddle Creation with Slack Channel' do
+    let(:company_with_team) { create(:organization, :company, name: 'Test Company') }
+    let!(:team_for_huddle) { create(:team, company: company_with_team, name: 'Test Team') }
+
     it 'creates a huddle with Slack channel and sends notification' do
-      # Approach 1: Use sign_in_as helper
-      teammate = CompanyTeammate.find_or_create_by!(person: person, organization: team)
-      sign_in_as(person, team)
-      visit new_huddle_path
-      select '+ Create new company', from: 'Company'
-      fill_in 'New company name', with: 'Test Company'
-      fill_in 'New team name', with: 'Test Team'
-      click_button 'Start Huddle'
-      
-      # Check for success message or redirect
-      has_success = page.has_content?('Huddle created successfully!') || 
-                    page.has_content?(/created/i)
+      CompanyTeammate.find_or_create_by!(person: person, organization: company_with_team)
+      sign_in_as(person, company_with_team)
+      visit new_huddle_path(organization_id: company_with_team.id)
+      expect(page).to have_content(company_with_team.name)
+      first('.list-group-item', text: team_for_huddle.name).click_button('Start Huddle')
+
+      sleep 1
+      has_success = page.has_content?('Huddle created successfully!') || page.has_content?(/created/i)
       has_redirect = page.current_path.match?(/huddles/)
       expect(has_success || has_redirect).to be true
-      
-      # Verify huddle was created
       expect(Huddle.last).to be_present
       
       # Approach 2: Set session with teammate
@@ -109,35 +104,18 @@ RSpec.describe 'Slack Integration', type: :system do
     end
 
     it 'creates a huddle without Slack channel and uses default' do
-      teammate = CompanyTeammate.find_or_create_by!(person: person, organization: team)
-      sign_in_as(person, team)
-      visit new_huddle_path
-      
-      # Select "+ Create new company" which triggers JavaScript to show the new company field
-      select '+ Create new company', from: 'Company'
-      
-      # Wait for the JavaScript to show the field (Capybara's have_css waits automatically)
-      expect(page).to have_css('input[name="huddle[new_company_name]"]', visible: true)
-      
-      fill_in 'New company name', with: 'Test Company No Slack'
-      
-      # The new team field should also be visible after selecting new company
-      expect(page).to have_css('input[name="huddle[new_team_name]"]', visible: true)
-      fill_in 'New team name', with: 'Test Team No Slack'
-      
-      click_button 'Start Huddle'
-      
-      # Verify redirect to huddle page
+      CompanyTeammate.find_or_create_by!(person: person, organization: company_with_team)
+      sign_in_as(person, company_with_team)
+      visit new_huddle_path(organization_id: company_with_team.id)
+      expect(page).to have_content(company_with_team.name)
+      first('.list-group-item', text: team_for_huddle.name).click_button('Start Huddle')
+      sleep 1
       expect(page).to have_current_path(/\/huddles\/\d+/)
       
-      # Verify huddle was created in database
       huddle = Huddle.last
       expect(huddle).to be_present
-      expect(huddle.display_name).to be_present
-      
-      # Verify the organization was created correctly
-      expect(huddle.company.name).to eq('Test Team No Slack')
-      expect(huddle.company.parent.name).to eq('Test Company No Slack')
+      expect(huddle.team).to eq(team_for_huddle)
+      expect(huddle.team.company.name).to eq('Test Company')
       
       # Approach 2: Check for redirect to huddle page instead of flash
       # teammate = CompanyTeammate.find_or_create_by!(person: person, organization: team)
@@ -190,7 +168,7 @@ RSpec.describe 'Slack Integration', type: :system do
       expect(page).to have_current_path(huddle_path(huddle))
       
       # Verify feedback was saved in database instead of checking flash message
-      feedback = huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: person })
+      feedback = huddle.huddle_feedbacks.joins(:company_teammate).find_by(teammates: { person: person })
       expect(feedback).to be_present
       expect(feedback.informed_rating).to eq(4)
       expect(feedback.connected_rating).to eq(5)
@@ -308,10 +286,10 @@ RSpec.describe 'Slack Integration', type: :system do
     let(:channel3) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C333333', display_name: 'announcements') }
     let(:group1) { create(:third_party_object, :slack_group, organization: company, third_party_id: 'S111111', display_name: 'Engineering') }
     let(:group2) { create(:third_party_object, :slack_group, organization: company, third_party_id: 'S222222', display_name: 'Product') }
-    let(:department1) { create(:organization, :department, parent: company, name: 'Engineering') }
-    let(:department2) { create(:organization, :department, parent: company, name: 'Product') }
-    let(:team1) { create(:organization, :team, parent: department1, name: 'Backend Team') }
-    let(:team2) { create(:organization, :team, parent: department2, name: 'Frontend Team') }
+    let(:department1) { create(:department, company: company, name: 'Engineering') }
+    let(:department2) { create(:department, company: company, name: 'Product') }
+    let(:team1) { create(:team, company: company, name: 'Backend Team') }
+    let(:team2) { create(:team, company: company, name: 'Frontend Team') }
 
     before do
       slack_config
@@ -332,7 +310,7 @@ RSpec.describe 'Slack Integration', type: :system do
       visit channels_organization_slack_path(company)
 
       expect(page).to have_content('Manage Channel & Group Associations')
-      expect(page).to have_content('Company Settings')
+      expect(page).to have_content('Organization Settings')
       expect(page).to have_content('Organization-Wide Settings')
       expect(page).to have_content(company.name)
 
@@ -347,7 +325,7 @@ RSpec.describe 'Slack Integration', type: :system do
     it 'edits huddle review channel for the company via dedicated page' do
       visit channels_organization_slack_path(company)
 
-      within('.card.mb-4.border-primary') do
+      within(first('.card.border-primary')) do
         click_link 'Edit'
       end
 
@@ -358,8 +336,8 @@ RSpec.describe 'Slack Integration', type: :system do
 
       expect(page).to have_current_path(channels_organization_slack_path(company))
 
-      company_record = Company.find(company.id)
-      expect(company_record.huddle_review_notification_channel_id).to eq('C111111')
+      company.reload
+      expect(company.huddle_review_notification_channel_id).to eq('C111111')
     end
 
     it 'edits kudos and group for the company via dedicated page' do
@@ -384,7 +362,9 @@ RSpec.describe 'Slack Integration', type: :system do
     it 'edits kudos and group for a department via dedicated page' do
       visit channels_organization_slack_path(company)
 
-      find("tr[data-organization-id='#{department1.id}'] a", text: 'Edit').click
+      within("tr[data-organization-id='#{department1.id}']") do
+        click_link 'Edit'
+      end
 
       expect(page).to have_current_path(edit_channel_organization_slack_path(company, target_organization_id: department1.id))
 
@@ -405,7 +385,9 @@ RSpec.describe 'Slack Integration', type: :system do
 
       visit channels_organization_slack_path(company)
 
-      find("tr[data-organization-id='#{department1.id}'] a", text: 'Edit').click
+      within("tr[data-organization-id='#{department1.id}']") do
+        click_link 'Edit'
+      end
 
       select 'None', from: 'organization[kudos_channel_id]'
       select 'None', from: 'organization[slack_group_id]'
@@ -418,9 +400,8 @@ RSpec.describe 'Slack Integration', type: :system do
     end
 
     it 'pre-populates the edit form with existing values' do
-      company_record = Company.find(company.id)
-      company_record.huddle_review_notification_channel_id = channel1.third_party_id
-      company_record.save!
+      company.huddle_review_notification_channel_id = channel1.third_party_id
+      company.save!
       company.kudos_channel_id = channel2.third_party_id
       company.slack_group_id = group1.third_party_id
       company.save!
@@ -436,9 +417,8 @@ RSpec.describe 'Slack Integration', type: :system do
     end
 
     it 'submits successfully when clearing huddle review channel via dedicated page' do
-      company_record = Company.find(company.id)
-      company_record.huddle_review_notification_channel_id = channel1.third_party_id
-      company_record.save!
+      company.huddle_review_notification_channel_id = channel1.third_party_id
+      company.save!
       
       visit edit_company_channel_organization_slack_path(company, target_organization_id: company.id)
       
@@ -447,8 +427,8 @@ RSpec.describe 'Slack Integration', type: :system do
       
       expect(page).to have_current_path(channels_organization_slack_path(company))
       
-      company_record.reload
-      expect(company_record.huddle_review_notification_channel_id).to be_nil
+      company.reload
+      expect(company.huddle_review_notification_channel_id).to be_nil
     end
   end
 end 

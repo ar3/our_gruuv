@@ -2,10 +2,10 @@ require 'rails_helper'
 
 RSpec.describe UpdateAssignmentAbilityMilestones, type: :service do
   let(:company) { create(:organization, :company) }
-  let!(:department) { create(:organization, :department, parent: company) }
+  let!(:department) { create(:department, company: company) }
   let(:assignment) { create(:assignment, company: company) }
   let(:ability1) { create(:ability, company: company) }
-  let(:ability2) { create(:ability, company: department) }
+  let(:ability2) { create(:ability, company: company, department: department) }
   let(:ability3) { create(:ability, company: company) }
 
   describe '#call' do

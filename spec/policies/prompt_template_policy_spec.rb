@@ -156,9 +156,9 @@ RSpec.describe PromptTemplatePolicy, type: :policy do
     end
 
     context 'when organization has root_company' do
-      let(:team) { create(:organization, type: 'Team', parent: company) }
-      let(:team_teammate) { CompanyTeammate.create!(person: person, organization: team, can_manage_prompts: true) }
-      let(:pundit_user_team) { OpenStruct.new(user: team_teammate, impersonating_teammate: nil) }
+      # Organizations are their own root (no parent hierarchy); teammate in company sees that company's templates
+      let(:company_teammate) { create(:teammate, person: person, organization: company, can_manage_prompts: true) }
+      let(:pundit_user_team) { OpenStruct.new(user: company_teammate, impersonating_teammate: nil) }
 
       it 'returns templates from root company' do
         policy = PromptTemplatePolicy::Scope.new(pundit_user_team, PromptTemplate)

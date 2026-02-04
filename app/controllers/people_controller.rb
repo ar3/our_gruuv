@@ -25,7 +25,7 @@ class PeopleController < ApplicationController
     
     # Get all milestones with public_profile_published_at across all organizations
     @milestones = if person.teammates.exists?
-      TeammateMilestone.joins(:teammate)
+      TeammateMilestone.joins(:company_teammate)
         .where(teammates: { person: person })
         .public_profile_published
         .includes(:ability, certifying_teammate: :person)

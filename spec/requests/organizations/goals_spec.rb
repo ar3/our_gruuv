@@ -1,12 +1,12 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Goals', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) do
-    person.teammates.find_or_initialize_by(organization: organization).tap do |t|
-      t.type = 'CompanyTeammate' unless t.persisted?
-      t.save! unless t.persisted?
+    person.company_teammates.find_or_create_by!(organization: organization) do |t|
+      t.first_employed_at = nil
+      t.last_terminated_at = nil
     end
   end
   let(:goal) { create(:goal, creator: teammate, owner: teammate, title: 'Test Goal', started_at: 1.week.ago) }
@@ -113,19 +113,11 @@ RSpec.describe 'Organizations::Goals', type: :request do
     
     context 'when current_teammate is missing' do
       let(:person_without_teammate) { create(:person) }
-      let(:department) { create(:organization, :department, parent: organization) }
-      let(:department_teammate) { create(:teammate, person: person_without_teammate, organization: department, type: 'DepartmentTeammate') }
-      
+
       before do
-        # Create a DepartmentTeammate but no CompanyTeammate for this person
-        department_teammate
-        # Sign in as person - this will create a CompanyTeammate, so we need to delete it
-        # to simulate the scenario where person doesn't have a CompanyTeammate
+        # Sign in as person - this will create a CompanyTeammate; destroy it to simulate missing
         signed_in_teammate = sign_in_as_teammate_for_request(person_without_teammate, organization)
-        # Delete the CompanyTeammate that was created by sign_in_as_teammate_for_request
-        # This simulates the scenario where person only has a DepartmentTeammate
         signed_in_teammate.destroy
-        # Stub current_person to return the person so the controller can find teammates
         allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person_without_teammate)
       end
       
@@ -198,7 +190,6 @@ RSpec.describe 'Organizations::Goals', type: :request do
       let(:other_person) { create(:person) }
       let(:other_teammate) do
         other_person.teammates.find_or_initialize_by(organization: organization).tap do |t|
-          t.type = 'CompanyTeammate' unless t.persisted?
           t.save! unless t.persisted?
         end
       end
@@ -220,9 +211,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
   
   describe 'GET /organizations/:organization_id/goals/:id' do
     it 'displays prompt attachments when goal is attached to prompts' do
-      # Ensure teammate is a CompanyTeammate by reloading from database
-      teammate.update_column(:type, 'CompanyTeammate') unless teammate.type == 'CompanyTeammate'
-      company_teammate = CompanyTeammate.find(teammate.id)
+      company_teammate = teammate
       
       template = create(:prompt_template, company: organization, available_at: Date.current)
       prompt = create(:prompt, company_teammate: company_teammate, prompt_template: template)
@@ -490,19 +479,14 @@ RSpec.describe 'Organizations::Goals', type: :request do
     
     context 'when user is not authorized' do
       let(:other_person) { create(:person) }
-      let(:other_teammate) do
-        other_person.teammates.find_or_initialize_by(organization: organization).tap do |t|
-          t.type = 'CompanyTeammate' unless t.persisted?
-          t.save! unless t.persisted?
-        end
-      end
+      let(:other_teammate) { other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil } }
       let(:other_goal) { create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'only_creator') }
-      
+
       before do
         other_teammate
         sign_in_as_teammate_for_request(person, organization)
       end
-      
+
       it 'denies access' do
         get weekly_update_organization_goal_path(organization, other_goal)
         
@@ -1036,20 +1020,14 @@ RSpec.describe 'Organizations::Goals', type: :request do
     
     context 'when user is not authorized' do
       let(:other_person) { create(:person) }
-      let(:other_teammate) do
-        other_person.teammates.find_or_initialize_by(organization: organization).tap do |t|
-          t.type = 'CompanyTeammate' unless t.persisted?
-          t.save! unless t.persisted?
-        end
-      end
+      let(:other_teammate) { other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil } }
       let(:other_goal) { create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'only_creator') }
-      
+
       before do
         other_teammate
-        # Sign in as original person (not the creator/owner of other_goal)
         sign_in_as_teammate_for_request(person, organization)
       end
-      
+
       it 'denies access' do
         expect {
           post complete_organization_goal_path(organization, other_goal), params: {
@@ -1075,9 +1053,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
 
     it 'filters goals by creator when created_by_me is selected' do
       other_person = create(:person)
-      other_teammate = other_person.teammates.find_or_create_by!(organization: organization) do |t|
-        t.type = 'CompanyTeammate'
-      end
+      other_teammate = other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil }
 
       my_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Goal')
       other_goal = create(:goal, creator: other_teammate, owner: other_teammate, 
@@ -1177,7 +1153,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
 
       created_goal = Goal.last
       expect(created_goal.owner_id).to eq(organization.id)
-      expect(created_goal.owner_type).to eq('Company')
+      expect(created_goal.owner_type).to eq('Organization')
       expect(created_goal.privacy_level).to eq('everyone_in_company')
     end
   end

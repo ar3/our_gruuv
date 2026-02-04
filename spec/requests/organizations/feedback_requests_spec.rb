@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::FeedbackRequests', type: :request do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:requestor_person) { create(:person) }
   let(:requestor_teammate) do
     CompanyTeammate.find_or_create_by!(person: requestor_person, organization: company) do |t|
@@ -74,7 +74,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
     end
 
     it 'requires authorization' do
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_person = create(:person)
       sign_in_as_teammate_for_request(other_person, other_company)
 
@@ -177,7 +177,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
     end
 
     it 'requires authorization' do
-      other_company = create(:organization, :company)
+      other_company = create(:organization)
       other_person = create(:person)
       sign_in_as_teammate_for_request(other_person, other_company)
 

@@ -47,9 +47,9 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   
   def set_wizard_data
     @positions = @organization.positions.includes(:title, :position_level)
-    employee_person_ids = @organization.employees.select(:id)
+    employee_person_ids = @organization.employees.select(:person_id)
     @managers = @organization.teammates
-      .where(type: 'CompanyTeammate', person_id: employee_person_ids)
+      .where(person_id: employee_person_ids)
       .includes(:person)
       .order('people.last_name, people.first_name')
     @employment_tenure = EmploymentTenure.new
@@ -81,9 +81,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   
   def create_employment_for_existing_person
     # Find or create teammate for this person and organization
-    teammate = @person.teammates.find_or_create_by(organization: @organization) do |t|
-      t.type = 'CompanyTeammate'
-    end
+    teammate = @person.company_teammates.find_or_create_by(organization: @organization)
     
     @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
     @employment_tenure.company = @organization
@@ -103,8 +101,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
       
       # Create teammate for this person and organization
       teammate = @person.teammates.create!(
-        organization: @organization,
-        type: 'CompanyTeammate'
+        organization: @organization
       )
       
       @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)

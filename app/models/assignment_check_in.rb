@@ -78,7 +78,7 @@ class AssignmentCheckIn < ApplicationRecord
 
   def previous_finalized_check_in
     @previous_finalized_check_in ||= AssignmentCheckIn
-      .where(teammate: teammate, assignment: assignment)
+      .where(company_teammate: teammate, assignment: assignment)
       .closed
       .order(:official_check_in_completed_at)
       .last
@@ -98,7 +98,7 @@ class AssignmentCheckIn < ApplicationRecord
 
   # Find the latest finalized check-in for a teammate and assignment
   def self.latest_finalized_for(teammate, assignment)
-    where(teammate: teammate, assignment: assignment)
+    where(company_teammate: teammate, assignment: assignment)
       .closed
       .order(official_check_in_completed_at: :desc)
       .first
@@ -110,7 +110,7 @@ class AssignmentCheckIn < ApplicationRecord
     return @assignment_tenure if @assignment_tenure
     
     # First, try to find an active tenure
-    active_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
+    active_tenure = AssignmentTenure.where(company_teammate: teammate, assignment: assignment).active.first
     
     if active_tenure
       @assignment_tenure = active_tenure
@@ -128,12 +128,12 @@ class AssignmentCheckIn < ApplicationRecord
     return nil unless tenure
     
     # Find existing open check-in for this teammate/assignment
-    open_check_in = where(teammate: teammate, assignment: assignment).open.first
+    open_check_in = where(company_teammate: teammate, assignment: assignment).open.first
     return open_check_in if open_check_in
     
     # Create new open check-in if none exists
     create!(
-      teammate: teammate,
+      company_teammate: teammate,
       assignment: assignment,
       check_in_started_on: Date.current,
       actual_energy_percentage: tenure.anticipated_energy_percentage
@@ -167,7 +167,7 @@ class AssignmentCheckIn < ApplicationRecord
     return unless open? # Only validate for open check-ins
     
     existing_open = AssignmentCheckIn
-      .where(teammate: teammate, assignment: assignment)
+      .where(company_teammate: teammate, assignment: assignment)
       .open
       .where.not(id: id)
     

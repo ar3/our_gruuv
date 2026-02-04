@@ -152,8 +152,8 @@ RSpec.describe UnassignedEmployeeUploadParser, type: :service do
   describe '#enhanced_preview_actions' do
     before do
       # Create some test data
-      @organization = create(:organization, type: 'Company')
-      @department = create(:organization, type: 'Department', parent: @organization, name: 'Engineering')
+      @organization = create(:organization, :company)
+      @department = create(:department, company: @organization, name: 'Engineering')
       @existing_person = create(:person, email: 'existing@company.com', first_name: 'Existing', last_name: 'Person')
     end
 

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:company_teammate, person: person, organization: organization) }
   let(:title) { create(:title, company: organization) }

@@ -1,6 +1,9 @@
 class Organization < ApplicationRecord
   include PgSearch::Model
 
+  # STI removed: always treat as Organization (ignore type column if present)
+  self.inheritance_column = :_type_disabled
+
   # Associations
   has_many :teams, foreign_key: :company_id, dependent: :destroy
   has_many :departments, foreign_key: :company_id, dependent: :destroy
@@ -14,7 +17,9 @@ class Organization < ApplicationRecord
   has_one :slack_configuration, dependent: :destroy
   has_many :third_party_objects, dependent: :destroy
   has_many :third_party_object_associations, as: :associatable, dependent: :destroy
-  has_many :teammates, dependent: :destroy
+  has_many :company_teammates, class_name: 'CompanyTeammate', dependent: :destroy
+  has_many :teammates, class_name: 'CompanyTeammate', foreign_key: 'organization_id', dependent: :destroy
+  has_many :employees, class_name: 'CompanyTeammate', foreign_key: 'organization_id', dependent: :destroy
   has_many :bulk_sync_events, dependent: :destroy
   has_many :upload_events, class_name: 'BulkSyncEvent', dependent: :destroy # Backward compatibility alias
   has_many :bulk_downloads, foreign_key: 'company_id', dependent: :destroy
@@ -46,6 +51,8 @@ class Organization < ApplicationRecord
   scope :ordered, -> { order(:name) }
   scope :active, -> { where(deleted_at: nil) }
   scope :archived, -> { where.not(deleted_at: nil) }
+  # Backward compatibility: all organizations are companies (STI removed)
+  scope :companies, -> { all }
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)
@@ -235,7 +242,7 @@ class Organization < ApplicationRecord
   end
 
   def teammate_milestones_for_person(person)
-    teammate = person.teammates.find_by(organization: self)
+    teammate = person.company_teammates.find_by(organization: self)
     return TeammateMilestone.none unless teammate
     
     teammate.teammate_milestones.joins(:ability)
@@ -259,12 +266,12 @@ class Organization < ApplicationRecord
   
   # Permission helper methods
   def can_manage_employment?(person)
-    Teammate.can_manage_employment_in_hierarchy?(person, self)
+    CompanyTeammate.can_manage_employment_in_hierarchy?(person, self)
   end
   
   def can_create_employment?(person)
     return true if person.og_admin?
-    teammate = person.teammates.find_by(organization: self)
+    teammate = person.company_teammates.find_by(organization: self)
     teammate&.can_create_employment? || false
   end
   

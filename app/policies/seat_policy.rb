@@ -2,7 +2,7 @@ class SeatPolicy < ApplicationPolicy
   def show?
     return false unless viewing_teammate
     return false unless viewing_teammate.employed?
-    org = record&.title&.organization
+    org = record&.title&.company
     return false unless org
     # Check if company_teammate matches root_company of the seat's organization
     seat_root_company = org.root_company

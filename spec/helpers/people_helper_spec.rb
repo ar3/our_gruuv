@@ -25,9 +25,9 @@ RSpec.describe PeopleHelper, type: :helper do
         expect(helper.people_current_view_name).to eq('Check-In Review')
       end
       
-      it 'returns Seat History Mode for position controller' do
+      it 'returns Seat Management Mode for position controller' do
         allow(helper).to receive(:controller_name).and_return('position')
-        expect(helper.people_current_view_name).to eq('Seat History Mode')
+        expect(helper.people_current_view_name).to eq('Seat Management Mode')
       end
     end
 

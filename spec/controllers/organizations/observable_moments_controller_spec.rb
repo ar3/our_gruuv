@@ -4,10 +4,10 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
   let(:company) { create(:organization) }
   let(:person) { create(:person) }
   # Use the teammate created by sign_in_as_teammate to avoid "Person has already been taken"
-  let(:teammate) { Teammate.find_by!(person: person, organization: company) }
+  let(:teammate) { CompanyTeammate.find_by!(person: person, organization: company) }
   let(:other_person) { create(:person) }
   # Find or create to avoid "Person has already been taken" when sign_in creates other_person's teammate
-  let(:other_teammate) { Teammate.find_by(person: other_person, organization: company) || create(:teammate, organization: company, person: other_person) }
+  let(:other_teammate) { CompanyTeammate.find_by(person: other_person, organization: company) || create(:teammate, organization: company, person: other_person) }
   let(:observable_moment) do
     create(:observable_moment, :new_hire, company: company, primary_potential_observer: teammate)
   end

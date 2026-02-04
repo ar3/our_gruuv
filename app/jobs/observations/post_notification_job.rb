@@ -20,7 +20,7 @@ class Observations::PostNotificationJob < ApplicationJob
 
   def send_group_dm(observation, teammate_ids)
     # Get all teammates with Slack identities from the provided list
-    teammates = Teammate.where(id: teammate_ids).select { |t| t.slack_user_id.present? }
+    teammates = CompanyTeammate.where(id: teammate_ids).select { |t| t.slack_user_id.present? }
     
     # Always include the observer if they have Slack configured
     observer_teammate = observation.company.teammates.find_by(person: observation.observer)

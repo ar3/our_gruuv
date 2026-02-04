@@ -16,9 +16,9 @@ class EnsureAssignmentTenuresSyncParser
       org_ids = organization.company? ? organization.self_and_descendants.map(&:id) : [organization.id]
       
       active_employment_tenures = EmploymentTenure.active
-        .joins(:teammate)
+        .joins(:company_teammate)
         .where(company_id: org_ids, teammates: { organization_id: org_ids })
-        .includes(:teammate, :position)
+        .includes(:company_teammate, :position)
 
       assignment_tenures_to_create = []
 
@@ -36,7 +36,7 @@ class EnsureAssignmentTenuresSyncParser
 
           # Check if an active assignment tenure already exists
           existing_tenure = AssignmentTenure.active
-            .find_by(teammate: teammate, assignment: assignment)
+            .find_by(company_teammate: teammate, assignment: assignment)
 
           # Calculate the estimated percentage (use existing if available, otherwise calculate)
           energy_percentage = existing_tenure&.anticipated_energy_percentage || calculate_energy_percentage(position_assignment)

@@ -32,7 +32,7 @@ class People::AssignmentsController < ApplicationController
     @tenure = teammate ? AssignmentTenure.most_recent_for(teammate, @assignment) : nil
     @open_check_in = teammate ? AssignmentCheckIn.find_or_create_open_for(teammate, @assignment) : nil
     @recent_check_ins = teammate ? AssignmentCheckIn
-      .where(teammate: teammate, assignment: @assignment)
+      .where(company_teammate: teammate, assignment: @assignment)
       .includes(:manager_completed_by_teammate, :finalized_by_teammate)
       .order(check_in_started_on: :desc)
       .limit(5) : []
@@ -57,7 +57,7 @@ class People::AssignmentsController < ApplicationController
 
   def load_tenure_history
     teammate = @person.teammates.find_by(organization: @assignment.company)
-    @tenure_history = teammate ? AssignmentTenure.where(teammate: teammate, assignment: @assignment).order(started_at: :desc) : []
+    @tenure_history = teammate ? AssignmentTenure.where(company_teammate: teammate, assignment: @assignment).order(started_at: :desc) : []
   end
 
   def require_authentication

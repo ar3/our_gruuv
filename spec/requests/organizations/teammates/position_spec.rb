@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Teammates::Position', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: true) }
   let(:employee_person) { create(:person) }
@@ -61,9 +61,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     # Ensure it's actually a CompanyTeammate instance
     teammate_instance.reload
     unless teammate_instance.is_a?(CompanyTeammate)
-      # Fix the type if needed
-      teammate_instance.update_column(:type, 'CompanyTeammate')
-      teammate_instance = Teammate.find(teammate_instance.id) # Reload as CompanyTeammate
+      teammate_instance = CompanyTeammate.find(teammate_instance.id)
     end
 
     # Set first_employed_at for employed? check in policies
@@ -243,11 +241,11 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
           puts "Form manager_teammate_id: #{assigns(:form).manager_teammate_id.inspect}" if assigns(:form).respond_to?(:manager_teammate_id)
         end
         puts "Current tenure ended_at after: #{current_tenure.reload.ended_at.inspect}"
-        puts "All tenures: #{EmploymentTenure.where(teammate: employee_teammate, company: organization).pluck(:id, :manager_teammate_id, :ended_at).inspect}"
+        puts "All tenures: #{EmploymentTenure.where(company_teammate: employee_teammate, company: organization).pluck(:id, :manager_teammate_id, :ended_at).inspect}"
         
         expect(response).to have_http_status(:redirect)
         expect(current_tenure.reload.ended_at).not_to be_nil
-        new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: organization).order(:created_at).last
+        new_tenure = EmploymentTenure.where(company_teammate: employee_teammate, company: organization).order(:created_at).last
         expect(new_tenure.manager_teammate_id).to eq(new_manager_teammate.id)
       end
 
@@ -265,7 +263,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
           }
         }.to change { current_tenure.reload.ended_at }.from(nil)
         
-        new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: organization).order(:created_at).last
+        new_tenure = EmploymentTenure.where(company_teammate: employee_teammate, company: organization).order(:created_at).last
         expect(new_tenure.position).to eq(new_position)
       end
 
@@ -433,7 +431,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
           expect(response).to have_http_status(:redirect)
           expect(flash[:notice]).to eq('Employment was successfully started.')
           
-          new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: organization).last
+          new_tenure = EmploymentTenure.where(company_teammate: teammate_without_employment, company: organization).last
           expect(new_tenure).to be_present
           expect(new_tenure.position).to eq(position)
           expect(new_tenure.manager_teammate_id).to eq(manager_teammate.id)
@@ -451,7 +449,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
           }
           
           expect(response).to have_http_status(:redirect)
-          new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: organization).last
+          new_tenure = EmploymentTenure.where(company_teammate: teammate_without_employment, company: organization).last
           expect(new_tenure.manager_teammate).to be_nil
         end
       end
@@ -478,7 +476,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
           }
           
           expect(response).to have_http_status(:redirect)
-          new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: organization).order(:created_at).last
+          new_tenure = EmploymentTenure.where(company_teammate: teammate_without_employment, company: organization).order(:created_at).last
           expect(new_tenure.started_at.to_date).to eq(restart_date)
           expect(new_tenure.active?).to be true
         end
@@ -494,7 +492,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
           }
           
           expect(response).to have_http_status(:redirect)
-          new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: organization).order(:created_at).last
+          new_tenure = EmploymentTenure.where(company_teammate: teammate_without_employment, company: organization).order(:created_at).last
           # Should be adjusted to 1 minute after the inactive end date
           expect(new_tenure.started_at).to be > inactive_tenure.ended_at
           expect(new_tenure.started_at).to be_within(2.minutes).of(inactive_tenure.ended_at + 1.minute)
@@ -536,9 +534,9 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       end
 
       it 'loads positions grouped by department' do
-        department = create(:organization, :department, parent: organization)
-        dept_title = create(:title, company: department, position_major_level: position_major_level)
-        dept_position = create(:position, title: dept_title, position_level: position_level)
+        department = create(:department, company: organization)
+        dept_title = create(:title, company: organization, department: department, position_major_level: create(:position_major_level), external_title: "Dept Title #{department.id}")
+        dept_position = create(:position, title: dept_title, position_level: create(:position_level, position_major_level: dept_title.position_major_level))
         
         get organization_teammate_position_path(organization, teammate_without_employment)
         

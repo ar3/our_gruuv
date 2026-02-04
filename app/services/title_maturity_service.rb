@@ -883,9 +883,9 @@ class TitleMaturityService
     employment_tenures = EmploymentTenure
       .where(position_id: positions_with_tenures)
       .active  # Only count active employment tenures
-      .includes(:teammate)
+      .includes(:company_teammate)
 
-    teammate_ids = employment_tenures.map(&:teammate).compact.uniq.map(&:id)
+    teammate_ids = employment_tenures.map(&:company_teammate).compact.uniq.map(&:id)
 
     return false if teammate_ids.empty?
 

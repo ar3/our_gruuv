@@ -2,11 +2,11 @@ class FeedbackRequest < ApplicationRecord
   include Notifiable
   
   belongs_to :company, class_name: 'Organization'
-  belongs_to :requestor_teammate, class_name: 'Teammate'
-  belongs_to :subject_of_feedback_teammate, class_name: 'Teammate'
+  belongs_to :requestor_teammate, class_name: 'CompanyTeammate'
+  belongs_to :subject_of_feedback_teammate, class_name: 'CompanyTeammate'
   has_many :feedback_request_questions, dependent: :destroy
   has_many :feedback_request_responders, dependent: :destroy
-  has_many :responders, through: :feedback_request_responders, source: :teammate
+  has_many :responders, through: :feedback_request_responders, source: :company_teammate
   has_many :observations, through: :feedback_request_questions
 
   # Soft delete scopes (NO default_scope)

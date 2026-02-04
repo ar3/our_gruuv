@@ -5,10 +5,7 @@ RSpec.describe "Organizations", type: :request do
   let(:organization) { create(:organization) }
 
   before do
-    # Sign in but don't set organization (for tests that need no organization)
     sign_in_as_teammate_for_request(person, organization)
-    # Override to nil for tests that specifically need no organization
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(nil)
   end
 
   describe "GET /index" do
@@ -36,7 +33,7 @@ RSpec.describe "Organizations", type: :request do
 
   describe "POST /create" do
     it "returns http success" do
-      post organizations_path, params: { organization: { name: "Test Org", type: "Company" } }
+      post organizations_path, params: { organization: { name: "Test Org" } }
       expect(response).to have_http_status(:redirect)
     end
   end

@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Organizations::Prompts::PromptGoals', type: :request do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:teammate) do
     CompanyTeammate.find_or_create_by!(person: person, organization: organization)
   end

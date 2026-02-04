@@ -7,7 +7,7 @@ RSpec.describe AspirationCheckIn, type: :model do
   let(:aspiration) { create(:aspiration, company: organization) }
   
   describe 'associations' do
-    it { should belong_to(:teammate) }
+    it { should belong_to(:company_teammate) }
     it { should belong_to(:aspiration) }
     it { should belong_to(:manager_completed_by_teammate).class_name('CompanyTeammate').optional }
     it { should belong_to(:finalized_by_teammate).class_name('CompanyTeammate').optional }
@@ -294,7 +294,7 @@ RSpec.describe AspirationCheckIn, type: :model do
           }.to change(AspirationCheckIn, :count).by(1)
           
           check_in = AspirationCheckIn.last
-          expect(check_in.teammate).to be_a(Teammate)
+          expect(check_in.teammate).to be_a(CompanyTeammate)
           expect(check_in.teammate.id).to eq(teammate.id)
           expect(check_in.aspiration).to eq(aspiration)
           expect(check_in.check_in_started_on).to eq(Date.current)

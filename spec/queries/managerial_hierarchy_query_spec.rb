@@ -34,7 +34,7 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
     context 'when person has no managers' do
       it 'returns empty array' do
         # Create employment tenure without manager
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: nil)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: nil)
         
         query = described_class.new(person: person, organization: company)
         expect(query.call).to eq([])
@@ -43,7 +43,7 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
 
     context 'when person has a direct manager' do
       before do
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
       end
 
       it 'returns the direct manager' do
@@ -63,7 +63,7 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
         position_level = create(:position_level, position_major_level: position_major_level)
         position = create(:position, title: title, position_level: position_level)
         # Find or create the manager's employment tenure and update its position
-        manager_tenure = EmploymentTenure.find_or_create_by!(teammate: direct_manager_teammate, company: company) do |et|
+        manager_tenure = EmploymentTenure.find_or_create_by!(company_teammate: direct_manager_teammate, company: company) do |et|
           et.started_at = 1.month.ago
           et.position = position
         end
@@ -84,9 +84,9 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
       before do
         # Person has two employment tenures with different managers
         # Inactive tenure that ended before the active one started (create this first)
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: manager2_teammate, started_at: 3.months.ago, ended_at: 2.months.ago)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: manager2_teammate, started_at: 3.months.ago, ended_at: 2.months.ago)
         # Active tenure starting after the inactive one ended
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate, started_at: 1.month.ago)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate, started_at: 1.month.ago)
       end
 
       it 'returns all managers from active tenures' do
@@ -105,7 +105,7 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
         other_teammate = CompanyTeammate.create!(person: person, organization: other_company)
         inactive_manager = create(:person)
         inactive_manager_teammate = CompanyTeammate.create!(person: inactive_manager, organization: other_company)
-        create(:employment_tenure, teammate: other_teammate, company: other_company, manager_teammate: inactive_manager_teammate, started_at: 3.months.ago, ended_at: 2.months.ago)
+        create(:employment_tenure, company_teammate: other_teammate, company: other_company, manager_teammate: inactive_manager_teammate, started_at: 3.months.ago, ended_at: 2.months.ago)
         
         query = described_class.new(person: person, organization: company)
         results = query.call
@@ -119,8 +119,8 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
 
     context 'when manager has a manager (grand manager)' do
       before do
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
-        create(:employment_tenure, teammate: direct_manager_teammate, company: company, manager_teammate: grand_manager_teammate)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
+        create(:employment_tenure, company_teammate: direct_manager_teammate, company: company, manager_teammate: grand_manager_teammate)
       end
 
       it 'returns both direct manager and grand manager' do
@@ -148,9 +148,9 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
       let(:great_grand_manager_teammate) { CompanyTeammate.create!(person: great_grand_manager, organization: company) }
 
       before do
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
-        create(:employment_tenure, teammate: direct_manager_teammate, company: company, manager_teammate: grand_manager_teammate)
-        create(:employment_tenure, teammate: grand_manager_teammate, company: company, manager_teammate: great_grand_manager_teammate)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
+        create(:employment_tenure, company_teammate: direct_manager_teammate, company: company, manager_teammate: grand_manager_teammate)
+        create(:employment_tenure, company_teammate: grand_manager_teammate, company: company, manager_teammate: great_grand_manager_teammate)
       end
 
       it 'returns all managers in the chain' do
@@ -174,8 +174,8 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
     context 'when manager appears multiple times in chain' do
       before do
         # Circular reference scenario - manager manages person, but also has a manager
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
-        create(:employment_tenure, teammate: direct_manager_teammate, company: company, manager_teammate: grand_manager_teammate)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
+        create(:employment_tenure, company_teammate: direct_manager_teammate, company: company, manager_teammate: grand_manager_teammate)
         # If grand_manager also had direct_manager as a manager, we should only see each manager once
       end
 
@@ -195,8 +195,8 @@ RSpec.describe ManagerialHierarchyQuery, type: :query do
       let(:other_company_teammate) { CompanyTeammate.create!(person: person, organization: other_company) }
 
       before do
-        create(:employment_tenure, teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
-        create(:employment_tenure, teammate: other_company_teammate, company: other_company, manager_teammate: other_company_manager_teammate)
+        create(:employment_tenure, company_teammate: person_teammate, company: company, manager_teammate: direct_manager_teammate)
+        create(:employment_tenure, company_teammate: other_company_teammate, company: other_company, manager_teammate: other_company_manager_teammate)
       end
 
       it 'only returns managers from the specified organization' do

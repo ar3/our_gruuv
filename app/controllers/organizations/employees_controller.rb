@@ -51,14 +51,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Find unassigned teammates matching filters
       org_ids = @organization.company? ? @organization.self_and_descendants.map(&:id) : [@organization.id]
       teammates_with_active_tenures = EmploymentTenure.active
-                                                       .joins(:teammate)
+                                                       .joins(:company_teammate)
                                                        .where(company_id: org_ids)
                                                        .where(teammates: { organization_id: org_ids })
                                                        .select('DISTINCT teammates.id')
       
       # Start with unassigned teammates query
-      unassigned_base = Teammate.where(organization_id: org_ids)
-                                .where(type: 'CompanyTeammate')
+      unassigned_base = CompanyTeammate.where(organization_id: org_ids)
                                 .where.not(id: teammates_with_active_tenures)
                                 .where.not(first_employed_at: nil)
                                 .where(last_terminated_at: nil)
@@ -291,8 +290,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       
       # Create teammate for this person and organization
       teammate_attrs = {
-        organization: @organization,
-        type: 'CompanyTeammate'
+        organization: @organization
       }
       # Set first_employed_at to the start date if provided
       teammate_attrs[:first_employed_at] = start_date if start_date.present?
@@ -301,7 +299,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       
       @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
       @employment_tenure.company = @organization
-      @employment_tenure.teammate = teammate
+      @employment_tenure.company_teammate = teammate
       @employment_tenure.save!
       
       # Create observable moment for new hire
@@ -434,7 +432,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     
     # Get all active employees (CompanyTeammates with active employment tenures in the organization hierarchy)
     all_active_teammate_ids = EmploymentTenure.active
-                                              .joins(:teammate)
+                                              .joins(:company_teammate)
                                               .where(company: org_hierarchy, teammates: { organization: org_hierarchy })
                                               .distinct
                                               .pluck('teammates.id')
@@ -511,7 +509,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Convert array back to ActiveRecord relation for eager loading if needed
       if teammates.is_a?(Array)
         teammate_ids = teammates.map(&:id)
-        teammates_relation = Teammate.where(id: teammate_ids)
+        teammates_relation = CompanyTeammate.where(id: teammate_ids)
       else
         teammates_relation = teammates
       end
@@ -562,7 +560,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Ensure teammates_for_joins is a relation for proper joins
       if teammates_for_joins.is_a?(Array)
         teammate_ids = teammates_for_joins.map(&:id)
-        teammates_relation = Teammate.where(id: teammate_ids)
+        teammates_relation = CompanyTeammate.where(id: teammate_ids)
       else
         teammates_relation = teammates_for_joins
       end
@@ -588,7 +586,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       if teammates_for_joins.is_a?(Array)
         # Convert Array back to ActiveRecord relation for proper joins
         teammate_ids = teammates_for_joins.map(&:id)
-        teammates_relation = Teammate.where(id: teammate_ids)
+        teammates_relation = CompanyTeammate.where(id: teammate_ids)
       else
         teammates_relation = teammates_for_joins
       end
@@ -736,7 +734,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       person_to_manager = {}
       EmploymentTenure.active
                       .where(company: org_hierarchy)
-                      .joins(:teammate)
+                      .joins(:company_teammate)
                       .joins('LEFT JOIN teammates AS manager_teammates ON employment_tenures.manager_teammate_id = manager_teammates.id')
                       .pluck('teammates.person_id', 'manager_teammates.person_id')
                       .each do |person_id, manager_person_id|
@@ -797,7 +795,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Ensure we have an ActiveRecord relation for proper joins
       if teammates_for_joins.is_a?(Array)
         teammate_ids = teammates_for_joins.map(&:id)
-        teammates_relation = Teammate.where(id: teammate_ids)
+        teammates_relation = CompanyTeammate.where(id: teammate_ids)
       else
         teammates_relation = teammates_for_joins
       end

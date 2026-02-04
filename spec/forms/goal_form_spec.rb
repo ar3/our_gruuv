@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe GoalForm, type: :form do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
-  let(:creator_teammate) { create(:teammate, person: person, organization: company) }
+  let(:creator_teammate) { create(:company_teammate, person: person, organization: company) }
   let(:goal) { build(:goal, creator: creator_teammate, owner: creator_teammate) }
   let(:form) { GoalForm.new(goal) }
   

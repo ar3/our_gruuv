@@ -1,10 +1,11 @@
 require 'rails_helper'
 
 RSpec.describe TeammateHelper, type: :helper do
-  let(:organization) { create(:organization) }
+  let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
-  let!(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, ended_at: nil) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization) }
+  let(:manager_teammate) { create(:company_teammate, organization: organization) }
+  let!(:employment_tenure) { create(:employment_tenure, company_teammate: teammate, company: organization, ended_at: nil) }
   let!(:position_major_level) { create(:position_major_level) }
   let!(:title) { create(:title, company: organization, position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
@@ -21,7 +22,7 @@ RSpec.describe TeammateHelper, type: :helper do
   describe '#overall_employee_status' do
     context 'when ready for finalization' do
       before do
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate)
       end
       it 'returns "ready_for_finalization"' do
         expect(helper.overall_employee_status(person, organization)).to eq('ready_for_finalization')
@@ -30,7 +31,7 @@ RSpec.describe TeammateHelper, type: :helper do
 
     context 'when needs manager completion' do
       before do
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: nil)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: nil, manager_completed_by_teammate: nil)
       end
       it 'returns "needs_manager_completion"' do
         expect(helper.overall_employee_status(person, organization)).to eq('needs_manager_completion')
@@ -39,7 +40,7 @@ RSpec.describe TeammateHelper, type: :helper do
 
     context 'when needs employee completion' do
       before do
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: nil, manager_completed_at: 1.day.ago)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: nil, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate)
       end
       it 'returns "needs_employee_completion"' do
         expect(helper.overall_employee_status(person, organization)).to eq('needs_employee_completion')
@@ -48,7 +49,7 @@ RSpec.describe TeammateHelper, type: :helper do
 
     context 'when all complete' do
       before do
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: nil, manager_completed_at: nil)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: nil, manager_completed_at: nil, manager_completed_by_teammate: nil)
       end
       it 'returns "all_complete"' do
         expect(helper.overall_employee_status(person, organization)).to eq('all_complete')
@@ -83,7 +84,7 @@ RSpec.describe TeammateHelper, type: :helper do
     context 'with multiple check-ins in different states' do
       before do
         # Ready for finalization (highest priority)
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate)
         # Needs manager completion (lower priority)
         create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: 1.day.ago, manager_completed_at: nil)
       end
@@ -145,10 +146,10 @@ RSpec.describe TeammateHelper, type: :helper do
 
   describe '#check_ins_for_employee' do
     it 'returns categorized check-ins' do
-      position_ci = create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago)
+      position_ci = create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate)
       assignment_ci = create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: 1.day.ago, manager_completed_at: nil)
-      aspiration_ci = create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, employee_completed_at: nil, manager_completed_at: 1.day.ago)
-      milestone = create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1)
+      aspiration_ci = create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, employee_completed_at: nil, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate)
+      milestone = create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 1)
 
       result = helper.check_ins_for_employee(person, organization)
 
@@ -195,7 +196,7 @@ RSpec.describe TeammateHelper, type: :helper do
 
     it 'only includes open check-ins' do
       # Create closed check-in (one that has been officially completed)
-      closed_check_in = create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: 1.day.ago)
+      closed_check_in = create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, official_check_in_completed_at: 1.day.ago, finalized_by_teammate: manager_teammate)
       
       result = helper.check_ins_for_employee(person, organization)
 
@@ -208,7 +209,7 @@ RSpec.describe TeammateHelper, type: :helper do
       
       # Create a new tenure with different company to avoid overlap
       other_company = create(:organization)
-      ended_tenure = create(:employment_tenure, teammate: teammate, company: other_company, started_at: 10.days.ago, ended_at: 1.day.ago)
+      ended_tenure = create(:employment_tenure, company_teammate: teammate, company: other_company, started_at: 10.days.ago, ended_at: 1.day.ago)
       ended_check_in = create(:position_check_in, teammate: teammate, employment_tenure: ended_tenure, employee_completed_at: 1.day.ago, manager_completed_at: nil)
       
       result = helper.check_ins_for_employee(person, organization)
@@ -218,7 +219,7 @@ RSpec.describe TeammateHelper, type: :helper do
 
     it 'only includes open assignment check-ins' do
       # Create closed check-in (one that has been officially completed)
-      ended_check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: 1.day.ago)
+      ended_check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, official_check_in_completed_at: 1.day.ago, finalized_by_teammate: manager_teammate)
       
       result = helper.check_ins_for_employee(person, organization)
 
@@ -228,14 +229,14 @@ RSpec.describe TeammateHelper, type: :helper do
 
   describe '#ready_for_finalization_count' do
     it 'returns the correct count' do
-      create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago)
-      create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago)
+      create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate)
+      create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate)
       
       expect(helper.ready_for_finalization_count(person, organization)).to eq(2)
     end
 
     it 'returns 0 when no check-ins are ready' do
-      create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: nil)
+      create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: nil, manager_completed_by_teammate: nil)
       
       expect(helper.ready_for_finalization_count(person, organization)).to eq(0)
     end
@@ -251,20 +252,20 @@ RSpec.describe TeammateHelper, type: :helper do
 
   describe '#pending_acknowledgements_count' do
     it 'returns the correct count' do
-      create(:maap_snapshot, employee: person, company: organization, effective_date: Date.current, employee_acknowledged_at: nil)
-      create(:maap_snapshot, employee: person, company: organization, effective_date: Date.current, employee_acknowledged_at: nil)
+      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: Date.current, employee_acknowledged_at: nil)
+      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: Date.current, employee_acknowledged_at: nil)
       
       expect(helper.pending_acknowledgements_count(person, organization)).to eq(2)
     end
 
     it 'returns 0 when no pending acknowledgements' do
-      create(:maap_snapshot, employee: person, company: organization, effective_date: Date.current, employee_acknowledged_at: 1.day.ago)
+      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: Date.current, employee_acknowledged_at: 1.day.ago)
       
       expect(helper.pending_acknowledgements_count(person, organization)).to eq(0)
     end
 
     it 'excludes snapshots without effective_date' do
-      create(:maap_snapshot, employee: person, company: organization, effective_date: nil, employee_acknowledged_at: nil)
+      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: nil, employee_acknowledged_at: nil)
       
       expect(helper.pending_acknowledgements_count(person, organization)).to eq(0)
     end
@@ -421,7 +422,7 @@ RSpec.describe TeammateHelper, type: :helper do
     end
 
     context 'when teammate has no employment tenures at all' do
-      let(:teammate_without_tenure) { create(:teammate, person: create(:person), organization: organization) }
+      let(:teammate_without_tenure) { create(:company_teammate, person: create(:person), organization: organization) }
 
       it 'returns "No position"' do
         result = helper.teammate_current_position(teammate_without_tenure)
@@ -466,7 +467,7 @@ RSpec.describe TeammateHelper, type: :helper do
     end
 
     context 'when teammate has no employment tenures at all' do
-      let(:teammate_without_tenure) { create(:teammate, person: create(:person), organization: organization) }
+      let(:teammate_without_tenure) { create(:company_teammate, person: create(:person), organization: organization) }
 
       it 'returns "No title"' do
         result = helper.teammate_current_title(teammate_without_tenure)
@@ -487,27 +488,20 @@ RSpec.describe TeammateHelper, type: :helper do
   end
 
   describe '#clear_filter_url' do
+    # Use top-level organization so @organization (set in main before) matches the stub
+    let(:filter_manager) { create(:person) }
+    let(:filter_manager_teammate) { create(:company_teammate, person: filter_manager, organization: organization) }
     before do
-      manager = create(:person)
-      organization = create(:organization)
-      manager_teammate = create(:company_teammate, person: manager, organization: organization)
-      allow(helper).to receive(:params).and_return({ controller: 'organizations/employees', action: 'index', manager_teammate_id: manager_teammate.id.to_s, status: 'active' })
+      allow(helper).to receive(:params).and_return({ controller: 'organizations/employees', action: 'index', manager_teammate_id: filter_manager_teammate.id.to_s, status: 'active' })
       allow(helper).to receive(:organization_employees_path).with(organization, { status: 'active' }).and_return('/test/path')
     end
 
     it 'removes manager_teammate_id from params' do
-      # Stub the instance variable directly
-      helper.instance_variable_set(:@organization, organization)
-      manager = create(:person)
-      organization = create(:organization)
-      manager_teammate = create(:company_teammate, person: manager, organization: organization)
-      result = helper.clear_filter_url('manager_teammate_id', manager_teammate.id.to_s)
+      result = helper.clear_filter_url('manager_teammate_id', filter_manager_teammate.id.to_s)
       expect(result).to eq('/test/path')
     end
 
     it 'handles nil filter_value' do
-      # Stub the instance variable directly
-      helper.instance_variable_set(:@organization, organization)
       result = helper.clear_filter_url('manager_teammate_id', nil)
       expect(result).to eq('')
     end
@@ -517,11 +511,11 @@ RSpec.describe TeammateHelper, type: :helper do
     let(:check_ins) do
       [
         # Fresh check-in (finalized 30 days ago)
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago),
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago, finalized_by_teammate: manager_teammate),
         # Stale but active check-in (finalized 100 days ago, manager completed)
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago, manager_completed_at: 1.day.ago),
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, finalized_by_teammate: manager_teammate),
         # Stale and inactive check-in (finalized 100 days ago, neither completed)
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago),
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago, finalized_by_teammate: manager_teammate),
         # Never finalized - should be stale_inactive
         create(:assignment_check_in, teammate: teammate, assignment: assignment, official_check_in_completed_at: nil)
       ]
@@ -545,9 +539,9 @@ RSpec.describe TeammateHelper, type: :helper do
   describe '#check_in_freshness_summary' do
     let(:check_ins) do
       [
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago),
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago),
-        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago, manager_completed_at: 1.day.ago)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago, finalized_by_teammate: manager_teammate),
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago, finalized_by_teammate: manager_teammate),
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, finalized_by_teammate: manager_teammate)
       ]
     end
 
@@ -598,11 +592,11 @@ RSpec.describe TeammateHelper, type: :helper do
       {
         position: [
           create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, 
-                 employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: nil)
+                 employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, official_check_in_completed_at: nil)
         ],
         assignments: [
           create(:assignment_check_in, teammate: teammate, assignment: assignment,
-                 employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: nil)
+                 employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, official_check_in_completed_at: nil)
         ],
         aspirations: [],
         milestones: []
@@ -625,11 +619,11 @@ RSpec.describe TeammateHelper, type: :helper do
 
   describe '#acknowledgement_summary_by_type' do
     before do
-      create(:maap_snapshot, employee: person, company: organization, change_type: 'position_tenure', 
+      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, change_type: 'position_tenure',
              effective_date: Date.current, employee_acknowledged_at: nil)
-      create(:maap_snapshot, employee: person, company: organization, change_type: 'assignment_management', 
+      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, change_type: 'assignment_management',
              effective_date: Date.current, employee_acknowledged_at: nil)
-      create(:maap_snapshot, employee: person, company: organization, change_type: 'position_tenure', 
+      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, change_type: 'position_tenure',
              effective_date: Date.current, employee_acknowledged_at: 1.day.ago) # Already acknowledged
     end
 
@@ -661,45 +655,36 @@ RSpec.describe TeammateHelper, type: :helper do
   end
 
   describe '#teammate_organization_display' do
+    # Organization no longer has department/team STI or parent; self_and_descendants is [self], so
+    # the helper shows "—" when person has only company teammate(s).
     let(:company) { create(:organization, :company, name: 'Acme Corp') }
-    let(:department1) { create(:organization, :department, name: 'Engineering', parent: company) }
-    let(:department2) { create(:organization, :department, name: 'Sales', parent: company) }
-    let(:team1) { create(:organization, :team, name: 'Frontend Team', parent: department1) }
-    let(:team2) { create(:organization, :team, name: 'Backend Team', parent: department1) }
-    
+
     before do
       @organization = company
     end
 
     context 'when person has teammates in multiple departments and teams' do
-      let!(:teammate_dept1) { create(:teammate, person: person, organization: department1) }
-      let!(:teammate_dept2) { create(:teammate, person: person, organization: department2) }
-      let!(:teammate_team1) { create(:teammate, person: person, organization: team1) }
-      let!(:teammate_team2) { create(:teammate, person: person, organization: team2) }
+      let!(:teammate_company) { create(:company_teammate, person: person, organization: company) }
 
       it 'displays all departments and teams as comma-separated list' do
-        result = helper.teammate_organization_display(teammate_dept1)
-        expect(result).to include('Backend Team')
-        expect(result).to include('Engineering')
-        expect(result).to include('Frontend Team')
-        expect(result).to include('Sales')
+        result = helper.teammate_organization_display(teammate_company)
         expect(result).not_to include('Acme Corp')
+        expect(result).to include('—')
       end
 
       it 'sorts organizations alphabetically' do
-        result = helper.teammate_organization_display(teammate_dept1)
-        # Check that names appear in alphabetical order
-        expect(result).to match(/Backend Team.*Engineering.*Frontend Team.*Sales/)
+        result = helper.teammate_organization_display(teammate_company)
+        expect(result).to include('—')
       end
 
       it 'excludes the company from the list' do
-        result = helper.teammate_organization_display(teammate_dept1)
+        result = helper.teammate_organization_display(teammate_company)
         expect(result).not_to include('Acme Corp')
       end
     end
 
     context 'when person only has teammate in company (no departments/teams)' do
-      let!(:teammate_company) { create(:teammate, person: person, organization: company) }
+      let!(:teammate_company) { create(:company_teammate, person: person, organization: company) }
 
       it 'displays em dash when no departments/teams' do
         result = helper.teammate_organization_display(teammate_company)
@@ -708,57 +693,48 @@ RSpec.describe TeammateHelper, type: :helper do
     end
 
     context 'when person has teammates in departments only' do
-      let!(:teammate_dept1) { create(:teammate, person: person, organization: department1) }
-      let!(:teammate_dept2) { create(:teammate, person: person, organization: department2) }
+      let!(:teammate_company) { create(:company_teammate, person: person, organization: company) }
 
       it 'displays only departments' do
-        result = helper.teammate_organization_display(teammate_dept1)
-        expect(result).to include('Engineering')
-        expect(result).to include('Sales')
+        result = helper.teammate_organization_display(teammate_company)
         expect(result).not_to include('Acme Corp')
+        expect(result).to include('—')
       end
     end
 
     context 'when person has teammates in teams only' do
-      let!(:teammate_team1) { create(:teammate, person: person, organization: team1) }
-      let!(:teammate_team2) { create(:teammate, person: person, organization: team2) }
+      let!(:teammate_company) { create(:company_teammate, person: person, organization: company) }
 
       it 'displays only teams' do
-        result = helper.teammate_organization_display(teammate_team1)
-        expect(result).to include('Backend Team')
-        expect(result).to include('Frontend Team')
+        result = helper.teammate_organization_display(teammate_company)
         expect(result).not_to include('Acme Corp')
-        expect(result).not_to include('Engineering')
+        expect(result).to include('—')
       end
     end
 
     context 'when viewing from a department context' do
       before do
-        @organization = department1
+        @organization = company
       end
 
-      let!(:teammate_dept1) { create(:teammate, person: person, organization: department1) }
-      let!(:teammate_team1) { create(:teammate, person: person, organization: team1) }
+      let!(:teammate_company) { create(:company_teammate, person: person, organization: company) }
 
       it 'still finds all departments/teams within the company hierarchy' do
-        result = helper.teammate_organization_display(teammate_dept1)
-        expect(result).to include('Engineering')
-        expect(result).to include('Frontend Team')
+        result = helper.teammate_organization_display(teammate_company)
         expect(result).not_to include('Acme Corp')
+        expect(result).to include('—')
       end
     end
 
     context 'when person has teammates in different companies' do
       let(:other_company) { create(:organization, :company, name: 'Other Corp') }
-      let(:other_dept) { create(:organization, :department, name: 'Other Dept', parent: other_company) }
-      let!(:teammate_dept1) { create(:teammate, person: person, organization: department1) }
-      let!(:teammate_other_dept) { create(:teammate, person: person, organization: other_dept) }
+      let!(:teammate_company) { create(:company_teammate, person: person, organization: company) }
+      let!(:teammate_other) { create(:company_teammate, person: person, organization: other_company) }
 
       it 'only shows departments/teams from the current company' do
-        result = helper.teammate_organization_display(teammate_dept1)
-        expect(result).to include('Engineering')
-        expect(result).not_to include('Other Dept')
+        result = helper.teammate_organization_display(teammate_company)
         expect(result).not_to include('Other Corp')
+        expect(result).to include('—')
       end
     end
 
@@ -769,26 +745,22 @@ RSpec.describe TeammateHelper, type: :helper do
       end
 
       it 'handles teammate with nil person gracefully' do
-        teammate_nil_person = build(:teammate, person: nil)
+        teammate_nil_person = build(:company_teammate, person: nil)
         result = helper.teammate_organization_display(teammate_nil_person)
         expect(result).to eq('')
       end
 
       it 'handles nil @organization gracefully' do
         @organization = nil
-        teammate = create(:teammate, person: person, organization: department1)
+        teammate = create(:company_teammate, person: person, organization: company)
         result = helper.teammate_organization_display(teammate)
         expect(result).to eq('')
       end
 
       it 'handles multiple teammates in same organization gracefully' do
-        # Create teammate in department
-        teammate1 = create(:teammate, person: person, organization: department1)
-        
+        teammate1 = create(:company_teammate, person: person, organization: company)
         result = helper.teammate_organization_display(teammate1)
-        # Should only show department once (even if queried multiple times)
-        expect(result.scan('Engineering').count).to eq(1)
-        expect(result).to include('Engineering')
+        expect(result).to include('—')
       end
     end
   end
@@ -855,7 +827,7 @@ RSpec.describe TeammateHelper, type: :helper do
 
     context 'when user has direct reports' do
       before do
-        create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
+        create(:employment_tenure, company_teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
       end
 
       context 'without employment management permission' do

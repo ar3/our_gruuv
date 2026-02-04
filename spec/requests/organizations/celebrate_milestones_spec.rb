@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::CelebrateMilestones', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { CompanyTeammate.find(create(:teammate, person: person, organization: organization).id) }
   
@@ -695,7 +695,7 @@ RSpec.describe 'Organizations::CelebrateMilestones', type: :request do
     end
 
     describe 'authorization' do
-      let(:other_organization) { create(:organization, :company) }
+      let(:other_organization) { create(:organization) }
       let(:other_person) { create(:person) }
       let(:other_teammate) { CompanyTeammate.find(create(:teammate, person: other_person, organization: other_organization).id) }
 

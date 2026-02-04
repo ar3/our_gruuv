@@ -203,6 +203,6 @@ class ObservationVisibilityQuery
     managed_person_ids = reports.map { |r| r[:person_id] }
     
     # Find active teammates for those person IDs in the organization (not terminated)
-    Teammate.where(organization_id: @company.id, person_id: managed_person_ids, last_terminated_at: nil).pluck(:id)
+    CompanyTeammate.where(organization_id: @company.id, person_id: managed_person_ids, last_terminated_at: nil).pluck(:id)
   end
 end

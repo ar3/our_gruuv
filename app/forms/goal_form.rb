@@ -54,7 +54,8 @@ class GoalForm < Reform::Form
     
     # Set owner polymorphic association (already parsed in before_validation)
     # Only allow CompanyTeammate, Company, Department, or Team as owner types
-    model.owner_type = owner_type
+    # Goal model stores Organization (not Company); normalize for validation
+    model.owner_type = (owner_type == 'Company' ? 'Organization' : owner_type)
     model.owner_id = owner_id
     
     # Save the model
@@ -223,7 +224,7 @@ class GoalForm < Reform::Form
     # Load the owner to check if it exists
     owner = case owner_type
             when 'CompanyTeammate'
-              Teammate.find_by(id: owner_id)
+              CompanyTeammate.find_by(id: owner_id)
             when 'Company', 'Department', 'Team'
               Organization.find_by(id: owner_id)
             end
@@ -256,7 +257,7 @@ class GoalForm < Reform::Form
     # Load the owner to validate its type
     owner = case owner_type
             when 'CompanyTeammate'
-              Teammate.find_by(id: owner_id)
+              CompanyTeammate.find_by(id: owner_id)
             when 'Company', 'Department', 'Team'
               Organization.find_by(id: owner_id)
             end
@@ -264,15 +265,13 @@ class GoalForm < Reform::Form
     return unless owner
     
     if owner_type == 'CompanyTeammate'
-      # Check the actual type, not just is_a? since polymorphic associations may not preserve STI type
-      unless owner.type == 'CompanyTeammate' || owner.is_a?(CompanyTeammate)
-        errors.add(:owner_id, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
+      unless owner.is_a?(CompanyTeammate)
+        errors.add(:owner_id, 'must be a CompanyTeammate')
       end
     elsif owner_type.in?(['Company', 'Department', 'Team'])
-      # Check the actual type attribute for STI
-      org_type = owner.respond_to?(:type) ? owner.type : owner.class.name
-      unless org_type.in?(['Department', 'Team', 'Company']) || owner.is_a?(Department) || owner.is_a?(Team) || owner.is_a?(Company)
-        errors.add(:owner_id, 'must be a Department, Team, or Company')
+      # Organization (company), Department, or Team
+      unless owner.is_a?(Organization) || owner.is_a?(Department) || owner.is_a?(Team)
+        errors.add(:owner_id, 'must be a Department, Team, or Organization')
       end
     end
   end

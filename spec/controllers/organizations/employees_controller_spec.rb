@@ -64,9 +64,9 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       
       # Debug: Check organization hierarchy
       puts "Company descendants: #{company.self_and_descendants.map(&:id)}"
-      puts "All teammates in hierarchy: #{Teammate.for_organization_hierarchy(company).count}"
+      puts "All teammates in hierarchy: #{CompanyTeammate.for_organization_hierarchy(company).count}"
       puts "Teammates by organization:"
-      Teammate.for_organization_hierarchy(company).each do |t|
+      CompanyTeammate.for_organization_hierarchy(company).each do |t|
         puts "  - #{t.person.display_name} (#{t.organization.name})"
       end
       

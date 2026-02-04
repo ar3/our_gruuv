@@ -27,12 +27,11 @@ RSpec.describe Seat, type: :model do
     end
 
     it 'can belong to a team' do
-      # Note: Seat.team association currently points to Organization (class_name: 'Organization')
-      # This is likely a legacy association that should be updated to use the new Team model
-      seat.team = team_org
+      team = create(:team, company: organization)
+      seat.team = team
       seat.save!
-      expect(seat.reload.team_id).to eq(team_org.id)
-      expect(seat.reload.team).to be_a(Organization)
+      expect(seat.reload.team_id).to eq(team.id)
+      expect(seat.reload.team).to be_a(Team)
     end
 
     it 'can belong to a reports_to_seat' do

@@ -1,8 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Public Person View Security', type: :request do
-  let(:organization) { create(:organization, :company) }
-  let(:other_organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
+  let(:other_organization) { create(:organization) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe') }
   let(:person_teammate) { create(:teammate, person: person, organization: organization) }
   

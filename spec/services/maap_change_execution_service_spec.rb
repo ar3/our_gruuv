@@ -19,8 +19,8 @@ RSpec.describe MaapChangeExecutionService do
       let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
-               employee_teammate: person,
-               creator_teammate: manager,
+               employee_company_teammate: person_teammate,
+               creator_company_teammate: manager_teammate,
                company: organization,
                change_type: 'assignment_management',
                maap_data: maap_data)
@@ -87,7 +87,7 @@ RSpec.describe MaapChangeExecutionService do
           expect(check_in.manager_rating).to eq('meeting')
           expect(check_in.manager_private_notes).to eq('New notes')
           expect(check_in.manager_completed_at).to be_present
-          expect(check_in.manager_completed_by).to eq(manager)
+          expect(check_in.manager_completed_by_teammate).to eq(manager_teammate)
         end
       end
 
@@ -99,7 +99,7 @@ RSpec.describe MaapChangeExecutionService do
                  manager_rating: 'meeting',
                  manager_private_notes: 'Good work',
                  manager_completed_at: Time.current,
-                 manager_completed_by: manager)
+                 manager_completed_by_teammate: manager_teammate)
         end
         let(:maap_data) do
           {
@@ -128,7 +128,7 @@ RSpec.describe MaapChangeExecutionService do
 
           check_in.reload
           expect(check_in.manager_completed_at).to be_nil
-          expect(check_in.manager_completed_by).to be_nil
+          expect(check_in.manager_completed_by_teammate).to be_nil
           expect(check_in.manager_rating).to eq('meeting')
           expect(check_in.manager_private_notes).to eq('Good work')
         end
@@ -257,7 +257,7 @@ RSpec.describe MaapChangeExecutionService do
           expect(check_in.official_rating).to eq('meeting')
           expect(check_in.shared_notes).to eq('New notes')
           expect(check_in.official_check_in_completed_at).to be_present
-          expect(check_in.finalized_by).to eq(manager)
+          expect(check_in.finalized_by_teammate).to eq(manager_teammate)
         end
       end
 
@@ -374,8 +374,8 @@ RSpec.describe MaapChangeExecutionService do
       let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
-               employee_teammate: person,
-               creator_teammate: manager,
+               employee_company_teammate: person_teammate,
+               creator_company_teammate: manager_teammate,
                company: organization,
                change_type: 'assignment_management',
                maap_data: {
@@ -402,8 +402,8 @@ RSpec.describe MaapChangeExecutionService do
       let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
-               employee_teammate: person,
-               creator_teammate: manager,
+               employee_company_teammate: person_teammate,
+               creator_company_teammate: manager_teammate,
                company: organization,
                change_type: 'assignment_management',
                maap_data: { 'assignments' => [{ 'id' => 99999 }] }) # Non-existent assignment

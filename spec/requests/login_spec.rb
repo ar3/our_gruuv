@@ -18,7 +18,7 @@ RSpec.describe 'Login Page', type: :request do
     end
 
     context 'when user is already logged in' do
-      let(:company) { create(:organization, :company) }
+      let(:company) { create(:organization) }
       let(:person) { create(:person) }
 
       before do

@@ -1,8 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
-  let(:organization) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: organization, name: 'Engineering') }
+  let(:organization) { create(:organization) }
+  let(:department) { create(:department, company: organization, name: 'Engineering') }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
   
@@ -70,7 +70,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
             dept_path = []
             while current
               dept_path.unshift(current.name)
-              current = current.parent
+              current = current.respond_to?(:parent_department) ? current.parent_department : current.parent
             end
             path.concat(dept_path)
           end
@@ -374,7 +374,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         tenure1.reload
         expect(tenure1.anticipated_energy_percentage).to eq(75)
         
-        new_tenure = AssignmentTenure.find_by(teammate: employee_teammate, assignment: assignment2)
+        new_tenure = AssignmentTenure.find_by(company_teammate: employee_teammate, assignment: assignment2)
         expect(new_tenure.anticipated_energy_percentage).to eq(25)
       end
 
@@ -470,7 +470,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
     end
 
     context 'when assignment does not belong to organization' do
-      let(:other_organization) { create(:organization, :company) }
+      let(:other_organization) { create(:organization) }
       let!(:other_assignment) { create(:assignment, company: other_organization, title: 'Other Assignment') }
 
       it 'ignores assignments from other organizations' do

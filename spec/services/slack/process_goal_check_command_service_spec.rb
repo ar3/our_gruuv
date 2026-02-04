@@ -7,7 +7,7 @@ RSpec.describe Slack::ProcessGoalCheckCommandService, type: :service do
   let(:command_info) { { command: '/og', user_id: user_id, trigger_id: trigger_id } }
   
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization) }
   
   let(:service) do
     described_class.new(
@@ -25,7 +25,7 @@ RSpec.describe Slack::ProcessGoalCheckCommandService, type: :service do
   describe '#call' do
     context 'when teammate is not found' do
       before do
-        TeammateIdentity.where(teammate: teammate).destroy_all
+        TeammateIdentity.where(teammate_id: teammate.id).destroy_all
       end
 
       it 'returns error message' do
@@ -48,7 +48,7 @@ RSpec.describe Slack::ProcessGoalCheckCommandService, type: :service do
       let!(:goal1) do
         create(:goal,
                :qualitative_key_result,
-               owner: person,
+               owner: teammate,
                creator: teammate,
                company: organization,
                title: 'First Goal',
@@ -58,7 +58,7 @@ RSpec.describe Slack::ProcessGoalCheckCommandService, type: :service do
       let!(:goal2) do
         create(:goal,
                :qualitative_key_result,
-               owner: person,
+               owner: teammate,
                creator: teammate,
                company: organization,
                title: 'Second Goal',
@@ -127,7 +127,7 @@ RSpec.describe Slack::ProcessGoalCheckCommandService, type: :service do
       let!(:long_goal) do
         create(:goal,
                :qualitative_key_result,
-               owner: person,
+               owner: teammate,
                creator: teammate,
                company: organization,
                title: 'A' * 100,

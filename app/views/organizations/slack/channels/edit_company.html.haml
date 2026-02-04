@@ -34,9 +34,9 @@
 
           .mb-4
             = form.label :huddle_review_channel_id, "Huddle Review Channel", class: "form-label"
-            - company_record = @target_organization.becomes(Company)
+            - org = @target_organization
             = form.select :huddle_review_channel_id,
-                          options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, company_record.huddle_review_notification_channel_id),
+                          options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, org.huddle_review_notification_channel_id),
                           { prompt: 'Select channel', include_blank: 'None' },
                           { class: 'form-select' }
             %small.form-text.text-muted
@@ -45,7 +45,7 @@
           .mb-4
             = form.label :maap_object_comment_channel_id, "MAAP Object Comment Channel", class: "form-label"
             = form.select :maap_object_comment_channel_id,
-                          options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, company_record.maap_object_comment_channel_id),
+                          options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, org.maap_object_comment_channel_id),
                           { prompt: 'Select channel', include_blank: 'None' },
                           { class: 'form-select' }
             %small.form-text.text-muted

@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Organizations::Seats', type: :request do
   let(:person) { create(:person) }
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:person_teammate) { create(:teammate, person: person, organization: company, first_employed_at: 1.year.ago, can_manage_maap: true) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
   let(:title) { create(:title, company: company, position_major_level: position_major_level) }

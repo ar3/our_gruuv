@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Abilities', type: :request do
-  let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:organization) { create(:organization, :company, name: 'Test Company') }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: true) }
 

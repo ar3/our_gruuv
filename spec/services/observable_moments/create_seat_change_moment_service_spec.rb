@@ -3,33 +3,31 @@ require 'rails_helper'
 RSpec.describe ObservableMoments::CreateSeatChangeMomentService do
   let(:company) { create(:organization, :company) }
   let(:created_by) { create(:person) }
-  let(:creator_teammate) { create(:teammate, organization: company, person: created_by) }
+  let(:creator_teammate) { create(:company_teammate, organization: company, person: created_by) }
   let(:employee_person) { create(:person) }
-  let(:employee_teammate) { create(:teammate, organization: company, person: employee_person) }
-  let(:old_position) { create(:position, company: company) }
-  let(:new_position) { create(:position, company: company) }
+  let(:employee_teammate) { create(:company_teammate, organization: company, person: employee_person) }
   let(:old_tenure) do
     create(:employment_tenure,
-           teammate: employee_teammate,
+           company_teammate: employee_teammate,
            company: company,
-           position: old_position,
            started_at: 6.months.ago,
            ended_at: 1.day.ago)
   end
   let(:new_tenure) do
     create(:employment_tenure,
-           teammate: employee_teammate,
+           company_teammate: employee_teammate,
            company: company,
-           position: new_position,
            started_at: 1.day.ago)
   end
+  let(:old_position) { old_tenure.position }
+  let(:new_position) { new_tenure.position }
   
   describe '.call' do
     it 'creates observable moment with creator as primary observer' do
       result = ObservableMoments::CreateSeatChangeMomentService.call(
         new_employment_tenure: new_tenure,
         old_employment_tenure: old_tenure,
-        created_by: created_by
+        created_by: creator_teammate
       )
       
       expect(result.ok?).to be true
@@ -45,7 +43,7 @@ RSpec.describe ObservableMoments::CreateSeatChangeMomentService do
       result = ObservableMoments::CreateSeatChangeMomentService.call(
         new_employment_tenure: new_tenure,
         old_employment_tenure: old_tenure,
-        created_by: created_by
+        created_by: creator_teammate
       )
       
       moment = result.value
@@ -57,7 +55,7 @@ RSpec.describe ObservableMoments::CreateSeatChangeMomentService do
       result = ObservableMoments::CreateSeatChangeMomentService.call(
         new_employment_tenure: new_tenure,
         old_employment_tenure: nil,
-        created_by: created_by
+        created_by: creator_teammate
       )
       
       expect(result.ok?).to be true

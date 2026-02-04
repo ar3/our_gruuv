@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Observations Mark as Journal', type: :request do
-  let(:company) { create(:organization, :company) }
+  let(:company) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: company) }
   let(:draft_observation) do

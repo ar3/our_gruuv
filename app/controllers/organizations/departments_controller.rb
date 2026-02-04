@@ -27,7 +27,7 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
     @child_departments = @department.child_departments.active.ordered
     
     # Load seats via titles with this department
-    @seats_as_department = Seat.for_department(@department).includes(:title, employment_tenures: { teammate: :person })
+    @seats_as_department = Seat.for_department(@department).includes(:title, employment_tenures: { company_teammate: :person })
     
     # Load titles for this department
     @titles = Title.for_department(@department).includes(:positions).ordered

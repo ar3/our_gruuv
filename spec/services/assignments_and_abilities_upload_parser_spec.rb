@@ -230,7 +230,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadParser, type: :service do
   end
 
   describe '#enhanced_preview_actions' do
-    let(:organization) { create(:organization, type: 'Company') }
+    let(:organization) { create(:organization, :company) }
     let(:parser) { described_class.new(valid_csv_content, organization) }
 
     it 'returns enhanced preview with action indicators' do

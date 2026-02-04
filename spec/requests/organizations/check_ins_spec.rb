@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Organizations::CheckIns", type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager_person) { create(:person) }
   let(:employee_person) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
@@ -49,7 +49,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                   redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
                 }
           
-          check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+          check_in = PositionCheckIn.find_by(company_teammate: employee_teammate)
           
           # Assert database state
           expect(check_in.manager_rating).to eq(2)
@@ -78,7 +78,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                   redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
                 }
           
-          check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+          check_in = PositionCheckIn.find_by(company_teammate: employee_teammate)
           
           # Assert database state
           expect(check_in.manager_rating).to eq(2)
@@ -106,7 +106,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                   }
                 }
           
-          check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+          check_in = PositionCheckIn.find_by(company_teammate: employee_teammate)
           expect(check_in.manager_completed_at).to be_nil
           
           # Then: Mark as complete
@@ -141,7 +141,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                   }
                 }
           
-          check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+          check_in = PositionCheckIn.find_by(company_teammate: employee_teammate)
           expect(check_in.manager_completed_at).to be_present
           
           # Then: Change back to draft
@@ -179,7 +179,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                   }
                 }
           
-          check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+          check_in = PositionCheckIn.find_by(company_teammate: employee_teammate)
           expect(check_in.employee_completed_at).to be_present
           expect(check_in.manager_completed_at).to be_nil # Manager hasn't completed
         end
@@ -199,7 +199,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                   save_and_continue_editing: "Save All & Continue Editing"
                 }
           
-          check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+          check_in = PositionCheckIn.find_by(company_teammate: employee_teammate)
           
           # Assert database state
           expect(check_in.manager_rating).to eq(3)

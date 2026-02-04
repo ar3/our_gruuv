@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe AssignmentsAndAbilitiesUploadProcessorJob, type: :job do
-  let(:organization) { create(:organization, type: 'Company') }
+  let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:upload_event) { create(:upload_assignments_and_abilities, organization: organization, creator: person, initiator: person) }
 

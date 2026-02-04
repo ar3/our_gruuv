@@ -49,7 +49,7 @@
                       %th Actions
                   %tbody
                     - @results[:people].each do |person|
-                      - teammate = person.teammates.find_by(organization: @organization, type: 'CompanyTeammate')
+                      - teammate = person.teammates.find_by(organization: @organization)
                       %tr
                         %td
                           - if teammate
@@ -81,7 +81,7 @@
                     - @results[:organizations].each do |organization|
                       %tr
                         %td= organization.display_name
-                        %td= organization.type
+                        %td Organization
                         %td
                           .btn-group.btn-group-sm
                             = link_to organization_path(organization), class: "btn btn-outline-primary" do

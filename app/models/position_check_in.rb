@@ -1,7 +1,9 @@
 class PositionCheckIn < ApplicationRecord
   include CheckInBehavior
   
-  belongs_to :teammate
+  belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
+  alias_method :teammate, :company_teammate
+  alias_method :teammate=, :company_teammate=
   belongs_to :employment_tenure
   belongs_to :manager_completed_by_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :finalized_by_teammate, class_name: 'CompanyTeammate', optional: true
@@ -28,11 +30,11 @@ class PositionCheckIn < ApplicationRecord
     end
     return nil unless tenure
     
-    open_check_in = where(teammate: teammate).open.first
+    open_check_in = where(company_teammate: teammate).open.first
     return open_check_in if open_check_in
     
     create!(
-      teammate: teammate,
+      company_teammate: teammate,
       employment_tenure: tenure,
       check_in_started_on: Date.current
     )
@@ -40,7 +42,7 @@ class PositionCheckIn < ApplicationRecord
   
   # Find the latest finalized check-in for a teammate (across all employment tenures)
   def self.latest_finalized_for(teammate)
-    where(teammate: teammate)
+    where(company_teammate: teammate)
       .closed
       .order(official_check_in_completed_at: :desc)
       .first
@@ -48,7 +50,7 @@ class PositionCheckIn < ApplicationRecord
 
   def previous_finalized_check_in
     @previous_finalized_check_in ||= PositionCheckIn
-      .where(teammate: teammate)
+      .where(company_teammate: teammate)
       .closed
       .order(:official_check_in_completed_at)
       .last
@@ -60,7 +62,7 @@ class PositionCheckIn < ApplicationRecord
     return unless open?
     
     existing_open = PositionCheckIn
-      .where(teammate: teammate)
+      .where(company_teammate: teammate)
       .open
       .where.not(id: id)
     

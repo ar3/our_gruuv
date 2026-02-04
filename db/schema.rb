@@ -724,7 +724,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_02_200000) do
 
   create_table "organizations", force: :cascade do |t|
     t.string "name"
-    t.string "type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "deleted_at"
@@ -1044,7 +1043,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_02_200000) do
     t.boolean "can_create_employment"
     t.datetime "first_employed_at"
     t.datetime "last_terminated_at"
-    t.string "type"
     t.boolean "can_manage_prompts"
     t.boolean "can_manage_departments_and_teams"
     t.boolean "can_customize_company", default: false

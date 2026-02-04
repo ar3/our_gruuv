@@ -8,7 +8,7 @@ RSpec.describe Goal, type: :model do
   
   describe 'associations' do
     it { should belong_to(:owner).optional(false) }
-    it { should belong_to(:creator).class_name('Teammate') }
+    it { should belong_to(:creator).class_name('CompanyTeammate') }
     it { should have_many(:outgoing_links).class_name('GoalLink').with_foreign_key('parent_id').dependent(:destroy) }
     it { should have_many(:linked_goals).through(:outgoing_links).source(:child) }
     it { should have_many(:incoming_links).class_name('GoalLink').with_foreign_key('child_id').dependent(:destroy) }
@@ -167,11 +167,7 @@ RSpec.describe Goal, type: :model do
     context 'owner type validation' do
       let(:department) { create(:department, company: company) }
       let(:team_org) { create(:team, company: company) }
-      let(:department_person) { create(:person) }
-      let(:team_person) { create(:person) }
-      let(:department_teammate) { create(:teammate, person: department_person, organization: company) }
-      let(:team_teammate) { create(:teammate, person: team_person, organization: company) }
-      
+
       context 'with valid owner types' do
         it 'allows CompanyTeammate as owner' do
           goal = build(:goal, creator: creator_teammate, owner: creator_teammate)
@@ -206,37 +202,12 @@ RSpec.describe Goal, type: :model do
         end
       end
       
-      context 'with invalid owner types' do
-        it 'does not allow DepartmentTeammate as owner' do
-          # Ensure department_teammate is actually a DepartmentTeammate
-          department_teammate.update_column(:type, 'DepartmentTeammate')
-          goal = build(:goal, creator: creator_teammate, owner: department_teammate)
-          goal.earliest_target_date = Date.today + 1.month
-          goal.most_likely_target_date = Date.today + 2.months
-          goal.latest_target_date = Date.today + 3.months
-          
-          expect(goal).not_to be_valid
-          expect(goal.errors[:owner]).to include('must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
-        end
-        
-        it 'does not allow TeamTeammate as owner' do
-          # Ensure team_teammate is actually a TeamTeammate
-          team_teammate.update_column(:type, 'TeamTeammate')
-          goal = build(:goal, creator: creator_teammate, owner: team_teammate)
-          goal.earliest_target_date = Date.today + 1.month
-          goal.most_likely_target_date = Date.today + 2.months
-          goal.latest_target_date = Date.today + 3.months
-          
-          expect(goal).not_to be_valid
-          expect(goal.errors[:owner]).to include('must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
-        end
-      end
     end
   end
   
   describe 'scopes' do
     let(:other_person) { create(:person) }
-    let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+    let(:other_teammate) { create(:company_teammate, person: other_person, organization: company) }
     
     let!(:personal_goal) do
       create(:goal, 
@@ -428,7 +399,7 @@ RSpec.describe Goal, type: :model do
       let(:owner_person) { create(:person) }
       let(:admin) { create(:person, :admin) }
       let(:owner_teammate) { CompanyTeammate.find(create(:teammate, person: owner_person, organization: company).id) }
-      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+      let(:other_teammate) { create(:company_teammate, person: other_person, organization: company) }
       
       context 'with CompanyTeammate owner' do
         context 'with only_creator privacy level' do
@@ -1017,7 +988,9 @@ RSpec.describe Goal, type: :model do
     describe 'owner_type validation' do
       it 'rejects Teammate as invalid owner_type' do
         goal = build(:goal, creator: creator_teammate, owner: creator_teammate)
-        goal.owner_type = 'Teammate'
+        goal.owner = nil
+        goal.owner_id = nil # clear so valid? does not constantize removed Teammate class
+        goal.owner_type = 'Teammate' # set after clearing owner so it is not overwritten
         goal.earliest_target_date = Date.today + 1.month
         goal.most_likely_target_date = Date.today + 2.months
         goal.latest_target_date = Date.today + 3.months

@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Prompt Questions', type: :request do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:teammate) { create(:teammate, person: person, organization: organization, can_manage_prompts: true) }
   let(:prompt_template) { create(:prompt_template, company: organization) }
 

@@ -18,7 +18,7 @@ module ObservableMoments
         primary_observer = @finalized_by
       else
         # If they're in different organizations, find the teammate in the check-in's organization
-        primary_observer = @finalized_by.person.teammates.find_by(organization: @check_in.teammate.organization, type: 'CompanyTeammate')
+        primary_observer = @finalized_by.person.company_teammates.find_by(organization: @check_in.teammate.organization)
       end
       return Result.err("Could not find finalizer's teammate in organization") unless primary_observer
       
@@ -77,7 +77,7 @@ module ObservableMoments
       @previous_rating ||= begin
         if @check_in.is_a?(PositionCheckIn)
           previous_check_in = PositionCheckIn
-            .where(teammate: @check_in.teammate)
+            .where(company_teammate: @check_in.teammate)
             .closed
             .where.not(id: @check_in.id)
             .order(official_check_in_completed_at: :desc)
@@ -85,7 +85,7 @@ module ObservableMoments
           previous_check_in&.official_rating
         elsif @check_in.is_a?(AssignmentCheckIn)
           previous_check_in = AssignmentCheckIn
-            .where(teammate: @check_in.teammate, assignment: @check_in.assignment)
+            .where(company_teammate: @check_in.teammate, assignment: @check_in.assignment)
             .closed
             .where.not(id: @check_in.id)
             .order(official_check_in_completed_at: :desc)
@@ -93,7 +93,7 @@ module ObservableMoments
           previous_check_in&.official_rating
         elsif @check_in.is_a?(AspirationCheckIn)
           previous_check_in = AspirationCheckIn
-            .where(teammate: @check_in.teammate, aspiration: @check_in.aspiration)
+            .where(company_teammate: @check_in.teammate, aspiration: @check_in.aspiration)
             .closed
             .where.not(id: @check_in.id)
             .order(official_check_in_completed_at: :desc)

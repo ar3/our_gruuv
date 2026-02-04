@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
   let(:title) { create(:title, company: organization) }
@@ -131,6 +131,17 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
         expect(position_check_in.maap_snapshot_id).to be_present
         expect(position_check_in.maap_snapshot.employee_company_teammate).to eq(employee_teammate)
       end
+
+      it "removes check-in from ready_for_finalization list after finalization" do
+        expect(PositionCheckIn.ready_for_finalization.where(id: position_check_in.id)).to exist
+
+        post organization_company_teammate_finalization_path(organization, employee_teammate),
+             params: finalization_params
+
+        position_check_in.reload
+        expect(position_check_in.official_check_in_completed_at).to be_present
+        expect(PositionCheckIn.ready_for_finalization.where(id: position_check_in.id)).not_to exist
+      end
     end
 
     context "assignment check-in finalization" do
@@ -167,7 +178,7 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
           }.to change(AssignmentTenure, :count).by(1)
 
           new_tenure = AssignmentTenure.last
-          expect(new_tenure.teammate).to be_a(Teammate)
+          expect(new_tenure.teammate).to be_a(CompanyTeammate)
           expect(new_tenure.teammate.id).to eq(employee_teammate.id)
           expect(new_tenure.assignment).to eq(assignment)
           expect(new_tenure.anticipated_energy_percentage).to eq(60)

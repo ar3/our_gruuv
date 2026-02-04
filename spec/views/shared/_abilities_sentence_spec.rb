@@ -63,7 +63,10 @@ RSpec.describe 'shared/_abilities_sentence', type: :view do
                include_prefix: true
              }
 
-      expect(rendered).to include('advanced Communication and expert Mentorship')
+      # Rendered uses links; text appears as "advanced Communication</a> and <a...>expert Mentorship"
+      expect(rendered).to include('advanced Communication')
+      expect(rendered).to include('expert Mentorship')
+      expect(rendered).to include(' and ')
     end
   end
 

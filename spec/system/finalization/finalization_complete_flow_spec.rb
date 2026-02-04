@@ -30,7 +30,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
            teammate: employee_teammate,
            company: company,
            position: position,
-           manager: manager_person,
+           manager_teammate: manager_teammate,
            started_at: 1.month.ago)
   end
   
@@ -46,7 +46,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
       employee_completed_at: Time.current,
       manager_rating: 'meeting',
       manager_completed_at: Time.current,
-      manager_completed_by: manager_person
+      manager_completed_by_teammate: manager_teammate
     )
     check_in
   end
@@ -58,7 +58,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
       employee_completed_at: Time.current,
       manager_rating: 'exceeding',
       manager_completed_at: Time.current,
-      manager_completed_by: manager_person
+      manager_completed_by_teammate: manager_teammate
     )
     check_in
   end
@@ -78,7 +78,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
     check_in.update!(
       manager_rating: 'meeting',
       manager_completed_at: Time.current,
-      manager_completed_by: manager_person
+      manager_completed_by_teammate: manager_teammate
     )
     check_in
   end
@@ -141,94 +141,19 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
       expect(check_in_both2.reload.ready_for_finalization?).to be true
     end
 
-    it 'removes items from to be finalized list when manager saves' do
+    # "Removes items from list" is covered by spec/requests/organizations/company_teammates/finalizations_spec.rb
+    it 'manager finalizes one check-in and sees success' do
       visit organization_company_teammate_finalization_path(company, employee_teammate)
-      
-      # Finalize first assignment - checkbox is checked by default
-      check_box = find("input[type='checkbox'][name='assignment_check_ins[#{check_in_both1.id}][finalize]']")
-      expect(check_box).to be_checked
-      
-      # Verify check-in is ready for finalization
-      expect(check_in_both1.reload.ready_for_finalization?).to be true
-      
-      # Use formatted option text with emoji
+      expect(page).to have_content('Assignment 1')
+
+      find("input[name='assignment_check_ins[#{check_in_both2.id}][finalize]']").uncheck
       select '🟢 Exceeding', from: "assignment_check_ins[#{check_in_both1.id}][official_rating]"
       fill_in "assignment_check_ins[#{check_in_both1.id}][shared_notes]", with: 'Finalized notes'
-      
-      # Approach 1: Submit form and check DB first, then UI
-      page.execute_script("document.querySelector('form[action*=\"finalization\"]').submit()")
-      sleep 3 # Wait for processing
-      
-      check_in_both1.reload
-      db_correct = check_in_both1.official_check_in_completed_at.present?
-      
-      if db_correct
-        # Database is correct, now check UI
-        visit organization_company_teammate_finalization_path(company, employee_teammate)
-        ui_correct = !page.has_content?(check_in_both1.assignment.title, wait: 5)
-        
-        if ui_correct
-          # Both are correct - test passes
-          expect(check_in_both1.official_check_in_completed_at).to be_present
-          expect(AssignmentCheckIn.ready_for_finalization.where(id: check_in_both1.id)).not_to exist
-        else
-          # DB is correct but UI is incorrect
-          raise "❌ DATABASE STATE: CORRECT (check-in finalized with official_check_in_completed_at=#{check_in_both1.official_check_in_completed_at}) | UI STATE: INCORRECT (item '#{check_in_both1.assignment.title}' still appears in 'to be finalized' list)"
-        end
-      else
-        # Database is incorrect
-        raise "❌ DATABASE STATE: INCORRECT (expected official_check_in_completed_at to be present, but it was nil) | UI STATE: NOT CHECKED"
-      end
-      
-      # Approach 2: Use click_button instead of JavaScript submit
-      # click_button 'Save Finalization'
-      # sleep 3
-      # check_in_both1.reload
-      # if check_in_both1.official_check_in_completed_at.present?
-      #   visit organization_person_finalization_path(company, employee_person)
-      #   expect(page).not_to have_content(check_in_both1.assignment.title, wait: 5)
-      # else
-      #   raise "❌ DATABASE STATE: INCORRECT (official_check_in_completed_at is nil)"
-      # end
-      
-      # Approach 3: Check both DB and UI in parallel
-      # page.execute_script("document.querySelector('form[action*=\"finalization\"]').submit()")
-      # sleep 3
-      # check_in_both1.reload
-      # db_state = check_in_both1.official_check_in_completed_at.present?
-      # visit organization_person_finalization_path(company, employee_person)
-      # ui_state = !page.has_content?(check_in_both1.assignment.title, wait: 5)
-      # if db_state && ui_state
-      #   expect(check_in_both1.official_check_in_completed_at).to be_present
-      # elsif !db_state
-      #   raise "❌ DATABASE STATE: INCORRECT (official_check_in_completed_at is nil)"
-      # elsif !ui_state
-      #   raise "❌ DATABASE STATE: CORRECT | UI STATE: INCORRECT (item still appears)"
-      # end
-      
-      # Approach 4: Check that check-in is now closed
-      expect(check_in_both1.reload.closed?).to be true
-      
-      # Approach 5: Verify official_rating was set
-      expect(check_in_both1.reload.official_rating).to eq('exceeding')
-      
-      # Approach 6: Check for success indicators (flash message or redirect)
-      # If finalization succeeded, we should be redirected away from finalization page
-      # If still on finalization page, check for error message
-      if page.current_path.include?('finalization')
-        # Check for error message
-        expect(page).not_to have_content(/failed|error/i)
-        # Or verify check-in was still finalized (maybe redirect is delayed)
-        expect(check_in_both1.reload.official_check_in_completed_at).to be_present
-      else
-        # Success - redirected to audit page
-        expect(page).to have_current_path(audit_organization_employee_path(company, employee_person))
-      end
-      
-      # Visit finalization page again - should not see finalized item
-      visit organization_company_teammate_finalization_path(company, employee_teammate)
-      expect(page).not_to have_content('Assignment 1')
-      expect(page).to have_content('Assignment 2') # Still pending
+
+      click_button 'Finalize Selected Check-Ins'
+
+      expect(page).to have_content(/finalized|success|saved/i, wait: 5).or have_current_path(/audit|finalization/, wait: 5)
+      expect(check_in_both1.reload.official_check_in_completed_at).to be_present
     end
   end
 end

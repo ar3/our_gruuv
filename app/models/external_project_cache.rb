@@ -1,7 +1,7 @@
 class ExternalProjectCache < ApplicationRecord
   # Associations
   belongs_to :cacheable, polymorphic: true
-  belongs_to :last_synced_by_teammate, class_name: 'Teammate', optional: true
+  belongs_to :last_synced_by_teammate, class_name: 'CompanyTeammate', optional: true
 
   # Validations
   validates :source, presence: true, inclusion: { in: %w[asana jira linear] }

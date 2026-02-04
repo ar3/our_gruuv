@@ -92,7 +92,7 @@ class MaapChangeExecutionService
     teammate = person.teammates.find_by(organization: assignment.company)
     return false unless teammate # Return false if teammate not found
     
-    check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
+    check_in = AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).open.first
     
     if check_in
       # Update existing check-in

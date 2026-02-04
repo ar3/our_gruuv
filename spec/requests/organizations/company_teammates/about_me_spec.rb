@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'About Me Page', type: :request do
-  let(:organization) { create(:organization, :company) }
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:company_teammate, person: person, organization: organization) }
 
@@ -137,7 +137,7 @@ RSpec.describe 'About Me Page', type: :request do
 
       before do
         # End the existing employment_tenure from the main before block and create a new one with position
-        EmploymentTenure.where(teammate: teammate, company: organization, ended_at: nil).update_all(ended_at: 2.years.ago)
+        EmploymentTenure.where(company_teammate: teammate, company: organization, ended_at: nil).update_all(ended_at: 2.years.ago)
         create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
         teammate.reload
       end
@@ -1397,7 +1397,7 @@ RSpec.describe 'About Me Page', type: :request do
       let!(:aspiration2) { create(:aspiration, company: organization, name: 'Aspiration 2') }
 
       before do
-        EmploymentTenure.where(teammate: teammate, company: organization, ended_at: nil).update_all(ended_at: 2.years.ago)
+        EmploymentTenure.where(company_teammate: teammate, company: organization, ended_at: nil).update_all(ended_at: 2.years.ago)
         create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
         teammate.reload
         actual_position = teammate.active_employment_tenure.position

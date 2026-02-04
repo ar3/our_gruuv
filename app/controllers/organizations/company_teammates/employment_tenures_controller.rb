@@ -18,7 +18,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     
     if @company
       # Pre-populate from most recent employment at this company
-      teammate = @teammate.person.teammates.find_by(organization: @company)
+      teammate = @teammate.person.company_teammates.find_by(organization: @company)
       most_recent = teammate ? EmploymentTenure.most_recent_for(teammate, @company) : nil
       if most_recent
         @employment_tenure.assign_attributes(
@@ -34,7 +34,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     end
     
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
-    @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
+    @managers = @company ? @company.teammates.includes(:person).order('people.last_name, people.first_name') : []
     @positions = @company ? @company.positions.includes(:title, :position_level) : []
     @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
   end
@@ -44,12 +44,10 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     company = Organization.find(employment_tenure_params[:company_id])
     
     # Find or create teammate for this person and company
-    target_teammate = @teammate.person.teammates.find_or_create_by(organization: company) do |t|
-      t.type = 'CompanyTeammate'
-    end
-    
+    target_teammate = @teammate.person.company_teammates.find_or_create_by(organization: company)
+
     @employment_tenure = target_teammate.employment_tenures.build(employment_tenure_params)
-    @employment_tenure.teammate = target_teammate
+    @employment_tenure.company_teammate = target_teammate
     authorize @employment_tenure
     
     # Check if this is a job change (there's an active employment at the same company)
@@ -97,7 +95,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
         redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       else
         @company = @employment_tenure.company
-        @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
+        @managers = @company ? @company.teammates.includes(:person).order('people.last_name, people.first_name') : []
         @positions = @company ? @company.positions.includes(:title, :position_level) : []
         @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
         render :change, status: :unprocessable_entity
@@ -106,7 +104,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   rescue ActiveRecord::RecordInvalid
     # If save fails, we need to set up the form for re-rendering
     @company = @employment_tenure.company
-    @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
+    @managers = @company ? @company.teammates.includes(:person).order('people.last_name, people.first_name') : []
     @positions = @company ? @company.positions.includes(:title, :position_level) : []
     @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
     render :change, status: :unprocessable_entity
@@ -121,7 +119,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     authorize @employment_tenure
     # Don't allow changing company
     @company = @employment_tenure.company
-    @managers = @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name')
+    @managers = @company.teammates.includes(:person).order('people.last_name, people.first_name')
     @positions = @company.positions.includes(:title, :position_level)
     @seats = @company.seats.includes(:title).where(state: [:open, :filled])
   end
@@ -129,10 +127,10 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   def update
     authorize @employment_tenure
     if @employment_tenure.update(employment_tenure_params)
-      redirect_to organization_company_teammate_path(@employment_tenure.company, @employment_tenure.teammate), notice: 'Employment tenure was successfully updated.'
+      redirect_to organization_company_teammate_path(@employment_tenure.company, @employment_tenure.company_teammate), notice: 'Employment tenure was successfully updated.'
     else
       @company = @employment_tenure.company
-      @managers = @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name')
+      @managers = @company.teammates.includes(:person).order('people.last_name, people.first_name')
       @positions = @company.positions.includes(:title, :position_level)
       @seats = @company.seats.includes(:title).where(state: [:open, :filled])
       render :edit, status: :unprocessable_entity
@@ -142,7 +140,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   def destroy
     authorize @employment_tenure
     company = @employment_tenure.company
-    teammate = @employment_tenure.teammate
+    teammate = @employment_tenure.company_teammate
     @employment_tenure.destroy
     redirect_to organization_company_teammate_path(company, teammate), notice: 'Employment tenure was successfully deleted.'
   end
@@ -157,7 +155,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   def employment_summary
     authorize @teammate, :show?, policy_class: CompanyTeammatePolicy
     @person = @teammate.person
-    @employment_tenures = EmploymentTenure.joins(:teammate)
+    @employment_tenures = EmploymentTenure.joins(:company_teammate)
                                           .where(teammates: { person: @teammate.person })
                                           .includes(:company, :position, :manager_teammate)
                                           .order(started_at: :desc)
@@ -171,8 +169,8 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   end
 
   def set_employment_tenure
-    @employment_tenure = EmploymentTenure.joins(:teammate)
-                                        .where(teammates: { person: @teammate.person })
+    @employment_tenure = EmploymentTenure.joins(:company_teammate)
+                                        .where(teammates: { person_id: @teammate.person_id })
                                         .find(params[:id])
   end
 

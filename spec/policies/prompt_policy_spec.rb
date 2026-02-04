@@ -42,7 +42,7 @@ RSpec.describe PromptPolicy, type: :policy do
 
     context 'when user is in managerial hierarchy' do
       let(:manager_person) { create(:person) }
-      let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
+      let(:manager_teammate) { CompanyTeammate.find_or_create_by!(person: manager_person, organization: company) }
       let(:pundit_user_manager) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
       
       before do
@@ -63,7 +63,7 @@ RSpec.describe PromptPolicy, type: :policy do
 
     context 'when user lacks access' do
       let(:other_person) { create(:person) }
-      let(:other_teammate) { CompanyTeammate.create!(person: other_person, organization: company) }
+      let(:other_teammate) { CompanyTeammate.find_or_create_by!(person: other_person, organization: company) }
       let(:pundit_user_other) { OpenStruct.new(user: other_teammate, impersonating_teammate: nil) }
 
       it 'denies access' do
@@ -180,7 +180,7 @@ RSpec.describe PromptPolicy, type: :policy do
 
     describe 'when user is in managerial hierarchy' do
       let(:manager_person) { create(:person) }
-      let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
+      let(:manager_teammate) { CompanyTeammate.find_or_create_by!(person: manager_person, organization: company) }
       let(:pundit_user_manager) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
       let!(:employee_prompt) { create(:prompt, company_teammate: prompt_teammate) }
 
@@ -206,7 +206,7 @@ RSpec.describe PromptPolicy, type: :policy do
 
       context 'with indirect reports' do
         let(:indirect_report_person) { create(:person) }
-        let(:indirect_report_teammate) { CompanyTeammate.create!(person: indirect_report_person, organization: company) }
+        let(:indirect_report_teammate) { CompanyTeammate.find_or_create_by!(person: indirect_report_person, organization: company) }
         let!(:indirect_report_prompt) { create(:prompt, company_teammate: indirect_report_teammate) }
 
         before do
@@ -232,7 +232,7 @@ RSpec.describe PromptPolicy, type: :policy do
 
     describe 'when user has no access' do
       let(:no_access_person) { create(:person) }
-      let(:no_access_teammate) { CompanyTeammate.create!(person: no_access_person, organization: company) }
+      let(:no_access_teammate) { CompanyTeammate.find_or_create_by!(person: no_access_person, organization: company) }
       let(:pundit_user_no_access) { OpenStruct.new(user: no_access_teammate, impersonating_teammate: nil) }
 
       it 'returns only prompts owned by the user' do

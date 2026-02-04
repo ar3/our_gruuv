@@ -147,7 +147,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
       let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:employment_tenure) do
-        EmploymentTenure.find_by(teammate: employee_teammate, company: organization) ||
+        EmploymentTenure.find_by(company_teammate: employee_teammate, company: organization) ||
           create(:employment_tenure,
             teammate: employee_teammate,
             company: organization,
@@ -531,7 +531,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
       let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:employment_tenure) do
-        EmploymentTenure.find_by(teammate: employee_teammate, company: organization) ||
+        EmploymentTenure.find_by(company_teammate: employee_teammate, company: organization) ||
           create(:employment_tenure,
             teammate: employee_teammate,
             company: organization,

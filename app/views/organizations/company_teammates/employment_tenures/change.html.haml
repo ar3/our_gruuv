@@ -24,7 +24,7 @@
                 .mb-3
                   = f.label :company_id, "Company", class: "form-label"
                   = f.collection_select :company_id, 
-                                       Organization.companies.order(:name), 
+                                       Organization.ordered, 
                                        :id, 
                                        :name, 
                                        { selected: @company&.id }, 

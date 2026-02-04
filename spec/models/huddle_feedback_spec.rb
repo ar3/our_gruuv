@@ -47,7 +47,7 @@ RSpec.describe HuddleFeedback, type: :model do
     it 'requires a teammate' do
       feedback = HuddleFeedback.new(valid_attributes.except(:teammate))
       expect(feedback).not_to be_valid
-      expect(feedback.errors[:teammate]).to include('must exist')
+      expect(feedback.errors[:company_teammate]).to include('must exist')
     end
 
     it 'requires informed_rating' do
@@ -98,7 +98,7 @@ RSpec.describe HuddleFeedback, type: :model do
 
     it 'allows feedback from different teammates for the same huddle' do
       person2 = Person.create!(full_name: 'Jane Smith', email: 'jane@example.com')
-      teammate2 = Teammate.create!(person: person2, organization: company)
+      teammate2 = CompanyTeammate.create!(person: person2, organization: company)
       HuddleFeedback.create!(valid_attributes)
       feedback2 = HuddleFeedback.new(valid_attributes.merge(teammate: teammate2))
       expect(feedback2).to be_valid
@@ -148,7 +148,7 @@ RSpec.describe HuddleFeedback, type: :model do
     let!(:anonymous_feedback) { HuddleFeedback.create!(valid_attributes.merge(anonymous: true)) }
     let!(:named_feedback) { 
       person2 = Person.create!(full_name: 'Jane', email: 'jane@example.com')
-      teammate2 = Teammate.create!(person: person2, organization: company)
+      teammate2 = CompanyTeammate.create!(person: person2, organization: company)
       HuddleFeedback.create!(valid_attributes.merge(teammate: teammate2, anonymous: false)) 
     }
 

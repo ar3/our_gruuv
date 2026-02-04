@@ -59,8 +59,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     @teammates = @organization.teammates
       .joins(:person)
       .includes(:person)
-      .where(type: 'CompanyTeammate')
-      .merge(Teammate.employed)
+      .merge(CompanyTeammate.employed)
       .order(Arel.sql('people.last_name, COALESCE(people.preferred_name, people.first_name)'))
     
     @return_url = params[:return_url] || organization_team_path(@organization, @team)
