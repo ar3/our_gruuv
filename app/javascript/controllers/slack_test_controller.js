@@ -18,7 +18,20 @@ export default class extends Controller {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          resultDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>Connection successful!</div>'
+          const steps = data.steps || {}
+          const authOk = steps.auth?.success
+          const channels = steps.channels
+          const users = steps.users
+          const testMsg = steps.test_message
+          const parts = []
+          parts.push(authOk ? '<i class="bi bi-check-circle me-2"></i>Auth: OK' : '<i class="bi bi-x-circle me-2"></i>Auth: failed')
+          if (channels?.success) parts.push(`<i class="bi bi-check-circle me-2"></i>Channels: ${channels.count} found`)
+          else if (channels) parts.push(`<i class="bi bi-x-circle me-2"></i>Channels: ${channels.error || 'failed'}`)
+          if (users?.success) parts.push(`<i class="bi bi-check-circle me-2"></i>Users: ${users.count} found`)
+          else if (users) parts.push(`<i class="bi bi-x-circle me-2"></i>Users: ${users.error || 'failed'}`)
+          if (testMsg?.success) parts.push('<i class="bi bi-check-circle me-2"></i>Test message: sent')
+          else if (testMsg) parts.push(`<i class="bi bi-x-circle me-2"></i>Test message: ${testMsg.error || 'failed'}`)
+          resultDiv.innerHTML = '<div class="alert alert-success"><strong>Connection successful</strong> (' + (data.team || '') + ')<br class="mb-2">' + parts.join('<br>') + '</div>'
         } else {
           resultDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle me-2"></i>' + (data.error || 'Connection failed') + '</div>'
         }

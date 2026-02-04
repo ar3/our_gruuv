@@ -49,9 +49,42 @@ RSpec.describe Organizations::SlackController, type: :controller do
     end
   end
 
+  describe 'GET #test_connection' do
+    let(:test_result) do
+      {
+        'success' => true,
+        'team' => 'Test Team',
+        'team_id' => 'T123456',
+        'steps' => {
+          'auth' => { 'success' => true },
+          'channels' => { 'success' => true, 'count' => 5 },
+          'users' => { 'success' => true, 'count' => 10 },
+          'test_message' => { 'success' => true }
+        }
+      }
+    end
+
+    before do
+      allow(SlackService).to receive(:new).with(company).and_return(instance_double(SlackService, test_connection: test_result))
+    end
+
+    it 'returns JSON with success, team, team_id, and steps' do
+      get :test_connection, params: { organization_id: company.id }
+      expect(response).to have_http_status(:ok)
+      json = response.parsed_body
+      expect(json['success']).to be true
+      expect(json['team']).to eq('Test Team')
+      expect(json['team_id']).to eq('T123456')
+      expect(json['steps']['auth']['success']).to be true
+      expect(json['steps']['channels']['count']).to eq(5)
+      expect(json['steps']['users']['count']).to eq(10)
+      expect(json['steps']['test_message']['success']).to be true
+    end
+  end
+
   describe 'PATCH #update_configuration' do
     it 'updates configuration and redirects' do
-      patch :update_configuration, params: { 
+      patch :update_configuration, params: {
         organization_id: company.id,
         slack_configuration: {
           default_channel: '#new-channel',

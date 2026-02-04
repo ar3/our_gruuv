@@ -188,25 +188,74 @@ RSpec.describe SlackService do
       allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
     end
 
-    context 'when connection is successful' do
+    context 'when Slack is not configured' do
       before do
-        allow(mock_client).to receive(:auth_test).and_return({ 'ok' => true, 'team' => 'Test Team', 'team_id' => 'T123456' })
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
       end
 
-      it 'returns the response' do
+      it 'returns failure hash with error' do
         result = slack_service.test_connection
-        expect(result).to eq({ 'ok' => true, 'team' => 'Test Team', 'team_id' => 'T123456' })
+        expect(result).to eq({ 'success' => false, 'error' => 'Slack not configured', 'steps' => {} })
       end
     end
 
-    context 'when connection fails' do
+    context 'when connection is successful' do
+      before do
+        allow(mock_client).to receive(:auth_test).and_return({ 'ok' => true, 'team' => 'Test Team', 'team_id' => 'T123456' })
+        allow(mock_client).to receive(:conversations_list).and_return(
+          { 'ok' => true, 'channels' => [{ 'id' => 'C1', 'name' => 'general' }], 'response_metadata' => {} }
+        )
+        allow(mock_client).to receive(:users_list).and_return(
+          { 'ok' => true, 'members' => [{ 'id' => 'U1', 'name' => 'user1' }], 'response_metadata' => {} }
+        )
+        allow(mock_client).to receive(:chat_postMessage).and_return({ 'ok' => true, 'ts' => '1234567890.123456' })
+      end
+
+      it 'returns success hash with team, team_id, and steps (auth, channels, users, test_message)' do
+        result = slack_service.test_connection
+        expect(result['success']).to be true
+        expect(result['team']).to eq('Test Team')
+        expect(result['team_id']).to eq('T123456')
+        expect(result['steps']['auth']).to eq({ 'success' => true })
+        expect(result['steps']['channels']['success']).to be true
+        expect(result['steps']['channels']['count']).to eq(1)
+        expect(result['steps']['users']['success']).to be true
+        expect(result['steps']['users']['count']).to eq(1)
+        expect(result['steps']['test_message']['success']).to be true
+      end
+    end
+
+    context 'when auth fails' do
       before do
         allow(mock_client).to receive(:auth_test).and_raise(Slack::Web::Api::Errors::SlackError.new('Auth failed'))
       end
 
-      it 'returns false' do
+      it 'returns failure hash with steps.auth failure' do
         result = slack_service.test_connection
-        expect(result).to be false
+        expect(result['success']).to be false
+        expect(result['error']).to eq('Connection test failed')
+        expect(result['steps']['auth']).to eq({ 'success' => false, 'error' => 'Auth failed' })
+      end
+    end
+
+    context 'when auth succeeds but list_channels fails' do
+      before do
+        allow(mock_client).to receive(:auth_test).and_return({ 'ok' => true, 'team' => 'Test Team', 'team_id' => 'T123456' })
+        # Raise an error that is not rescued by list_channels (it only rescues SlackError and returns [])
+        allow(mock_client).to receive(:conversations_list).and_raise(StandardError.new('channel_error'))
+        allow(mock_client).to receive(:users_list).and_return(
+          { 'ok' => true, 'members' => [], 'response_metadata' => {} }
+        )
+        allow(mock_client).to receive(:chat_postMessage).and_return({ 'ok' => true, 'ts' => '1234567890.123456' })
+      end
+
+      it 'returns success with channels step failed' do
+        result = slack_service.test_connection
+        expect(result['success']).to be true
+        expect(result['steps']['channels']['success']).to be false
+        expect(result['steps']['channels']['error']).to include('channel_error')
+        expect(result['steps']['users']['success']).to be true
+        expect(result['steps']['test_message']['success']).to be true
       end
     end
   end

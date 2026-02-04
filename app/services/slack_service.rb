@@ -177,12 +177,12 @@ class SlackService
       loop do
         page_count += 1
         params = {
-          types: 'public_channel,private_channel,mpim,im,external_shared',
+          types: 'public_channel,private_channel,mpim,im',
           limit: 1000,
           exclude_archived: true
         }
         params[:cursor] = cursor if cursor
-        
+
         Rails.logger.info "Slack: Page #{page_count} - Fetching with cursor: #{cursor || 'initial'}"
         
         response = @client.conversations_list(params)
@@ -229,9 +229,9 @@ class SlackService
   # Get comprehensive channel information by type
   def list_all_channel_types
     return [] unless slack_configured?
-    
+
     all_channels = []
-    
+
     # Get public channels
     begin
       Rails.logger.info "Slack: Fetching public channels"
@@ -330,31 +330,32 @@ class SlackService
   # List all channels the bot has access to
   def list_channels
     return [] unless slack_configured?
-    
+
     all_channels = []
     cursor = nil
-    
+
     begin
       loop do
+        # Omit external_shared from combined call — Slack returns invalid_types when including it with others
         params = {
-          types: 'public_channel,private_channel,mpim,im,external_shared',
+          types: 'public_channel,private_channel,mpim,im',
           limit: 1000,
           exclude_archived: true
         }
         params[:cursor] = cursor if cursor
-        
+
         Rails.logger.info "Slack: Fetching channels with cursor: #{cursor || 'initial'}"
-        
+
         response = @client.conversations_list(params)
-        
+
         # Store the response in debug_responses
         store_slack_response('conversations_list', params, response)
-        
+
         if response['ok'] && response['channels']
           channels = response['channels']
           all_channels.concat(channels)
           Rails.logger.info "Slack: Fetched #{channels.length} channels (total: #{all_channels.length})"
-          
+
           # Check if there are more pages
           cursor = response['response_metadata']&.dig('next_cursor')
           break unless cursor.present?
@@ -363,23 +364,23 @@ class SlackService
           break
         end
       end
-      
+
       Rails.logger.info "Slack: Total channels found: #{all_channels.length}"
       all_channels
-      
+
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error listing channels - #{e.message}"
       Rails.logger.error "Slack: Error class: #{e.class}"
       Rails.logger.error "Slack: Error code: #{e.code}" if e.respond_to?(:code)
-      
+
       # Store the error in debug_responses
-      store_slack_response('conversations_list', { 
-        types: 'public_channel,private_channel,mpim,im,external_shared',
+      store_slack_response('conversations_list', {
+        types: 'public_channel,private_channel,mpim,im',
         limit: 1000,
         exclude_archived: true,
         error: true
       }, { error: e.message, backtrace: e.backtrace.first(5), code: e.respond_to?(:code) ? e.code : nil })
-      
+
       []
     end
   end
@@ -497,26 +498,73 @@ class SlackService
     end
   end
   
-  # Test the Slack connection
+  # Test the Slack connection: auth_test, then list channels, list users, and post a test message.
+  # Returns a hash with success, team, team_id, and steps (auth, channels, users, test_message).
   def test_connection
-    return false unless slack_configured?
-    
-    begin
-      response = @client.auth_test
-      Rails.logger.info "Slack: Connection test successful - #{response['team']} (#{response['team_id']})"
-      
-      # Store the response in debug_responses
-      store_slack_response('auth_test', {}, response)
-      
-      response
-    rescue Slack::Web::Api::Errors::SlackError => e
-      Rails.logger.error "Slack: Connection test failed - #{e.message}"
-      
-      # Store the error in debug_responses
-      store_slack_response('auth_test', {}, { error: e.message, backtrace: e.backtrace.first(5) })
-      
-      false
+    unless slack_configured?
+      return { 'success' => false, 'error' => 'Slack not configured', 'steps' => {} }
     end
+
+    steps = {}
+    auth_response = run_auth_test
+    if auth_response && auth_response['team_id']
+      steps['auth'] = { 'success' => true }
+      team = auth_response['team']
+      team_id = auth_response['team_id']
+
+      steps['channels'] = run_test_list_channels
+      steps['users'] = run_test_list_users
+      steps['test_message'] = run_test_post_message
+
+      {
+        'success' => true,
+        'team' => team,
+        'team_id' => team_id,
+        'steps' => steps
+      }
+    else
+      steps['auth'] = auth_response.is_a?(Hash) && auth_response['error'] ? auth_response : { 'success' => false, 'error' => 'Auth test failed' }
+      { 'success' => false, 'error' => 'Connection test failed', 'steps' => steps }
+    end
+  rescue Slack::Web::Api::Errors::SlackError => e
+    Rails.logger.error "Slack: Connection test failed - #{e.message}"
+    steps = { 'auth' => { 'success' => false, 'error' => e.message } }
+    { 'success' => false, 'error' => e.message, 'steps' => steps }
+  end
+
+  def run_auth_test
+    response = @client.auth_test
+    Rails.logger.info "Slack: Connection test successful - #{response['team']} (#{response['team_id']})"
+    store_slack_response('auth_test', {}, response)
+    response
+  rescue Slack::Web::Api::Errors::SlackError => e
+    Rails.logger.error "Slack: Connection test failed - #{e.message}"
+    store_slack_response('auth_test', {}, { error: e.message, backtrace: e.backtrace.first(5) })
+    { 'success' => false, 'error' => e.message }
+  end
+
+  def run_test_list_channels
+    channels = list_channels
+    { 'success' => true, 'count' => channels.length }
+  rescue => e
+    Rails.logger.error "Slack: Test list channels failed - #{e.message}"
+    { 'success' => false, 'error' => e.message }
+  end
+
+  def run_test_list_users
+    users = list_users
+    { 'success' => true, 'count' => users.length }
+  rescue => e
+    Rails.logger.error "Slack: Test list users failed - #{e.message}"
+    { 'success' => false, 'error' => e.message }
+  end
+
+  def run_test_post_message
+    result = post_test_message("🧪 Test connection from OurGruuv at #{Time.current.strftime('%Y-%m-%d %H:%M %Z')}")
+    result[:success] ? { 'success' => true } : { 'success' => false, 'error' => result[:error] }
+  rescue => e
+    Rails.logger.error "Slack: Test post message failed - #{e.message}"
+    { 'success' => false, 'error' => e.message }
   end
   
   # Post a test message to the default channel

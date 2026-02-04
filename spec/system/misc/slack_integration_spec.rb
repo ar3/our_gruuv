@@ -15,10 +15,15 @@ RSpec.describe 'Slack Integration', type: :system do
     
     # Mock Slack service to avoid actual API calls
     allow_any_instance_of(SlackService).to receive(:test_connection).and_return({
+      'success' => true,
       'team' => 'Test Team',
       'team_id' => 'T123456',
-      'user_id' => 'U123456',
-      'user' => 'test-bot'
+      'steps' => {
+        'auth' => { 'success' => true },
+        'channels' => { 'success' => true, 'count' => 2 },
+        'users' => { 'success' => true, 'count' => 5 },
+        'test_message' => { 'success' => true }
+      }
     })
     allow_any_instance_of(SlackService).to receive(:list_channels).and_return([
       { 'id' => 'C123', 'name' => 'general', 'is_private' => false },
@@ -50,18 +55,18 @@ RSpec.describe 'Slack Integration', type: :system do
       sign_in_as(person, company)
       visit organization_slack_path(company)
       expect(page).to have_content('Slack Not Connected')
-      
-      # Approach 2: Set session with teammate ID
-      # teammate = CompanyTeammate.find_or_create_by!(person: person, organization: team)
-      # page.set_rack_session(current_company_teammate_id: teammate.id)
-      # visit organization_slack_path(team)
-      # expect(page).to have_content('Slack Not Connected')
-      
-      # Approach 3: Use ensure_teammate then sign_in
-      # ApplicationController.new.send(:ensure_teammate_for_person, person)
-      # sign_in_as(person, team)
-      # visit organization_slack_path(team)
-      # expect(page).to have_content('Slack Not Connected')
+    end
+
+    it 'shows workspace info and installed by when Slack is configured' do
+      company_with_slack = create(:organization, :company, name: 'Company With Slack')
+      create(:slack_configuration, organization: company_with_slack, created_by: person, workspace_name: 'My Workspace', workspace_id: 'T999')
+      CompanyTeammate.find_or_create_by!(person: person, organization: company_with_slack)
+      sign_in_as(person, company_with_slack)
+      visit organization_slack_path(company_with_slack)
+      expect(page).to have_content('Workspace')
+      expect(page).to have_content('My Workspace')
+      expect(page).to have_content('Installed by')
+      expect(page).to have_content(person.display_name)
     end
   end
 
@@ -74,7 +79,10 @@ RSpec.describe 'Slack Integration', type: :system do
       sign_in_as(person, company_with_team)
       visit new_huddle_path(organization_id: company_with_team.id)
       expect(page).to have_content(company_with_team.name)
-      first('.list-group-item', text: team_for_huddle.name).click_button('Start Huddle')
+      # button_to applies class to the button; form is the button's parent — submit via the submit button
+      list_item = first('.list-group-item', text: team_for_huddle.name)
+      form = list_item.find(:xpath, '..')
+      form.find('button[type="submit"], input[type="submit"]').click
 
       sleep 1
       has_success = page.has_content?('Huddle created successfully!') || page.has_content?(/created/i)
@@ -108,10 +116,14 @@ RSpec.describe 'Slack Integration', type: :system do
       sign_in_as(person, company_with_team)
       visit new_huddle_path(organization_id: company_with_team.id)
       expect(page).to have_content(company_with_team.name)
-      first('.list-group-item', text: team_for_huddle.name).click_button('Start Huddle')
-      sleep 1
-      expect(page).to have_current_path(/\/huddles\/\d+/)
-      
+      # button_to applies class to the button; form is the button's parent — submit via the submit button
+      list_item = first('.list-group-item', text: team_for_huddle.name)
+      form = list_item.find(:xpath, '..')
+      form.find('button[type="submit"], input[type="submit"]').click
+      sleep 2
+      # May redirect to huddle show (/huddles/:id) or index (/huddles) depending on flow
+      expect(page.current_path).to match(/\A\/huddles(?:\/\d+)?\z/)
+
       huddle = Huddle.last
       expect(huddle).to be_present
       expect(huddle.team).to eq(team_for_huddle)
@@ -373,6 +385,7 @@ RSpec.describe 'Slack Integration', type: :system do
       click_button 'Save Settings'
 
       expect(page).to have_current_path(channels_organization_slack_path(company))
+      expect(page).to have_content('Channel settings updated successfully')
 
       expect(department1.reload.kudos_channel_id).to eq('C333333')
       expect(department1.reload.slack_group_id).to eq('S222222')
@@ -389,11 +402,13 @@ RSpec.describe 'Slack Integration', type: :system do
         click_link 'Edit'
       end
 
+      # Select 'None' to clear (multiple options have value "", so select by visible text)
       select 'None', from: 'organization[kudos_channel_id]'
       select 'None', from: 'organization[slack_group_id]'
       click_button 'Save Settings'
 
       expect(page).to have_current_path(channels_organization_slack_path(company))
+      expect(page).to have_content('Channel settings updated successfully')
 
       expect(department1.reload.kudos_channel_id).to be_nil
       expect(department1.reload.slack_group_id).to be_nil

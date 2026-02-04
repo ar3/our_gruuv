@@ -126,7 +126,8 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
       redirect_to channels_organization_slack_path(@organization), alert: 'Organization not found.' and return
     end
 
-    @target_organization = Organization.find_by(id: target_id) || Department.find_by(id: target_id, company: @organization)
+    # Prefer department when target_id is a department of this org (ids can overlap across tables)
+    @target_organization = Department.find_by(id: target_id, company: @organization) || Organization.find_by(id: target_id)
     unless @target_organization
       redirect_to channels_organization_slack_path(@organization), alert: 'Organization not found.' and return
     end

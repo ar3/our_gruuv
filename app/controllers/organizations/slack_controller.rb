@@ -44,8 +44,9 @@ class Organizations::SlackController < Organizations::OrganizationNamespaceBaseC
   
   def test_connection
     result = SlackService.new(@organization).test_connection
-    if result
-      render json: { success: true, team: result['team'], team_id: result['team_id'] }
+    if result.is_a?(Hash)
+      status = result['success'] ? :ok : :unprocessable_entity
+      render json: result, status: status
     else
       render json: { success: false, error: "Connection test failed" }, status: :unprocessable_entity
     end

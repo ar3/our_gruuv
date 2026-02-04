@@ -22,6 +22,30 @@
         = slack_configuration_status(@organization)
         
         - if @slack_config&.configured?
+          / Workspace info and who installed
+          .row.mt-3
+            .col-md-6
+              %h6.text-muted.mb-2 Workspace
+              %ul.list-unstyled.small
+                %li
+                  %strong Workspace:
+                  = @slack_config.workspace_name
+                %li
+                  %strong Workspace ID:
+                  = @slack_config.workspace_id
+                - if @slack_config.workspace_url.present?
+                  %li
+                    %strong URL:
+                    = link_to @slack_config.workspace_url, @slack_config.workspace_url, target: "_blank", rel: "noopener"
+                %li
+                  %strong Installed at:
+                  = @slack_config.installed_at.strftime("%B %d, %Y at %l:%M %p")
+            .col-md-6
+              %h6.text-muted.mb-2 Installed by
+              %p.small.mb-0
+                = @slack_config.configured_by_name
+          
+          %hr
           / Bot Configuration Form (always visible, no edit button)
           .row.mt-3
             .col-12
