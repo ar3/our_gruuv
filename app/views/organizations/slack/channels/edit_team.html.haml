@@ -1,0 +1,45 @@
+- content_for :title, "Edit Team Huddle Channel"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-people-fill.me-2
+    Edit Team Huddle Channel
+
+- content_for :go_back_link do
+  = link_to channels_organization_slack_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Channel & Group Associations
+
+.row.justify-content-center
+  .col-lg-8
+    .card
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-people-fill.me-2
+          = @team.name
+        %span.badge.bg-secondary
+          Team
+      .card-body
+        = form_with url: team_channel_organization_slack_path(@organization, team_id: @team.id),
+                    method: :patch,
+                    local: true,
+                    scope: :team do |form|
+          .mb-3
+            %label.form-label Team
+            %p.mb-0
+              %strong= @team.name
+              %br
+              %small.text-muted Team
+
+          .mb-4
+            = form.label :huddle_channel_id, "Huddle Channel", class: "form-label"
+            = form.select :huddle_channel_id,
+                          options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, @team.huddle_channel_id),
+                          { prompt: 'Select channel', include_blank: 'None' },
+                          { class: 'form-select' }
+            %small.form-text.text-muted
+              Huddle notifications for #{@team.name} will be posted to this channel
+
+          .d-flex.justify-content-between.mt-4
+            = link_to 'Cancel', channels_organization_slack_path(@organization), class: 'btn btn-outline-secondary'
+            = form.submit 'Save Settings', class: 'btn btn-primary'

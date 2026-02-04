@@ -36,9 +36,10 @@
               %h6.mb-0
                 %i.bi.bi-building.me-2
                 Organization Settings
-              = link_to edit_company_channel_organization_slack_path(@organization, target_organization_id: @organization.id), class: "btn btn-sm btn-light" do
-                %i.bi.bi-pencil-square.me-1
-                Edit
+              .btn-group.btn-group-sm{role: "group"}
+                = link_to edit_company_channel_organization_slack_path(@organization, target_organization_id: @organization.id), class: "btn btn-light btn-sm" do
+                  %i.bi.bi-pencil-square.me-1
+                  Edit
             .card-body
               .mb-3
                 .row.align-items-center
@@ -60,7 +61,7 @@
               .mb-3
                 .row.align-items-center
                   .col-md-8
-                    %label.form-label MAAP Object Comment Channel
+                    %label.form-label Comment Channel
                     - if @organization.maap_object_comment_channel_id.present?
                       - channel = @slack_channels.find { |c| c.third_party_id == @organization.maap_object_comment_channel_id }
                       %p.mb-1
@@ -68,32 +69,49 @@
                     - else
                       %p.mb-1.text-muted None
                     %small.form-text.text-muted
-                      Channel where notifications for new root-level comments will be posted
+                      Channel where notifications for new root-level comments on assignments, abilities, and aspirations will be posted
                   .col-md-4.text-end
                     - if @organization.maap_object_comment_channel_id.present?
                       %span.badge.bg-success
                         %i.bi.bi-check-circle.me-1
                         Configured
+              .mb-3
+                .row.align-items-center
+                  .col-md-8
+                    %label.form-label Kudos Channel
+                    - if @organization.kudos_channel_id.present?
+                      - channel = @slack_channels.find { |c| c.third_party_id == @organization.kudos_channel_id }
+                      %p.mb-1
+                        = channel&.display_name || @organization.kudos_channel_id
+                    - else
+                      %p.mb-1.text-muted None
+                    %small.form-text.text-muted
+                      Channel where kudos messages will be posted
+                  .col-md-4.text-end
+                    - if @organization.kudos_channel_id.present?
+                      %span.badge.bg-success
+                        %i.bi.bi-check-circle.me-1
+                        Configured
 
-          / Section 2: Organization-Wide Channels (Kudos & Groups)
+          / Section 2: Department-Related Channels (Kudos & Slack Group per department)
           .card.mb-4
             .card-header
               %h6.mb-0
                 %i.bi.bi-people.me-2
-                Organization-Wide Settings
+                Department-Related Channels
             .card-body
               .table-responsive
                 %table.table.table-hover
                   %thead
                     %tr
-                      %th{style: "width: 30%;"} Organization
+                      %th{style: "width: 30%;"} Department
                       %th{style: "width: 25%;"} Kudos Channel
                       %th{style: "width: 25%;"} Slack Group
                       %th{style: "width: 10%;"} Status
                       %th{style: "width: 10%;"} Actions
                   %tbody
                     - @organizations.each do |org|
-                      - indent_level = org.ancestry_depth
+                      - indent_level = org.respond_to?(:ancestry_depth) ? org.ancestry_depth : 0
                       - indent_px = indent_level * 20
                       %tr{ data: { organization_id: org.id } }
                         %td{style: "padding-left: #{indent_px}px;"}
@@ -103,7 +121,7 @@
                           - else
                             %strong= org.name
                           %br
-                          %small.text-muted Organization
+                          %small.text-muted= org.department? ? 'Department' : 'Organization'
                         %td
                           - kudos_channel = org.kudos_channel
                           - if kudos_channel.present?
@@ -125,17 +143,18 @@
                               %i.bi.bi-check-circle.me-1
                               Group
                         %td.text-end
-                          = link_to edit_channel_organization_slack_path(@organization, target_organization_id: org.id), class: "btn btn-sm btn-outline-primary" do
-                            %i.bi.bi-pencil-square.me-1
-                            Edit
+                          - if org.department?
+                            = link_to edit_channel_organization_slack_path(@organization, target_organization_id: org.id), class: "btn btn-sm btn-outline-primary" do
+                              %i.bi.bi-pencil-square.me-1
+                              Edit
 
-          / Section 3: Team Huddle Channels
+          / Section 3: Team-Related Channels (Huddle channel per team)
           - if @teams.present?
             .card.mb-4
               .card-header
                 %h6.mb-0
                   %i.bi.bi-people-fill.me-2
-                  Team Huddle Channels
+                  Team-Related Channels
               .card-body
                 .table-responsive
                   %table.table.table-hover
@@ -143,7 +162,8 @@
                       %tr
                         %th{style: "width: 40%;"} Team
                         %th{style: "width: 40%;"} Huddle Channel
-                        %th{style: "width: 20%;"} Status
+                        %th{style: "width: 10%;"} Status
+                        %th{style: "width: 10%;"} Actions
                     %tbody
                       - @teams.each do |team|
                         %tr{ data: { team_id: team.id } }
@@ -164,6 +184,7 @@
                               %span.badge.bg-warning.text-dark
                                 %i.bi.bi-exclamation-triangle.me-1
                                 Not Configured
-                %p.text-muted.small.mt-2
-                  %i.bi.bi-info-circle.me-1
-                  Team huddle channels can be configured when editing organization channel settings above.
+                          %td.text-end
+                            = link_to edit_team_channel_organization_slack_path(@organization, team_id: team.id), class: "btn btn-sm btn-outline-primary" do
+                              %i.bi.bi-pencil-square.me-1
+                              Edit

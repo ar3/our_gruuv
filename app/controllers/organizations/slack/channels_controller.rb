@@ -1,9 +1,11 @@
 class Organizations::Slack::ChannelsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
   before_action :authorize_slack_access
-  before_action :load_slack_data, only: [:index, :edit, :edit_company]
+  before_action :load_slack_data, only: [:index, :edit, :edit_company, :edit_team]
   before_action :load_target_organization, only: [:edit, :update, :edit_company, :update_company]
-  
+  before_action :ensure_company_target, only: [:edit_company, :update_company]
+  before_action :load_team, only: [:edit_team, :update_team]
+
   def index
     # Show-only page listing current settings and edit links
   end
@@ -30,14 +32,11 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
   
   def edit
     # Uses @target_organization and @slack_channels/@slack_groups from before_actions
-    # Also load teams for this organization
-    @teams = @organization.teams.active.ordered
   end
 
   def update
-    attrs = params.require(:organization).permit(:kudos_channel_id, :slack_group_id, team_huddle_channels: {})
+    attrs = params.require(:organization).permit(:kudos_channel_id, :slack_group_id)
 
-    # Update kudos and group associations
     if attrs.key?(:kudos_channel_id)
       @target_organization.kudos_channel_id = attrs[:kudos_channel_id].presence
     end
@@ -46,22 +45,26 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
       @target_organization.slack_group_id = attrs[:slack_group_id].presence
     end
 
-    # Update team huddle channels
-    if attrs[:team_huddle_channels].present?
-      attrs[:team_huddle_channels].each do |team_id, channel_id|
-        team = @organization.teams.find_by(id: team_id)
-        next unless team
-
-        team.huddle_channel_id = channel_id.presence
-      end
-    end
-
     redirect_to channels_organization_slack_path(@organization), notice: 'Channel settings updated successfully.'
   rescue StandardError
     load_slack_data
-    @teams = @organization.teams.active.ordered
     flash.now[:alert] = 'Unable to update channel settings.'
     render :edit, status: :unprocessable_entity
+  end
+
+  def edit_team
+    # Uses @team and @slack_channels from before_actions
+  end
+
+  def update_team
+    channel_id = params.require(:team).permit(:huddle_channel_id)[:huddle_channel_id]
+    @team.huddle_channel_id = channel_id.presence
+    redirect_to channels_organization_slack_path(@organization), notice: 'Team huddle channel updated successfully.'
+  rescue StandardError
+    load_slack_data
+    load_team
+    flash.now[:alert] = 'Unable to update team huddle channel.'
+    render :edit_team, status: :unprocessable_entity
   end
 
   def edit_company
@@ -69,10 +72,11 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
   end
 
   def update_company
-    attrs = params.require(:organization).permit(:huddle_review_channel_id, :maap_object_comment_channel_id)
+    attrs = params.require(:organization).permit(:huddle_review_channel_id, :maap_object_comment_channel_id, :kudos_channel_id)
 
     @target_organization.huddle_review_notification_channel_id = attrs[:huddle_review_channel_id].presence if attrs.key?(:huddle_review_channel_id)
     @target_organization.maap_object_comment_channel_id = attrs[:maap_object_comment_channel_id].presence if attrs.key?(:maap_object_comment_channel_id)
+    @target_organization.kudos_channel_id = attrs[:kudos_channel_id].presence if attrs.key?(:kudos_channel_id)
     @target_organization.save!
 
     redirect_to channels_organization_slack_path(@organization), notice: 'Company-only channels updated successfully.'
@@ -126,10 +130,34 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
       redirect_to channels_organization_slack_path(@organization), alert: 'Organization not found.' and return
     end
 
+    # Company-only actions must resolve to the organization only (avoid Department id collision)
+    if %w[edit_company update_company].include?(action_name)
+      if target_id != @organization.id
+        redirect_to channels_organization_slack_path(@organization), alert: 'Organization not found.' and return
+      end
+      @target_organization = @organization
+      return
+    end
+
     # Prefer department when target_id is a department of this org (ids can overlap across tables)
     @target_organization = Department.find_by(id: target_id, company: @organization) || Organization.find_by(id: target_id)
     unless @target_organization
       redirect_to channels_organization_slack_path(@organization), alert: 'Organization not found.' and return
+    end
+  end
+
+  # Company-only channel settings (huddle review, comment channel) apply only to the root organization, not departments.
+  def ensure_company_target
+    return if @target_organization == @organization
+
+    redirect_to channels_organization_slack_path(@organization), alert: 'Company channel settings apply only to the organization, not departments.'
+  end
+
+  def load_team
+    team_id = params[:team_id].to_i
+    @team = @organization.teams.find_by(id: team_id)
+    unless @team
+      redirect_to channels_organization_slack_path(@organization), alert: 'Team not found.' and return
     end
   end
 end

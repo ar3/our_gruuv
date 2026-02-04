@@ -170,6 +170,81 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       company.reload
       expect(company.huddle_review_notification_channel_id).to be_nil
     end
+
+    it 'updates kudos channel for company' do
+      patch :update_company, params: {
+        organization_id: company.id,
+        target_organization_id: company.id,
+        organization: {
+          kudos_channel_id: channel2.third_party_id
+        }
+      }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+      expect(flash[:notice]).to include('Company-only channels updated successfully.')
+
+      company.reload
+      expect(company.kudos_channel_id).to eq(channel2.third_party_id)
+    end
+
+    it 'clears kudos channel when value is blank' do
+      company.kudos_channel_id = channel1.third_party_id
+      company.save!
+
+      patch :update_company, params: {
+        organization_id: company.id,
+        target_organization_id: company.id,
+        organization: {
+          kudos_channel_id: ''
+        }
+      }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+
+      company.reload
+      expect(company.kudos_channel_id).to be_nil
+    end
+  end
+
+  describe 'GET #edit_team and PATCH #update_team' do
+    let(:channel1) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C111111') }
+
+    it 'renders edit_team for a team' do
+      get :edit_team, params: { organization_id: company.id, team_id: team1.id }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:team)).to eq(team1)
+    end
+
+    it 'redirects when team does not belong to organization' do
+      other_company = create(:organization, name: 'Other Company')
+      other_team = create(:team, company: other_company, name: 'Other Team')
+      get :edit_team, params: { organization_id: company.id, team_id: other_team.id }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+      expect(flash[:alert]).to eq('Team not found.')
+    end
+
+    it 'updates team huddle channel' do
+      patch :update_team, params: {
+        organization_id: company.id,
+        team_id: team1.id,
+        team: { huddle_channel_id: channel1.third_party_id }
+      }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+      expect(flash[:notice]).to include('Team huddle channel updated successfully')
+
+      expect(team1.reload.huddle_channel_id).to eq(channel1.third_party_id)
+    end
+
+    it 'clears team huddle channel when value is blank' do
+      team1.huddle_channel_id = channel1.third_party_id
+
+      patch :update_team, params: {
+        organization_id: company.id,
+        team_id: team1.id,
+        team: { huddle_channel_id: '' }
+      }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+
+      expect(team1.reload.huddle_channel_id).to be_nil
+    end
   end
 end
 

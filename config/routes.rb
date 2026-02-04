@@ -485,6 +485,13 @@ Rails.application.routes.draw do
         patch 'channels/:target_organization_id/update-company',
               to: 'slack/channels#update_company',
               as: :company_channel
+        # Per-team huddle channel settings
+        get 'channels/teams/:team_id/edit',
+            to: 'slack/channels#edit_team',
+            as: :edit_team_channel
+        patch 'channels/teams/:team_id',
+              to: 'slack/channels#update_team',
+              as: :team_channel
       end
     end
   end
