@@ -69,6 +69,4 @@ position_levels.each do |level_data|
 end
 
 # Seed "OurGruuv Demo" organization - required for all users to have a teammate record
-Company.find_or_create_by!(name: 'OurGruuv Demo') do |org|
-  org.type = 'Company'
-end
+Organization.find_or_create_by!(name: 'OurGruuv Demo')
