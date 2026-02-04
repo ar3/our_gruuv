@@ -65,10 +65,12 @@
               - viewing_teammate_id = current_company_teammate&.id || @form.current_teammate&.id
               - default_owner_id = @form.owner_id || (viewing_teammate_id ? "CompanyTeammate_#{viewing_teammate_id}" : nil)
               - raise "MAJOR ISSUE WITH GOALS... SOMEHOW THE CURRENT TEAMMATE IS NIL?!?!" if default_owner_id.blank?
-              = form.select :owner_id, 
-                available_goal_owners,
-                { selected: default_owner_id },
-                { class: 'form-select' }
+              = render 'goal_owner_select',
+                options: available_goal_owners,
+                selected_value: default_owner_id,
+                name: 'goal[owner_id]',
+                select_class: 'form-select',
+                required: true
               %small.form-text.text-muted
                 Choose who this goal belongs to: yourself, an employee, a team, department, or company
             

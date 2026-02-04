@@ -25,6 +25,20 @@
                     %li= message
             
             .mb-3
+              = form.label :owner_id, class: 'form-label' do
+                Owner
+                %span.text-danger *
+              - current_owner_value = (@goal.owner_type == 'Organization') ? "Company_#{@goal.owner_id}" : "#{@goal.owner_type}_#{@goal.owner_id}"
+              = render 'goal_owner_select',
+                options: available_goal_owners,
+                selected_value: current_owner_value,
+                name: 'goal[owner_id]',
+                select_class: 'form-select',
+                required: true
+              %small.form-text.text-muted
+                Choose who this goal belongs to: yourself, an employee, a team, department, or company
+
+            .mb-3
               = form.label :title, class: 'form-label' do
                 Title
                 %span.text-danger *
@@ -33,73 +47,74 @@
             .mb-3
               = form.label :description, class: 'form-label'
               = form.text_area :description, class: 'form-control', rows: 4
-            
-            / Timeframe Selection - Large Button Group
-            - if @goal.most_likely_target_date.present?
-              / Derive timeframe from existing most_likely_target_date
-              - days_from_now = (@goal.most_likely_target_date - Date.today).to_i
-              - existing_timeframe = days_from_now < 120 ? 'near_term' : (days_from_now < 365 ? 'medium_term' : (days_from_now < 1095 ? 'long_term' : 'vision'))
-            - else
-              - existing_timeframe = 'vision'
-           
+
+            .mb-3
+              = form.label :most_likely_target_date, 'Most Likely Target Date', class: 'form-label'
+              = form.date_field :most_likely_target_date, class: 'form-control'
+              %small.form-text.text-muted
+                Optional. When you expect this goal to be reached.
+
+            .mb-3
+              = render 'goal_type_selection', form: form
+
+            .mb-3
+              = form.label :privacy_level, class: 'form-label' do
+                Privacy Level
+                %span.text-danger *
+              - Goal.privacy_levels.each do |privacy_level, value|
+                .form-check
+                  = form.radio_button :privacy_level, privacy_level, class: 'form-check-input', required: true
+                  = form.label :privacy_level, privacy_level.humanize, value: privacy_level, class: 'form-check-label'
+                  - if privacy_level == 'only_creator'
+                    %small.text-muted.d-block.ms-4 Only you can view this goal
+                  - elsif privacy_level == 'only_creator_and_owner'
+                    %small.text-muted.d-block.ms-4 You and the goal owner can view this goal
+                  - elsif privacy_level == 'only_creator_owner_and_managers'
+                    %small.text-muted.d-block.ms-4 You, the owner, and their managers can view this goal
+                  - elsif privacy_level == 'everyone_in_company'
+                    %small.text-muted.d-block.ms-4 Everyone in your company can view this goal
+
             / Advanced Settings Collapse
             .mb-3
               %button.btn.btn-link.p-0.text-decoration-none{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#advancedSettings", "aria-expanded": "false", "aria-controls": "advancedSettings"}
                 %i.bi.bi-chevron-down.me-2
                 Advanced Settings
-            
+
             .collapse#advancedSettings
               .card.card-body.bg-light.mt-3
-                = render 'goal_type_selection', form: form
-                
                 .mb-3
                   %label.form-label
-                    Target Dates
+                    Target Date Range
                     %small.text-muted (Optional)
                   %small.form-text.text-muted.mb-2.d-block
-                    If you set dates here, they will override the timeframe selection above.
+                    Set earliest and latest target dates. Most Likely Target Date is set above. If provided, Earliest ≤ Most Likely ≤ Latest.
                   .row
-                    .col-md-4.mb-2
+                    .col-md-6.mb-2
                       = form.label :earliest_target_date, 'Earliest Target Date', class: 'form-label small'
                       = form.date_field :earliest_target_date, class: 'form-control'
-                    .col-md-4.mb-2
-                      = form.label :most_likely_target_date, 'Most Likely Target Date', class: 'form-label small'
-                      = form.date_field :most_likely_target_date, class: 'form-control'
-                    .col-md-4.mb-2
+                    .col-md-6.mb-2
                       = form.label :latest_target_date, 'Latest Target Date', class: 'form-label small'
                       = form.date_field :latest_target_date, class: 'form-control'
-                  %small.form-text.text-muted
-                    All dates are optional. If provided, Earliest ≤ Most Likely ≤ Latest
-                
+
                 .mb-3
-                  = form.label :owner_id, class: 'form-label' do
-                    Owner
-                    %span.text-danger *
-                  - current_owner_value = (@goal.owner_type == 'Organization') ? "Company_#{@goal.owner_id}" : "#{@goal.owner_type}_#{@goal.owner_id}"
-                  = form.select :owner_id, 
-                    available_goal_owners,
-                    { selected: current_owner_value },
-                    { class: 'form-select', required: true }
-                  %small.form-text.text-muted
-                    Choose who this goal belongs to: yourself, an employee, a team, department, or company
-                
-                .mb-3
-                  = form.label :privacy_level, class: 'form-label' do
-                    Privacy Level
-                    %span.text-danger *
-                  - Goal.privacy_levels.each do |privacy_level, value|
-                    .form-check
-                      = form.radio_button :privacy_level, privacy_level, class: 'form-check-input', required: true
-                      = form.label :privacy_level, privacy_level.humanize, value: privacy_level, class: 'form-check-label'
-                      - if privacy_level == 'only_creator'
-                        %small.text-muted.d-block.ms-4 Only you can view this goal
-                      - elsif privacy_level == 'only_creator_and_owner'
-                        %small.text-muted.d-block.ms-4 You and the goal owner can view this goal
-                      - elsif privacy_level == 'only_creator_owner_and_managers'
-                        %small.text-muted.d-block.ms-4 You, the owner, and their managers can view this goal
-                      - elsif privacy_level == 'everyone_in_company'
-                        %small.text-muted.d-block.ms-4 Everyone in your company can view this goal
-                
+                  = form.label :initial_confidence, 'Initial Confidence', class: 'form-label'
+                  - initial_confidence_value = @form.initial_confidence.presence || 'stretch'
+                  .form-check
+                    = form.radio_button :initial_confidence, 'commit', class: 'form-check-input', id: 'goal_initial_confidence_commit', checked: (initial_confidence_value == 'commit')
+                    = form.label :initial_confidence, nil, value: 'commit', class: 'form-check-label', for: 'goal_initial_confidence_commit' do
+                      %strong Commit
+                      %small.text-muted.d-block.ms-4 At the time of starting this goal, I was more than 80% confident it would be hit by the due date (well within my/our control).
+                  .form-check
+                    = form.radio_button :initial_confidence, 'stretch', class: 'form-check-input', id: 'goal_initial_confidence_stretch', checked: (initial_confidence_value == 'stretch')
+                    = form.label :initial_confidence, nil, value: 'stretch', class: 'form-check-label', for: 'goal_initial_confidence_stretch' do
+                      %strong Stretch
+                      %small.text-muted.d-block.ms-4 At the time of starting this goal, I was about 50/50 on whether it would be hit by the due date (striving for it, but not certain).
+                  .form-check
+                    = form.radio_button :initial_confidence, 'transform', class: 'form-check-input', id: 'goal_initial_confidence_transform', checked: (initial_confidence_value == 'transform')
+                    = form.label :initial_confidence, nil, value: 'transform', class: 'form-check-label', for: 'goal_initial_confidence_transform' do
+                      %strong Transform
+                      %small.text-muted.d-block.ms-4 At the time of starting this goal, I was less than 30% confident it would be hit by the due date—but if hit, it would change or make us rethink everything (big-hairy-audacious goals).
+
                 .mb-3
                   %label.form-label
                     Status Dates

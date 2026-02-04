@@ -91,7 +91,30 @@ RSpec.describe GoalForm, type: :form do
       expect(form).not_to be_valid
       expect(form.errors[:privacy_level]).to include('is not included in the list')
     end
-    
+
+    it 'allows initial_confidence to be nil (optional)' do
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = creator_teammate.id
+      form.initial_confidence = nil
+
+      expect(form).to be_valid
+    end
+
+    it 'validates initial_confidence inclusion when present' do
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = creator_teammate.id
+      form.initial_confidence = 'invalid_confidence'
+
+      expect(form).not_to be_valid
+      expect(form.errors[:initial_confidence]).to include('is not included in the list')
+    end
+
     it 'validates current_teammate is present for new goals' do
       form.title = "Test Goal"
       form.goal_type = "inspirational_objective"
@@ -225,15 +248,29 @@ RSpec.describe GoalForm, type: :form do
       form.most_likely_target_date = Date.today + 2.months
       form.latest_target_date = Date.today + 3.months
       form.privacy_level = "only_creator_and_owner"
+      form.initial_confidence = "stretch"
       form.owner_type = "CompanyTeammate"
       form.owner_id = creator_teammate.id
-      
+
       expect(form.save).to be true
       expect(goal.title).to eq("My Goal")
       expect(goal.description).to eq("Goal description")
       expect(goal.goal_type).to eq("quantitative_key_result")
       expect(goal.privacy_level).to eq("only_creator_and_owner")
+      expect(goal.initial_confidence).to eq("stretch")
       expect(goal.owner_type).to eq('CompanyTeammate')
+    end
+
+    it 'saves initial_confidence when set' do
+      form.title = "Transform Goal"
+      form.goal_type = "inspirational_objective"
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = creator_teammate.id
+      form.initial_confidence = "transform"
+
+      expect(form.save).to be true
+      expect(goal.initial_confidence).to eq("transform")
     end
     
     it 'handles optional started_at' do

@@ -21,11 +21,14 @@
               %label.form-label.fw-bold
                 Owner
                 %span.text-danger *
-              = select_tag :owner_id, 
-                options_for_select(available_goal_owners_for_bulk, @owner_param),
-                class: 'form-select', 
+              = render 'goal_owner_select',
+                options: available_goal_owners,
+                selected_value: @owner_param,
+                name: 'owner_id',
                 id: 'bulk-goal-owner-select',
-                data: { test_id: 'bulk-goal-owner' }
+                select_class: 'form-select',
+                required: true,
+                html_options: { data: { test_id: 'bulk-goal-owner' } }
               %small.form-text.text-muted
                 Choose who these goals belong to: yourself, an employee, a team, department, or company.
               %small.form-text.text-muted.d-block.mt-1

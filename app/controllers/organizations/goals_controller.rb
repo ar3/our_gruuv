@@ -754,6 +754,24 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   private
 
+  # Departments for goal owner dropdown: hierarchically and alphabetically (root first, then children by name).
+  # Example: AAA, BBB, BBB > Sub-B1, BBB > Sub-B2, CCC, CCC > Sub-C1, DDD, EEE
+  def department_goal_owner_options(company)
+    result = []
+    roots = Department.where(company: company).active.root_departments.ordered
+    append_departments_for_goal_owners(roots, result)
+    result
+  end
+
+  def append_departments_for_goal_owners(departments, result)
+    departments.each do |dept|
+      next unless dept.display_name.present? && dept.id.present?
+      result << ["Department: #{dept.display_name}", "Department_#{dept.id}"]
+      children = dept.child_departments.active.ordered
+      append_departments_for_goal_owners(children, result) if children.any?
+    end
+  end
+
   def resolve_owner_for_bulk(current_teammate)
     owner_id_param = params[:owner_id].to_s
     if owner_id_param.include?('_')
@@ -916,22 +934,15 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def available_goal_owners
     options = []
-    
-    # Get company (root organization)
     company = @organization.root_company || @organization
-    
-    # Add special option for "All goals visible to everyone at <company name>"
+
+    # Filter-only options (index page: view all / view mine)
     if company.display_name.present?
       options << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"]
     end
-    
-    # Add special option for "All goals created by me"
     options << ["All goals created by me", "created_by_me"]
-    
-    # Add current teammate (person themselves) - should be first/default
-    # Find teammate in the company or any descendant organization
-    # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
-    # Filter at database level for efficiency
+
+    # 1) Viewing teammate first
     company_descendant_ids = company.self_and_descendants.pluck(:id)
     current_teammate = current_person.teammates
                                      .where(organization_id: company_descendant_ids)
@@ -939,15 +950,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     if current_teammate && current_person&.display_name.present?
       options << ["Teammate: #{current_person.display_name}", "CompanyTeammate_#{current_teammate.id}"]
     end
-    
-    # Get teammates managed by current user in this organization (their employees)
-    # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
-    # Use CompanyTeammate directly to filter at database level
-    # Find the current person's CompanyTeammate in the company to use as manager_teammate_id
+
+    # 2) Other teammates alphabetically
     current_manager_teammate = current_person.teammates
                                              .where(organization_id: company.id)
                                              .first
-    
     managed_teammates = if current_manager_teammate
       CompanyTeammate.joins(:employment_tenures)
                      .where(employment_tenures: { company: company, manager_teammate_id: current_manager_teammate.id, ended_at: nil })
@@ -958,29 +965,25 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     else
       CompanyTeammate.none
     end
-    
     managed_teammates.each do |teammate|
       next unless teammate.person&.display_name.present? && teammate.id.present?
       options << ["Teammate: #{teammate.person.display_name}", "CompanyTeammate_#{teammate.id}"]
     end
-    
-    # Get departments and teams within the company (standalone models, not Organization STI)
-    Department.where(company: company).ordered.each do |dept|
-      next unless dept.display_name.present? && dept.id.present?
-      options << ["Department: #{dept.display_name}", "Department_#{dept.id}"]
+
+    # 3) Company
+    if company.display_name.present? && company.id.present?
+      options << ["Company: #{company.display_name}", "Company_#{company.id}"]
     end
-    
+
+    # 4) Departments: hierarchically and alphabetically (root first, then children alphabetically)
+    options.concat(department_goal_owner_options(company))
+
+    # Teams (alphabetically)
     Team.where(company: company).ordered.each do |t|
       next unless t.display_name.present? && t.id.present?
       options << ["Team: #{t.display_name}", "Team_#{t.id}"]
     end
-    
-    # Add company (organization) at the end - use "Company" for user-facing label; form converts to Organization when saving
-    if company.display_name.present? && company.id.present?
-      options << ["Company: #{company.display_name}", "Company_#{company.id}"]
-    end
-    
-    # Filter out any options with blank/nil values or labels
+
     options.reject { |label, value| label.blank? || value.blank? || value.nil? }
   end
   helper_method :available_goal_owners

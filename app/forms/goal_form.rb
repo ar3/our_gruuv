@@ -7,12 +7,13 @@ class GoalForm < Reform::Form
   property :latest_target_date
   property :most_likely_target_date
   property :privacy_level
+  property :initial_confidence
   property :owner_type
   property :owner_id
   property :started_at
   property :completed_at
   property :became_top_priority
-  
+
   # Virtual property for timeframe selection (near_term, medium_term, long_term, vision)
   property :timeframe, virtual: true
   
@@ -28,6 +29,7 @@ class GoalForm < Reform::Form
   validate :privacy_level_for_owner_type
   validate :goal_type_inclusion
   validate :privacy_level_inclusion
+  validate :initial_confidence_inclusion
   validate :current_teammate_present_for_new_goals
   
   # Override validate to parse owner selection before validations run
@@ -188,12 +190,20 @@ class GoalForm < Reform::Form
   
   def privacy_level_inclusion
     return unless privacy_level
-    
+
     unless Goal.privacy_levels.key?(privacy_level)
       errors.add(:privacy_level, 'is not included in the list')
     end
   end
-  
+
+  def initial_confidence_inclusion
+    return if initial_confidence.blank?
+
+    unless Goal.initial_confidences.key?(initial_confidence)
+      errors.add(:initial_confidence, 'is not included in the list')
+    end
+  end
+
   def current_teammate_present_for_new_goals
     return unless model.new_record?
     return if current_teammate.present?

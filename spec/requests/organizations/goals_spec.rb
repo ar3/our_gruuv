@@ -174,6 +174,18 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Company Goal')
     end
 
+    it 'shows Owner as the first field on the edit page (not in Advanced Settings)' do
+      get edit_organization_goal_path(organization, goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Owner')
+      expect(response.body).to include('goal[owner_id]')
+      # Owner field should appear before Advanced Settings (owner is top-level, not inside collapse)
+      owner_pos = response.body.index('Owner')
+      advanced_pos = response.body.index('Advanced Settings')
+      expect(owner_pos).to be < advanced_pos
+    end
+
     it 'updates goal preserving Organization owner when owner_id is Company_ID' do
       company_goal = create(:goal, creator: teammate, owner: organization, title: 'Company Goal', started_at: 1.week.ago, privacy_level: 'everyone_in_company')
       patch organization_goal_path(organization, company_goal), params: {
@@ -400,16 +412,21 @@ RSpec.describe 'Organizations::Goals', type: :request do
     it 'displays check-ins in chronological order' do
       old_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_percentage: 60, confidence_reporter: person)
       recent_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 80, confidence_reporter: person)
-      
+
       get weekly_update_organization_goal_path(organization, goal)
-      
+
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Check-In History')
       expect(response.body).to include('60%')
       expect(response.body).to include('80%')
-      # Verify they appear in chronological order (oldest first)
-      old_index = response.body.index('60%')
-      recent_index = response.body.index('80%')
+      # Verify they appear in chronological order (oldest first) within Check-In History
+      # (avoid matching percentages in the Current Week form dropdown)
+      body = response.body
+      history_start = body.index('Check-In History')
+      history_end = body.index('Current Week Check-In') || body.length
+      history_section = body[history_start...history_end]
+      old_index = history_section.index('60%')
+      recent_index = history_section.index('80%')
       expect(old_index).to be < recent_index
     end
     
@@ -1323,6 +1340,30 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('everyone in the company')
       expect(response.body).to include('creator, owner, and managers')
+    end
+
+    it 'orders owner dropdown: viewing teammate first, then company, then departments hierarchically' do
+      dept_aaa = create(:department, company: organization, name: 'AAA', parent_department: nil)
+      dept_bbb = create(:department, company: organization, name: 'BBB', parent_department: nil)
+      create(:department, company: organization, name: 'Sub-B1', parent_department: dept_bbb)
+
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      body = response.body
+      # Viewing teammate option appears before company
+      teammate_pos = body.index("CompanyTeammate_#{teammate.id}")
+      company_pos = body.index("Company: #{organization.display_name}")
+      expect(teammate_pos).to be < company_pos
+      # Departments appear in hierarchical order: AAA, then BBB, then BBB > Sub-B1 (HTML-escaped >)
+      expect(body).to include('Department: AAA')
+      expect(body).to include('Department: BBB')
+      expect(body).to include('Sub-B1')
+      pos_aaa = body.index('Department: AAA')
+      pos_bbb = body.index('Department: BBB')
+      pos_sub = body.index('Sub-B1')
+      expect(pos_aaa).to be < pos_bbb
+      expect(pos_bbb).to be < pos_sub
     end
   end
 

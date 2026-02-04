@@ -33,7 +33,13 @@ class Goal < ApplicationRecord
     only_creator_owner_and_managers: 'only_creator_owner_and_managers',
     everyone_in_company: 'everyone_in_company'
   }
-  
+
+  enum :initial_confidence, {
+    commit: 'commit',
+    stretch: 'stretch',
+    transform: 'transform'
+  }, prefix: true
+
   # Validations (owner_type_valid before presence so invalid owner_type doesn't constantize removed Teammate)
   validate :owner_type_valid
   validates :title, :goal_type, :privacy_level, :creator, presence: true

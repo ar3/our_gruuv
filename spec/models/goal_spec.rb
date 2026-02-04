@@ -33,6 +33,14 @@ RSpec.describe Goal, type: :model do
         'everyone_in_company' => 'everyone_in_company'
       })
     end
+
+    it 'defines initial_confidence enum' do
+      expect(Goal.initial_confidences).to eq({
+        'commit' => 'commit',
+        'stretch' => 'stretch',
+        'transform' => 'transform'
+      })
+    end
   end
   
   describe 'validations' do

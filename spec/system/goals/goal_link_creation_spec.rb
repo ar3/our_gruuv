@@ -154,11 +154,12 @@ RSpec.describe 'Goal Link Creation', type: :system do
     
     it 'shows validation error when no goals selected and no bulk titles provided' do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
+
       click_button 'Create Links', id: 'create-existing-links-btn'
-      
+
       expect(page).to have_content(/error|required|select/i)
-      expect(page).to have_current_path(new_outgoing_link_organization_goal_goal_links_path(organization, goal1))
+      expected_path = new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      expect(URI.parse(page.current_url).path).to eq(expected_path)
     end
     
     it 'prevents self-linking' do

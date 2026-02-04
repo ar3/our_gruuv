@@ -771,7 +771,62 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       end
     end
   end
-  
+
+  describe '#available_goal_owners and #available_goal_owners_for_bulk' do
+    before do
+      get :index, params: { organization_id: company.id }
+    end
+
+    it 'orders options: filter options, viewing teammate, teammates alphabetically, company, departments hierarchically, teams' do
+      options = controller.send(:available_goal_owners)
+      values = options.map(&:second)
+
+      # Filter options first (index only)
+      expect(values.first).to eq('everyone_in_company')
+      expect(values.second).to eq('created_by_me')
+      # Viewing teammate next
+      expect(values.third).to eq("CompanyTeammate_#{creator_teammate.id}")
+      # Company before departments
+      company_idx = values.index("Company_#{company.id}")
+      dept_indices = values.each_index.select { |i| values[i].to_s.start_with?('Department_') }
+      expect(company_idx).to be < dept_indices.min if dept_indices.any?
+      # Departments before teams
+      team_indices = values.each_index.select { |i| values[i].to_s.start_with?('Team_') }
+      expect(dept_indices.max).to be < team_indices.min if dept_indices.any? && team_indices.any?
+    end
+
+    it 'lists departments hierarchically and alphabetically (parent then children by name)' do
+      dept_aaa = create(:department, company: company, name: 'AAA', parent_department: nil)
+      dept_bbb = create(:department, company: company, name: 'BBB', parent_department: nil)
+      dept_bbb_sub1 = create(:department, company: company, name: 'Sub-B1', parent_department: dept_bbb)
+      dept_bbb_sub2 = create(:department, company: company, name: 'Sub-B2', parent_department: dept_bbb)
+      dept_ccc = create(:department, company: company, name: 'CCC', parent_department: nil)
+      dept_ccc_sub1 = create(:department, company: company, name: 'Sub-C1', parent_department: dept_ccc)
+      dept_ddd = create(:department, company: company, name: 'DDD', parent_department: nil)
+
+      get :index, params: { organization_id: company.id }
+      options = controller.send(:available_goal_owners)
+      labels = options.map(&:first)
+      dept_labels = labels.select { |l| l.start_with?('Department: ') }.map { |l| l.sub('Department: ', '') }
+
+      expect(dept_labels).to eq([
+        'AAA',
+        'BBB',
+        'BBB > Sub-B1',
+        'BBB > Sub-B2',
+        'CCC',
+        'CCC > Sub-C1',
+        'DDD'
+      ])
+    end
+
+    it 'available_goal_owners_for_bulk excludes everyone_in_company and created_by_me' do
+      bulk_options = controller.send(:available_goal_owners_for_bulk)
+      values = bulk_options.map(&:second)
+      expect(values).not_to include('everyone_in_company', 'created_by_me')
+    end
+  end
+
   describe 'GET #edit' do
     let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     
