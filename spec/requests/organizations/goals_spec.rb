@@ -737,6 +737,32 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
   
+  describe 'GET /organizations/:organization_id/goals with default (hierarchical-collapsible) view' do
+    let(:check_in_eligible_goal) do
+      create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Check-in Eligible Goal',
+        goal_type: 'qualitative_key_result',
+        most_likely_target_date: Date.today + 1.month,
+        started_at: 1.week.ago
+      )
+    end
+
+    it 'shows "mark this goal as complete" link for active check-in-eligible goals' do
+      check_in_eligible_goal
+
+      get organization_goals_path(organization), params: {
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('mark this goal as complete')
+      expect(response.body).to include(done_organization_goal_path(organization, check_in_eligible_goal))
+    end
+  end
+  
   describe 'GET /organizations/:organization_id/goals with list view' do
     let(:draft_goal) do
       create(:goal,

@@ -77,6 +77,14 @@
           %dd.col-sm-8
             %span.badge.bg-secondary= @goal.privacy_level.humanize
 
+          - if @prompt_goals.any?
+            %dt.col-sm-4 Linked to prompt(s):
+            %dd.col-sm-8
+              - @prompt_goals.each_with_index.each do |prompt_goal, idx|
+                - if idx > 0
+                  %span.text-muted= ", "
+                = link_to prompt_goal.prompt.prompt_template.title, edit_organization_prompt_path(@organization, prompt_goal.prompt), class: "text-decoration-none"
+
           - if @goal.completed_at.present?
             %dt.col-sm-4 Completed:
             %dd.col-sm-8
