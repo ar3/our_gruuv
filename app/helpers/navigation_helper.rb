@@ -32,11 +32,44 @@ module NavigationHelper
         policy_check: -> { policy(current_company_teammate).view_check_ins? }
       },
       {
-        label: 'Observations',
+        label: 'Observations (OGO)',
         icon: 'bi-eye',
-        path: organization_observations_path(current_organization),
-        section: nil,
-        policy_check: -> { policy(current_company).view_observations? }
+        section: 'observations_ogo',
+        items: [
+          {
+            label: 'Add New OGO',
+            icon: 'bi-plus-circle',
+            path: select_type_organization_observations_path(current_organization),
+            policy_check: -> { policy(current_company).view_observations? },
+            coming_soon: false
+          },
+          {
+            label: "#{current_organization&.name || 'Organization'} Highlights",
+            icon: 'bi-gift',
+            path: organization_observations_path(
+              current_organization,
+              privacy: %w[public_to_company public_to_world],
+              spotlight: 'most_observed',
+              view: 'wall'
+            ),
+            policy_check: -> { policy(current_company).view_observations? },
+            coming_soon: false
+          },
+          {
+            label: "OGO's involving me",
+            icon: 'bi-person',
+            path: organization_observations_path(current_organization, involving_teammate_id: current_company_teammate&.id),
+            policy_check: -> { current_company_teammate.present? && policy(current_company).view_observations? },
+            coming_soon: false
+          },
+          {
+            label: 'All observations',
+            icon: 'bi-list-ul',
+            path: organization_observations_path(current_organization),
+            policy_check: -> { policy(current_company).view_observations? },
+            coming_soon: false
+          }
+        ]
       },
       {
         label: company_label_plural('prompt', 'Prompts'),

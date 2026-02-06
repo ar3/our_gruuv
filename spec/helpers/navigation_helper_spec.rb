@@ -253,5 +253,55 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(insights_index).to be < admin_index
       end
     end
+
+    describe 'Observations (OGO) section' do
+      it 'includes Observations (OGO) section in navigation structure' do
+        structure = helper.navigation_structure
+        ogo_section = structure.find { |item| item[:label] == 'Observations (OGO)' }
+        expect(ogo_section).to be_present
+        expect(ogo_section[:section]).to eq('observations_ogo')
+        expect(ogo_section[:icon]).to eq('bi-eye')
+      end
+
+      it 'has the expected four sub-items in order' do
+        structure = helper.navigation_structure
+        ogo_section = structure.find { |item| item[:label] == 'Observations (OGO)' }
+        items = ogo_section[:items]
+        labels = items.map { |item| item[:label] }
+
+        expect(labels.length).to eq(4)
+        expect(labels[0]).to eq('Add New OGO')
+        expect(labels[2]).to eq("OGO's involving me")
+        expect(labels[3]).to eq('All observations')
+        expect(labels[1]).to match(/\A.+ Highlights\z/)
+      end
+
+      it 'uses organization name in Highlights sub-item label' do
+        company = create(:organization, :company, name: 'Acme Corp')
+        helper.instance_variable_set(:@current_organization, company)
+        helper.instance_variable_set(:@current_company, company)
+        helper.instance_variable_set(:@current_company_teammate, teammate)
+
+        structure = helper.navigation_structure
+        ogo_section = structure.find { |item| item[:label] == 'Observations (OGO)' }
+        highlights_item = ogo_section[:items].find { |item| item[:label]&.end_with?(' Highlights') }
+        expect(highlights_item).to be_present
+        expect(highlights_item[:label]).to eq('Acme Corp Highlights')
+      end
+
+      it 'places Observations (OGO) section after My Check-In and before Prompts' do
+        structure = helper.navigation_structure
+        my_checkin_index = structure.find_index { |item| item[:label] == 'My Check-In' }
+        ogo_index = structure.find_index { |item| item[:label] == 'Observations (OGO)' }
+        prompts_item = structure.find { |item| item[:label] == 'Prompts' }
+        prompts_index = structure.find_index { |item| item[:label] == 'Prompts' }
+
+        expect(my_checkin_index).to be_present
+        expect(ogo_index).to be_present
+        expect(prompts_index).to be_present
+        expect(ogo_index).to eq(my_checkin_index + 1)
+        expect(ogo_index).to be < prompts_index
+      end
+    end
   end
 end

@@ -98,24 +98,33 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        
-        allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
+        highlights_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        eligibility_policy_double = double(index?: true)
+
+        allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
           case record
           when Organization
             record.company? ? company_policy_double : org_policy_double
+          when :highlights
+            highlights_policy_double
+          when :eligibility_requirement
+            eligibility_policy_double
           else
             policy_double
           end
         end
       end
-      
-      it 'renders observations page successfully' do
+
+      it 'renders observations page successfully and expands Observations (OGO) section' do
         get organization_observations_path(organization)
-        
+
         expect(response).to have_http_status(:success)
-        # Observations is a standalone nav item (section: nil), not in a collapsible section
-        # So we just verify the page loads successfully
         expect(response.body).to include('vertical-nav')
+        # Observations (OGO) is a collapsible section; section should be present and expanded when on observations index
+        expect(response.body).to include('id="navSectionObservations_ogo"')
+        ogo_section_div = response.body[/<div[^>]*id="navSectionObservations_ogo"[^>]*>/]
+        expect(ogo_section_div).to be_present
+        expect(ogo_section_div).to include('class="collapse show"')
       end
     end
     
@@ -151,17 +160,23 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        
-        allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
+        highlights_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        eligibility_policy_double = double(index?: true)
+
+        allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
           case record
           when Organization
             record.company? ? company_policy_double : org_policy_double
+          when :highlights
+            highlights_policy_double
+          when :eligibility_requirement
+            eligibility_policy_double
           else
             policy_double
           end
         end
       end
-      
+
       it 'expands only the Admin section' do
         get organization_seats_path(organization)
         
@@ -217,17 +232,23 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        
-        allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
+        highlights_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        eligibility_policy_double = double(index?: true)
+
+        allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
           case record
           when Organization
             record.company? ? company_policy_double : org_policy_double
+          when :highlights
+            highlights_policy_double
+          when :eligibility_requirement
+            eligibility_policy_double
           else
             policy_double
           end
         end
       end
-      
+
       it 'expands only the Huddles section' do
         get huddles_path
         
