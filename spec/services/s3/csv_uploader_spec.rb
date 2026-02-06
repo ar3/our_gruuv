@@ -12,9 +12,30 @@ RSpec.describe S3::CsvUploader, type: :service do
     # Stub ENV calls - need to stub BULK_DOWNLOADS_S3_BUCKET first, then allow others
     allow(ENV).to receive(:[]).and_call_original
     allow(ENV).to receive(:[]).with('BULK_DOWNLOADS_S3_BUCKET').and_return(bucket_name)
+    allow(ENV).to receive(:[]).with('DEFAULT_S3_BUCKET').and_return(nil)
     allow(ENV).to receive(:[]).with('AWS_ACCESS_KEY_ID').and_return('test-access-key')
     allow(ENV).to receive(:[]).with('AWS_SECRET_ACCESS_KEY').and_return('test-secret-key')
     allow(ENV).to receive(:[]).with('AWS_REGION').and_return('us-east-1')
+  end
+
+  describe '#bucket_name' do
+    it 'uses BULK_DOWNLOADS_S3_BUCKET when set' do
+      allow(ENV).to receive(:[]).with('BULK_DOWNLOADS_S3_BUCKET').and_return('bulk-bucket')
+      allow(ENV).to receive(:[]).with('DEFAULT_S3_BUCKET').and_return('default-bucket')
+      expect(uploader.bucket_name).to eq('bulk-bucket')
+    end
+
+    it 'falls back to DEFAULT_S3_BUCKET when BULK_DOWNLOADS_S3_BUCKET is not set' do
+      allow(ENV).to receive(:[]).with('BULK_DOWNLOADS_S3_BUCKET').and_return(nil)
+      allow(ENV).to receive(:[]).with('DEFAULT_S3_BUCKET').and_return('default-bucket')
+      expect(uploader.bucket_name).to eq('default-bucket')
+    end
+
+    it 'falls back to hardcoded default when neither env var is set' do
+      allow(ENV).to receive(:[]).with('BULK_DOWNLOADS_S3_BUCKET').and_return(nil)
+      allow(ENV).to receive(:[]).with('DEFAULT_S3_BUCKET').and_return(nil)
+      expect(uploader.bucket_name).to eq('bulk-downloads.ourgruuv.com')
+    end
   end
 
   describe '#upload' do
@@ -67,6 +88,22 @@ RSpec.describe S3::CsvUploader, type: :service do
             download_type: download_type
           )
         }.to raise_error(Aws::S3::Errors::ServiceError)
+      end
+
+      it 'raises NoSuchBucket when the specified bucket does not exist' do
+        allow(mock_bucket).to receive(:object).and_return(mock_object)
+        allow(mock_object).to receive(:put).and_raise(
+          Aws::S3::Errors::NoSuchBucket.new(nil, 'The specified bucket does not exist')
+        )
+
+        expect {
+          uploader.upload(
+            csv_content,
+            filename: filename,
+            organization_id: organization_id,
+            download_type: download_type
+          )
+        }.to raise_error(Aws::S3::Errors::NoSuchBucket, 'The specified bucket does not exist')
       end
     end
 

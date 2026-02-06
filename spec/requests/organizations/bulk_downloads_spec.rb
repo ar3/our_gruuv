@@ -691,6 +691,24 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
       end
     end
 
+    context 'when S3 bucket does not exist (NoSuchBucket)' do
+      before do
+        employed_teammate
+        sign_in_as_teammate_for_request(employed_person, organization)
+        allow_any_instance_of(S3::CsvUploader).to receive(:upload).and_raise(
+          Aws::S3::Errors::NoSuchBucket.new(nil, 'The specified bucket does not exist')
+        )
+      end
+
+      it 'still returns CSV and does not create a BulkDownload record' do
+        expect {
+          get download_organization_bulk_downloads_path(organization, type: 'assignments')
+        }.not_to change(BulkDownload, :count)
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include('text/csv')
+      end
+    end
+
     context 'when downloading new types' do
       before do
         employed_teammate

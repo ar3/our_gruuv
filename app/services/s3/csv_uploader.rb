@@ -1,7 +1,7 @@
 module S3
   class CsvUploader
     def bucket_name
-      ENV['BULK_DOWNLOADS_S3_BUCKET'] || 'bulk-downloads.ourgruuv.com'
+      ENV['BULK_DOWNLOADS_S3_BUCKET'].presence || ENV['DEFAULT_S3_BUCKET'].presence || 'bulk-downloads.ourgruuv.com'
     end
     
     def initialize
