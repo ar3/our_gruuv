@@ -154,8 +154,8 @@ class CompanyTeammatesQuery
         filtered_teammates = filtered_teammates.where(can_manage_maap: true)
       when 'customize_company'
         filtered_teammates = filtered_teammates.where(can_customize_company: true)
-      when 'highlights_rewards'
-        filtered_teammates = filtered_teammates.where(can_manage_highlights_rewards: true)
+      when 'kudos_rewards'
+        filtered_teammates = filtered_teammates.where(can_manage_kudos_rewards: true)
       end
     end
 

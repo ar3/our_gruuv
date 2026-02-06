@@ -371,11 +371,11 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
       expect(results).not_to include(direct_report2_teammate)
     end
 
-    it 'filters by highlights_rewards permission' do
-      direct_report1_teammate.update!(can_manage_highlights_rewards: true)
-      direct_report2_teammate.update!(can_manage_highlights_rewards: false)
+    it 'filters by kudos_rewards permission' do
+      direct_report1_teammate.update!(can_manage_kudos_rewards: true)
+      direct_report2_teammate.update!(can_manage_kudos_rewards: false)
       
-      query = CompanyTeammatesQuery.new(organization, { permission: 'highlights_rewards' })
+      query = CompanyTeammatesQuery.new(organization, { permission: 'kudos_rewards' })
       results = query.call
       
       expect(results).to include(direct_report1_teammate)

@@ -1,0 +1,13 @@
+- content_for :title, "Add Reward"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-plus-circle.me-2
+    Add Reward
+
+- content_for :go_back_link do
+  = link_to organization_kudos_rewards_rewards_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Rewards
+
+= render 'form'

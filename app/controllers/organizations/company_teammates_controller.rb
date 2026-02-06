@@ -88,11 +88,11 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     load_viewer_check_in_readiness_for_about_me
   end
 
-  def highlights_points
-    authorize @teammate, :view_highlights_points?, policy_class: CompanyTeammatePolicy
+  def kudos_points
+    authorize @teammate, :view_kudos_points?, policy_class: CompanyTeammatePolicy
     @person = @teammate.person
-    @ledger = @teammate.highlights_ledger
-    transactions_scope = @teammate.highlights_transactions.recent
+    @ledger = @teammate.kudos_ledger
+    transactions_scope = @teammate.kudos_transactions.recent
     total_count = transactions_scope.count
     @pagy = Pagy.new(count: total_count, page: params[:page] || 1, items: 25)
     @transactions = transactions_scope.limit(@pagy.items).offset(@pagy.offset)
@@ -190,7 +190,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @who_has_prompts_management = organization.teammates.with_prompts_management.includes(:person)
     @who_has_departments_and_teams_management = organization.teammates.with_departments_and_teams_management.includes(:person)
     @who_has_customize_company = organization.teammates.with_customize_company.includes(:person)
-    @who_has_highlights_rewards_management = organization.teammates.with_highlights_management.includes(:person)
+    @who_has_kudos_rewards_management = organization.teammates.with_kudos_management.includes(:person)
     
     render layout: 'overlay'
   end
@@ -246,10 +246,10 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       access.can_customize_company
     end
     
-    access.can_manage_highlights_rewards = if params[:can_manage_highlights_rewards].present?
-      params[:can_manage_highlights_rewards] == 'true'
+    access.can_manage_kudos_rewards = if params[:can_manage_kudos_rewards].present?
+      params[:can_manage_kudos_rewards] == 'true'
     else
-      access.can_manage_highlights_rewards
+      access.can_manage_kudos_rewards
     end
     
     # Save the access record

@@ -109,8 +109,8 @@
               = check_box_tag 'permission[]', 'customize_company', @current_filters[:permission]&.include?('customize_company'), class: 'form-check-input', id: 'perm_customize_company'
               = label_tag 'perm_customize_company', 'Customize Company', class: 'form-check-label'
             .form-check
-              = check_box_tag 'permission[]', 'highlights_rewards', @current_filters[:permission]&.include?('highlights_rewards'), class: 'form-check-input', id: 'perm_highlights_rewards'
-              = label_tag 'perm_highlights_rewards', 'Highlight Points & Rewards Management', class: 'form-check-label'
+              = check_box_tag 'permission[]', 'kudos_rewards', @current_filters[:permission]&.include?('kudos_rewards'), class: 'form-check-input', id: 'perm_kudos_rewards'
+              = label_tag 'perm_kudos_rewards', 'Kudos Points & Rewards Management', class: 'form-check-label'
   .row
     .col-md-4
       .mb-4

@@ -98,8 +98,8 @@ module TeammateHelper
       badges << content_tag(:span, "Customize", class: "badge bg-warning me-1")
     end
     
-    if teammate.can_manage_highlights_rewards?
-      badges << content_tag(:span, "Highlights", class: "badge bg-secondary me-1")
+    if teammate.can_manage_kudos_rewards?
+      badges << content_tag(:span, "Kudos", class: "badge bg-secondary me-1")
     end
     
     badges.any? ? badges.join.html_safe : content_tag(:span, "No special permissions", class: "text-muted small")
@@ -150,7 +150,7 @@ module TeammateHelper
       when 'employment_create' then 'Employment Creation'
       when 'maap_mgmt' then 'MAAP Management'
       when 'customize_company' then 'Customize Company'
-      when 'highlights_rewards' then 'Highlight Points & Rewards Management'
+      when 'kudos_rewards' then 'Kudos Points & Rewards Management'
       else filter_value.to_s.humanize
       end
     when 'manager_teammate_id'

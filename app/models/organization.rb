@@ -25,11 +25,11 @@ class Organization < ApplicationRecord
   has_many :bulk_downloads, foreign_key: 'company_id', dependent: :destroy
   has_many :observations, foreign_key: :company_id, dependent: :destroy
 
-  # Highlights associations
-  has_many :highlights_points_ledgers, foreign_key: :organization_id, dependent: :destroy
-  has_many :highlights_transactions, foreign_key: :organization_id, dependent: :destroy
-  has_many :highlights_rewards, foreign_key: :organization_id, dependent: :destroy
-  has_many :highlights_redemptions, foreign_key: :organization_id, dependent: :destroy
+  # Kudos associations
+  has_many :kudos_points_ledgers, foreign_key: :organization_id, dependent: :destroy
+  has_many :kudos_transactions, foreign_key: :organization_id, dependent: :destroy
+  has_many :kudos_rewards, foreign_key: :organization_id, dependent: :destroy
+  has_many :kudos_redemptions, foreign_key: :organization_id, dependent: :destroy
 
   # Company-specific associations (formerly in Company STI subclass)
   has_one :huddle_review_notification_channel_association,
@@ -337,10 +337,10 @@ class Organization < ApplicationRecord
     end
   end
 
-  # Highlights configuration methods
-  def highlights_celebratory_points_for(event_type)
-    return nil unless highlights_celebratory_config.present?
-    highlights_celebratory_config[event_type.to_s] || {}
+  # Kudos configuration methods
+  def kudos_celebratory_points_for(event_type)
+    return nil unless kudos_celebratory_config.present?
+    kudos_celebratory_config[event_type.to_s] || {}
   end
 
   # pg_search configuration

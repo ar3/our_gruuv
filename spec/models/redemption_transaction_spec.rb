@@ -3,30 +3,30 @@ require 'rails_helper'
 RSpec.describe RedemptionTransaction, type: :model do
   let(:organization) { create(:organization) }
   let(:teammate) { create(:company_teammate, organization: organization) }
-  let(:reward) { create(:highlights_reward, organization: organization, cost_in_points: 100) }
-  let(:redemption) { create(:highlights_redemption, organization: organization, company_teammate: teammate, highlights_reward: reward, points_spent: 100) }
+  let(:reward) { create(:kudos_reward, organization: organization, cost_in_points: 100) }
+  let(:redemption) { create(:kudos_redemption, organization: organization, company_teammate: teammate, kudos_reward: reward, points_spent: 100) }
 
   describe 'validations' do
     it 'is valid with proper attributes' do
       transaction = build(:redemption_transaction,
         company_teammate: teammate,
         organization: organization,
-        highlights_redemption: redemption,
+        kudos_redemption: redemption,
         points_to_spend_delta: -100)
       expect(transaction).to be_valid
     end
 
-    it 'requires a highlights_redemption' do
-      transaction = build(:redemption_transaction, highlights_redemption: nil)
+    it 'requires a kudos_redemption' do
+      transaction = build(:redemption_transaction, kudos_redemption: nil)
       expect(transaction).not_to be_valid
-      expect(transaction.errors[:highlights_redemption_id]).to include("can't be blank")
+      expect(transaction.errors[:kudos_redemption_id]).to include("can't be blank")
     end
 
     it 'requires negative points_to_spend_delta' do
       transaction = build(:redemption_transaction,
         company_teammate: teammate,
         organization: organization,
-        highlights_redemption: redemption,
+        kudos_redemption: redemption,
         points_to_spend_delta: 100)
       expect(transaction).not_to be_valid
       expect(transaction.errors[:points_to_spend_delta]).to include("must be negative for redemptions (spending points)")
@@ -36,7 +36,7 @@ RSpec.describe RedemptionTransaction, type: :model do
       transaction = build(:redemption_transaction,
         company_teammate: teammate,
         organization: organization,
-        highlights_redemption: redemption,
+        kudos_redemption: redemption,
         points_to_spend_delta: 0)
       expect(transaction).not_to be_valid
     end
@@ -47,7 +47,7 @@ RSpec.describe RedemptionTransaction, type: :model do
       create(:redemption_transaction,
         company_teammate: teammate,
         organization: organization,
-        highlights_redemption: redemption,
+        kudos_redemption: redemption,
         points_to_spend_delta: -100)
     end
 
@@ -96,7 +96,7 @@ RSpec.describe RedemptionTransaction, type: :model do
 
   describe '#apply_to_ledger!' do
     let!(:ledger) do
-      create(:highlights_points_ledger,
+      create(:kudos_points_ledger,
         company_teammate: teammate,
         organization: organization,
         points_to_spend: 200.0)
@@ -106,7 +106,7 @@ RSpec.describe RedemptionTransaction, type: :model do
       create(:redemption_transaction,
         company_teammate: teammate,
         organization: organization,
-        highlights_redemption: redemption,
+        kudos_redemption: redemption,
         points_to_spend_delta: -100)
     end
 
@@ -116,7 +116,7 @@ RSpec.describe RedemptionTransaction, type: :model do
 
     it 'raises error if insufficient balance' do
       ledger.update!(points_to_spend: 50.0)
-      expect { transaction.apply_to_ledger! }.to raise_error(HighlightsPointsLedger::InsufficientBalance)
+      expect { transaction.apply_to_ledger! }.to raise_error(KudosPointsLedger::InsufficientBalance)
     end
   end
 end

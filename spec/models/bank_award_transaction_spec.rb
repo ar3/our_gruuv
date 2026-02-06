@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe BankAwardTransaction, type: :model do
   describe 'validations' do
     let(:organization) { create(:organization) }
-    let(:banker) { create(:company_teammate, organization: organization, can_manage_highlights_rewards: true) }
+    let(:banker) { create(:company_teammate, organization: organization, can_manage_kudos_rewards: true) }
     let(:recipient) { create(:company_teammate, organization: organization) }
 
     it 'requires a banker' do
@@ -47,7 +47,7 @@ RSpec.describe BankAwardTransaction, type: :model do
     end
 
     it 'validates banker has permission' do
-      non_banker = create(:company_teammate, organization: organization, can_manage_highlights_rewards: false)
+      non_banker = create(:company_teammate, organization: organization, can_manage_kudos_rewards: false)
       transaction = build(:bank_award_transaction,
         company_teammate: recipient,
         company_teammate_banker: non_banker,
@@ -70,7 +70,7 @@ RSpec.describe BankAwardTransaction, type: :model do
 
   describe 'scopes' do
     let(:organization) { create(:organization) }
-    let(:banker) { create(:company_teammate, organization: organization, can_manage_highlights_rewards: true) }
+    let(:banker) { create(:company_teammate, organization: organization, can_manage_kudos_rewards: true) }
     let(:recipient1) { create(:company_teammate, organization: organization) }
     let(:recipient2) { create(:company_teammate, organization: organization) }
 
@@ -94,7 +94,7 @@ RSpec.describe BankAwardTransaction, type: :model do
 
   describe 'instance methods' do
     let(:organization) { create(:organization) }
-    let(:banker) { create(:company_teammate, organization: organization, can_manage_highlights_rewards: true) }
+    let(:banker) { create(:company_teammate, organization: organization, can_manage_kudos_rewards: true) }
     let(:recipient) { create(:company_teammate, organization: organization) }
 
     let(:transaction) do

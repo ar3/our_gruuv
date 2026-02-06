@@ -111,22 +111,22 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization or to be in the managerial hierarchy to access audit features"}
       
     %li
-      - viewing_own_highlights = @teammate && current_company_teammate == @teammate
-      - can_view_highlights = @teammate && (viewing_own_highlights || policy(@teammate).view_highlights_points?)
-      - if action_name == 'highlights_points' && controller_name == 'company_teammates'
+      - viewing_own_kudos = @teammate && current_company_teammate == @teammate
+      - can_view_kudos = @teammate && (viewing_own_kudos || policy(@teammate).view_kudos_points?)
+      - if action_name == 'kudos_points' && controller_name == 'company_teammates'
         .dropdown-item.text-muted
           %i.bi.bi-star.me-2
-          Highlight Points Mode (Active)
+          Kudos Points Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif can_view_highlights
-        = link_to highlights_points_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
+      - elsif can_view_kudos
+        = link_to kudos_points_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-star.me-2
-          Highlight Points Mode
+          Kudos Points Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-star.me-2
-          Highlight Points Mode
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can only view your own Highlight Points or those of people in your managerial hierarchy"}
+          Kudos Points Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can only view your own Kudos Points or those of people in your managerial hierarchy"}
       
     %li
       - if action_name == 'show' && controller_name == 'position'

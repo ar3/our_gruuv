@@ -1,7 +1,7 @@
-# STI subclass of HighlightsTransaction
+# STI subclass of KudosTransaction
 # Used for earned rewards from giving feedback (observer kickback)
 # Points go TO the observer as a reward for giving feedback
-class KickbackRewardTransaction < HighlightsTransaction
+class KickbackRewardTransaction < KudosTransaction
   # Kickback must be linked to an observation
   validates :observation_id, presence: true
 

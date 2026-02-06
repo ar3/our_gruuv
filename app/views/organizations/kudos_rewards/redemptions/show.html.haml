@@ -1,0 +1,140 @@
+- content_for :title, "Redemption ##{@redemption.id}"
+
+- content_for :header do
+  .d-flex.align-items-center.justify-content-between
+    %h1.mb-0.me-2
+      %i.bi.bi-receipt.me-2
+      Redemption ##{@redemption.id}
+    %span.badge.badge-lg{class: redemption_status_badge_class(@redemption.status)}
+      = @redemption.status.titleize
+
+- content_for :go_back_link do
+  = link_to organization_kudos_rewards_redemptions_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Redemptions
+
+.row
+  .col-md-8
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-info-circle.me-2
+          Redemption Details
+      .card-body
+        .row.mb-3
+          .col-sm-4.text-muted Reward
+          .col-sm-8
+            %strong= @redemption.reward_name
+            - if @redemption.kudos_reward&.description.present?
+              %br
+              %small.text-muted= @redemption.kudos_reward.description
+
+        .row.mb-3
+          .col-sm-4.text-muted Points Spent
+          .col-sm-8
+            %strong.text-primary= @redemption.points_spent.to_i
+            points
+            %small.text-muted= "(#{number_to_currency(@redemption.points_spent_in_dollars)})"
+
+        .row.mb-3
+          .col-sm-4.text-muted Requested
+          .col-sm-8= @redemption.created_at.strftime("%B %d, %Y at %I:%M %p")
+
+        - if @redemption.fulfilled?
+          .row.mb-3
+            .col-sm-4.text-muted Fulfilled
+            .col-sm-8= @redemption.fulfilled_at.strftime("%B %d, %Y at %I:%M %p")
+
+        - if @redemption.external_reference.present?
+          .row.mb-3
+            .col-sm-4.text-muted Reference
+            .col-sm-8
+              %code= @redemption.external_reference
+
+        - if @redemption.notes.present?
+          .row.mb-3
+            .col-sm-4.text-muted Notes
+            .col-sm-8
+              %pre.mb-0.small= @redemption.notes
+
+    - if policy(:kudos).view_all_redemptions?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-person.me-2
+            Redeemer Info
+        .card-body
+          .row.mb-3
+            .col-sm-4.text-muted Name
+            .col-sm-8= @redemption.redeemer_name
+          .row
+            .col-sm-4.text-muted Current Balance
+            .col-sm-8
+              - ledger = @redemption.company_teammate.kudos_ledger
+              = kudos_points_display(ledger.points_to_spend)
+
+  .col-md-4
+    - if @redemption.pending? || @redemption.processing?
+      .card.border-warning.mb-4
+        .card-header.bg-warning.text-dark
+          %h5.mb-0
+            %i.bi.bi-hourglass-split.me-2
+            Awaiting Fulfillment
+        .card-body
+          %p.small.mb-0
+            This redemption is being processed. You'll be notified when it's fulfilled.
+
+    - elsif @redemption.fulfilled?
+      .card.border-success.mb-4
+        .card-header.bg-success.text-white
+          %h5.mb-0
+            %i.bi.bi-check-circle.me-2
+            Fulfilled
+        .card-body
+          %p.small.mb-0
+            This redemption has been completed.
+            - if @redemption.external_reference.present?
+              %br
+              Reference:
+              %code= @redemption.external_reference
+
+    - elsif @redemption.cancelled?
+      .card.border-secondary.mb-4
+        .card-header.bg-secondary.text-white
+          %h5.mb-0
+            %i.bi.bi-x-circle.me-2
+            Cancelled
+        .card-body
+          %p.small.mb-0
+            This redemption was cancelled and points have been refunded.
+
+    - elsif @redemption.failed?
+      .card.border-danger.mb-4
+        .card-header.bg-danger.text-white
+          %h5.mb-0
+            %i.bi.bi-exclamation-circle.me-2
+            Failed
+        .card-body
+          %p.small.mb-0
+            There was an issue with this redemption. Please contact support.
+
+    - if policy(:kudos).manage_redemption_status? && (@redemption.pending? || @redemption.processing?)
+      .card
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-gear.me-2
+            Admin Actions
+        .card-body
+          = form_with url: fulfill_organization_kudos_rewards_redemption_path(@organization, @redemption), method: :post, local: true, class: "mb-3" do |f|
+            .mb-2
+              = f.label :external_reference, "External Reference (optional)", class: "form-label small"
+              = f.text_field :external_reference, class: "form-control form-control-sm", placeholder: "e.g., Order #12345"
+            = f.submit "Mark as Fulfilled", class: "btn btn-success w-100"
+
+          %hr
+
+          = form_with url: cancel_organization_kudos_rewards_redemption_path(@organization, @redemption), method: :post, local: true do |f|
+            .mb-2
+              = f.label :reason, "Cancellation Reason", class: "form-label small"
+              = f.text_area :reason, class: "form-control form-control-sm", rows: 2, placeholder: "Reason for cancellation..."
+            = f.submit "Cancel & Refund", class: "btn btn-outline-danger w-100", data: { confirm: "This will refund #{@redemption.points_spent.to_i} points to #{@redemption.redeemer_name}. Continue?" }

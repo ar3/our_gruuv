@@ -1,0 +1,95 @@
+- content_for :title, "Rewards Catalog"
+
+- content_for :header do
+  .d-flex.align-items-center.justify-content-between
+    %h1.mb-0.me-2
+      %i.bi.bi-gift.me-2
+      Rewards Catalog
+    - if policy(:kudos).manage_rewards_catalog?
+      = link_to new_organization_kudos_rewards_reward_path(@organization), class: "btn btn-primary" do
+        %i.bi.bi-plus-circle.me-1
+        Add Reward
+
+- content_for :go_back_link do
+  = link_to kudos_points_organization_company_teammate_path(@organization, current_company_teammate), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Kudos Points
+
+- if @rewards.any?
+  .row.row-cols-1.row-cols-md-2.row-cols-lg-3.g-4.mb-4
+    - @rewards.each do |reward|
+      .col
+        .card.h-100{class: reward.active? ? "" : "bg-light"}
+          - if reward.image_url.present?
+            %img.card-img-top{src: reward.image_url, alt: reward.name, style: "height: 150px; object-fit: cover;"}
+          - else
+            .card-img-top.bg-secondary.d-flex.align-items-center.justify-content-center{style: "height: 150px;"}
+              %i.bi.bi-gift.fs-1.text-white
+          .card-body
+            %h5.card-title= reward.name
+            %p.card-text.text-muted= truncate(reward.description, length: 100)
+            .d-flex.justify-content-between.align-items-center
+              .h4.mb-0.text-primary
+                = reward.cost_in_points.to_i
+                %small points
+              %span.badge{class: reward_type_badge_class(reward.reward_type)}
+                = reward.reward_type.titleize
+          .card-footer.bg-transparent
+            - if reward.available?
+              - ledger = current_company_teammate.kudos_ledger
+              - can_afford = ledger.can_spend?(reward.cost_in_points)
+              = link_to new_organization_kudos_rewards_redemption_path(@organization, reward_id: reward), class: "btn btn-#{can_afford ? 'success' : 'outline-secondary'} w-100", disabled: !can_afford do
+                - if can_afford
+                  %i.bi.bi-cart-check.me-1
+                  Redeem
+                - else
+                  %i.bi.bi-lock.me-1
+                  Need #{(reward.cost_in_points - ledger.points_to_spend).ceil} more points
+            - else
+              %span.text-muted
+                %i.bi.bi-x-circle.me-1
+                Unavailable
+            - if policy(:kudos).manage_rewards_catalog?
+              .mt-2
+                = link_to edit_organization_kudos_rewards_reward_path(@organization, reward), class: "btn btn-sm btn-outline-secondary me-1" do
+                  %i.bi.bi-pencil
+                = link_to organization_kudos_rewards_reward_path(@organization, reward), method: :delete, data: { confirm: "Archive this reward?" }, class: "btn btn-sm btn-outline-danger" do
+                  %i.bi.bi-archive
+- else
+  .text-center.py-5
+    %i.bi.bi-gift.fs-1.text-muted
+    %p.text-muted.mt-2 No rewards available yet.
+    - if policy(:kudos).manage_rewards_catalog?
+      %p.small.text-muted
+        = link_to "Add your first reward", new_organization_kudos_rewards_reward_path(@organization)
+
+- if @inactive_rewards&.any? && policy(:kudos).manage_rewards_catalog?
+  %hr.my-4
+  .card
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-archive.me-2
+        Archived Rewards
+    .card-body
+      .table-responsive
+        %table.table.table-sm.table-hover.mb-0
+          %thead
+            %tr
+              %th Name
+              %th Cost
+              %th Status
+              %th Actions
+          %tbody
+            - @inactive_rewards.each do |reward|
+              %tr
+                %td= reward.name
+                %td= reward.cost_in_points.to_i
+                %td
+                  - if reward.deleted?
+                    %span.badge.bg-danger Archived
+                  - else
+                    %span.badge.bg-warning Inactive
+                %td
+                  = link_to restore_organization_kudos_rewards_reward_path(@organization, reward), method: :post, class: "btn btn-sm btn-outline-success" do
+                    %i.bi.bi-arrow-counterclockwise.me-1
+                    Restore

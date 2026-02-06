@@ -1,7 +1,7 @@
-# STI subclass of HighlightsTransaction
+# STI subclass of KudosTransaction
 # Used for automatic point awards triggered by observable moments (company bank awards)
 # These are system-generated and don't require a banker
-class CelebratoryAwardTransaction < HighlightsTransaction
+class CelebratoryAwardTransaction < KudosTransaction
   # Celebratory awards must be associated with an observable moment
   validates :observable_moment_id, presence: true
 

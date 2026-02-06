@@ -55,7 +55,7 @@ module ObservableMoments
     def award_celebratory_points(observable_moment)
       return unless observable_moment.present?
       
-      result = Highlights::AwardCelebratoryPointsService.call(observable_moment: observable_moment)
+      result = Kudos::AwardCelebratoryPointsService.call(observable_moment: observable_moment)
       
       if result.ok?
         Rails.logger.info "Awarded celebratory points for #{observable_moment.moment_type}: #{result.value.award_summary}"

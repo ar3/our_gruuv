@@ -98,15 +98,15 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        highlights_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
         eligibility_policy_double = double(index?: true)
 
         allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
           case record
           when Organization
             record.company? ? company_policy_double : org_policy_double
-          when :highlights
-            highlights_policy_double
+          when :kudos
+            kudos_policy_double
           when :eligibility_requirement
             eligibility_policy_double
           else
@@ -160,15 +160,15 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        highlights_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
         eligibility_policy_double = double(index?: true)
 
         allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
           case record
           when Organization
             record.company? ? company_policy_double : org_policy_double
-          when :highlights
-            highlights_policy_double
+          when :kudos
+            kudos_policy_double
           when :eligibility_requirement
             eligibility_policy_double
           else
@@ -244,15 +244,15 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        highlights_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
         eligibility_policy_double = double(index?: true)
 
         allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
           case record
           when Organization
             record.company? ? company_policy_double : org_policy_double
-          when :highlights
-            highlights_policy_double
+          when :kudos
+            kudos_policy_double
           when :eligibility_requirement
             eligibility_policy_double
           else
@@ -360,14 +360,14 @@ RSpec.describe 'Vertical Navigation', type: :request do
         view_feedback_requests?: true, customize_company?: true
       )
       policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-      highlights_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+      kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
       eligibility_policy_double = double(index?: true)
       allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
         case record
         when Organization
           record.company? ? company_policy_double : org_policy_double
-        when :highlights
-          highlights_policy_double
+        when :kudos
+          kudos_policy_double
         when :eligibility_requirement
           eligibility_policy_double
         else
@@ -377,15 +377,15 @@ RSpec.describe 'Vertical Navigation', type: :request do
     end
 
     it 'marks nav link with query params as active only when current URL params match' do
-      highlights_path = organization_observations_path(
+      kudos_path = organization_observations_path(
         organization,
         privacy: %w[public_to_company public_to_world],
         spotlight: 'most_observed',
         view: 'wall'
       )
-      get highlights_path
+      get kudos_path
       expect(response).to have_http_status(:success)
-      # The "Organization Highlights" link (with view=wall, spotlight=most_observed, privacy) should be active
+      # The "Organization Kudos" link (with view=wall, spotlight=most_observed, privacy) should be active
       expect(response.body).to include('navSectionObservations_ogo')
       # Link with view=wall in href should have active class (order of attributes may vary)
       expect(response.body).to match(/<a(?=[^>]*href="[^"]*view=wall[^"]*")(?=[^>]*class="[^"]*active[^"]*")[^>]*>/)
@@ -394,14 +394,14 @@ RSpec.describe 'Vertical Navigation', type: :request do
     it 'does not mark parameterized nav link as active when current URL has different or no params' do
       get organization_observations_path(organization)
       expect(response).to have_http_status(:success)
-      # The "Organization Highlights" link has view=wall&spotlight=most_observed&privacy=...
+      # The "Organization Kudos" link has view=wall&spotlight=most_observed&privacy=...
       # That link should NOT be active when we are on observations index with no params.
-      # Find the Highlights link (href with view=wall); attribute order may vary.
+      # Find the Kudos link (href with view=wall); attribute order may vary.
       highlights_link_re = /<a[^>]*href="[^"]*view=wall[^"]*"[^>]*class="([^"]*)"[^>]*>|<a[^>]*class="([^"]*)"[^>]*href="[^"]*view=wall[^"]*"[^>]*>/
       match = response.body.match(highlights_link_re)
-      expect(match).to be_present, 'Expected to find Organization Highlights link in nav'
+      expect(match).to be_present, 'Expected to find Organization Kudos link in nav'
       class_attr = match[1] || match[2]
-      expect(class_attr).not_to include('active'), 'Parameterized Highlights link should not be active when on observations without matching params'
+      expect(class_attr).not_to include('active'), 'Parameterized Kudos link should not be active when on observations without matching params'
     end
   end
 

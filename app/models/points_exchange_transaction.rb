@@ -1,7 +1,7 @@
-# STI subclass of HighlightsTransaction
+# STI subclass of KudosTransaction
 # Used for observation-based point transfers (recognition/constructive feedback)
 # Points go TO the observee (recipient) as recognition/constructive feedback
-class PointsExchangeTransaction < HighlightsTransaction
+class PointsExchangeTransaction < KudosTransaction
   # Points exchange must be linked to an observation
   validates :observation_id, presence: true
 

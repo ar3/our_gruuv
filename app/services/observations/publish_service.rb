@@ -18,8 +18,8 @@ module Observations
       # Enforce privacy level if needed
       privacy_changed = PrivacyLevelEnforcementService.call(@observation)
       
-      # Process highlights points (outside main flow to not block publishing)
-      process_highlights_points
+      # Process kudos points (outside main flow to not block publishing)
+      process_kudos_points
       
       privacy_changed
     end
@@ -28,20 +28,20 @@ module Observations
 
     attr_reader :observation
 
-    def process_highlights_points
+    def process_kudos_points
       return unless observation.observees.any?
       
-      result = Highlights::ProcessObservationPointsService.call(observation: observation)
+      result = Kudos::ProcessObservationPointsService.call(observation: observation)
       
       if result.ok?
-        Rails.logger.info "Processed highlights points for observation #{observation.id}: #{result.value.count} transactions"
+        Rails.logger.info "Processed kudos points for observation #{observation.id}: #{result.value.count} transactions"
       else
-        # Log but don't fail - highlights points are a bonus feature
-        Rails.logger.info "Highlights points not processed for observation #{observation.id}: #{result.error}"
+        # Log but don't fail - kudos points are a bonus feature
+        Rails.logger.info "Kudos points not processed for observation #{observation.id}: #{result.error}"
       end
     rescue => e
       # Catch any errors to prevent them from affecting the main flow
-      Rails.logger.error "Error processing highlights points: #{e.message}"
+      Rails.logger.error "Error processing kudos points: #{e.message}"
     end
   end
 end

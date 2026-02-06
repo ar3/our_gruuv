@@ -1,6 +1,6 @@
-# STI subclass of HighlightsTransaction
-# Used for manual point awards by highlights bankers (admins with can_manage_highlights_rewards)
-class BankAwardTransaction < HighlightsTransaction
+# STI subclass of KudosTransaction
+# Used for manual point awards by kudos bankers (admins with can_manage_kudos_rewards)
+class BankAwardTransaction < KudosTransaction
   # Bank awards require a banker and a reason
   validates :company_teammate_banker_id, presence: true
   validates :reason, presence: true
@@ -8,7 +8,7 @@ class BankAwardTransaction < HighlightsTransaction
   # Bank awards should have at least one positive delta
   validate :has_positive_award
 
-  # Banker must have highlights management permission
+  # Banker must have kudos management permission
   validate :banker_has_permission
 
   # Alias for easier access to the banker association
@@ -65,7 +65,7 @@ class BankAwardTransaction < HighlightsTransaction
   def banker_has_permission
     return unless company_teammate_banker.present?
 
-    unless company_teammate_banker.can_manage_highlights_rewards?
+    unless company_teammate_banker.can_manage_kudos_rewards?
       errors.add(:company_teammate_banker, "does not have permission to award points")
     end
   end

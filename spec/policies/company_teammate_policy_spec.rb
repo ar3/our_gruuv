@@ -98,8 +98,8 @@ RSpec.describe CompanyTeammatePolicy, type: :policy do
     end
   end
 
-  describe 'view_highlights_points?' do
-    permissions :view_highlights_points? do
+  describe 'view_kudos_points?' do
+    permissions :view_kudos_points? do
       context 'when user is admin' do
         it 'allows access via admin bypass' do
           expect(subject).to permit(admin_pundit_user, person_teammate)

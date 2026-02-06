@@ -41,8 +41,8 @@ class CompanyTeammatePolicy < ApplicationPolicy
     audit?
   end
 
-  # Highlight Points Mode: only self or someone in the teammate's managerial hierarchy
-  def view_highlights_points?
+  # Kudos Points Mode: only self or someone in the teammate's managerial hierarchy
+  def view_kudos_points?
     return true if admin_bypass?
     return false unless viewing_teammate && record
     return false if viewing_teammate.terminated?

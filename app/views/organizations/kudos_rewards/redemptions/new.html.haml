@@ -1,0 +1,66 @@
+- content_for :title, "Redeem #{@reward.name}"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-cart-check.me-2
+    Confirm Redemption
+
+- content_for :go_back_link do
+  = link_to organization_kudos_rewards_rewards_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Rewards
+
+.row.justify-content-center
+  .col-md-8.col-lg-6
+    .card
+      .card-body.text-center.py-4
+        - if @reward.image_url.present?
+          %img.mb-3{src: @reward.image_url, alt: @reward.name, style: "max-height: 150px; object-fit: contain;"}
+        - else
+          .mb-3
+            %i.bi.bi-gift.display-3.text-primary
+
+        %h3= @reward.name
+        %p.text-muted= @reward.description
+
+        %hr
+
+        .row.mb-3
+          .col-6
+            %small.text-muted Cost
+            %p.h4.text-primary.mb-0
+              = @reward.cost_in_points.to_i
+              %small points
+          .col-6
+            %small.text-muted Your Balance
+            %p.h4.mb-0{class: @can_afford ? "text-success" : "text-danger"}
+              = @ledger.points_to_spend.to_i
+              %small points
+
+        - if @can_afford
+          %p.mb-3
+            After redemption, you'll have
+            %strong.text-primary= (@ledger.points_to_spend - @reward.cost_in_points).to_i
+            points remaining.
+
+          = form_with url: organization_kudos_rewards_redemptions_path(@organization), local: true do |f|
+            = f.hidden_field :reward_id, value: @reward.id
+
+            .mb-3
+              = f.label :notes, "Notes (optional)", class: "form-label"
+              = f.text_area :notes, class: "form-control", rows: 2, placeholder: "Any special requests or notes..."
+
+            = f.submit "Confirm Redemption", class: "btn btn-success btn-lg w-100"
+
+          %p.small.text-muted.mt-2
+            By redeeming, you agree to use your points for this reward.
+        - else
+          .alert.alert-danger
+            %i.bi.bi-exclamation-triangle.me-2
+            You don't have enough points to redeem this reward.
+            %br
+            You need #{(@reward.cost_in_points - @ledger.points_to_spend).ceil} more points.
+
+          = link_to organization_kudos_rewards_rewards_path(@organization), class: "btn btn-outline-secondary" do
+            %i.bi.bi-arrow-left.me-1
+            Browse Other Rewards

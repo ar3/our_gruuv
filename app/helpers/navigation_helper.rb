@@ -44,7 +44,7 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: "#{current_organization&.name || 'Organization'} Highlights",
+            label: "#{current_organization&.name || 'Organization'} Kudos",
             icon: 'bi-gift',
             path: organization_observations_path(
               current_organization,
@@ -210,15 +210,15 @@ module NavigationHelper
           {
             label: 'Bank Awards',
             icon: 'bi-bank',
-            path: organization_highlights_rewards_bank_awards_path(current_organization),
-            policy_check: -> { policy(:highlights).award_bank_points? },
+            path: organization_kudos_rewards_bank_awards_path(current_organization),
+            policy_check: -> { policy(:kudos).award_bank_points? },
             coming_soon: false
           },
           {
             label: 'Rewards',
             icon: 'bi-gift',
-            path: organization_highlights_rewards_rewards_path(current_organization),
-            policy_check: -> { policy(:highlights).view_rewards_catalog? },
+            path: organization_kudos_rewards_rewards_path(current_organization),
+            policy_check: -> { policy(:kudos).view_rewards_catalog? },
             coming_soon: false
           },
           {

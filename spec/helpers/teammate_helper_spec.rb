@@ -383,8 +383,8 @@ RSpec.describe TeammateHelper, type: :helper do
       expect(helper.filter_display_name('permission', 'customize_company')).to eq('Customize Company')
     end
 
-    it 'returns display name for highlights_rewards permission' do
-      expect(helper.filter_display_name('permission', 'highlights_rewards')).to eq('Highlight Points & Rewards Management')
+    it 'returns display name for kudos_rewards permission' do
+      expect(helper.filter_display_name('permission', 'kudos_rewards')).to eq('Kudos Points & Rewards Management')
     end
   end
 
@@ -402,17 +402,17 @@ RSpec.describe TeammateHelper, type: :helper do
       expect(result).not_to include('Customize')
     end
 
-    it 'includes Highlights badge when teammate has can_manage_highlights_rewards' do
-      teammate.update!(can_manage_highlights_rewards: true)
+    it 'includes Kudos badge when teammate has can_manage_kudos_rewards' do
+      teammate.update!(can_manage_kudos_rewards: true)
       result = helper.teammate_permissions_badges(teammate)
-      expect(result).to include('Highlights')
+      expect(result).to include('Kudos')
       expect(result).to include('badge bg-secondary')
     end
 
-    it 'does not include Highlights badge when teammate lacks permission' do
-      teammate.update!(can_manage_highlights_rewards: false)
+    it 'does not include Kudos badge when teammate lacks permission' do
+      teammate.update!(can_manage_kudos_rewards: false)
       result = helper.teammate_permissions_badges(teammate)
-      expect(result).not_to include('Highlights')
+      expect(result).not_to include('Kudos')
     end
   end
 

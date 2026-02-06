@@ -1,17 +1,17 @@
-# STI subclass of HighlightsTransaction
+# STI subclass of KudosTransaction
 # Used for reward redemptions (spending points)
 # Points are deducted from points_to_spend balance
-class RedemptionTransaction < HighlightsTransaction
-  belongs_to :highlights_redemption
+class RedemptionTransaction < KudosTransaction
+  belongs_to :kudos_redemption, foreign_key: :kudos_redemption_id
 
   # Redemption must be linked to a redemption record
-  validates :highlights_redemption_id, presence: true
+  validates :kudos_redemption_id, presence: true
 
   # Must have negative points_to_spend_delta (spending points)
   validate :has_negative_spend_delta
 
   # Scopes
-  scope :for_redemption, ->(redemption) { where(highlights_redemption: redemption) }
+  scope :for_redemption, ->(redemption) { where(kudos_redemption: redemption) }
 
   # Helpers
   def redeemer
@@ -23,11 +23,11 @@ class RedemptionTransaction < HighlightsTransaction
   end
 
   def redemption
-    highlights_redemption
+    kudos_redemption
   end
 
   def reward
-    highlights_redemption&.highlights_reward
+    kudos_redemption&.kudos_reward
   end
 
   def reward_name

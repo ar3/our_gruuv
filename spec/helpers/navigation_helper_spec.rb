@@ -292,10 +292,10 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels[0]).to eq('Add New OGO')
         expect(labels[2]).to eq("OGO's involving me")
         expect(labels[3]).to eq('All observations')
-        expect(labels[1]).to match(/\A.+ Highlights\z/)
+        expect(labels[1]).to match(/\A.+ Kudos\z/)
       end
 
-      it 'uses organization name in Highlights sub-item label' do
+      it 'uses organization name in Kudos sub-item label' do
         company = create(:organization, :company, name: 'Acme Corp')
         helper.instance_variable_set(:@current_organization, company)
         helper.instance_variable_set(:@current_company, company)
@@ -303,9 +303,9 @@ RSpec.describe NavigationHelper, type: :helper do
 
         structure = helper.navigation_structure
         ogo_section = structure.find { |item| item[:label] == 'Observations (OGO)' }
-        highlights_item = ogo_section[:items].find { |item| item[:label]&.end_with?(' Highlights') }
+        highlights_item = ogo_section[:items].find { |item| item[:label]&.end_with?(' Kudos') }
         expect(highlights_item).to be_present
-        expect(highlights_item[:label]).to eq('Acme Corp Highlights')
+        expect(highlights_item[:label]).to eq('Acme Corp Kudos')
       end
 
       it 'places Observations (OGO) section after My Check-In and before Prompts' do

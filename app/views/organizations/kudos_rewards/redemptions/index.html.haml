@@ -1,0 +1,63 @@
+- content_for :title, "My Redemptions"
+
+- content_for :header do
+  .d-flex.align-items-center.justify-content-between
+    %h1.mb-0.me-2
+      %i.bi.bi-bag-check.me-2
+      = @view_mode == :admin ? "All Redemptions" : "My Redemptions"
+    = link_to organization_kudos_rewards_rewards_path(@organization), class: "btn btn-outline-primary" do
+      %i.bi.bi-gift.me-1
+      Browse Rewards
+
+- content_for :go_back_link do
+  = link_to kudos_points_organization_company_teammate_path(@organization, current_company_teammate), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Kudos Points
+
+- if @redemptions.any?
+  .card
+    .card-body
+      .table-responsive
+        %table.table.table-hover.mb-0
+          %thead
+            %tr
+              %th Date
+              - if @view_mode == :admin
+                %th Redeemer
+              %th Reward
+              %th Points
+              %th Status
+              %th
+          %tbody
+            - @redemptions.each do |redemption|
+              %tr
+                %td
+                  = redemption.created_at.strftime("%b %d, %Y")
+                  %br
+                  %small.text-muted= redemption.created_at.strftime("%I:%M %p")
+                - if @view_mode == :admin
+                  %td= redemption.redeemer_name
+                %td= redemption.reward_name
+                %td= redemption.points_spent.to_i
+                %td
+                  %span.badge{class: redemption_status_badge_class(redemption.status)}
+                    = redemption.status.titleize
+                %td
+                  = link_to organization_kudos_rewards_redemption_path(@organization, redemption), class: "btn btn-sm btn-outline-secondary" do
+                    %i.bi.bi-eye
+                    View
+
+  - if @pagy.pages > 1
+    .mt-3
+      == pagy_nav(@pagy)
+
+- else
+  .text-center.py-5
+    %i.bi.bi-bag.fs-1.text-muted
+    %p.text-muted.mt-2
+      - if @view_mode == :admin
+        No redemptions yet.
+      - else
+        You haven't redeemed any rewards yet.
+    %p.small.text-muted
+      = link_to "Browse available rewards", organization_kudos_rewards_rewards_path(@organization)
