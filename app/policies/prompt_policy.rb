@@ -25,10 +25,10 @@ class PromptPolicy < ApplicationPolicy
   end
 
   def update?
-    # Same as show? but also requires prompt to be open
+    # Only the company teammate who owns the prompt can update (managers/can_manage_prompts can view only)
     return false unless show?
     return false unless record.open?
-    true
+    viewing_teammate == record.company_teammate
   end
 
   def close?

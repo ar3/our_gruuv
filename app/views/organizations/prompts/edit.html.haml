@@ -1,4 +1,4 @@
-- content_for :title, "Edit #{company_label_for('reflection', 'Reflection')}"
+- content_for :title, "Edit #{@prompt_template.title} (#{@prompt.company_teammate.person.casual_name})"
 
 - content_for :go_back_link do
   = link_to organization_prompts_path(@organization), class: "go-back-link" do
@@ -10,7 +10,7 @@
   .d-flex.align-items-center.justify-content-between
     %h1.mb-0.me-2
       %i.bi.bi-file-text.me-2
-      Edit #{@prompt_template.title}
+      Edit #{@prompt_template.title} (#{@prompt.company_teammate.person.casual_name})
     .d-flex.gap-2
       - if view_mode == 'split'
         %span.badge.bg-primary Split View

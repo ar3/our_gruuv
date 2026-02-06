@@ -176,5 +176,26 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
       expect(button).to have_content('Manage Goals')
     end
   end
+
+  context 'when can_edit is false' do
+    before { assign(:can_edit, false) }
+
+    it 'disables form fields and shows disabled buttons' do
+      render
+      # Submit buttons are replaced with disabled spans/buttons
+      expect(rendered).to include('Save and continue editing')
+      expect(rendered).to include('disabled')
+      # Manage Goals button and Associate goals link are hidden when cannot edit
+      expect(rendered).not_to have_css('button[name="save_and_manage_goals"]')
+      expect(rendered).not_to have_link('Associate goals')
+    end
+  end
+
+  context 'page title' do
+    it 'includes the template title (casual name is in content_for :header, not in default rendered body)' do
+      render
+      expect(rendered).to have_content(template.title)
+    end
+  end
 end
 

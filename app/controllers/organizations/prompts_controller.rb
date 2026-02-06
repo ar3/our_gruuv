@@ -336,7 +336,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       raise ActiveRecord::RecordNotFound, "Couldn't find Prompt with 'id'=#{params[:id].inspect}"
     end
     
-    @prompt = Prompt.find(params[:id])
+    @prompt = Prompt.includes(company_teammate: :person).find(params[:id])
   end
 end
 

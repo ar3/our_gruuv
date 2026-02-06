@@ -1078,6 +1078,46 @@ RSpec.describe 'About Me Page', type: :request do
             end
           end
         end
+
+        context 'when viewing another teammate\'s about me' do
+          let(:viewer_person) { person }
+          let(:viewer_teammate) { teammate }
+          let(:about_me_person) { create(:person) }
+          let(:about_me_teammate) do
+            ct = create(:company_teammate, person: about_me_person, organization: organization)
+            create(:employment_tenure, teammate: ct, company: organization, manager: viewer_person, started_at: 1.year.ago, ended_at: nil)
+            ct.update!(first_employed_at: 1.year.ago)
+            ct
+          end
+          let!(:about_me_prompt) do
+            create(:prompt, :open, company_teammate: about_me_teammate, prompt_template: prompt_template)
+          end
+
+          before do
+            allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_check_ins?).and_return(true)
+            sign_in_as_teammate_for_request(viewer_person, organization)
+          end
+
+          it 'links View to the about-me teammate\'s prompt edit page, not the viewer\'s' do
+            get about_me_organization_company_teammate_path(organization, about_me_teammate)
+            expect(response).to have_http_status(:success)
+
+            expected_path = edit_organization_prompt_path(organization, about_me_prompt)
+            expect(response.body).to include(expected_path)
+
+            # Prompts section only shows @open_prompts for the about-me teammate; View link must be that teammate's prompt
+            prompts_section = Nokogiri::HTML(response.body).at_css('#promptsSection')
+            expect(prompts_section).to be_present
+            expect(prompts_section.to_s).to include(expected_path)
+
+            # If viewer has their own prompt, the prompts section must not link to it (only about-me teammate's prompts)
+            viewer_prompt = Prompt.find_by(company_teammate: viewer_teammate, prompt_template: prompt_template)
+            if viewer_prompt && viewer_prompt.id != about_me_prompt.id
+              viewer_prompt_path = edit_organization_prompt_path(organization, viewer_prompt)
+              expect(prompts_section.to_s).not_to include(viewer_prompt_path)
+            end
+          end
+        end
       end
     end
   end

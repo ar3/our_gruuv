@@ -93,10 +93,10 @@ RSpec.describe PromptPolicy, type: :policy do
     context 'when prompt is open' do
       let(:open_prompt) { create(:prompt, :open, company_teammate: prompt_teammate) }
 
-      context 'when user is admin' do
-        it 'allows access' do
+      context 'when user is admin but not the prompt owner' do
+        it 'denies access (only owner can update)' do
           policy = PromptPolicy.new(pundit_user_admin, open_prompt)
-          expect(policy.update?).to be true
+          expect(policy.update?).to be false
         end
       end
 
@@ -107,10 +107,30 @@ RSpec.describe PromptPolicy, type: :policy do
         end
       end
 
-      context 'when user has prompts permission' do
-        it 'allows access' do
+      context 'when user has can_manage_prompts but is not the owner' do
+        it 'denies access (only owner can update)' do
           policy = PromptPolicy.new(pundit_user_prompts, open_prompt)
-          expect(policy.update?).to be true
+          expect(policy.update?).to be false
+        end
+      end
+
+      context 'when user is manager of prompt owner but not the owner' do
+        let(:manager_person) { create(:person) }
+        let(:manager_teammate) { CompanyTeammate.find_or_create_by!(person: manager_person, organization: company) }
+        let(:pundit_user_manager) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
+
+        before do
+          create(:employment_tenure,
+            teammate: prompt_teammate,
+            company: company,
+            manager: manager_person,
+            started_at: 1.month.ago
+          )
+        end
+
+        it 'denies access (only owner can update)' do
+          policy = PromptPolicy.new(pundit_user_manager, open_prompt)
+          expect(policy.update?).to be false
         end
       end
     end
@@ -128,17 +148,37 @@ RSpec.describe PromptPolicy, type: :policy do
   describe 'close?' do
     let(:open_prompt) { create(:prompt, :open, company_teammate: prompt_teammate) }
 
-    context 'when user can update' do
+    context 'when user is owner' do
       it 'allows closing' do
         policy = PromptPolicy.new(pundit_user_owner, open_prompt)
         expect(policy.close?).to be true
       end
     end
 
-    context 'when user cannot update' do
-      let(:closed_prompt) { create(:prompt, :closed, company_teammate: prompt_teammate) }
+    context 'when user is manager but not owner' do
+      let(:manager_person) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.find_or_create_by!(person: manager_person, organization: company) }
+      let(:pundit_user_manager) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
+
+      before do
+        create(:employment_tenure,
+          teammate: prompt_teammate,
+          company: company,
+          manager: manager_person,
+          started_at: 1.month.ago
+        )
+      end
 
       it 'denies closing' do
+        policy = PromptPolicy.new(pundit_user_manager, open_prompt)
+        expect(policy.close?).to be false
+      end
+    end
+
+    context 'when prompt is closed' do
+      let(:closed_prompt) { create(:prompt, :closed, company_teammate: prompt_teammate) }
+
+      it 'denies closing even for owner' do
         policy = PromptPolicy.new(pundit_user_owner, closed_prompt)
         expect(policy.close?).to be false
       end

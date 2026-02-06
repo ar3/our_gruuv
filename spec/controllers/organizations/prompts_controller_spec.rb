@@ -330,6 +330,30 @@ RSpec.describe Organizations::PromptsController, type: :controller do
         expect(assigns(:can_edit)).to be false
       end
     end
+
+    context 'when current user is manager of prompt owner but not the owner' do
+      let(:prompt_owner_person) { create(:person) }
+      let(:prompt_owner_teammate) do
+        CompanyTeammate.find_or_create_by!(person: prompt_owner_person, organization: organization)
+      end
+      let(:prompt_owned_by_other) { create(:prompt, :open, company_teammate: prompt_owner_teammate, prompt_template: template) }
+
+      before do
+        create(:employment_tenure,
+          teammate: prompt_owner_teammate,
+          company: organization,
+          manager: person,
+          started_at: 1.month.ago,
+          ended_at: nil
+        )
+      end
+
+      it 'allows viewing but sets can_edit to false' do
+        get :edit, params: { organization_id: organization.id, id: prompt_owned_by_other.id }
+        expect(response).to have_http_status(:success)
+        expect(assigns(:can_edit)).to be false
+      end
+    end
   end
 
   describe 'PATCH #update' do
@@ -362,6 +386,40 @@ RSpec.describe Organizations::PromptsController, type: :controller do
           }
         }
         expect(response).to redirect_to(edit_organization_prompt_path(organization, open_prompt))
+      end
+    end
+
+    context 'when current user is not the prompt owner' do
+      let(:prompt_owner_person) { create(:person) }
+      let(:prompt_owner_teammate) do
+        CompanyTeammate.find_or_create_by!(person: prompt_owner_person, organization: organization)
+      end
+      let(:prompt_owned_by_other) { create(:prompt, :open, company_teammate: prompt_owner_teammate, prompt_template: template) }
+      let!(:answer_question) { create(:prompt_question, prompt_template: template, position: 1) }
+      let!(:existing_answer) do
+        create(:prompt_answer, prompt: prompt_owned_by_other, prompt_question: answer_question, text: 'Original text')
+      end
+
+      before do
+        create(:employment_tenure,
+          teammate: prompt_owner_teammate,
+          company: organization,
+          manager: person,
+          started_at: 1.month.ago,
+          ended_at: nil
+        )
+      end
+
+      it 'redirects (unauthorized) and does not update answers' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: prompt_owned_by_other.id,
+          prompt_answers: {
+            answer_question.id.to_s => { text: 'Hacked text' }
+          }
+        }
+        expect(response).to have_http_status(:redirect)
+        expect(existing_answer.reload.text).to eq('Original text')
       end
     end
 
