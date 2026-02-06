@@ -12,18 +12,18 @@
                   .card.bg-light.border-0
                     .card-body.py-2
                       .d-flex.justify-content-between.align-items-center.mb-2
-                        %small.fw-bold Management Levels
+                        %small.fw-bold Management Radii
                         %small.text-muted #{@spotlight_stats[:max_level]} level#{'s' if @spotlight_stats[:max_level] != 1}
                       
                       / Display each level
                       - @spotlight_stats[:management_levels].sort.reverse.each do |level, count|
                         .d-flex.justify-content-between.align-items-center.py-1.border-bottom
                           %small
-                            %strong Level #{level}:
+                            %strong Radius #{level}:
                             - if level == 1
                               %span.text-muted (Exclusively Serves Others)
                             - else
-                              %span.text-muted (Reports to Level #{level - 1})
+                              %span.text-muted (Reports to Radius #{level - 1})
                           %span.badge.bg-primary= count
                       .d-flex.justify-content-between.align-items-center.py-1.border-bottom
                         %small.text-muted Total Teammates
