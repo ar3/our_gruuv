@@ -234,6 +234,55 @@ RSpec.describe Observation, type: :model do
     end
   end
 
+  describe '#kudos_or_feedback_bucket' do
+    it 'returns :kudos for observation_type kudos' do
+      obs = build(:observation, observer: observer, company: company, observation_type: :kudos)
+      obs.observees.build(teammate: teammate1)
+      obs.save!
+      expect(obs.kudos_or_feedback_bucket).to eq(:kudos)
+    end
+
+    it 'returns :feedback for observation_type feedback' do
+      obs = build(:observation, observer: observer, company: company, observation_type: :feedback)
+      obs.observees.build(teammate: teammate1)
+      obs.save!
+      expect(obs.kudos_or_feedback_bucket).to eq(:feedback)
+    end
+
+    it 'returns :kudos for generic with only positive ratings' do
+      obs = build(:observation, observer: observer, company: company, observation_type: :generic)
+      obs.observees.build(teammate: teammate1)
+      obs.save!
+      create(:observation_rating, observation: obs, rateable: ability, rating: :strongly_agree)
+      create(:observation_rating, observation: obs, rateable: assignment, rating: :agree)
+      expect(obs.kudos_or_feedback_bucket).to eq(:kudos)
+    end
+
+    it 'returns :feedback for generic with only negative ratings' do
+      obs = build(:observation, observer: observer, company: company, observation_type: :generic)
+      obs.observees.build(teammate: teammate1)
+      obs.save!
+      create(:observation_rating, observation: obs, rateable: ability, rating: :strongly_disagree)
+      expect(obs.kudos_or_feedback_bucket).to eq(:feedback)
+    end
+
+    it 'returns :mixed for generic with no ratings' do
+      obs = build(:observation, observer: observer, company: company, observation_type: :generic)
+      obs.observees.build(teammate: teammate1)
+      obs.save!
+      expect(obs.kudos_or_feedback_bucket).to eq(:mixed)
+    end
+
+    it 'returns :mixed for generic with both positive and negative ratings' do
+      obs = build(:observation, observer: observer, company: company, observation_type: :generic)
+      obs.observees.build(teammate: teammate1)
+      obs.save!
+      create(:observation_rating, observation: obs, rateable: ability, rating: :agree)
+      create(:observation_rating, observation: obs, rateable: assignment, rating: :disagree)
+      expect(obs.kudos_or_feedback_bucket).to eq(:mixed)
+    end
+  end
+
   describe 'permalink methods' do
     before do
       observation.observed_at = Time.parse('2025-10-05 14:30:00')

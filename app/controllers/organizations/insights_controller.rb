@@ -74,7 +74,40 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     
     @total_goals = Goal.where(company: company).count
   end
-  
+
+  def observations
+    authorize company, :view_observations?
+
+    base_scope = Observation.for_company(company).not_soft_deleted.published
+
+    # 52-week stacked bar: count by week and privacy_level
+    @observations_chart_data = observations_chart_series_by_privacy(base_scope)
+
+    # Observers (person_ids) who have given at least one observation
+    observer_ids = base_scope.distinct.pluck(:observer_id).compact
+    @observer_teammates = CompanyTeammate
+      .where(organization: company)
+      .where(person_id: observer_ids)
+      .includes(employment_tenures: { position: { title: :department } })
+
+    # Aggregate kudos / feedback / mixed per observer (load observations with ratings)
+    observations_with_bucket = base_scope.includes(:observation_ratings).to_a
+    @kudos_feedback_mixed_by_observer = Hash.new { |h, k| h[k] = { kudos: 0, feedback: 0, mixed: 0 } }
+    observations_with_bucket.each do |obs|
+      bucket = obs.kudos_or_feedback_bucket
+      @kudos_feedback_mixed_by_observer[obs.observer_id][bucket] += 1
+    end
+
+    # Aggregate count by privacy_level per observer
+    @privacy_counts_by_observer = Hash.new { |h, k| h[k] = Hash.new(0) }
+    base_scope.pluck(:observer_id, :privacy_level).each do |observer_id, privacy_level|
+      @privacy_counts_by_observer[observer_id][privacy_level] += 1
+    end
+
+    # All privacy levels for table columns (use enum order)
+    @privacy_levels = Observation.privacy_levels.keys
+  end
+
   private
   
   def build_department_breakdown(seats_scope)
@@ -88,5 +121,24 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     result['No Department'] = no_dept_count if no_dept_count > 0
     
     result
+  end
+
+  def observations_chart_series_by_privacy(base_scope)
+    # Counts grouped by week (date_trunc week) and privacy_level for last 52 weeks
+    scope = base_scope.where(observed_at: 52.weeks.ago..)
+    raw = scope.group(Arel.sql("date_trunc('week', observed_at)::date"), :privacy_level).count
+    raw_normalized = raw.each_with_object(Hash.new(0)) { |((w, p), c), h| h[[w.to_s, p]] = c }
+
+    end_date = Time.current.to_date
+    start_date = 52.weeks.ago.to_date
+    week_dates = (start_date..end_date).to_a.map { |d| d.beginning_of_week }.uniq.sort.last(52)
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    series = Observation.privacy_levels.keys.map do |privacy|
+      {
+        name: privacy.to_s.humanize.titleize,
+        data: week_dates.map { |wd| raw_normalized[[wd.to_s, privacy]] || 0 }
+      }
+    end
+    { categories: categories, series: series }
   end
 end

@@ -113,6 +113,22 @@ class Observation < ApplicationRecord
   def has_negative_ratings?
     negative_ratings.exists?
   end
+
+  # Classification for insights: :kudos, :feedback, or :mixed
+  # Kudos: observation_type kudos, or note/generic with only positive ratings
+  # Feedback: observation_type feedback, or note/generic with only negative ratings
+  # Mixed: note/generic with no ratings or mix of positive and negative
+  def kudos_or_feedback_bucket
+    return :kudos if kudos_observation_type?
+    return :feedback if feedback_observation_type?
+    return :mixed unless generic_observation_type? || quick_note_observation_type?
+
+    has_pos = observation_ratings.positive.exists?
+    has_neg = observation_ratings.negative.exists?
+    return :kudos if has_pos && !has_neg
+    return :feedback if has_neg && !has_pos
+    :mixed
+  end
   
   def soft_delete!
     update!(deleted_at: Time.current)

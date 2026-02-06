@@ -203,4 +203,48 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     end
   end
 
+  describe 'GET #observations' do
+    it 'returns http success' do
+      get :observations, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'assigns chart data with categories and series' do
+      get :observations, params: { organization_id: company.id }
+      chart = assigns(:observations_chart_data)
+      expect(chart).to be_a(Hash)
+      expect(chart[:categories]).to be_an(Array)
+      expect(chart[:series]).to be_an(Array)
+      expect(chart[:categories].size).to eq(52)
+      expect(chart[:series].map { |s| s[:name] }.sort).to eq(Observation.privacy_levels.keys.map { |k| k.to_s.humanize.titleize }.sort)
+    end
+
+    it 'lists observers as teammates who have given published observations' do
+      obs = create(:observation, observer: person, company: company, published_at: 1.day.ago, deleted_at: nil, observation_type: :kudos)
+      get :observations, params: { organization_id: company.id }
+      teammates = assigns(:observer_teammates)
+      expect(teammates.map(&:person_id)).to include(person.id)
+      kudos = assigns(:kudos_feedback_mixed_by_observer)[person.id]
+      expect(kudos[:kudos]).to eq(1)
+      expect(kudos[:feedback]).to eq(0)
+      expect(kudos[:mixed]).to eq(0)
+    end
+
+    it 'assigns privacy counts per observer' do
+      create(:observation, observer: person, company: company, published_at: 1.day.ago, deleted_at: nil, privacy_level: :observer_only)
+      create(:observation, observer: person, company: company, published_at: 1.day.ago, deleted_at: nil, privacy_level: :public_to_company)
+      get :observations, params: { organization_id: company.id }
+      counts = assigns(:privacy_counts_by_observer)[person.id]
+      expect(counts['observer_only']).to eq(1)
+      expect(counts['public_to_company']).to eq(1)
+    end
+
+    it 'excludes soft-deleted and draft observations' do
+      create(:observation, observer: person, company: company, published_at: nil, deleted_at: nil)
+      create(:observation, observer: person, company: company, published_at: 1.day.ago, deleted_at: 1.hour.ago)
+      get :observations, params: { organization_id: company.id }
+      teammates = assigns(:observer_teammates)
+      expect(teammates.map(&:person_id)).not_to include(person.id)
+    end
+  end
 end

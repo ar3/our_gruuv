@@ -1,0 +1,139 @@
+- content_for :title, "Insights: Observations"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bar-chart-line.me-2
+      Insights: Observations
+
+.container-fluid
+  / 52-week stacked bar chart by privacy level
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-eye.me-2
+            Observations by Week (Last 52 Weeks)
+        .card-body
+          #observations-by-privacy-chart{style: "height: 400px;"}
+
+  %hr.my-5
+
+  / Observations Kudos vs Feedback table
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-success.text-white
+          %h4.mb-0
+            %i.bi.bi-heart.me-2
+            Observations Kudos vs Feedback
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Employee
+                  %th Department
+                  %th.text-end Kudos
+                  %th.text-end Feedback
+                  %th.text-end Mixed / Other
+              %tbody
+                - @observer_teammates.sort_by { |ct| ct.person.display_name }.each do |teammate|
+                  - buckets = @kudos_feedback_mixed_by_observer[teammate.person_id] || {}
+                  - dept = teammate.active_employment_tenure&.position&.title&.department
+                  %tr
+                    %td
+                      Employee on... 
+                      /= teammate.person.display_name
+                    %td= dept&.name.presence || '—'
+                    %td.text-end= buckets[:kudos].to_i
+                    %td.text-end= buckets[:feedback].to_i
+                    %td.text-end= buckets[:mixed].to_i
+
+  %hr.my-5
+
+  / Observations Sharing table (by privacy level)
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-info.text-white
+          %h4.mb-0
+            %i.bi.bi-shield-lock.me-2
+            Observations Sharing
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Employee
+                  %th Department
+                  - @privacy_levels.each do |privacy|
+                    %th.text-end= privacy.to_s.humanize.titleize
+              %tbody
+                - @observer_teammates.sort_by { |ct| ct.person.display_name }.each do |teammate|
+                  - counts = @privacy_counts_by_observer[teammate.person_id] || {}
+                  - dept = teammate.active_employment_tenure&.position&.title&.department
+                  %tr
+                    %td
+                      Employee on... 
+                      /= teammate.person.display_name
+                    %td= dept&.name.presence || '—'
+                    - @privacy_levels.each do |privacy|
+                      %td.text-end= counts[privacy].to_i
+
+:javascript
+  (function() {
+    var chartData = #{@observations_chart_data.to_json};
+
+    function initializeChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-by-privacy-chart');
+      if (!el) return;
+      Highcharts.chart('observations-by-privacy-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Published observations by privacy level (last 52 weeks)' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: chartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of observations' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: chartData.series
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeChart();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeChart();
+    });
+  })();
