@@ -328,6 +328,18 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).not_to include('Positions that Require or Suggest This Assignment')
       end
 
+      context 'when assignment has outcomes' do
+        let!(:outcome) do
+          create(:assignment_outcome, assignment: assignment, description: 'Ship features on time', outcome_type: 'quantitative')
+        end
+
+        it 'displays outcome description so it can be copied (outcome text is not a link)' do
+          get organization_assignment_path(organization, assignment)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('Ship features on time')
+        end
+      end
+
       it 'links positions to their show pages' do
         position_major_level = create(:position_major_level)
         title = create(:title, company: organization, position_major_level: position_major_level)
@@ -361,6 +373,47 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('Manage Ability Milestones')
         expect(response.body).to include('Edit Assignment')
         expect(response.body).to include('Delete Assignment')
+      end
+
+      context 'when assignment has outcomes' do
+        let!(:outcome_no_config) do
+          create(:assignment_outcome, assignment: assignment, description: 'Outcome with no config', outcome_type: 'quantitative',
+            progress_report_url: nil, management_relationship_filter: nil, team_relationship_filter: nil, consumer_assignment_filter: nil)
+        end
+        let!(:outcome_with_config) do
+          create(:assignment_outcome, assignment: assignment, description: 'Outcome with config', outcome_type: 'sentiment',
+            progress_report_url: 'https://example.com/report')
+        end
+
+        it 'shows "Add add\'l config" badge (grey) when outcome has no additional config' do
+          get organization_assignment_path(organization, assignment)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include("Add add&#39;l config")
+          expect(response.body).to include('bg-secondary')
+        end
+
+        it 'shows "Modify/View add\'l config" badge (info) when outcome has additional config' do
+          get organization_assignment_path(organization, assignment)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include("Modify/View add&#39;l config")
+          expect(response.body).to include('bg-info')
+        end
+
+        it 'links the additional configuration badge to the outcome edit page' do
+          get organization_assignment_path(organization, assignment)
+          expect(response).to have_http_status(:success)
+          edit_path = edit_organization_assignment_assignment_outcome_path(organization, assignment, outcome_no_config)
+          expect(response.body).to include(edit_path)
+        end
+
+        it 'displays outcome description as plain text (not wrapped in a link)' do
+          get organization_assignment_path(organization, assignment)
+          expect(response.body).to include('Outcome with no config')
+          expect(response.body).to include('Outcome with config')
+          # Each outcome edit path should appear only once (for the badge), not for the description
+          expect(response.body.scan(edit_organization_assignment_assignment_outcome_path(organization, assignment, outcome_no_config)).size).to eq(1)
+          expect(response.body.scan(edit_organization_assignment_assignment_outcome_path(organization, assignment, outcome_with_config)).size).to eq(1)
+        end
       end
     end
 

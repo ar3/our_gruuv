@@ -21,6 +21,18 @@ class AssignmentOutcome < ApplicationRecord
     description
   end
 
+  # True if any of the "additional configuration" fields are set (progress report URL, who to ask filters).
+  def has_additional_configuration?
+    progress_report_url.present? ||
+      management_relationship_filter.present? ||
+      team_relationship_filter.present? ||
+      consumer_assignment_filter.present?
+  end
+
+  def additional_configuration_badge_label
+    has_additional_configuration? ? "Modify/View add'l config" : "Add add'l config"
+  end
+
   # Extract content between quotes for qualitative outcomes
   # Returns the first quoted string found, or nil if none found
   def extract_quoted_content

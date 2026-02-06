@@ -36,7 +36,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
     it 'allows access to select_type page' do
       get select_type_organization_observations_path(organization)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Select Observation Type')
+      expect(response.body).to include('Select OurGruuv Observation (OGO) Type')
       expect(response.body).to include('Kudos')
       expect(response.body).to include('Feedback')
       expect(response.body).to include('Quick Note')

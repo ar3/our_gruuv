@@ -51,12 +51,7 @@
                       .d-flex.justify-content-between.align-items-start
                         .flex-grow-1
                           .markdown-content
-                            - if policy(outcome).edit?
-                              = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "text-decoration-none" do
-                                = render_markdown(outcome.description)
-                            - else
-                              = render_markdown(outcome.description)
-                          
+                            = render_markdown(outcome.description)
                           - if outcome.progress_report_url.present? || outcome.management_relationship_filter.present? || outcome.team_relationship_filter.present? || outcome.consumer_assignment_filter.present?
                             .mt-2.pt-2.border-top
                               - if outcome.progress_report_url.present?
@@ -86,8 +81,12 @@
                                     %strong Who to Ask (Consumer Assignment):
                                   %br
                                   %small= assignment_outcome_consumer_assignment_label(outcome.consumer_assignment_filter, @assignment)
-                        %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
-                          = outcome.outcome_type.titleize
+                        .d-flex.flex-column.align-items-end.gap-1
+                          %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
+                            = outcome.outcome_type.titleize
+                          - if policy(outcome).edit?
+                            = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "badge text-decoration-none #{outcome.has_additional_configuration? ? 'bg-info' : 'bg-secondary'}" do
+                              = outcome.additional_configuration_badge_label
             - else
               .mb-3
                 .alert.alert-warning

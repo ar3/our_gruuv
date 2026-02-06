@@ -127,6 +127,45 @@ RSpec.describe AssignmentOutcome, type: :model do
       expect(outcome.display_name).to eq(outcome.description)
     end
 
+    describe '#has_additional_configuration?' do
+      it 'returns false when no additional config fields are set' do
+        outcome.update!(progress_report_url: nil, management_relationship_filter: nil, team_relationship_filter: nil, consumer_assignment_filter: nil)
+        expect(outcome.has_additional_configuration?).to be false
+      end
+
+      it 'returns true when progress_report_url is set' do
+        outcome.update!(progress_report_url: 'https://example.com/report')
+        expect(outcome.has_additional_configuration?).to be true
+      end
+
+      it 'returns true when management_relationship_filter is set' do
+        outcome.update!(management_relationship_filter: 'direct_employee')
+        expect(outcome.has_additional_configuration?).to be true
+      end
+
+      it 'returns true when team_relationship_filter is set' do
+        outcome.update!(team_relationship_filter: 'same_team')
+        expect(outcome.has_additional_configuration?).to be true
+      end
+
+      it 'returns true when consumer_assignment_filter is set' do
+        outcome.update!(consumer_assignment_filter: 'active_consumer')
+        expect(outcome.has_additional_configuration?).to be true
+      end
+    end
+
+    describe '#additional_configuration_badge_label' do
+      it 'returns "Add add\'l config" when no config is set' do
+        outcome.update!(progress_report_url: nil, management_relationship_filter: nil, team_relationship_filter: nil, consumer_assignment_filter: nil)
+        expect(outcome.additional_configuration_badge_label).to eq("Add add'l config")
+      end
+
+      it 'returns "Modify/View add\'l config" when any config is set' do
+        outcome.update!(progress_report_url: 'https://example.com')
+        expect(outcome.additional_configuration_badge_label).to eq("Modify/View add'l config")
+      end
+    end
+
     describe '#extract_quoted_content' do
       it 'extracts content from double quotes' do
         outcome.description = 'Team agrees: "We communicate clearly and frequently"'
