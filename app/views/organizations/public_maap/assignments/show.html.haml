@@ -73,7 +73,7 @@
               %p.mb-2= observation.decorate.story_html.html_safe
               .d-flex.justify-content-between.align-items-center
                 .small.text-muted
-                  From: #{observation.observer.preferred_name || observation.observer.first_name}
+                  From: #{observation.observer.casual_name}
                   - if observation.observed_teammates.any?
                     |  • Recognizing: 
                     - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }

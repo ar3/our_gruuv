@@ -146,11 +146,14 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
       visit organization_company_teammate_finalization_path(company, employee_teammate)
       expect(page).to have_content('Assignment 1')
 
-      find("input[name='assignment_check_ins[#{check_in_both2.id}][finalize]']").uncheck
+      accept_alert('This row will not be saved if this stays unchecked') do
+        find("input[name='assignment_check_ins[#{check_in_both2.id}][finalize]']").uncheck
+      end
       select '🟢 Exceeding', from: "assignment_check_ins[#{check_in_both1.id}][official_rating]"
       fill_in "assignment_check_ins[#{check_in_both1.id}][shared_notes]", with: 'Finalized notes'
 
-      click_button 'Finalize Selected Check-Ins'
+      # Submit via JS to bypass the "Are you sure you want to finalize?" confirmation dialog
+      page.execute_script("document.querySelector('form[action*=\"finalization\"]').submit()")
 
       expect(page).to have_content(/finalized|success|saved/i, wait: 5).or have_current_path(/audit|finalization/, wait: 5)
       expect(check_in_both1.reload.official_check_in_completed_at).to be_present

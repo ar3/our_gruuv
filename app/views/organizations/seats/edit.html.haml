@@ -59,7 +59,7 @@
                 - if filled_seats.any?
                   - filled_options = filled_seats.map do |item|
                     - person = item[:person]
-                    - display_name = "#{person.last_name}, #{person.first_name} - #{item[:seat].display_name}"
+                    - display_name = "#{person.display_name} - #{item[:seat].display_name}"
                     - [display_name, item[:seat].id]
                   - grouped_options << ["Filled Seats", filled_options]
                 - if unfilled_seats.any?

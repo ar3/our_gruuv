@@ -40,7 +40,7 @@
                           - if seat.filled?
                             - active_tenure = seat.employment_tenures.active.first
                             - if active_tenure&.teammate&.person
-                              = " by #{active_tenure.teammate.person.first_name}"
+                              = " by #{active_tenure.teammate.person.casual_name}"
                           - if seat.needs_reconciliation?
                             %span.badge.bg-warning.ms-1
                               %i.bi.bi-exclamation-triangle
