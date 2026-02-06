@@ -11,6 +11,7 @@ class GoalLink < ApplicationRecord
   validate :no_self_linking
   validate :no_circular_dependencies, unless: :should_skip_circular_dependency_check?
   validate :uniqueness_of_link
+  validate :child_not_org_goal_when_parent_teammate
   
   private
   
@@ -62,6 +63,14 @@ class GoalLink < ApplicationRecord
     
     if existing
       errors.add(:base, "link already exists")
+    end
+  end
+
+  def child_not_org_goal_when_parent_teammate
+    return unless parent && child
+
+    if parent.owner_type == 'CompanyTeammate' && child.owner_type.in?(%w[Organization Department Team])
+      errors.add(:base, "A team, department, or company goal cannot be a child of a teammate goal")
     end
   end
   

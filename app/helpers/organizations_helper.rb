@@ -37,7 +37,7 @@ module OrganizationsHelper
     
     {
       teammate_id: teammate&.id,
-      teammate_type: teammate&.type,
+      teammate_type: teammate&.class&.name,
       teammate_exists: teammate.present?,
       root_company_id: root_company.id,
       root_company_name: root_company.name,

@@ -62,6 +62,21 @@ RSpec.describe GoalLink, type: :model do
       
       expect(different_goals).to be_valid
     end
+
+    it 'prevents team/department/company goal as child of teammate goal' do
+      org_owned_goal = create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Company goal')
+      link = build(:goal_link, parent: goal1, child: org_owned_goal)
+
+      expect(link).not_to be_valid
+      expect(link.errors[:base]).to include("A team, department, or company goal cannot be a child of a teammate goal")
+    end
+
+    it 'allows org-owned goal as parent of teammate goal' do
+      org_owned_goal = create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Company goal')
+      link = build(:goal_link, parent: org_owned_goal, child: goal1)
+
+      expect(link).to be_valid
+    end
   end
   
   describe 'circular dependency prevention' do

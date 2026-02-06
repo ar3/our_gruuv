@@ -21,6 +21,7 @@ class GoalLinkForm < Reform::Form
   validate :no_self_linking, unless: :bulk_create_mode?
   validate :no_circular_dependencies, unless: :bulk_create_mode?
   validate :uniqueness_of_link, unless: :bulk_create_mode?
+  validate :no_org_goal_under_teammate_goal, unless: :bulk_create_mode?
   
   # Reform automatically handles save - we just need to customize the logic
   def save
@@ -218,6 +219,27 @@ class GoalLinkForm < Reform::Form
       if existing
         errors.add(:base, "link already exists")
       end
+    end
+  end
+
+  def no_org_goal_under_teammate_goal
+    parent_goal, child_goal = link_parent_and_child
+    return unless parent_goal && child_goal
+
+    if parent_goal.owner_type == 'CompanyTeammate' && child_goal.owner_type.in?(%w[Organization Department Team])
+      errors.add(:base, "A team, department, or company goal cannot be a child of a teammate goal")
+    end
+  end
+
+  def link_parent_and_child
+    if link_direction == 'incoming'
+      parent_goal = Goal.find_by(id: parent_id)
+      child_goal = linking_goal
+      [parent_goal, child_goal]
+    else
+      parent_goal = linking_goal
+      child_goal = Goal.find_by(id: child_id)
+      [parent_goal, child_goal]
     end
   end
 end

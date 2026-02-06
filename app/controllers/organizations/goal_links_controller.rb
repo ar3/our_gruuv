@@ -16,7 +16,8 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
                           .where(deleted_at: nil, completed_at: nil)
                           .where.not(id: @goal.id)
                           .where(goal_type: @goal_type)
-    
+    available_goals = available_goals.owned_by_teammate if @goal.owner_type == 'CompanyTeammate'
+
     @available_goals_with_status = available_goals.map do |candidate_goal|
       {
         goal: candidate_goal,
@@ -42,7 +43,8 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
                           .where(deleted_at: nil, completed_at: nil)
                           .where.not(id: @goal.id)
-    
+    available_goals = available_goals.owned_by_org_dept_team if @goal.owner_type.in?(%w[Organization Department Team])
+
     @available_goals_with_status = available_goals.map do |candidate_goal|
       {
         goal: candidate_goal,

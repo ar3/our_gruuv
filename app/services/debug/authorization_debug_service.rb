@@ -51,7 +51,7 @@ module Debug
         teammates: subject_teammates.map do |tm|
           {
             id: tm.id,
-            type: tm.type,
+            type: tm.class.name,
             organization: tm.organization.name,
             organization_id: tm.organization_id,
             organization_type: tm.organization.type,

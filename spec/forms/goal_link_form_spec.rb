@@ -154,6 +154,48 @@ RSpec.describe GoalLinkForm, type: :form do
         expect(form.errors[:base]).to include("link already exists")
       end
     end
+
+    context 'teammate parent / org-dept-team child' do
+      let(:org_owned_goal) { create(:goal, creator: creator_teammate, owner: company, company: company, title: 'Company goal') }
+
+      it 'rejects linking an org/company goal as child of a teammate goal (outgoing)' do
+        form.link_direction = 'outgoing'
+        form.linking_goal = goal1
+        form.child_id = org_owned_goal.id
+        form.bulk_create_mode = false
+
+        expect(form).not_to be_valid
+        expect(form.errors[:base]).to include("A team, department, or company goal cannot be a child of a teammate goal")
+      end
+
+      it 'rejects linking a teammate goal as parent when child is org-owned (incoming)' do
+        form.link_direction = 'incoming'
+        form.linking_goal = org_owned_goal
+        form.parent_id = goal1.id
+        form.bulk_create_mode = false
+
+        expect(form).not_to be_valid
+        expect(form.errors[:base]).to include("A team, department, or company goal cannot be a child of a teammate goal")
+      end
+
+      it 'allows linking when both are teammate-owned' do
+        form.link_direction = 'outgoing'
+        form.linking_goal = goal1
+        form.child_id = goal2.id
+        form.bulk_create_mode = false
+
+        expect(form).to be_valid
+      end
+
+      it 'allows linking when parent is org-owned and child is teammate-owned' do
+        form.link_direction = 'outgoing'
+        form.linking_goal = org_owned_goal
+        form.child_id = goal1.id
+        form.bulk_create_mode = false
+
+        expect(form).to be_valid
+      end
+    end
     
     context 'with outgoing direction' do
       before do

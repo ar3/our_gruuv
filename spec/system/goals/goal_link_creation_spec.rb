@@ -187,6 +187,15 @@ RSpec.describe 'Goal Link Creation', type: :system do
       # Should only have one link
       expect(GoalLink.where(parent: goal1, child: goal2).count).to eq(1)
     end
+
+    it 'does not show team/department/company goals when parent goal is teammate-owned' do
+      org_goal = create(:goal, creator: teammate, owner: organization, title: 'Company-wide initiative', goal_type: 'stepping_stone_activity', company: organization, privacy_level: 'everyone_in_company')
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, goal_type: 'stepping_stone_activity')
+
+      expect(page).to have_content('Existing Goals')
+      expect(page).not_to have_content('Company-wide initiative')
+      expect(page).to have_content('Goal 2')
+    end
   end
   
   describe 'selecting existing goals (incoming links)' do

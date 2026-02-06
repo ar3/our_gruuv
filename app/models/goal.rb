@@ -62,6 +62,9 @@ class Goal < ApplicationRecord
       teammate_ids, teammate_ids, organization_ids
     )
   }
+
+  scope :owned_by_teammate, -> { where(owner_type: 'CompanyTeammate') }
+  scope :owned_by_org_dept_team, -> { where(owner_type: ['Organization', 'Department', 'Team']) }
   
   scope :timeframe_now, -> {
     where('most_likely_target_date >= ? AND most_likely_target_date < ?', 

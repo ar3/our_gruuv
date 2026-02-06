@@ -19,6 +19,27 @@ RSpec.describe 'Organizations::GoalLinks', type: :request do
     # Re-enable PaperTrail after tests
     PaperTrail.enabled = true
   end
+
+  describe 'GET new_outgoing_link' do
+    it 'returns success' do
+      get new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it 'excludes org-owned goals from list when parent goal is teammate-owned' do
+      org_goal = create(:goal, creator: teammate, owner: organization, title: 'Company-wide initiative', goal_type: 'stepping_stone_activity', company: organization)
+      get new_outgoing_link_organization_goal_goal_links_path(organization, goal1, goal_type: 'stepping_stone_activity')
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('Company-wide initiative')
+    end
+  end
+
+  describe 'GET new_incoming_link' do
+    it 'returns success' do
+      get new_incoming_link_organization_goal_goal_links_path(organization, goal1)
+      expect(response).to have_http_status(:ok)
+    end
+  end
   
   describe 'DELETE /organizations/:organization_id/goals/:goal_id/goal_links/:id' do
     context 'with outgoing link' do

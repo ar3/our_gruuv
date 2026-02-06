@@ -11,6 +11,79 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
   before do
     sign_in_as_teammate(person, company)
   end
+
+  describe 'GET #new_outgoing_link' do
+    let(:parent_teammate_goal) do
+      create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Parent', goal_type: 'stepping_stone_activity')
+    end
+    let(:teammate_candidate) do
+      create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Teammate candidate', goal_type: 'stepping_stone_activity')
+    end
+    let(:org_candidate) do
+      create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Company candidate', goal_type: 'stepping_stone_activity')
+    end
+
+    it 'excludes team/department/company goals from linkable children when parent is teammate-owned' do
+      parent_teammate_goal
+      teammate_candidate
+      org_candidate
+
+      get :new_outgoing_link, params: { organization_id: company.id, goal_id: parent_teammate_goal.id }
+
+      expect(response).to have_http_status(:ok)
+      available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
+      expect(available_goals).to include(teammate_candidate)
+      expect(available_goals).not_to include(org_candidate)
+    end
+
+    it 'includes both teammate and org goals when parent is org-owned' do
+      parent_org_goal = create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Parent org', goal_type: 'stepping_stone_activity')
+      teammate_candidate
+      org_candidate
+
+      get :new_outgoing_link, params: { organization_id: company.id, goal_id: parent_org_goal.id }
+
+      expect(response).to have_http_status(:ok)
+      available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
+      expect(available_goals).to include(teammate_candidate)
+      expect(available_goals).to include(org_candidate)
+    end
+  end
+
+  describe 'GET #new_incoming_link' do
+    let(:teammate_parent_candidate) do
+      create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Teammate parent candidate')
+    end
+    let(:org_parent_candidate) do
+      create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Org parent candidate')
+    end
+
+    it 'excludes teammate goals from linkable parents when child is org/department/team-owned' do
+      child_org_goal = create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Child org goal')
+      teammate_parent_candidate
+      org_parent_candidate
+
+      get :new_incoming_link, params: { organization_id: company.id, goal_id: child_org_goal.id }
+
+      expect(response).to have_http_status(:ok)
+      available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
+      expect(available_goals).not_to include(teammate_parent_candidate)
+      expect(available_goals).to include(org_parent_candidate)
+    end
+
+    it 'includes both teammate and org goals when child is teammate-owned' do
+      goal1
+      teammate_parent_candidate
+      org_parent_candidate
+
+      get :new_incoming_link, params: { organization_id: company.id, goal_id: goal1.id }
+
+      expect(response).to have_http_status(:ok)
+      available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
+      expect(available_goals).to include(teammate_parent_candidate)
+      expect(available_goals).to include(org_parent_candidate)
+    end
+  end
   
   describe 'POST #create' do
     it 'creates a new goal link' do
