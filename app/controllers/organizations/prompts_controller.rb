@@ -211,6 +211,14 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       current_teammate = current_person.teammates.find_by(organization: company)
       @next_prompt = @prompt.next_prompt_for_teammate(current_teammate) if current_teammate
     end
+
+    # Last closed version of this template for this user (for link in Reflection Details)
+    @last_closed_prompt = Prompt
+      .where(company_teammate: @prompt.company_teammate, prompt_template: @prompt.prompt_template)
+      .closed
+      .where.not(id: @prompt.id)
+      .order(closed_at: :desc)
+      .first
   end
 
   def update

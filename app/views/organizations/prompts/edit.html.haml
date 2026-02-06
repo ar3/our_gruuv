@@ -31,6 +31,13 @@
         %p.mb-2
           %strong Last Updated:
           = format_time_in_user_timezone(@prompt.updated_at)
+    - if @last_closed_prompt.present?
+      .row.mt-2
+        .col-12
+          %p.mb-0
+            %strong Last closed #{company_label_for('reflection', 'reflection')}:
+            = link_to edit_organization_prompt_path(@organization, @last_closed_prompt), class: "text-decoration-none" do
+              Opened #{format_time_in_user_timezone(@last_closed_prompt.created_at)}, closed #{format_time_in_user_timezone(@last_closed_prompt.closed_at)}
 
 .card
   .card-header
