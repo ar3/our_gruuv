@@ -110,6 +110,15 @@ RSpec.describe HuddlesController, type: :controller do
       get :show, params: { id: huddle.id }
       expect(response).to redirect_to(join_huddle_path(huddle))
     end
+
+    it 'renders successfully when a participant has a nil teammate (orphaned record)' do
+      other_person = create(:person, first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com')
+      other_teammate = create(:teammate, person: other_person, organization: organization)
+      orphan_participant = create(:huddle_participant, huddle: huddle, teammate: other_teammate, role: 'active')
+      orphan_participant.update_columns(teammate_id: nil)
+      get :show, params: { id: huddle.id }
+      expect(response).to be_successful
+    end
   end
 
   describe 'GET #feedback' do
