@@ -979,6 +979,11 @@ RSpec.describe 'About Me Page', type: :request do
             expect(response.body).to match(/of these (prompts|reflections)/i)
           end
 
+          it 'shows View All growth plans link when viewing own about me' do
+            get about_me_organization_company_teammate_path(organization, teammate)
+            expect(response.body).to match(/View All.*Prompt/i)
+          end
+
           context 'when prompt is open' do
             it 'shows prompt in expanded view with goal count' do
               get about_me_organization_company_teammate_path(organization, teammate)
@@ -1116,6 +1121,13 @@ RSpec.describe 'About Me Page', type: :request do
               viewer_prompt_path = edit_organization_prompt_path(organization, viewer_prompt)
               expect(prompts_section.to_s).not_to include(viewer_prompt_path)
             end
+          end
+
+          it 'does not show View All growth plans link when viewing another teammate\'s about me' do
+            get about_me_organization_company_teammate_path(organization, about_me_teammate)
+            prompts_section = Nokogiri::HTML(response.body).at_css('#promptsSection')
+            expect(prompts_section).to be_present
+            expect(prompts_section.to_s).not_to match(/View All.*Prompt/i)
           end
         end
       end

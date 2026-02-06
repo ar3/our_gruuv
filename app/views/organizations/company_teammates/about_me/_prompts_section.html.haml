@@ -72,8 +72,9 @@
         - else
           %p.text-muted.mb-3 No open #{company_label_for('prompt', 'prompt').pluralize} to display.
         
-        .d-grid
-          = link_to "View All #{company_label_plural('prompt', 'Prompt')}", 
-                    @prompts_url,
-                    class: "btn btn-outline-primary"
+        - if @viewing_own_about_me
+          .d-grid
+            = link_to "View All #{company_label_plural('prompt', 'Prompt')}", 
+                      @prompts_url,
+                      class: "btn btn-outline-primary"
 
