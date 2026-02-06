@@ -88,6 +88,23 @@ RSpec.describe Huddle, type: :model do
         expect(Huddle.recent.last).to eq(old_huddle)
       end
     end
+
+    describe '.participated_by' do
+      let(:person) { Person.create!(email: 'participant@example.com', full_name: 'Participant', unique_textable_phone_number: '+12345678999') }
+      let(:teammate) { create(:teammate, person: person, organization: company) }
+
+      it 'returns huddles where the person participated as a huddle participant' do
+        HuddleParticipant.create!(huddle: huddle, company_teammate: teammate, role: 'active')
+        expect(Huddle.participated_by(person)).to include(huddle)
+      end
+
+      it 'excludes huddles where the person did not participate' do
+        other_person = Person.create!(email: 'other@example.com', full_name: 'Other', unique_textable_phone_number: '+12345678998')
+        other_teammate = create(:teammate, person: other_person, organization: company)
+        HuddleParticipant.create!(huddle: huddle, company_teammate: other_teammate, role: 'active')
+        expect(Huddle.participated_by(person)).not_to include(huddle)
+      end
+    end
   end
 
   describe '#display_name' do

@@ -18,7 +18,7 @@ class Huddle < ApplicationRecord
   }
   scope :recent, -> { order(started_at: :desc) }
   scope :participated_by, ->(person) {
-    joins(huddle_participants: :teammate).where(teammates: { person: person })
+    joins(huddle_participants: :company_teammate).where(teammates: { person_id: person.id })
   }
   scope :for_company, ->(company) {
     joins(:team).where(teams: { company_id: company.id })
