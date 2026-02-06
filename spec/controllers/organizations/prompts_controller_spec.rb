@@ -449,6 +449,53 @@ RSpec.describe Organizations::PromptsController, type: :controller do
       end
     end
 
+    context 'with save_and_edit_goals' do
+      it 'saves answers and redirects to goals index with owner and prompt_id' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: open_prompt.id,
+          save_and_edit_goals: '1',
+          prompt_answers: {
+            question.id.to_s => { text: 'My answer' }
+          }
+        }
+
+        answer = open_prompt.reload.prompt_answers.find_by(prompt_question: question)
+        expect(answer.text).to eq('My answer')
+
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include(organization_goals_path(organization))
+        expect(redirect_location).to include('owner_type=CompanyTeammate')
+        expect(redirect_location).to include("owner_id=#{teammate.id}")
+        expect(redirect_location).to include("prompt_id=#{open_prompt.id}")
+        expect(flash[:notice]).to eq('Prompt answers saved. Showing goals for this reflection.')
+      end
+    end
+
+    context 'with save_and_close_and_start_new' do
+      it 'saves answers, closes prompt, creates new prompt, redirects to edit new with notice' do
+        initial_count = Prompt.count
+        patch :update, params: {
+          organization_id: organization.id,
+          id: open_prompt.id,
+          save_and_close_and_start_new: '1',
+          prompt_answers: {
+            question.id.to_s => { text: 'My answer' }
+          }
+        }
+
+        expect(Prompt.count).to be >= initial_count + 1
+        expect(open_prompt.reload.closed?).to be true
+        new_prompt = Prompt.where(prompt_template: template, company_teammate: teammate).where.not(id: open_prompt.id).order(created_at: :desc).first
+        expect(new_prompt).to be_present
+        expect(new_prompt.open?).to be true
+
+        expect(response).to redirect_to(edit_organization_prompt_path(organization, new_prompt))
+        expect(flash[:notice]).to eq("Fresh #{organization.display_name}: #{template.title} started.")
+      end
+    end
+
     context 'with valid params' do
       skip 'switch_to_view parameter not implemented' do
       it 'redirects to edit page with new view when switch_to_view parameter is present' do

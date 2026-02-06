@@ -135,7 +135,7 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       expect(response).to redirect_to(edit_organization_prompt_path(organization, open_prompt))
     end
 
-    it 'Manage Goals button (save_and_manage_goals) saves answers and redirects to manage_goals to add/link goals' do
+    it 'Add New / Associate Goals button (save_and_manage_goals) saves answers and redirects to manage_goals to add/link goals' do
       patch organization_prompt_path(organization, open_prompt), params: {
         save_and_manage_goals: '1',
         prompt_answers: {
@@ -155,6 +155,40 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Associate Goals')
       expect(response.body).to include('Select one or more goals to associate with this prompt')
+    end
+
+    it 'save_and_edit_goals saves answers and redirects to goals index with teammate and prompt_id' do
+      patch organization_prompt_path(organization, open_prompt), params: {
+        save_and_edit_goals: '1',
+        prompt_answers: {
+          question.id.to_s => { text: 'My answer' }
+        }
+      }
+
+      expect(response).to have_http_status(:redirect)
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include(organization_goals_path(organization))
+      expect(redirect_url).to include('owner_type=CompanyTeammate')
+      expect(redirect_url).to include("owner_id=#{teammate.id}")
+      expect(redirect_url).to include("prompt_id=#{open_prompt.id}")
+      expect(flash[:notice]).to eq('Prompt answers saved. Showing goals for this reflection.')
+    end
+
+    it 'save_and_close_and_start_new saves answers, closes prompt, creates new prompt, redirects to edit new' do
+      patch organization_prompt_path(organization, open_prompt), params: {
+        save_and_close_and_start_new: '1',
+        prompt_answers: {
+          question.id.to_s => { text: 'My answer' }
+        }
+      }
+
+      expect(response).to have_http_status(:redirect)
+      expect(open_prompt.reload.closed?).to be true
+      new_prompt = Prompt.where(prompt_template: template).where.not(id: open_prompt.id).order(created_at: :desc).first
+      expect(new_prompt).to be_present
+      expect(new_prompt.open?).to be true
+      expect(response).to redirect_to(edit_organization_prompt_path(organization, new_prompt))
+      expect(flash[:notice]).to eq("Fresh #{organization.display_name}: #{template.title} started.")
     end
   end
 

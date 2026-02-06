@@ -73,6 +73,8 @@
             = hidden_field_tag :view, @current_filters[:view]
           - if @current_filters[:spotlight].present?
             = hidden_field_tag :spotlight, @current_filters[:spotlight]
+          - if @current_filters[:prompt_id].present?
+            = hidden_field_tag :prompt_id, @current_filters[:prompt_id]
 
 / Spotlight Section (always shown)
 .row.justify-content-center.mb-4
@@ -93,6 +95,9 @@
       .card-footer.bg-light
         .row.align-items-center
           .col-md-6
+            - if @current_filters[:prompt_id].present? && @filter_prompt.present?
+              %span.badge.rounded-pill.bg-info.me-2.mb-1
+                Goals for: #{@filter_prompt.prompt_template.title}
             %small.text-muted
               %i.bi.bi-funnel.me-1
               Filters: 

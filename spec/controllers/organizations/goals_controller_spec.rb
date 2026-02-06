@@ -125,6 +125,54 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(goals).to include(top_priority_goal)
       # Spotlight may filter or just highlight - check that it's included
     end
+
+    context 'when prompt_id is present' do
+      let(:template) { create(:prompt_template, :available, company: company) }
+      let(:prompt) { create(:prompt, :open, company_teammate: creator_teammate, prompt_template: template) }
+
+      it 'assigns only goals attached to the prompt and all their descendants (children, grandchildren)' do
+        root = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Root on prompt')
+        child = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Child')
+        grandchild = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Grandchild')
+        GoalLink.create!(parent: root, child: child)
+        GoalLink.create!(parent: child, child: grandchild)
+        PromptGoal.create!(prompt: prompt, goal: root)
+
+        other_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Other')
+
+        get :index, params: {
+          organization_id: company.id,
+          owner_type: 'CompanyTeammate',
+          owner_id: creator_teammate.id,
+          prompt_id: prompt.id
+        }
+
+        goal_ids = assigns(:goals).map(&:id).to_set
+        expect(goal_ids).to include(root.id, child.id, grandchild.id)
+        expect(goal_ids).not_to include(other_goal.id)
+        expect(assigns(:filter_prompt)).to eq(prompt)
+      end
+
+      it 'excludes descendants of goals not attached to the prompt' do
+        root_on_prompt = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Only root on prompt')
+        PromptGoal.create!(prompt: prompt, goal: root_on_prompt)
+
+        unlinked_parent = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Unlinked parent')
+        child_of_unlinked = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Child of unlinked')
+        GoalLink.create!(parent: unlinked_parent, child: child_of_unlinked)
+
+        get :index, params: {
+          organization_id: company.id,
+          owner_type: 'CompanyTeammate',
+          owner_id: creator_teammate.id,
+          prompt_id: prompt.id
+        }
+
+        goal_ids = assigns(:goals).map(&:id).to_set
+        expect(goal_ids).to include(root_on_prompt.id)
+        expect(goal_ids).not_to include(unlinked_parent.id, child_of_unlinked.id)
+      end
+    end
     
     it 'applies spotlight: recently_added' do
       recent_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.day.ago)

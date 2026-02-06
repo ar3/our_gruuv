@@ -104,6 +104,10 @@
             .btn.btn-primary.disabled Save and continue editing
             - if @next_prompt
               .btn.btn-outline-primary.disabled Save and go to #{@next_prompt.prompt_template.title}
+      - if @can_edit
+        .mt-2
+          = button_tag type: 'submit', form: 'prompt-edit-form', name: 'save_and_close_and_start_new', value: '1', class: "btn btn-link p-0 text-muted border-0 bg-transparent", style: "font-size: 0.9em; text-decoration: none;", data: { turbo_confirm: "Are you sure? You will not lose any data, but the form will clear so that you can start fresh." } do
+            Close and Start Fresh
 
 - quote_popover_content = capture do
   %div.markdown-content
@@ -125,10 +129,14 @@
       - if @can_edit
         = button_tag type: 'submit', form: 'prompt-edit-form', name: 'save_and_manage_goals', value: '1', class: "btn btn-sm btn-primary" do
           %i.bi.bi-plus.me-1
-          Manage Goals
+          Add New / Associate Goals
   .card-body
     - non_archived_goals = @prompt.goals.reject { |g| g.deleted_at.present? }
     - if non_archived_goals.any?
+      - if @can_edit
+        .mb-3
+          = button_tag type: 'submit', form: 'prompt-edit-form', name: 'save_and_edit_goals', value: '1', class: "btn btn-sm btn-outline-secondary" do
+            Check-in on / Edit all goals
       - # Get all descendant goal IDs (includes children, grandchildren, etc.)
       - all_descendant_goal_ids = @linked_goals.keys.to_set
       - prompt_goal_ids = non_archived_goals.map(&:id).to_set

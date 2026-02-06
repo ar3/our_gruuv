@@ -375,10 +375,16 @@ module GoalsHelper
             (goal.should_show_warning? ? content_tag(:i, '', class: 'bi bi-exclamation-triangle text-warning ms-1', 'data-bs-toggle': 'tooltip', 'data-bs-title': goal_warning_message(goal)) : '')
           end
           badges = content_tag(:p, class: 'mb-1') do
+            owned_by_span = content_tag(:span, " | Owned by: #{goal_owner_display_name(goal)}", class: 'text-muted small ms-2')
+            prompt_span = if goal.prompt_goals.any?
+              link_to(" | #{goal_prompt_association_display(goal)}", edit_organization_prompt_path(organization, goal.prompt_goals.first.prompt), target: '_blank', rel: 'noopener', class: 'text-muted small ms-2 text-decoration-none')
+            else
+              ''
+            end
             content_tag(:span, goal.timeframe.to_s.humanize, class: "badge me-2 #{timeframe_badge_class(goal.timeframe)}", 'data-bs-toggle': 'tooltip', 'data-bs-title': timeframe_tooltip_text(goal)) +
             content_tag(:span, goal.status.to_s.humanize, class: "badge me-2 #{status_badge_class(goal.status)}") +
             content_tag(:span, goal_visibility_display(goal), class: 'text-muted small ms-2', 'data-bs-toggle': 'tooltip', 'data-bs-title': goal_privacy_tooltip_text(goal)) +
-            content_tag(:span, " | Owned by: #{goal_owner_display_name(goal)}", class: 'text-muted small ms-2')
+            owned_by_span + prompt_span
           end
           check_in_sentence = ''
           if most_recent_check_in.present?
@@ -489,7 +495,7 @@ module GoalsHelper
   
   def goal_owner_display_name(goal)
     return 'Unknown' unless goal.owner
-    
+
     if goal.owner_type == 'CompanyTeammate'
       goal.owner.person&.display_name || 'Unknown'
     elsif goal.owner_type.in?(['Company', 'Department', 'Team', 'Organization'])
@@ -497,6 +503,17 @@ module GoalsHelper
     else
       'Unknown'
     end
+  end
+
+  # Returns a short phrase when the goal is associated to one or more prompts (e.g. "In reflection: Weekly Check-in"), or nil.
+  def goal_prompt_association_display(goal)
+    return nil if goal.prompt_goals.blank?
+
+    titles = goal.prompt_goals.map { |pg| pg.prompt.prompt_template.title }.uniq
+    return nil if titles.empty?
+
+    reflection_label = company_label_for('reflection', 'Reflection')
+    "In #{reflection_label.downcase}: #{titles.join(', ')}"
   end
   
   # Returns the owner's profile image or organization initials, wrapped with a tooltip showing the full owner name

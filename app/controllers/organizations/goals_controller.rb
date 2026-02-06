@@ -46,7 +46,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
           owner_type: params[:owner_type],
           owner_id: params[:owner_id],
           show_deleted: params[:show_deleted],
-          show_completed: params[:show_completed]
+          show_completed: params[:show_completed],
+          prompt_id: params[:prompt_id].presence
         }
         return
       end
@@ -71,6 +72,24 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     else
       # Filter by owner
       @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
+    end
+
+    # Apply prompt filter: restrict to goals associated with this prompt + their descendant hierarchy
+    if params[:prompt_id].present?
+      company = @organization.root_company || @organization
+      @filter_prompt = Prompt.find_by(id: params[:prompt_id])
+      @filter_prompt = nil if @filter_prompt && @filter_prompt.company_teammate.organization.id != company.id
+      if @filter_prompt
+        prompt_goal_ids = @filter_prompt.goals.pluck(:id)
+        all_ids = prompt_goal_ids.dup
+        current_level = prompt_goal_ids.dup
+        while current_level.any?
+          child_ids = GoalLink.where(parent_id: current_level).pluck(:child_id).uniq
+          child_ids.each { |id| all_ids << id unless all_ids.include?(id) }
+          current_level = child_ids
+        end
+        @goals = @goals.where(id: all_ids)
+      end
     end
     
     # Set default spotlight
@@ -111,6 +130,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Eager load links and owner (with person for CompanyTeammate) for table/cards/list to avoid N+1
     if @view_style.in?(%w[table cards list])
       @goals = @goals.includes(:outgoing_links, :incoming_links, owner: :person)
+    end
+
+    # Eager load prompt associations for hierarchical views (goal node shows "In reflection: ..." next to Owned by)
+    if @view_style.in?(%w[hierarchical-collapsible hierarchical-indented])
+      @goals = @goals.includes(prompt_goals: { prompt: :prompt_template })
     end
     
     # For check-in view, filter to eligible goals and load check-ins
@@ -175,7 +199,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       owner_type: @everyone_in_company_filter ? nil : params[:owner_type],
       owner_id: @everyone_in_company_filter ? 'everyone_in_company' : params[:owner_id],
       show_deleted: params[:show_deleted],
-      show_completed: params[:show_completed]
+      show_completed: params[:show_completed],
+      prompt_id: params[:prompt_id].presence
     }
     
     # Set current spotlight for view

@@ -104,11 +104,42 @@ RSpec.describe GoalsHelper, type: :helper do
 
     context 'with department owner' do
       let(:department) { create(:department, company: company, name: 'Engineering') }
-      
+
       it 'returns department display name' do
         goal = create(:goal, creator: creator_teammate, owner: department, privacy_level: 'everyone_in_company')
         expect(helper.goal_owner_display_name(goal)).to eq(department.display_name)
       end
+    end
+  end
+
+  describe '#goal_prompt_association_display' do
+    before { allow(helper).to receive(:company_label_for).with('reflection', 'Reflection').and_return('Reflection') }
+
+    it 'returns nil when goal has no prompt_goals' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+      expect(helper.goal_prompt_association_display(goal)).to be_nil
+    end
+
+    it 'returns "In reflection: <template title>" when goal is associated to one prompt' do
+      template = create(:prompt_template, :available, company: company, title: 'Weekly Check-in')
+      prompt = create(:prompt, :open, company_teammate: creator_teammate, prompt_template: template)
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+      PromptGoal.create!(prompt: prompt, goal: goal)
+      expect(helper.goal_prompt_association_display(goal)).to eq('In reflection: Weekly Check-in')
+    end
+
+    it 'returns comma-separated template titles when goal is associated to multiple prompts' do
+      template1 = create(:prompt_template, :available, company: company, title: 'Weekly')
+      template2 = create(:prompt_template, :available, company: company, title: 'Monthly')
+      prompt1 = create(:prompt, :open, company_teammate: creator_teammate, prompt_template: template1)
+      prompt2 = create(:prompt, :open, company_teammate: creator_teammate, prompt_template: template2)
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+      PromptGoal.create!(prompt: prompt1, goal: goal)
+      PromptGoal.create!(prompt: prompt2, goal: goal)
+      result = helper.goal_prompt_association_display(goal)
+      expect(result).to include('Weekly')
+      expect(result).to include('Monthly')
+      expect(result).to start_with('In reflection: ')
     end
   end
 

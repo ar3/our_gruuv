@@ -32,6 +32,8 @@
                   = goal_visibility_display(goal)
                 %span.text-muted.small.ms-2
                   = "| Owned by: #{goal_owner_display_name(goal)}"
+                - if goal.prompt_goals.any?
+                  = link_to "| #{goal_prompt_association_display(goal)}", edit_organization_prompt_path(@organization, goal.prompt_goals.first.prompt), target: '_blank', rel: 'noopener', class: 'text-muted small ms-2 text-decoration-none'
               - if most_recent_check_in.present?
                 %p.mb-1.small.text-muted
                   = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal

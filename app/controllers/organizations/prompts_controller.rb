@@ -250,6 +250,20 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       # Save and go to manage goals page
       redirect_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: edit_organization_prompt_path(@organization, @prompt), return_text: @prompt.prompt_template.title),
                   notice: 'Prompt answers saved successfully.'
+    elsif params[:save_and_edit_goals].present?
+      # Save and go to goals index with teammate selected and prompt filter
+      redirect_to organization_goals_path(@organization, owner_type: 'CompanyTeammate', owner_id: current_teammate.id, prompt_id: @prompt.id),
+                  notice: 'Prompt answers saved. Showing goals for this reflection.'
+    elsif params[:save_and_close_and_start_new].present?
+      # Save, close current prompt, create new prompt, redirect to edit new
+      template = @prompt.prompt_template
+      @prompt.close!
+      new_prompt = Prompt.create!(
+        company_teammate: current_teammate,
+        prompt_template: template
+      )
+      redirect_to edit_organization_prompt_path(@organization, new_prompt),
+                  notice: "Fresh #{@organization.display_name}: #{template.title} started."
     elsif params[:save_and_next].present?
       # Save and go to next prompt
       next_prompt = @prompt.next_prompt_for_teammate(current_teammate)

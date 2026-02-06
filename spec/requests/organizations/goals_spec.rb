@@ -1110,6 +1110,65 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/goals index with prompt_id filter' do
+    let(:template) { create(:prompt_template, :available, company: organization) }
+    let(:prompt) { create(:prompt, :open, company_teammate: teammate, prompt_template: template) }
+    let!(:prompt_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Goal for reflection', started_at: 1.week.ago) }
+    let!(:unlinked_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Unlinked goal', started_at: 1.week.ago) }
+
+    before do
+      PromptGoal.create!(prompt: prompt, goal: prompt_goal)
+    end
+
+    it 'restricts goals to prompt-associated goals only (excludes unlinked goals)' do
+      get organization_goals_path(organization, owner_type: 'CompanyTeammate', owner_id: teammate.id, prompt_id: prompt.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Goal for reflection')
+      expect(response.body).not_to include('Unlinked goal')
+    end
+
+    it 'includes prompt-associated goals and all their descendants (children, grandchildren)' do
+      root = create(:goal, creator: teammate, owner: teammate, title: 'Root on prompt', started_at: 1.week.ago)
+      child = create(:goal, creator: teammate, owner: teammate, title: 'Child of root', started_at: 1.week.ago)
+      grandchild = create(:goal, creator: teammate, owner: teammate, title: 'Grandchild', started_at: 1.week.ago)
+      GoalLink.create!(parent: root, child: child)
+      GoalLink.create!(parent: child, child: grandchild)
+      PromptGoal.create!(prompt: prompt, goal: root)
+
+      get organization_goals_path(organization, owner_type: 'CompanyTeammate', owner_id: teammate.id, prompt_id: prompt.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Root on prompt')
+      expect(response.body).to include('Child of root')
+      expect(response.body).to include('Grandchild')
+    end
+
+    it 'excludes goals that are only descendants of goals not on the prompt' do
+      root_on_prompt = create(:goal, creator: teammate, owner: teammate, title: 'Only root on prompt', started_at: 1.week.ago)
+      PromptGoal.create!(prompt: prompt, goal: root_on_prompt)
+
+      unlinked_parent = create(:goal, creator: teammate, owner: teammate, title: 'Unlinked parent', started_at: 1.week.ago)
+      child_of_unlinked = create(:goal, creator: teammate, owner: teammate, title: 'Child of unlinked', started_at: 1.week.ago)
+      GoalLink.create!(parent: unlinked_parent, child: child_of_unlinked)
+
+      get organization_goals_path(organization, owner_type: 'CompanyTeammate', owner_id: teammate.id, prompt_id: prompt.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Only root on prompt')
+      expect(response.body).not_to include('Unlinked parent')
+      expect(response.body).not_to include('Child of unlinked')
+    end
+
+    it 'shows information pill with prompt template name in spotlight footer when filtered by prompt' do
+      get organization_goals_path(organization, owner_type: 'CompanyTeammate', owner_id: teammate.id, prompt_id: prompt.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Goals for:')
+      expect(response.body).to include(template.title)
+    end
+  end
+
   describe 'GET /organizations/:organization_id/goals index page owner dropdown' do
     it 'includes the created_by_me option in the owner dropdown' do
       get organization_goals_path(organization)

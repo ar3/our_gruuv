@@ -153,6 +153,11 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
       expect(rendered).to have_content('No goals associated with this prompt.')
     end
 
+    it 'does not show Check-in on / Edit all goals button' do
+      render
+      expect(rendered).not_to have_css('button[name="save_and_edit_goals"]')
+    end
+
     it 'shows link to associate goals when can_edit is true' do
       render
       expect(rendered).to have_link('Associate goals')
@@ -169,11 +174,38 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
   end
 
   context 'when can_edit is true' do
-    it 'shows Manage Goals as submit button (name=save_and_manage_goals) that saves and redirects to manage_goals' do
+    it 'shows Add New / Associate Goals as submit button (name=save_and_manage_goals) that saves and redirects to manage_goals' do
       render
       button = Capybara.string(rendered).find('button[name="save_and_manage_goals"]')
       expect(button[:form]).to eq('prompt-edit-form')
-      expect(button).to have_content('Manage Goals')
+      expect(button).to have_content('Add New / Associate Goals')
+    end
+
+    it 'shows Close and Start Fresh submit button with confirm message' do
+      render
+      button = Capybara.string(rendered).find('button[name="save_and_close_and_start_new"]')
+      expect(button[:form]).to eq('prompt-edit-form')
+      expect(button).to have_content('Close and Start Fresh')
+      expect(button[:'data-turbo-confirm']).to include('You will not lose any data')
+      expect(button[:'data-turbo-confirm']).to include('form will clear')
+    end
+  end
+
+  context 'when can_edit is true and prompt has associated goals' do
+    before do
+      prompt_goal1
+      prompt_goal2
+      prompt.reload
+      allow(prompt).to receive(:goals).and_return(Goal.where(id: [goal1.id, goal2.id]))
+      allow(prompt).to receive(:prompt_goals).and_return([prompt_goal1, prompt_goal2])
+    end
+
+    it 'shows Check-in on / Edit all goals button with save_and_edit_goals and outline secondary style' do
+      render
+      button = Capybara.string(rendered).find('button[name="save_and_edit_goals"]')
+      expect(button[:form]).to eq('prompt-edit-form')
+      expect(button).to have_content('Check-in on / Edit all goals')
+      expect(button[:class]).to include('btn-outline-secondary')
     end
   end
 
@@ -185,9 +217,10 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
       # Submit buttons are replaced with disabled spans/buttons
       expect(rendered).to include('Save and continue editing')
       expect(rendered).to include('disabled')
-      # Manage Goals button and Associate goals link are hidden when cannot edit
+      # Add New / Associate Goals button and Associate goals link are hidden when cannot edit
       expect(rendered).not_to have_css('button[name="save_and_manage_goals"]')
       expect(rendered).not_to have_link('Associate goals')
+      expect(rendered).not_to have_css('button[name="save_and_close_and_start_new"]')
     end
   end
 
