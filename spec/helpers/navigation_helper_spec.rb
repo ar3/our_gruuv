@@ -141,11 +141,24 @@ RSpec.describe NavigationHelper, type: :helper do
       end
     end
 
-    it 'has "View Teammates" instead of "My Teammates"' do
+    it 'has Teammate Directory section with View Teammates (employee tenure), My Employees, and Employee Hierarchy' do
       structure = helper.navigation_structure
-      teammates_item = structure.find { |item| item[:label] == 'View Teammates' }
-      expect(teammates_item).to be_present
-      expect(teammates_item[:label]).to eq('View Teammates')
+      directory_section = structure.find { |item| item[:label] == 'Teammate Directory' }
+      expect(directory_section).to be_present
+      expect(directory_section[:section]).to eq('directory')
+      expect(directory_section[:icon]).to eq('bi-people')
+
+      view_teammates_item = directory_section[:items].find { |item| item[:label] == 'View Teammates' }
+      expect(view_teammates_item).to be_present
+      expect(view_teammates_item[:path]).to include('spotlight=teammate_tenures')
+
+      hierarchy_item = directory_section[:items].find { |item| item[:label] == 'Employee Hierarchy' }
+      expect(hierarchy_item).to be_present
+      expect(hierarchy_item[:path]).to include('spotlight=manager_distribution')
+      expect(hierarchy_item[:path]).to include('view=vertical_hierarchy')
+      expect(hierarchy_item[:path]).to include('status')
+      expect(hierarchy_item[:path]).to include('unassigned_employee')
+      expect(hierarchy_item[:path]).to include('assigned_employee')
     end
 
     context 'when teammate has direct reports' do
@@ -175,24 +188,27 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(manager_teammate.has_direct_reports?).to be true
       end
 
-      it 'includes "My Employees" in navigation' do
+      it 'includes "My Employees" under Teammate Directory in navigation' do
         structure = helper.visible_navigation_structure
-        # Debug: print all labels to see what's in the structure
-        labels = structure.map { |item| item[:label] }
-        expect(labels).to include('My Employees'), "Expected 'My Employees' in navigation, but found: #{labels.inspect}"
-        
-        my_employees_item = structure.find { |item| item[:label] == 'My Employees' }
+        directory_section = structure.find { |item| item[:label] == 'Teammate Directory' }
+        expect(directory_section).to be_present, "Expected 'Teammate Directory' section in navigation, but found: #{structure.map { |item| item[:label] }.inspect}"
+        item_labels = directory_section[:items].map { |item| item[:label] }
+        expect(item_labels).to include('My Employees'), "Expected 'My Employees' under Teammate Directory, but found: #{item_labels.inspect}"
+
+        my_employees_item = directory_section[:items].find { |item| item[:label] == 'My Employees' }
         expect(my_employees_item).to be_present
         expect(my_employees_item[:path]).to include('managers_view')
         expect(my_employees_item[:path]).to include("manager_teammate_id=#{manager_teammate.id}")
       end
 
-      it 'places "My Employees" after "View Teammates"' do
+      it 'places "My Employees" after "View Teammates" under Teammate Directory' do
         structure = helper.visible_navigation_structure
-        view_teammates_index = structure.find_index { |item| item[:label] == 'View Teammates' }
-        my_employees_index = structure.find_index { |item| item[:label] == 'My Employees' }
-        expect(view_teammates_index).to be_present, "Expected 'View Teammates' in navigation"
-        expect(my_employees_index).to be_present, "Expected 'My Employees' in navigation"
+        directory_section = structure.find { |item| item[:label] == 'Teammate Directory' }
+        expect(directory_section).to be_present
+        view_teammates_index = directory_section[:items].find_index { |item| item[:label] == 'View Teammates' }
+        my_employees_index = directory_section[:items].find_index { |item| item[:label] == 'My Employees' }
+        expect(view_teammates_index).to be_present, "Expected 'View Teammates' under Teammate Directory"
+        expect(my_employees_index).to be_present, "Expected 'My Employees' under Teammate Directory"
         expect(my_employees_index).to be > view_teammates_index
       end
     end
@@ -209,11 +225,13 @@ RSpec.describe NavigationHelper, type: :helper do
         helper.instance_variable_set(:@current_company_teammate, teammate_without_reports)
       end
 
-      it 'does not include "My Employees" in navigation' do
+      it 'does not include "My Employees" in Teammate Directory items' do
         # Verify teammate has no direct reports
         expect(teammate_without_reports.has_direct_reports?).to be false
         structure = helper.visible_navigation_structure
-        my_employees_item = structure.find { |item| item[:label] == 'My Employees' }
+        directory_section = structure.find { |item| item[:label] == 'Teammate Directory' }
+        expect(directory_section).to be_present
+        my_employees_item = directory_section[:items]&.find { |item| item[:label] == 'My Employees' }
         expect(my_employees_item).to be_nil
       end
     end
@@ -302,6 +320,80 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(ogo_index).to eq(my_checkin_index + 1)
         expect(ogo_index).to be < prompts_index
       end
+    end
+  end
+
+  describe '#nav_item_active?' do
+    let(:request_double) do
+      double('request').tap do |req|
+        allow(req).to receive(:path).and_return('/organizations/1/observations')
+        allow(req).to receive(:query_parameters).and_return({})
+      end
+    end
+
+    before do
+      allow(helper).to receive(:request).and_return(request_double)
+    end
+
+    context 'when the link has no query parameters' do
+      it 'is active when path matches and current request has no query params' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/observations')
+        allow(request_double).to receive(:query_parameters).and_return({})
+        expect(helper.nav_item_active?('/organizations/1/observations')).to be true
+      end
+
+      it 'is active when path matches and current request has query params' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/observations')
+        allow(request_double).to receive(:query_parameters).and_return('view' => 'wall', 'privacy' => 'public')
+        expect(helper.nav_item_active?('/organizations/1/observations')).to be true
+      end
+
+      it 'is active when current path is a subpath of the link path' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/observations/123')
+        allow(request_double).to receive(:query_parameters).and_return({})
+        expect(helper.nav_item_active?('/organizations/1/observations')).to be true
+      end
+
+      it 'is not active when path does not match' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/goals')
+        expect(helper.nav_item_active?('/organizations/1/observations')).to be false
+      end
+    end
+
+    context 'when the link has query parameters' do
+      it 'is active when path and query params match' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/observations')
+        allow(request_double).to receive(:query_parameters).and_return('view' => 'wall', 'privacy' => 'public')
+        expect(helper.nav_item_active?('/organizations/1/observations?view=wall&privacy=public')).to be true
+      end
+
+      it 'is active when path and query params match (different param order)' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/observations')
+        allow(request_double).to receive(:query_parameters).and_return('privacy' => 'public', 'view' => 'wall')
+        expect(helper.nav_item_active?('/organizations/1/observations?view=wall&privacy=public')).to be true
+      end
+
+      it 'is not active when path matches but current request has no query params' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/observations')
+        allow(request_double).to receive(:query_parameters).and_return({})
+        expect(helper.nav_item_active?('/organizations/1/observations?view=wall')).to be false
+      end
+
+      it 'is not active when path matches but query params differ' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/observations')
+        allow(request_double).to receive(:query_parameters).and_return('view' => 'grid')
+        expect(helper.nav_item_active?('/organizations/1/observations?view=wall')).to be false
+      end
+
+      it 'is not active when path matches but link has extra params not in request' do
+        allow(request_double).to receive(:path).and_return('/organizations/1/observations')
+        allow(request_double).to receive(:query_parameters).and_return('view' => 'wall')
+        expect(helper.nav_item_active?('/organizations/1/observations?view=wall&privacy=public')).to be false
+      end
+    end
+
+    it 'returns false when path is nil' do
+      expect(helper.nav_item_active?(nil)).to be false
     end
   end
 end

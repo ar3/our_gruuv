@@ -69,7 +69,7 @@
                   %li
                     %hr.dropdown-divider
                 - if current_organization
-                  %li= link_to "View Teammates", organization_employees_path(current_organization), class: "dropdown-item"
+                  %li= link_to "View Teammates", organization_employees_path(current_organization, spotlight: 'teammate_tenures'), class: "dropdown-item"
                   - if current_organization && policy(current_organization).manage_employment?
                     %li= link_to "Check-ins Health", organization_check_ins_health_path(current_organization), class: "dropdown-item"
                   - if current_company_teammate&.has_direct_reports?

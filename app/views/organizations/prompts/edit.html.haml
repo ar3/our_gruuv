@@ -11,9 +11,8 @@
     %h1.mb-0.me-2
       %i.bi.bi-file-text.me-2
       Edit #{@prompt_template.title} (#{@prompt.company_teammate.person.casual_name})
-    .d-flex.gap-2
       - if view_mode == 'split'
-        %span.badge.bg-primary Split View
+        %span.badge.bg-primary{style: "display:none;"} Split View
       - else
         %span.badge.bg-secondary Vertical View
 

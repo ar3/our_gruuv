@@ -200,6 +200,18 @@ RSpec.describe 'Vertical Navigation', type: :request do
       end
     end
     
+    context 'when on a page within Teammate Directory section' do
+      it 'expands the Teammate Directory section when on employees index with View Teammates params' do
+        get organization_employees_path(organization, spotlight: 'teammate_tenures')
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('id="navSectionDirectory"')
+        directory_div = response.body[/<div[^>]*id="navSectionDirectory"[^>]*>/]
+        expect(directory_div).to be_present
+        expect(directory_div).to include('class="collapse show"')
+      end
+    end
+
     context 'when on a page within Collab section' do
       before do
         org_policy_double = double(
@@ -334,6 +346,65 @@ RSpec.describe 'Vertical Navigation', type: :request do
     end
   end
   
+  describe 'active state and query parameters' do
+    before do
+      org_policy_double = double(
+        show?: true, manage_employment?: true, view_prompts?: true, view_prompt_templates?: true,
+        view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true,
+        view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true
+      )
+      company_policy_double = double(
+        show?: true, manage_employment?: true, view_prompts?: true, view_prompt_templates?: true,
+        view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true,
+        view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true,
+        view_feedback_requests?: true, customize_company?: true
+      )
+      policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
+      highlights_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+      eligibility_policy_double = double(index?: true)
+      allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
+        case record
+        when Organization
+          record.company? ? company_policy_double : org_policy_double
+        when :highlights
+          highlights_policy_double
+        when :eligibility_requirement
+          eligibility_policy_double
+        else
+          policy_double
+        end
+      end
+    end
+
+    it 'marks nav link with query params as active only when current URL params match' do
+      highlights_path = organization_observations_path(
+        organization,
+        privacy: %w[public_to_company public_to_world],
+        spotlight: 'most_observed',
+        view: 'wall'
+      )
+      get highlights_path
+      expect(response).to have_http_status(:success)
+      # The "Organization Highlights" link (with view=wall, spotlight=most_observed, privacy) should be active
+      expect(response.body).to include('navSectionObservations_ogo')
+      # Link with view=wall in href should have active class (order of attributes may vary)
+      expect(response.body).to match(/<a(?=[^>]*href="[^"]*view=wall[^"]*")(?=[^>]*class="[^"]*active[^"]*")[^>]*>/)
+    end
+
+    it 'does not mark parameterized nav link as active when current URL has different or no params' do
+      get organization_observations_path(organization)
+      expect(response).to have_http_status(:success)
+      # The "Organization Highlights" link has view=wall&spotlight=most_observed&privacy=...
+      # That link should NOT be active when we are on observations index with no params.
+      # Find the Highlights link (href with view=wall); attribute order may vary.
+      highlights_link_re = /<a[^>]*href="[^"]*view=wall[^"]*"[^>]*class="([^"]*)"[^>]*>|<a[^>]*class="([^"]*)"[^>]*href="[^"]*view=wall[^"]*"[^>]*>/
+      match = response.body.match(highlights_link_re)
+      expect(match).to be_present, 'Expected to find Organization Highlights link in nav'
+      class_attr = match[1] || match[2]
+      expect(class_attr).not_to include('active'), 'Parameterized Highlights link should not be active when on observations without matching params'
+    end
+  end
+
   describe 'header links' do
     it 'links top bar header to about me page' do
       get dashboard_organization_path(organization)

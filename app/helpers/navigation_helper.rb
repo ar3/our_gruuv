@@ -72,6 +72,39 @@ module NavigationHelper
         ]
       },
       {
+        label: 'Teammate Directory',
+        icon: 'bi-people',
+        section: 'directory',
+        items: [
+          {
+            label: 'View Teammates',
+            icon: 'bi-people',
+            path: organization_employees_path(current_organization, spotlight: 'teammate_tenures'),
+            policy_check: -> { policy(Organization).show? },
+            coming_soon: false
+          },
+          {
+            label: 'My Employees',
+            icon: 'bi-person-badge',
+            path: organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'manager_lite'),
+            policy_check: -> { current_company_teammate&.has_direct_reports? && policy(Organization).show? },
+            coming_soon: false
+          },
+          {
+            label: 'Employee Hierarchy',
+            icon: 'bi-diagram-3',
+            path: organization_employees_path(
+              current_organization,
+              spotlight: 'manager_distribution',
+              status: %w[unassigned_employee assigned_employee],
+              view: 'vertical_hierarchy'
+            ),
+            policy_check: -> { policy(Organization).show? },
+            coming_soon: false
+          }
+        ]
+      },
+      {
         label: company_label_plural('prompt', 'Prompts'),
         icon: 'bi-journal-text',
         path: organization_prompts_path(current_organization),
@@ -84,20 +117,6 @@ module NavigationHelper
         path: organization_goals_path(current_organization),
         section: nil,
         policy_check: -> { policy(current_company).view_goals? }
-      },
-      {
-        label: 'View Teammates',
-        icon: 'bi-people',
-        path: organization_employees_path(current_organization),
-        section: nil,
-        policy_check: -> { policy(Organization).show? }
-      },
-      {
-        label: 'My Employees',
-        icon: 'bi-person-badge',
-        path: organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'manager_lite'),
-        section: nil,
-        policy_check: -> { current_company_teammate&.has_direct_reports? && policy(Organization).show? }
       },
       {
         label: 'Celebrate Milestones',
@@ -315,10 +334,23 @@ module NavigationHelper
     ]
   end
   
-  # Check if a navigation item is active
+  # Check if a navigation item is active.
+  # - Link without query params: active when path matches (or path prefix), regardless of current request query.
+  # - Link with query params: active only when path matches and current request query params equal the link's.
   def nav_item_active?(path)
     return false unless path
-    current_page?(path) || request.path.start_with?(path.to_s.split('?').first)
+
+    path_str = path.to_s
+    path_only = path_str.split('?').first
+    link_query = path_str.include?('?') ? path_str.split('?', 2).last : nil
+
+    path_match = request.path == path_only || request.path.start_with?("#{path_only}/")
+
+    if link_query.blank?
+      path_match
+    else
+      path_match && nav_query_params_match?(link_query, request)
+    end
   end
   
   # Check if a section has any active items
@@ -374,6 +406,15 @@ module NavigationHelper
         end
       end
     end.compact
+  end
+
+  private
+
+  def nav_query_params_match?(link_query, request)
+    # Use parse_nested_query so array params (e.g. privacy[]=a&privacy[]=b) match request.query_parameters
+    link_params = Rack::Utils.parse_nested_query(link_query)
+    request_params = request.query_parameters
+    link_params == request_params
   end
 end
 

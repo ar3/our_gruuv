@@ -12,13 +12,13 @@
         
         .row
           .col-md-3
-            %small.text-muted Department/Team(s):
+            %small.text-muted Team(s):
             %br
             = teammate_organization_display(teammate)
           .col-md-3
-            %small.text-muted Status:
+            %small.text-muted Teammate for:
             %br
-            = employment_status_badge(teammate)
+            = employment_status_display(teammate, @organization)
           .col-md-3
             %small.text-muted Title:
             %br

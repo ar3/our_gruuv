@@ -10,6 +10,26 @@ module TeammateHelper
     end
   end
 
+  # For list view: active employees show tenure text ("Org teammate for X"); others show badge.
+  def employment_status_display(teammate, organization)
+    status = TeammateStatus.new(teammate)
+    is_active_employee = status.status.in?([:assigned_employee, :unassigned_employee])
+    start_date = teammate.first_employed_at
+
+    if is_active_employee && start_date && organization
+      org_name = organization.display_name
+      duration = time_ago_in_words(start_date)
+      tooltip_date = format_date_in_user_timezone(start_date, nil, format: "%B %d, %Y")
+      content_tag :span,
+                  "#{duration}",
+                  class: "text-muted",
+                  "data-bs-toggle" => "tooltip",
+                  "data-bs-title" => tooltip_date
+    else
+      employment_status_badge(teammate)
+    end
+  end
+
   def employment_status_progress_bar(teammate)
     status = TeammateStatus.new(teammate)
     
