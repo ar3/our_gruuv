@@ -1,0 +1,66 @@
+- content_for :title, "Award Points"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-gift.me-2
+      Award Points
+
+- content_for :go_back_link do
+  = link_to organization_highlights_rewards_bank_awards_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Bank Awards
+
+.row.justify-content-center
+  .col-lg-8
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-send.me-2
+          Award Points from Company Bank
+
+      .card-body
+        = form_with url: organization_highlights_rewards_bank_awards_path(@organization), scope: :bank_award, local: true, class: "needs-validation" do |f|
+          .mb-4
+            = f.label :recipient_id, "Recipient", class: "form-label fw-semibold"
+            - if @recipient
+              .form-control-plaintext
+                = @recipient.person.display_name
+                = f.hidden_field :recipient_id, value: @recipient.id
+            - else
+              = f.select :recipient_id, options_for_select(@teammates.map { |t| [t.person.display_name, t.id] }), { prompt: "Select a teammate..." }, class: "form-select", required: true
+            %small.form-text.text-muted
+              Choose which teammate will receive the points
+
+          .row.mb-4
+            .col-md-6
+              = f.label :points_to_give, "Points to Give", class: "form-label fw-semibold"
+              .input-group
+                = f.number_field :points_to_give, class: "form-control", min: 0, step: 0.5, placeholder: "0"
+                %span.input-group-text points
+              %small.form-text.text-muted
+                Points the recipient can give to others
+
+            .col-md-6
+              = f.label :points_to_spend, "Points to Spend", class: "form-label fw-semibold"
+              .input-group
+                = f.number_field :points_to_spend, class: "form-control", min: 0, step: 0.5, placeholder: "0"
+                %span.input-group-text points
+              %small.form-text.text-muted
+                Points the recipient can redeem for rewards
+
+          .mb-4
+            = f.label :reason, "Reason", class: "form-label fw-semibold"
+            = f.text_area :reason, class: "form-control", rows: 3, placeholder: "Why are you awarding these points?", required: true
+            %small.form-text.text-muted
+              This will be visible to the recipient
+
+          .alert.alert-info
+            %i.bi.bi-info-circle.me-2
+            %strong Note:
+            Points are awarded from the company bank. There is no limit to how many points can be awarded.
+            The recipient will see the award in their transaction history.
+
+          .d-flex.justify-content-end.gap-2
+            = link_to "Cancel", organization_highlights_rewards_bank_awards_path(@organization), class: "btn btn-outline-secondary"
+            = f.submit "Award Points", class: "btn btn-primary"

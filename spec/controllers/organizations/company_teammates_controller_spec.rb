@@ -247,6 +247,44 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
     end
   end
 
+  describe 'GET #highlights_points' do
+    context 'when user is permitted' do
+      before do
+        allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_highlights_points?).and_return(true)
+      end
+
+      it 'renders the highlights_points page successfully' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        get :highlights_points, params: { organization_id: organization.id, id: employee_teammate.id }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:highlights_points)
+      end
+
+      it 'assigns ledger, transactions, person and pagy' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        get :highlights_points, params: { organization_id: organization.id, id: employee_teammate.id }
+        expect(assigns(:teammate)).to eq(employee_teammate)
+        expect(assigns(:person)).to eq(employee)
+        expect(assigns(:ledger)).to be_a(HighlightsPointsLedger)
+        expect(assigns(:ledger).company_teammate).to eq(employee_teammate)
+        expect(assigns(:transactions)).to be_a(ActiveRecord::Relation)
+        expect(assigns(:pagy)).to be_a(Pagy)
+      end
+    end
+
+    context 'when user is not self and not in managerial hierarchy' do
+      before do
+        allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_highlights_points?).and_return(false)
+      end
+
+      it 'denies access' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        get :highlights_points, params: { organization_id: organization.id, id: employee_teammate.id }
+        expect(response).to redirect_to(root_path)
+      end
+    end
+  end
+
   describe 'GET #permissions' do
     context 'when user has update_permission permissions' do
       before do
@@ -277,12 +315,16 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         # Create another teammate with employment management
         other_person = create(:person)
         other_teammate = create(:teammate, person: other_person, organization: organization, can_manage_employment: true)
+        highlights_person = create(:person)
+        highlights_teammate = create(:teammate, person: highlights_person, organization: organization, can_manage_highlights_rewards: true)
         
         get :permissions, params: { organization_id: organization.id, id: employee_teammate.id }
         
         expect(assigns(:who_has_employment_management)).to include(manager_teammate)
         expect(assigns(:who_has_employment_management)).to include(other_teammate)
         expect(assigns(:who_has_employment_management)).not_to include(employee_teammate)
+        expect(assigns(:who_has_highlights_rewards_management)).to include(highlights_teammate)
+        expect(assigns(:who_has_highlights_rewards_management)).not_to include(employee_teammate)
       end
     end
 
@@ -306,7 +348,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_maap: 'true',
           can_manage_prompts: 'false',
           can_manage_departments_and_teams: 'true',
-          can_customize_company: 'true'
+          can_customize_company: 'true',
+          can_manage_highlights_rewards: 'true'
         }
         
         expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
@@ -321,7 +364,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_maap: false,
           can_manage_prompts: false,
           can_manage_departments_and_teams: false,
-          can_customize_company: false
+          can_customize_company: false,
+          can_manage_highlights_rewards: false
         )
         
         post :update_permissions, params: {
@@ -332,7 +376,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_maap: 'false',
           can_manage_prompts: 'true',
           can_manage_departments_and_teams: 'false',
-          can_customize_company: 'true'
+          can_customize_company: 'true',
+          can_manage_highlights_rewards: 'true'
         }
         
         employee_teammate.reload
@@ -342,6 +387,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         expect(employee_teammate.can_manage_prompts).to eq(true)
         expect(employee_teammate.can_manage_departments_and_teams).to eq(false)
         expect(employee_teammate.can_customize_company).to eq(true)
+        expect(employee_teammate.can_manage_highlights_rewards).to eq(true)
       end
 
       it 'handles setting permissions to false' do
@@ -352,7 +398,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_maap: true,
           can_manage_prompts: true,
           can_manage_departments_and_teams: true,
-          can_customize_company: true
+          can_customize_company: true,
+          can_manage_highlights_rewards: true
         )
         
         post :update_permissions, params: {
@@ -363,7 +410,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_maap: 'false',
           can_manage_prompts: 'false',
           can_manage_departments_and_teams: 'false',
-          can_customize_company: 'false'
+          can_customize_company: 'false',
+          can_manage_highlights_rewards: 'false'
         }
         
         employee_teammate.reload
@@ -373,6 +421,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         expect(employee_teammate.can_manage_prompts).to eq(false)
         expect(employee_teammate.can_manage_departments_and_teams).to eq(false)
         expect(employee_teammate.can_customize_company).to eq(false)
+        expect(employee_teammate.can_manage_highlights_rewards).to eq(false)
       end
     end
 

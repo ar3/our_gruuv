@@ -371,6 +371,17 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
       expect(results).not_to include(direct_report2_teammate)
     end
 
+    it 'filters by highlights_rewards permission' do
+      direct_report1_teammate.update!(can_manage_highlights_rewards: true)
+      direct_report2_teammate.update!(can_manage_highlights_rewards: false)
+      
+      query = CompanyTeammatesQuery.new(organization, { permission: 'highlights_rewards' })
+      results = query.call
+      
+      expect(results).to include(direct_report1_teammate)
+      expect(results).not_to include(direct_report2_teammate)
+    end
+
       it 'combines manager filter with organization filter' do
       child_org = create(:organization, :company)
       child_teammate = create(:company_teammate, person: direct_report1, organization: child_org)

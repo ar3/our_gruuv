@@ -149,6 +149,20 @@ module NavigationHelper
         section: 'admin',
         items: [
           {
+            label: 'Bank Awards',
+            icon: 'bi-bank',
+            path: organization_highlights_rewards_bank_awards_path(current_organization),
+            policy_check: -> { policy(:highlights).award_bank_points? },
+            coming_soon: false
+          },
+          {
+            label: 'Rewards',
+            icon: 'bi-gift',
+            path: organization_highlights_rewards_rewards_path(current_organization),
+            policy_check: -> { policy(:highlights).view_rewards_catalog? },
+            coming_soon: false
+          },
+          {
             label: 'Eligibility Requirements 🚧 Beta',
             icon: 'bi-check2-circle',
             path: organization_eligibility_requirements_path(current_organization),

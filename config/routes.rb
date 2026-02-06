@@ -230,6 +230,7 @@ Rails.application.routes.draw do
         post :update_assignments
         get :assignment_tenure_check_in_bypass
         patch :update_assignment_tenure_check_in_bypass
+        get :highlights_points
       end
       
       # Unified check-ins page (spreadsheet-style giant form)
@@ -395,6 +396,23 @@ Rails.application.routes.draw do
       end
     end
     
+    # Highlights Rewards management
+    namespace :highlights_rewards, module: 'organizations/highlights_rewards' do
+      resources :transactions, only: [:index]
+      resources :bank_awards, only: [:index, :new, :create]
+      resources :rewards, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
+        member do
+          post :restore
+        end
+      end
+      resources :redemptions, only: [:index, :show, :new, :create] do
+        member do
+          post :fulfill
+          post :cancel
+        end
+      end
+    end
+
     # Insights analytics
     namespace :insights, module: :organizations do
       get 'seats_titles_positions', to: 'insights#seats_titles_positions'

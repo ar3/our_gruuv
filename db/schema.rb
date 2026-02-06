@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_04_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_05_111258) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -477,6 +477,80 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_04_120000) do
     t.index ["started_at"], name: "index_goals_on_started_at"
   end
 
+  create_table "highlights_points_ledgers", force: :cascade do |t|
+    t.bigint "company_teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.decimal "points_to_give", precision: 10, scale: 1, default: "0.0", null: false
+    t.decimal "points_to_spend", precision: 10, scale: 1, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id", "organization_id"], name: "index_kudos_ledgers_on_teammate_and_organization", unique: true
+    t.index ["organization_id"], name: "index_highlights_points_ledgers_on_organization_id"
+  end
+
+  create_table "highlights_redemptions", force: :cascade do |t|
+    t.bigint "company_teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.bigint "highlights_reward_id", null: false
+    t.decimal "points_spent", precision: 10, scale: 1, null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "fulfilled_at"
+    t.string "external_reference"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id", "status"], name: "index_highlights_redemptions_on_company_teammate_id_and_status"
+    t.index ["company_teammate_id"], name: "index_highlights_redemptions_on_company_teammate_id"
+    t.index ["external_reference"], name: "index_highlights_redemptions_on_external_reference"
+    t.index ["highlights_reward_id"], name: "index_highlights_redemptions_on_highlights_reward_id"
+    t.index ["organization_id", "status"], name: "index_highlights_redemptions_on_organization_id_and_status"
+    t.index ["organization_id"], name: "index_highlights_redemptions_on_organization_id"
+    t.index ["status"], name: "index_highlights_redemptions_on_status"
+  end
+
+  create_table "highlights_rewards", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.decimal "cost_in_points", precision: 10, scale: 1, null: false
+    t.string "reward_type", default: "gift_card", null: false
+    t.boolean "active", default: true, null: false
+    t.string "image_url"
+    t.jsonb "metadata", default: {}
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_highlights_rewards_on_deleted_at"
+    t.index ["organization_id", "active"], name: "index_highlights_rewards_on_organization_id_and_active"
+    t.index ["organization_id"], name: "index_highlights_rewards_on_organization_id"
+    t.index ["reward_type"], name: "index_highlights_rewards_on_reward_type"
+  end
+
+  create_table "highlights_transactions", force: :cascade do |t|
+    t.string "type", null: false
+    t.bigint "company_teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.decimal "points_to_give_delta", precision: 10, scale: 1, default: "0.0"
+    t.decimal "points_to_spend_delta", precision: 10, scale: 1, default: "0.0"
+    t.bigint "observation_id"
+    t.bigint "triggering_transaction_id"
+    t.bigint "company_teammate_banker_id"
+    t.text "reason"
+    t.bigint "highlights_redemption_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "observable_moment_id"
+    t.index ["company_teammate_banker_id"], name: "index_highlights_transactions_on_company_teammate_banker_id"
+    t.index ["company_teammate_id", "created_at"], name: "index_kudos_transactions_on_teammate_and_date"
+    t.index ["company_teammate_id"], name: "index_highlights_transactions_on_company_teammate_id"
+    t.index ["highlights_redemption_id"], name: "index_highlights_transactions_on_highlights_redemption_id"
+    t.index ["observable_moment_id"], name: "index_highlights_transactions_on_observable_moment_id"
+    t.index ["observation_id"], name: "index_highlights_transactions_on_observation_id"
+    t.index ["organization_id"], name: "index_highlights_transactions_on_organization_id"
+    t.index ["triggering_transaction_id"], name: "index_highlights_transactions_on_triggering_transaction_id"
+    t.index ["type"], name: "index_highlights_transactions_on_type"
+  end
+
   create_table "huddle_feedbacks", force: :cascade do |t|
     t.bigint "huddle_id", null: false
     t.integer "informed_rating"
@@ -729,7 +803,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_04_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "deleted_at"
+    t.jsonb "highlights_celebratory_config", default: {}
     t.index ["deleted_at"], name: "index_organizations_on_deleted_at"
+    t.index ["highlights_celebratory_config"], name: "index_organizations_on_highlights_celebratory_config", using: :gin
   end
 
   create_table "page_visits", force: :cascade do |t|
@@ -1048,9 +1124,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_04_120000) do
     t.boolean "can_manage_prompts"
     t.boolean "can_manage_departments_and_teams"
     t.boolean "can_customize_company", default: false
+    t.boolean "can_manage_highlights_rewards", default: false, null: false
     t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
     t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
+    t.index ["can_manage_highlights_rewards"], name: "index_teammates_on_can_manage_highlights_rewards"
     t.index ["can_manage_maap"], name: "index_teammates_on_can_manage_maap"
     t.index ["can_manage_prompts"], name: "index_teammates_on_can_manage_prompts"
     t.index ["first_employed_at", "last_terminated_at"], name: "index_teammates_on_first_employed_at_and_last_terminated_at"
@@ -1185,6 +1263,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_04_120000) do
   add_foreign_key "goal_links", "goals", column: "parent_id"
   add_foreign_key "goals", "organizations", column: "company_id"
   add_foreign_key "goals", "teammates", column: "creator_id"
+  add_foreign_key "highlights_points_ledgers", "organizations"
+  add_foreign_key "highlights_points_ledgers", "teammates", column: "company_teammate_id"
+  add_foreign_key "highlights_redemptions", "highlights_rewards"
+  add_foreign_key "highlights_redemptions", "organizations"
+  add_foreign_key "highlights_redemptions", "teammates", column: "company_teammate_id"
+  add_foreign_key "highlights_rewards", "organizations"
+  add_foreign_key "highlights_transactions", "highlights_redemptions"
+  add_foreign_key "highlights_transactions", "highlights_transactions", column: "triggering_transaction_id"
+  add_foreign_key "highlights_transactions", "observable_moments"
+  add_foreign_key "highlights_transactions", "observations"
+  add_foreign_key "highlights_transactions", "organizations"
+  add_foreign_key "highlights_transactions", "teammates", column: "company_teammate_banker_id"
+  add_foreign_key "highlights_transactions", "teammates", column: "company_teammate_id"
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "teammates"
   add_foreign_key "huddle_participants", "huddles"

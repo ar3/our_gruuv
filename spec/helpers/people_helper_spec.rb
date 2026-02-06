@@ -55,6 +55,12 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Acknowledgement')
     end
 
+    it 'returns Highlight Points Mode for highlights_points action' do
+      allow(helper).to receive(:action_name).and_return('highlights_points')
+      allow(helper).to receive(:controller_name).and_return('company_teammates')
+      expect(helper.people_current_view_name).to eq('Highlight Points Mode')
+    end
+
     it 'returns Check-In for check_in action' do
       allow(helper).to receive(:action_name).and_return('check_in')
       allow(helper).to receive(:controller_name).and_return('people')

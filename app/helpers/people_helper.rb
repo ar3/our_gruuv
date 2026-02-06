@@ -141,6 +141,11 @@ module PeopleHelper
     if controller_name == 'position' && action_name == 'show'
       return 'Seat Management Mode'
     end
+
+    # Check for highlights points (company_teammates#highlights_points)
+    if controller_name == 'company_teammates' && action_name == 'highlights_points'
+      return 'Highlight Points Mode'
+    end
     
     case action_name.downcase
     when 'show'

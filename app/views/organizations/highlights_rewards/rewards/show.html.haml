@@ -1,0 +1,74 @@
+- content_for :title, @reward.name
+
+- content_for :header do
+  .d-flex.align-items-center.justify-content-between
+    %h1.mb-0.me-2
+      %i.bi.bi-gift.me-2
+      = @reward.name
+    - if policy([:highlights, :rewards]).manage_rewards_catalog?
+      = link_to edit_organization_highlights_rewards_reward_path(@organization, @reward), class: "btn btn-outline-primary" do
+        %i.bi.bi-pencil.me-1
+        Edit
+
+- content_for :go_back_link do
+  = link_to organization_highlights_rewards_rewards_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Rewards
+
+.row
+  .col-md-4.mb-4
+    - if @reward.image_url.present?
+      %img.img-fluid.rounded{src: @reward.image_url, alt: @reward.name}
+    - else
+      .bg-secondary.rounded.d-flex.align-items-center.justify-content-center{style: "height: 200px;"}
+        %i.bi.bi-gift.display-1.text-white
+
+  .col-md-8
+    .card.mb-4
+      .card-body
+        .row.mb-3
+          .col-6
+            %label.text-muted.small Cost
+            %p.h4.mb-0.text-primary
+              = @reward.cost_in_points.to_i
+              %small points
+            %small.text-muted= number_to_currency(@reward.cost_in_dollars)
+          .col-6
+            %label.text-muted.small Type
+            %p.mb-0
+              %span.badge{class: reward_type_badge_class(@reward.reward_type)}
+                = @reward.reward_type.titleize
+
+        .mb-3
+          %label.text-muted.small Status
+          %p.mb-0
+            - if @reward.available?
+              %span.badge.bg-success Available
+            - elsif @reward.deleted?
+              %span.badge.bg-danger Archived
+            - else
+              %span.badge.bg-warning Inactive
+
+        - if @reward.description.present?
+          .mb-3
+            %label.text-muted.small Description
+            %p.mb-0= @reward.description
+
+    - if @reward.available?
+      - ledger = current_company_teammate.highlights_ledger
+      - can_afford = ledger.can_spend?(@reward.cost_in_points)
+      .card
+        .card-body
+          .d-flex.justify-content-between.align-items-center.mb-3
+            %span Your balance:
+            %strong= highlights_points_display(ledger.points_to_spend)
+
+          - if can_afford
+            = link_to new_organization_highlights_rewards_redemption_path(@organization, reward_id: @reward), 
+              class: "btn btn-success btn-lg w-100" do
+              %i.bi.bi-cart-check.me-2
+              Redeem for #{@reward.cost_in_points.to_i} points
+          - else
+            .alert.alert-warning.mb-0
+              %i.bi.bi-exclamation-triangle.me-2
+              You need #{(@reward.cost_in_points - ledger.points_to_spend).ceil} more points to redeem this reward.

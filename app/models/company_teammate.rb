@@ -21,6 +21,12 @@ class CompanyTeammate < ApplicationRecord
 
   has_many :prompts, foreign_key: 'company_teammate_id', dependent: :destroy
 
+  # Highlights associations
+  has_one :highlights_points_ledger, foreign_key: :company_teammate_id, dependent: :destroy
+  has_many :highlights_transactions, foreign_key: :company_teammate_id, dependent: :destroy
+  has_many :highlights_redemptions, foreign_key: :company_teammate_id, dependent: :destroy
+  has_many :bank_awards_given, class_name: 'BankAwardTransaction', foreign_key: :company_teammate_banker_id, dependent: :nullify
+
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }
   validates :first_employed_at, presence: true, if: :employed?
@@ -41,6 +47,7 @@ class CompanyTeammate < ApplicationRecord
   scope :with_prompts_management, -> { where(can_manage_prompts: true) }
   scope :with_departments_and_teams_management, -> { where(can_manage_departments_and_teams: true) }
   scope :with_customize_company, -> { where(can_customize_company: true) }
+  scope :with_highlights_management, -> { where(can_manage_highlights_rewards: true) }
 
   # Employment state scopes
   scope :followers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
@@ -73,6 +80,19 @@ class CompanyTeammate < ApplicationRecord
 
   def can_customize_company?
     self[:can_customize_company] == true
+  end
+
+  def can_manage_highlights_rewards?
+    self[:can_manage_highlights_rewards] == true
+  end
+
+  def can_be_points_banker?
+    can_manage_highlights_rewards?
+  end
+
+  # Highlights helper methods
+  def highlights_ledger
+    highlights_points_ledger || create_highlights_points_ledger(organization: organization)
   end
 
   # Employment state methods
@@ -307,6 +327,12 @@ class CompanyTeammate < ApplicationRecord
     return true if person.og_admin?
     access = find_by(person: person, organization: organization)
     access&.can_customize_company? || false
+  end
+
+  def self.can_manage_highlights_rewards?(person, organization)
+    return true if person.og_admin?
+    access = find_by(person: person, organization: organization)
+    access&.can_manage_highlights_rewards? || false
   end
 
   def self.can_manage_employment_in_hierarchy?(person, organization)

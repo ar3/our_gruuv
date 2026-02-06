@@ -41,6 +41,16 @@ class CompanyTeammatePolicy < ApplicationPolicy
     audit?
   end
 
+  # Highlight Points Mode: only self or someone in the teammate's managerial hierarchy
+  def view_highlights_points?
+    return true if admin_bypass?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    return true if viewing_teammate == record
+    return true if viewing_teammate.in_managerial_hierarchy_of?(record)
+    false
+  end
+
   def manage_assignments?
     return false unless audit?
     # Additional requirement: target person must have active employment

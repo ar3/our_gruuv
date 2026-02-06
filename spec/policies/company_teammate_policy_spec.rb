@@ -97,4 +97,49 @@ RSpec.describe CompanyTeammatePolicy, type: :policy do
       end
     end
   end
+
+  describe 'view_highlights_points?' do
+    permissions :view_highlights_points? do
+      context 'when user is admin' do
+        it 'allows access via admin bypass' do
+          expect(subject).to permit(admin_pundit_user, person_teammate)
+        end
+      end
+
+      context 'when viewing own teammate record' do
+        it 'allows access' do
+          expect(subject).to permit(pundit_user, person_teammate)
+        end
+      end
+
+      context 'when viewing another teammate in same org (peer, not in hierarchy)' do
+        before do
+          person_teammate.update!(first_employed_at: 1.month.ago)
+          other_person_teammate.update!(first_employed_at: 1.month.ago)
+          create(:employment_tenure, teammate: person_teammate, company: organization)
+          create(:employment_tenure, teammate: other_person_teammate, company: organization)
+        end
+
+        it 'denies access' do
+          expect(subject).not_to permit(pundit_user, other_person_teammate)
+        end
+      end
+
+      context 'when viewer is in managerial hierarchy of record' do
+        let(:report_person) { create(:person) }
+        let(:report_teammate) { CompanyTeammate.create!(person: report_person, organization: organization) }
+
+        before do
+          person_teammate.update!(first_employed_at: 1.year.ago)
+          report_teammate.update!(first_employed_at: 6.months.ago)
+          create(:employment_tenure, teammate: person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+          create(:employment_tenure, teammate: report_teammate, company: organization, started_at: 6.months.ago, ended_at: nil, manager_teammate: person_teammate)
+        end
+
+        it 'allows manager to view report’s highlights points' do
+          expect(subject).to permit(pundit_user, report_teammate)
+        end
+      end
+    end
+  end
 end
