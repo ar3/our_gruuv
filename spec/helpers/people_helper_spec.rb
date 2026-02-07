@@ -58,7 +58,15 @@ RSpec.describe PeopleHelper, type: :helper do
     it 'returns Kudos Points Mode for kudos_points action' do
       allow(helper).to receive(:action_name).and_return('kudos_points')
       allow(helper).to receive(:controller_name).and_return('company_teammates')
+      allow(helper).to receive(:company_label_plural).with('kudos_point', 'Kudos Point').and_return('Kudos Points')
       expect(helper.people_current_view_name).to eq('Kudos Points Mode')
+    end
+
+    it 'returns custom label Mode for kudos_points when company has kudos_point preference' do
+      allow(helper).to receive(:action_name).and_return('kudos_points')
+      allow(helper).to receive(:controller_name).and_return('company_teammates')
+      allow(helper).to receive(:company_label_plural).with('kudos_point', 'Kudos Point').and_return('Stars')
+      expect(helper.people_current_view_name).to eq('Stars Mode')
     end
 
     it 'returns Check-In for check_in action' do

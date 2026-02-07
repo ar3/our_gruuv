@@ -144,7 +144,7 @@ module PeopleHelper
 
     # Check for kudos points (company_teammates#kudos_points)
     if controller_name == 'company_teammates' && action_name == 'kudos_points'
-      return 'Kudos Points Mode'
+      return "#{company_label_plural('kudos_point', 'Kudos Point')} Mode"
     end
     
     case action_name.downcase

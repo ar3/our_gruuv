@@ -116,17 +116,17 @@
       - if action_name == 'kudos_points' && controller_name == 'company_teammates'
         .dropdown-item.text-muted
           %i.bi.bi-star.me-2
-          Kudos Points Mode (Active)
+          #{company_label_plural('kudos_point', 'Kudos Point')} Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif can_view_kudos
         = link_to kudos_points_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-star.me-2
-          Kudos Points Mode
+          #{company_label_plural('kudos_point', 'Kudos Point')} Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-star.me-2
-          Kudos Points Mode
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can only view your own Kudos Points or those of people in your managerial hierarchy"}
+          #{company_label_plural('kudos_point', 'Kudos Point')} Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can only view your own #{company_label_plural('kudos_point', 'Kudos Point')} or those of people in your managerial hierarchy"}
       
     %li
       - if action_name == 'show' && controller_name == 'position'

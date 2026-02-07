@@ -37,6 +37,18 @@
 
   .row.mb-4
     .col-6
+      %h5.mb-3 Kudos Point
+      %p.text-muted.small
+        The label for the points or currency used in Kudos & Rewards (e.g. in balances, transactions, and rewards). Leave blank to use the default "Kudos Point".
+    .col-6
+      = f.text_field "preferences[kudos_point]",
+                     value: @preferences['kudos_point'],
+                     placeholder: 'Kudos Point',
+                     class: 'form-control',
+                     disabled: !can_customize
+
+  .row.mb-4
+    .col-6
       %h5.mb-3 Encourage Everyone to have a goal and an observation
       %p.text-muted.small
         When enabled, teammates viewing their own "About Me" page will see an onboarding section encouraging them to create a goal and an observation if they haven't done so yet.

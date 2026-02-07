@@ -83,5 +83,16 @@ RSpec.describe CompanyLabelHelper, type: :helper do
         expect(helper.company_label_plural('prompt', 'Prompt')).to eq('Prompts')
       end
     end
+
+    context 'with kudos_point key' do
+      it 'returns pluralized default when no preference' do
+        expect(helper.company_label_plural('kudos_point', 'Kudos Point')).to eq('Kudos Points')
+      end
+
+      it 'returns pluralized custom label when preference set' do
+        create(:company_label_preference, company: company, label_key: 'kudos_point', label_value: 'Star')
+        expect(helper.company_label_plural('kudos_point', 'Kudos Point')).to eq('Stars')
+      end
+    end
   end
 end

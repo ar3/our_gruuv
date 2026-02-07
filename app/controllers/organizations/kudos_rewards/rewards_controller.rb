@@ -15,10 +15,16 @@ class Organizations::KudosRewards::RewardsController < Organizations::KudosRewar
       .or(organization.kudos_rewards.where(active: false))
       .order(updated_at: :desc)
       .limit(10) if policy(:kudos).manage_rewards_catalog?
+
+    @rewards_return_url = params[:return_url].presence
+    @rewards_return_text = params[:return_text].presence
   end
 
   def show
     authorize :kudos, :view_rewards_catalog?
+
+    @rewards_return_url = params[:return_url].presence
+    @rewards_return_text = params[:return_text].presence
   end
 
   def new

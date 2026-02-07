@@ -270,6 +270,21 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         expect(assigns(:transactions)).to be_a(ActiveRecord::Relation)
         expect(assigns(:pagy)).to be_a(Pagy)
       end
+
+      it 'assigns kudos_return_url and kudos_return_text from params when present' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        return_url = about_me_organization_company_teammate_path(organization, employee_teammate)
+        get :kudos_points, params: { organization_id: organization.id, id: employee_teammate.id, return_url: return_url, return_text: 'Back to About Me' }
+        expect(assigns(:kudos_return_url)).to eq(return_url)
+        expect(assigns(:kudos_return_text)).to eq('Back to About Me')
+      end
+
+      it 'does not set kudos_return_url or kudos_return_text when params omitted' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        get :kudos_points, params: { organization_id: organization.id, id: employee_teammate.id }
+        expect(assigns(:kudos_return_url)).to be_blank
+        expect(assigns(:kudos_return_text)).to be_blank
+      end
     end
 
     context 'when user is not self and not in managerial hierarchy' do

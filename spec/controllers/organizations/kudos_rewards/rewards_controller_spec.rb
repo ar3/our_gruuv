@@ -22,6 +22,19 @@ RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller
         get :index, params: { organization_id: organization.id }
         expect(assigns(:rewards)).to include(reward)
       end
+
+      it 'assigns rewards_return_url and rewards_return_text from params when present' do
+        return_url = kudos_points_organization_company_teammate_path(organization, admin_teammate)
+        get :index, params: { organization_id: organization.id, return_url: return_url, return_text: 'Back to Kudos' }
+        expect(assigns(:rewards_return_url)).to eq(return_url)
+        expect(assigns(:rewards_return_text)).to eq('Back to Kudos')
+      end
+
+      it 'does not set rewards_return_url or rewards_return_text when params omitted' do
+        get :index, params: { organization_id: organization.id }
+        expect(assigns(:rewards_return_url)).to be_blank
+        expect(assigns(:rewards_return_text)).to be_blank
+      end
     end
 
     context 'as regular user' do
@@ -40,6 +53,13 @@ RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller
     it 'returns success' do
       get :show, params: { organization_id: organization.id, id: reward.id }
       expect(response).to have_http_status(:success)
+    end
+
+    it 'assigns rewards_return_url and rewards_return_text from params when present' do
+      return_url = organization_kudos_rewards_rewards_path(organization)
+      get :show, params: { organization_id: organization.id, id: reward.id, return_url: return_url, return_text: 'Back to Catalog' }
+      expect(assigns(:rewards_return_url)).to eq(return_url)
+      expect(assigns(:rewards_return_text)).to eq('Back to Catalog')
     end
   end
 

@@ -150,7 +150,7 @@ module TeammateHelper
       when 'employment_create' then 'Employment Creation'
       when 'maap_mgmt' then 'MAAP Management'
       when 'customize_company' then 'Customize Company'
-      when 'kudos_rewards' then 'Kudos Points & Rewards Management'
+      when 'kudos_rewards' then "#{company_label_plural('kudos_point', 'Kudos Point')} & Rewards Management"
       else filter_value.to_s.humanize
       end
     when 'manager_teammate_id'

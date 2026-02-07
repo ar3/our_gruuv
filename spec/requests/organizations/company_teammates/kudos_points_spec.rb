@@ -22,10 +22,10 @@ RSpec.describe 'Kudos Points Mode', type: :request do
       expect(response).to render_template(:kudos_points)
     end
 
-    it 'shows points to give and points to redeem (balance)' do
+    it 'shows kudos point labels for balance (to give and to redeem)' do
       get kudos_points_organization_company_teammate_path(organization, teammate)
-      expect(response.body).to include('Points to Give')
-      expect(response.body).to include('Points to Redeem')
+      expect(response.body).to include('Kudos Points to Give')
+      expect(response.body).to include('Kudos Points to Redeem')
     end
 
     it 'shows Transaction History section' do
@@ -43,6 +43,20 @@ RSpec.describe 'Kudos Points Mode', type: :request do
       expect(response).to have_http_status(:success)
       kudos_path = kudos_points_organization_company_teammate_path(organization, teammate)
       expect(response.body).to include(kudos_path), "View switcher should show enabled Kudos Points link for viewing teammate on own page"
+    end
+
+    it 'does not show a back link when return_url and return_text are not in query params' do
+      get kudos_points_organization_company_teammate_path(organization, teammate)
+      expect(response.body).not_to include('go-back-link')
+      expect(response.body).not_to include('Back to About Me')
+    end
+
+    it 'shows back link with given url and text when return_url and return_text are in query params' do
+      about_path = about_me_organization_company_teammate_path(organization, teammate)
+      get kudos_points_organization_company_teammate_path(organization, teammate), params: { return_url: about_path, return_text: 'Back to About Me' }
+      expect(response.body).to include('go-back-link')
+      expect(response.body).to include('Back to About Me')
+      expect(response.body).to include(about_path)
     end
   end
 

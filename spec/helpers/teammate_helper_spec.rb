@@ -384,6 +384,7 @@ RSpec.describe TeammateHelper, type: :helper do
     end
 
     it 'returns display name for kudos_rewards permission' do
+      allow(helper).to receive(:company_label_plural).with('kudos_point', 'Kudos Point').and_return('Kudos Points')
       expect(helper.filter_display_name('permission', 'kudos_rewards')).to eq('Kudos Points & Rewards Management')
     end
   end

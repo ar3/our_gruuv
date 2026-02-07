@@ -12,7 +12,7 @@
 - content_for :go_back_link do
   = link_to kudos_points_organization_company_teammate_path(@organization, current_company_teammate), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to Kudos Points
+    Back to #{company_label_plural('kudos_point', 'Kudos Point')}
 
 .card
   .card-header

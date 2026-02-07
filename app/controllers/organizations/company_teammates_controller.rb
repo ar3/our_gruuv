@@ -96,6 +96,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     total_count = transactions_scope.count
     @pagy = Pagy.new(count: total_count, page: params[:page] || 1, items: 25)
     @transactions = transactions_scope.limit(@pagy.items).offset(@pagy.offset)
+    @kudos_return_url = params[:return_url].presence
+    @kudos_return_text = params[:return_text].presence
   end
 
   def internal

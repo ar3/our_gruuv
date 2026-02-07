@@ -10,10 +10,11 @@
         %i.bi.bi-plus-circle.me-1
         Add Reward
 
-- content_for :go_back_link do
-  = link_to kudos_points_organization_company_teammate_path(@organization, current_company_teammate), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Kudos Points
+- if @rewards_return_url.present? && @rewards_return_text.present?
+  - content_for :go_back_link do
+    = link_to @rewards_return_url, class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      = @rewards_return_text
 
 - if @rewards.any?
   .row.row-cols-1.row-cols-md-2.row-cols-lg-3.g-4.mb-4
@@ -31,7 +32,7 @@
             .d-flex.justify-content-between.align-items-center
               .h4.mb-0.text-primary
                 = reward.cost_in_points.to_i
-                %small points
+                %small= company_label_plural('kudos_point', 'Kudos Point')
               %span.badge{class: reward_type_badge_class(reward.reward_type)}
                 = reward.reward_type.titleize
           .card-footer.bg-transparent
@@ -44,7 +45,7 @@
                   Redeem
                 - else
                   %i.bi.bi-lock.me-1
-                  Need #{(reward.cost_in_points - ledger.points_to_spend).ceil} more points
+                  Need #{(reward.cost_in_points - ledger.points_to_spend).ceil} more #{company_label_plural('kudos_point', 'Kudos Point').downcase}
             - else
               %span.text-muted
                 %i.bi.bi-x-circle.me-1

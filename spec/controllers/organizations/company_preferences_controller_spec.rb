@@ -34,6 +34,18 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
       expect(assigns(:preferences)['encourage_goal_and_observation']).to eq('false')
     end
 
+    it 'loads kudos_point preference with default empty value' do
+      get :edit, params: { organization_id: company.to_param }
+      expect(assigns(:preferences)).to have_key('kudos_point')
+      expect(assigns(:preferences)['kudos_point']).to eq('')
+    end
+
+    it 'loads existing kudos_point preference' do
+      create(:company_label_preference, company: company, label_key: 'kudos_point', label_value: 'Star')
+      get :edit, params: { organization_id: company.to_param }
+      expect(assigns(:preferences)['kudos_point']).to eq('Star')
+    end
+
     it 'requires customize_company permission' do
       teammate = CompanyTeammate.find_by(person: person, organization: company)
       teammate.update!(can_customize_company: false)
@@ -124,6 +136,37 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
         }
         preference = company.reload.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')
         expect(preference.label_value).to eq('true')
+      end
+
+      it 'creates kudos_point preference' do
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { kudos_point: 'Star' }
+          }
+        }.to change { company.reload.company_label_preferences.count }.by(1)
+        preference = company.company_label_preferences.find_by(label_key: 'kudos_point')
+        expect(preference.label_value).to eq('Star')
+      end
+
+      it 'updates existing kudos_point preference' do
+        create(:company_label_preference, company: company, label_key: 'kudos_point', label_value: 'Star')
+        patch :update, params: {
+          organization_id: company.to_param,
+          preferences: { kudos_point: 'Highlight' }
+        }
+        company.reload
+        expect(company.company_label_preferences.find_by(label_key: 'kudos_point').label_value).to eq('Highlight')
+      end
+
+      it 'removes kudos_point preference when value is blank' do
+        create(:company_label_preference, company: company, label_key: 'kudos_point', label_value: 'Star')
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { kudos_point: '' }
+          }
+        }.to change { company.reload.company_label_preferences.count }.by(-1)
       end
     end
 
