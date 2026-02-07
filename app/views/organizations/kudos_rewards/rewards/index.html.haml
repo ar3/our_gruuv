@@ -64,33 +64,39 @@
       %p.small.text-muted
         = link_to "Add your first reward", new_organization_kudos_rewards_reward_path(@organization)
 
-- if @inactive_rewards&.any? && policy(:kudos).manage_rewards_catalog?
-  %hr.my-4
-  .card
-    .card-header
-      %h5.mb-0
-        %i.bi.bi-archive.me-2
-        Archived Rewards
-    .card-body
-      .table-responsive
-        %table.table.table-sm.table-hover.mb-0
-          %thead
-            %tr
-              %th Name
-              %th Cost
-              %th Status
-              %th Actions
-          %tbody
-            - @inactive_rewards.each do |reward|
+- if policy(:kudos).manage_rewards_catalog?
+  - if @inactive_rewards&.any?
+    %hr.my-4
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-archive.me-2
+          Archived Rewards
+      .card-body
+        .table-responsive
+          %table.table.table-sm.table-hover.mb-0
+            %thead
               %tr
-                %td= reward.name
-                %td= reward.cost_in_points.to_i
-                %td
-                  - if reward.deleted?
-                    %span.badge.bg-danger Archived
-                  - else
-                    %span.badge.bg-warning Inactive
-                %td
-                  = link_to restore_organization_kudos_rewards_reward_path(@organization, reward), method: :post, class: "btn btn-sm btn-outline-success" do
-                    %i.bi.bi-arrow-counterclockwise.me-1
-                    Restore
+                %th Name
+                %th Cost
+                %th Status
+                %th Actions
+            %tbody
+              - @inactive_rewards.each do |reward|
+                %tr
+                  %td= reward.name
+                  %td= reward.cost_in_points.to_i
+                  %td
+                    - if reward.deleted?
+                      %span.badge.bg-danger Archived
+                    - else
+                      %span.badge.bg-warning Inactive
+                  %td
+                    = link_to restore_organization_kudos_rewards_reward_path(@organization, reward), method: :post, class: "btn btn-sm btn-outline-success" do
+                      %i.bi.bi-arrow-counterclockwise.me-1
+                      Restore
+- else
+  %hr.my-4
+  .alert.alert-light.border.text-muted.small.mb-0{role: "alert"}
+    %i.bi.bi-info-circle.me-2
+    Rewards managers can add new rewards and manage archived rewards.

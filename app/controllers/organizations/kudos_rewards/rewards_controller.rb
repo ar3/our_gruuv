@@ -7,8 +7,8 @@ class Organizations::KudosRewards::RewardsController < Organizations::KudosRewar
     authorize :kudos, :view_rewards_catalog?
 
     @rewards = organization.kudos_rewards
-      .where(deleted_at: nil)
-      .order(active: :desc, cost_in_points: :asc)
+      .active
+      .order(cost_in_points: :asc)
 
     @inactive_rewards = organization.kudos_rewards
       .where.not(deleted_at: nil)

@@ -28,6 +28,21 @@ RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller
         expect(assigns(:rewards)).to include(reward)
       end
 
+      it 'excludes archived and inactive rewards from the catalog list' do
+        active_reward = create(:kudos_reward, organization: organization, active: true, deleted_at: nil)
+        archived_reward = create(:kudos_reward, :deleted, organization: organization)
+        inactive_reward = create(:kudos_reward, :inactive, organization: organization)
+        get :index, params: { organization_id: organization.id }
+        expect(assigns(:rewards)).to contain_exactly(active_reward)
+        expect(assigns(:rewards)).not_to include(archived_reward, inactive_reward)
+      end
+
+      it 'assigns inactive_rewards for managers' do
+        archived = create(:kudos_reward, :deleted, organization: organization)
+        get :index, params: { organization_id: organization.id }
+        expect(assigns(:inactive_rewards)).to include(archived)
+      end
+
       it 'assigns rewards_return_url and rewards_return_text from params when present' do
         return_url = kudos_points_organization_company_teammate_path(organization, admin_teammate)
         get :index, params: { organization_id: organization.id, return_url: return_url, return_text: 'Back to Kudos' }
@@ -48,6 +63,11 @@ RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller
       it 'returns success' do
         get :index, params: { organization_id: organization.id }
         expect(response).to have_http_status(:success)
+      end
+
+      it 'does not assign inactive_rewards' do
+        get :index, params: { organization_id: organization.id }
+        expect(assigns(:inactive_rewards)).to be_nil
       end
     end
   end
