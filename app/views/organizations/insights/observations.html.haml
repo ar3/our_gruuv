@@ -35,11 +35,12 @@
                 %tr
                   %th Employee
                   %th Department
+                  %th.text-end Total
                   %th.text-end Kudos
                   %th.text-end Feedback
                   %th.text-end Mixed / Other
               %tbody
-                - @observer_teammates.sort_by { |ct| ct.person.display_name }.each do |teammate|
+                - @observer_teammates.sort_by { |ct| -(@total_published_unarchived_by_observer[ct.person_id] || 0) }.each do |teammate|
                   - buckets = @kudos_feedback_mixed_by_observer[teammate.person_id] || {}
                   - dept = teammate.active_employment_tenure&.position&.title&.department
                   %tr
@@ -47,6 +48,7 @@
                       Employee on... 
                       /= teammate.person.display_name
                     %td= dept&.name.presence || '—'
+                    %td.text-end= @total_published_unarchived_by_observer[teammate.person_id].to_i
                     %td.text-end= buckets[:kudos].to_i
                     %td.text-end= buckets[:feedback].to_i
                     %td.text-end= buckets[:mixed].to_i
@@ -68,10 +70,11 @@
                 %tr
                   %th Employee
                   %th Department
+                  %th.text-end Total
                   - @privacy_levels.each do |privacy|
                     %th.text-end= privacy.to_s.humanize.titleize
               %tbody
-                - @observer_teammates.sort_by { |ct| ct.person.display_name }.each do |teammate|
+                - @observer_teammates.sort_by { |ct| -(@total_published_unarchived_by_observer[ct.person_id] || 0) }.each do |teammate|
                   - counts = @privacy_counts_by_observer[teammate.person_id] || {}
                   - dept = teammate.active_employment_tenure&.position&.title&.department
                   %tr
@@ -79,6 +82,7 @@
                       Employee on... 
                       /= teammate.person.display_name
                     %td= dept&.name.presence || '—'
+                    %td.text-end= @total_published_unarchived_by_observer[teammate.person_id].to_i
                     - @privacy_levels.each do |privacy|
                       %td.text-end= counts[privacy].to_i
 

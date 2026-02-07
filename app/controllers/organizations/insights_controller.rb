@@ -104,6 +104,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       @privacy_counts_by_observer[observer_id][privacy_level] += 1
     end
 
+    # Total published unarchived observations per observer (for column and sorting)
+    @total_published_unarchived_by_observer = base_scope.group(:observer_id).count
+
     # All privacy levels for table columns (use enum order)
     @privacy_levels = Observation.privacy_levels.keys
   end
