@@ -1,5 +1,10 @@
 require 'rails_helper'
 
+# Minimal 1x1 PNG for upload specs
+REWARD_IMAGE_PNG = Base64.decode64(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+).freeze
+
 RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller do
   let(:organization) { create(:organization) }
   let(:admin_person) { create(:person) }
@@ -113,6 +118,42 @@ RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller
       post :create, params: { organization_id: organization.id, kudos_reward: { name: '' } }
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    it 'creates a reward with image_url' do
+      post :create, params: valid_params.merge(
+        kudos_reward: valid_params[:kudos_reward].merge(image_url: 'https://example.com/reward.png')
+      )
+      expect(response).to redirect_to(organization_kudos_rewards_rewards_path(organization))
+      expect(KudosReward.last.image_url).to eq('https://example.com/reward.png')
+    end
+
+    it 'creates a reward with image upload (S3 stubbed)' do
+      stubbed_url = 'https://s3.example.com/rewards/uploaded.png'
+      allow_any_instance_of(S3::ImageUploader).to receive(:upload).and_return(stubbed_url)
+      Tempfile.open(['reward', '.png']) do |tmp|
+        tmp.binmode
+        tmp.write(REWARD_IMAGE_PNG)
+        tmp.rewind
+        file = Rack::Test::UploadedFile.new(tmp.path, 'image/png')
+        post :create, params: valid_params.deep_merge(kudos_reward: { image: file })
+      end
+      expect(response).to redirect_to(organization_kudos_rewards_rewards_path(organization))
+      expect(KudosReward.last.image_url).to eq(stubbed_url)
+    end
+
+    it 'renders new when image upload fails' do
+      allow_any_instance_of(S3::ImageUploader).to receive(:upload).and_raise(StandardError.new('S3 error'))
+      Tempfile.open(['reward', '.png']) do |tmp|
+        tmp.binmode
+        tmp.write(REWARD_IMAGE_PNG)
+        tmp.rewind
+        file = Rack::Test::UploadedFile.new(tmp.path, 'image/png')
+        post :create, params: valid_params.deep_merge(kudos_reward: { image: file })
+      end
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to render_template(:new)
+      expect(assigns(:reward).errors[:image]).to be_present
+    end
   end
 
   describe 'PATCH #update' do
@@ -126,6 +167,34 @@ RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller
     it 'redirects to rewards index on success' do
       patch :update, params: { organization_id: organization.id, id: reward.id, kudos_reward: { name: 'Updated Name' } }
       expect(response).to redirect_to(organization_kudos_rewards_rewards_path(organization))
+    end
+
+    it 'updates reward with image upload (S3 stubbed)' do
+      stubbed_url = 'https://s3.example.com/rewards/updated.png'
+      allow_any_instance_of(S3::ImageUploader).to receive(:upload).and_return(stubbed_url)
+      Tempfile.open(['reward', '.png']) do |tmp|
+        tmp.binmode
+        tmp.write(REWARD_IMAGE_PNG)
+        tmp.rewind
+        file = Rack::Test::UploadedFile.new(tmp.path, 'image/png')
+        patch :update, params: { organization_id: organization.id, id: reward.id, kudos_reward: { image: file } }
+      end
+      expect(response).to redirect_to(organization_kudos_rewards_rewards_path(organization))
+      expect(reward.reload.image_url).to eq(stubbed_url)
+    end
+
+    it 'renders edit when image upload fails' do
+      allow_any_instance_of(S3::ImageUploader).to receive(:upload).and_raise(StandardError.new('S3 error'))
+      Tempfile.open(['reward', '.png']) do |tmp|
+        tmp.binmode
+        tmp.write(REWARD_IMAGE_PNG)
+        tmp.rewind
+        file = Rack::Test::UploadedFile.new(tmp.path, 'image/png')
+        patch :update, params: { organization_id: organization.id, id: reward.id, kudos_reward: { image: file } }
+      end
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to render_template(:edit)
+      expect(assigns(:reward).errors[:image]).to be_present
     end
   end
 

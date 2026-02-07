@@ -35,7 +35,19 @@ class Organizations::KudosRewards::RewardsController < Organizations::KudosRewar
   end
 
   def create
-    @reward = organization.kudos_rewards.build(reward_params)
+    @reward = organization.kudos_rewards.build(reward_params.except(:image))
+
+    if params[:kudos_reward].present? && params[:kudos_reward][:image].present?
+      begin
+        uploader = S3::ImageUploader.new
+        @reward.image_url = uploader.upload(params[:kudos_reward][:image], folder: 'rewards')
+      rescue => e
+        @reward.errors.add(:image, "failed to upload: #{e.message}")
+        flash.now[:alert] = @reward.errors.full_messages.join(', ')
+        render :new, status: :unprocessable_entity
+        return
+      end
+    end
 
     if @reward.save
       flash[:notice] = "Reward '#{@reward.name}' created successfully."
@@ -50,7 +62,21 @@ class Organizations::KudosRewards::RewardsController < Organizations::KudosRewar
   end
 
   def update
-    if @reward.update(reward_params)
+    update_params = reward_params.except(:image)
+
+    if params[:kudos_reward].present? && params[:kudos_reward][:image].present?
+      begin
+        uploader = S3::ImageUploader.new
+        update_params[:image_url] = uploader.upload(params[:kudos_reward][:image], folder: 'rewards')
+      rescue => e
+        @reward.errors.add(:image, "failed to upload: #{e.message}")
+        flash.now[:alert] = @reward.errors.full_messages.join(', ')
+        render :edit, status: :unprocessable_entity
+        return
+      end
+    end
+
+    if @reward.update(update_params)
       flash[:notice] = "Reward '#{@reward.name}' updated successfully."
       redirect_to organization_kudos_rewards_rewards_path(organization)
     else
@@ -88,7 +114,8 @@ class Organizations::KudosRewards::RewardsController < Organizations::KudosRewar
       :cost_in_points,
       :reward_type,
       :active,
-      :image_url
+      :image_url,
+      :image
     )
   end
 end

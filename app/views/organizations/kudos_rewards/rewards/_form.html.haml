@@ -1,4 +1,4 @@
-= form_with model: @reward, url: (@reward.persisted? ? organization_kudos_rewards_reward_path(@organization, @reward) : organization_kudos_rewards_rewards_path(@organization)), local: true, class: "needs-validation" do |f|
+= form_with model: @reward, url: (@reward.persisted? ? organization_kudos_rewards_reward_path(@organization, @reward) : organization_kudos_rewards_rewards_path(@organization)), local: true, class: "needs-validation", multipart: true do |f|
   .card
     .card-body
       .mb-3
@@ -24,9 +24,18 @@
           = f.select :reward_type, KudosReward::REWARD_TYPES.map { |t| [t.titleize, t] }, {}, class: "form-select"
 
       .mb-3
-        = f.label :image_url, "Image URL (optional)", class: "form-label"
+        = f.label :image, "Upload Image", class: "form-label"
+        = f.file_field :image, class: "form-control", accept: "image/*"
+        .form-text Upload an image file (any image type accepted). This will upload to S3 and replace any existing image URL.
+        - if @reward.persisted? && @reward.image_url.present?
+          .mt-2
+            %small.text-muted Current image:
+            = link_to @reward.image_url, @reward.image_url, target: "_blank", class: "ms-2"
+            = image_tag @reward.image_url, alt: "Current reward image", class: "img-thumbnail ms-2", style: "max-height: 100px;", onerror: "this.style.display='none'"
+      .mb-3
+        = f.label :image_url, "Or Image URL", class: "form-label"
         = f.url_field :image_url, class: "form-control", placeholder: "https://example.com/image.png"
-        %small.text-muted Direct link to an image
+        .form-text Optional: Alternatively, provide a direct URL to an image. Leave blank if uploading a file above.
 
       .mb-3
         .form-check
