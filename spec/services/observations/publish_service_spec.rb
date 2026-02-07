@@ -27,6 +27,13 @@ RSpec.describe Observations::PublishService do
         result = described_class.call(draft)
         expect(result).to be false
       end
+
+      it 'does not process kudos points on publish (awarded by observer in nudge)' do
+        expect {
+          described_class.call(draft)
+        }.not_to change(PointsExchangeTransaction, :count)
+        expect(PointsExchangeTransaction.exists?(observation: draft)).to be false
+      end
     end
 
     context 'with observation ratings' do

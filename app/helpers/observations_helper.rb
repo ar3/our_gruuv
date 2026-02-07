@@ -196,5 +196,20 @@ module ObservationsHelper
     list_items = other_manager_names.map { |name| "<li>#{ERB::Util.html_escape(name)}</li>" }.join
     "The following may not be notified, but they'll be able to view this:<ul class='mb-0 mt-1'>#{list_items}</ul>".html_safe
   end
+
+  # Internal (authenticated) path for a rateable (Assignment, Ability, or Aspiration).
+  # Used when linking to the resource from observation copy (e.g. nudge sentence).
+  def internal_rateable_path(organization, rateable)
+    case rateable
+    when Ability
+      organization_ability_path(organization, rateable)
+    when Assignment
+      organization_assignment_path(organization, rateable)
+    when Aspiration
+      organization_aspiration_path(organization, rateable)
+    else
+      '#'
+    end
+  end
 end
 

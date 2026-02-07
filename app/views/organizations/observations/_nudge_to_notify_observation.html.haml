@@ -2,8 +2,44 @@
   .card-body.bg-light
     .text-center.py-3.mb-3
       %h4.mb-0{ id: "share-prompt" }
-        🎉GREAT Observation... almost done! 
+        🎉GREAT Observation... almost done!
       %h6.mt-1.mb0 #{@observation.observer.casual_name} helping #{@observation.company.name} grow with one great story at a time 📖
+      %p.text-muted.small.mt-2.mb-0
+        Two optional steps: decide if any points will be awarded, then whether to announce via Slack.
+    
+    / Observation summary + points row (when eligible observees)
+    - if @observees_for_kudos.present?
+      - link_opts = { target: '_blank', rel: 'noopener noreferrer' }
+      - observee_links = @observees_for_kudos.map { |h| link_to(h[:person].casual_name, public_person_path(h[:person]), **link_opts) }
+      - observee_sentence = observee_links.size <= 1 ? safe_join(observee_links) : (safe_join(observee_links[0..-2], ', ') + ', and '.html_safe + observee_links.last)
+      - observer_link = link_to(@observation.observer.casual_name, public_person_path(@observation.observer), **link_opts)
+      - phrase_entries = @observation.rating_phrase_entries_for_sentence
+      - included_phrase = phrase_entries.any? ? ("that included ".html_safe + safe_join(phrase_entries.map { |e| e[:text_before_name].html_safe + link_to(e[:name], internal_rateable_path(@organization, e[:rateable]), **link_opts) }, ', ')) : "that shared their story"
+      - kudos_label_plural = company_label_plural('kudos_point', 'Kudos Point')
+      - if @kudos_not_yet_awarded && @observer_ledger  && !@observation.has_negative_ratings?
+        .row.mb-4
+          .col-md-4
+            %h4 Observation summary
+            %hr.my-2.mb-2.mt-2
+            %p.mb-2
+              = safe_join([observee_sentence, " were recognized in a story retold by ", observer_link, " ", included_phrase, "."], '')
+          
+            %p.mb-2
+              = safe_join([" And ", observer_link, " could reward up to ", @observer_ledger.points_to_give, " ", (@observer_ledger.points_to_give == 1 ? company_label_for('kudos_point', 'Kudos Point') : kudos_label_plural), "."], '')
+            - if @observees_for_kudos.size > 1
+              %p.small.text-muted.mt-2.mb-0
+                #{kudos_label_plural} awarded will be split equally between the observees.
+          .col-md-8
+            %h4 Award points (optional)
+            %hr.my-2.mb-2.mt-2
+            = form_with url: award_kudos_organization_observation_path(@organization, @observation), method: :post, local: true, data: { turbo: false }, html: { id: 'award_kudos_form' } do |form|
+              .d-flex.flex-wrap.align-items-center.gap-2.mb-2
+                %label.form-label.mb-0.me-1 Your banked #{kudos_label_plural} to give
+                %strong.me-2= kudos_points_display(@observer_ledger.points_to_give)
+              .d-flex.flex-wrap.align-items-center.gap-2.mb-2
+                = form.label :points_to_give, "#{kudos_label_plural} to give", class: 'form-label mb-0 me-1'
+                = form.number_field :points_to_give, class: 'form-control form-control-sm', style: 'width: 5rem;', min: 0, step: 0.5, placeholder: '0', required: true, value: nil
+                = form.submit "Send #{kudos_label_plural}", class: 'btn btn-sm btn-primary', onclick: "return confirm('Are you sure you want to send these #{kudos_label_plural}? This cannot be undone.');"
     
     .row
       / Left column - Privacy selector and view stats

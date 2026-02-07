@@ -365,6 +365,40 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       end
     end
 
+    context 'when nudge section is loaded (published, no notifications, not journal, observer)' do
+      let(:nudge_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'assigns observer_ledger for the observer' do
+        get :show, params: { organization_id: company.id, id: nudge_observation.id }
+        expect(assigns(:observer_ledger)).to be_a(KudosPointsLedger)
+        expect(assigns(:observer_ledger).company_teammate.person).to eq(observer)
+      end
+
+      it 'assigns observees_for_kudos excluding the observer' do
+        get :show, params: { organization_id: company.id, id: nudge_observation.id }
+        expect(assigns(:observees_for_kudos)).to be_present
+        expect(assigns(:observees_for_kudos).map { |h| h[:person] }).to include(observee_person)
+        expect(assigns(:observees_for_kudos).map { |h| h[:person] }).not_to include(observer)
+      end
+
+      it 'assigns kudos_not_yet_awarded true when no points exchanged yet' do
+        get :show, params: { organization_id: company.id, id: nudge_observation.id }
+        expect(assigns(:kudos_not_yet_awarded)).to be true
+      end
+
+      it 'assigns kudos_not_yet_awarded false when points already awarded' do
+        create(:points_exchange_transaction, observation: nudge_observation, company_teammate: observee_teammate, organization: company, points_to_spend_delta: 10)
+        get :show, params: { organization_id: company.id, id: nudge_observation.id }
+        expect(assigns(:kudos_not_yet_awarded)).to be false
+      end
+    end
+
     context 'managers_only privacy' do
       let(:managers_only_observation) do
         obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only)
@@ -3266,6 +3300,138 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           notify_teammate_ids: []
         }
         expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
+  end
+
+  describe 'POST #award_kudos' do
+    let(:published_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      observer_teammate # ensure observer has a teammate record
+      create(:kudos_points_ledger, company_teammate: observer_teammate, organization: company, points_to_give: 50.0, points_to_spend: 0)
+    end
+
+    context 'when observer has sufficient balance' do
+      it 'redirects with notice and creates transactions' do
+        initial_exchange = PointsExchangeTransaction.where(observation: published_observation).count
+        initial_give = ObserverGiveTransaction.where(observation: published_observation).count
+
+        post :award_kudos, params: {
+          organization_id: company.id,
+          id: published_observation.id,
+          points_to_give: '10'
+        }
+
+        expect(response).to redirect_to(organization_observation_path(company, published_observation))
+        expect(flash[:notice]).to eq('Points awarded successfully.')
+        expect(PointsExchangeTransaction.where(observation: published_observation).count).to eq(initial_exchange + published_observation.observees.count)
+        expect(ObserverGiveTransaction.where(observation: published_observation).count).to eq(initial_give + 1)
+      end
+    end
+
+    context 'when observer has insufficient balance' do
+      before do
+        observer_teammate.kudos_ledger.update!(points_to_give: 2)
+      end
+
+      it 'redirects with alert and does not create transactions' do
+        expect {
+          post :award_kudos, params: {
+            organization_id: company.id,
+            id: published_observation.id,
+            points_to_give: '10'
+          }
+        }.not_to change(PointsExchangeTransaction, :count)
+
+        expect(response).to redirect_to(organization_observation_path(company, published_observation))
+        expect(flash[:alert]).to be_present
+      end
+    end
+
+    context 'when points already awarded for this observation' do
+      before do
+        create(:points_exchange_transaction, observation: published_observation, company_teammate: observee_teammate, organization: company, points_to_spend_delta: 10)
+      end
+
+      it 'denies award_kudos (policy) and redirects with alert' do
+        expect {
+          post :award_kudos, params: {
+            organization_id: company.id,
+            id: published_observation.id,
+            points_to_give: '5'
+          }
+        }.not_to change { PointsExchangeTransaction.where(observation: published_observation).count }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
+
+    context 'when user is not the observer' do
+      let(:other_person) { create(:person) }
+
+      before do
+        sign_in_as_teammate(other_person, company)
+      end
+
+      it 'redirects with authorization error' do
+        post :award_kudos, params: {
+          organization_id: company.id,
+          id: published_observation.id,
+          points_to_give: '10'
+        }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
+
+    context 'when observation is journal' do
+      let(:journal_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observer_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'redirects with authorization error' do
+        post :award_kudos, params: {
+          organization_id: company.id,
+          id: journal_observation.id,
+          points_to_give: '10'
+        }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
+
+    context 'when points_to_give is blank' do
+      it 'redirects with alert' do
+        post :award_kudos, params: {
+          organization_id: company.id,
+          id: published_observation.id,
+          points_to_give: ''
+        }
+        expect(response).to redirect_to(organization_observation_path(company, published_observation))
+        expect(flash[:alert]).to include('Please enter points')
+      end
+    end
+
+    context 'when points_to_give is zero' do
+      it 'redirects with alert' do
+        post :award_kudos, params: {
+          organization_id: company.id,
+          id: published_observation.id,
+          points_to_give: '0'
+        }
+        expect(response).to redirect_to(organization_observation_path(company, published_observation))
         expect(flash[:alert]).to be_present
       end
     end

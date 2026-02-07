@@ -39,7 +39,7 @@ module KudosHelper
   end
 
   def kudos_points_display(points)
-    "#{points} points (#{kudos_dollar_value(points)})"
+    "#{points} #{company_label_plural('kudos_point', 'Kudos Point')}"
   end
 
   def reward_type_badge_class(reward_type)

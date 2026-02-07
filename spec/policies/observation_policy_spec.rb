@@ -1381,6 +1381,64 @@ end
     end
   end
 
+  describe '#award_kudos?' do
+    let(:published_with_observee) do
+      build(:observation, observer: observer, company: company, privacy_level: :observed_only).tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+      end
+    end
+
+    it 'allows observer when published, not journal, has eligible observees, not already awarded' do
+      policy = ObservationPolicy.new(pundit_user_observer, published_with_observee)
+      expect(policy.award_kudos?).to be true
+    end
+
+    it 'denies non-observer' do
+      policy = ObservationPolicy.new(pundit_user_observee, published_with_observee)
+      expect(policy.award_kudos?).to be false
+    end
+
+    it 'denies when observation is draft' do
+      draft_obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only, published_at: nil)
+      draft_obs.observees.build(teammate: observee_teammate)
+      draft_obs.save!
+      policy = ObservationPolicy.new(pundit_user_observer, draft_obs)
+      expect(policy.award_kudos?).to be false
+    end
+
+    it 'denies when observation is journal (observer_only)' do
+      journal_obs = build(:observation, observer: observer, company: company, privacy_level: :observer_only)
+      journal_obs.observees.build(teammate: observee_teammate)
+      journal_obs.save!
+      journal_obs.publish!
+      policy = ObservationPolicy.new(pundit_user_observer, journal_obs)
+      expect(policy.award_kudos?).to be false
+    end
+
+    it 'denies when only observee is the observer (self-only)' do
+      obs = Observation.new(
+        observer: observer,
+        company: company,
+        story: 'Test',
+        privacy_level: :observed_only,
+        observed_at: Time.current
+      )
+      obs.observees.build(teammate: observer_teammate)
+      obs.save!
+      obs.publish!
+      policy = ObservationPolicy.new(pundit_user_observer, obs)
+      expect(policy.award_kudos?).to be false
+    end
+
+    it 'denies when kudos already awarded' do
+      create(:points_exchange_transaction, observation: published_with_observee, company_teammate: observee_teammate, organization: company, points_to_spend_delta: 10)
+      policy = ObservationPolicy.new(pundit_user_observer, published_with_observee.reload)
+      expect(policy.award_kudos?).to be false
+    end
+  end
+
   describe 'soft-deleted observations' do
     let(:soft_deleted_observation) do
       build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap do |obs|

@@ -441,6 +441,13 @@
           %i.bi.bi-star.me-2
           Spotlight
       .card-body
+        - if @observation_kudos_awards.present?
+          %p.mb-2
+            %strong Awards granted:
+            - kudos_label_plural = company_label_plural('kudos_point', 'Kudos Point')
+            - link_opts = { target: '_blank', rel: 'noopener noreferrer' }
+            = safe_join(@observation_kudos_awards.map { |a| "#{a[:points]} #{(a[:points] == 1 ? company_label_for('kudos_point', 'Kudos Point') : kudos_label_plural)} to ".html_safe + link_to(a[:person].casual_name, public_person_path(a[:person]), **link_opts) }, ', '.html_safe)
+          %hr
         %p
           %strong Total Ratings: 
           = @observation.observation_ratings.count

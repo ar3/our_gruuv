@@ -66,6 +66,30 @@ module ObservationRatingFormatter
     end
   end
 
+  # Plain-text rating phrases for use in sentences (e.g. nudge copy).
+  # Returns array of strings like "An Exceptional demonstration of Collaboration".
+  # Skips N/A ratings.
+  def rating_phrases_for_sentence
+    rating_phrase_entries_for_sentence.map do |entry|
+      "#{entry[:text_before_name]}#{entry[:name]}"
+    end
+  end
+
+  # Structured rating phrase entries for building sentences with links.
+  # Returns array of hashes: { text_before_name:, rateable:, name: }.
+  # Skips N/A ratings. Use with internal_rateable_path(organization, rateable) in views.
+  def rating_phrase_entries_for_sentence
+    observation_ratings.reject { |r| r.rating.to_s == 'na' }.filter_map do |rating|
+      rateable = rating.rateable
+      next unless rateable
+      word = rating_to_word(rating.rating)
+      verb = verb_for_type(rating.rateable_type)
+      name = rateable_name(rateable)
+      article = word.start_with?('A') ? 'An' : 'A'
+      { text_before_name: "#{article} #{word} #{verb} of ", rateable: rateable, name: name }
+    end
+  end
+
   private
 
   def rating_to_word(rating_value)

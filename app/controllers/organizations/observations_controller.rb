@@ -1,5 +1,5 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :share_publicly, :share_privately]
+  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :share_publicly, :share_privately, :award_kudos]
   
 
   def index
@@ -247,6 +247,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     # Prepare privacy names for Details section (who can see this)
     prepare_privacy_selector_data
 
+    # Load observation kudos awards for Spotlight section (when points have been awarded)
+    @observation_kudos_awards = if PointsExchangeTransaction.exists?(observation: @observation)
+      PointsExchangeTransaction.for_observation(@observation).includes(company_teammate: :person).map do |t|
+        { person: t.company_teammate.person, points: t.points_to_spend_delta.to_f }
+      end
+    else
+      []
+    end
+
     # Load data for the "great observation" section (only shown when published, no notifications, not journal, and observer)
     if @observation.published? && @observation.notifications.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
       # Load organizations with kudos channels (company + descendants)
@@ -338,7 +347,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       else
         []
       end
-      
+
+      # Load data for points awarding row in nudge (observees excluding observer, observer ledger, already awarded?)
+      observer_teammate = company.teammates.find_by(person: @observation.observer)
+      @observer_ledger = observer_teammate&.kudos_ledger
+      @observees_for_kudos = @observation.observees.includes(:company_teammate).reject { |o| o.company_teammate.person_id == @observation.observer_id }.map do |o|
+        { person: o.company_teammate.person, role: "Observed" }
+      end
+      @kudos_not_yet_awarded = !PointsExchangeTransaction.exists?(observation: @observation)
+
       # Load page visit statistics from both show page and public permalink page
       @page_visit_stats = Observations::PageVisitStatsService.call(
         observation: @observation,
@@ -967,6 +984,37 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     redirect_to organization_observation_path(organization, @observation), 
                 notice: 'Notifications sent successfully'
+  end
+
+  def award_kudos
+    authorize @observation, :award_kudos?
+
+    points_total = params[:points_to_give].to_s.strip
+    if points_total.blank?
+      redirect_to organization_observation_path(organization, @observation), alert: 'Please enter points to give.'
+      return
+    end
+
+    points_value = points_total.to_f
+    if points_value <= 0
+      redirect_to organization_observation_path(organization, @observation), alert: 'Points to give must be greater than zero.'
+      return
+    end
+
+    # Normalize to 0.5 increments (round up)
+    points_value = (points_value * 2).ceil / 2.0
+    if points_value <= 0
+      redirect_to organization_observation_path(organization, @observation), alert: 'Points to give must be greater than zero.'
+      return
+    end
+
+    result = Kudos::AwardObservationPointsFromObserverService.call(observation: @observation, points_total: points_value)
+
+    if result.ok?
+      redirect_to organization_observation_path(organization, @observation), notice: 'Points awarded successfully.'
+    else
+      redirect_to organization_observation_path(organization, @observation), alert: result.error
+    end
   end
 
   # Public action methods (must be before private keyword)

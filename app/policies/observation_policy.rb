@@ -103,6 +103,16 @@ class ObservationPolicy < ApplicationPolicy
     viewing_teammate.person == record.observer
   end
 
+  def award_kudos?
+    return false unless viewing_teammate.present?
+    return false unless viewing_teammate.person == record.observer
+    return false unless record.published?
+    return false if record.privacy_level == 'observer_only'
+    return false if PointsExchangeTransaction.exists?(observation: record)
+    # Must have at least one observee who is not the observer
+    record.observees.joins(:company_teammate).where.not(teammates: { person_id: record.observer_id }).exists?
+  end
+
   def journal?
     index?
   end

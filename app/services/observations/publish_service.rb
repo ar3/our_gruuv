@@ -12,37 +12,19 @@ module Observations
       # Remove all unrated (na) ratings before publishing
       @observation.observation_ratings.neutral.destroy_all
       
-      # Set published_at timestamp (this will trigger validation)
-      @observation.update!(published_at: Time.current)
-      
-      # Enforce privacy level if needed
-      privacy_changed = PrivacyLevelEnforcementService.call(@observation)
-      
-      # Process kudos points (outside main flow to not block publishing)
-      process_kudos_points
-      
-      privacy_changed
-    end
-
-    private
-
-    attr_reader :observation
-
-    def process_kudos_points
-      return unless observation.observees.any?
-      
-      result = Kudos::ProcessObservationPointsService.call(observation: observation)
-      
-      if result.ok?
-        Rails.logger.info "Processed kudos points for observation #{observation.id}: #{result.value.count} transactions"
-      else
-        # Log but don't fail - kudos points are a bonus feature
-        Rails.logger.info "Kudos points not processed for observation #{observation.id}: #{result.error}"
-      end
-    rescue => e
-      # Catch any errors to prevent them from affecting the main flow
-      Rails.logger.error "Error processing kudos points: #{e.message}"
-    end
+    # Set published_at timestamp (this will trigger validation)
+    @observation.update!(published_at: Time.current)
+    
+    # Enforce privacy level if needed
+    privacy_changed = PrivacyLevelEnforcementService.call(@observation)
+    
+    # Kudos points are awarded by the observer in the nudge (award_kudos), not on publish
+    privacy_changed
   end
+
+  private
+
+  attr_reader :observation
+end
 end
 

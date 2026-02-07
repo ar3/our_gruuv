@@ -748,6 +748,61 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'POST /organizations/:organization_id/observations/:id/award_kudos' do
+    let(:observee_teammate) { create(:teammate, person: create(:person), organization: organization) }
+    let(:published_observation) do
+      obs = build(:observation, observer: person, company: organization, privacy_level: :observed_only)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      create(:kudos_points_ledger, company_teammate: teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
+    end
+
+    it 'awards points and redirects with notice' do
+      initial_exchange = PointsExchangeTransaction.where(observation: published_observation).count
+      initial_give = ObserverGiveTransaction.where(observation: published_observation).count
+
+      post award_kudos_organization_observation_path(organization, published_observation), params: { points_to_give: '10' }
+
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(organization_observation_path(organization, published_observation))
+      expect(flash[:notice]).to eq('Points awarded successfully.')
+      expect(PointsExchangeTransaction.where(observation: published_observation).count).to eq(initial_exchange + published_observation.observees.reload.count)
+      expect(ObserverGiveTransaction.where(observation: published_observation).count).to eq(initial_give + 1)
+    end
+
+    context 'when observer has insufficient balance' do
+      before do
+        teammate.kudos_ledger.update!(points_to_give: 2)
+      end
+
+      it 'redirects with alert and does not create transactions' do
+        expect {
+          post award_kudos_organization_observation_path(organization, published_observation), params: { points_to_give: '10' }
+        }.not_to change(PointsExchangeTransaction, :count)
+
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
+    end
+
+    context 'when points already awarded' do
+      before do
+        create(:points_exchange_transaction, observation: published_observation, company_teammate: observee_teammate, organization: organization, points_to_spend_delta: 10)
+      end
+
+      it 'redirects with alert' do
+        post award_kudos_organization_observation_path(organization, published_observation), params: { points_to_give: '5' }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
+    end
+  end
+
   describe 'CSRF token in forms' do
     context 'for kudos observation form' do
       let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
