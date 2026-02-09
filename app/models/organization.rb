@@ -337,10 +337,10 @@ class Organization < ApplicationRecord
     end
   end
 
-  # Kudos configuration methods
+  # Kudos configuration methods (stored in kudos_points_economy_config)
   def kudos_celebratory_points_for(event_type)
-    return nil unless kudos_celebratory_config.present?
-    kudos_celebratory_config[event_type.to_s] || {}
+    return nil unless kudos_points_economy_config.present?
+    kudos_points_economy_config[event_type.to_s] || {}
   end
 
   # pg_search configuration

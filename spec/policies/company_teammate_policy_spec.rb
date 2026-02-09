@@ -140,6 +140,19 @@ RSpec.describe CompanyTeammatePolicy, type: :policy do
           expect(subject).to permit(pundit_user, report_teammate)
         end
       end
+
+      context 'when viewer has manage_employment permission' do
+        before do
+          person_teammate.update!(first_employed_at: 1.month.ago, can_manage_employment: true)
+          other_person_teammate.update!(first_employed_at: 1.month.ago)
+          create(:employment_tenure, teammate: person_teammate, company: organization)
+          create(:employment_tenure, teammate: other_person_teammate, company: organization)
+        end
+
+        it 'allows viewing any teammate’s kudos points page (peer not in hierarchy)' do
+          expect(subject).to permit(pundit_user, other_person_teammate)
+        end
+      end
     end
   end
 end

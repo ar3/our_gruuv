@@ -273,6 +273,36 @@ RSpec.describe NavigationHelper, type: :helper do
       end
     end
 
+    describe 'Kudos Center section' do
+      it 'includes Kudos Points Center section above Admin' do
+        structure = helper.navigation_structure
+        kudos_center = structure.find { |item| item[:label]&.end_with?(' Center') && item[:section] == 'kudos_center' }
+        expect(kudos_center).to be_present
+        expect(kudos_center[:section]).to eq('kudos_center')
+        expect(kudos_center[:icon]).to eq('bi-coin')
+
+        admin_index = structure.find_index { |item| item[:label] == 'Admin' }
+        kudos_index = structure.find_index { |item| item == kudos_center }
+        expect(kudos_index).to be < admin_index
+      end
+
+      it 'has My Balance, Rewards Catalog, Leader Board, Bank, and Economy items' do
+        structure = helper.navigation_structure
+        kudos_center = structure.find { |item| item[:section] == 'kudos_center' }
+        expect(kudos_center).to be_present
+        labels = kudos_center[:items].map { |item| item[:label] }
+        paths = kudos_center[:items].map { |item| item[:path].to_s }
+        expect(labels).to include('My Balance')
+        expect(labels).to include('Rewards Catalog')
+        expect(labels.any? { |l| l&.include?('Leader Board') }).to be true
+        expect(labels.any? { |l| l&.include?('Bank') }).to be true
+        expect(labels.any? { |l| l&.include?('Economy') }).to be true
+        expect(paths.any? { |p| p.include?('leaderboard') }).to be true
+        expect(paths.any? { |p| p.include?('bank_awards') }).to be true
+        expect(paths.any? { |p| p.include?('economy') }).to be true
+      end
+    end
+
     describe 'Observations (OGO) section' do
       it 'includes Observations (OGO) section in navigation structure' do
         structure = helper.navigation_structure

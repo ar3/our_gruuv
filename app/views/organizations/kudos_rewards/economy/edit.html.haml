@@ -1,0 +1,64 @@
+- content_for :title, "#{company_label_plural('kudos_point', 'Kudos Point')} Economy"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-sliders.me-2
+      #{company_label_plural('kudos_point', 'Kudos Point')} Economy
+
+- if @economy_return_url.present? && @economy_return_text.present?
+  - content_for :go_back_link do
+    = link_to @economy_return_url, class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      = @economy_return_text
+
+= form_with url: organization_kudos_rewards_economy_path(@organization), method: :patch, local: true, scope: :economy do
+  .card.mb-4
+    .card-header
+      %h5.mb-0 Bank to Manager Allowances
+    .card-body
+      %p.text-muted.small Managers can give up to the following amounts from the #{@organization.name} Bank for each observation type.
+
+      - economy_allowance_types = [['ability_milestone', 'Milestone Attainment Observations', 'When a teammate earnes a new Milestone... this is a time for celebration. This will allow the person who creates an observation associated with this moment, to give the teammate who earned it some extra points to both give and redeem.'], ['seat_change', 'Position Change Observations', 'Position changes are usually merit based. This is also a time for celebration. This will allow the person who creates an observation associated with this moment, to give the teammate who earned it some extra points to both give and redeem.'], ['check_in_completed', 'Check-In Completed Observations', 'There are those moments when a teammate takes on an assignment, or overcomes some adversary in pursuit of the ideals behind the company`s aspirational values. This is a time for celebration. This will allow the person who creates an observation associated with this moment, to give the teammate who earned it some extra points to both give and redeem.'], ['goal_check_in', 'Goal Progress Observations', 'Goals are the pulse of most companies. When a big goal is hit or a massive learning happens... this is a time for celebration. This will allow the person who creates an observation associated with this moment, to give the teammate who earned it some extra points to both give and redeem.']]
+      - economy_allowance_types.each do |key, label, sublabel|
+        .row.mb-3
+          .col-12
+            %strong= label
+            %br
+            %small.text-muted= sublabel
+          .col-md-6.mt-2
+            = label_tag "economy_#{key}_points_to_give", "To Give #{company_label_plural('kudos_point', 'Kudos Point')}", class: "form-label"
+            = number_field_tag "economy[#{key}][points_to_give]", @config.dig(key, 'points_to_give'), step: 0.5, min: 0, class: "form-control", id: "economy_#{key}_points_to_give"
+          .col-md-6.mt-2
+            = label_tag "economy_#{key}_points_to_spend", "To Redeem #{company_label_plural('kudos_point', 'Kudos Point')}", class: "form-label"
+            = number_field_tag "economy[#{key}][points_to_spend]", @config.dig(key, 'points_to_spend'), step: 0.5, min: 0, class: "form-control", id: "economy_#{key}_points_to_spend"
+
+  .card.mb-4
+    .card-header
+      %h5.mb-0 Bank Automation
+    .card-body
+      .row.mb-3
+        .col-12
+          = label_tag "economy_bank_automation_weekly_guaranteed_minimum_to_give", "Weekly Guaranteed Minimum 'To Give' Balance", class: "form-label"
+          = number_field_tag "economy[bank_automation][weekly_guaranteed_minimum_to_give]", @config['weekly_guaranteed_minimum_to_give'], step: 0.5, min: 0, class: "form-control", id: "economy_bank_automation_weekly_guaranteed_minimum_to_give"
+
+  .card.mb-4
+    .card-header
+      %h5.mb-0 Peer to Peer Rating Point Limits
+    .card-body
+      .row.mb-3
+        .col-md-6.mt-2
+          = label_tag "economy_peer_to_peer_rating_limits_exceptional_ratings_min", "Exceptional Ratings Minimum", class: "form-label"
+          = number_field_tag "economy[peer_to_peer_rating_limits][exceptional_ratings_min]", @config.dig('peer_to_peer_rating_limits', 'exceptional_ratings_min'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_exceptional_ratings_min"
+        .col-md-6.mt-2
+          = label_tag "economy_peer_to_peer_rating_limits_exceptional_ratings_max", "Exceptional Ratings Maximum", class: "form-label"
+          = number_field_tag "economy[peer_to_peer_rating_limits][exceptional_ratings_max]", @config.dig('peer_to_peer_rating_limits', 'exceptional_ratings_max'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_exceptional_ratings_max"
+      .row.mb-3
+        .col-md-6.mt-2
+          = label_tag "economy_peer_to_peer_rating_limits_solid_ratings_min", "Solid Ratings Minimum", class: "form-label"
+          = number_field_tag "economy[peer_to_peer_rating_limits][solid_ratings_min]", @config.dig('peer_to_peer_rating_limits', 'solid_ratings_min'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_solid_ratings_min"
+        .col-md-6.mt-2
+          = label_tag "economy_peer_to_peer_rating_limits_solid_ratings_max", "Solid Ratings Maximum", class: "form-label"
+          = number_field_tag "economy[peer_to_peer_rating_limits][solid_ratings_max]", @config.dig('peer_to_peer_rating_limits', 'solid_ratings_max'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_solid_ratings_max"
+
+  = submit_tag "Save economy settings", class: "btn btn-primary"

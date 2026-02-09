@@ -1,0 +1,63 @@
+- content_for :title, "#{company_label_plural('kudos_point', 'Kudos Point')} Leader Board"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-trophy.me-2
+      #{company_label_plural('kudos_point', 'Kudos Point')} Leader Board
+
+- content_for :go_back_link do
+  = link_to kudos_points_organization_company_teammate_path(@organization, current_company_teammate), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{company_label_plural('kudos_point', 'Kudos Point')}
+
+/ Timeframe selector
+.mb-4
+  .btn-group{role: "group"}
+    = link_to "Last 90 days", organization_kudos_rewards_leaderboard_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Last Year", organization_kudos_rewards_leaderboard_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "All-Time", organization_kudos_rewards_leaderboard_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+
+/ Two columns: Top 10 Gifters | Top 10 Recipients
+.row
+  .col-md-6.mb-4
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-gift.me-2
+          Top 10 Gifters
+      .card-body
+        - if @top_gifters.any?
+          %ol.list-group.list-group-numbered.list-group-flush.mb-0
+            - @top_gifters.each do |entry|
+              %li.list-group-item
+                %span{style: "white-space: nowrap;"}
+                  = link_to entry[:company_teammate].person.casual_name, internal_organization_company_teammate_path(@organization, entry[:company_teammate]), class: "text-decoration-none"
+                  gave
+                  %strong= kudos_points_display(entry[:total_given])
+                %small.text-muted.d-block.mt-1.caption-text
+                  with #{entry[:transaction_count]} #{'transaction'.pluralize(entry[:transaction_count])}
+        - else
+          %p.text-muted.mb-0 No gifters in this timeframe.
+
+  .col-md-6.mb-4
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-arrow-down-circle.me-2
+          Top 10 Recipients
+      .card-body
+        - if @top_recipients.any?
+          %ol.list-group.list-group-numbered.list-group-flush.mb-0
+            - @top_recipients.each do |entry|
+              %li.list-group-item
+                %span{style: "white-space: nowrap;"}
+                  = link_to entry[:company_teammate].person.casual_name, internal_organization_company_teammate_path(@organization, entry[:company_teammate]), class: "text-decoration-none"
+                  received
+                  %strong= kudos_points_display(entry[:total_received])
+                %small.text-muted.d-block.mt-1.caption-text
+                  - parts = ["from #{entry[:transaction_count]} #{'transaction'.pluralize(entry[:transaction_count])}", "#{entry[:from_teammates_count]} from teammates", "#{entry[:from_bank_count]} from the bank"]
+                  - parts << "#{entry[:from_bank_automation_count]} from bank automation" if entry[:from_bank_automation_count].to_i > 0
+                  = parts.join(', ').sub(/, ([^,]+)$/, ' and \1')
+        - else
+          %p.text-muted.mb-0 No recipients in this timeframe.

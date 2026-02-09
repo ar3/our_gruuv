@@ -8,6 +8,9 @@ class Organizations::KudosRewards::BankAwardsController < Organizations::KudosRe
       .includes(:company_teammate, :company_teammate_banker)
       .recent
       .limit(50)
+
+    @total_points_to_give = KudosPointsLedger.where(organization: organization).sum(:points_to_give)
+    @total_points_to_redeem = KudosPointsLedger.where(organization: organization).sum(:points_to_spend)
   end
 
   def new

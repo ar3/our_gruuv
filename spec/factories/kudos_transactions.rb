@@ -35,6 +35,13 @@ FactoryBot.define do
     points_to_spend_delta { 0.0 }
   end
 
+  factory :observer_give_transaction, parent: :kudos_transaction, class: 'ObserverGiveTransaction' do
+    type { 'ObserverGiveTransaction' }
+    association :observation
+    points_to_give_delta { -10.0 }
+    points_to_spend_delta { 0.0 }
+  end
+
   factory :points_exchange_transaction, parent: :kudos_transaction, class: 'PointsExchangeTransaction' do
     type { 'PointsExchangeTransaction' }
     association :observation

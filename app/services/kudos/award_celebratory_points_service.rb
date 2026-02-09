@@ -5,7 +5,7 @@ class Kudos::AwardCelebratoryPointsService
   def self.call(...) = new(...).call
 
   # Default point configurations for each moment type
-  # Organizations can override these in their kudos_celebratory_config
+  # Organizations can override these in their kudos_points_economy_config
   DEFAULT_CONFIGS = {
     'new_hire' => { 'points_to_give' => 50.0, 'points_to_spend' => 25.0 },
     'seat_change' => { 'points_to_give' => 25.0, 'points_to_spend' => 10.0 },

@@ -39,7 +39,8 @@ module KudosHelper
   end
 
   def kudos_points_display(points)
-    "#{points} #{company_label_plural('kudos_point', 'Kudos Point')}"
+    formatted = number_with_precision(points.to_f, strip_insignificant_zeros: true)
+    "#{formatted} #{company_label_plural('kudos_point', 'Kudos Point')}"
   end
 
   def reward_type_badge_class(reward_type)

@@ -55,7 +55,7 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
       end
 
       before do
-        organization.update!(kudos_celebratory_config: {
+        organization.update!(kudos_points_economy_config: {
           'new_hire' => { 'points_to_give' => 100, 'points_to_spend' => 50 }
         })
       end

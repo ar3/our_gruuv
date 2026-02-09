@@ -399,6 +399,8 @@ Rails.application.routes.draw do
     
     # Kudos Rewards management
     namespace :kudos_rewards, module: 'organizations/kudos_rewards' do
+      get 'leaderboard', to: 'leaderboard#show', as: :leaderboard
+      resource :economy, only: [:show, :edit, :update], controller: 'economy'
       resources :transactions, only: [:index]
       resources :bank_awards, only: [:index, :new, :create]
       resources :rewards, only: [:index, :show, :new, :create, :edit, :update, :destroy] do

@@ -14,6 +14,17 @@
     %i.bi.bi-arrow-left.me-2
     Back to #{company_label_plural('kudos_point', 'Kudos Point')}
 
+/ Spotlight: total points in people's ledgers
+.card.border-0.shadow-sm.mb-4
+  .card-body
+    .row.text-center
+      .col-md-6
+        .h4.text-primary= kudos_points_display(@total_points_to_give.to_f)
+        %small.text-muted Total #{company_label_plural('kudos_point', 'Kudos Point')} to Give (in people's ledgers)
+      .col-md-6
+        .h4.text-success= kudos_points_display(@total_points_to_redeem.to_f)
+        %small.text-muted Total #{company_label_plural('kudos_point', 'Kudos Point')} to Redeem (in people's ledgers)
+
 .card
   .card-header
     %h5.mb-0

@@ -203,24 +203,52 @@ module NavigationHelper
         ]
       },
       {
-        label: 'Admin',
-        icon: 'bi-gear',
-        section: 'admin',
+        label: "#{company_label_plural('kudos_point', 'Kudos Point')} Center",
+        icon: 'bi-coin',
+        section: 'kudos_center',
         items: [
           {
-            label: 'Bank Awards',
+            label: 'My Balance',
+            icon: 'bi-wallet2',
+            path: kudos_points_organization_company_teammate_path(current_organization, current_company_teammate),
+            policy_check: -> { current_company_teammate && policy(current_company_teammate).view_kudos_points? },
+            coming_soon: false
+          },
+          {
+            label: 'Rewards Catalog',
+            icon: 'bi-gift',
+            path: organization_kudos_rewards_rewards_path(current_organization),
+            policy_check: -> { policy(:kudos).view_rewards_catalog? },
+            coming_soon: false
+          },
+          {
+            label: "#{company_label_plural('kudos_point', 'Kudos Point')} Leader Board",
+            icon: 'bi-trophy',
+            path: organization_kudos_rewards_leaderboard_path(current_organization),
+            policy_check: -> { policy(:kudos).view_dashboard? },
+            coming_soon: false
+          },
+          {
+            label: "#{company_label_plural('kudos_point', 'Kudos Point')} Bank",
             icon: 'bi-bank',
             path: organization_kudos_rewards_bank_awards_path(current_organization),
             policy_check: -> { policy(:kudos).award_bank_points? },
             coming_soon: false
           },
           {
-            label: 'Rewards',
-            icon: 'bi-gift',
-            path: organization_kudos_rewards_rewards_path(current_organization),
-            policy_check: -> { policy(:kudos).view_rewards_catalog? },
+            label: "#{company_label_plural('kudos_point', 'Kudos Point')} Economy",
+            icon: 'bi-sliders',
+            path: organization_kudos_rewards_economy_path(current_organization),
+            policy_check: -> { policy(:kudos).manage_rewards? },
             coming_soon: false
-          },
+          }
+        ]
+      },
+      {
+        label: 'Admin',
+        icon: 'bi-gear',
+        section: 'admin',
+        items: [
           {
             label: 'Eligibility Requirements 🚧 Beta',
             icon: 'bi-check2-circle',

@@ -44,9 +44,10 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
         expect(result.value.count).to eq(3)
       end
 
-      it 'deducts from observer points_to_give' do
+      it 'deducts from observer points_to_give and adds recognition kickback' do
         described_class.call(observation: observation, points_total: 10)
-        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(40.0)
+        # 50 - 10 (debit) + 5 (recognition kickback 0.5 * 10) = 45
+        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(45.0)
       end
 
       it 'awards points to observee' do
@@ -70,9 +71,10 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
         expect(observee_teammate2.kudos_ledger.reload.points_to_spend).to eq(5.0)
       end
 
-      it 'deducts full total from observer' do
+      it 'deducts full total from observer and adds recognition kickback' do
         described_class.call(observation: observation, points_total: 10)
-        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(40.0)
+        # 50 - 10 (debit) + 5 (recognition kickback 0.5 * 10) = 45
+        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(45.0)
       end
     end
 

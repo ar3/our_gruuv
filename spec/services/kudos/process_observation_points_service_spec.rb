@@ -174,7 +174,7 @@ RSpec.describe Kudos::ProcessObservationPointsService do
       let(:observation) { build_observation(org: organization, observer: observer_person, observees: [observee_teammate]) }
 
       before do
-        organization.update!(kudos_celebratory_config: {
+        organization.update!(kudos_points_economy_config: {
           'observation_recognition' => {
             'points_per_observee' => 20,
             'observer_kickback_give' => 1.0

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_06_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_07_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -803,9 +803,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_06_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "deleted_at"
-    t.jsonb "kudos_celebratory_config", default: {}
+    t.jsonb "kudos_points_economy_config", default: {}
     t.index ["deleted_at"], name: "index_organizations_on_deleted_at"
-    t.index ["kudos_celebratory_config"], name: "index_organizations_on_kudos_celebratory_config", using: :gin
+    t.index ["kudos_points_economy_config"], name: "index_organizations_on_kudos_points_economy_config", using: :gin
   end
 
   create_table "page_visits", force: :cascade do |t|
