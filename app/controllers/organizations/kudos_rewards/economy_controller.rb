@@ -6,6 +6,8 @@ class Organizations::KudosRewards::EconomyController < Organizations::KudosRewar
     'seat_change' => { 'points_to_give' => '250', 'points_to_spend' => '250' },
     'check_in_completed' => { 'points_to_give' => '250', 'points_to_spend' => '250' },
     'goal_check_in' => { 'points_to_give' => '100', 'points_to_spend' => '100' },
+    'birthday' => { 'points_to_give' => '250', 'points_to_spend' => '250' },
+    'work_anniversary' => { 'points_to_give' => '250', 'points_to_spend' => '250' },
     'weekly_guaranteed_minimum_to_give' => '100',
     'peer_to_peer_rating_limits' => {
       'exceptional_ratings_min' => '30',
@@ -64,6 +66,8 @@ class Organizations::KudosRewards::EconomyController < Organizations::KudosRewar
         seat_change: [:points_to_give, :points_to_spend],
         check_in_completed: [:points_to_give, :points_to_spend],
         goal_check_in: [:points_to_give, :points_to_spend],
+        birthday: [:points_to_give, :points_to_spend],
+        work_anniversary: [:points_to_give, :points_to_spend],
         bank_automation: [:weekly_guaranteed_minimum_to_give],
         peer_to_peer_rating_limits: [:exceptional_ratings_min, :exceptional_ratings_max, :solid_ratings_min, :solid_ratings_max]
       }
@@ -71,7 +75,7 @@ class Organizations::KudosRewards::EconomyController < Organizations::KudosRewar
     raw = permitted[:economy] || {}
     config = {}
 
-    %w[ability_milestone seat_change check_in_completed goal_check_in].each do |key|
+    %w[ability_milestone seat_change check_in_completed goal_check_in birthday work_anniversary].each do |key|
       next unless raw[key].present?
       config[key] = {
         'points_to_give' => raw[key][:points_to_give].presence,

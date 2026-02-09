@@ -125,6 +125,28 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
       end
     end
 
+    context 'with birthday moment' do
+      let(:observable_moment) { create(:observable_moment, :birthday, company: organization, primary_potential_observer: recipient) }
+
+      it 'creates a celebratory award with default 250/250' do
+        result = described_class.call(observable_moment: observable_moment)
+        expect(result.ok?).to be true
+        expect(result.value.points_to_give_delta).to eq(250.0)
+        expect(result.value.points_to_spend_delta).to eq(250.0)
+      end
+    end
+
+    context 'with work_anniversary moment' do
+      let(:observable_moment) { create(:observable_moment, :work_anniversary, company: organization, primary_potential_observer: recipient) }
+
+      it 'creates a celebratory award with default 250/250' do
+        result = described_class.call(observable_moment: observable_moment)
+        expect(result.ok?).to be true
+        expect(result.value.points_to_give_delta).to eq(250.0)
+        expect(result.value.points_to_spend_delta).to eq(250.0)
+      end
+    end
+
     context 'when no associated teammate' do
       let(:employment_tenure) { create(:employment_tenure, company: organization, teammate: recipient) }
       let(:observable_moment) do

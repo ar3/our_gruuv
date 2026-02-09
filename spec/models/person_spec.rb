@@ -46,6 +46,13 @@ RSpec.describe Person, type: :model do
       expect(person).to be_valid
     end
 
+    it 'allows born_at to be set and is optional' do
+      person.born_at = 30.years.ago
+      expect(person).to be_valid
+      person.born_at = nil
+      expect(person).to be_valid
+    end
+
     it 'validates phone number uniqueness' do
       existing_person = create(:person, unique_textable_phone_number: '+1234567890')
       person.unique_textable_phone_number = '+1234567890'

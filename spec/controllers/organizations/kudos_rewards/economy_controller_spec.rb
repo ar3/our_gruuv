@@ -36,6 +36,10 @@ RSpec.describe Organizations::KudosRewards::EconomyController, type: :controller
       expect(assigns(:config)['ability_milestone']['points_to_give']).to eq('250')
       expect(assigns(:config)['weekly_guaranteed_minimum_to_give']).to eq('100')
       expect(assigns(:config)['peer_to_peer_rating_limits']['exceptional_ratings_min']).to eq('30')
+      expect(assigns(:config)['birthday']['points_to_give']).to eq('250')
+      expect(assigns(:config)['birthday']['points_to_spend']).to eq('250')
+      expect(assigns(:config)['work_anniversary']['points_to_give']).to eq('250')
+      expect(assigns(:config)['work_anniversary']['points_to_spend']).to eq('250')
     end
   end
 
@@ -48,6 +52,8 @@ RSpec.describe Organizations::KudosRewards::EconomyController, type: :controller
         economy: {
           ability_milestone: { points_to_give: '20', points_to_spend: '10' },
           seat_change: { points_to_give: '25', points_to_spend: '10' },
+          birthday: { points_to_give: '100', points_to_spend: '100' },
+          work_anniversary: { points_to_give: '150', points_to_spend: '150' },
           bank_automation: { weekly_guaranteed_minimum_to_give: '75' },
           peer_to_peer_rating_limits: { exceptional_ratings_min: '40', exceptional_ratings_max: '60', solid_ratings_min: '10', solid_ratings_max: '30' }
         }
@@ -57,6 +63,10 @@ RSpec.describe Organizations::KudosRewards::EconomyController, type: :controller
       organization.reload
       expect(organization.kudos_points_economy_config['ability_milestone']['points_to_give']).to eq('20')
       expect(organization.kudos_points_economy_config['ability_milestone']['points_to_spend']).to eq('10')
+      expect(organization.kudos_points_economy_config['birthday']['points_to_give']).to eq('100')
+      expect(organization.kudos_points_economy_config['birthday']['points_to_spend']).to eq('100')
+      expect(organization.kudos_points_economy_config['work_anniversary']['points_to_give']).to eq('150')
+      expect(organization.kudos_points_economy_config['work_anniversary']['points_to_spend']).to eq('150')
       expect(organization.kudos_points_economy_config['weekly_guaranteed_minimum_to_give']).to eq('75')
       expect(organization.kudos_points_economy_config['peer_to_peer_rating_limits']['exceptional_ratings_min']).to eq('40')
     end

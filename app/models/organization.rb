@@ -50,8 +50,11 @@ class Organization < ApplicationRecord
 
   has_many :company_label_preferences, foreign_key: 'company_id', dependent: :destroy
 
+  belongs_to :observable_moment_notifier_teammate, class_name: 'CompanyTeammate', optional: true
+
   # Validations
   validates :name, presence: true
+  validate :observable_moment_notifier_teammate_belongs_to_organization, if: -> { observable_moment_notifier_teammate_id.present? }
 
   # Scopes
   scope :ordered, -> { order(:name) }
@@ -365,5 +368,14 @@ class Organization < ApplicationRecord
 
   def archived?
     deleted_at.present?
+  end
+
+  private
+
+  def observable_moment_notifier_teammate_belongs_to_organization
+    return unless observable_moment_notifier_teammate.present?
+    return if observable_moment_notifier_teammate.organization_id == id
+
+    errors.add(:observable_moment_notifier_teammate_id, 'must belong to this organization')
   end
 end

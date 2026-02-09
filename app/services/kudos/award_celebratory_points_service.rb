@@ -11,7 +11,9 @@ class Kudos::AwardCelebratoryPointsService
     'seat_change' => { 'points_to_give' => 25.0, 'points_to_spend' => 10.0 },
     'ability_milestone' => { 'points_to_give' => 20.0, 'points_to_spend' => 10.0 },
     'check_in_completed' => { 'points_to_give' => 10.0, 'points_to_spend' => 5.0 },
-    'goal_check_in' => { 'points_to_give' => 5.0, 'points_to_spend' => 2.5 }
+    'goal_check_in' => { 'points_to_give' => 5.0, 'points_to_spend' => 2.5 },
+    'birthday' => { 'points_to_give' => 250.0, 'points_to_spend' => 250.0 },
+    'work_anniversary' => { 'points_to_give' => 250.0, 'points_to_spend' => 250.0 }
   }.freeze
 
   def initialize(observable_moment:)

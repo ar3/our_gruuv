@@ -9,7 +9,8 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
 
   def update
     authorize @company, :customize_company?
-    
+
+    update_observable_moment_notifier
     if update_preferences
       redirect_to edit_organization_company_preference_path(@organization), notice: 'Company preferences updated successfully.'
     else
@@ -41,9 +42,24 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
     }
   end
 
+  def update_observable_moment_notifier
+    return if params[:organization].blank?
+
+    permitted = params.require(:organization).permit(:observable_moment_notifier_teammate_id)
+    raw = permitted[:observable_moment_notifier_teammate_id].to_s.presence
+    new_id = raw.present? ? raw.to_i : nil
+    if new_id.present?
+      teammate = @company.teammates.find_by(id: new_id)
+      @company.observable_moment_notifier_teammate_id = teammate&.id
+    else
+      @company.observable_moment_notifier_teammate_id = nil
+    end
+    @company.save!
+  end
+
   def update_preferences
     success = true
-    
+
     params[:preferences]&.each do |key, value|
       preference = @company.company_label_preferences.find_or_initialize_by(label_key: key.to_s)
       

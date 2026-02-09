@@ -338,4 +338,19 @@ RSpec.describe Organization, type: :model do
       end
     end
   end
+
+  describe 'observable_moment_notifier_teammate' do
+    it 'allows setting a teammate that belongs to the organization' do
+      company.update!(observable_moment_notifier_teammate: teammate1)
+      expect(company.reload.observable_moment_notifier_teammate).to eq(teammate1)
+    end
+
+    it 'validates that the teammate belongs to the organization' do
+      other_company = create(:organization)
+      other_teammate = create(:teammate, organization: other_company)
+      company.observable_moment_notifier_teammate_id = other_teammate.id
+      expect(company).not_to be_valid
+      expect(company.errors[:observable_moment_notifier_teammate_id]).to include('must belong to this organization')
+    end
+  end
 end 

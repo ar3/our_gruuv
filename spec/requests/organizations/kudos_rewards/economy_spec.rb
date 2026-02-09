@@ -74,6 +74,12 @@ RSpec.describe 'Organizations::KudosRewards::Economy', type: :request do
         expect(response.body).to include('value="5"')
         expect(response.body).to include('value="25"')
       end
+
+      it 'shows Birthday Observations and Work Anniversary Observations in Bank to Manager Allowances' do
+        get edit_organization_kudos_rewards_economy_path(organization)
+        expect(response.body).to include('Birthday Observations')
+        expect(response.body).to include('Work Anniversary Observations')
+      end
     end
 
     context 'when user does not have can_manage_kudos_rewards' do

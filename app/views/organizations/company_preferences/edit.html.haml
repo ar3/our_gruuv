@@ -61,6 +61,17 @@
                       'true',
                       'false'
 
+  .row.mb-4
+    .col-6
+      %h5.mb-3 Observable Moment Notifier
+      %p.text-muted.small
+        Optional. When set, this teammate is used as the default observer for birthday and work anniversary observable moments when the teammate has no manager. Leave blank for "None".
+    .col-6
+      - teammate_options = @company.teammates.includes(:person).map { |t| [t.person.display_name, t.id] }
+      = select_tag "organization[observable_moment_notifier_teammate_id]",
+                  options_for_select(teammate_options, @company.observable_moment_notifier_teammate_id),
+                  { include_blank: 'None', class: 'form-select', disabled: !can_customize }
+
   .d-flex.justify-content-end.gap-2.mt-4.mb-4
     = link_to dashboard_organization_path(@organization), class: "btn btn-secondary" do
       Cancel

@@ -22,7 +22,9 @@ RSpec.describe ObservableMoment, type: :model do
         'seat_change' => 'seat_change',
         'ability_milestone' => 'ability_milestone',
         'check_in_completed' => 'check_in_completed',
-        'goal_check_in' => 'goal_check_in'
+        'goal_check_in' => 'goal_check_in',
+        'birthday' => 'birthday',
+        'work_anniversary' => 'work_anniversary'
       })
     end
   end
@@ -149,6 +151,16 @@ RSpec.describe ObservableMoment, type: :model do
         moment = create(:observable_moment, :ability_milestone, momentable: milestone, company: milestone.ability.company)
         expect(moment.display_name).to include('Milestone')
       end
+
+      it 'returns appropriate display name for birthday' do
+        moment = create(:observable_moment, :birthday, company: company)
+        expect(moment.display_name).to include('Birthday')
+      end
+
+      it 'returns appropriate display name for work_anniversary' do
+        moment = create(:observable_moment, :work_anniversary, company: company)
+        expect(moment.display_name).to include('Work Anniversary')
+      end
     end
     
     describe '#description' do
@@ -164,12 +176,32 @@ RSpec.describe ObservableMoment, type: :model do
         moment = create(:observable_moment, :new_hire, company: company)
         expect(moment.associated_person).to eq(moment.momentable.teammate.person)
       end
+
+      it 'returns the momentable person for birthday' do
+        moment = create(:observable_moment, :birthday, company: company)
+        expect(moment.associated_person).to eq(moment.momentable.person)
+      end
+
+      it 'returns the momentable person for work_anniversary' do
+        moment = create(:observable_moment, :work_anniversary, company: company)
+        expect(moment.associated_person).to eq(moment.momentable.person)
+      end
     end
     
     describe '#associated_teammate' do
       it 'returns the teammate associated with the moment' do
         moment = create(:observable_moment, :new_hire, company: company)
         expect(moment.associated_teammate).to eq(moment.momentable.teammate)
+      end
+
+      it 'returns the momentable teammate for birthday' do
+        moment = create(:observable_moment, :birthday, company: company)
+        expect(moment.associated_teammate).to eq(moment.momentable)
+      end
+
+      it 'returns the momentable teammate for work_anniversary' do
+        moment = create(:observable_moment, :work_anniversary, company: company)
+        expect(moment.associated_teammate).to eq(moment.momentable)
       end
     end
     

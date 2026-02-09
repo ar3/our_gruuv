@@ -12,7 +12,9 @@ class ObservableMoment < ApplicationRecord
     seat_change: 'seat_change',
     ability_milestone: 'ability_milestone',
     check_in_completed: 'check_in_completed',
-    goal_check_in: 'goal_check_in'
+    goal_check_in: 'goal_check_in',
+    birthday: 'birthday',
+    work_anniversary: 'work_anniversary'
   }
   
   validates :momentable_type, :momentable_id, :moment_type, :company, :created_by, 
@@ -58,6 +60,12 @@ class ObservableMoment < ApplicationRecord
       goal_check_in = momentable
       goal = goal_check_in&.goal
       "Goal Check-In: #{goal&.title || 'Unknown Goal'}"
+    when 'birthday'
+      person = associated_person
+      "Birthday: #{person&.display_name || 'Unknown'}"
+    when 'work_anniversary'
+      person = associated_person
+      "Work Anniversary: #{person&.display_name || 'Unknown'}"
     else
       "#{moment_type.humanize} Moment"
     end
@@ -97,6 +105,12 @@ class ObservableMoment < ApplicationRecord
       person = goal&.owner&.person if goal&.owner&.respond_to?(:person)
       confidence = metadata['confidence_percentage']
       "#{person&.display_name || 'Team member'} updated goal '#{goal&.title || 'Unknown'}' with #{confidence || '?'}% confidence"
+    when 'birthday'
+      person = associated_person
+      "Celebrate #{person&.display_name || 'team member'}'s birthday!"
+    when 'work_anniversary'
+      person = associated_person
+      "Celebrate #{person&.display_name || 'team member'}'s work anniversary!"
     else
       "#{moment_type.humanize} occurred on #{occurred_at.strftime('%B %d, %Y')}"
     end
@@ -117,6 +131,8 @@ class ObservableMoment < ApplicationRecord
       elsif goal&.owner&.respond_to?(:teammate)
         goal.owner.teammate&.person
       end
+    when 'birthday', 'work_anniversary'
+      momentable&.person
     end
   end
   
@@ -133,6 +149,8 @@ class ObservableMoment < ApplicationRecord
       if goal&.owner&.respond_to?(:teammate)
         goal.owner.teammate
       end
+    when 'birthday', 'work_anniversary'
+      momentable
     end
   end
   

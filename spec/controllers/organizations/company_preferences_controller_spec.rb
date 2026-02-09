@@ -168,6 +168,28 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
           }
         }.to change { company.reload.company_label_preferences.count }.by(-1)
       end
+
+      it 'updates observable_moment_notifier_teammate_id when organization params present' do
+        other_teammate = create(:company_teammate, organization: company)
+        expect(company.observable_moment_notifier_teammate_id).to be_nil
+        patch :update, params: {
+          organization_id: company.to_param,
+          organization: { observable_moment_notifier_teammate_id: other_teammate.id }
+        }
+        company.reload
+        expect(company.observable_moment_notifier_teammate_id).to eq(other_teammate.id)
+      end
+
+      it 'clears observable_moment_notifier_teammate_id when passed blank' do
+        other_teammate = create(:company_teammate, organization: company)
+        company.update!(observable_moment_notifier_teammate_id: other_teammate.id)
+        patch :update, params: {
+          organization_id: company.to_param,
+          organization: { observable_moment_notifier_teammate_id: '' }
+        }
+        company.reload
+        expect(company.observable_moment_notifier_teammate_id).to be_nil
+      end
     end
 
     it 'requires customize_company permission' do

@@ -116,6 +116,49 @@ FactoryBot.define do
         end
       end
     end
+
+    trait :birthday do
+      moment_type { 'birthday' }
+      transient do
+        birthday_teammate { nil }
+      end
+      after(:build) do |moment, evaluator|
+        if moment.company
+          teammate = evaluator.birthday_teammate
+          unless teammate && teammate.organization_id == moment.company.id
+            person = create(:person, born_at: 30.years.ago)
+            teammate = CompanyTeammate.create!(
+              person: person,
+              organization: moment.company,
+              first_employed_at: 1.year.ago,
+              last_terminated_at: nil
+            )
+          end
+          moment.momentable = teammate
+        end
+      end
+    end
+
+    trait :work_anniversary do
+      moment_type { 'work_anniversary' }
+      transient do
+        work_anniversary_teammate { nil }
+      end
+      after(:build) do |moment, evaluator|
+        if moment.company
+          teammate = evaluator.work_anniversary_teammate
+          unless teammate && teammate.organization_id == moment.company.id
+            teammate = CompanyTeammate.create!(
+              person: create(:person),
+              organization: moment.company,
+              first_employed_at: 1.year.ago,
+              last_terminated_at: nil
+            )
+          end
+          moment.momentable = teammate
+        end
+      end
+    end
     
     trait :processed do
       processed_at { Time.current }
