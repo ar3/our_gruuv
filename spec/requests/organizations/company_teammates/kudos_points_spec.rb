@@ -137,4 +137,32 @@ RSpec.describe 'Kudos Points Mode', type: :request do
       expect(response.body).to include(kudos_path), "View switcher should show enabled Kudos Points link for manage_employment viewing peer's page"
     end
   end
+
+  describe 'can_manage_kudos_rewards permission' do
+    let(:kudos_manager_person) { create(:person) }
+    let(:kudos_manager_teammate) { create(:company_teammate, person: kudos_manager_person, organization: organization, can_manage_kudos_rewards: true) }
+    let(:peer_person) { create(:person) }
+    let(:peer_teammate) { create(:company_teammate, person: peer_person, organization: organization) }
+
+    before do
+      create(:employment_tenure, teammate: kudos_manager_teammate, company: organization, started_at: 2.years.ago, ended_at: nil)
+      create(:employment_tenure, teammate: peer_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      kudos_manager_teammate.update!(first_employed_at: 2.years.ago)
+      peer_teammate.update!(first_employed_at: 1.year.ago)
+      sign_in_as_teammate_for_request(kudos_manager_person, organization)
+    end
+
+    it 'allows user with can_manage_kudos_rewards to view any teammate\'s kudos_points page' do
+      get kudos_points_organization_company_teammate_path(organization, peer_teammate)
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:kudos_points)
+    end
+
+    it 'shows Kudos Points Mode in view switcher when can_manage_kudos_rewards user views peer\'s kudos_points page' do
+      get kudos_points_organization_company_teammate_path(organization, peer_teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Kudos Points Mode')
+      expect(response.body).to include('Transaction History')
+    end
+  end
 end

@@ -41,13 +41,14 @@ class CompanyTeammatePolicy < ApplicationPolicy
     audit?
   end
 
-  # Kudos Points Mode: self, someone in the teammate's managerial hierarchy, or manage_employment
+  # Kudos Points Mode: self, managerial hierarchy, employment management, or kudos point management
   def view_kudos_points?
     return true if admin_bypass?
     return false unless viewing_teammate && record
     return false if viewing_teammate.terminated?
     return true if viewing_teammate == record
     return true if viewing_teammate.can_manage_employment?
+    return true if viewing_teammate.can_manage_kudos_rewards?
     return true if viewing_teammate.in_managerial_hierarchy_of?(record)
     false
   end
