@@ -30,10 +30,10 @@ RSpec.describe 'Organizations::KudosRewards::Economy', type: :request do
     context 'when user does not have can_manage_kudos_rewards' do
       before { sign_in_as_teammate_for_request(regular_person, organization) }
 
-      it 'redirects to root' do
+      it 'redirects to edit' do
         get organization_kudos_rewards_economy_path(organization)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(edit_organization_kudos_rewards_economy_path(organization))
       end
     end
   end
@@ -79,10 +79,20 @@ RSpec.describe 'Organizations::KudosRewards::Economy', type: :request do
     context 'when user does not have can_manage_kudos_rewards' do
       before { sign_in_as_teammate_for_request(regular_person, organization) }
 
-      it 'redirects to root' do
+      it 'returns success and shows read-only economy page' do
         get edit_organization_kudos_rewards_economy_path(organization)
-        expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:edit)
+      end
+
+      it 'shows disabled form fields, disabled Save button, and warning icon with tooltip' do
+        get edit_organization_kudos_rewards_economy_path(organization)
+        expect(response.body).to include('Bank to Manager Allowances')
+        expect(response.body).to include('Save economy settings')
+        expect(response.body).to include('disabled')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('data-bs-toggle')
+        expect(response.body).to include('kudos points management permission')
       end
     end
   end

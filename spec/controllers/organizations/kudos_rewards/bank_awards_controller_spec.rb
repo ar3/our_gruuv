@@ -33,4 +33,24 @@ RSpec.describe Organizations::KudosRewards::BankAwardsController, type: :control
       expect(assigns(:total_points_to_redeem)).to eq(30.0)
     end
   end
+
+  context 'when teammate does not have can_manage_kudos_rewards' do
+    let(:regular_teammate) { create(:company_teammate, person: create(:person), organization: organization, can_manage_kudos_rewards: false) }
+
+    before do
+      session[:current_company_teammate_id] = regular_teammate.id
+    end
+
+    describe 'GET #index' do
+      it 'returns success' do
+        get :index, params: { organization_id: organization.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'assigns recent_awards' do
+        get :index, params: { organization_id: organization.id }
+        expect(assigns(:recent_awards)).to be_a(ActiveRecord::Relation)
+      end
+    end
+  end
 end

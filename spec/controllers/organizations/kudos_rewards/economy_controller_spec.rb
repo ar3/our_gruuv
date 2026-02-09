@@ -65,8 +65,18 @@ RSpec.describe Organizations::KudosRewards::EconomyController, type: :controller
   context 'as regular user without manage_rewards' do
     before { session[:current_company_teammate_id] = regular_teammate.id }
 
-    it 'denies edit' do
+    it 'allows edit (read-only view) and assigns organization and config' do
       get :edit, params: { organization_id: organization.id }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:organization)).to eq(organization)
+      expect(assigns(:config)).to be_a(Hash)
+    end
+
+    it 'denies update' do
+      patch :update, params: {
+        organization_id: organization.id,
+        economy: { ability_milestone: { points_to_give: '99', points_to_spend: '99' } }
+      }
       expect(response).to redirect_to(root_path)
     end
   end

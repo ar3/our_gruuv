@@ -60,6 +60,8 @@ RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller
     context 'as regular user' do
       before { session[:current_company_teammate_id] = regular_teammate.id }
 
+      render_views
+
       it 'returns success' do
         get :index, params: { organization_id: organization.id }
         expect(response).to have_http_status(:success)
@@ -68,6 +70,14 @@ RSpec.describe Organizations::KudosRewards::RewardsController, type: :controller
       it 'does not assign inactive_rewards' do
         get :index, params: { organization_id: organization.id }
         expect(assigns(:inactive_rewards)).to be_nil
+      end
+
+      it 'shows Add Reward button disabled with warning icon and tooltip' do
+        get :index, params: { organization_id: organization.id }
+        expect(response.body).to include('Add Reward')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('data-bs-toggle')
+        expect(response.body).to include('kudos rewards management permission')
       end
     end
   end

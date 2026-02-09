@@ -5,9 +5,16 @@
     %h1.mb-0.me-2
       %i.bi.bi-bank.me-2
       Bank Awards
-    = link_to new_organization_kudos_rewards_bank_award_path(@organization), class: "btn btn-primary" do
-      %i.bi.bi-plus-circle.me-1
-      Award Points
+    .d-flex.align-items-center
+      - if policy(:kudos).award_bank_points?
+        = link_to new_organization_kudos_rewards_bank_award_path(@organization), class: "btn btn-primary" do
+          %i.bi.bi-plus-circle.me-1
+          Award Points
+      - else
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus-circle.me-1
+          Award Points
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need kudos points management permission to award points"}
 
 - content_for :go_back_link do
   = link_to kudos_points_organization_company_teammate_path(@organization, current_company_teammate), class: "go-back-link" do

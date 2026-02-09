@@ -89,6 +89,8 @@ RSpec.describe NavigationHelper, type: :helper do
 
       # Stub the policy method to return appropriate policy doubles
       allow(helper).to receive(:policy) do |record|
+        # Kudos center nav - must match first so :kudos symbol is handled
+        return double(view_dashboard?: true) if record == :kudos || record.to_s == 'kudos'
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
@@ -101,7 +103,7 @@ RSpec.describe NavigationHelper, type: :helper do
           double(show?: true)
         else
           # For other records, return a policy that allows show?
-          double(show?: true, view_prompts?: true)
+          double(show?: true, view_prompts?: true, view_dashboard?: true)
         end
       end
 
@@ -300,6 +302,21 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(paths.any? { |p| p.include?('leaderboard') }).to be true
         expect(paths.any? { |p| p.include?('bank_awards') }).to be true
         expect(paths.any? { |p| p.include?('economy') }).to be true
+      end
+
+      it 'shows all five Kudos Center items in visible navigation for teammate with view_dashboard?' do
+        # Use real policy so KudosPolicy#view_dashboard? runs with current_company_teammate (any CompanyTeammate passes)
+        allow(helper).to receive(:policy).and_call_original
+        structure = helper.visible_navigation_structure
+        kudos_center = structure.find { |item| item[:section] == 'kudos_center' }
+        expect(kudos_center).to be_present
+        labels = kudos_center[:items].map { |item| item[:label] }
+        expect(labels).to include('My Balance')
+        expect(labels).to include('Rewards Catalog')
+        expect(labels.any? { |l| l&.include?('Leader Board') }).to be true
+        expect(labels.any? { |l| l&.include?('Bank') }).to be true
+        expect(labels.any? { |l| l&.include?('Economy') }).to be true
+        expect(kudos_center[:items].size).to eq(5)
       end
     end
 

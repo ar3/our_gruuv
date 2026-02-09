@@ -15,7 +15,8 @@ class Organizations::KudosRewards::EconomyController < Organizations::KudosRewar
     }
   }.freeze
 
-  before_action :authorize_manage_rewards!
+  before_action :authorize_view_dashboard!, only: [:show, :edit]
+  before_action :authorize_manage_rewards!, only: [:update]
 
   def show
     redirect_to edit_organization_kudos_rewards_economy_path(organization)
@@ -42,6 +43,10 @@ class Organizations::KudosRewards::EconomyController < Organizations::KudosRewar
   end
 
   private
+
+  def authorize_view_dashboard!
+    authorize :kudos, :view_dashboard?
+  end
 
   def authorize_manage_rewards!
     authorize :kudos, :manage_rewards?

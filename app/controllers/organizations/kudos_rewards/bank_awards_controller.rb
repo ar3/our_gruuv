@@ -1,5 +1,6 @@
 class Organizations::KudosRewards::BankAwardsController < Organizations::KudosRewards::BaseController
-  before_action :authorize_banker!
+  before_action :authorize_view_dashboard!, only: [:index]
+  before_action :authorize_banker!, only: [:new, :create]
   before_action :set_recipient, only: [:new, :create]
 
   def index
@@ -43,6 +44,10 @@ class Organizations::KudosRewards::BankAwardsController < Organizations::KudosRe
   end
 
   private
+
+  def authorize_view_dashboard!
+    authorize :kudos, :view_dashboard?
+  end
 
   def authorize_banker!
     authorize :kudos, :award_bank_points?

@@ -1,4 +1,5 @@
 - content_for :title, "#{company_label_plural('kudos_point', 'Kudos Point')} Economy"
+- can_manage_economy = policy(:kudos).manage_rewards?
 
 - content_for :header do
   .d-flex.align-items-center
@@ -28,10 +29,10 @@
             %small.text-muted= sublabel
           .col-md-6.mt-2
             = label_tag "economy_#{key}_points_to_give", "To Give #{company_label_plural('kudos_point', 'Kudos Point')}", class: "form-label"
-            = number_field_tag "economy[#{key}][points_to_give]", @config.dig(key, 'points_to_give'), step: 0.5, min: 0, class: "form-control", id: "economy_#{key}_points_to_give"
+            = number_field_tag "economy[#{key}][points_to_give]", @config.dig(key, 'points_to_give'), step: 0.5, min: 0, class: "form-control", id: "economy_#{key}_points_to_give", disabled: !can_manage_economy
           .col-md-6.mt-2
             = label_tag "economy_#{key}_points_to_spend", "To Redeem #{company_label_plural('kudos_point', 'Kudos Point')}", class: "form-label"
-            = number_field_tag "economy[#{key}][points_to_spend]", @config.dig(key, 'points_to_spend'), step: 0.5, min: 0, class: "form-control", id: "economy_#{key}_points_to_spend"
+            = number_field_tag "economy[#{key}][points_to_spend]", @config.dig(key, 'points_to_spend'), step: 0.5, min: 0, class: "form-control", id: "economy_#{key}_points_to_spend", disabled: !can_manage_economy
 
   .card.mb-4
     .card-header
@@ -40,7 +41,7 @@
       .row.mb-3
         .col-12
           = label_tag "economy_bank_automation_weekly_guaranteed_minimum_to_give", "Weekly Guaranteed Minimum 'To Give' Balance", class: "form-label"
-          = number_field_tag "economy[bank_automation][weekly_guaranteed_minimum_to_give]", @config['weekly_guaranteed_minimum_to_give'], step: 0.5, min: 0, class: "form-control", id: "economy_bank_automation_weekly_guaranteed_minimum_to_give"
+          = number_field_tag "economy[bank_automation][weekly_guaranteed_minimum_to_give]", @config['weekly_guaranteed_minimum_to_give'], step: 0.5, min: 0, class: "form-control", id: "economy_bank_automation_weekly_guaranteed_minimum_to_give", disabled: !can_manage_economy
 
   .card.mb-4
     .card-header
@@ -49,16 +50,21 @@
       .row.mb-3
         .col-md-6.mt-2
           = label_tag "economy_peer_to_peer_rating_limits_exceptional_ratings_min", "Exceptional Ratings Minimum", class: "form-label"
-          = number_field_tag "economy[peer_to_peer_rating_limits][exceptional_ratings_min]", @config.dig('peer_to_peer_rating_limits', 'exceptional_ratings_min'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_exceptional_ratings_min"
+          = number_field_tag "economy[peer_to_peer_rating_limits][exceptional_ratings_min]", @config.dig('peer_to_peer_rating_limits', 'exceptional_ratings_min'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_exceptional_ratings_min", disabled: !can_manage_economy
         .col-md-6.mt-2
           = label_tag "economy_peer_to_peer_rating_limits_exceptional_ratings_max", "Exceptional Ratings Maximum", class: "form-label"
-          = number_field_tag "economy[peer_to_peer_rating_limits][exceptional_ratings_max]", @config.dig('peer_to_peer_rating_limits', 'exceptional_ratings_max'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_exceptional_ratings_max"
+          = number_field_tag "economy[peer_to_peer_rating_limits][exceptional_ratings_max]", @config.dig('peer_to_peer_rating_limits', 'exceptional_ratings_max'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_exceptional_ratings_max", disabled: !can_manage_economy
       .row.mb-3
         .col-md-6.mt-2
           = label_tag "economy_peer_to_peer_rating_limits_solid_ratings_min", "Solid Ratings Minimum", class: "form-label"
-          = number_field_tag "economy[peer_to_peer_rating_limits][solid_ratings_min]", @config.dig('peer_to_peer_rating_limits', 'solid_ratings_min'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_solid_ratings_min"
+          = number_field_tag "economy[peer_to_peer_rating_limits][solid_ratings_min]", @config.dig('peer_to_peer_rating_limits', 'solid_ratings_min'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_solid_ratings_min", disabled: !can_manage_economy
         .col-md-6.mt-2
           = label_tag "economy_peer_to_peer_rating_limits_solid_ratings_max", "Solid Ratings Maximum", class: "form-label"
-          = number_field_tag "economy[peer_to_peer_rating_limits][solid_ratings_max]", @config.dig('peer_to_peer_rating_limits', 'solid_ratings_max'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_solid_ratings_max"
+          = number_field_tag "economy[peer_to_peer_rating_limits][solid_ratings_max]", @config.dig('peer_to_peer_rating_limits', 'solid_ratings_max'), step: 0.5, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_solid_ratings_max", disabled: !can_manage_economy
 
-  = submit_tag "Save economy settings", class: "btn btn-primary"
+  .d-flex.align-items-center
+    - if can_manage_economy
+      = submit_tag "Save economy settings", class: "btn btn-primary"
+    - else
+      = submit_tag "Save economy settings", class: "btn btn-primary", disabled: true, style: "opacity: 0.6; cursor: not-allowed;"
+      %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need kudos points management permission to change economy settings"}

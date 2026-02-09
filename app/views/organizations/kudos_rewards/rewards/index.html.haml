@@ -5,10 +5,16 @@
     %h1.mb-0.me-2
       %i.bi.bi-gift.me-2
       Rewards Catalog
-    - if policy(:kudos).manage_rewards_catalog?
-      = link_to new_organization_kudos_rewards_reward_path(@organization), class: "btn btn-primary" do
-        %i.bi.bi-plus-circle.me-1
-        Add Reward
+    .d-flex.align-items-center
+      - if policy(:kudos).manage_rewards_catalog?
+        = link_to new_organization_kudos_rewards_reward_path(@organization), class: "btn btn-primary" do
+          %i.bi.bi-plus-circle.me-1
+          Add Reward
+      - else
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus-circle.me-1
+          Add Reward
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need kudos rewards management permission to add rewards"}
 
 - if @rewards_return_url.present? && @rewards_return_text.present?
   - content_for :go_back_link do

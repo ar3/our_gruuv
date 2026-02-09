@@ -18,6 +18,43 @@ RSpec.describe 'Organizations::KudosRewards::BankAwards', type: :request do
     recipient_teammate
   end
 
+  describe 'GET /organizations/:organization_id/kudos_rewards/bank_awards' do
+    context 'when user has can_manage_kudos_rewards' do
+      before { sign_in_as_teammate_for_request(banker_person, organization) }
+
+      it 'returns success' do
+        get organization_kudos_rewards_bank_awards_path(organization)
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'shows the Award Points button as a link' do
+        get organization_kudos_rewards_bank_awards_path(organization)
+        expect(response.body).to include('Award Points')
+        expect(response.body).to include(new_organization_kudos_rewards_bank_award_path(organization))
+      end
+    end
+
+    context 'when user does not have can_manage_kudos_rewards' do
+      before do
+        banker_teammate.update!(can_manage_kudos_rewards: false)
+        sign_in_as_teammate_for_request(banker_person, organization)
+      end
+
+      it 'returns success' do
+        get organization_kudos_rewards_bank_awards_path(organization)
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'shows the page with disabled Award Points button and warning icon' do
+        get organization_kudos_rewards_bank_awards_path(organization)
+        expect(response.body).to include('Award Points')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('data-bs-toggle')
+        expect(response.body).to include('kudos points management permission')
+      end
+    end
+  end
+
   describe 'GET /organizations/:organization_id/kudos_rewards/bank_awards/new' do
     context 'when user has can_manage_kudos_rewards' do
       before { sign_in_as_teammate_for_request(banker_person, organization) }

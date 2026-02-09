@@ -211,14 +211,14 @@ module NavigationHelper
             label: 'My Balance',
             icon: 'bi-wallet2',
             path: kudos_points_organization_company_teammate_path(current_organization, current_company_teammate),
-            policy_check: -> { current_company_teammate && policy(current_company_teammate).view_kudos_points? },
+            policy_check: -> { policy(:kudos).view_dashboard? },
             coming_soon: false
           },
           {
             label: 'Rewards Catalog',
             icon: 'bi-gift',
             path: organization_kudos_rewards_rewards_path(current_organization),
-            policy_check: -> { policy(:kudos).view_rewards_catalog? },
+            policy_check: -> { policy(:kudos).view_dashboard? },
             coming_soon: false
           },
           {
@@ -232,14 +232,14 @@ module NavigationHelper
             label: "#{company_label_plural('kudos_point', 'Kudos Point')} Bank",
             icon: 'bi-bank',
             path: organization_kudos_rewards_bank_awards_path(current_organization),
-            policy_check: -> { policy(:kudos).award_bank_points? },
+            policy_check: -> { policy(:kudos).view_dashboard? },
             coming_soon: false
           },
           {
             label: "#{company_label_plural('kudos_point', 'Kudos Point')} Economy",
             icon: 'bi-sliders',
             path: organization_kudos_rewards_economy_path(current_organization),
-            policy_check: -> { policy(:kudos).manage_rewards? },
+            policy_check: -> { policy(:kudos).view_dashboard? },
             coming_soon: false
           }
         ]
