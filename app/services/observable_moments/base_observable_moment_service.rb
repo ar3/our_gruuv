@@ -35,10 +35,11 @@ module ObservableMoments
             metadata: @metadata
           )
         end
-        
-        # Award celebratory points (outside transaction to not block moment creation)
-        award_celebratory_points(observable_moment) if observable_moment
-        
+
+        # Celebratory points are never awarded automatically. They are awarded only when the observer
+        # publishes an observation for this moment and uses the nudge to choose the amount and click
+        # "Award from [Org] Bank" for any observable moment type.
+
         Result.ok(observable_moment)
       rescue ActiveRecord::RecordInvalid => e
         Rails.logger.error "Failed to create observable moment: #{e.message}"
@@ -48,24 +49,6 @@ module ObservableMoments
         Rails.logger.error e.backtrace.first(5).join("\n")
         Result.err("Failed to create observable moment: #{e.message}")
       end
-    end
-    
-    private
-    
-    def award_celebratory_points(observable_moment)
-      return unless observable_moment.present?
-      
-      result = Kudos::AwardCelebratoryPointsService.call(observable_moment: observable_moment)
-      
-      if result.ok?
-        Rails.logger.info "Awarded celebratory points for #{observable_moment.moment_type}: #{result.value.award_summary}"
-      else
-        # Log but don't fail - celebratory points are a bonus feature
-        Rails.logger.info "Celebratory points not awarded for #{observable_moment.moment_type}: #{result.error}"
-      end
-    rescue => e
-      # Catch any errors to prevent them from affecting the main flow
-      Rails.logger.error "Error awarding celebratory points: #{e.message}"
     end
   end
 end

@@ -168,5 +168,47 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
         expect(result.error).to include("No associated teammate")
       end
     end
+
+    context 'when called with observation and custom amounts' do
+      let(:employment_tenure) { create(:employment_tenure, company: organization, teammate: recipient) }
+      let(:observable_moment) do
+        create(:observable_moment,
+          company: organization,
+          momentable: employment_tenure,
+          primary_potential_observer: recipient,
+          moment_type: :new_hire)
+      end
+      let(:observation) { create(:observation, company: organization, observable_moment: observable_moment) }
+
+      it 'creates transaction with observation_id set and uses provided amounts' do
+        result = described_class.call(
+          observable_moment: observable_moment,
+          observation: observation,
+          points_to_give: 25,
+          points_to_spend: 10
+        )
+
+        expect(result.ok?).to be true
+        expect(result.value.observation_id).to eq(observation.id)
+        expect(result.value.points_to_give_delta).to eq(25.0)
+        expect(result.value.points_to_spend_delta).to eq(10.0)
+      end
+
+      it 'caps amounts at config max when provided amounts exceed max' do
+        organization.update!(kudos_points_economy_config: {
+          'new_hire' => { 'points_to_give' => 30, 'points_to_spend' => 15 }
+        })
+        result = described_class.call(
+          observable_moment: observable_moment,
+          observation: observation,
+          points_to_give: 100,
+          points_to_spend: 50
+        )
+
+        expect(result.ok?).to be true
+        expect(result.value.points_to_give_delta).to eq(30.0)
+        expect(result.value.points_to_spend_delta).to eq(15.0)
+      end
+    end
   end
 end

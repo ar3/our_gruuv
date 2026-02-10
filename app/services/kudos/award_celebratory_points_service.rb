@@ -16,9 +16,12 @@ class Kudos::AwardCelebratoryPointsService
     'work_anniversary' => { 'points_to_give' => 250.0, 'points_to_spend' => 250.0 }
   }.freeze
 
-  def initialize(observable_moment:)
+  def initialize(observable_moment:, observation: nil, points_to_give: nil, points_to_spend: nil)
     @observable_moment = observable_moment
     @organization = observable_moment.company
+    @observation = observation
+    @requested_points_to_give = points_to_give
+    @requested_points_to_spend = points_to_spend
   end
 
   def call
@@ -28,10 +31,12 @@ class Kudos::AwardCelebratoryPointsService
     config = points_config
     return Result.err("No point configuration for moment type: #{moment_type}") if config.blank?
 
-    points_to_give = normalize_points(config['points_to_give'])
-    points_to_spend = normalize_points(config['points_to_spend'])
+    max_give = normalize_points(config['points_to_give'])
+    max_spend = normalize_points(config['points_to_spend'])
+    return Result.err("No points configured for moment type: #{moment_type}") if max_give <= 0 && max_spend <= 0
 
-    return Result.err("No points configured for moment type: #{moment_type}") if points_to_give <= 0 && points_to_spend <= 0
+    points_to_give, points_to_spend = resolve_amounts(max_give, max_spend)
+    return Result.err("Must award at least some points (to give or to spend)") if points_to_give <= 0 && points_to_spend <= 0
 
     ApplicationRecord.transaction do
       transaction = create_transaction!(points_to_give, points_to_spend)
@@ -71,14 +76,32 @@ class Kudos::AwardCelebratoryPointsService
     DEFAULT_CONFIGS[moment_type]
   end
 
+  def resolve_amounts(max_give, max_spend)
+    give = if @requested_points_to_give.present? && @requested_points_to_give.to_f >= 0
+      normalized = normalize_points(@requested_points_to_give)
+      [normalized, max_give].min
+    else
+      max_give
+    end
+    spend = if @requested_points_to_spend.present? && @requested_points_to_spend.to_f >= 0
+      normalized = normalize_points(@requested_points_to_spend)
+      [normalized, max_spend].min
+    else
+      max_spend
+    end
+    [give, spend]
+  end
+
   def create_transaction!(points_to_give, points_to_spend)
-    CelebratoryAwardTransaction.create!(
+    attrs = {
       company_teammate: recipient,
       organization: @organization,
       observable_moment: @observable_moment,
       points_to_give_delta: points_to_give,
       points_to_spend_delta: points_to_spend
-    )
+    }
+    attrs[:observation] = @observation if @observation.present?
+    CelebratoryAwardTransaction.create!(attrs)
   end
 
   # Normalize points to 0.5 increments (round up)

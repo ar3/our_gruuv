@@ -407,6 +407,17 @@
                     %small.text-muted
                       (#{format_date_in_user_timezone(obs.observed_at)})
                     %br
+            - if @observable_moment_bank_award.present?
+              %hr.my-2
+              %p.mb-2
+                %small
+                  %strong Awarded from #{@organization.name} Bank:
+                  - give = @observable_moment_bank_award.points_to_give_delta.to_f
+                  - spend = @observable_moment_bank_award.points_to_spend_delta.to_f
+                  - parts = []
+                  - parts << "#{give} to give" if give > 0
+                  - parts << "#{spend} to redeem" if spend > 0
+                  = parts.join(', ')
       
       - if @observation.observation_trigger.present?
         .card.mb-4

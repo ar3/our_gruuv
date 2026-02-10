@@ -53,6 +53,50 @@ RSpec.describe ObservableMoments::BaseObservableMomentService do
         )
       }.not_to raise_error
     end
+
+    it 'does not auto-award celebratory points for any moment type (award is from observation nudge)' do
+      expect {
+        ObservableMoments::BaseObservableMomentService.call(
+          momentable: employment_tenure,
+          company: company,
+          created_by: creator_teammate,
+          primary_potential_observer: primary_observer,
+          moment_type: :new_hire,
+          occurred_at: Time.current,
+          metadata: {}
+        )
+      }.not_to change(CelebratoryAwardTransaction, :count)
+    end
+
+    it 'does not auto-award for birthday (observer decides from nudge)' do
+      birthday_teammate = create(:company_teammate, organization: company, first_employed_at: 1.year.ago, last_terminated_at: nil)
+      expect {
+        ObservableMoments::BaseObservableMomentService.call(
+          momentable: birthday_teammate,
+          company: company,
+          created_by: creator_teammate,
+          primary_potential_observer: primary_observer,
+          moment_type: :birthday,
+          occurred_at: Time.current,
+          metadata: {}
+        )
+      }.not_to change(CelebratoryAwardTransaction, :count)
+    end
+
+    it 'does not auto-award for work_anniversary (observer decides from nudge)' do
+      anniversary_teammate = create(:company_teammate, organization: company, first_employed_at: 2.years.ago, last_terminated_at: nil)
+      expect {
+        ObservableMoments::BaseObservableMomentService.call(
+          momentable: anniversary_teammate,
+          company: company,
+          created_by: creator_teammate,
+          primary_potential_observer: primary_observer,
+          moment_type: :work_anniversary,
+          occurred_at: Time.current,
+          metadata: {}
+        )
+      }.not_to change(CelebratoryAwardTransaction, :count)
+    end
   end
 end
 

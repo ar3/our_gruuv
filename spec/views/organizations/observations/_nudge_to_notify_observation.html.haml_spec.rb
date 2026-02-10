@@ -36,12 +36,19 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     allow(view).to receive(:company_label_for).with('kudos_point', 'Kudos Point').and_return('Kudos Point')
   end
 
-  context 'when points row is shown (observees_for_kudos present, kudos_not_yet_awarded, observer_ledger set)' do
+  context 'when points row is shown (observees_for_kudos, kudos_not_yet_awarded, observer_ledger, positive_rating_reward_options)' do
+    let(:ability) { create(:ability, company: company) }
+    let(:positive_rating) { create(:observation_rating, :agree, observation: observation, rateable: ability) }
+    let(:positive_rating_reward_options) do
+      [{ rating: positive_rating, label: 'A Solid demonstration of ' + ability.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
+    end
+
     before do
       assign(:observees_for_kudos, observees_for_kudos)
       assign(:kudos_not_yet_awarded, true)
       assign(:observer_ledger, observer_ledger)
       assign(:observation_kudos_awards, [])
+      assign(:positive_rating_reward_options, positive_rating_reward_options)
     end
 
     it 'shows the two optional steps intro' do
@@ -71,12 +78,13 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
       expect(rendered).to include('href="/people/')
     end
 
-    it 'shows observer balance and Points to give input' do
+    it 'shows observer balance and per-rating reward toggle and points dropdown' do
       render partial: 'organizations/observations/nudge_to_notify_observation'
       expect(rendered).to include('Your banked Kudos Points to give')
       expect(rendered).to include('25.0 points ($2.50)')
-      expect(rendered).to include('Kudos Points to give')
-      expect(rendered).to have_css('input[name="points_to_give"]')
+      expect(rendered).to include('Reward this rating')
+      expect(rendered).to have_css('input[type="checkbox"][name^="award_by_rating"]')
+      expect(rendered).to have_css('select[name^="award_by_rating"]')
     end
 
     it 'shows Send Kudos Points button with confirm message' do
@@ -103,6 +111,11 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
       obs
     end
     let(:observees_for_kudos_two) { [{ person: observee_person, role: 'Observed' }, { person: observee2_person, role: 'Observed' }] }
+    let(:ability_two) { create(:ability, company: company) }
+    let!(:positive_rating_two) { create(:observation_rating, :agree, observation: observation_two, rateable: ability_two) }
+    let(:positive_rating_reward_options_two) do
+      [{ rating: positive_rating_two, label: 'A Solid demonstration of ' + ability_two.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
+    end
 
     before do
       assign(:observation, observation_two)
@@ -110,6 +123,7 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
       assign(:kudos_not_yet_awarded, true)
       assign(:observer_ledger, observer_ledger)
       assign(:observation_kudos_awards, [])
+      assign(:positive_rating_reward_options, positive_rating_reward_options_two)
     end
 
     it 'shows split equally message' do
@@ -137,6 +151,68 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     it 'still shows Observation summary (awards are shown in Spotlight section below)' do
       render partial: 'organizations/observations/nudge_to_notify_observation'
       expect(rendered).to include('Observation summary')
+    end
+  end
+
+  context 'when observation has observable moment with celebratory bank config (not already awarded)' do
+    let(:observable_moment) { create(:observable_moment, :birthday, company: company, primary_potential_observer: observer_teammate) }
+    let(:observation_with_moment) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only, observable_moment: observable_moment)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+    let(:bank_point_options) do
+      give_opts = (0..100).step(0.5).to_a.map { |n| n == n.to_i ? n.to_i.to_f : n }
+      spend_opts = (0..100).step(0.5).to_a.map { |n| n == n.to_i ? n.to_i.to_f : n }
+      { points_to_give_options: give_opts, points_to_spend_options: spend_opts, max_points_to_give: 100.0, max_points_to_spend: 100.0 }
+    end
+
+    before do
+      assign(:observation, observation_with_moment)
+      assign(:organization, company)
+      assign(:celebratory_bank_config, { points_to_give: 100.0, points_to_spend: 100.0 })
+      assign(:celebratory_bank_already_awarded, false)
+      assign(:celebratory_bank_point_options, bank_point_options)
+      allow(view).to receive(:award_celebratory_kudos_organization_observation_path).with(company, observation_with_moment).and_return("/organizations/#{company.id}/observations/#{observation_with_moment.id}/award_celebratory_kudos")
+    end
+
+    it 'shows the org bank section heading' do
+      render partial: 'organizations/observations/nudge_to_notify_observation'
+      expect(rendered).to include('Bank awards up to the following points for this observable moment')
+      expect(rendered).to include(company.name)
+    end
+
+    it 'shows dropdowns and Award from Bank button' do
+      render partial: 'organizations/observations/nudge_to_notify_observation'
+      expect(rendered).to include('Points to give')
+      expect(rendered).to include('Points to redeem')
+      expect(rendered).to include("Award from #{company.name} Bank")
+      expect(rendered).to have_css('form[action*="award_celebratory_kudos"]', count: 1)
+    end
+  end
+
+  context 'when celebratory_bank_already_awarded is true' do
+    let(:observable_moment) { create(:observable_moment, :birthday, company: company, primary_potential_observer: observer_teammate) }
+    let(:observation_with_moment) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only, observable_moment: observable_moment)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      assign(:observation, observation_with_moment)
+      assign(:celebratory_bank_config, { points_to_give: 100.0, points_to_spend: 100.0 })
+      assign(:celebratory_bank_already_awarded, true)
+    end
+
+    it 'does not show the org bank award section' do
+      render partial: 'organizations/observations/nudge_to_notify_observation'
+      expect(rendered).not_to include('Award from')
+      expect(rendered).not_to include('award_celebratory_kudos')
     end
   end
 end

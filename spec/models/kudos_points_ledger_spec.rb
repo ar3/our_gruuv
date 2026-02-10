@@ -12,8 +12,8 @@ RSpec.describe KudosPointsLedger, type: :model do
     subject { build(:kudos_points_ledger, company_teammate: company_teammate) }
 
     it { should validate_uniqueness_of(:company_teammate_id).scoped_to(:organization_id) }
-    it { should validate_numericality_of(:points_to_give).is_greater_than_or_equal_to(0) }
-    it { should validate_numericality_of(:points_to_spend).is_greater_than_or_equal_to(0) }
+    it { should validate_numericality_of(:points_to_give).is_greater_than_or_equal_to(-1000) }
+    it { should validate_numericality_of(:points_to_spend).is_greater_than_or_equal_to(-1000) }
 
     context 'half increment validation' do
       it 'allows whole numbers' do
@@ -82,6 +82,19 @@ RSpec.describe KudosPointsLedger, type: :model do
 
       it 'raises InsufficientBalance when not enough points' do
         expect { ledger.deduct_from_give(100.0) }.to raise_error(KudosPointsLedger::InsufficientBalance)
+      end
+    end
+
+    describe '#apply_debit_from_give' do
+      it 'decrements points_to_give without balance check (allows overdraft)' do
+        ledger.apply_debit_from_give(10.0)
+        expect(ledger.reload.points_to_give).to eq(40.0)
+      end
+
+      it 'allows balance to go negative' do
+        ledger.update!(points_to_give: 3.0)
+        ledger.apply_debit_from_give(10.0)
+        expect(ledger.reload.points_to_give).to eq(-7.0)
       end
     end
 

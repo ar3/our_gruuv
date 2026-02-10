@@ -1,31 +1,54 @@
 # Service for awarding kudos points from observer's balance to observees (nudge flow).
-# Observer chooses the total amount; it is split equally among observees (excluding observer).
+# Accepts per-rating rewards; total is split equally among observees (excluding observer).
+# Allows overdraft when awarding exactly one rating and total <= that rating's minimum.
 class Kudos::AwardObservationPointsFromObserverService
+  DEFAULT_PEER_TO_PEER_LIMITS = {
+    'solid_ratings_min' => 5,
+    'solid_ratings_max' => 25,
+    'exceptional_ratings_min' => 30,
+    'exceptional_ratings_max' => 50
+  }.freeze
+
   def self.call(...) = new(...).call
 
-  def initialize(observation:, points_total:)
+  def initialize(observation:, rating_rewards:)
     @observation = observation
-    @points_total = points_total.to_f
     @organization = observation.company
     @observer = observation.observer
     @observees = eligible_observees
+    @rating_rewards = resolve_rating_rewards(rating_rewards)
+    @points_total = @rating_rewards.sum { |r| r[:points].to_f }
   end
 
   def call
     return Result.err("Observation has no observees to award") if @observees.empty?
     return Result.err("Observation is not published") unless @observation.published?
     return Result.err("Points already processed for this observation") if already_processed?
+    return Result.err("Please select at least one rating and enter points.") if @rating_rewards.empty? || @points_total <= 0
 
     observer_teammate = find_observer_teammate
     return Result.err("Observer is not a teammate in this organization") unless observer_teammate
 
     observer_ledger = observer_teammate.kudos_ledger
-    return Result.err("You don't have enough points to give") unless observer_ledger.can_give?(@points_total)
+    balance = observer_ledger.points_to_give
+
+    min_for_single_rating = nil
+    min_for_single_rating = min_for_rating(@rating_rewards.first[:observation_rating_id]) if @rating_rewards.size == 1
+
+    allowed = balance >= @points_total
+    allowed = (balance + min_for_single_rating.to_f) >= @points_total if !allowed && @rating_rewards.size == 1 && min_for_single_rating
+
+    unless allowed
+      return Result.err(
+        "You don't have enough points to spend to give this reward; the #{@organization.name} bank will allow overdraft on the minimum points of one rating."
+      )
+    end
+
+    use_overdraft_path = balance < @points_total
 
     transactions = []
 
     ApplicationRecord.transaction do
-      # 1. Deduct from observer's points to give
       observer_debit = ObserverGiveTransaction.create!(
         company_teammate: observer_teammate,
         organization: @organization,
@@ -33,10 +56,13 @@ class Kudos::AwardObservationPointsFromObserverService
         points_to_give_delta: -@points_total,
         points_to_spend_delta: 0
       )
-      observer_debit.apply_to_ledger!
+      if use_overdraft_path
+        observer_ledger.apply_debit_from_give(@points_total)
+      else
+        observer_debit.apply_to_ledger!
+      end
       transactions << observer_debit
 
-      # 2. Credit each observee (split equally)
       points_per_observee = calculate_points_per_observee(@points_total)
       @observees.each do |observee|
         exchange = PointsExchangeTransaction.create!(
@@ -50,7 +76,6 @@ class Kudos::AwardObservationPointsFromObserverService
         transactions << exchange
       end
 
-      # 3. Optional kickback to observer (same config as ProcessObservationPointsService)
       feedback_type = @observation.has_negative_ratings? ? :constructive : :recognition
       config = points_config(feedback_type)
       kickback = award_kickback_to_observer(observer_teammate, config, feedback_type)
@@ -69,6 +94,28 @@ class Kudos::AwardObservationPointsFromObserverService
   end
 
   private
+
+  def resolve_rating_rewards(rating_rewards)
+    return [] if rating_rewards.blank?
+    ids = rating_rewards.map { |r| r[:observation_rating_id] || r['observation_rating_id'] }.compact.uniq
+    return [] if ids.empty?
+    valid_ids = @observation.observation_ratings.positive.where(id: ids).pluck(:id).to_set
+    rating_rewards.filter_map do |r|
+      id = (r[:observation_rating_id] || r['observation_rating_id']).to_i
+      next unless valid_ids.include?(id)
+      pts = (r[:points] || r['points']).to_f
+      next if pts <= 0
+      { observation_rating_id: id, points: normalize_points(pts) }
+    end
+  end
+
+  def min_for_rating(observation_rating_id)
+    rating = @observation.observation_ratings.positive.find_by(id: observation_rating_id)
+    return nil unless rating
+    limits = @organization.kudos_points_economy_config&.dig('peer_to_peer_rating_limits') || {}
+    key = rating.strongly_agree? ? 'exceptional_ratings_min' : 'solid_ratings_min'
+    (limits[key] || DEFAULT_PEER_TO_PEER_LIMITS[key]).to_i
+  end
 
   def eligible_observees
     @observation.observees.includes(:company_teammate).reject do |o|

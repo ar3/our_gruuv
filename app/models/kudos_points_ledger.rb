@@ -3,7 +3,7 @@ class KudosPointsLedger < ApplicationRecord
   belongs_to :organization
 
   validates :company_teammate_id, uniqueness: { scope: :organization_id }
-  validates :points_to_give, :points_to_spend, numericality: { greater_than_or_equal_to: 0 }
+  validates :points_to_give, :points_to_spend, numericality: { greater_than_or_equal_to: -1000 }
   validate :points_in_half_increments
 
   scope :for_organization, ->(org) { where(organization: org) }
@@ -28,6 +28,11 @@ class KudosPointsLedger < ApplicationRecord
     decrement!(:points_to_give, amount)
   end
 
+  # Applies a debit without balance check (used for allowed overdraft in observer award flow).
+  def apply_debit_from_give(amount)
+    decrement!(:points_to_give, amount)
+  end
+
   def deduct_from_spend(amount)
     raise InsufficientBalance, "Insufficient points to spend" if points_to_spend < amount
     decrement!(:points_to_spend, amount)
@@ -44,7 +49,7 @@ class KudosPointsLedger < ApplicationRecord
   def recalculate_balance!
     transactions = KudosTransaction.where(company_teammate: company_teammate, organization: organization)
     update!(
-      points_to_give: [transactions.sum(:points_to_give_delta), 0].max,
+      points_to_give: transactions.sum(:points_to_give_delta),
       points_to_spend: [transactions.sum(:points_to_spend_delta), 0].max
     )
   end

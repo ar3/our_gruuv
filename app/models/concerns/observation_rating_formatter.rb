@@ -77,6 +77,17 @@ module ObservationRatingFormatter
 
   # Structured rating phrase entries for building sentences with links.
   # Returns array of hashes: { text_before_name:, rateable:, name: }.
+  # Returns a short label for one rating, e.g. "An Exceptional demonstration of Collaboration".
+  def label_for_rating(observation_rating)
+    rateable = observation_rating.rateable
+    return nil unless rateable
+    word = rating_to_word(observation_rating.rating)
+    verb = verb_for_type(observation_rating.rateable_type)
+    name = rateable_name(rateable)
+    article = word.start_with?('A') ? 'An' : 'A'
+    "#{article} #{word} #{verb} of #{name}"
+  end
+
   # Skips N/A ratings. Use with internal_rateable_path(organization, rateable) in views.
   def rating_phrase_entries_for_sentence
     observation_ratings.reject { |r| r.rating.to_s == 'na' }.filter_map do |rating|

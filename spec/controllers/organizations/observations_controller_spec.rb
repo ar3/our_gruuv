@@ -399,6 +399,44 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       end
     end
 
+    context 'when observation has observable moment with celebratory config' do
+      let(:observable_moment) do
+        create(:observable_moment, :birthday, company: company, primary_potential_observer: observer_teammate)
+      end
+      let(:observation_with_moment) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only, observable_moment: observable_moment)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      before do
+        observer_teammate
+        company.update!(kudos_points_economy_config: { 'birthday' => { 'points_to_give' => '100', 'points_to_spend' => '100' } })
+      end
+
+      it 'assigns celebratory_bank_config, celebratory_bank_already_awarded, and celebratory_bank_point_options' do
+        get :show, params: { organization_id: company.id, id: observation_with_moment.id }
+        expect(assigns(:celebratory_bank_config)).to eq({ points_to_give: 100.0, points_to_spend: 100.0 })
+        expect(assigns(:celebratory_bank_already_awarded)).to be false
+        expect(assigns(:celebratory_bank_point_options)).to be_present
+        expect(assigns(:celebratory_bank_point_options)[:max_points_to_give]).to eq(100.0)
+        expect(assigns(:celebratory_bank_point_options)[:max_points_to_spend]).to eq(100.0)
+      end
+
+      it 'assigns observable_moment_bank_award when celebratory award exists' do
+        award = create(:celebratory_award_transaction,
+          observable_moment: observable_moment,
+          company_teammate: observable_moment.associated_teammate,
+          organization: company,
+          points_to_give_delta: 50,
+          points_to_spend_delta: 50)
+        get :show, params: { organization_id: company.id, id: observation_with_moment.id }
+        expect(assigns(:observable_moment_bank_award)).to eq(award)
+      end
+    end
+
     context 'managers_only privacy' do
       let(:managers_only_observation) do
         obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only)
@@ -3313,6 +3351,15 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       obs.publish!
       obs
     end
+    let!(:positive_rating) { create(:observation_rating, :agree, :with_ability, observation: published_observation) }
+
+    def award_by_rating_params(rating_id:, points: '10')
+      {
+        organization_id: company.id,
+        id: published_observation.id,
+        award_by_rating: { rating_id.to_s => { 'reward' => '1', 'points' => points.to_s } }
+      }
+    end
 
     before do
       observer_teammate # ensure observer has a teammate record
@@ -3324,11 +3371,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         initial_exchange = PointsExchangeTransaction.where(observation: published_observation).count
         initial_give = ObserverGiveTransaction.where(observation: published_observation).count
 
-        post :award_kudos, params: {
-          organization_id: company.id,
-          id: published_observation.id,
-          points_to_give: '10'
-        }
+        post :award_kudos, params: award_by_rating_params(rating_id: positive_rating.id, points: '10')
 
         expect(response).to redirect_to(organization_observation_path(company, published_observation))
         expect(flash[:notice]).to eq('Points awarded successfully.')
@@ -3344,15 +3387,12 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
       it 'redirects with alert and does not create transactions' do
         expect {
-          post :award_kudos, params: {
-            organization_id: company.id,
-            id: published_observation.id,
-            points_to_give: '10'
-          }
+          post :award_kudos, params: award_by_rating_params(rating_id: positive_rating.id, points: '10')
         }.not_to change(PointsExchangeTransaction, :count)
 
         expect(response).to redirect_to(organization_observation_path(company, published_observation))
         expect(flash[:alert]).to be_present
+        expect(flash[:alert]).to include('overdraft')
       end
     end
 
@@ -3363,11 +3403,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
       it 'denies award_kudos (policy) and redirects with alert' do
         expect {
-          post :award_kudos, params: {
-            organization_id: company.id,
-            id: published_observation.id,
-            points_to_give: '5'
-          }
+          post :award_kudos, params: award_by_rating_params(rating_id: positive_rating.id, points: '5')
         }.not_to change { PointsExchangeTransaction.where(observation: published_observation).count }
         expect(response).to redirect_to(root_path)
         expect(flash[:alert]).to be_present
@@ -3382,11 +3418,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       end
 
       it 'redirects with authorization error' do
-        post :award_kudos, params: {
-          organization_id: company.id,
-          id: published_observation.id,
-          points_to_give: '10'
-        }
+        post :award_kudos, params: award_by_rating_params(rating_id: positive_rating.id, points: '10')
         expect(response).to redirect_to(root_path)
         expect(flash[:alert]).to be_present
       end
@@ -3400,39 +3432,125 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         obs.publish!
         obs
       end
+      let!(:journal_rating) { create(:observation_rating, :agree, :with_ability, observation: journal_observation) }
 
       it 'redirects with authorization error' do
         post :award_kudos, params: {
           organization_id: company.id,
           id: journal_observation.id,
-          points_to_give: '10'
+          award_by_rating: { journal_rating.id.to_s => { 'reward' => '1', 'points' => '10' } }
         }
         expect(response).to redirect_to(root_path)
         expect(flash[:alert]).to be_present
       end
     end
 
-    context 'when points_to_give is blank' do
+    context 'when no rating selected (award_by_rating empty or no reward)' do
       it 'redirects with alert' do
         post :award_kudos, params: {
           organization_id: company.id,
           id: published_observation.id,
-          points_to_give: ''
+          award_by_rating: {}
         }
         expect(response).to redirect_to(organization_observation_path(company, published_observation))
-        expect(flash[:alert]).to include('Please enter points')
+        expect(flash[:alert]).to include('Please select at least one rating')
       end
     end
 
-    context 'when points_to_give is zero' do
-      it 'redirects with alert' do
-        post :award_kudos, params: {
-          organization_id: company.id,
-          id: published_observation.id,
-          points_to_give: '0'
-        }
+    context 'when single rating at minimum and insufficient balance (overdraft allowed)' do
+      before do
+        observer_teammate.kudos_ledger.update!(points_to_give: 0)
+      end
+
+      it 'succeeds and creates transactions' do
+        post :award_kudos, params: award_by_rating_params(rating_id: positive_rating.id, points: '5')
         expect(response).to redirect_to(organization_observation_path(company, published_observation))
-        expect(flash[:alert]).to be_present
+        expect(flash[:notice]).to eq('Points awarded successfully.')
+        expect(ObserverGiveTransaction.exists?(observation: published_observation)).to be true
+        # 0 - 5 (debit) + 2.5 (recognition kickback 0.5 * 5) = -2.5
+        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(-2.5)
+      end
+    end
+  end
+
+  describe 'POST #award_celebratory_kudos' do
+    let(:observable_moment) do
+      create(:observable_moment, :birthday, company: company, primary_potential_observer: observer_teammate)
+    end
+    let(:published_observation_with_moment) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only, observable_moment: observable_moment)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      observer_teammate
+      company.update!(kudos_points_economy_config: { 'birthday' => { 'points_to_give' => '100', 'points_to_spend' => '100' } })
+    end
+
+    context 'when observation has observable moment and not already awarded' do
+      it 'redirects with notice and creates CelebratoryAwardTransaction with observation_id' do
+        expect {
+          post :award_celebratory_kudos, params: {
+            organization_id: company.id,
+            id: published_observation_with_moment.id,
+            points_to_give: '50',
+            points_to_spend: '50'
+          }
+        }.to change(CelebratoryAwardTransaction, :count).by(1)
+
+        expect(response).to redirect_to(organization_observation_path(company, published_observation_with_moment))
+        expect(flash[:notice]).to eq('Celebratory points awarded successfully.')
+        tx = CelebratoryAwardTransaction.find_by(observable_moment: observable_moment)
+        expect(tx.observation_id).to eq(published_observation_with_moment.id)
+        expect(tx.points_to_give_delta).to eq(50.0)
+        expect(tx.points_to_spend_delta).to eq(50.0)
+      end
+    end
+
+    context 'when celebratory points already awarded for this moment' do
+      before do
+        create(:celebratory_award_transaction,
+          observable_moment: observable_moment,
+          company_teammate: observable_moment.associated_teammate,
+          organization: company)
+      end
+
+      it 'redirects with alert and does not create another transaction' do
+        expect {
+          post :award_celebratory_kudos, params: {
+            organization_id: company.id,
+            id: published_observation_with_moment.id,
+            points_to_give: '50',
+            points_to_spend: '50'
+          }
+        }.not_to change(CelebratoryAwardTransaction, :count)
+
+        expect(response).to redirect_to(organization_observation_path(company, published_observation_with_moment))
+        expect(flash[:alert]).to include('already been awarded')
+      end
+    end
+
+    context 'when observation has no observable moment' do
+      let(:observation_no_moment) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'redirects with alert' do
+        post :award_celebratory_kudos, params: {
+          organization_id: company.id,
+          id: observation_no_moment.id,
+          points_to_give: '50',
+          points_to_spend: '50'
+        }
+        expect(response).to redirect_to(organization_observation_path(company, observation_no_moment))
+        expect(flash[:alert]).to include('no observable moment')
       end
     end
   end

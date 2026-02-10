@@ -1,5 +1,5 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :share_publicly, :share_privately, :award_kudos]
+  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :share_publicly, :share_privately, :award_kudos, :award_celebratory_kudos]
   
 
   def index
@@ -256,6 +256,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       []
     end
 
+    # Load celebratory bank award for observable moment card (when observation has an observable moment)
+    @observable_moment_bank_award = if @observation.observable_moment.present?
+      CelebratoryAwardTransaction.find_by(observable_moment: @observation.observable_moment)
+    end
+
     # Load data for the "great observation" section (only shown when published, no notifications, not journal, and observer)
     if @observation.published? && @observation.notifications.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
       # Load organizations with kudos channels (company + descendants)
@@ -355,6 +360,33 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         { person: o.company_teammate.person, role: "Observed" }
       end
       @kudos_not_yet_awarded = !PointsExchangeTransaction.exists?(observation: @observation)
+
+      # Build per-rating reward options for the award form (positive ratings only)
+      @positive_rating_reward_options = @observation.positive_ratings.includes(:rateable).map do |rating|
+        rating_kind = rating.strongly_agree? ? :exceptional : :solid
+        opts = helpers.peer_to_peer_point_options_for(company, rating_kind)
+        {
+          rating: rating,
+          label: @observation.label_for_rating(rating),
+          rating_kind: rating_kind,
+          min: opts[:min],
+          max: opts[:max],
+          point_options: opts[:point_options]
+        }
+      end
+
+      # Celebratory org-bank section in nudge: config, already awarded?, point options for dropdowns
+      if @observation.observable_moment.present?
+        moment_type = @observation.observable_moment.moment_type
+        opts = helpers.celebratory_bank_point_options_for(company, moment_type)
+        max_give = opts[:max_points_to_give].to_f
+        max_spend = opts[:max_points_to_spend].to_f
+        if max_give > 0 || max_spend > 0
+          @celebratory_bank_config = { points_to_give: max_give, points_to_spend: max_spend }
+          @celebratory_bank_already_awarded = CelebratoryAwardTransaction.exists?(observable_moment: @observation.observable_moment)
+          @celebratory_bank_point_options = opts
+        end
+      end
 
       # Load page visit statistics from both show page and public permalink page
       @page_visit_stats = Observations::PageVisitStatsService.call(
@@ -989,29 +1021,73 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def award_kudos
     authorize @observation, :award_kudos?
 
-    points_total = params[:points_to_give].to_s.strip
-    if points_total.blank?
-      redirect_to organization_observation_path(organization, @observation), alert: 'Please enter points to give.'
+    raw = params.permit(award_by_rating: {}).fetch(:award_by_rating, {}) || {}
+    rating_rewards = []
+    raw.each do |rating_id_s, attrs|
+      next if attrs.blank?
+      reward = attrs['reward'].to_s
+      points_s = attrs['points'].to_s.strip
+      next if reward.blank? || reward == '0' || points_s.blank?
+      points_value = points_s.to_f
+      next if points_value <= 0
+      rating = @observation.observation_ratings.positive.find_by(id: rating_id_s)
+      next unless rating
+      rating_rewards << { observation_rating_id: rating.id, points: (points_value * 2).ceil / 2.0 }
+    end
+
+    if rating_rewards.empty?
+      redirect_to organization_observation_path(organization, @observation), alert: 'Please select at least one rating and enter points.'
       return
     end
 
-    points_value = points_total.to_f
-    if points_value <= 0
-      redirect_to organization_observation_path(organization, @observation), alert: 'Points to give must be greater than zero.'
+    total = rating_rewards.sum { |r| r[:points] }
+    if total <= 0
+      redirect_to organization_observation_path(organization, @observation), alert: 'Please select at least one rating and enter points.'
       return
     end
 
-    # Normalize to 0.5 increments (round up)
-    points_value = (points_value * 2).ceil / 2.0
-    if points_value <= 0
-      redirect_to organization_observation_path(organization, @observation), alert: 'Points to give must be greater than zero.'
-      return
-    end
-
-    result = Kudos::AwardObservationPointsFromObserverService.call(observation: @observation, points_total: points_value)
+    result = Kudos::AwardObservationPointsFromObserverService.call(observation: @observation, rating_rewards: rating_rewards)
 
     if result.ok?
       redirect_to organization_observation_path(organization, @observation), notice: 'Points awarded successfully.'
+    else
+      redirect_to organization_observation_path(organization, @observation), alert: result.error
+    end
+  end
+
+  def award_celebratory_kudos
+    authorize @observation, :award_kudos?
+
+    unless @observation.observable_moment.present?
+      redirect_to organization_observation_path(organization, @observation), alert: 'This observation has no observable moment.'
+      return
+    end
+
+    if CelebratoryAwardTransaction.exists?(observable_moment: @observation.observable_moment)
+      redirect_to organization_observation_path(organization, @observation), alert: 'Celebratory points have already been awarded for this observable moment.'
+      return
+    end
+
+    opts = helpers.celebratory_bank_point_options_for(organization, @observation.observable_moment.moment_type)
+    max_give = opts[:max_points_to_give].to_f
+    max_spend = opts[:max_points_to_spend].to_f
+    if max_give <= 0 && max_spend <= 0
+      redirect_to organization_observation_path(organization, @observation), alert: 'No celebratory point configuration for this moment type.'
+      return
+    end
+
+    points_to_give = params[:points_to_give].present? ? params[:points_to_give].to_s.strip : nil
+    points_to_spend = params[:points_to_spend].present? ? params[:points_to_spend].to_s.strip : nil
+
+    result = Kudos::AwardCelebratoryPointsService.call(
+      observable_moment: @observation.observable_moment,
+      observation: @observation,
+      points_to_give: points_to_give,
+      points_to_spend: points_to_spend
+    )
+
+    if result.ok?
+      redirect_to organization_observation_path(organization, @observation), notice: 'Celebratory points awarded successfully.'
     else
       redirect_to organization_observation_path(organization, @observation), alert: result.error
     end

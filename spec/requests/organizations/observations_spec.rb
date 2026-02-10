@@ -757,6 +757,11 @@ RSpec.describe 'Organizations::Observations', type: :request do
       obs.publish!
       obs
     end
+    let!(:positive_rating) { create(:observation_rating, :agree, :with_ability, observation: published_observation) }
+
+    def award_by_rating_params(rating_id:, points: '10')
+      { award_by_rating: { rating_id.to_s => { 'reward' => '1', 'points' => points.to_s } } }
+    end
 
     before do
       create(:kudos_points_ledger, company_teammate: teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
@@ -766,7 +771,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
       initial_exchange = PointsExchangeTransaction.where(observation: published_observation).count
       initial_give = ObserverGiveTransaction.where(observation: published_observation).count
 
-      post award_kudos_organization_observation_path(organization, published_observation), params: { points_to_give: '10' }
+      post award_kudos_organization_observation_path(organization, published_observation), params: award_by_rating_params(rating_id: positive_rating.id, points: '10')
 
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(organization_observation_path(organization, published_observation))
@@ -782,11 +787,12 @@ RSpec.describe 'Organizations::Observations', type: :request do
 
       it 'redirects with alert and does not create transactions' do
         expect {
-          post award_kudos_organization_observation_path(organization, published_observation), params: { points_to_give: '10' }
+          post award_kudos_organization_observation_path(organization, published_observation), params: award_by_rating_params(rating_id: positive_rating.id, points: '10')
         }.not_to change(PointsExchangeTransaction, :count)
 
         expect(response).to have_http_status(:redirect)
         expect(flash[:alert]).to be_present
+        expect(flash[:alert]).to include('overdraft')
       end
     end
 
@@ -796,10 +802,94 @@ RSpec.describe 'Organizations::Observations', type: :request do
       end
 
       it 'redirects with alert' do
-        post award_kudos_organization_observation_path(organization, published_observation), params: { points_to_give: '5' }
+        post award_kudos_organization_observation_path(organization, published_observation), params: award_by_rating_params(rating_id: positive_rating.id, points: '5')
         expect(response).to have_http_status(:redirect)
         expect(flash[:alert]).to be_present
       end
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/observations/:id/award_celebratory_kudos' do
+    let(:observable_moment) do
+      create(:observable_moment, :birthday, company: organization, primary_potential_observer: teammate)
+    end
+    let(:observee_teammate) { create(:teammate, person: create(:person), organization: organization) }
+    let(:published_observation_with_moment) do
+      obs = build(:observation, observer: person, company: organization, privacy_level: :observed_only, observable_moment: observable_moment)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      organization.update!(kudos_points_economy_config: { 'birthday' => { 'points_to_give' => '100', 'points_to_spend' => '100' } })
+    end
+
+    it 'creates CelebratoryAwardTransaction with observation_id and redirects with notice' do
+      expect {
+        post award_celebratory_kudos_organization_observation_path(organization, published_observation_with_moment), params: {
+          points_to_give: '50',
+          points_to_spend: '50'
+        }
+      }.to change(CelebratoryAwardTransaction, :count).by(1)
+
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(organization_observation_path(organization, published_observation_with_moment))
+      expect(flash[:notice]).to eq('Celebratory points awarded successfully.')
+      tx = CelebratoryAwardTransaction.find_by(observable_moment: observable_moment)
+      expect(tx.observation_id).to eq(published_observation_with_moment.id)
+    end
+
+    context 'when celebratory points already awarded for this moment' do
+      before do
+        create(:celebratory_award_transaction,
+          observable_moment: observable_moment,
+          company_teammate: observable_moment.associated_teammate,
+          organization: organization)
+      end
+
+      it 'redirects with alert and does not create another transaction' do
+        expect {
+          post award_celebratory_kudos_organization_observation_path(organization, published_observation_with_moment), params: {
+            points_to_give: '50',
+            points_to_spend: '50'
+          }
+        }.not_to change(CelebratoryAwardTransaction, :count)
+
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to include('already been awarded')
+      end
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/observations/:id (show) with observable moment bank award' do
+    let(:observable_moment) do
+      create(:observable_moment, :birthday, company: organization, primary_potential_observer: teammate)
+    end
+    let(:observee_teammate) { create(:teammate, person: create(:person), organization: organization) }
+    let(:observation_with_moment) do
+      obs = build(:observation, observer: person, company: organization, privacy_level: :observed_only, observable_moment: observable_moment)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    it 'displays Awarded from Org Bank in observable moment card when bank award exists' do
+      create(:celebratory_award_transaction,
+        observable_moment: observable_moment,
+        company_teammate: observable_moment.associated_teammate,
+        organization: organization,
+        points_to_give_delta: 50,
+        points_to_spend_delta: 25)
+      get organization_observation_path(organization, observation_with_moment)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Awarded from')
+      expect(response.body).to include(organization.name)
+      expect(response.body).to include('Bank')
+      expect(response.body).to include('50')
+      expect(response.body).to include('25')
     end
   end
 
