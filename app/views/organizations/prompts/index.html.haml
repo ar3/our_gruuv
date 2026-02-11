@@ -61,3 +61,21 @@
       %i.bi.bi-info-circle.me-2
       No Active Templates
     %p.mb-0 No active #{company_label_for('prompt', 'prompt')} templates are available. Contact your administrator to set up #{company_label_for('reflection', 'reflection')} templates.
+
+- if @inactive_template_prompts_by_template.present?
+  .mt-4.pt-4.border-top
+    %h5.mb-3
+      %i.bi.bi-archive.me-2
+      #{company_label_plural('prompt', 'Prompts')} from inactive templates
+    %p.text-muted.small.mb-3 These templates are no longer active, but you can still view your past #{company_label_plural('reflection', 'reflection').downcase}.
+    - @inactive_template_prompts_by_template.each do |template, prompts|
+      .mb-3
+        %strong.d-block.mb-2= template.title
+        %ul.list-unstyled.mb-0
+          - prompts.each do |prompt|
+            %li.mb-1
+              = link_to edit_organization_prompt_path(@organization, prompt), class: "text-decoration-none" do
+                %i.bi.bi-file-text.me-1
+                = format_date_in_user_timezone(prompt.created_at)
+                - if prompt.closed?
+                  %span.text-muted.ms-1 (closed)

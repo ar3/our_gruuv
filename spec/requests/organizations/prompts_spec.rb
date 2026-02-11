@@ -20,6 +20,19 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       get organization_prompts_path(organization)
       expect(response).to have_http_status(:success)
     end
+
+    context 'when user has prompts from inactive templates' do
+      let(:inactive_template) { create(:prompt_template, :unavailable, company: organization, title: 'Old Check-in') }
+      let!(:inactive_prompt) { create(:prompt, :closed, company_teammate: teammate, prompt_template: inactive_template) }
+
+      it 'shows a section linking to prompts from inactive templates' do
+        get organization_prompts_path(organization)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('inactive templates')
+        expect(response.body).to include('Old Check-in')
+        expect(response.body).to include(edit_organization_prompt_path(organization, inactive_prompt))
+      end
+    end
   end
 
 

@@ -29,6 +29,25 @@ RSpec.describe Organizations::PromptsController, type: :controller do
       expect(assigns(:active_templates)).to be_present
       expect(assigns(:template_prompts)).to be_a(Hash)
     end
+
+    it 'assigns inactive_template_prompts_by_template as empty when user has no prompts from inactive templates' do
+      get :index, params: { organization_id: organization.id }
+      expect(assigns(:inactive_template_prompts_by_template)).to eq({})
+    end
+
+    context 'when user has prompts from inactive (no longer active) templates' do
+      let(:inactive_template) { create(:prompt_template, :unavailable, company: organization, title: 'Retired Reflection') }
+      let!(:inactive_prompt) { create(:prompt, :closed, company_teammate: teammate, prompt_template: inactive_template) }
+
+      it 'assigns inactive_template_prompts_by_template with those prompts grouped by template' do
+        get :index, params: { organization_id: organization.id }
+        inactive_by_template = assigns(:inactive_template_prompts_by_template)
+        expect(inactive_by_template).to be_a(Hash)
+        expect(inactive_by_template.keys.map(&:title)).to include('Retired Reflection')
+        prompts_shown = inactive_by_template.values.flatten
+        expect(prompts_shown).to contain_exactly(inactive_prompt)
+      end
+    end
   end
 
   describe 'GET #customize_view' do

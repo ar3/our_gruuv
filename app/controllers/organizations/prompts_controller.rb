@@ -32,6 +32,17 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
         }
       end
     end
+
+    # Prompts from templates that are no longer active (for current user)
+    inactive_template_ids = PromptTemplate.where(company: company).where.not(id: @active_templates.select(:id)).pluck(:id)
+    inactive_prompts = if current_teammate && inactive_template_ids.any?
+      Prompt.where(company_teammate: current_teammate, prompt_template_id: inactive_template_ids)
+            .includes(:prompt_template)
+            .ordered
+    else
+      Prompt.none
+    end
+    @inactive_template_prompts_by_template = inactive_prompts.group_by(&:prompt_template).sort_by { |t, _| t.title }.to_h
   end
 
   def customize_view
