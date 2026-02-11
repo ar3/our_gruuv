@@ -99,6 +99,34 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     end
   end
 
+  context 'when organization has kudos points disabled' do
+    let(:ability) { create(:ability, company: company) }
+    let(:positive_rating) { create(:observation_rating, :agree, observation: observation, rateable: ability) }
+    let(:positive_rating_reward_options) do
+      [{ rating: positive_rating, label: 'A Solid demonstration of ' + ability.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
+    end
+
+    before do
+      company.update!(kudos_points_economy_config: (company.kudos_points_economy_config || {}).merge('disable_kudos_points' => 'true'))
+      assign(:organization, company)
+      assign(:observees_for_kudos, observees_for_kudos)
+      assign(:kudos_not_yet_awarded, true)
+      assign(:observer_ledger, observer_ledger)
+      assign(:observation_kudos_awards, [])
+      assign(:positive_rating_reward_options, positive_rating_reward_options)
+    end
+
+    it 'disables peer-to-peer points checkboxes, selects, and Send button and shows warning tooltip' do
+      render partial: 'organizations/observations/nudge_to_notify_observation'
+      expect(rendered).to have_css('input[type="checkbox"][name^="award_by_rating"][disabled]')
+      expect(rendered).to have_css('select[name^="award_by_rating"][disabled]')
+      expect(rendered).to have_css('input[type="submit"][value*="Send"][disabled]')
+      expect(rendered).to have_css('i.bi-exclamation-triangle.text-warning[data-bs-toggle="tooltip"]')
+      expect(rendered).to include(company.name)
+      expect(rendered).to include('has not yet configured the Kudos Points system')
+    end
+  end
+
   context 'when multiple observees' do
     let(:observee2_person) { create(:person, first_name: 'Second', last_name: 'Person') }
     let(:observee2_teammate) { create(:teammate, person: observee2_person, organization: company) }
@@ -190,6 +218,23 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
       expect(rendered).to include('Points to redeem')
       expect(rendered).to include("Award from #{company.name} Bank")
       expect(rendered).to have_css('form[action*="award_celebratory_kudos"]', count: 1)
+    end
+
+    context 'when organization has kudos points disabled' do
+      before do
+        company.update!(kudos_points_economy_config: (company.kudos_points_economy_config || {}).merge('disable_kudos_points' => 'true'))
+        assign(:organization, company)
+      end
+
+      it 'disables celebratory bank dropdowns and button and shows warning tooltip' do
+        render partial: 'organizations/observations/nudge_to_notify_observation'
+        expect(rendered).to have_css('select[name="points_to_give"][disabled]')
+        expect(rendered).to have_css('select[name="points_to_spend"][disabled]')
+        expect(rendered).to have_css('input[type="submit"][value*="Award from"][disabled]')
+        expect(rendered).to have_css('i.bi-exclamation-triangle.text-warning[data-bs-toggle="tooltip"]')
+        expect(rendered).to include(company.name)
+        expect(rendered).to include('has not yet configured the Kudos Points system')
+      end
     end
   end
 

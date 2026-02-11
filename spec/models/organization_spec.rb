@@ -131,6 +131,26 @@ RSpec.describe Organization, type: :model do
     end
   end
 
+  describe '#kudos_points_disabled?' do
+    it 'returns true when kudos_points_economy_config has disable_kudos_points set to true string' do
+      company.update!(kudos_points_economy_config: (company.kudos_points_economy_config || {}).merge('disable_kudos_points' => 'true'))
+      expect(company.kudos_points_disabled?).to be true
+    end
+
+    it 'returns true when kudos_points_economy_config has disable_kudos_points set to boolean true' do
+      company.update!(kudos_points_economy_config: (company.kudos_points_economy_config || {}).merge('disable_kudos_points' => true))
+      expect(company.kudos_points_disabled?).to be true
+    end
+
+    it 'returns false when disable_kudos_points is false or absent' do
+      company.update!(kudos_points_economy_config: (company.kudos_points_economy_config || {}).merge('disable_kudos_points' => 'false'))
+      expect(company.kudos_points_disabled?).to be false
+
+      company.update!(kudos_points_economy_config: { 'ability_milestone' => { 'points_to_give' => '100' } })
+      expect(company.kudos_points_disabled?).to be false
+    end
+  end
+
   describe '#to_param' do
     it 'returns id-name-parameterized format' do
       company = create(:organization, name: 'Test Company')

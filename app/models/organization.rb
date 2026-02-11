@@ -346,6 +346,10 @@ class Organization < ApplicationRecord
     kudos_points_economy_config[event_type.to_s] || {}
   end
 
+  def kudos_points_disabled?
+    ActiveModel::Type::Boolean.new.cast(kudos_points_economy_config&.dig('disable_kudos_points')) == true
+  end
+
   # pg_search configuration
   pg_search_scope :search_by_full_text,
     against: {

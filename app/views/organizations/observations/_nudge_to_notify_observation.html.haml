@@ -1,5 +1,7 @@
 .card.mb-4.border-success{ role: "region", "aria-labelledby": "share-prompt" }
   .card-body.bg-light
+    - kudos_points_disabled = @organization.kudos_points_disabled?
+    - kudos_disabled_tooltip = kudos_points_disabled ? "#{@organization.name} has not yet configured the #{company_label_plural('kudos_point', 'Kudos Point')} system" : nil
     .text-center.py-3.mb-3
       %h4.mb-0{ id: "share-prompt" }
         🎉GREAT Observation... almost done!
@@ -20,12 +22,15 @@
               - if bank_opts[:max_points_to_give].to_f > 0
                 .d-flex.align-items-center.gap-2
                   %label.form-label.mb-0 Points to give
-                  = select_tag :points_to_give, options_for_select(bank_opts[:points_to_give_options].to_a.map { |n| [n.to_s, n] }, bank_opts[:max_points_to_give]), class: 'form-select form-select-sm', style: 'width: 5rem;'
+                  = select_tag :points_to_give, options_for_select(bank_opts[:points_to_give_options].to_a.map { |n| [n.to_s, n] }, bank_opts[:max_points_to_give]), class: 'form-select form-select-sm', style: 'width: 5rem;', disabled: kudos_points_disabled
               - if bank_opts[:max_points_to_spend].to_f > 0
                 .d-flex.align-items-center.gap-2
                   %label.form-label.mb-0 Points to redeem
-                  = select_tag :points_to_spend, options_for_select(bank_opts[:points_to_spend_options].to_a.map { |n| [n.to_s, n] }, bank_opts[:max_points_to_spend]), class: 'form-select form-select-sm', style: 'width: 5rem;'
-            = form.submit "Award from #{@organization.name} Bank", class: 'btn btn-sm btn-success', onclick: "return confirm('Are you sure you want to award these #{kudos_label_plural} from #{@organization.name} Bank? This cannot be undone.');"
+                  = select_tag :points_to_spend, options_for_select(bank_opts[:points_to_spend_options].to_a.map { |n| [n.to_s, n] }, bank_opts[:max_points_to_spend]), class: 'form-select form-select-sm', style: 'width: 5rem;', disabled: kudos_points_disabled
+            .d-flex.align-items-center.gap-2
+              = form.submit "Award from #{@organization.name} Bank", class: 'btn btn-sm btn-success', disabled: kudos_points_disabled, onclick: kudos_points_disabled ? nil : "return confirm('Are you sure you want to award these #{kudos_label_plural} from #{@organization.name} Bank? This cannot be undone.');"
+              - if kudos_disabled_tooltip.present?
+                %i.bi.bi-exclamation-triangle.text-warning{"aria-label" => kudos_disabled_tooltip, "data-bs-toggle" => "tooltip", "data-bs-title" => kudos_disabled_tooltip, title: kudos_disabled_tooltip}
     
     / Observation summary + points row (when eligible observees)
     - if @observees_for_kudos.present?
@@ -60,12 +65,15 @@
                 - rating_id = option[:rating].id
                 .mb-3
                   .d-flex.flex-wrap.align-items-center.gap-2.mb-1
-                    = check_box_tag "award_by_rating[#{rating_id}][reward]", "1", false, class: 'form-check-input', id: "award_by_rating_#{rating_id}_reward"
+                    = check_box_tag "award_by_rating[#{rating_id}][reward]", "1", false, class: 'form-check-input', id: "award_by_rating_#{rating_id}_reward", disabled: kudos_points_disabled
                     = label_tag "award_by_rating_#{rating_id}_reward", "Reward this rating: #{option[:label]}", class: 'form-check-label mb-0'
                   .d-flex.flex-wrap.align-items-center.gap-2.ms-4
                     = label_tag "award_by_rating_#{rating_id}_points", "#{kudos_label_plural} for this rating", class: 'form-label mb-0 small'
-                    = select_tag "award_by_rating[#{rating_id}][points]", options_for_select(option[:point_options].map { |n| [n.to_s, n] }, option[:min]), class: 'form-select form-select-sm', style: 'width: 5rem;', id: "award_by_rating_#{rating_id}_points"
-              = form.submit "Send #{kudos_label_plural}", class: 'btn btn-sm btn-primary', onclick: "return confirm('Are you sure you want to send these #{kudos_label_plural}? This cannot be undone.');"
+                    = select_tag "award_by_rating[#{rating_id}][points]", options_for_select(option[:point_options].map { |n| [n.to_s, n] }, option[:min]), class: 'form-select form-select-sm', style: 'width: 5rem;', id: "award_by_rating_#{rating_id}_points", disabled: kudos_points_disabled
+              .d-flex.align-items-center.gap-2
+                = form.submit "Send #{kudos_label_plural}", class: 'btn btn-sm btn-primary', disabled: kudos_points_disabled, onclick: kudos_points_disabled ? nil : "return confirm('Are you sure you want to send these #{kudos_label_plural}? This cannot be undone.');"
+                - if kudos_disabled_tooltip.present?
+                  %i.bi.bi-exclamation-triangle.text-warning{"aria-label" => kudos_disabled_tooltip, "data-bs-toggle" => "tooltip", "data-bs-title" => kudos_disabled_tooltip, title: kudos_disabled_tooltip}
     
     .row
       / Left column - Privacy selector and view stats

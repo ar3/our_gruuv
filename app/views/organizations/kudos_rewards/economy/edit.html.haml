@@ -16,6 +16,16 @@
 = form_with url: organization_kudos_rewards_economy_path(@organization), method: :patch, local: true, scope: :economy do
   .card.mb-4
     .card-header
+      %h5.mb-0 Kudos Points on Observations
+    .card-body
+      .form-check
+        = hidden_field_tag "economy[disable_kudos_points]", "0"
+        = check_box_tag "economy[disable_kudos_points]", "1", ActiveModel::Type::Boolean.new.cast(@config['disable_kudos_points']), class: "form-check-input", id: "economy_disable_kudos_points", disabled: !can_manage_economy
+        = label_tag "economy_disable_kudos_points", "Disable kudos points", class: "form-check-label"
+      %p.text-muted.small.mb-0 When enabled, points fields and award buttons on the observation nudge page are disabled and show a notice that the system is not yet configured.
+
+  .card.mb-4
+    .card-header
       %h5.mb-0 Bank to Manager Allowances
     .card-body
       %p.text-muted.small Managers can give up to the following amounts from the #{@organization.name} Bank for each observation type.

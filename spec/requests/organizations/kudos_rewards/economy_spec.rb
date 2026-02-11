@@ -52,6 +52,13 @@ RSpec.describe 'Organizations::KudosRewards::Economy', type: :request do
         expect(response).to render_template(:edit)
       end
 
+      it 'shows Disable kudos points checkbox in Kudos Points on Observations section' do
+        get edit_organization_kudos_rewards_economy_path(organization)
+        expect(response.body).to include('Kudos Points on Observations')
+        expect(response.body).to include('Disable kudos points')
+        expect(response.body).to include('economy_disable_kudos_points')
+      end
+
       it 'shows economy form sections' do
         get edit_organization_kudos_rewards_economy_path(organization)
         expect(response.body).to include('Bank to Manager Allowances')
@@ -137,6 +144,39 @@ RSpec.describe 'Organizations::KudosRewards::Economy', type: :request do
         expect(organization.kudos_points_economy_config['peer_to_peer_rating_limits']['exceptional_ratings_max']).to eq('60')
         expect(organization.kudos_points_economy_config['peer_to_peer_rating_limits']['solid_ratings_min']).to eq('10')
         expect(organization.kudos_points_economy_config['peer_to_peer_rating_limits']['solid_ratings_max']).to eq('30')
+      end
+
+      it 'persists disable_kudos_points when checkbox is checked' do
+        patch organization_kudos_rewards_economy_path(organization),
+              params: {
+                economy: {
+                  disable_kudos_points: '1',
+                  ability_milestone: { points_to_give: '250', points_to_spend: '250' },
+                  bank_automation: { weekly_guaranteed_minimum_to_give: '100' }
+                }
+              }
+
+        expect(response).to have_http_status(:redirect)
+        organization.reload
+        expect(organization.kudos_points_economy_config['disable_kudos_points']).to eq('true')
+        expect(organization.kudos_points_disabled?).to be true
+      end
+
+      it 'persists disable_kudos_points false when checkbox is unchecked' do
+        organization.update!(kudos_points_economy_config: organization.kudos_points_economy_config.merge('disable_kudos_points' => 'true'))
+
+        patch organization_kudos_rewards_economy_path(organization),
+              params: {
+                economy: {
+                  disable_kudos_points: '0',
+                  ability_milestone: { points_to_give: '250', points_to_spend: '250' },
+                  bank_automation: { weekly_guaranteed_minimum_to_give: '100' }
+                }
+              }
+
+        organization.reload
+        expect(organization.kudos_points_economy_config['disable_kudos_points']).to eq('false')
+        expect(organization.kudos_points_disabled?).to be false
       end
     end
 

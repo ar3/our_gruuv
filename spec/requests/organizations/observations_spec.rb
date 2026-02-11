@@ -863,6 +863,35 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/observations/:id (show) when kudos points are disabled' do
+    let(:observee_person) { create(:person) }
+    let(:observee_teammate) { create(:teammate, person: observee_person, organization: organization) }
+    let(:observation) do
+      obs = build(:observation, observer: person, company: organization, privacy_level: :observed_only)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      create(:kudos_points_ledger, company_teammate: teammate, organization: organization, points_to_give: 25.0, points_to_spend: 0)
+      ability = create(:ability, company: organization)
+      create(:observation_rating, :agree, observation: observation, rateable: ability)
+      organization.update!(kudos_points_economy_config: (organization.kudos_points_economy_config || {}).merge('disable_kudos_points' => 'true'))
+    end
+
+    it 'returns success and shows nudge with disabled points and tooltip' do
+      get organization_observation_path(organization, observation)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(organization.name)
+      expect(response.body).to include('has not yet configured the')
+      expect(response.body).to include('system')
+      expect(response.body).to include('bi-exclamation-triangle')
+      expect(response.body).to include('data-bs-toggle="tooltip"')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/observations/:id (show) with observable moment bank award' do
     let(:observable_moment) do
       create(:observable_moment, :birthday, company: organization, primary_potential_observer: teammate)

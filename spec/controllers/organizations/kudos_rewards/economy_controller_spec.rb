@@ -70,6 +70,21 @@ RSpec.describe Organizations::KudosRewards::EconomyController, type: :controller
       expect(organization.kudos_points_economy_config['weekly_guaranteed_minimum_to_give']).to eq('75')
       expect(organization.kudos_points_economy_config['peer_to_peer_rating_limits']['exceptional_ratings_min']).to eq('40')
     end
+
+    it 'updates disable_kudos_points in config when present' do
+      patch :update, params: {
+        organization_id: organization.id,
+        economy: {
+          disable_kudos_points: '1',
+          ability_milestone: { points_to_give: '20', points_to_spend: '10' },
+          bank_automation: { weekly_guaranteed_minimum_to_give: '75' },
+          peer_to_peer_rating_limits: { exceptional_ratings_min: '40', exceptional_ratings_max: '60', solid_ratings_min: '10', solid_ratings_max: '30' }
+        }
+      }
+      organization.reload
+      expect(organization.kudos_points_economy_config['disable_kudos_points']).to eq('true')
+      expect(organization.kudos_points_disabled?).to be true
+    end
   end
 
   context 'as regular user without manage_rewards' do

@@ -61,19 +61,24 @@ class Organizations::KudosRewards::EconomyController < Organizations::KudosRewar
 
   def economy_config_from_params
     permitted = params.permit(
-      economy: {
-        ability_milestone: [:points_to_give, :points_to_spend],
-        seat_change: [:points_to_give, :points_to_spend],
-        check_in_completed: [:points_to_give, :points_to_spend],
-        goal_check_in: [:points_to_give, :points_to_spend],
-        birthday: [:points_to_give, :points_to_spend],
-        work_anniversary: [:points_to_give, :points_to_spend],
-        bank_automation: [:weekly_guaranteed_minimum_to_give],
-        peer_to_peer_rating_limits: [:exceptional_ratings_min, :exceptional_ratings_max, :solid_ratings_min, :solid_ratings_max]
-      }
+      economy: [
+        :disable_kudos_points,
+        { ability_milestone: [:points_to_give, :points_to_spend] },
+        { seat_change: [:points_to_give, :points_to_spend] },
+        { check_in_completed: [:points_to_give, :points_to_spend] },
+        { goal_check_in: [:points_to_give, :points_to_spend] },
+        { birthday: [:points_to_give, :points_to_spend] },
+        { work_anniversary: [:points_to_give, :points_to_spend] },
+        { bank_automation: [:weekly_guaranteed_minimum_to_give] },
+        { peer_to_peer_rating_limits: [:exceptional_ratings_min, :exceptional_ratings_max, :solid_ratings_min, :solid_ratings_max] }
+      ]
     )
     raw = permitted[:economy] || {}
     config = {}
+    # Checkbox + hidden field can send array ["0", "1"] when checked; take last value
+    disable_val = raw[:disable_kudos_points]
+    disable_val = disable_val.last if disable_val.is_a?(Array)
+    config['disable_kudos_points'] = ActiveModel::Type::Boolean.new.cast(disable_val) ? 'true' : 'false'
 
     %w[ability_milestone seat_change check_in_completed goal_check_in birthday work_anniversary].each do |key|
       next unless raw[key].present?
