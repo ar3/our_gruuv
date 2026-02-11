@@ -32,15 +32,15 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
         described_class.call(observable_moment: observable_moment)
 
         ledger = recipient.kudos_ledger.reload
-        expect(ledger.points_to_give).to eq(50.0)  # Default for new_hire
-        expect(ledger.points_to_spend).to eq(25.0)
+        expect(ledger.points_to_give).to eq(50)  # Default for new_hire
+        expect(ledger.points_to_spend).to eq(25)
       end
 
       it 'uses default point configuration' do
         result = described_class.call(observable_moment: observable_moment)
 
-        expect(result.value.points_to_give_delta).to eq(50.0)
-        expect(result.value.points_to_spend_delta).to eq(25.0)
+        expect(result.value.points_to_give_delta).to eq(50)
+        expect(result.value.points_to_spend_delta).to eq(25)
       end
     end
 
@@ -63,8 +63,8 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
       it 'uses organization-specific configuration' do
         result = described_class.call(observable_moment: observable_moment)
 
-        expect(result.value.points_to_give_delta).to eq(100.0)
-        expect(result.value.points_to_spend_delta).to eq(50.0)
+        expect(result.value.points_to_give_delta).to eq(100)
+        expect(result.value.points_to_spend_delta).to eq(50)
       end
     end
 
@@ -120,8 +120,8 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
         result = described_class.call(observable_moment: observable_moment)
 
         expect(result.ok?).to be true
-        expect(result.value.points_to_give_delta).to eq(20.0)
-        expect(result.value.points_to_spend_delta).to eq(10.0)
+        expect(result.value.points_to_give_delta).to eq(20)
+        expect(result.value.points_to_spend_delta).to eq(10)
       end
     end
 
@@ -131,8 +131,8 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
       it 'creates a celebratory award with default 250/250' do
         result = described_class.call(observable_moment: observable_moment)
         expect(result.ok?).to be true
-        expect(result.value.points_to_give_delta).to eq(250.0)
-        expect(result.value.points_to_spend_delta).to eq(250.0)
+        expect(result.value.points_to_give_delta).to eq(250)
+        expect(result.value.points_to_spend_delta).to eq(250)
       end
     end
 
@@ -142,8 +142,8 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
       it 'creates a celebratory award with default 250/250' do
         result = described_class.call(observable_moment: observable_moment)
         expect(result.ok?).to be true
-        expect(result.value.points_to_give_delta).to eq(250.0)
-        expect(result.value.points_to_spend_delta).to eq(250.0)
+        expect(result.value.points_to_give_delta).to eq(250)
+        expect(result.value.points_to_spend_delta).to eq(250)
       end
     end
 
@@ -190,8 +190,8 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
 
         expect(result.ok?).to be true
         expect(result.value.observation_id).to eq(observation.id)
-        expect(result.value.points_to_give_delta).to eq(25.0)
-        expect(result.value.points_to_spend_delta).to eq(10.0)
+        expect(result.value.points_to_give_delta).to eq(25)
+        expect(result.value.points_to_spend_delta).to eq(10)
       end
 
       it 'caps amounts at config max when provided amounts exceed max' do
@@ -206,8 +206,8 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
         )
 
         expect(result.ok?).to be true
-        expect(result.value.points_to_give_delta).to eq(30.0)
-        expect(result.value.points_to_spend_delta).to eq(15.0)
+        expect(result.value.points_to_give_delta).to eq(30)
+        expect(result.value.points_to_spend_delta).to eq(15)
       end
     end
   end

@@ -12,7 +12,7 @@ class KudosTransaction < ApplicationRecord
   has_many :triggered_transactions, class_name: 'KudosTransaction', foreign_key: :triggering_transaction_id
 
   validates :company_teammate, :organization, presence: true
-  validate :deltas_in_half_increments
+  validates :points_to_give_delta, :points_to_spend_delta, numericality: { only_integer: true }, allow_nil: true
 
   scope :by_teammate, ->(teammate) { where(company_teammate: teammate) }
   scope :for_organization, ->(org) { where(organization: org) }
@@ -53,13 +53,4 @@ class KudosTransaction < ApplicationRecord
   end
 
   private
-
-  def deltas_in_half_increments
-    if points_to_give_delta.present? && (points_to_give_delta * 2) % 1 != 0
-      errors.add(:points_to_give_delta, 'must be in 0.5 increments')
-    end
-    if points_to_spend_delta.present? && (points_to_spend_delta * 2) % 1 != 0
-      errors.add(:points_to_spend_delta, 'must be in 0.5 increments')
-    end
-  end
 end

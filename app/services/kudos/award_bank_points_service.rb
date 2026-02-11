@@ -54,12 +54,10 @@ class Kudos::AwardBankPointsService
     )
   end
 
-  # Normalize points to 0.5 increments (round up)
+  # Normalize points to whole numbers (integers)
   def normalize_points(value)
-    return 0.0 if value.blank? || value.to_f <= 0
+    return 0 if value.blank? || value.to_f <= 0
 
-    raw = value.to_f
-    # Round up to nearest 0.5
-    (raw * 2).ceil / 2.0
+    value.to_f.round
   end
 end

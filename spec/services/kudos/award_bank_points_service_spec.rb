@@ -45,7 +45,7 @@ RSpec.describe Kudos::AwardBankPointsService do
         expect(ledger.points_to_spend).to eq(25)
       end
 
-      it 'normalizes points to 0.5 increments (rounds up)' do
+      it 'normalizes points to integers (rounds)' do
         result = described_class.call(
           banker: banker,
           recipient: recipient,
@@ -55,8 +55,8 @@ RSpec.describe Kudos::AwardBankPointsService do
         )
 
         expect(result.ok?).to be true
-        expect(result.value.points_to_give_delta).to eq(10.5)
-        expect(result.value.points_to_spend_delta).to eq(5.5)
+        expect(result.value.points_to_give_delta).to eq(10)
+        expect(result.value.points_to_spend_delta).to eq(5)
       end
 
       it 'handles string inputs for points' do
@@ -69,8 +69,8 @@ RSpec.describe Kudos::AwardBankPointsService do
         )
 
         expect(result.ok?).to be true
-        expect(result.value.points_to_give_delta).to eq(25.0)
-        expect(result.value.points_to_spend_delta).to eq(10.0)
+        expect(result.value.points_to_give_delta).to eq(25)
+        expect(result.value.points_to_spend_delta).to eq(10)
       end
     end
 

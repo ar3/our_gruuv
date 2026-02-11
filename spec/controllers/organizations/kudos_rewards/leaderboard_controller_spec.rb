@@ -50,7 +50,7 @@ RSpec.describe Organizations::KudosRewards::LeaderboardController, type: :contro
       expect(assigns(:top_gifters).length).to eq(1)
       entry = assigns(:top_gifters).first
       expect(entry).to include(:company_teammate, :total_given, :transaction_count, :from_teammates_count, :from_bank_count)
-      expect(entry[:total_given]).to eq(10.0)
+      expect(entry[:total_given]).to eq(10)
       expect(entry[:transaction_count]).to eq(1)
       expect(entry[:from_teammates_count]).to eq(1)
       expect(entry[:from_bank_count]).to eq(0)

@@ -97,12 +97,12 @@ RSpec.describe CelebratoryAwardTransaction, type: :model do
 
     describe '#award_summary' do
       it 'returns a summary of the award' do
-        expect(transaction.award_summary).to eq("50.0 points to give and 25.0 points to spend")
+        expect(transaction.award_summary).to eq("50 points to give and 25 points to spend")
       end
 
       it 'only mentions non-zero amounts' do
         transaction.points_to_spend_delta = 0
-        expect(transaction.award_summary).to eq("50.0 points to give")
+        expect(transaction.award_summary).to eq("50 points to give")
       end
     end
 

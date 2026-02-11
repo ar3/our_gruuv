@@ -46,14 +46,14 @@ RSpec.describe Kudos::ProcessObservationPointsService do
         described_class.call(observation: observation)
 
         ledger = observee_teammate.kudos_ledger.reload
-        expect(ledger.points_to_spend).to eq(10.0)  # Default recognition points
+        expect(ledger.points_to_spend).to eq(10)  # Default recognition points
       end
 
       it 'awards kickback to observer' do
         described_class.call(observation: observation)
 
         ledger = observer_teammate.kudos_ledger.reload
-        expect(ledger.points_to_give).to eq(5.0)  # 10 * 0.5 = 5 kickback
+        expect(ledger.points_to_give).to eq(5)  # 10 * 0.5 = 5 kickback
       end
 
       it 'creates correct transaction types' do
@@ -82,15 +82,15 @@ RSpec.describe Kudos::ProcessObservationPointsService do
         described_class.call(observation: observation)
 
         ledger = observee_teammate.kudos_ledger.reload
-        expect(ledger.points_to_spend).to eq(5.0)  # Default constructive points
+        expect(ledger.points_to_spend).to eq(5)  # Default constructive points
       end
 
       it 'awards larger kickback to observer' do
         described_class.call(observation: observation)
 
         ledger = observer_teammate.kudos_ledger.reload
-        expect(ledger.points_to_give).to eq(2.0)   # Constructive kickback
-        expect(ledger.points_to_spend).to eq(2.0)  # Constructive kickback
+        expect(ledger.points_to_give).to eq(2)   # Constructive kickback
+        expect(ledger.points_to_spend).to eq(2)  # Constructive kickback
       end
     end
 
@@ -99,15 +99,15 @@ RSpec.describe Kudos::ProcessObservationPointsService do
       let(:observee_teammate2) { create(:company_teammate, organization: organization) }
       let(:observation) { build_observation(org: organization, observer: observer_person, observees: [observee_teammate1, observee_teammate2]) }
 
-      it 'splits points among observees (rounded up to 0.5)' do
+      it 'splits points among observees (round up to whole number each)' do
         described_class.call(observation: observation)
 
         ledger1 = observee_teammate1.kudos_ledger.reload
         ledger2 = observee_teammate2.kudos_ledger.reload
 
         # 10 points / 2 observees = 5 each
-        expect(ledger1.points_to_spend).to eq(5.0)
-        expect(ledger2.points_to_spend).to eq(5.0)
+        expect(ledger1.points_to_spend).to eq(5)
+        expect(ledger2.points_to_spend).to eq(5)
       end
 
       it 'scales observer kickback by total points given' do
@@ -115,7 +115,7 @@ RSpec.describe Kudos::ProcessObservationPointsService do
 
         ledger = observer_teammate.kudos_ledger.reload
         # 2 observees * 5 points each = 10 total, * 0.5 = 5 kickback
-        expect(ledger.points_to_give).to eq(5.0)
+        expect(ledger.points_to_give).to eq(5)
       end
     end
 
@@ -188,8 +188,8 @@ RSpec.describe Kudos::ProcessObservationPointsService do
         observee_ledger = observee_teammate.kudos_ledger.reload
         observer_ledger = observer_teammate.kudos_ledger.reload
 
-        expect(observee_ledger.points_to_spend).to eq(20.0)
-        expect(observer_ledger.points_to_give).to eq(20.0)  # 20 * 1.0 = 20
+        expect(observee_ledger.points_to_spend).to eq(20)
+        expect(observer_ledger.points_to_give).to eq(20)  # 20 * 1.0 = 20
       end
     end
   end

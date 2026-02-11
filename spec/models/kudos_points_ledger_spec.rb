@@ -12,24 +12,24 @@ RSpec.describe KudosPointsLedger, type: :model do
     subject { build(:kudos_points_ledger, company_teammate: company_teammate) }
 
     it { should validate_uniqueness_of(:company_teammate_id).scoped_to(:organization_id) }
-    it { should validate_numericality_of(:points_to_give).is_greater_than_or_equal_to(-1000) }
-    it { should validate_numericality_of(:points_to_spend).is_greater_than_or_equal_to(-1000) }
+    it { should validate_numericality_of(:points_to_give).only_integer.is_greater_than_or_equal_to(0) }
+    it { should validate_numericality_of(:points_to_spend).only_integer.is_greater_than_or_equal_to(0) }
 
-    context 'half increment validation' do
+    context 'integer validation' do
       it 'allows whole numbers' do
-        ledger = build(:kudos_points_ledger, company_teammate: company_teammate, points_to_give: 10.0)
+        ledger = build(:kudos_points_ledger, company_teammate: company_teammate, points_to_give: 10)
         expect(ledger).to be_valid
       end
 
-      it 'allows half increments' do
+      it 'rejects decimals' do
         ledger = build(:kudos_points_ledger, company_teammate: company_teammate, points_to_give: 10.5)
-        expect(ledger).to be_valid
+        expect(ledger).not_to be_valid
+        expect(ledger.errors[:points_to_give]).to include('must be an integer')
       end
 
-      it 'rejects quarter increments' do
-        ledger = build(:kudos_points_ledger, company_teammate: company_teammate, points_to_give: 10.25)
+      it 'rejects negative values' do
+        ledger = build(:kudos_points_ledger, company_teammate: company_teammate, points_to_give: -1)
         expect(ledger).not_to be_valid
-        expect(ledger.errors[:points_to_give]).to include('must be in 0.5 increments')
       end
     end
   end
@@ -58,74 +58,74 @@ RSpec.describe KudosPointsLedger, type: :model do
   end
 
   describe 'instance methods' do
-    let(:ledger) { create(:kudos_points_ledger, points_to_give: 50.0, points_to_spend: 25.0) }
+    let(:ledger) { create(:kudos_points_ledger, points_to_give: 50, points_to_spend: 25) }
 
     describe '#add_to_give' do
       it 'increments points_to_give' do
-        ledger.add_to_give(10.0)
-        expect(ledger.reload.points_to_give).to eq(60.0)
+        ledger.add_to_give(10)
+        expect(ledger.reload.points_to_give).to eq(60)
       end
     end
 
     describe '#add_to_spend' do
       it 'increments points_to_spend' do
-        ledger.add_to_spend(10.0)
-        expect(ledger.reload.points_to_spend).to eq(35.0)
+        ledger.add_to_spend(10)
+        expect(ledger.reload.points_to_spend).to eq(35)
       end
     end
 
     describe '#deduct_from_give' do
       it 'decrements points_to_give' do
-        ledger.deduct_from_give(10.0)
-        expect(ledger.reload.points_to_give).to eq(40.0)
+        ledger.deduct_from_give(10)
+        expect(ledger.reload.points_to_give).to eq(40)
       end
 
       it 'raises InsufficientBalance when not enough points' do
-        expect { ledger.deduct_from_give(100.0) }.to raise_error(KudosPointsLedger::InsufficientBalance)
+        expect { ledger.deduct_from_give(100) }.to raise_error(KudosPointsLedger::InsufficientBalance)
       end
     end
 
     describe '#apply_debit_from_give' do
       it 'decrements points_to_give without balance check (allows overdraft)' do
-        ledger.apply_debit_from_give(10.0)
-        expect(ledger.reload.points_to_give).to eq(40.0)
+        ledger.apply_debit_from_give(10)
+        expect(ledger.reload.points_to_give).to eq(40)
       end
 
-      it 'allows balance to go negative' do
-        ledger.update!(points_to_give: 3.0)
-        ledger.apply_debit_from_give(10.0)
-        expect(ledger.reload.points_to_give).to eq(-7.0)
+      it 'allows balance to go negative (overdraft)' do
+        ledger.update!(points_to_give: 3)
+        ledger.apply_debit_from_give(10)
+        expect(ledger.reload.points_to_give).to eq(-7)
       end
     end
 
     describe '#deduct_from_spend' do
       it 'decrements points_to_spend' do
-        ledger.deduct_from_spend(10.0)
-        expect(ledger.reload.points_to_spend).to eq(15.0)
+        ledger.deduct_from_spend(10)
+        expect(ledger.reload.points_to_spend).to eq(15)
       end
 
       it 'raises InsufficientBalance when not enough points' do
-        expect { ledger.deduct_from_spend(100.0) }.to raise_error(KudosPointsLedger::InsufficientBalance)
+        expect { ledger.deduct_from_spend(100) }.to raise_error(KudosPointsLedger::InsufficientBalance)
       end
     end
 
     describe '#can_give?' do
       it 'returns true when enough points' do
-        expect(ledger.can_give?(50.0)).to be true
+        expect(ledger.can_give?(50)).to be true
       end
 
       it 'returns false when not enough points' do
-        expect(ledger.can_give?(100.0)).to be false
+        expect(ledger.can_give?(100)).to be false
       end
     end
 
     describe '#can_spend?' do
       it 'returns true when enough points' do
-        expect(ledger.can_spend?(25.0)).to be true
+        expect(ledger.can_spend?(25)).to be true
       end
 
       it 'returns false when not enough points' do
-        expect(ledger.can_spend?(100.0)).to be false
+        expect(ledger.can_spend?(100)).to be false
       end
     end
 

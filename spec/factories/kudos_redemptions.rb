@@ -4,7 +4,7 @@ FactoryBot.define do
     association :company_teammate
     association :kudos_reward
 
-    points_spent { 100.0 }
+    points_spent { 100 }
     status { 'pending' }
     fulfilled_at { nil }
     external_reference { nil }

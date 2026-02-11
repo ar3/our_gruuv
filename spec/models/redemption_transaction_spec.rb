@@ -89,7 +89,7 @@ RSpec.describe RedemptionTransaction, type: :model do
 
     describe '#transaction_summary' do
       it 'returns a summary of the transaction' do
-        expect(transaction.transaction_summary).to eq("Redeemed 100.0 points for #{reward.name}")
+        expect(transaction.transaction_summary).to eq("Redeemed 100 points for #{reward.name}")
       end
     end
   end
@@ -99,7 +99,7 @@ RSpec.describe RedemptionTransaction, type: :model do
       create(:kudos_points_ledger,
         company_teammate: teammate,
         organization: organization,
-        points_to_spend: 200.0)
+        points_to_spend: 200)
     end
 
     let(:transaction) do
@@ -111,11 +111,11 @@ RSpec.describe RedemptionTransaction, type: :model do
     end
 
     it 'deducts points from the ledger' do
-      expect { transaction.apply_to_ledger! }.to change { ledger.reload.points_to_spend }.from(200.0).to(100.0)
+      expect { transaction.apply_to_ledger! }.to change { ledger.reload.points_to_spend }.from(200).to(100)
     end
 
     it 'raises error if insufficient balance' do
-      ledger.update!(points_to_spend: 50.0)
+      ledger.update!(points_to_spend: 50)
       expect { transaction.apply_to_ledger! }.to raise_error(KudosPointsLedger::InsufficientBalance)
     end
   end

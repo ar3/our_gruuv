@@ -10,9 +10,8 @@ class KudosRedemption < ApplicationRecord
   # Status values
   STATUSES = %w[pending processing fulfilled failed cancelled].freeze
 
-  validates :points_spent, presence: true, numericality: { greater_than: 0 }
+  validates :points_spent, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validates :status, presence: true, inclusion: { in: STATUSES }
-  validate :points_in_half_increments
   validate :reward_belongs_to_organization
   validate :teammate_belongs_to_organization
 
@@ -115,14 +114,6 @@ class KudosRedemption < ApplicationRecord
   class InvalidStateTransition < StandardError; end
 
   private
-
-  def points_in_half_increments
-    return unless points_spent.present?
-
-    if (points_spent * 2) % 1 != 0
-      errors.add(:points_spent, 'must be in 0.5 increments')
-    end
-  end
 
   def reward_belongs_to_organization
     return unless kudos_reward && organization

@@ -4,7 +4,7 @@ FactoryBot.define do
 
     sequence(:name) { |n| "Reward #{n}" }
     description { "A great reward for your hard work" }
-    cost_in_points { 100.0 }
+    cost_in_points { 100 }
     reward_type { 'gift_card' }
     active { true }
     deleted_at { nil }
@@ -43,11 +43,11 @@ FactoryBot.define do
     end
 
     trait :cheap do
-      cost_in_points { 10.0 }
+      cost_in_points { 10 }
     end
 
     trait :expensive do
-      cost_in_points { 500.0 }
+      cost_in_points { 500 }
     end
   end
 end

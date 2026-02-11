@@ -101,7 +101,7 @@ module KudosHelper
   end
 
   def kudos_points_display(points)
-    formatted = number_with_precision(points.to_f, strip_insignificant_zeros: true)
+    formatted = number_with_delimiter(points.to_i)
     "#{formatted} #{company_label_plural('kudos_point', 'Kudos Point')}"
   end
 

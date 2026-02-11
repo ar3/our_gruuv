@@ -36,7 +36,7 @@
             .col-md-6
               = f.label :points_to_give, "Points to Give", class: "form-label fw-semibold"
               .input-group
-                = f.number_field :points_to_give, class: "form-control", min: 0, step: 0.5, placeholder: "0"
+                = f.number_field :points_to_give, class: "form-control", min: 0, step: 1, placeholder: "0"
                 %span.input-group-text points
               %small.form-text.text-muted
                 Points the recipient can give to others
@@ -44,7 +44,7 @@
             .col-md-6
               = f.label :points_to_spend, "Points to Spend", class: "form-label fw-semibold"
               .input-group
-                = f.number_field :points_to_spend, class: "form-control", min: 0, step: 0.5, placeholder: "0"
+                = f.number_field :points_to_spend, class: "form-control", min: 0, step: 1, placeholder: "0"
                 %span.input-group-text points
               %small.form-text.text-muted
                 Points the recipient can redeem for rewards

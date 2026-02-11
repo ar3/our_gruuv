@@ -8,9 +8,8 @@ class KudosReward < ApplicationRecord
   REWARD_TYPES = %w[gift_card merchandise experience donation custom].freeze
 
   validates :name, presence: true
-  validates :cost_in_points, presence: true, numericality: { greater_than: 0 }
+  validates :cost_in_points, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validates :reward_type, presence: true, inclusion: { in: REWARD_TYPES }
-  validate :cost_in_half_increments
 
   # Scopes
   scope :active, -> { where(active: true, deleted_at: nil) }
@@ -82,16 +81,8 @@ class KudosReward < ApplicationRecord
   end
 
   def display_cost
-    "#{cost_in_points.to_i} points" + (cost_in_points % 1 != 0 ? " (#{cost_in_points} points)" : "")
+    "#{cost_in_points} points"
   end
 
   private
-
-  def cost_in_half_increments
-    return unless cost_in_points.present?
-
-    if (cost_in_points * 2) % 1 != 0
-      errors.add(:cost_in_points, 'must be in 0.5 increments')
-    end
-  end
 end

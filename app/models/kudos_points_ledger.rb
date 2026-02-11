@@ -3,8 +3,7 @@ class KudosPointsLedger < ApplicationRecord
   belongs_to :organization
 
   validates :company_teammate_id, uniqueness: { scope: :organization_id }
-  validates :points_to_give, :points_to_spend, numericality: { greater_than_or_equal_to: -1000 }
-  validate :points_in_half_increments
+  validates :points_to_give, :points_to_spend, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
   scope :for_organization, ->(org) { where(organization: org) }
   scope :with_balance, -> { where('points_to_give > 0 OR points_to_spend > 0') }
@@ -29,8 +28,10 @@ class KudosPointsLedger < ApplicationRecord
   end
 
   # Applies a debit without balance check (used for allowed overdraft in observer award flow).
+  # Uses update_column to allow negative balance without triggering >= 0 validation.
   def apply_debit_from_give(amount)
-    decrement!(:points_to_give, amount)
+    new_balance = points_to_give - amount
+    update_columns(points_to_give: new_balance, updated_at: Time.current)
   end
 
   def deduct_from_spend(amount)
@@ -68,13 +69,4 @@ class KudosPointsLedger < ApplicationRecord
   end
 
   private
-
-  def points_in_half_increments
-    if points_to_give.present? && (points_to_give * 2) % 1 != 0
-      errors.add(:points_to_give, 'must be in 0.5 increments')
-    end
-    if points_to_spend.present? && (points_to_spend * 2) % 1 != 0
-      errors.add(:points_to_spend, 'must be in 0.5 increments')
-    end
-  end
 end

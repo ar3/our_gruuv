@@ -25,10 +25,10 @@ RSpec.describe KudosRedemption, type: :model do
       expect(redemption).not_to be_valid
     end
 
-    it 'requires points_spent to be in 0.5 increments' do
+    it 'requires points_spent to be an integer' do
       redemption = build(:kudos_redemption, points_spent: 10.3)
       expect(redemption).not_to be_valid
-      expect(redemption.errors[:points_spent]).to include("must be in 0.5 increments")
+      expect(redemption.errors[:points_spent]).to include("must be an integer")
     end
 
     it 'requires a valid status' do

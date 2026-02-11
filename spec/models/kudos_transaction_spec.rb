@@ -10,27 +10,22 @@ RSpec.describe KudosTransaction, type: :model do
   end
 
   describe 'validations' do
-    describe 'half increment validation' do
+    describe 'integer validation' do
       let(:transaction) { build(:kudos_transaction) }
 
       it 'allows whole numbers for points_to_give_delta' do
-        transaction.points_to_give_delta = 10.0
+        transaction.points_to_give_delta = 10
         expect(transaction).to be_valid
       end
 
-      it 'allows half increments for points_to_give_delta' do
+      it 'rejects decimals for points_to_give_delta' do
         transaction.points_to_give_delta = 10.5
-        expect(transaction).to be_valid
-      end
-
-      it 'rejects quarter increments for points_to_give_delta' do
-        transaction.points_to_give_delta = 10.25
         expect(transaction).not_to be_valid
-        expect(transaction.errors[:points_to_give_delta]).to include('must be in 0.5 increments')
+        expect(transaction.errors[:points_to_give_delta]).to include('must be an integer')
       end
 
-      it 'allows negative half increments' do
-        transaction.points_to_give_delta = -5.5
+      it 'allows negative integers' do
+        transaction.points_to_give_delta = -5
         expect(transaction).to be_valid
       end
     end
@@ -69,41 +64,41 @@ RSpec.describe KudosTransaction, type: :model do
   describe '#apply_to_ledger!' do
     let(:company_teammate) { create(:company_teammate) }
     let(:organization) { company_teammate.organization }
-    let!(:ledger) { create(:kudos_points_ledger, company_teammate: company_teammate, organization: organization, points_to_give: 50.0, points_to_spend: 25.0) }
+    let!(:ledger) { create(:kudos_points_ledger, company_teammate: company_teammate, organization: organization, points_to_give: 50, points_to_spend: 25) }
 
     context 'with positive deltas' do
-      let(:transaction) { build(:kudos_transaction, company_teammate: company_teammate, organization: organization, points_to_give_delta: 10.0, points_to_spend_delta: 5.0) }
+      let(:transaction) { build(:kudos_transaction, company_teammate: company_teammate, organization: organization, points_to_give_delta: 10, points_to_spend_delta: 5) }
 
       it 'adds points to the ledger' do
         transaction.save!
         transaction.apply_to_ledger!
         ledger.reload
-        expect(ledger.points_to_give).to eq(60.0)
-        expect(ledger.points_to_spend).to eq(30.0)
+        expect(ledger.points_to_give).to eq(60)
+        expect(ledger.points_to_spend).to eq(30)
       end
     end
 
     context 'with negative deltas' do
-      let(:transaction) { build(:kudos_transaction, company_teammate: company_teammate, organization: organization, points_to_give_delta: -10.0, points_to_spend_delta: -5.0) }
+      let(:transaction) { build(:kudos_transaction, company_teammate: company_teammate, organization: organization, points_to_give_delta: -10, points_to_spend_delta: -5) }
 
       it 'deducts points from the ledger' do
         transaction.save!
         transaction.apply_to_ledger!
         ledger.reload
-        expect(ledger.points_to_give).to eq(40.0)
-        expect(ledger.points_to_spend).to eq(20.0)
+        expect(ledger.points_to_give).to eq(40)
+        expect(ledger.points_to_spend).to eq(20)
       end
     end
 
     context 'when ledger does not exist' do
       let(:new_teammate) { create(:company_teammate, organization: organization) }
-      let(:transaction) { build(:kudos_transaction, company_teammate: new_teammate, organization: organization, points_to_give_delta: 10.0) }
+      let(:transaction) { build(:kudos_transaction, company_teammate: new_teammate, organization: organization, points_to_give_delta: 10) }
 
       it 'creates a ledger and applies the transaction' do
         transaction.save!
         expect { transaction.apply_to_ledger! }.to change(KudosPointsLedger, :count).by(1)
         new_ledger = new_teammate.kudos_points_ledger
-        expect(new_ledger.points_to_give).to eq(10.0)
+        expect(new_ledger.points_to_give).to eq(10)
       end
     end
   end
@@ -117,13 +112,13 @@ RSpec.describe KudosTransaction, type: :model do
 
   describe '#net_points_change' do
     it 'sums give and spend deltas' do
-      transaction = build(:kudos_transaction, points_to_give_delta: 10.0, points_to_spend_delta: 5.0)
-      expect(transaction.net_points_change).to eq(15.0)
+      transaction = build(:kudos_transaction, points_to_give_delta: 10, points_to_spend_delta: 5)
+      expect(transaction.net_points_change).to eq(15)
     end
 
     it 'handles nil deltas' do
       transaction = build(:kudos_transaction, points_to_give_delta: nil, points_to_spend_delta: nil)
-      expect(transaction.net_points_change).to eq(0.0)
+      expect(transaction.net_points_change).to eq(0)
     end
   end
 end

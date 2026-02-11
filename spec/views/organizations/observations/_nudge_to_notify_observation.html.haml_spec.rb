@@ -13,7 +13,7 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     obs.publish!
     obs
   end
-  let(:observer_ledger) { create(:kudos_points_ledger, company_teammate: observer_teammate, organization: company, points_to_give: 25.0, points_to_spend: 0) }
+  let(:observer_ledger) { create(:kudos_points_ledger, company_teammate: observer_teammate, organization: company, points_to_give: 25, points_to_spend: 0) }
   let(:observees_for_kudos) { [{ person: observee_person, role: 'Observed' }] }
 
   before do
@@ -31,7 +31,7 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     allow(view).to receive(:share_publicly_organization_observation_path).and_return("#")
     allow(view).to receive(:share_privately_organization_observation_path).and_return("#")
     allow(view).to receive(:award_kudos_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/award_kudos")
-    allow(view).to receive(:kudos_points_display).with(25.0).and_return('25.0 points ($2.50)')
+    allow(view).to receive(:kudos_points_display).with(25).and_return('25 Kudos Points')
     allow(view).to receive(:company_label_plural).with('kudos_point', 'Kudos Point').and_return('Kudos Points')
     allow(view).to receive(:company_label_for).with('kudos_point', 'Kudos Point').and_return('Kudos Point')
   end
@@ -81,7 +81,7 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     it 'shows observer balance and per-rating reward toggle and points dropdown' do
       render partial: 'organizations/observations/nudge_to_notify_observation'
       expect(rendered).to include('Your banked Kudos Points to give')
-      expect(rendered).to include('25.0 points ($2.50)')
+      expect(rendered).to include('25 Kudos Points')
       expect(rendered).to include('Reward this rating')
       expect(rendered).to have_css('input[type="checkbox"][name^="award_by_rating"]')
       expect(rendered).to have_css('select[name^="award_by_rating"]')

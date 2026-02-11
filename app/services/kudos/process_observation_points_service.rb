@@ -9,14 +9,14 @@ class Kudos::ProcessObservationPointsService
   # Constructive: Points come from company bank, observer gets larger kickback
   DEFAULT_CONFIGS = {
     recognition: {
-      points_per_observee: 10.0,       # Points to spend given to each observee
+      points_per_observee: 10,         # Points to spend given to each observee
       observer_kickback_give: 0.5,     # Points to give earned by observer per point given
-      observer_kickback_spend: 0.0     # Points to spend earned by observer
+      observer_kickback_spend: 0       # Points to spend earned by observer
     },
     constructive: {
-      points_per_observee: 5.0,        # Points to spend given to each observee (from company bank)
-      observer_kickback_give: 2.0,     # Points to give earned by observer
-      observer_kickback_spend: 2.0     # Points to spend earned by observer
+      points_per_observee: 5,          # Points to spend given to each observee (from company bank)
+      observer_kickback_give: 2,       # Points to give earned by observer
+      observer_kickback_spend: 2        # Points to spend earned by observer
     }
   }.freeze
 
@@ -104,13 +104,13 @@ class Kudos::ProcessObservationPointsService
     end
   end
 
-  # Split points among observees, round up to nearest 0.5
+  # Split points among observees; when multiple, round up each share to nearest whole number
   def calculate_points_per_observee(total_points)
     count = @observees.count
     return normalize_points(total_points) if count == 1
 
     per_person = total_points.to_f / count
-    normalize_points(per_person)
+    per_person.ceil.to_i
   end
 
   def award_points_to_observee(recipient, points, feedback_type)
@@ -142,12 +142,10 @@ class Kudos::ProcessObservationPointsService
     )
   end
 
-  # Normalize points to 0.5 increments (round up)
+  # Normalize points to whole numbers (integers)
   def normalize_points(value)
-    return 0.0 if value.blank? || value.to_f <= 0
+    return 0 if value.blank? || value.to_f <= 0
 
-    raw = value.to_f
-    # Round up to nearest 0.5
-    (raw * 2).ceil / 2.0
+    value.to_f.round
   end
 end

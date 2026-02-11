@@ -26,14 +26,14 @@ RSpec.describe KudosReward, type: :model do
       expect(reward.errors[:cost_in_points]).to include("must be greater than 0")
     end
 
-    it 'requires cost_in_points to be in 0.5 increments' do
+    it 'requires cost_in_points to be an integer' do
       reward = build(:kudos_reward, cost_in_points: 10.3)
       expect(reward).not_to be_valid
-      expect(reward.errors[:cost_in_points]).to include("must be in 0.5 increments")
+      expect(reward.errors[:cost_in_points]).to include("must be an integer")
     end
 
-    it 'allows cost_in_points in 0.5 increments' do
-      reward = build(:kudos_reward, cost_in_points: 10.5)
+    it 'allows integer cost_in_points' do
+      reward = build(:kudos_reward, cost_in_points: 10)
       expect(reward).to be_valid
     end
 
@@ -110,11 +110,6 @@ RSpec.describe KudosReward, type: :model do
     describe '#display_cost' do
       it 'returns a formatted cost string' do
         expect(reward.display_cost).to eq("100 points")
-      end
-
-      it 'shows decimal points if present' do
-        reward.update!(cost_in_points: 10.5)
-        expect(reward.display_cost).to include("10.5 points")
       end
     end
 

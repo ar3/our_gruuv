@@ -3346,6 +3346,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
   describe 'POST #award_kudos' do
     let(:published_observation) do
       obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+      obs.observees.clear # avoid second observee from factory so we have exactly one
       obs.observees.build(teammate: observee_teammate)
       obs.save!
       obs.publish!
@@ -3363,7 +3364,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
     before do
       observer_teammate # ensure observer has a teammate record
-      create(:kudos_points_ledger, company_teammate: observer_teammate, organization: company, points_to_give: 50.0, points_to_spend: 0)
+      create(:kudos_points_ledger, company_teammate: observer_teammate, organization: company, points_to_give: 50, points_to_spend: 0)
     end
 
     context 'when observer has sufficient balance' do
@@ -3467,8 +3468,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(response).to redirect_to(organization_observation_path(company, published_observation))
         expect(flash[:notice]).to eq('Points awarded successfully.')
         expect(ObserverGiveTransaction.exists?(observation: published_observation)).to be true
-        # 0 - 5 (debit) + 2.5 (recognition kickback 0.5 * 5) = -2.5
-        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(-2.5)
+        # 0 - 5 (debit) + 3 (recognition kickback 0.5*5 rounded) = -2 (integers)
+        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(-2)
       end
     end
   end

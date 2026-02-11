@@ -85,12 +85,12 @@ RSpec.describe KickbackRewardTransaction, type: :model do
 
     describe '#reward_summary' do
       it 'returns a summary of the reward' do
-        expect(transaction.reward_summary).to eq("5.0 points to give and 2.0 points to spend")
+        expect(transaction.reward_summary).to eq("5 points to give and 2 points to spend")
       end
 
       it 'only mentions non-zero amounts' do
         transaction.points_to_spend_delta = 0
-        expect(transaction.reward_summary).to eq("5.0 points to give")
+        expect(transaction.reward_summary).to eq("5 points to give")
       end
     end
   end

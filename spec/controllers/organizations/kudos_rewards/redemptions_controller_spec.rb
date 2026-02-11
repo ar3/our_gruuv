@@ -13,7 +13,7 @@ RSpec.describe Organizations::KudosRewards::RedemptionsController, type: :contro
     create(:kudos_points_ledger,
       company_teammate: regular_teammate,
       organization: organization,
-      points_to_spend: 100.0)
+      points_to_spend: 100)
   end
 
   describe 'GET #index' do
@@ -106,7 +106,7 @@ RSpec.describe Organizations::KudosRewards::RedemptionsController, type: :contro
     it 'deducts points from ledger' do
       expect {
         post :create, params: valid_params
-      }.to change { ledger.reload.points_to_spend }.by(-50.0)
+      }.to change { ledger.reload.points_to_spend }.by(-50)
     end
 
     it 'redirects to redemption show on success' do
@@ -115,7 +115,7 @@ RSpec.describe Organizations::KudosRewards::RedemptionsController, type: :contro
     end
 
     context 'with insufficient balance' do
-      before { ledger.update!(points_to_spend: 10.0) }
+      before { ledger.update!(points_to_spend: 10) }
 
       it 'redirects with error' do
         post :create, params: valid_params
@@ -163,7 +163,7 @@ RSpec.describe Organizations::KudosRewards::RedemptionsController, type: :contro
       # Start with 100 points, redemption cost 50, so after refund should be 150
       expect {
         post :cancel, params: { organization_id: organization.id, id: redemption.id, reason: 'Test cancel' }
-      }.to change { ledger.reload.points_to_spend }.by(50.0)
+      }.to change { ledger.reload.points_to_spend }.by(50)
     end
   end
 end

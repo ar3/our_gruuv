@@ -13,7 +13,7 @@
         .col-md-6
           = f.label :cost_in_points, "Cost (in points)", class: "form-label"
           .input-group
-            = f.number_field :cost_in_points, class: "form-control", required: true, min: 0.5, step: 0.5, placeholder: "100"
+            = f.number_field :cost_in_points, class: "form-control", required: true, min: 1, step: 1, placeholder: "100"
             %span.input-group-text points
           %small.text-muted
             = number_to_currency((@reward.cost_in_points || 0) / 10.0)

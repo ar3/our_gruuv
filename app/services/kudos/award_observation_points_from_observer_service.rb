@@ -32,11 +32,19 @@ class Kudos::AwardObservationPointsFromObserverService
     observer_ledger = observer_teammate.kudos_ledger
     balance = observer_ledger.points_to_give
 
+    points_per_observee = calculate_points_per_observee(@points_total)
+    total_to_deduct = @observees.count > 1 ? (points_per_observee * @observees.count) : points_per_observee
+
     min_for_single_rating = nil
     min_for_single_rating = min_for_rating(@rating_rewards.first[:observation_rating_id]) if @rating_rewards.size == 1
 
-    allowed = balance >= @points_total
-    allowed = (balance + min_for_single_rating.to_f) >= @points_total if !allowed && @rating_rewards.size == 1 && min_for_single_rating
+    deduct_int = total_to_deduct.to_i
+    min_int = min_for_single_rating&.to_i
+    allowed = balance >= total_to_deduct
+    if !allowed && @rating_rewards.size == 1 && min_int
+      # Allow overdraft when awarding at or below the minimum for that single rating
+      allowed = deduct_int <= min_int || (balance.to_i + min_int) >= deduct_int
+    end
 
     unless allowed
       return Result.err(
@@ -44,7 +52,7 @@ class Kudos::AwardObservationPointsFromObserverService
       )
     end
 
-    use_overdraft_path = balance < @points_total
+    use_overdraft_path = balance < total_to_deduct
 
     transactions = []
 
@@ -53,17 +61,15 @@ class Kudos::AwardObservationPointsFromObserverService
         company_teammate: observer_teammate,
         organization: @organization,
         observation: @observation,
-        points_to_give_delta: -@points_total,
+        points_to_give_delta: -total_to_deduct,
         points_to_spend_delta: 0
       )
       if use_overdraft_path
-        observer_ledger.apply_debit_from_give(@points_total)
+        observer_ledger.apply_debit_from_give(total_to_deduct)
       else
         observer_debit.apply_to_ledger!
       end
       transactions << observer_debit
-
-      points_per_observee = calculate_points_per_observee(@points_total)
       @observees.each do |observee|
         exchange = PointsExchangeTransaction.create!(
           company_teammate: observee.company_teammate,
@@ -135,15 +141,15 @@ class Kudos::AwardObservationPointsFromObserverService
     count = @observees.count
     return normalize_points(total_points) if count == 1
 
+    # When multiple recipients, round up each share to nearest whole number
     per_person = total_points.to_f / count
-    normalize_points(per_person)
+    per_person.ceil.to_i
   end
 
   def normalize_points(value)
-    return 0.0 if value.blank? || value.to_f <= 0
+    return 0 if value.blank? || value.to_f <= 0
 
-    raw = value.to_f
-    (raw * 2).ceil / 2.0
+    value.to_f.round
   end
 
   DEFAULT_CONFIGS = {

@@ -10,7 +10,7 @@ RSpec.describe Kudos::RedeemRewardService do
     create(:kudos_points_ledger,
       company_teammate: teammate,
       organization: organization,
-      points_to_spend: 200.0)
+      points_to_spend: 200)
   end
 
   describe '.call' do
@@ -99,7 +99,7 @@ RSpec.describe Kudos::RedeemRewardService do
     end
 
     context 'when teammate has insufficient points' do
-      before { ledger.update!(points_to_spend: 50.0) }
+      before { ledger.update!(points_to_spend: 50) }
 
       it 'returns an error result' do
         result = described_class.call(company_teammate: teammate, reward: reward)
@@ -116,13 +116,13 @@ RSpec.describe Kudos::RedeemRewardService do
     end
 
     context 'when redeeming exact balance' do
-      before { ledger.update!(points_to_spend: 100.0) }
+      before { ledger.update!(points_to_spend: 100) }
 
       it 'succeeds and reduces balance to zero' do
         result = described_class.call(company_teammate: teammate, reward: reward)
 
         expect(result.ok?).to be true
-        expect(ledger.reload.points_to_spend).to eq(0.0)
+        expect(ledger.reload.points_to_spend).to eq(0)
       end
     end
 
@@ -135,12 +135,12 @@ RSpec.describe Kudos::RedeemRewardService do
 
         expect(result1.ok?).to be true
         expect(result2.ok?).to be true
-        expect(ledger.reload.points_to_spend).to eq(50.0)
+        expect(ledger.reload.points_to_spend).to eq(50)
       end
 
       it 'fails second redemption if not enough points' do
         # Reduce balance so second redemption fails
-        ledger.update!(points_to_spend: 150.0)
+        ledger.update!(points_to_spend: 150)
 
         result1 = described_class.call(company_teammate: teammate, reward: reward)
         result2 = described_class.call(company_teammate: teammate, reward: reward)

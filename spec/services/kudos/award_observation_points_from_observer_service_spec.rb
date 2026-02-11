@@ -34,7 +34,7 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
       let!(:positive_rating) { create(:observation_rating, :agree, :with_ability, observation: observation) }
 
       before do
-        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
+        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50, points_to_spend: 0)
       end
 
       it 'creates observer debit, point exchange, and kickback transactions' do
@@ -55,12 +55,12 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
       it 'deducts from observer points_to_give and adds recognition kickback' do
         described_class.call(observation: observation, rating_rewards: rating_rewards_for(observation, points: 10))
         # 50 - 10 (debit) + 5 (recognition kickback 0.5 * 10) = 45
-        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(45.0)
+        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(45)
       end
 
       it 'awards points to observee' do
         described_class.call(observation: observation, rating_rewards: rating_rewards_for(observation, points: 10))
-        expect(observee_teammate.kudos_ledger.reload.points_to_spend).to eq(10.0)
+        expect(observee_teammate.kudos_ledger.reload.points_to_spend).to eq(10)
       end
     end
 
@@ -71,19 +71,33 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
       let!(:positive_rating) { create(:observation_rating, :agree, :with_ability, observation: observation) }
 
       before do
-        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
+        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50, points_to_spend: 0)
       end
 
-      it 'splits points equally between observees' do
+      it 'splits points equally between observees (each gets whole number)' do
         described_class.call(observation: observation, rating_rewards: rating_rewards_for(observation, points: 10))
-        expect(observee_teammate1.kudos_ledger.reload.points_to_spend).to eq(5.0)
-        expect(observee_teammate2.kudos_ledger.reload.points_to_spend).to eq(5.0)
+        expect(observee_teammate1.kudos_ledger.reload.points_to_spend).to eq(5)
+        expect(observee_teammate2.kudos_ledger.reload.points_to_spend).to eq(5)
       end
 
       it 'deducts full total from observer and adds recognition kickback' do
         described_class.call(observation: observation, rating_rewards: rating_rewards_for(observation, points: 10))
         # 50 - 10 (debit) + 5 (recognition kickback 0.5 * 10) = 45
-        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(45.0)
+        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(45)
+      end
+
+      it 'rounds each share up to whole number when splitting (10 total, 3 observees => 4 each, 12 debited)' do
+        observee3 = create(:company_teammate, organization: organization)
+        obs = build_observation(org: organization, observer: observer_person, observees: [observee_teammate1, observee_teammate2, observee3])
+        create(:observation_rating, :agree, :with_ability, observation: obs)
+        # observer_ledger already created by parent context before block
+
+        described_class.call(observation: obs, rating_rewards: rating_rewards_for(obs, points: 10))
+
+        expect(observee_teammate1.kudos_ledger.reload.points_to_spend).to eq(4)
+        expect(observee_teammate2.kudos_ledger.reload.points_to_spend).to eq(4)
+        expect(observee3.kudos_ledger.reload.points_to_spend).to eq(4)
+        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(43)  # 50 - 12 (debit) + 5 (kickback 0.5*10)
       end
     end
 
@@ -92,7 +106,7 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
       let!(:positive_rating) { create(:observation_rating, :agree, :with_ability, observation: observation) }
 
       before do
-        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
+        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50, points_to_spend: 0)
       end
 
       it 'excludes observer from recipients and returns error' do
@@ -109,7 +123,7 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
       let!(:positive_rating) { create(:observation_rating, :agree, :with_ability, observation: observation) }
 
       before do
-        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 2.0, points_to_spend: 0)
+        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 2, points_to_spend: 0)
       end
 
       it 'returns error and does not create transactions' do
@@ -131,11 +145,11 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
         create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 0, points_to_spend: 0)
       end
 
-      it 'succeeds and ledger goes negative (debit 5, then kickback 2.5 => -2.5)' do
+      it 'succeeds and ledger goes negative (debit 5, then kickback 3 => -2)' do
         result = described_class.call(observation: observation, rating_rewards: rating_rewards_for(observation, points: 5))
         expect(result.ok?).to be true
-        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(-2.5)
-        expect(observee_teammate.kudos_ledger.reload.points_to_spend).to eq(5.0)
+        expect(observer_teammate.kudos_ledger.reload.points_to_give).to eq(-2)
+        expect(observee_teammate.kudos_ledger.reload.points_to_spend).to eq(5)
       end
     end
 
@@ -145,7 +159,7 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
       let!(:positive_rating) { create(:observation_rating, :agree, :with_ability, observation: observation) }
 
       before do
-        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
+        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50, points_to_spend: 0)
         create(:points_exchange_transaction, observation: observation, company_teammate: observee_teammate, organization: organization, points_to_spend_delta: 10)
       end
 
@@ -162,7 +176,7 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
       let!(:positive_rating) { create(:observation_rating, :agree, :with_ability, observation: observation) }
 
       before do
-        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
+        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50, points_to_spend: 0)
       end
 
       it 'returns error' do
@@ -177,7 +191,7 @@ RSpec.describe Kudos::AwardObservationPointsFromObserverService do
       let(:observation) { build_observation(org: organization, observer: observer_person, observees: [observee_teammate]) }
 
       before do
-        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
+        create(:kudos_points_ledger, company_teammate: observer_teammate, organization: organization, points_to_give: 50, points_to_spend: 0)
       end
 
       it 'returns error' do

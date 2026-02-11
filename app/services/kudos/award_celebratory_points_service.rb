@@ -7,13 +7,13 @@ class Kudos::AwardCelebratoryPointsService
   # Default point configurations for each moment type
   # Organizations can override these in their kudos_points_economy_config
   DEFAULT_CONFIGS = {
-    'new_hire' => { 'points_to_give' => 50.0, 'points_to_spend' => 25.0 },
-    'seat_change' => { 'points_to_give' => 25.0, 'points_to_spend' => 10.0 },
-    'ability_milestone' => { 'points_to_give' => 20.0, 'points_to_spend' => 10.0 },
-    'check_in_completed' => { 'points_to_give' => 10.0, 'points_to_spend' => 5.0 },
-    'goal_check_in' => { 'points_to_give' => 5.0, 'points_to_spend' => 2.5 },
-    'birthday' => { 'points_to_give' => 250.0, 'points_to_spend' => 250.0 },
-    'work_anniversary' => { 'points_to_give' => 250.0, 'points_to_spend' => 250.0 }
+    'new_hire' => { 'points_to_give' => 50, 'points_to_spend' => 25 },
+    'seat_change' => { 'points_to_give' => 25, 'points_to_spend' => 10 },
+    'ability_milestone' => { 'points_to_give' => 20, 'points_to_spend' => 10 },
+    'check_in_completed' => { 'points_to_give' => 10, 'points_to_spend' => 5 },
+    'goal_check_in' => { 'points_to_give' => 5, 'points_to_spend' => 3 },
+    'birthday' => { 'points_to_give' => 250, 'points_to_spend' => 250 },
+    'work_anniversary' => { 'points_to_give' => 250, 'points_to_spend' => 250 }
   }.freeze
 
   def initialize(observable_moment:, observation: nil, points_to_give: nil, points_to_spend: nil)
@@ -104,12 +104,10 @@ class Kudos::AwardCelebratoryPointsService
     CelebratoryAwardTransaction.create!(attrs)
   end
 
-  # Normalize points to 0.5 increments (round up)
+  # Normalize points to whole numbers (integers)
   def normalize_points(value)
-    return 0.0 if value.blank? || value.to_f <= 0
+    return 0 if value.blank? || value.to_f <= 0
 
-    raw = value.to_f
-    # Round up to nearest 0.5
-    (raw * 2).ceil / 2.0
+    value.to_f.round
   end
 end

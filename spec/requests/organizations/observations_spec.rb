@@ -764,7 +764,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
 
     before do
-      create(:kudos_points_ledger, company_teammate: teammate, organization: organization, points_to_give: 50.0, points_to_spend: 0)
+      create(:kudos_points_ledger, company_teammate: teammate, organization: organization, points_to_give: 50, points_to_spend: 0)
     end
 
     it 'awards points and redirects with notice' do
@@ -875,7 +875,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
 
     before do
-      create(:kudos_points_ledger, company_teammate: teammate, organization: organization, points_to_give: 25.0, points_to_spend: 0)
+      create(:kudos_points_ledger, company_teammate: teammate, organization: organization, points_to_give: 25, points_to_spend: 0)
       ability = create(:ability, company: organization)
       create(:observation_rating, :agree, observation: observation, rateable: ability)
       organization.update!(kudos_points_economy_config: (organization.kudos_points_economy_config || {}).merge('disable_kudos_points' => 'true'))
