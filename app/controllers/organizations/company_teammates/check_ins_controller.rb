@@ -31,34 +31,35 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   end
   
   def update
-    # Parse giant form and update all check-ins
-    # Handle both old and new parameter structures (with and without check_ins scope)
+    @check_in_errors = []
     check_ins_params = params[:check_ins] || params
-    
+
     update_position_check_in(check_ins_params) if check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
     update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
-    
-    # Determine redirect URL based on button name
+
     redirect_url = determine_redirect_url
-    
-    redirect_to redirect_url, notice: 'Check-ins saved successfully.'
+    if @check_in_errors.any?
+      redirect_to redirect_url, alert: check_in_errors_flash_message
+    else
+      redirect_to redirect_url, notice: 'Check-ins saved successfully.'
+    end
   end
 
   def save_and_redirect
-    # This method is kept for backward compatibility but should not be used with new architecture
-    # Parse giant form and update all check-ins
-    # Handle both old and new parameter structures (with and without check_ins scope)
+    @check_in_errors = []
     check_ins_params = params[:check_ins] || params
-    
+
     update_position_check_in(check_ins_params) if check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
     update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
-    
-    # Determine redirect URL based on button name
+
     redirect_url = determine_redirect_url
-    
-    redirect_to redirect_url, notice: 'Check-ins saved successfully.'
+    if @check_in_errors.any?
+      redirect_to redirect_url, alert: check_in_errors_flash_message
+    else
+      redirect_to redirect_url, notice: 'Check-ins saved successfully.'
+    end
   end
   
   private
@@ -234,61 +235,64 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       next unless assignment_id
 
       assignment = Assignment.find(assignment_id)
-      
-      # First, try to find an existing open check-in (it may have been created without a tenure)
-      check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
-      
-      # If no open check-in exists, try to find or create one (requires tenure)
-      check_in ||= AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
-      
-      # If still no check-in and no tenure, create one anyway (matching load_or_build_assignment_check_ins behavior)
-      if check_in.nil?
-        check_in = AssignmentCheckIn.create!(
-          teammate: @teammate,
-          assignment: assignment,
-          check_in_started_on: Date.current,
-          actual_energy_percentage: nil
-        )
-      end
-      
+      check_in = find_assignment_check_in_for_update(check_in_id, assignment)
       next unless check_in
 
-      # Handle status radio button
-      if attrs[:status] == 'complete'
-        # Only update fields that are present and not empty
-        update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
-        check_in.update!(update_attrs) if update_attrs.present?
-        
-        completion_service = CheckInCompletionService.new(check_in)
-        
-        if @view_mode == :employee
-          completion_service.complete_employee_side!
-        elsif @view_mode == :manager
-          completion_service.complete_manager_side!(completed_by: current_company_teammate)
-        end
+      close_duplicate_open_assignment_check_ins(check_in)
 
-        # Trigger notification if completion was detected
-        if completion_service.completion_detected?
-          CheckIns::NotifyCompletionJob.perform_and_get_result(
-            check_in_id: check_in.id,
-            check_in_type: 'AssignmentCheckIn',
-            completion_state: completion_service.completion_state,
-            organization_id: organization.id
-          )
+      begin
+        if attrs[:status] == 'complete'
+          update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
+          check_in.update!(update_attrs) if update_attrs.present?
+
+          completion_service = CheckInCompletionService.new(check_in)
+          if @view_mode == :employee
+            completion_service.complete_employee_side!
+          elsif @view_mode == :manager
+            completion_service.complete_manager_side!(completed_by: current_company_teammate)
+          end
+
+          if completion_service.completion_detected?
+            CheckIns::NotifyCompletionJob.perform_and_get_result(
+              check_in_id: check_in.id,
+              check_in_type: 'AssignmentCheckIn',
+              completion_state: completion_service.completion_state,
+              organization_id: organization.id
+            )
+          end
+        else
+          update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
+          check_in.update!(update_attrs) if update_attrs.present?
+
+          if @view_mode == :employee
+            check_in.uncomplete_employee_side!
+          elsif @view_mode == :manager
+            check_in.uncomplete_manager_side!
+          end
         end
-      else
-        # Save as draft - uncomplete if previously completed
-        # Only update fields that are present and not empty
-        update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
-        check_in.update!(update_attrs) if update_attrs.present?
-        
-        if @view_mode == :employee
-          check_in.uncomplete_employee_side!
-        elsif @view_mode == :manager
-          check_in.uncomplete_manager_side!
-        end
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+        add_check_in_error(check_in_type: 'Assignment', identifier: assignment.title, message: e.record.errors.full_messages.join(', '))
       end
     end
+  end
+
+  def find_assignment_check_in_for_update(check_in_id, assignment)
+    if check_in_id.to_s =~ /\A\d+\z/
+      found = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).find_by(id: check_in_id)
+      return found if found
+    end
+
+    check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
+    check_in ||= AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
+    if check_in.nil?
+      check_in = AssignmentCheckIn.create!(
+        teammate: @teammate,
+        assignment: assignment,
+        check_in_started_on: Date.current,
+        actual_energy_percentage: nil
+      )
+    end
+    check_in
   end
 
   def update_aspiration_check_ins(check_ins_params = params)
@@ -300,86 +304,93 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       next unless aspiration_id
 
       aspiration = Aspiration.find(aspiration_id)
-      check_in = AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
+      check_in = find_aspiration_check_in_for_update(check_in_id, aspiration)
       next unless check_in
 
-      # Handle status radio button
+      close_duplicate_open_aspiration_check_ins(check_in)
+
+      begin
+        if attrs[:status] == 'complete'
+          update_attrs = attrs.except(:status, :aspiration_id).reject { |k, v| v.blank? }
+          check_in.update!(update_attrs) if update_attrs.present?
+
+          completion_service = CheckInCompletionService.new(check_in)
+          if @view_mode == :employee
+            completion_service.complete_employee_side!
+          elsif @view_mode == :manager
+            completion_service.complete_manager_side!(completed_by: current_company_teammate)
+          end
+
+          if completion_service.completion_detected?
+            CheckIns::NotifyCompletionJob.perform_and_get_result(
+              check_in_id: check_in.id,
+              check_in_type: 'AspirationCheckIn',
+              completion_state: completion_service.completion_state,
+              organization_id: organization.id
+            )
+          end
+        else
+          update_attrs = attrs.except(:status, :aspiration_id).reject { |k, v| v.blank? }
+          check_in.update!(update_attrs) if update_attrs.present?
+
+          if @view_mode == :employee
+            check_in.uncomplete_employee_side!
+          elsif @view_mode == :manager
+            check_in.uncomplete_manager_side!
+          end
+        end
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+        add_check_in_error(check_in_type: 'Aspiration', identifier: aspiration.name, message: e.record.errors.full_messages.join(', '))
+      end
+    end
+  end
+
+  def find_aspiration_check_in_for_update(check_in_id, aspiration)
+    if check_in_id.to_s =~ /\A\d+\z/
+      found = AspirationCheckIn.where(company_teammate: @teammate, aspiration: aspiration).find_by(id: check_in_id)
+      return found if found
+    end
+    AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
+  end
+  
+  def update_position_check_in(check_ins_params = params)
+    check_in = PositionCheckIn.find_or_create_open_for(@teammate)
+    return unless check_in
+
+    attrs = position_check_in_params(check_ins_params)
+
+    begin
       if attrs[:status] == 'complete'
-        # Only update fields that are present and not empty
-        update_attrs = attrs.except(:status, :aspiration_id).reject { |k, v| v.blank? }
+        update_attrs = attrs.except(:status).reject { |k, v| v.blank? }
         check_in.update!(update_attrs) if update_attrs.present?
-        
+
         completion_service = CheckInCompletionService.new(check_in)
-        
         if @view_mode == :employee
           completion_service.complete_employee_side!
         elsif @view_mode == :manager
           completion_service.complete_manager_side!(completed_by: current_company_teammate)
         end
 
-        # Trigger notification if completion was detected
         if completion_service.completion_detected?
           CheckIns::NotifyCompletionJob.perform_and_get_result(
             check_in_id: check_in.id,
-            check_in_type: 'AspirationCheckIn',
+            check_in_type: 'PositionCheckIn',
             completion_state: completion_service.completion_state,
             organization_id: organization.id
           )
         end
       else
-        # Save as draft - uncomplete if previously completed
-        # Only update fields that are present and not empty
-        update_attrs = attrs.except(:status, :aspiration_id).reject { |k, v| v.blank? }
+        update_attrs = attrs.except(:status).reject { |k, v| v.blank? }
         check_in.update!(update_attrs) if update_attrs.present?
-        
+
         if @view_mode == :employee
           check_in.uncomplete_employee_side!
         elsif @view_mode == :manager
           check_in.uncomplete_manager_side!
         end
       end
-    end
-  end
-  
-  def update_position_check_in(check_ins_params = params)
-    check_in = PositionCheckIn.find_or_create_open_for(@teammate)
-    # Handle both :position_check_in and "[position_check_in]" parameter formats
-    attrs = position_check_in_params(check_ins_params)
-    
-    # Handle status radio button
-    if attrs[:status] == 'complete'
-      # Only update fields that are present and not empty
-      update_attrs = attrs.except(:status).reject { |k, v| v.blank? }
-      check_in.update!(update_attrs) if update_attrs.present?
-      
-      completion_service = CheckInCompletionService.new(check_in)
-      
-      if @view_mode == :employee
-        completion_service.complete_employee_side!
-      elsif @view_mode == :manager
-        completion_service.complete_manager_side!(completed_by: current_company_teammate)
-      end
-
-      # Trigger notification if completion was detected
-      if completion_service.completion_detected?
-        CheckIns::NotifyCompletionJob.perform_and_get_result(
-          check_in_id: check_in.id,
-          check_in_type: 'PositionCheckIn',
-          completion_state: completion_service.completion_state,
-          organization_id: organization.id
-        )
-      end
-    else
-      # Save as draft - uncomplete if previously completed
-      # Only update fields that are present and not empty
-      update_attrs = attrs.except(:status).reject { |k, v| v.blank? }
-      check_in.update!(update_attrs) if update_attrs.present?
-      
-      if @view_mode == :employee
-        check_in.uncomplete_employee_side!
-      elsif @view_mode == :manager
-        check_in.uncomplete_manager_side!
-      end
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+      add_check_in_error(check_in_type: 'Position', identifier: 'check-in', message: e.record.errors.full_messages.join(', '))
     end
   end
 
@@ -428,6 +439,47 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
     
     permitted_params
+  end
+
+  def add_check_in_error(check_in_type:, identifier:, message:)
+    @check_in_errors << { type: check_in_type, identifier: identifier, message: message }
+  end
+
+  def check_in_errors_flash_message
+    count = @check_in_errors.size
+    details = @check_in_errors.first(3).map { |e| "#{e[:type]} #{e[:identifier]}: #{e[:message]}" }.join("; ")
+    suffix = count > 3 ? " (and #{count - 3} more)" : ""
+    "#{count} check-in(s) could not be saved. #{details}#{suffix}"
+  end
+
+  def close_duplicate_open_aspiration_check_ins(keep_check_in)
+    return unless keep_check_in && current_company_teammate
+    others = AspirationCheckIn
+      .where(company_teammate: keep_check_in.company_teammate, aspiration: keep_check_in.aspiration)
+      .open
+      .where.not(id: keep_check_in.id)
+    others.find_each do |dup|
+      dup.update!(
+        official_check_in_completed_at: Time.current,
+        finalized_by_teammate: current_company_teammate,
+        official_rating: dup.official_rating.presence || 'meeting'
+      )
+    end
+  end
+
+  def close_duplicate_open_assignment_check_ins(keep_check_in)
+    return unless keep_check_in && current_company_teammate
+    others = AssignmentCheckIn
+      .where(company_teammate: keep_check_in.company_teammate, assignment: keep_check_in.assignment)
+      .open
+      .where.not(id: keep_check_in.id)
+    others.find_each do |dup|
+      dup.update!(
+        official_check_in_completed_at: Time.current,
+        finalized_by_teammate: current_company_teammate,
+        official_rating: dup.official_rating.presence || 'meeting'
+      )
+    end
   end
 
   def determine_redirect_url

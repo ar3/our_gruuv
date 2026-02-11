@@ -197,6 +197,103 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(assignment_check_in.manager_completed?).to be true
         expect(aspiration_check_in.manager_completed?).to be false
       end
+
+      it 'when one check-in fails validation, redirects with alert and other check-ins still save' do
+        position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
+        aspiration_check_in = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
+
+        invalid_record = AspirationCheckIn.new
+        invalid_record.errors.add(:base, 'Only one open aspiration check-in allowed per teammate per aspiration')
+        allow_any_instance_of(AspirationCheckIn).to receive(:update!).and_raise(ActiveRecord::RecordInvalid.new(invalid_record))
+
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          position_check_in: {
+            manager_rating: 2,
+            manager_private_notes: 'Saved',
+            status: 'complete'
+          },
+          aspiration_check_ins: {
+            aspiration_check_in.id => {
+              aspiration_id: aspiration.id,
+              manager_rating: 'exceeding',
+              status: 'complete'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        expect(flash[:alert]).to include('could not be saved')
+        position_check_in.reload
+        expect(position_check_in.manager_rating).to eq(2)
+        expect(position_check_in.manager_completed?).to be true
+      end
+
+      it 'when duplicate open aspiration check-ins exist, closes the duplicate and update succeeds' do
+        aspiration_check_in1 = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
+        aspiration_check_in2 = AspirationCheckIn.new(
+          company_teammate: aspiration_check_in1.company_teammate,
+          aspiration: aspiration,
+          check_in_started_on: aspiration_check_in1.check_in_started_on
+        )
+        aspiration_check_in2.save!(validate: false)
+
+        expect(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).open.count).to eq(2)
+
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          aspiration_check_ins: {
+            aspiration_check_in1.id => {
+              aspiration_id: aspiration.id,
+              manager_rating: 'exceeding',
+              manager_private_notes: 'Updated',
+              status: 'complete'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        expect(flash[:notice]).to eq('Check-ins saved successfully.')
+
+        aspiration_check_in1.reload
+        aspiration_check_in2.reload
+        expect(aspiration_check_in1.manager_rating).to eq('exceeding')
+        expect(aspiration_check_in1.manager_completed?).to be true
+        expect(aspiration_check_in2.official_check_in_completed_at).to be_present
+        expect(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).open.count).to eq(1)
+      end
+
+      it 'uses check_in id from params to update the correct aspiration check-in when duplicates exist' do
+        aspiration_check_in_first = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
+        aspiration_check_in_second = AspirationCheckIn.new(
+          company_teammate: aspiration_check_in_first.company_teammate,
+          aspiration: aspiration,
+          check_in_started_on: aspiration_check_in_first.check_in_started_on
+        )
+        aspiration_check_in_second.save!(validate: false)
+
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          aspiration_check_ins: {
+            aspiration_check_in_second.id => {
+              aspiration_id: aspiration.id,
+              manager_rating: 'exceeding',
+              manager_private_notes: 'Second one',
+              status: 'complete'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        aspiration_check_in_first.reload
+        aspiration_check_in_second.reload
+        expect(aspiration_check_in_second.manager_rating).to eq('exceeding')
+        expect(aspiration_check_in_second.manager_private_notes).to eq('Second one')
+        expect(aspiration_check_in_first.manager_rating).not_to eq('exceeding')
+      end
     end
 
     context 'as employee' do
