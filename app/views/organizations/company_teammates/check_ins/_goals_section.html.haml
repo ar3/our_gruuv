@@ -63,8 +63,10 @@
         %p.text-muted.mb-3 No active goals found.
       
       .d-grid.mt-3
-        = link_to "Manage Goals & Confidence Ratings", 
-                  organization_company_teammate_goal_check_ins_path(organization, @teammate, 
+        = link_to "Manage Goals & Confidence Ratings",
+                  organization_goals_path(organization,
+                    owner_id: "CompanyTeammate_#{@teammate.id}",
+                    view: 'hierarchical-collapsible',
                     return_url: organization_company_teammate_check_ins_path(organization, @teammate),
                     return_text: "Back to Check-ins"),
                   class: "btn btn-outline-primary"

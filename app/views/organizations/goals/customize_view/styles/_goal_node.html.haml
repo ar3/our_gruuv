@@ -80,6 +80,20 @@
               - if can_update_goal
                 .pt-0.border-top
                   = link_to "Mark this goal as done (hit or missed – state what we learned)", done_organization_goal_path(@organization, goal), class: "small caption-text text-muted"
+            - elsif !can_check_in && goal.check_in_eligible? && goal.completed_at.nil?
+              .check-in-inline.mt-1.p-1.bg-light.rounded.opacity-75
+                .d-flex.align-items-end.gap-2.flex-wrap
+                  .flex-grow-1{style: "min-width: 120px; max-width: 150px;"}
+                    %label.form-label.small.mb-1 Confidence
+                    = select_tag "goal_check_in_disabled_#{goal.id}", options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm', disabled: true }
+                  .flex-grow-1{style: "min-width: 200px;"}
+                    %label.form-label.small.mb-1 Reason (optional)
+                    = text_field_tag "goal_check_in_reason_disabled_#{goal.id}", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm', placeholder: 'Brief update...', disabled: true
+                  .flex-shrink-0.d-flex.align-items-center
+                    %span.btn.btn-primary.btn-sm.disabled
+                      %i.bi.bi-check-lg.me-1
+                      Check In
+                    %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(goal)}
             - elsif goal.completed_at.nil?
               / Action buttons for non-check-in-eligible goals
               .d-flex.gap-2.mt-2

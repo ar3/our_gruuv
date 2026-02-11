@@ -32,7 +32,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       else
         @goals = policy_scope(Goal.none)
         @view_style = params[:view] || 'hierarchical-collapsible'
-        @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible].include?(@view_style)
+        @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible].include?(@view_style)
         @goal_count = 0
         @show_performance_warning = false
         @current_filters = {
@@ -125,7 +125,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Set view style
     @view_style = params[:view] || 'hierarchical-collapsible'
-    @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible].include?(@view_style)
+    @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible].include?(@view_style)
     
     # Eager load links and owner (with person for CompanyTeammate) for table/cards/list to avoid N+1
     if @view_style.in?(%w[table cards list])
@@ -135,27 +135,6 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Eager load prompt associations for hierarchical views (goal node shows "In reflection: ..." next to Owned by)
     if @view_style.in?(%w[hierarchical-collapsible hierarchical-indented])
       @goals = @goals.includes(prompt_goals: { prompt: :prompt_template })
-    end
-    
-    # For check-in view, filter to eligible goals and load check-ins
-    if @view_style == 'check-in'
-      @goals = @goals.check_in_eligible.includes(:goal_check_ins, :recent_check_ins)
-      @current_week_start = Date.current.beginning_of_week(:monday)
-      goal_ids = @goals.pluck(:id)
-      @goal_check_ins = GoalCheckIn
-        .where(goal_id: goal_ids, check_in_week_start: @current_week_start)
-        .includes(:confidence_reporter)
-        .index_by(&:goal_id)
-      
-      # Preload recent check-ins for all goals (last 3 weeks)
-      recent_check_ins = GoalCheckIn
-        .where(goal_id: goal_ids)
-        .where('check_in_week_start >= ?', @current_week_start - 3.weeks)
-        .includes(:confidence_reporter)
-        .order(check_in_week_start: :desc)
-        .group_by(&:goal_id)
-      
-      @recent_check_ins_by_goal = recent_check_ins.transform_values { |check_ins| check_ins.first(3) }
     end
     
     # For hierarchical-indented view, load most recent check-ins for display
@@ -200,7 +179,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       owner_id: @everyone_in_company_filter ? 'everyone_in_company' : params[:owner_id],
       show_deleted: params[:show_deleted],
       show_completed: params[:show_completed],
-      prompt_id: params[:prompt_id].presence
+      prompt_id: params[:prompt_id].presence,
+      return_url: params[:return_url].presence,
+      return_text: params[:return_text].presence
     }
     
     # Set current spotlight for view
@@ -653,7 +634,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     }
     
     # Validate view style
-    valid_views = %w[table cards list network tree nested timeline check-in hierarchical-indented hierarchical-collapsible]
+    valid_views = %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible]
     @current_filters[:view] = 'hierarchical-collapsible' unless valid_views.include?(@current_filters[:view])
     
     @current_sort = @current_filters[:sort]

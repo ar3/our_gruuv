@@ -238,9 +238,6 @@ Rails.application.routes.draw do
         post :save_and_redirect, on: :member
       end
       
-      # Goal check-ins page (overlay)
-      resource :goal_check_ins, controller: 'company_teammates/goal_check_ins', only: [:show, :update]
-      
       resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :create, :update] do
         member do
           post 'sync', to: 'company_teammates/one_on_one_links#sync', as: :sync

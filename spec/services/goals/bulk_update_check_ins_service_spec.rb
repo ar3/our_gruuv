@@ -388,6 +388,82 @@ RSpec.describe Goals::BulkUpdateCheckInsService, type: :service do
         end
       end
     end
+
+    context 'when teammate-owned goal is updated by non-creator non-owner' do
+      let(:other_person) { create(:person) }
+      let!(:other_teammate) { create(:teammate, person: other_person, organization: organization) }
+      let(:teammate_owned_goal) do
+        create(:goal,
+          creator: teammate,
+          owner: teammate,
+          company: organization,
+          started_at: 1.week.ago,
+          most_likely_target_date: Date.today + 1.month,
+          privacy_level: 'everyone_in_company')
+      end
+
+      it 'does not save check-in when non-creator non-owner submits (permission denied)' do
+        params = {
+          teammate_owned_goal.id => {
+            confidence_percentage: '75',
+            confidence_reason: 'Other person trying to check in'
+          }
+        }
+
+        result = described_class.call(
+          organization: organization,
+          current_person: other_person,
+          goal_check_ins_params: params,
+          week_start: week_start
+        )
+
+        expect(result.ok?).to be true
+        expect(result.value[:success_count]).to eq(0)
+        check_in = GoalCheckIn.find_by(goal: teammate_owned_goal, check_in_week_start: week_start)
+        expect(check_in&.confidence_reporter).not_to eq(other_person)
+        if result.value[:failure_count] >= 1
+          expect(result.value[:errors].first[:message]).to include('permission')
+        end
+      end
+    end
+
+    context 'when organization-owned goal is updated by person who can view' do
+      let(:company_goal) do
+        create(:goal,
+          creator: teammate,
+          owner: organization,
+          company: organization,
+          started_at: 1.week.ago,
+          most_likely_target_date: Date.today + 1.month,
+          privacy_level: 'everyone_in_company')
+      end
+      let(:other_person) { create(:person) }
+      let!(:other_teammate) { create(:teammate, person: other_person, organization: organization) }
+
+      it 'saves check-in for team/department/company goal when viewer can see it' do
+        params = {
+          company_goal.id => {
+            confidence_percentage: '70',
+            confidence_reason: 'Company goal check-in by member'
+          }
+        }
+
+        result = described_class.call(
+          organization: organization,
+          current_person: other_person,
+          goal_check_ins_params: params,
+          week_start: week_start
+        )
+
+        expect(result.ok?).to be true
+        expect(result.value[:success_count]).to eq(1)
+        expect(result.value[:failure_count]).to eq(0)
+        check_in = GoalCheckIn.find_by(goal: company_goal, check_in_week_start: week_start)
+        expect(check_in).to be_present
+        expect(check_in.confidence_percentage).to eq(70)
+        expect(check_in.confidence_reporter).to eq(other_person)
+      end
+    end
     
     context 'when goal auto-completes' do
       # Note: 0% and 100% are no longer available in the UI dropdowns,

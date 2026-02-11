@@ -104,6 +104,14 @@ RSpec.describe 'About Me Page', type: :request do
       expect(response.body).to match(/Active Goals/i)
     end
 
+    it 'links Manage Goals & Confidence Ratings to goals index with owner and hierarchical-collapsible view' do
+      get about_me_organization_company_teammate_path(organization, teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Manage Goals")
+      expect(response.body).to include("CompanyTeammate_#{teammate.id}")
+      expect(response.body).to include("view=hierarchical-collapsible")
+    end
+
     it 'renders prompts section when company has active prompts' do
       create(:prompt_template, company: organization, available_at: 1.day.ago)
       get about_me_organization_company_teammate_path(organization, teammate)

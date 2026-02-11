@@ -13,7 +13,7 @@
   Check-In on Your Goals
 - goals_description = ['Set goals, track progress, achieve results', 'Define what matters, measure what counts', 'Turn aspirations into achievements'].sample
 - current_teammate = current_person.teammates.find_by(organization: @organization)
-- check_in_url = current_teammate ? organization_goals_path(@organization, owner_id: "CompanyTeammate_#{current_teammate.id}", view: 'check-in') : organization_goals_path(@organization, view: 'check-in')
+- check_in_url = current_teammate ? organization_goals_path(@organization, owner_id: "CompanyTeammate_#{current_teammate.id}", view: 'hierarchical-collapsible') : organization_goals_path(@organization, view: 'hierarchical-collapsible')
 
 = render 'organizations/dashboard/dashboard_hero_card',
   header_html: goals_header_html,

@@ -1,9 +1,14 @@
 - content_for :title, "Goals"
 
 - content_for :go_back_link do
-  = link_to organization_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@organization.display_name}
+  - if params[:return_url].present? && params[:return_text].present?
+    = link_to params[:return_url], class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      = params[:return_text]
+  - else
+    = link_to organization_path(@organization), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to #{@organization.display_name}
 
 - content_for :header do
   .d-flex.align-items-center
@@ -75,6 +80,10 @@
             = hidden_field_tag :spotlight, @current_filters[:spotlight]
           - if @current_filters[:prompt_id].present?
             = hidden_field_tag :prompt_id, @current_filters[:prompt_id]
+          - if params[:return_url].present?
+            = hidden_field_tag :return_url, params[:return_url]
+          - if params[:return_text].present?
+            = hidden_field_tag :return_text, params[:return_text]
 
 / Spotlight Section (always shown)
 .row.justify-content-center.mb-4
@@ -100,11 +109,7 @@
                 Goals for: #{@filter_prompt.prompt_template.title}
             %small.text-muted
               %i.bi.bi-funnel.me-1
-              Filters: 
-              - if @view_style == 'check-in'
-                Check-in Eligible (applied because of the view style)
-              - else
-                #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
+              Filters: #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
                 
               %br
               %i.bi.bi-sort-down.me-1
@@ -153,8 +158,6 @@
         = render partial: 'organizations/goals/customize_view/styles/nested'
       - when 'timeline'
         = render partial: 'organizations/goals/customize_view/styles/timeline'
-      - when 'check-in'
-        = render partial: 'organizations/goals/customize_view/styles/check_in'
       - when 'hierarchical-indented'
         = render partial: 'organizations/goals/customize_view/styles/hierarchical_indented'
       - when 'hierarchical-collapsible'

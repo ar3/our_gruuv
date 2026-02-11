@@ -54,19 +54,19 @@ module Goals
     end
 
     def load_permissions
-      # Check which goals the current person can add check-ins to
-      # A person can check-in if they can view the goal (per GoalCheckInPolicy)
+      # Check which goals the current person can add check-ins to.
+      # Teammate-owned: only creator or owner. Team/department/company: if you can see, you can check-in.
       @can_check_in_goals = Set.new
       
       return unless current_person
       
-      # Get viewing teammate for policy checks
       viewing_teammate = current_person.teammates.find_by(organization: organization)
       return unless viewing_teammate
       
+      pundit_user = OpenStruct.new(user: viewing_teammate, impersonating_teammate: nil)
       goals.each do |goal|
-        # Check if goal can be viewed by current person (which allows check-in per policy)
-        if goal.can_be_viewed_by?(current_person)
+        check_in_record = GoalCheckIn.new(goal: goal)
+        if GoalCheckInPolicy.new(pundit_user, check_in_record).create?
           @can_check_in_goals.add(goal.id)
         end
       end

@@ -216,22 +216,42 @@
                 Unarchive Goal
         - if @goal.started_at.nil?
           / Unstarted goal - show Start Now button
+          - can_edit = policy(@goal).update?
           .d-grid.gap-2
-            - if policy(@goal).update?
+            - if can_edit
               = button_to start_organization_goal_path(@organization, @goal), method: :patch, class: "btn btn-primary w-100" do
                 %i.bi.bi-play-circle.me-2
                 Start Now
-            - if policy(@goal).update?
+            - else
+              .d-flex.align-items-center.gap-2
+                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                  %i.bi.bi-play-circle.me-2
+                  Start Now
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+            - if can_edit
               = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary" do
                 %i.bi.bi-pencil.me-2
                 Edit Goal
+            - else
+              .d-flex.align-items-center.gap-2
+                = link_to "#", class: "btn btn-outline-secondary disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                  %i.bi.bi-pencil.me-2
+                  Edit Goal
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
             - if policy(@goal).destroy? && @goal.status != :deleted
               = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger w-100", data: { confirm: "Are you sure you want to archive this goal?" } do
                 %i.bi.bi-archive.me-2
                 Archive Goal
+            - elsif @goal.status != :deleted
+              .d-flex.align-items-center.gap-2
+                = link_to "#", class: "btn btn-outline-danger w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                  %i.bi.bi-archive.me-2
+                  Archive Goal
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
         - else
           / Started goal - show check-in button
           - can_edit = policy(@goal).update?
+          - can_add_check_in = policy(GoalCheckIn.new(goal: @goal)).create?
           - return_url = request.url
           - return_text = 'Goal'
           
@@ -253,34 +273,53 @@
               Add first check-in
           
           .d-grid.gap-2.mb-3
-            - if can_edit
+            - if can_add_check_in
               = link_to weekly_update_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-primary w-100" do
                 %i.bi.bi-calendar-check.me-2
                 Add/Edit & View All Check-In
             - else
-              .position-relative
-                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => "You need permission to edit this goal to access check-ins" do
+              .d-flex.align-items-center.gap-2
+                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal) do
                   %i.bi.bi-calendar-check.me-2
                   Check-In
-                  %i.bi.bi-exclamation-triangle.text-warning.ms-2
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal)}
           
-          - if policy(@goal).update? && !goal_is_completed?(@goal)
+          - if can_edit && !goal_is_completed?(@goal)
             .mt-3.pt-3.border-top
               .d-grid.gap-2
                 = link_to done_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-success w-100" do
                   %i.bi.bi-check-circle.me-2
                   Mark Completed
+          - elsif !goal_is_completed?(@goal)
+            .mt-3.pt-3.border-top
+              .d-flex.align-items-center.gap-2
+                = link_to "#", class: "btn btn-success w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                  %i.bi.bi-check-circle.me-2
+                  Mark Completed
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
           
           .mt-3.pt-3.border-top
             .d-grid.gap-2
-              - if policy(@goal).update?
+              - if can_edit
                 = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm" do
                   %i.bi.bi-pencil.me-2
                   Edit Goal
+              - else
+                .d-flex.align-items-center.gap-2
+                  = link_to "#", class: "btn btn-outline-secondary btn-sm disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                    %i.bi.bi-pencil.me-2
+                    Edit Goal
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
               - if policy(@goal).destroy? && @goal.status != :deleted
                 = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger btn-sm w-100", data: { confirm: "Are you sure you want to archive this goal?" } do
                   %i.bi.bi-archive.me-2
                   Archive Goal
+              - elsif @goal.status != :deleted
+                .d-flex.align-items-center.gap-2
+                  = link_to "#", class: "btn btn-outline-danger btn-sm w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                    %i.bi.bi-archive.me-2
+                    Archive Goal
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
           
         - if @goal.goal_type != 'inspirational_objective' && @goal.most_likely_target_date.nil?
           .mt-3.pt-3.border-top

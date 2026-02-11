@@ -89,7 +89,7 @@ RSpec.describe Goals::HierarchyWithCheckInsQuery do
       let(:goals) { [goal] }
       let(:query) { described_class.new(goals: goals, current_person: person, organization: company) }
 
-      it 'includes can_check_in flag when person can view goal' do
+      it 'includes can_check_in flag when person is creator or owner (teammate goal)' do
         result = query.call
         node = result[:root_goals].first
         expect(node[:can_check_in]).to be(true)
@@ -98,6 +98,19 @@ RSpec.describe Goals::HierarchyWithCheckInsQuery do
       it 'returns can_check_in_goals set' do
         result = query.call
         expect(result[:can_check_in_goals]).to include(goal.id)
+      end
+
+      context 'when viewer can see teammate-owned goal but is not creator or owner' do
+        let(:other_person) { create(:person) }
+        let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+        let!(:shared_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Shared Goal', privacy_level: 'everyone_in_company') }
+        let(:goals) { [shared_goal] }
+        let(:query) { described_class.new(goals: goals, current_person: other_person, organization: company) }
+
+        it 'does not include can_check_in for teammate goal when viewer is not creator or owner' do
+          result = query.call
+          expect(result[:can_check_in_goals]).not_to include(shared_goal.id)
+        end
       end
 
       context 'with restricted privacy' do

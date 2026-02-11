@@ -86,7 +86,19 @@ module GoalsHelper
       "This goal has a problem"
     end
   end
-  
+
+  def goal_no_check_in_access_tooltip(goal)
+    if goal.owner_type == 'CompanyTeammate'
+      "Only the goal creator or owner can add check-ins to this goal."
+    else
+      "You don't have permission to add check-ins to this goal."
+    end
+  end
+
+  def goal_no_edit_access_tooltip(_goal)
+    "Only the goal creator or owner can edit this goal."
+  end
+
   def timeframe_tooltip_text(goal)
     lines = []
     if goal.earliest_target_date.present?

@@ -873,20 +873,20 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(page).to have_field('goal_title')
     end
     
-    # SKIPPED: Link text "Manage Goals & Confidence Ratings" may have changed; navigation covered by request specs
-    xit 'links to goals check-in view from about_me page' do
+    it 'links to goals index (hierarchical with check-ins) from about_me page' do
       teammate = person.company_teammates.find_by!(organization: organization)
       visit about_me_organization_company_teammate_path(organization, teammate)
 
-      # Goals section is collapsible; expand it to see the manage link
+      # Goals section is collapsible; expand it via Bootstrap then click the link
       expect(page).to have_content(/Active Goals|Goals/i)
-      find('div[data-bs-target="#goalsSection"]').click if page.has_css?('#goalsSection.collapse:not(.show)')
+      page.execute_script("document.querySelector('[data-bs-target=\"#goalsSection\"]').click()")
       expect(page).to have_link('Manage Goals & Confidence Ratings', wait: 2)
-
       click_link 'Manage Goals & Confidence Ratings'
 
-      # Should be on goals check-in page
-      expect(current_path).to eq(organization_company_teammate_goal_check_ins_path(organization, teammate))
+      # Wait for navigation to goals index, then check params
+      expect(page).to have_current_path(/\/goals(\?|$)/, wait: 5)
+      expect(page.current_url).to include('view=hierarchical-collapsible')
+      expect(page.current_url).to include("owner_id=CompanyTeammate_#{teammate.id}")
     end
   end
 end

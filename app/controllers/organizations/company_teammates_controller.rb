@@ -858,7 +858,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         organization,
         owner_type: 'CompanyTeammate',
         owner_id: @teammate.id,
-        view: 'check-in'
+        view: 'hierarchical-collapsible'
       )
     else
       @now_goals = []

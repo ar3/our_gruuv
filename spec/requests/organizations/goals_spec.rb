@@ -346,7 +346,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         expect(response.body).to include('disabled')
         expect(response.body).to include('aria-disabled="true"')
         expect(response.body).to include('bi-exclamation-triangle')
-        expect(response.body).to include('You need permission to edit this goal to access check-ins')
+        expect(response.body).to include('Only the goal creator or owner can add check-ins to this goal.')
       end
       
       it 'displays last check-in in sentence form when present' do
@@ -563,180 +563,6 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
   
-  describe 'GET /organizations/:organization_id/goals with check-in view' do
-    let(:check_in_eligible_goal) do
-      create(:goal, 
-        creator: teammate, 
-        owner: teammate, 
-        title: 'Check-in Eligible Goal',
-        goal_type: 'qualitative_key_result',
-        most_likely_target_date: Date.today + 1.month,
-        started_at: 1.week.ago
-      )
-    end
-    
-    let(:objective_goal) do
-      create(:goal,
-        creator: teammate,
-        owner: teammate,
-        title: 'Objective Goal',
-        goal_type: 'inspirational_objective',
-        most_likely_target_date: Date.today + 1.month,
-        started_at: 1.week.ago
-      )
-    end
-    
-    let(:goal_without_date) do
-      create(:goal,
-        creator: teammate,
-        owner: teammate,
-        title: 'Goal Without Date',
-        goal_type: 'qualitative_key_result',
-        most_likely_target_date: nil,
-        started_at: 1.week.ago
-      )
-    end
-    
-    let(:completed_goal) do
-      create(:goal,
-        creator: teammate,
-        owner: teammate,
-        title: 'Completed Goal',
-        goal_type: 'quantitative_key_result',
-        most_likely_target_date: Date.today + 1.month,
-        started_at: 1.week.ago,
-        completed_at: 1.day.ago
-      )
-    end
-    
-    it 'filters to check-in eligible goals only' do
-      check_in_eligible_goal
-      objective_goal
-      goal_without_date
-      
-      get organization_goals_path(organization), params: {
-        view: 'check-in',
-        owner_type: 'CompanyTeammate',
-        owner_id: teammate.id
-      }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Check-in Eligible Goal')
-      expect(response.body).not_to include('Objective Goal')
-      expect(response.body).not_to include('Goal Without Date')
-    end
-    
-    it 'loads current week check-ins' do
-      current_week_start = Date.current.beginning_of_week(:monday)
-      check_in = create(:goal_check_in,
-        goal: check_in_eligible_goal,
-        check_in_week_start: current_week_start,
-        confidence_percentage: 75,
-        confidence_reason: 'Making good progress',
-        confidence_reporter: person
-      )
-      
-      get organization_goals_path(organization), params: {
-        view: 'check-in',
-        owner_type: 'CompanyTeammate',
-        owner_id: teammate.id
-      }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('75%')
-      expect(response.body).to include('Making good progress')
-    end
-    
-    it 'loads recent check-ins (last 3 weeks)' do
-      current_week_start = Date.current.beginning_of_week(:monday)
-      week1_start = current_week_start - 1.week
-      week2_start = current_week_start - 2.weeks
-      week3_start = current_week_start - 3.weeks
-      
-      create(:goal_check_in, goal: check_in_eligible_goal, check_in_week_start: week1_start, confidence_percentage: 70, confidence_reporter: person)
-      create(:goal_check_in, goal: check_in_eligible_goal, check_in_week_start: week2_start, confidence_percentage: 65, confidence_reporter: person)
-      create(:goal_check_in, goal: check_in_eligible_goal, check_in_week_start: week3_start, confidence_percentage: 60, confidence_reporter: person)
-      
-      get organization_goals_path(organization), params: {
-        view: 'check-in',
-        owner_type: 'CompanyTeammate',
-        owner_id: teammate.id
-      }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('70%')
-      expect(response.body).to include('65%')
-      expect(response.body).to include('60%')
-    end
-    
-    it 'shows completion info for completed goals instead of form fields' do
-      current_week_start = Date.current.beginning_of_week(:monday)
-      final_check_in = create(:goal_check_in,
-        goal: completed_goal,
-        check_in_week_start: current_week_start - 1.week,
-        confidence_percentage: 100,
-        confidence_reason: 'Successfully completed!',
-        confidence_reporter: person
-      )
-      
-      get organization_goals_path(organization), params: {
-        view: 'check-in',
-        owner_type: 'CompanyTeammate',
-        owner_id: teammate.id,
-        show_completed: '1'
-      }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Hit')
-      expect(response.body).to include('Successfully completed!')
-      expect(response.body).to include(person.display_name)
-      # Should not have form fields for completed goals
-      expect(response.body).not_to include("goal_check_ins[#{completed_goal.id}][confidence_percentage]")
-    end
-    
-    it 'shows "Check-in Eligible" filter in spotlight footer' do
-      get organization_goals_path(organization), params: {
-        view: 'check-in',
-        owner_type: 'CompanyTeammate',
-        owner_id: teammate.id
-      }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Check-in Eligible (applied because of the view style)')
-    end
-    
-    it 'displays current check-in week information' do
-      check_in_eligible_goal # Ensure there's at least one goal to display
-      current_week_start = Date.current.beginning_of_week(:monday)
-      current_week_end = current_week_start.end_of_week(:sunday)
-      
-      get organization_goals_path(organization), params: {
-        view: 'check-in',
-        owner_type: 'CompanyTeammate',
-        owner_id: teammate.id
-      }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Current Check-in Week')
-      expect(response.body).to include(current_week_start.strftime('%B %d'))
-      expect(response.body).to include(current_week_end.strftime('%B %d, %Y'))
-    end
-    
-    it 'includes form to save all goal check-ins' do
-      check_in_eligible_goal # Ensure there's at least one goal to display
-      
-      get organization_goals_path(organization), params: {
-        view: 'check-in',
-        owner_type: 'CompanyTeammate',
-        owner_id: teammate.id
-      }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Save All Goal Check-ins')
-      expect(response.body).to include(bulk_update_check_ins_organization_goals_path(organization))
-    end
-  end
-  
   describe 'GET /organizations/:organization_id/goals with default (hierarchical-collapsible) view' do
     let(:check_in_eligible_goal) do
       create(:goal,
@@ -749,7 +575,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       )
     end
 
-    it 'shows "mark this goal as complete" link for active check-in-eligible goals' do
+    it 'shows "mark this goal as done" link for active check-in-eligible goals' do
       check_in_eligible_goal
 
       get organization_goals_path(organization), params: {
@@ -758,7 +584,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('mark this goal as complete')
+      expect(response.body).to include('Mark this goal as done')
       expect(response.body).to include(done_organization_goal_path(organization, check_in_eligible_goal))
     end
   end

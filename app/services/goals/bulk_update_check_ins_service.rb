@@ -38,8 +38,14 @@ module Goals
         return
       end
 
-      # Check authorization - user must be able to view the goal
-      unless goal.can_be_viewed_by?(current_person)
+      # Check authorization: teammate-owned => creator or owner only; team/dept/company => can see can check-in
+      teammate = current_person.teammates.find_by(organization: organization)
+      unless teammate
+        return add_error(goal_id, "You don't have permission to update check-ins for this goal")
+      end
+      pundit_user = OpenStruct.new(user: teammate, impersonating_teammate: nil)
+      check_in_record = GoalCheckIn.new(goal: goal)
+      unless GoalCheckInPolicy.new(pundit_user, check_in_record).create?
         return add_error(goal_id, "You don't have permission to update check-ins for this goal")
       end
 

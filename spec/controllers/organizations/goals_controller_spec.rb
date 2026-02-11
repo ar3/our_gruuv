@@ -193,6 +193,13 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:view_style)).to eq('hierarchical-collapsible')
     end
 
+    it 'sets can_check_in_goals for hierarchical-collapsible view' do
+      started_goal = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, most_likely_target_date: Date.today + 1.month)
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, view: 'hierarchical-collapsible' }
+      expect(assigns(:can_check_in_goals)).to be_a(Set)
+      expect(assigns(:can_check_in_goals)).to include(started_goal.id)
+    end
+
     context 'with everyone_in_company filter' do
       let!(:public_goal) do
         create(:goal, 

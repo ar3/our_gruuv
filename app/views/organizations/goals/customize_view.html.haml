@@ -135,11 +135,6 @@
               %i.bi.bi-calendar-event.me-2
               Timeline View
           .form-check
-            = radio_button_tag 'view', 'check-in', @current_view == 'check-in', class: 'form-check-input', id: 'view_check_in'
-            = label_tag 'view_check_in', class: 'form-check-label' do
-              %i.bi.bi-check-circle.me-2
-              Check-in View
-          .form-check
             = radio_button_tag 'view', 'hierarchical-indented', @current_view == 'hierarchical-indented', class: 'form-check-input', id: 'view_hierarchical_indented'
             = label_tag 'view_hierarchical_indented', class: 'form-check-label' do
               %i.bi.bi-list-nested.me-2
