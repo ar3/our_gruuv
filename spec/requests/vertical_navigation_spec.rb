@@ -24,6 +24,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
     allow_any_instance_of(OrganizationPolicy).to receive(:view_bulk_sync_events?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:show?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:check_ins_health?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:customize_company?).and_return(true)
     # Mock OrganizationPolicy methods (organization-scoped permissions)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
@@ -71,6 +72,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
         org_policy_double = double(
           show?: true,
           manage_employment?: true,
+          check_ins_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -85,6 +87,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
         company_policy_double = double(
           show?: true,
           manage_employment?: true,
+          check_ins_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -98,7 +101,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true, view_dashboard?: true)
         eligibility_policy_double = double(index?: true)
 
         allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
@@ -133,6 +136,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
         org_policy_double = double(
           show?: true,
           manage_employment?: true,
+          check_ins_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -147,6 +151,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
         company_policy_double = double(
           show?: true,
           manage_employment?: true,
+          check_ins_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -160,7 +165,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true, view_dashboard?: true)
         eligibility_policy_double = double(index?: true)
 
         allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
@@ -177,20 +182,20 @@ RSpec.describe 'Vertical Navigation', type: :request do
         end
       end
 
-      it 'expands only the Admin section' do
+      it 'expands Admin/Explore MAAP(s) section when on Seats page' do
         get organization_seats_path(organization)
         
         expect(response).to have_http_status(:success)
         
-        # Admin section should be expanded
-        admin_div = response.body[/<div[^>]*id="navSectionAdmin"[^>]*>/]
-        expect(admin_div).to be_present
-        expect(admin_div).to include('class="collapse show"')
+        # Admin/Explore MAAP(s) section (Seats lives here) should be expanded
+        admin_explore_div = response.body[/<div[^>]*id="navSectionAdmin_explore_maps"[^>]*>/]
+        expect(admin_explore_div).to be_present
+        expect(admin_explore_div).to include('class="collapse show"')
         
         # Check button aria-expanded
-        admin_button = response.body[/<button[^>]*data-bs-target="#navSectionAdmin"[^>]*>/]
-        expect(admin_button).to be_present
-        expect(admin_button).to include('aria-expanded="true"')
+        admin_explore_button = response.body[/<button[^>]*data-bs-target="#navSectionAdmin_explore_maps"[^>]*>/]
+        expect(admin_explore_button).to be_present
+        expect(admin_explore_button).to include('aria-expanded="true"')
         
         # Other sections should be closed
         huddles_div = response.body[/<div[^>]*id="navSectionHuddles"[^>]*>/]
@@ -217,6 +222,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
         org_policy_double = double(
           show?: true,
           manage_employment?: true,
+          check_ins_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -231,6 +237,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
         company_policy_double = double(
           show?: true,
           manage_employment?: true,
+          check_ins_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -244,7 +251,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           customize_company?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+        kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true, view_dashboard?: true)
         eligibility_policy_double = double(index?: true)
 
         allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
@@ -349,18 +356,18 @@ RSpec.describe 'Vertical Navigation', type: :request do
   describe 'active state and query parameters' do
     before do
       org_policy_double = double(
-        show?: true, manage_employment?: true, view_prompts?: true, view_prompt_templates?: true,
+        show?: true, manage_employment?: true, check_ins_health?: true, view_prompts?: true, view_prompt_templates?: true,
         view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true,
         view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true
       )
       company_policy_double = double(
-        show?: true, manage_employment?: true, view_prompts?: true, view_prompt_templates?: true,
+        show?: true, manage_employment?: true, check_ins_health?: true, view_prompts?: true, view_prompt_templates?: true,
         view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true,
         view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true,
         view_feedback_requests?: true, customize_company?: true
       )
       policy_double = double(show?: true, create?: true, view_check_ins?: true, index?: true)
-      kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true)
+      kudos_policy_double = double(award_bank_points?: true, view_rewards_catalog?: true, view_dashboard?: true)
       eligibility_policy_double = double(index?: true)
       allow_any_instance_of(ApplicationController).to receive(:policy) do |_controller, record|
         case record

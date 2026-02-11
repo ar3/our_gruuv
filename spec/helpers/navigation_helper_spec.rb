@@ -94,7 +94,7 @@ RSpec.describe NavigationHelper, type: :helper do
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
-          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true)
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true)
         elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
           double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true)
         elsif record.is_a?(CompanyTeammate)
@@ -247,7 +247,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(insights_section[:icon]).to eq('bi-bar-chart-line')
       end
 
-      it 'has the expected Insights sub-items with Observations first' do
+      it 'has the expected Insights sub-items with Observations first and Check-ins Health last' do
         structure = helper.navigation_structure
         insights_section = structure.find { |item| item[:label] == 'Insights' }
         items = insights_section[:items]
@@ -259,19 +259,65 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Abilities')
         expect(labels).to include('Goals')
         expect(labels).to include('Huddles')
+        expect(labels.last).to eq('Check-ins Health')
       end
 
-      it 'places Insights section between Huddles and Admin' do
+      it 'places Insights section between Huddles and Admin/Explore MAAP(s)' do
         structure = helper.navigation_structure
         huddles_index = structure.find_index { |item| item[:label] == 'Huddles' }
         insights_index = structure.find_index { |item| item[:label] == 'Insights' }
-        admin_index = structure.find_index { |item| item[:label] == 'Admin' }
+        admin_explore_index = structure.find_index { |item| item[:label] == 'Admin/Explore MAAP(s)' }
         
         expect(huddles_index).to be_present
         expect(insights_index).to be_present
-        expect(admin_index).to be_present
+        expect(admin_explore_index).to be_present
         expect(insights_index).to be > huddles_index
-        expect(insights_index).to be < admin_index
+        expect(insights_index).to be < admin_explore_index
+      end
+    end
+
+    describe 'Admin/Explore MAAP(s), Org Essentials, Beta, and Admin sections' do
+      it 'includes Admin/Explore MAAP(s) section with Milestones & Abilities, Assignments, Positions, Seats' do
+        structure = helper.navigation_structure
+        section = structure.find { |item| item[:label] == 'Admin/Explore MAAP(s)' }
+        expect(section).to be_present
+        expect(section[:section]).to eq('admin_explore_maps')
+        labels = section[:items].map { |item| item[:label] }
+        expect(labels).to eq(['Milestones & Abilities', 'Assignments', 'Positions', 'Seats'])
+      end
+
+      it 'includes Org Essentials section with Aspirational Values, Departments, Teams, and Preferences' do
+        structure = helper.navigation_structure
+        section = structure.find { |item| item[:label]&.end_with?(' Essentials') }
+        expect(section).to be_present
+        expect(section[:section]).to eq('org_essentials')
+        labels = section[:items].map { |item| item[:label] }
+        expect(labels).to include('Aspirational Values')
+        expect(labels).to include('Departments')
+        expect(labels).to include('Teams')
+        expect(labels.any? { |l| l&.end_with?(' Preferences') }).to be true
+      end
+
+      it 'includes Beta section with Eligibility Requirements and Feedback Requests' do
+        structure = helper.navigation_structure
+        section = structure.find { |item| item[:label] == 'Beta' }
+        expect(section).to be_present
+        expect(section[:section]).to eq('beta')
+        labels = section[:items].map { |item| item[:label] }
+        expect(labels).to include('Eligibility Requirements')
+        expect(labels).to include('Feedback Requests')
+      end
+
+      it 'includes Admin section with Prompt Templates, Bulk Events, Bulk Downloads, Slack Settings' do
+        structure = helper.navigation_structure
+        section = structure.find { |item| item[:label] == 'Admin' && item[:section] == 'admin' }
+        expect(section).to be_present
+        labels = section[:items].map { |item| item[:label] }
+        expect(labels).to include('Prompt Templates')
+        expect(labels).to include('Bulk Events')
+        expect(labels).to include('Bulk Downloads')
+        expect(labels).to include('Slack Settings')
+        expect(labels).not_to include('Check-ins Health')
       end
     end
 

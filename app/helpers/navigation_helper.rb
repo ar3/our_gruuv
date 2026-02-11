@@ -199,6 +199,13 @@ module NavigationHelper
             path: huddles_review_organization_path(current_organization),
             policy_check: -> { policy(current_organization).show? },
             coming_soon: false
+          },
+          {
+            label: 'Check-ins Health',
+            icon: 'bi-heart-pulse',
+            path: organization_check_ins_health_path(current_organization),
+            policy_check: -> { policy(current_organization).check_ins_health? },
+            coming_soon: false
           }
         ]
       },
@@ -245,36 +252,15 @@ module NavigationHelper
         ]
       },
       {
-        label: 'Admin',
+        label: 'Admin/Explore MAAP(s)',
         icon: 'bi-gear',
-        section: 'admin',
+        section: 'admin_explore_maps',
         items: [
           {
-            label: 'Eligibility Requirements 🚧 Beta',
-            icon: 'bi-check2-circle',
-            path: organization_eligibility_requirements_path(current_organization),
-            policy_check: -> { policy(:eligibility_requirement).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Feedback Requests 🚧 Beta',
-            icon: 'bi-chat-dots',
-            path: organization_feedback_requests_path(current_organization),
-            policy_check: -> { policy(current_company).view_feedback_requests? },
-            coming_soon: false
-          },
-          {
-            label: 'Seats',
-            icon: 'bi-briefcase',
-            path: organization_seats_path(current_organization),
-            policy_check: -> { policy(current_company).view_seats? },
-            coming_soon: false
-          },
-          {
-            label: 'Positions',
-            icon: 'bi-briefcase-fill',
-            path: organization_positions_path(current_organization),
-            policy_check: -> { current_organization.present? && policy(current_organization).show? },
+            label: 'Milestones & Abilities',
+            icon: 'bi-award',
+            path: organization_abilities_path(current_organization),
+            policy_check: -> { policy(current_company).view_abilities? },
             coming_soon: false
           },
           {
@@ -285,24 +271,31 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Abilities',
-            icon: 'bi-award',
-            path: organization_abilities_path(current_organization),
-            policy_check: -> { policy(current_company).view_abilities? },
+            label: 'Positions',
+            icon: 'bi-briefcase-fill',
+            path: organization_positions_path(current_organization),
+            policy_check: -> { current_organization.present? && policy(current_organization).show? },
             coming_soon: false
           },
+          {
+            label: 'Seats',
+            icon: 'bi-briefcase',
+            path: organization_seats_path(current_organization),
+            policy_check: -> { policy(current_company).view_seats? },
+            coming_soon: false
+          }
+        ]
+      },
+      {
+        label: "#{current_company.name} Essentials",
+        icon: 'bi-building',
+        section: 'org_essentials',
+        items: [
           {
             label: 'Aspirational Values',
             icon: 'bi-star',
             path: organization_aspirations_path(current_organization),
             policy_check: -> { policy(current_company).view_aspirations? },
-            coming_soon: false
-          },
-          {
-            label: 'Prompt Templates',
-            icon: 'bi-file-text',
-            path: organization_prompt_templates_path(current_organization),
-            policy_check: -> { policy(current_company).view_prompt_templates? },
             coming_soon: false
           },
           {
@@ -317,6 +310,48 @@ module NavigationHelper
             icon: 'bi-people',
             path: organization_teams_path(current_organization),
             policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
+            label: "#{current_company.name} Preferences",
+            icon: 'bi-sliders',
+            path: edit_organization_company_preference_path(current_organization),
+            policy_check: -> { policy(current_company).customize_company? },
+            coming_soon: false
+          }
+        ]
+      },
+      {
+        label: 'Beta',
+        icon: 'bi-lightning',
+        section: 'beta',
+        items: [
+          {
+            label: 'Eligibility Requirements',
+            icon: 'bi-check2-circle',
+            path: organization_eligibility_requirements_path(current_organization),
+            policy_check: -> { policy(:eligibility_requirement).index? },
+            coming_soon: false
+          },
+          {
+            label: 'Feedback Requests',
+            icon: 'bi-chat-dots',
+            path: organization_feedback_requests_path(current_organization),
+            policy_check: -> { policy(current_company).view_feedback_requests? },
+            coming_soon: false
+          }
+        ]
+      },
+      {
+        label: 'Admin',
+        icon: 'bi-gear',
+        section: 'admin',
+        items: [
+          {
+            label: 'Prompt Templates',
+            icon: 'bi-file-text',
+            path: organization_prompt_templates_path(current_organization),
+            policy_check: -> { policy(current_company).view_prompt_templates? },
             coming_soon: false
           },
           {
@@ -338,20 +373,6 @@ module NavigationHelper
             icon: 'bi-slack',
             path: organization_slack_path(current_organization),
             policy_check: -> { policy(current_organization).manage_employment? },
-            coming_soon: false
-          },
-          {
-            label: 'Check-ins Health',
-            icon: 'bi-heart-pulse',
-            path: organization_check_ins_health_path(current_organization),
-            policy_check: -> { policy(current_organization).manage_employment? },
-            coming_soon: false
-          },
-          {
-            label: "#{current_company.name} Preferences",
-            icon: 'bi-sliders',
-            path: edit_organization_company_preference_path(current_organization),
-            policy_check: -> { policy(current_company).customize_company? },
             coming_soon: false
           }
         ]
