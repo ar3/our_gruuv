@@ -7,12 +7,14 @@ RSpec.describe PromptTemplatePolicy, type: :policy do
   let(:admin) { create(:person, :admin) }
   let(:template) { create(:prompt_template, company: company) }
 
-  let(:prompts_teammate) { CompanyTeammate.create!(person: person, organization: company, can_manage_prompts: true) }
+  let(:prompts_teammate) { CompanyTeammate.create!(person: person, organization: company, can_manage_prompts: true, first_employed_at: 1.month.ago, last_terminated_at: nil) }
   let(:person_teammate) { CompanyTeammate.create!(person: person, organization: company, can_manage_prompts: false) }
-  let(:admin_teammate) { CompanyTeammate.create!(person: admin, organization: company) }
+  let(:employed_no_prompts_teammate) { CompanyTeammate.create!(person: person, organization: company, can_manage_prompts: false, first_employed_at: 1.month.ago, last_terminated_at: nil) }
+  let(:admin_teammate) { CompanyTeammate.create!(person: admin, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil) }
 
   let(:pundit_user_prompts) { OpenStruct.new(user: prompts_teammate, impersonating_teammate: nil) }
   let(:pundit_user_person) { OpenStruct.new(user: person_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_employed_no_prompts) { OpenStruct.new(user: employed_no_prompts_teammate, impersonating_teammate: nil) }
   let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
 
 
@@ -140,10 +142,19 @@ RSpec.describe PromptTemplatePolicy, type: :policy do
       end
     end
 
-    context 'when user lacks prompts permission' do
+    context 'when user is not employed' do
       it 'returns empty scope' do
         policy = PromptTemplatePolicy::Scope.new(pundit_user_person, PromptTemplate)
         expect(policy.resolve).to be_empty
+      end
+    end
+
+    context 'when user is employed but lacks prompts permission' do
+      it 'returns company templates (index visible to all active teammates)' do
+        policy = PromptTemplatePolicy::Scope.new(pundit_user_employed_no_prompts, PromptTemplate)
+        resolved = policy.resolve
+        expect(resolved).to include(template1, template2)
+        expect(resolved).not_to include(other_company_template)
       end
     end
 
@@ -157,7 +168,7 @@ RSpec.describe PromptTemplatePolicy, type: :policy do
 
     context 'when organization has root_company' do
       # Organizations are their own root (no parent hierarchy); teammate in company sees that company's templates
-      let(:company_teammate) { create(:teammate, person: person, organization: company, can_manage_prompts: true) }
+      let(:company_teammate) { create(:teammate, person: person, organization: company, can_manage_prompts: true, first_employed_at: 1.month.ago, last_terminated_at: nil) }
       let(:pundit_user_team) { OpenStruct.new(user: company_teammate, impersonating_teammate: nil) }
 
       it 'returns templates from root company' do

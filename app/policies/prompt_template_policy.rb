@@ -24,14 +24,11 @@ class PromptTemplatePolicy < ApplicationPolicy
       else
         viewing_teammate_org = viewing_teammate.organization
         return scope.none unless viewing_teammate_org
-        
-        if viewing_teammate.can_manage_prompts?
-          # Include templates from viewing_teammate's organization's root company
-          root_company = viewing_teammate_org.root_company || viewing_teammate_org
-          scope.where(company_id: root_company.id)
-        else
-          scope.none
-        end
+        return scope.none unless viewing_teammate.employed?
+
+        # Any active teammate in hierarchy can see company templates (for index); create/update/destroy are gated by action policies
+        root_company = viewing_teammate_org.root_company || viewing_teammate_org
+        scope.where(company_id: root_company.id)
       end
     end
   end

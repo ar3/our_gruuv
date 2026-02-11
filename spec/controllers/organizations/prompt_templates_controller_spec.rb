@@ -5,8 +5,8 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
   let(:organization) { create(:organization, name: 'Test Company') }
 
   before do
-    # Create a teammate for the person in the organization with prompts management permissions
-    create(:teammate, person: person, organization: organization, can_manage_prompts: true)
+    # Create an employed teammate with prompts management permissions
+    create(:teammate, person: person, organization: organization, can_manage_prompts: true, first_employed_at: 1.month.ago, last_terminated_at: nil)
     sign_in_as_teammate(person, organization)
   end
 
@@ -23,6 +23,20 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
     it 'assigns prompt templates' do
       get :index, params: { organization_id: organization.id }
       expect(assigns(:prompt_templates)).to include(template1, template2)
+    end
+
+    context 'when teammate is employed but lacks prompt management permission' do
+      before do
+        teammate = CompanyTeammate.find_by(person: person, organization: organization)
+        teammate.update!(can_manage_prompts: false, first_employed_at: 1.month.ago, last_terminated_at: nil)
+      end
+
+      it 'returns success and assigns prompt templates (view-only index)' do
+        get :index, params: { organization_id: organization.id }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:index)
+        expect(assigns(:prompt_templates)).to include(template1, template2)
+      end
     end
   end
 
@@ -166,63 +180,79 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
   end
 
   describe 'authorization' do
-    let(:unauthorized_person) { create(:person) }
-    let(:unauthorized_teammate) { create(:teammate, person: unauthorized_person, organization: organization, can_manage_prompts: false) }
     let(:template) { create(:prompt_template, company: organization) }
 
-    before do
-      sign_in_as_teammate(unauthorized_person, organization)
+    context 'when teammate is not employed (cannot view index)' do
+      let(:unauthorized_person) { create(:person) }
+      let(:unauthorized_teammate) { create(:teammate, person: unauthorized_person, organization: organization, can_manage_prompts: false) }
+
+      before do
+        sign_in_as_teammate(unauthorized_person, organization)
+      end
+
+      it 'redirects with alert from index' do
+        get :index, params: { organization_id: organization.id }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
     end
 
-    it 'redirects with alert when unauthorized' do
-      get :index, params: { organization_id: organization.id }
-      expect(response).to have_http_status(:redirect)
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to be_present
-    end
+    context 'when teammate is employed but lacks prompt management permission' do
+      let(:view_only_person) { create(:person) }
+      let!(:view_only_teammate) { create(:teammate, person: view_only_person, organization: organization, can_manage_prompts: false, first_employed_at: 1.month.ago, last_terminated_at: nil) }
 
-    it 'prevents access to new' do
-      get :new, params: { organization_id: organization.id }
-      expect(response).to have_http_status(:redirect)
-      expect(flash[:alert]).to be_present
-    end
+      before do
+        sign_in_as_teammate(view_only_person, organization)
+      end
 
-    it 'prevents access to create' do
-      post :create, params: {
-        organization_id: organization.id,
-        prompt_template: { title: 'New Template' }
-      }
-      expect(response).to have_http_status(:redirect)
-      expect(flash[:alert]).to be_present
-    end
+      it 'allows access to index' do
+        get :index, params: { organization_id: organization.id }
+        expect(response).to have_http_status(:success)
+      end
 
-    it 'prevents access to edit' do
-      get :edit, params: { organization_id: organization.id, id: template.id }
-      expect(response).to have_http_status(:redirect)
-      expect(flash[:alert]).to be_present
-    end
+      it 'prevents access to new' do
+        get :new, params: { organization_id: organization.id }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
 
-    it 'prevents access to update' do
-      patch :update, params: {
-        organization_id: organization.id,
-        id: template.id,
-        prompt_template: { title: 'Updated Title' }
-      }
-      expect(response).to have_http_status(:redirect)
-      expect(flash[:alert]).to be_present
-    end
+      it 'prevents access to create' do
+        post :create, params: {
+          organization_id: organization.id,
+          prompt_template: { title: 'New Template' }
+        }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
 
-    it 'prevents access to destroy' do
-      delete :destroy, params: { organization_id: organization.id, id: template.id }
-      expect(response).to have_http_status(:redirect)
-      expect(flash[:alert]).to be_present
+      it 'prevents access to edit' do
+        get :edit, params: { organization_id: organization.id, id: template.id }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
+
+      it 'prevents access to update' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: template.id,
+          prompt_template: { title: 'Updated Title' }
+        }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
+
+      it 'prevents access to destroy' do
+        delete :destroy, params: { organization_id: organization.id, id: template.id }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
     end
   end
 
   describe 'root_company handling' do
     let(:root_company) { create(:organization) }
     let(:team) { create(:team, company: root_company) }
-    let!(:root_company_teammate) { create(:company_teammate, person: person, organization: root_company, can_manage_prompts: true) }
+    let!(:root_company_teammate) { create(:company_teammate, person: person, organization: root_company, can_manage_prompts: true, first_employed_at: 1.month.ago, last_terminated_at: nil) }
     let!(:root_template) { create(:prompt_template, company: root_company) }
 
     before do
