@@ -11,7 +11,7 @@ RSpec.describe OrganizationPolicy, type: :policy do
   let(:employment_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_employment: true) }
   let(:create_employment_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_create_employment: true) }
   let(:no_permissions_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_maap: false, can_manage_employment: false, can_create_employment: false) }
-  let(:prompts_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_prompts: true) }
+  let(:prompts_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_prompts: true, first_employed_at: 1.month.ago, last_terminated_at: nil) }
   let(:customize_company_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_customize_company: true) }
   let(:employed_teammate) { CompanyTeammate.create!(person: person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil) }
   let(:other_org_teammate) { CompanyTeammate.create!(person: person, organization: other_organization, can_manage_maap: true) }
@@ -301,12 +301,17 @@ RSpec.describe OrganizationPolicy, type: :policy do
 
   describe '#view_prompt_templates?' do
     context 'when organization is in viewing_teammate hierarchy' do
+      it 'allows access for any employed teammate (nav link visibility)' do
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.view_prompt_templates?).to be true
+      end
+
       it 'allows access when user has prompts permission' do
         policy = OrganizationPolicy.new(pundit_user_prompts, organization)
         expect(policy.view_prompt_templates?).to be true
       end
 
-      it 'denies access when user lacks prompts permission' do
+      it 'denies access when user is not employed' do
         policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
         expect(policy.view_prompt_templates?).to be false
       end
@@ -321,6 +326,84 @@ RSpec.describe OrganizationPolicy, type: :policy do
       it 'returns false' do
         policy = OrganizationPolicy.new(pundit_user_other_org, organization)
         expect(policy.view_prompt_templates?).to be false
+      end
+    end
+  end
+
+  describe '#check_ins_health?' do
+    context 'when organization matches viewing_teammate.organization' do
+      it 'allows access for any employed teammate (nav link visibility)' do
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.check_ins_health?).to be true
+      end
+
+      it 'denies access when user is not employed' do
+        policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+        expect(policy.check_ins_health?).to be false
+      end
+
+      it 'respects admin_bypass?' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.check_ins_health?).to be true
+      end
+    end
+
+    context 'when organization does not match viewing_teammate.organization' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.check_ins_health?).to be false
+      end
+    end
+  end
+
+  describe '#view_slack_settings?' do
+    context 'when organization matches viewing_teammate.organization' do
+      it 'allows access for any employed teammate (nav link visibility)' do
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.view_slack_settings?).to be true
+      end
+
+      it 'denies access when user is not employed' do
+        policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+        expect(policy.view_slack_settings?).to be false
+      end
+
+      it 'respects admin_bypass?' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.view_slack_settings?).to be true
+      end
+    end
+
+    context 'when organization does not match viewing_teammate.organization' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.view_slack_settings?).to be false
+      end
+    end
+  end
+
+  describe '#view_company_preferences?' do
+    context 'when organization is in viewing_teammate hierarchy' do
+      it 'allows access for any employed teammate (nav link visibility)' do
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.view_company_preferences?).to be true
+      end
+
+      it 'denies access when user is not employed' do
+        policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+        expect(policy.view_company_preferences?).to be false
+      end
+
+      it 'respects admin_bypass?' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.view_company_preferences?).to be true
+      end
+    end
+
+    context 'when organization is not in viewing_teammate hierarchy' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.view_company_preferences?).to be false
       end
     end
   end

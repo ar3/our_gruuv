@@ -316,7 +316,7 @@ module NavigationHelper
             label: "#{current_company.name} Preferences",
             icon: 'bi-sliders',
             path: edit_organization_company_preference_path(current_organization),
-            policy_check: -> { policy(current_company).customize_company? },
+            policy_check: -> { policy(current_company).view_company_preferences? },
             coming_soon: false
           }
         ]
@@ -372,7 +372,7 @@ module NavigationHelper
             label: 'Slack Settings',
             icon: 'bi-slack',
             path: organization_slack_path(current_organization),
-            policy_check: -> { policy(current_organization).manage_employment? },
+            policy_check: -> { policy(current_organization).view_slack_settings? },
             coming_soon: false
           }
         ]

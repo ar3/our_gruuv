@@ -71,7 +71,8 @@ class OrganizationPolicy < ApplicationPolicy
   def check_ins_health?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization
-    admin_bypass? || viewing_teammate.can_manage_employment?
+    return false unless viewing_teammate.employed?
+    admin_bypass? || organization_in_hierarchy?
   end
 
   def view_prompts?
@@ -126,7 +127,8 @@ class OrganizationPolicy < ApplicationPolicy
   def view_prompt_templates?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
-    admin_bypass? || viewing_teammate.can_manage_prompts?
+    return false unless viewing_teammate.employed?
+    admin_bypass? || true
   end
 
   def view_bulk_sync_events?
@@ -176,6 +178,22 @@ class OrganizationPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
     admin_bypass? || viewing_teammate.can_customize_company?
+  end
+
+  # Any active teammate in hierarchy can see the nav link to Slack settings (page access is separate).
+  def view_slack_settings?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return false unless viewing_teammate.employed?
+    admin_bypass? || organization_in_hierarchy?
+  end
+
+  # Any active teammate in hierarchy can see the nav link to company preferences (edit page access is separate).
+  def view_company_preferences?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    return false unless viewing_teammate.employed?
+    admin_bypass? || true
   end
 
   private

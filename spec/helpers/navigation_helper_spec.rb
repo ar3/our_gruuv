@@ -94,9 +94,9 @@ RSpec.describe NavigationHelper, type: :helper do
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
-          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true)
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, view_slack_settings?: true, view_company_preferences?: true)
         elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
-          double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true)
+          double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, view_company_preferences?: true)
         elsif record.is_a?(CompanyTeammate)
           double(view_check_ins?: true)
         elsif record.is_a?(Huddle)
