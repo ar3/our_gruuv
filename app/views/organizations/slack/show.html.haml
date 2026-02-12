@@ -11,6 +11,7 @@
     Back to Organization
 
 - can_manage_slack = policy(@organization).manage_employment?
+- slack_disabled_tooltip = "Requires permission to manage employment to modify Slack settings."
 
 .row.justify-content-center
   .col-lg-10
@@ -72,50 +73,65 @@
                     = form.label :bot_emoji, "Bot Emoji", class: "form-label"
                     = form.text_field :bot_emoji, class: "form-control", placeholder: ":sparkles:", value: @slack_config.bot_emoji_or_default, disabled: !can_manage_slack
                 .row.mt-3
-                  .col-12
+                  .col-12.d-flex.align-items-center.gap-2
                     = form.submit "Update Configuration", class: "btn btn-primary btn-sm", disabled: !can_manage_slack
+                    - unless can_manage_slack
+                      %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: slack_disabled_tooltip}, style: "font-size: 1rem;"}
           
           / Test Buttons
           .row.mt-4{"data-controller" => "slack-test", "data-slack-test-organization-id-value" => @organization.id}
             .col-md-6
               %h6 Test Connection
-              %button.btn.btn-outline-primary.btn-sm{data: {action: "click->slack-test#testConnection"}, disabled: !can_manage_slack}
-                %i.bi.bi-wifi.me-1
-                Test Connection
+              .d-flex.align-items-center.gap-2
+                %button.btn.btn-outline-primary.btn-sm{data: {action: "click->slack-test#testConnection"}, disabled: !can_manage_slack}
+                  %i.bi.bi-wifi.me-1
+                  Test Connection
+                - unless can_manage_slack
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: slack_disabled_tooltip}, style: "font-size: 1rem;"}
               #connectionResult.mt-2
             
             .col-md-6
               %h6 List Channels
-              %button.btn.btn-outline-secondary.btn-sm{data: {action: "click->slack-test#listChannels"}, disabled: !can_manage_slack}
-                %i.bi.bi-list.me-1
-                List Channels
+              .d-flex.align-items-center.gap-2
+                %button.btn.btn-outline-secondary.btn-sm{data: {action: "click->slack-test#listChannels"}, disabled: !can_manage_slack}
+                  %i.bi.bi-list.me-1
+                  List Channels
+                - unless can_manage_slack
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: slack_disabled_tooltip}, style: "font-size: 1rem;"}
               #channelsResult.mt-2
           
           .row.mt-3{"data-controller" => "slack-test", "data-slack-test-organization-id-value" => @organization.id}
             .col-12
               %h6 Send Test Message
-              .input-group
-                %input.form-control#testMessage{type: "text", placeholder: "Enter test message...", value: "🧪 Test message from OurGruuv!", data: {slack_test_target: "messageInput"}, disabled: !can_manage_slack}
-                %button.btn.btn-outline-success{data: {action: "click->slack-test#sendTestMessage"}, disabled: !can_manage_slack}
-                  %i.bi.bi-send.me-1
-                  Send
+              .d-flex.align-items-center.gap-2
+                .input-group.flex-grow-1
+                  %input.form-control#testMessage{type: "text", placeholder: "Enter test message...", value: "🧪 Test message from OurGruuv!", data: {slack_test_target: "messageInput"}, disabled: !can_manage_slack}
+                  %button.btn.btn-outline-success{data: {action: "click->slack-test#sendTestMessage"}, disabled: !can_manage_slack}
+                    %i.bi.bi-send.me-1
+                    Send
+                - unless can_manage_slack
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: slack_disabled_tooltip}, style: "font-size: 1rem;"}
               #messageResult.mt-2
           
           / Uninstall Button
           .row.mt-4
-            .col-12
+            .col-12.d-flex.align-items-center.gap-2
               = button_to oauth_uninstall_organization_slack_path(@organization), method: :delete, class: "btn btn-outline-danger", disabled: !can_manage_slack, data: { confirm: can_manage_slack ? "Are you sure you want to uninstall Slack from #{@organization.display_name}?" : nil } do
                 %i.bi.bi-trash.me-2
                 Uninstall Slack
+              - unless can_manage_slack
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: slack_disabled_tooltip}, style: "font-size: 1rem;"}
         - else
           - if can_manage_slack
             = link_to oauth_authorize_organization_slack_path(@organization), class: "btn btn-primary mt-3" do
               %i.bi.bi-slack.me-2
               Install Slack for #{@organization.display_name}
           - else
-            %button.btn.btn-primary.mt-3.disabled{type: "button"}
-              %i.bi.bi-slack.me-2
-              Install Slack for #{@organization.display_name}
+            .d-inline-flex.align-items-center.gap-2.mt-3
+              %button.btn.btn-primary.disabled{type: "button"}
+                %i.bi.bi-slack.me-2
+                Install Slack for #{@organization.display_name}
+              %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: slack_disabled_tooltip}, style: "font-size: 1rem;"}
     
     / Section 2: Teammate Associations Summary
     - if @slack_config&.configured?
@@ -123,10 +139,12 @@
       
       / Refresh Slack Profiles Button
       .card.mb-4
-        .card-body
+        .card-body.d-flex.align-items-center.gap-2
           = button_to refresh_slack_profiles_organization_path(@organization), method: :post, class: "btn btn-outline-primary", disabled: !can_manage_slack, data: { confirm: can_manage_slack ? "This will match Slack profiles to teammates by email. Existing associations will not be changed. Continue?" : nil } do
             %i.bi.bi-arrow-clockwise.me-2
             Refresh Slack Profiles
+          - unless can_manage_slack
+            %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: slack_disabled_tooltip}, style: "font-size: 1rem;"}
     
     / Section 3: Channel & Group Associations Summary
     - if @slack_config&.configured?

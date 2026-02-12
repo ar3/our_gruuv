@@ -322,27 +322,6 @@ module NavigationHelper
         ]
       },
       {
-        label: 'Beta',
-        icon: 'bi-lightning',
-        section: 'beta',
-        items: [
-          {
-            label: 'Eligibility Requirements',
-            icon: 'bi-check2-circle',
-            path: organization_eligibility_requirements_path(current_organization),
-            policy_check: -> { policy(:eligibility_requirement).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Feedback Requests',
-            icon: 'bi-chat-dots',
-            path: organization_feedback_requests_path(current_organization),
-            policy_check: -> { policy(current_company).view_feedback_requests? },
-            coming_soon: false
-          }
-        ]
-      },
-      {
         label: 'Admin',
         icon: 'bi-gear',
         section: 'admin',
@@ -373,6 +352,27 @@ module NavigationHelper
             icon: 'bi-slack',
             path: organization_slack_path(current_organization),
             policy_check: -> { policy(current_organization).view_slack_settings? },
+            coming_soon: false
+          }
+        ]
+      },
+      {
+        label: 'Beta',
+        icon: 'bi-lightning',
+        section: 'beta',
+        items: [
+          {
+            label: 'Eligibility Requirements',
+            icon: 'bi-check2-circle',
+            path: organization_eligibility_requirements_path(current_organization),
+            policy_check: -> { policy(:eligibility_requirement).index? },
+            coming_soon: false
+          },
+          {
+            label: 'Feedback Requests',
+            icon: 'bi-chat-dots',
+            path: organization_feedback_requests_path(current_organization),
+            policy_check: -> { policy(current_company).view_feedback_requests? },
             coming_soon: false
           }
         ]

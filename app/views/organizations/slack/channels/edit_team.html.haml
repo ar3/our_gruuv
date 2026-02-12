@@ -10,8 +10,25 @@
     %i.bi.bi-arrow-left.me-2
     Back to Channel & Group Associations
 
+- can_manage_slack = policy(@organization).manage_employment?
+
 .row.justify-content-center
   .col-lg-8
+    - unless can_manage_slack
+      .alert.alert-warning.mb-4
+        %strong
+          %i.bi.bi-exclamation-triangle.me-2
+          You cannot modify channel or group associations on this page.
+        %p.mb-1.mt-2
+          Only teammates with permission to manage employment can change these settings. If you see something that should be changed, contact one of them:
+        - if @teammates_with_manage_employment.present?
+          %ul.mb-0.mt-1
+            - @teammates_with_manage_employment.each do |name|
+              %li= name
+        - else
+          %p.mb-0.small
+            %em No teammates with this permission in this organization.
+
     .card
       .card-header.d-flex.justify-content-between.align-items-center
         %h5.mb-0
@@ -36,10 +53,13 @@
             = form.select :huddle_channel_id,
                           options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, @team.huddle_channel_id),
                           { prompt: 'Select channel', include_blank: 'None' },
-                          { class: 'form-select' }
+                          { class: 'form-select', disabled: !can_manage_slack }
             %small.form-text.text-muted
               Huddle notifications for #{@team.name} will be posted to this channel
 
           .d-flex.justify-content-between.mt-4
             = link_to 'Cancel', channels_organization_slack_path(@organization), class: 'btn btn-outline-secondary'
-            = form.submit 'Save Settings', class: 'btn btn-primary'
+            - if can_manage_slack
+              = form.submit 'Save Settings', class: 'btn btn-primary'
+            - else
+              %button.btn.btn-primary{type: "button", disabled: true} Save Settings

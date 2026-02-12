@@ -3,7 +3,7 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
   after_action :verify_authorized
 
   def edit
-    authorize @company, :customize_company?
+    authorize @company, :view_company_preferences?
     @preferences = load_preferences
   end
 

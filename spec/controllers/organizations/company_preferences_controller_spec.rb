@@ -2,11 +2,11 @@ require 'rails_helper'
 
 RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
   let(:person) { create(:person) }
-  let(:company) { Organization.find_or_create_by!(name: 'Test Company') }
-  
+  let(:company) { create(:organization, :company, name: 'Test Company') }
+
   before do
     teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
-    teammate.update!(can_customize_company: true)
+    teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil, can_customize_company: true)
     sign_in_as_teammate(person, company)
   end
 
@@ -46,9 +46,17 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
       expect(assigns(:preferences)['kudos_point']).to eq('Star')
     end
 
-    it 'requires customize_company permission' do
+    it 'allows view when user is employed but does not have customize_company (view-only)' do
       teammate = CompanyTeammate.find_by(person: person, organization: company)
       teammate.update!(can_customize_company: false)
+      get :edit, params: { organization_id: company.to_param }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:edit)
+    end
+
+    it 'redirects when user is not employed' do
+      teammate = CompanyTeammate.find_by(person: person, organization: company)
+      teammate.update!(first_employed_at: nil, last_terminated_at: nil)
       get :edit, params: { organization_id: company.to_param }
       expect(response).to have_http_status(:redirect)
       expect(flash[:alert]).to be_present
@@ -192,7 +200,7 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
       end
     end
 
-    it 'requires customize_company permission' do
+    it 'requires customize_company permission (update remains restricted)' do
       teammate = CompanyTeammate.find_by(person: person, organization: company)
       teammate.update!(can_customize_company: false)
       patch :update, params: {

@@ -5,7 +5,7 @@ class Organizations::Slack::TeammatesController < Organizations::OrganizationNam
   
   def index
     @slack_config = @organization.calculated_slack_config
-    
+
     if @slack_config&.configured?
       begin
         slack_service = SlackService.new(@organization)
@@ -17,11 +17,20 @@ class Organizations::Slack::TeammatesController < Organizations::OrganizationNam
     else
       @slack_users = []
     end
-    
+
     @teammates = @organization.teammates
                              .where(last_terminated_at: nil)
                              .includes(:person, :teammate_identities)
                              .order('people.last_name, people.first_name')
+
+    # For view-only users: list of teammates who can make changes (for banner on page)
+    @teammates_with_manage_employment = @organization.teammates
+      .where(last_terminated_at: nil)
+      .where(can_manage_employment: true)
+      .includes(:person)
+      .map { |t| t.person&.casual_name }
+      .compact
+      .sort
   end
   
   def update
@@ -75,9 +84,14 @@ class Organizations::Slack::TeammatesController < Organizations::OrganizationNam
   end
   
   def authorize_slack_access
-    # Allow if user can manage employment OR is an active company teammate
-    unless policy(@organization).manage_employment? || current_company_teammate&.organization == @organization
-      redirect_to organization_path(@organization), alert: 'You do not have permission to access Slack configuration.'
+    if action_name == 'index'
+      unless policy(@organization).view_slack_settings?
+        redirect_to organization_path(@organization), alert: 'You do not have permission to access Slack configuration.'
+      end
+    else
+      unless policy(@organization).manage_employment?
+        redirect_to organization_path(@organization), alert: 'You do not have permission to modify Slack teammate associations.'
+      end
     end
   end
 end

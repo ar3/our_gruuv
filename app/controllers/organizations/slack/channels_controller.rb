@@ -5,6 +5,7 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
   before_action :load_target_organization, only: [:edit, :update, :edit_company, :update_company]
   before_action :ensure_company_target, only: [:edit_company, :update_company]
   before_action :load_team, only: [:edit_team, :update_team]
+  before_action :set_teammates_with_manage_employment, only: [:index, :edit, :edit_company, :edit_team]
 
   def index
     # Show-only page listing current settings and edit links
@@ -95,10 +96,25 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
   end
 
   def authorize_slack_access
-    # Allow if user can manage employment OR is an active company teammate
-    unless policy(@organization).manage_employment? || current_company_teammate&.organization == @organization
-      redirect_to organization_path(@organization), alert: 'You do not have permission to access Slack configuration.'
+    if %w[index edit edit_company edit_team].include?(action_name)
+      unless policy(@organization).view_slack_settings?
+        redirect_to organization_path(@organization), alert: 'You do not have permission to access Slack configuration.'
+      end
+    else
+      unless policy(@organization).manage_employment?
+        redirect_to organization_path(@organization), alert: 'You do not have permission to modify Slack channel settings.'
+      end
     end
+  end
+
+  def set_teammates_with_manage_employment
+    @teammates_with_manage_employment = @organization.teammates
+      .where(last_terminated_at: nil)
+      .where(can_manage_employment: true)
+      .includes(:person)
+      .map { |t| t.person&.casual_name }
+      .compact
+      .sort
   end
 
   def load_slack_data

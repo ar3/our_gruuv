@@ -13,7 +13,7 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
   let(:mock_groups_service) { instance_double(SlackGroupsService) }
 
   before do
-    teammate = create(:teammate, person: person, organization: company)
+    teammate = create(:teammate, person: person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil, can_manage_employment: true)
     sign_in_as_teammate(person, company)
     slack_config
     allow(SlackService).to receive(:new).with(kind_of(Organization)).and_return(mock_slack_service)
@@ -47,6 +47,41 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       expect(assigns(:slack_channels)).to include(channel)
       expect(assigns(:slack_groups)).to include(group)
     end
+
+    it 'assigns teammates_with_manage_employment for the view' do
+      get :index, params: { organization_id: company.id }
+      expect(assigns(:teammates_with_manage_employment)).to be_an(Array)
+    end
+
+    context 'when user is employed but does not have manage_employment' do
+      before do
+        person.teammates.find_by(organization: company).update!(can_manage_employment: false)
+      end
+
+      it 'returns success (view-only access)' do
+        get :index, params: { organization_id: company.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'assigns teammates_with_manage_employment' do
+        manager = create(:person, first_name: 'Alice', last_name: 'Manager')
+        create(:teammate, person: manager, organization: company, can_manage_employment: true, first_employed_at: 1.month.ago, last_terminated_at: nil)
+        get :index, params: { organization_id: company.id }
+        expect(assigns(:teammates_with_manage_employment)).to include(manager.casual_name)
+      end
+    end
+
+    context 'when user is not employed' do
+      before do
+        person.teammates.find_by(organization: company).update!(first_employed_at: nil, last_terminated_at: nil)
+      end
+
+      it 'redirects with authorization error' do
+        get :index, params: { organization_id: company.id }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
+    end
   end
 
   describe 'POST #refresh_channels' do
@@ -54,10 +89,22 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       allow(mock_channels_service).to receive(:refresh_channels).and_return(true)
     end
 
-    it 'refreshes channels and redirects' do
+    it 'refreshes channels and redirects when user has manage_employment' do
       post :refresh_channels, params: { organization_id: company.id }
       expect(response).to redirect_to(channels_organization_slack_path(company))
       expect(flash[:notice]).to include('refreshed successfully')
+    end
+
+    context 'when user does not have manage_employment' do
+      before do
+        person.teammates.find_by(organization: company).update!(can_manage_employment: false)
+      end
+
+      it 'redirects with alert' do
+        post :refresh_channels, params: { organization_id: company.id }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
     end
   end
 
@@ -66,10 +113,22 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       allow(mock_groups_service).to receive(:refresh_groups).and_return(true)
     end
 
-    it 'refreshes groups and redirects' do
+    it 'refreshes groups and redirects when user has manage_employment' do
       post :refresh_groups, params: { organization_id: company.id }
       expect(response).to redirect_to(channels_organization_slack_path(company))
       expect(flash[:notice]).to include('refreshed successfully')
+    end
+
+    context 'when user does not have manage_employment' do
+      before do
+        person.teammates.find_by(organization: company).update!(can_manage_employment: false)
+      end
+
+      it 'redirects with alert' do
+        post :refresh_groups, params: { organization_id: company.id }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
     end
   end
 
@@ -122,6 +181,22 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
 
       expect(company.reload.kudos_channel_id).to be_nil
       expect(company.reload.slack_group_id).to be_nil
+    end
+
+    context 'when user does not have manage_employment' do
+      before do
+        person.teammates.find_by(organization: company).update!(can_manage_employment: false)
+      end
+
+      it 'redirects on update with alert' do
+        patch :update, params: {
+          organization_id: company.id,
+          target_organization_id: company.id,
+          organization: { kudos_channel_id: channel2.third_party_id }
+        }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
     end
   end
 
@@ -202,6 +277,22 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       company.reload
       expect(company.kudos_channel_id).to be_nil
     end
+
+    context 'when user does not have manage_employment' do
+      before do
+        person.teammates.find_by(organization: company).update!(can_manage_employment: false)
+      end
+
+      it 'redirects on update_company with alert' do
+        patch :update_company, params: {
+          organization_id: company.id,
+          target_organization_id: company.id,
+          organization: { huddle_review_channel_id: channel1.third_party_id }
+        }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
+    end
   end
 
   describe 'GET #edit_team and PATCH #update_team' do
@@ -244,6 +335,22 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
       expect(response).to redirect_to(channels_organization_slack_path(company))
 
       expect(team1.reload.huddle_channel_id).to be_nil
+    end
+
+    context 'when user does not have manage_employment' do
+      before do
+        person.teammates.find_by(organization: company).update!(can_manage_employment: false)
+      end
+
+      it 'redirects on update_team with alert' do
+        patch :update_team, params: {
+          organization_id: company.id,
+          team_id: team1.id,
+          team: { huddle_channel_id: channel1.third_party_id }
+        }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to be_present
+      end
     end
   end
 end

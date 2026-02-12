@@ -10,16 +10,34 @@
     %i.bi.bi-arrow-left.me-2
     Back to Slack Configuration
 
+- can_manage_slack = policy(@organization).manage_employment?
+
 .row.justify-content-center
   .col-lg-12
+    - unless can_manage_slack
+      .alert.alert-warning.mb-4
+        %strong
+          %i.bi.bi-exclamation-triangle.me-2
+          You cannot modify teammate–Slack associations on this page.
+        %p.mb-1.mt-2
+          Only teammates with permission to manage employment can change or refresh associations. If you see something that is wrong, contact one of them:
+        - if @teammates_with_manage_employment.present?
+          %ul.mb-0.mt-1
+            - @teammates_with_manage_employment.each do |name|
+              %li= name
+        - else
+          %p.mb-0.small
+            %em No teammates with this permission in this organization.
+
     .card.mb-4
       .card-header.d-flex.justify-content-between.align-items-center
         %h5.mb-0
           %i.bi.bi-people.me-2
           Teammate to Slack User Associations
-        = button_to refresh_slack_profiles_organization_path(@organization), method: :post, class: "btn btn-sm btn-outline-primary", data: { confirm: "This will match Slack profiles to teammates by email. Existing associations will not be changed. Continue?" } do
-          %i.bi.bi-arrow-clockwise.me-1
-          Refresh All Associations
+        - if can_manage_slack
+          = button_to refresh_slack_profiles_organization_path(@organization), method: :post, class: "btn btn-sm btn-outline-primary", data: { confirm: "This will match Slack profiles to teammates by email. Existing associations will not be changed. Continue?" } do
+            %i.bi.bi-arrow-clockwise.me-1
+            Refresh All Associations
       .card-body
         - if @slack_users.empty?
           .alert.alert-warning
@@ -34,7 +52,8 @@
                   %th Email
                   %th Slack User
                   %th Status
-                  %th Actions
+                  - if can_manage_slack
+                    %th Actions
               %tbody
                 - @teammates.each do |teammate|
                   - slack_identity = teammate.slack_identity
@@ -44,9 +63,16 @@
                       = teammate.person.display_name
                     %td= teammate.person.email
                     %td
-                      = form_with url: update_teammate_association_organization_slack_path(@organization), method: :patch, local: true, class: "d-inline" do |form|
-                        = form.hidden_field :teammate_id, value: teammate.id
-                        = form.select :slack_user_id, options_from_collection_for_select(@slack_users, 'id', ->(u) { "#{u.dig('profile', 'real_name') || u['name']} (#{u.dig('profile', 'email')})" }, slack_identity&.uid), { prompt: 'Select Slack user', include_blank: 'None' }, { class: 'form-select form-select-sm', onchange: 'this.form.submit()' }
+                      - if can_manage_slack
+                        = form_with url: update_teammate_association_organization_slack_path(@organization), method: :patch, local: true, class: "d-inline" do |form|
+                          = form.hidden_field :teammate_id, value: teammate.id
+                          = form.select :slack_user_id, options_from_collection_for_select(@slack_users, 'id', ->(u) { "#{u.dig('profile', 'real_name') || u['name']} (#{u.dig('profile', 'email')})" }, slack_identity&.uid), { prompt: 'Select Slack user', include_blank: 'None' }, { class: 'form-select form-select-sm', onchange: 'this.form.submit()' }
+                      - else
+                        - if is_linked
+                          - slack_user = @slack_users.find { |u| u['id'] == slack_identity.uid }
+                          = slack_user ? "#{slack_user.dig('profile', 'real_name') || slack_user['name']} (#{slack_user.dig('profile', 'email')})" : slack_identity.uid
+                        - else
+                          %span.text-muted None
                     %td
                       - if is_linked
                         %span.badge.bg-success
@@ -56,10 +82,11 @@
                         %span.badge.bg-secondary
                           %i.bi.bi-x-circle.me-1
                           Not Linked
-                    %td
-                      - if is_linked
-                        = form_with url: update_teammate_association_organization_slack_path(@organization), method: :patch, local: true, class: "d-inline" do |form|
-                          = form.hidden_field :teammate_id, value: teammate.id
-                          = form.hidden_field :slack_user_id, value: ''
-                          = form.submit "Remove", class: "btn btn-sm btn-outline-danger", data: { confirm: "Are you sure you want to remove this association?" }
+                    - if can_manage_slack
+                      %td
+                        - if is_linked
+                          = form_with url: update_teammate_association_organization_slack_path(@organization), method: :patch, local: true, class: "d-inline" do |form|
+                            = form.hidden_field :teammate_id, value: teammate.id
+                            = form.hidden_field :slack_user_id, value: ''
+                            = form.submit "Remove", class: "btn btn-sm btn-outline-danger", data: { confirm: "Are you sure you want to remove this association?" }
 
