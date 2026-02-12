@@ -5,7 +5,7 @@
     %i.bi.bi-arrow-left.me-2
     Back to Assignments
 
-%h1.mb-4= department_hierarchy_display(@department)
+%h1.mb-4= department_hierarchy_links(@department, @organization, public: true)
 
 - if current_person
   .mb-3
@@ -15,6 +15,16 @@
 
 .row
   .col-md-8
+    - has_child_departments = @child_departments.any?
+    - if has_child_departments
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Sub-departments
+        .card-body
+          %ul.list-unstyled.mb-0
+            - @child_departments.each do |child_dept|
+              %li.mb-2
+                = link_to department_hierarchy_display(child_dept), organization_public_maap_department_path(@organization, child_dept), class: "text-decoration-none"
     - has_positions = @positions_direct.any? || @positions_indirect.any?
     - if has_positions
       .card.mb-4
@@ -74,12 +84,29 @@
               - @abilities_indirect.each do |ability|
                 %li.mb-2
                   = link_to ability.name, organization_public_maap_ability_path(@organization, ability), class: "text-decoration-none"
-    
-    - unless has_positions || has_assignments || has_abilities
+    - has_aspirations = @aspirations_direct.any? || @aspirations_indirect.any?
+    - if has_aspirations
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Aspirations
+        .card-body
+          - if @aspirations_direct.any?
+            %ul.list-unstyled.mb-0
+              - @aspirations_direct.each do |aspiration|
+                %li.mb-2
+                  = link_to aspiration.name, organization_public_maap_aspiration_path(@organization, aspiration), class: "text-decoration-none"
+          - if @aspirations_indirect.any?
+            - if @aspirations_direct.any?
+              %hr.my-3
+            %ul.list-unstyled.mb-0
+              - @aspirations_indirect.each do |aspiration|
+                %li.mb-2
+                  = link_to aspiration.name, organization_public_maap_aspiration_path(@organization, aspiration), class: "text-decoration-none"
+    - unless has_positions || has_assignments || has_abilities || has_aspirations || has_child_departments
       .alert.alert-info
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
           No Resources Available
         %p.mb-0
-          There are currently no positions, assignments, or abilities available for this department.
+          There are currently no positions, assignments, abilities, aspirations, or sub-departments available for this department.
 

@@ -5,7 +5,7 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   def index
     authorize company, :view_aspirations?
     # Show aspirations for the company
-    @aspirations = policy_scope(Aspiration).for_company(company).ordered
+    @aspirations = policy_scope(Aspiration).for_company(company).includes(department: :parent_department).ordered
     render layout: determine_layout
   end
 
@@ -93,7 +93,7 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   end
 
   def set_aspiration
-    @aspiration = company.aspirations.find(params[:id])
+    @aspiration = company.aspirations.includes(:department).find(params[:id])
   end
 
   def aspiration_params

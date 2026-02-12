@@ -1,6 +1,7 @@
 class Organizations::PublicMaap::BaseController < ApplicationController
   layout 'public_maap'
   helper Organizations::PublicMaapHelper
+  helper OrganizationsHelper
 
   before_action :set_organization
   

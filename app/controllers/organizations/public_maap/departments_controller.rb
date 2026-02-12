@@ -50,5 +50,18 @@ class Organizations::PublicMaap::DepartmentsController < Organizations::PublicMa
     @abilities_indirect = Ability
       .where(company_id: company.id, department_id: nil)
       .ordered
+
+    # Load aspirations where department is in scope
+    @aspirations_direct = Aspiration
+      .where(department_id: department_ids)
+      .ordered
+
+    # Load aspirations at company level (no department)
+    @aspirations_indirect = Aspiration
+      .where(company_id: company.id, department_id: nil)
+      .ordered
+
+    # Sub-departments (children of this department)
+    @child_departments = @department.child_departments.active.ordered
   end
 end

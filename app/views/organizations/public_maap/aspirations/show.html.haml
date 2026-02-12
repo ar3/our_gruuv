@@ -25,8 +25,12 @@
               = @aspiration.description
             - else
               %em.text-muted No description provided
-          %dt.col-sm-3 Organization:
-          %dd.col-sm-9= @aspiration.company.display_name
+          %dt.col-sm-3 Department:
+          %dd.col-sm-9
+            - if @aspiration.department.present?
+              = department_hierarchy_links(@aspiration.department, @organization, public: true)
+            - else
+              = @aspiration.company.display_name
 
     - if @observations.any?
       .card.mb-4

@@ -29,6 +29,13 @@
           
           %div.mt-3
             %small.text-muted
+              Department:
+              - if @aspiration.department.present?
+                = department_hierarchy_links(@aspiration.department, @organization, public: false)
+              - else
+                = @aspiration.company.display_name
+          %div.mt-3
+            %small.text-muted
               Sort Order: #{@aspiration.sort_order}
       
       - if @observations.any?

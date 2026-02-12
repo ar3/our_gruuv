@@ -186,6 +186,21 @@ module OrganizationsHelper
     path.join(' > ')
   end
 
+  # Get department hierarchy as linked segments (each segment links to that department).
+  # When public: true, links go to organization_public_maap_department_path; otherwise organization_department_path.
+  # Returns html_safe string or empty string when department is nil.
+  def department_hierarchy_links(department, organization, public: false)
+    return ''.html_safe unless department&.is_a?(Department)
+
+    path = department.self_and_ancestors.reverse
+    sep = ' > '.html_safe
+    links = path.map do |dept|
+      url = public ? organization_public_maap_department_path(organization, dept) : organization_department_path(organization, dept)
+      link_to(dept.name, url, class: 'text-decoration-none')
+    end
+    safe_join(links, sep)
+  end
+
   # Determine table row class based on assignment tenure status
   # latest_tenure: nil = no tenure, ended_at present = ended (info), ended_at nil = active (success)
   def assignment_row_class(latest_tenure)

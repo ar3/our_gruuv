@@ -30,7 +30,7 @@
           %thead
             %tr
               %th Name
-              %th Organization
+              %th Department
               %th Description
               %th Sort Order
               %th Actions
@@ -39,7 +39,11 @@
               %tr
                 %td
                   = link_to aspiration.name, organization_aspiration_path(@organization, aspiration), class: "text-decoration-none"
-                %td= aspiration.company.display_name
+                %td
+                  - if aspiration.department.present?
+                    = department_hierarchy_display(aspiration.department)
+                  - else
+                    = aspiration.company.display_name
                 %td= aspiration.description.to_s[0..100]
                 %td= aspiration.sort_order
                 %td
@@ -87,9 +91,9 @@
               %i.bi.bi-funnel.me-2
               Filters
             .mb-3
-              %label.form-label Organization
+              %label.form-label Department
               %select.form-select
-                %option All Organizations
+                %option All Departments
                 %option Company
                 %option Department
                 %option Team
