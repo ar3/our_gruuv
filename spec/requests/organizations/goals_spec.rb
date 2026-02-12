@@ -575,7 +575,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       )
     end
 
-    it 'shows "mark this goal as done" link for active check-in-eligible goals' do
+    it 'shows mark-done button with tooltip for active check-in-eligible goals' do
       check_in_eligible_goal
 
       get organization_goals_path(organization), params: {
@@ -584,8 +584,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
       }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Mark this goal as done')
       expect(response.body).to include(done_organization_goal_path(organization, check_in_eligible_goal))
+      expect(response.body).to include('mark this goal as done and log if it was hit or not')
     end
   end
   
