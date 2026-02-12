@@ -14,7 +14,7 @@
           - if current_person
             .nav-item.dropdown
               %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
-                = current_person.full_name
+                = current_person.display_name
               %ul.dropdown-menu
                 - if current_organization
                   %li

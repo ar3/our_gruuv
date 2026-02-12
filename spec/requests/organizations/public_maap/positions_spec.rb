@@ -55,6 +55,14 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
       expect(response.body).to include('View Authenticated Version')
     end
 
+    it 'shows logged-in teammate display name in the header' do
+      person = create(:person, first_name: 'Jane', last_name: 'Doe', preferred_name: 'Janey')
+      sign_in_as_teammate_for_request(person, company)
+
+      get organization_public_maap_positions_path(company)
+      expect(response.body).to include(person.display_name)
+    end
+
     it 'does not show link to authenticated version when user is not logged in' do
       get organization_public_maap_positions_path(company)
       expect(response.body).not_to include('View Authenticated Version')
