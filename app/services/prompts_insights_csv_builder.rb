@@ -32,7 +32,7 @@ class PromptsInsightsCsvBuilder
 
   def open_prompts
     open_prompts_base
-      .includes(company_teammate: :person, prompt_template: :prompt_questions, prompt_answers: :prompt_question)
+      .includes(company_teammate: :person, prompt_template: :prompt_questions, prompt_answers: :prompt_question, prompt_goals: [])
       .order('prompts.created_at')
   end
 
@@ -53,7 +53,7 @@ class PromptsInsightsCsvBuilder
   end
 
   def header_row
-    ['Teammate', 'Prompt template name', 'Date created'] +
+    ['Teammate', 'Prompt template name', 'Date created', 'Goals count'] +
       (1..max_question_count).map { |i| "Question #{i}" }
   end
 
@@ -73,6 +73,7 @@ class PromptsInsightsCsvBuilder
     teammate_name = prompt.company_teammate.person&.display_name.to_s
     template_name = prompt.prompt_template.title.to_s
     date_created = prompt.created_at&.strftime('%Y-%m-%d').to_s
+    goals_count = prompt.prompt_goals.size
     labels = question_labels_by_position(prompt)
     answers = answers_by_position(prompt)
     answer_cols = (1..max_question_count).map do |pos|
@@ -80,6 +81,6 @@ class PromptsInsightsCsvBuilder
       answer_text = (answers[pos] || '').to_s
       "#{label}:\n#{answer_text}"
     end
-    [teammate_name, template_name, date_created] + answer_cols
+    [teammate_name, template_name, date_created, goals_count] + answer_cols
   end
 end
