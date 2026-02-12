@@ -56,7 +56,7 @@
                   %small.text-muted= transaction.created_at.strftime("%I:%M %p")
                 %td
                   %span.badge.bg-secondary= transaction.transaction_type_display
-                %td= kudos_transaction_description(transaction)
+                %td= kudos_transaction_description_link(transaction)
                 %td.text-end{class: kudos_delta_class(transaction.points_to_give_delta)}
                   = kudos_format_delta(transaction.points_to_give_delta)
                 %td.text-end{class: kudos_delta_class(transaction.points_to_spend_delta)}

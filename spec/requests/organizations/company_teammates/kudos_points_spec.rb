@@ -58,6 +58,17 @@ RSpec.describe 'Kudos Points Mode', type: :request do
       expect(response.body).to include('Back to About Me')
       expect(response.body).to include(about_path)
     end
+
+    it 'links transaction description to observation when transaction has an observation' do
+      observation = create(:observation, company: organization)
+      create(:points_exchange_transaction, company_teammate: teammate, organization: organization, observation: observation)
+
+      get kudos_points_organization_company_teammate_path(organization, teammate)
+
+      expect(response).to have_http_status(:success)
+      observation_path = organization_observation_path(organization, observation)
+      expect(response.body).to include(observation_path), "Transaction History should link description to the observation"
+    end
   end
 
   describe 'authorization (self or managerial hierarchy only)' do

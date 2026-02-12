@@ -84,6 +84,17 @@ module KudosHelper
     end
   end
 
+  def kudos_transaction_description_link(transaction)
+    if transaction.observation.present?
+      link_to(
+        kudos_transaction_description(transaction),
+        organization_observation_path(transaction.organization, transaction.observation)
+      )
+    else
+      kudos_transaction_description(transaction)
+    end
+  end
+
   def kudos_format_delta(delta)
     return "-" if delta.nil? || delta == 0
 
