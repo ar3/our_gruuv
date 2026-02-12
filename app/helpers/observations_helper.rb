@@ -128,6 +128,8 @@ module ObservationsHelper
   end
 
   def privacy_level_display_text(observation)
+    return 'only you, because draft' if observation.draft?
+
     observee_names = observation.observed_teammates.map { |t| t.person.casual_name }
     
     # Get direct manager names (level 0 only) for all observees (deduplicated)

@@ -239,6 +239,14 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(response.body).not_to include('<strong>Privacy:</strong>')
       end
 
+      it 'shows "only you, because draft" for draft observations in Who can see this' do
+        draft_obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_to_company, story: 'Draft story')
+        draft_obs.observees.build(teammate: observee_teammate)
+        draft_obs.save!
+        get :index, params: { organization_id: company.id, view: 'large_list' }
+        expect(response.body).to include('only you, because draft')
+      end
+
       context 'with managers' do
         let(:direct_manager_person) { create(:person, first_name: 'Direct', last_name: 'Manager') }
         let(:direct_manager_teammate) { CompanyTeammate.create!(person: direct_manager_person, organization: company) }
