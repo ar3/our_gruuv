@@ -175,6 +175,66 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
 
+  describe '#goal_index_due_phrase' do
+    it 'returns "no due date" when goal has no target dates' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+      expect(helper.goal_index_due_phrase(goal)).to eq('no due date')
+    end
+
+    it 'returns "due today" when most_likely_target_date is today' do
+      today = Date.current
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: today, earliest_target_date: today, latest_target_date: today)
+      expect(helper.goal_index_due_phrase(goal)).to eq('due today')
+    end
+
+    it 'returns "due in X" for future date' do
+      future = 2.weeks.from_now.to_date
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: future, earliest_target_date: future, latest_target_date: future)
+      expect(helper.goal_index_due_phrase(goal)).to match(/\Adue in \d+ (day|days|week|weeks|month|months)\z/)
+    end
+
+    it 'returns "due X ago" for past date' do
+      past = 2.weeks.ago.to_date
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: past, earliest_target_date: past - 1.week, latest_target_date: past)
+      expect(helper.goal_index_due_phrase(goal)).to start_with('due ').and end_with(' ago')
+    end
+  end
+
+  describe '#goal_index_info_sentence' do
+    it 'includes status, goal type, and due phrase for active goal' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: Date.current + 30, started_at: 1.day.ago)
+      result = helper.goal_index_info_sentence(goal)
+      expect(result).to be_html_safe
+      expect(result).to include('Active')
+      expect(result).to include('Key Result')
+      expect(result).to include('due in')
+    end
+
+    it 'wraps draft status in warning styling with icon' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil)
+      result = helper.goal_index_info_sentence(goal)
+      expect(result).to include('text-warning')
+      expect(result).to include('bi-exclamation-triangle')
+      expect(result).to include('Draft')
+    end
+
+    it 'includes "no due date" when goal has no target date' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: nil, earliest_target_date: nil, latest_target_date: nil)
+      result = helper.goal_index_info_sentence(goal)
+      expect(result).to include('no due date')
+    end
+
+    it 'adds popover with earliest, most likely, latest dates when goal has due date' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: 1.month.from_now.to_date, earliest_target_date: 2.weeks.from_now.to_date, latest_target_date: 2.months.from_now.to_date)
+      result = helper.goal_index_info_sentence(goal)
+      expect(result).to include('data-bs-toggle="popover"')
+      expect(result).to include('data-bs-trigger="hover"')
+      expect(result).to include('Earliest:')
+      expect(result).to include('Most Likely:')
+      expect(result).to include('Latest:')
+    end
+  end
+
   describe '#goal_owner_image' do
     context 'with CompanyTeammate owner' do
       it 'returns div with initials when no profile image' do

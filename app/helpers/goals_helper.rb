@@ -118,6 +118,47 @@ module GoalsHelper
     end
     lines.join("\n")
   end
+
+  # For hierarchical goal index: "no due date" | "due in X" | "due X ago"
+  def goal_index_due_phrase(goal)
+    date = goal.calculated_target_date
+    return "no due date" if date.blank?
+    today = Date.current
+    if date < today
+      "due #{time_ago_in_words(date)} ago"
+    elsif date > today
+      "due in #{distance_of_time_in_words(today, date)}"
+    else
+      "due today"
+    end
+  end
+
+  # Sentence for hierarchical goal index: <status> | <goal type> | <due phrase>. Draft gets warning color + icon. Due shows popover with earliest/most likely/latest when present.
+  def goal_index_info_sentence(goal)
+    status_word = goal.status.to_s.humanize
+    status_span = if goal.status == :draft
+      content_tag(:span, class: 'text-warning') do
+        content_tag(:i, '', class: 'bi bi-exclamation-triangle me-1', 'aria-hidden': 'true') + status_word
+      end
+    else
+      content_tag(:span, status_word, class: '')
+    end
+    type_span = content_tag(:span, goal_category_label(goal), class: '')
+    due_phrase = goal_index_due_phrase(goal)
+    due_span = if goal_index_due_phrase_has_dates?(goal)
+      popover_content = timeframe_tooltip_text(goal).gsub("\n", '<br>')
+      content_tag(:span, due_phrase, class: '', style: 'cursor: pointer;',
+        'data-bs-toggle' => 'popover', 'data-bs-trigger' => 'hover', 'data-bs-placement' => 'top',
+        'data-bs-html' => 'true', 'data-bs-content' => popover_content)
+    else
+      content_tag(:span, due_phrase, class: '')
+    end
+    safe_join([status_span, type_span, due_span], ' | ')
+  end
+
+  def goal_index_due_phrase_has_dates?(goal)
+    goal.earliest_target_date.present? || goal.most_likely_target_date.present? || goal.latest_target_date.present?
+  end
   
   def goal_privacy_rings(goal)
     case goal.privacy_level

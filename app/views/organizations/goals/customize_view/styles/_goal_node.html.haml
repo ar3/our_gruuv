@@ -31,20 +31,18 @@
                   - else
                     #{pluralize(direct_children_count, 'sub-goal')} directly & #{total_descendants_count} total
             
-            / Goal title and category badge
+            / Goal title (category/timeframe/status moved to info sentence below)
             .d-flex.align-items-center.flex-wrap.mb-1
               = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold me-2"
-              %span.badge.me-2{class: goal_category_badge_class(goal)}
-                = goal_category_label(goal)
               - if goal.should_show_warning?
                 %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
             
-            / Status badges row
+            / Info sentence (status, goal type, due) then visibility and owner
             .d-flex.align-items-center.flex-wrap.mb-1
-              %span.badge.me-2{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
-                = goal.timeframe.to_s.humanize
-              %span.badge.me-2{class: status_badge_class(goal.status)}
-                = goal.status.to_s.humanize
+              %span.small.me-2
+                = goal_index_info_sentence(goal)
+              %span.small.me-2
+                |
               %span.text-muted.small.me-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_privacy_tooltip_text(goal)}
                 = goal_visibility_display(goal)
               %span.text-muted.small
