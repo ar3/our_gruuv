@@ -3,17 +3,29 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
   after_action :verify_authorized
   
   def index
-    # Authorization: require manage_employment permission
     authorize @organization, :check_ins_health?
-    
-    # Get all active employees (teammates with active employment)
-    active_teammates = CompanyTeammate.for_organization_hierarchy(@organization)
+
+    base_scope = CompanyTeammate.for_organization_hierarchy(@organization)
       .where.not(first_employed_at: nil)
       .where(last_terminated_at: nil)
       .includes(:person, :employment_tenures, :organization)
       .joins(:person)
       .order('people.last_name ASC, people.first_name ASC')
-    
+
+    if policy(@organization).manage_employment?
+      active_teammates = base_scope
+      @show_only_self_and_reports = false
+    else
+      viewing_teammate = base_scope.find_by(person: current_person)
+      if viewing_teammate
+        hierarchy_ids = CompanyTeammate.self_and_reporting_hierarchy(viewing_teammate, @organization).pluck(:id)
+        active_teammates = base_scope.where(id: hierarchy_ids)
+      else
+        active_teammates = base_scope.none
+      end
+      @show_only_self_and_reports = true
+    end
+
     # Calculate health status for each teammate
     all_employee_health_data = active_teammates.map do |teammate|
       health_data = CheckInHealthService.call(teammate, @organization)

@@ -55,7 +55,10 @@
               Organization: #{@organization.display_name}
               %br
               %i.bi.bi-people.me-1
-              Showing active employees from company and descendants
+              - if @show_only_self_and_reports
+                Showing only you and your reports
+              - else
+                Showing active employees from company and descendants
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-clipboard-check.me-1

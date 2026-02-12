@@ -40,6 +40,15 @@ class Organizations::SlackController < Organizations::OrganizationNamespaceBaseC
     # Organization summary
     @total_departments = @organization.departments.count
     @total_teams = @organization.teams.count
+
+    # For view-only users: list of teammates who can make changes (for alert on page)
+    @teammates_with_manage_employment = @organization.teammates
+      .where(last_terminated_at: nil)
+      .where(can_manage_employment: true)
+      .includes(:person)
+      .map { |t| t.person&.casual_name }
+      .compact
+      .sort
   end
   
   def test_connection
@@ -157,9 +166,19 @@ class Organizations::SlackController < Organizations::OrganizationNamespaceBaseC
   end
   
   def authorize_slack_access
-    # Allow if user can manage employment OR is an active company teammate
-    unless policy(@organization).manage_employment? || current_company_teammate&.organization == @organization
-      redirect_to organization_path(@organization), alert: 'You do not have permission to access Slack configuration.'
+    # Show: any active teammate can view (view_slack_settings?). Other actions: require manage_employment.
+    if action_name == 'show'
+      unless policy(@organization).view_slack_settings?
+        redirect_to organization_path(@organization), alert: 'You do not have permission to access Slack configuration.'
+      end
+    else
+      unless policy(@organization).manage_employment?
+        if request.format.json?
+          render json: { error: 'You do not have permission to perform this action.' }, status: :forbidden
+        else
+          redirect_to organization_path(@organization), alert: 'You do not have permission to modify Slack configuration.'
+        end
+      end
     end
   end
   

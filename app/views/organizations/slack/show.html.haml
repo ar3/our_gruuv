@@ -10,8 +10,18 @@
     %i.bi.bi-arrow-left.me-2
     Back to Organization
 
+- can_manage_slack = policy(@organization).manage_employment?
+
 .row.justify-content-center
   .col-lg-10
+    - unless can_manage_slack
+      .alert.alert-info.mb-4
+        %strong Only the following teammates can make adjustments to #{@organization.display_name} Slack settings:
+        - if @teammates_with_manage_employment.present?
+          = @teammates_with_manage_employment.to_sentence
+        - else
+          %em No teammates with this permission in this organization.
+
     / Section 1: Slack Setup/Configuration
     .card.mb-4
       .card-header
@@ -54,29 +64,29 @@
                 .row
                   .col-md-4
                     = form.label :default_channel, "Default Channel", class: "form-label"
-                    = form.text_field :default_channel, class: "form-control", placeholder: "#bot-test", value: @slack_config.default_channel_or_general
+                    = form.text_field :default_channel, class: "form-control", placeholder: "#bot-test", value: @slack_config.default_channel_or_general, disabled: !can_manage_slack
                   .col-md-4
                     = form.label :bot_username, "Bot Username", class: "form-label"
-                    = form.text_field :bot_username, class: "form-control", placeholder: "OG", value: @slack_config.bot_username_or_default
+                    = form.text_field :bot_username, class: "form-control", placeholder: "OG", value: @slack_config.bot_username_or_default, disabled: !can_manage_slack
                   .col-md-4
                     = form.label :bot_emoji, "Bot Emoji", class: "form-label"
-                    = form.text_field :bot_emoji, class: "form-control", placeholder: ":sparkles:", value: @slack_config.bot_emoji_or_default
+                    = form.text_field :bot_emoji, class: "form-control", placeholder: ":sparkles:", value: @slack_config.bot_emoji_or_default, disabled: !can_manage_slack
                 .row.mt-3
                   .col-12
-                    = form.submit "Update Configuration", class: "btn btn-primary btn-sm"
+                    = form.submit "Update Configuration", class: "btn btn-primary btn-sm", disabled: !can_manage_slack
           
           / Test Buttons
           .row.mt-4{"data-controller" => "slack-test", "data-slack-test-organization-id-value" => @organization.id}
             .col-md-6
               %h6 Test Connection
-              %button.btn.btn-outline-primary.btn-sm{data: {action: "click->slack-test#testConnection"}}
+              %button.btn.btn-outline-primary.btn-sm{data: {action: "click->slack-test#testConnection"}, disabled: !can_manage_slack}
                 %i.bi.bi-wifi.me-1
                 Test Connection
               #connectionResult.mt-2
             
             .col-md-6
               %h6 List Channels
-              %button.btn.btn-outline-secondary.btn-sm{data: {action: "click->slack-test#listChannels"}}
+              %button.btn.btn-outline-secondary.btn-sm{data: {action: "click->slack-test#listChannels"}, disabled: !can_manage_slack}
                 %i.bi.bi-list.me-1
                 List Channels
               #channelsResult.mt-2
@@ -85,8 +95,8 @@
             .col-12
               %h6 Send Test Message
               .input-group
-                %input.form-control#testMessage{type: "text", placeholder: "Enter test message...", value: "🧪 Test message from OurGruuv!", data: {slack_test_target: "messageInput"}}
-                %button.btn.btn-outline-success{data: {action: "click->slack-test#sendTestMessage"}}
+                %input.form-control#testMessage{type: "text", placeholder: "Enter test message...", value: "🧪 Test message from OurGruuv!", data: {slack_test_target: "messageInput"}, disabled: !can_manage_slack}
+                %button.btn.btn-outline-success{data: {action: "click->slack-test#sendTestMessage"}, disabled: !can_manage_slack}
                   %i.bi.bi-send.me-1
                   Send
               #messageResult.mt-2
@@ -94,13 +104,18 @@
           / Uninstall Button
           .row.mt-4
             .col-12
-              = button_to oauth_uninstall_organization_slack_path(@organization), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to uninstall Slack from #{@organization.display_name}?" } do
+              = button_to oauth_uninstall_organization_slack_path(@organization), method: :delete, class: "btn btn-outline-danger", disabled: !can_manage_slack, data: { confirm: can_manage_slack ? "Are you sure you want to uninstall Slack from #{@organization.display_name}?" : nil } do
                 %i.bi.bi-trash.me-2
                 Uninstall Slack
         - else
-          = link_to oauth_authorize_organization_slack_path(@organization), class: "btn btn-primary mt-3" do
-            %i.bi.bi-slack.me-2
-            Install Slack for #{@organization.display_name}
+          - if can_manage_slack
+            = link_to oauth_authorize_organization_slack_path(@organization), class: "btn btn-primary mt-3" do
+              %i.bi.bi-slack.me-2
+              Install Slack for #{@organization.display_name}
+          - else
+            %button.btn.btn-primary.mt-3.disabled{type: "button"}
+              %i.bi.bi-slack.me-2
+              Install Slack for #{@organization.display_name}
     
     / Section 2: Teammate Associations Summary
     - if @slack_config&.configured?
@@ -109,7 +124,7 @@
       / Refresh Slack Profiles Button
       .card.mb-4
         .card-body
-          = button_to refresh_slack_profiles_organization_path(@organization), method: :post, class: "btn btn-outline-primary", data: { confirm: "This will match Slack profiles to teammates by email. Existing associations will not be changed. Continue?" } do
+          = button_to refresh_slack_profiles_organization_path(@organization), method: :post, class: "btn btn-outline-primary", disabled: !can_manage_slack, data: { confirm: can_manage_slack ? "This will match Slack profiles to teammates by email. Existing associations will not be changed. Continue?" : nil } do
             %i.bi.bi-arrow-clockwise.me-2
             Refresh Slack Profiles
     

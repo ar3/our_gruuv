@@ -267,6 +267,32 @@ class CompanyTeammate < ApplicationRecord
                     .exists?
   end
 
+  # Returns the teammate and all teammates who report to them (directly or indirectly) within the organization hierarchy.
+  # Used for Check-ins Health view-only: show only self and reports when the user lacks manage_employment.
+  def self.self_and_reporting_hierarchy(teammate, organization)
+    return none unless teammate && organization
+
+    company = organization.company? ? organization : (organization.root_company || organization)
+    allowed_ids = for_organization_hierarchy(organization).pluck(:id)
+    return none unless allowed_ids.include?(teammate.id)
+
+    ids = [teammate.id]
+    queue = [teammate]
+    while queue.any?
+      current = queue.shift
+      direct_report_ids = EmploymentTenure
+        .where(company: company, manager_teammate: current, ended_at: nil)
+        .pluck(:teammate_id)
+      direct_report_ids.each do |tid|
+        next unless allowed_ids.include?(tid)
+        next if ids.include?(tid)
+        ids << tid
+        queue << find(tid)
+      end
+    end
+    where(id: ids)
+  end
+
   def in_managerial_hierarchy_of?(other_teammate)
     return false unless other_teammate
     return false unless other_teammate.organization == organization
