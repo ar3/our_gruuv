@@ -23,5 +23,17 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Observations Sharing')
       expect(response.body).to include('observations-by-privacy-chart')
     end
+
+    it 'includes timeframe filter links (Last 90 days, Last Year, All-Time)' do
+      get organization_insights_observations_path(organization)
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+    end
+
+    it 'returns success with timeframe=year' do
+      get organization_insights_observations_path(organization, timeframe: 'year')
+      expect(response).to have_http_status(:success)
+    end
   end
 end

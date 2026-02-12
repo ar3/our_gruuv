@@ -1,20 +1,29 @@
 - content_for :title, "Insights: Observations"
 
+- chart_title_period = case @timeframe when :'90_days' then "Last 90 Days" when :year then "Last Year" when :all_time then "Last 52 Weeks" else "Last 90 Days" end
+
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-bar-chart-line.me-2
       Insights: Observations
 
+/ Timeframe selector
+.mb-4
+  .btn-group{role: "group"}
+    = link_to "Last 90 days", organization_insights_observations_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Last Year", organization_insights_observations_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "All-Time", organization_insights_observations_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+
 .container-fluid
-  / 52-week stacked bar chart by privacy level
+  / Stacked bar chart by privacy level
   .row.mb-4
     .col-12
       .card.border-0.shadow-sm
         .card-header.bg-primary.text-white
           %h4.mb-0
             %i.bi.bi-eye.me-2
-            Observations by Week (Last 52 Weeks)
+            Observations by Week (#{chart_title_period})
         .card-body
           #observations-by-privacy-chart{style: "height: 400px;"}
 
@@ -89,6 +98,7 @@
 :javascript
   (function() {
     var chartData = #{@observations_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
 
     function initializeChart() {
       if (typeof Highcharts === 'undefined') return;
@@ -96,7 +106,7 @@
       if (!el) return;
       Highcharts.chart('observations-by-privacy-chart', {
         chart: { type: 'column' },
-        title: { text: 'Published observations by privacy level (last 52 weeks)' },
+        title: { text: 'Published observations by privacy level (' + chartTitle + ')' },
         accessibility: { enabled: false },
         xAxis: {
           categories: chartData.categories,

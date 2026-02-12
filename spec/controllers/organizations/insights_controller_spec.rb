@@ -209,14 +209,43 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(response).to have_http_status(:success)
     end
 
-    it 'assigns chart data with categories and series' do
+    it 'defaults timeframe to 90_days' do
+      get :observations, params: { organization_id: company.id }
+      expect(assigns(:timeframe)).to eq(:'90_days')
+    end
+
+    it 'accepts timeframe year' do
+      get :observations, params: { organization_id: company.id, timeframe: 'year' }
+      expect(assigns(:timeframe)).to eq(:year)
+    end
+
+    it 'accepts timeframe all_time' do
+      get :observations, params: { organization_id: company.id, timeframe: 'all_time' }
+      expect(assigns(:timeframe)).to eq(:all_time)
+    end
+
+    it 'assigns chart data with categories and series (90_days has ~13 weeks)' do
       get :observations, params: { organization_id: company.id }
       chart = assigns(:observations_chart_data)
       expect(chart).to be_a(Hash)
       expect(chart[:categories]).to be_an(Array)
       expect(chart[:series]).to be_an(Array)
-      expect(chart[:categories].size).to eq(52)
+      expect(chart[:categories].size).to be_between(12, 14)
       expect(chart[:series].map { |s| s[:name] }.sort).to eq(Observation.privacy_levels.keys.map { |k| k.to_s.humanize.titleize }.sort)
+    end
+
+    it 'assigns chart data with 52–53 week categories when timeframe is year' do
+      get :observations, params: { organization_id: company.id, timeframe: 'year' }
+      chart = assigns(:observations_chart_data)
+      expect(chart[:categories].size).to be_between(52, 53)
+    end
+
+    it 'excludes observations outside range when timeframe is 90_days' do
+      create(:observation, observer: person, company: company, published_at: 2.years.ago, observed_at: 2.years.ago, deleted_at: nil, observation_type: :kudos)
+      get :observations, params: { organization_id: company.id, timeframe: '90_days' }
+      teammates = assigns(:observer_teammates)
+      expect(teammates.map(&:person_id)).not_to include(person.id)
+      expect(assigns(:total_published_unarchived_by_observer)[person.id]).to be_nil
     end
 
     it 'lists observers as teammates who have given published observations' do

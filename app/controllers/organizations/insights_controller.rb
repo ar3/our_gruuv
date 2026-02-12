@@ -78,10 +78,15 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   def observations
     authorize company, :view_observations?
 
-    base_scope = Observation.for_company(company).not_soft_deleted.published
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range = date_range_for(@timeframe)
 
-    # 52-week stacked bar: count by week and privacy_level
-    @observations_chart_data = observations_chart_series_by_privacy(base_scope)
+    base_scope = Observation.for_company(company).not_soft_deleted.published
+    base_scope = base_scope.where(observed_at: range) if range
+
+    chart_range = range || (52.weeks.ago..Time.current)
+    @observations_chart_data = observations_chart_series_by_privacy(base_scope, chart_range)
 
     # Observers (person_ids) who have given at least one observation
     observer_ids = base_scope.distinct.pluck(:observer_id).compact
@@ -126,15 +131,35 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     result
   end
 
-  def observations_chart_series_by_privacy(base_scope)
-    # Counts grouped by week (date_trunc week) and privacy_level for last 52 weeks
-    scope = base_scope.where(observed_at: 52.weeks.ago..)
+  def parse_timeframe(param)
+    case param.to_s
+    when 'year' then :year
+    when 'all_time' then :all_time
+    else :'90_days'
+    end
+  end
+
+  def date_range_for(timeframe)
+    case timeframe
+    when :'90_days'
+      90.days.ago..Time.current
+    when :year
+      1.year.ago..Time.current
+    when :all_time
+      nil
+    else
+      90.days.ago..Time.current
+    end
+  end
+
+  def observations_chart_series_by_privacy(base_scope, chart_range)
+    scope = base_scope.where(observed_at: chart_range)
     raw = scope.group(Arel.sql("date_trunc('week', observed_at)::date"), :privacy_level).count
     raw_normalized = raw.each_with_object(Hash.new(0)) { |((w, p), c), h| h[[w.to_s, p]] = c }
 
-    end_date = Time.current.to_date
-    start_date = 52.weeks.ago.to_date
-    week_dates = (start_date..end_date).to_a.map { |d| d.beginning_of_week }.uniq.sort.last(52)
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map { |d| d.beginning_of_week }.uniq.sort
     categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
     series = Observation.privacy_levels.keys.map do |privacy|
       {
