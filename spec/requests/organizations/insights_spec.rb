@@ -36,4 +36,64 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response).to have_http_status(:success)
     end
   end
+
+  describe 'GET /organizations/:organization_id/insights/prompts' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
+    end
+
+    it 'returns http success' do
+      get organization_insights_prompts_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders prompts insights page with timeframe links' do
+      get organization_insights_prompts_path(organization)
+      expect(response.body).to include('Insights: Prompts')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+    end
+
+    it 'returns success with timeframe=year' do
+      get organization_insights_prompts_path(organization, timeframe: 'year')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns success with timeframe=all_time' do
+      get organization_insights_prompts_path(organization, timeframe: 'all_time')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'includes the answers chart container' do
+      get organization_insights_prompts_path(organization)
+      expect(response.body).to include('prompts-answers-by-template-chart')
+    end
+
+    it 'includes the teammates chart container' do
+      get organization_insights_prompts_path(organization)
+      expect(response.body).to include('prompts-teammates-by-template-chart')
+    end
+
+    it 'includes download button with access scope and teammate count' do
+      get organization_insights_prompts_path(organization)
+      expect(response.body).to include('I have access to')
+      expect(response.body).to include('teammates.')
+      expect(response.body).to include('prompts/download')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/insights/prompts/download' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
+    end
+
+    it 'returns CSV with correct headers' do
+      get organization_insights_prompts_download_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Teammate')
+      expect(response.body).to include('Prompt template name')
+      expect(response.body).to include('Date created')
+    end
+  end
 end

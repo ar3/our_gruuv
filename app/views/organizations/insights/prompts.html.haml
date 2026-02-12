@@ -1,0 +1,139 @@
+- content_for :title, "Insights: Prompts"
+
+- chart_title_period = case @timeframe when :'90_days' then "Last 90 Days" when :year then "Last Year" when :all_time then "Last 52 Weeks" else "Last 90 Days" end
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bar-chart-line.me-2
+      Insights: Prompts
+
+/ Timeframe selector
+.mb-4
+  .btn-group{role: "group"}
+    = link_to "Last 90 days", organization_insights_prompts_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Last Year", organization_insights_prompts_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "All-Time", organization_insights_prompts_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+
+.container-fluid
+  / Answers by week stacked by prompt template
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-journal-text.me-2
+            Answers by Week (#{chart_title_period})
+        .card-body
+          #prompts-answers-by-template-chart{style: "height: 400px;"}
+
+  %hr.my-5
+
+  / Teammates with content by week stacked by prompt template
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-secondary.text-white
+          %h4.mb-0
+            %i.bi.bi-people.me-2
+            Teammates with content by Week (#{chart_title_period})
+        .card-body
+          #prompts-teammates-by-template-chart{style: "height: 400px;"}
+
+  %hr.my-5
+
+  .row.mb-4
+    .col-12
+      = link_to organization_insights_prompts_download_path(@organization), class: 'btn btn-primary' do
+        %i.bi.bi-download.me-2
+        Download all active #{company_label_plural('prompt', 'Prompts')} I have access to, which is for #{@prompts_download_teammate_count} teammates.
+
+:javascript
+  (function() {
+    var answersChartData = #{@prompts_answers_chart_data.to_json};
+    var teammatesChartData = #{@prompts_teammates_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+
+    function initializeAnswersChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('prompts-answers-by-template-chart');
+      if (!el) return;
+      Highcharts.chart('prompts-answers-by-template-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Answers by prompt template (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: answersChartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of answers' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: answersChartData.series
+      });
+    }
+
+    function initializeTeammatesChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('prompts-teammates-by-template-chart');
+      if (!el) return;
+      Highcharts.chart('prompts-teammates-by-template-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Teammates with content by prompt template (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: teammatesChartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of teammates' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: teammatesChartData.series
+      });
+    }
+
+    function initializeCharts() {
+      initializeAnswersChart();
+      initializeTeammatesChart();
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeCharts;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeCharts();
+    });
+  })();

@@ -276,4 +276,158 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(teammates.map(&:person_id)).not_to include(person.id)
     end
   end
+
+  describe 'GET #prompts' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
+    end
+
+    it 'returns http success' do
+      get :prompts, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'defaults timeframe to 90_days' do
+      get :prompts, params: { organization_id: company.id }
+      expect(assigns(:timeframe)).to eq(:'90_days')
+    end
+
+    it 'accepts timeframe year' do
+      get :prompts, params: { organization_id: company.id, timeframe: 'year' }
+      expect(assigns(:timeframe)).to eq(:year)
+    end
+
+    it 'accepts timeframe all_time' do
+      get :prompts, params: { organization_id: company.id, timeframe: 'all_time' }
+      expect(assigns(:timeframe)).to eq(:all_time)
+    end
+
+    it 'assigns organization' do
+      get :prompts, params: { organization_id: company.id }
+      expect(assigns(:organization)).to eq(company)
+    end
+
+    it 'assigns chart data with categories and series (90_days has ~13 weeks)' do
+      get :prompts, params: { organization_id: company.id }
+      chart = assigns(:prompts_answers_chart_data)
+      expect(chart).to be_a(Hash)
+      expect(chart[:categories]).to be_an(Array)
+      expect(chart[:series]).to be_an(Array)
+      expect(chart[:categories].size).to be_between(12, 14)
+    end
+
+    it 'assigns chart data with 52–53 week categories when timeframe is year' do
+      get :prompts, params: { organization_id: company.id, timeframe: 'year' }
+      chart = assigns(:prompts_answers_chart_data)
+      expect(chart[:categories].size).to be_between(52, 53)
+    end
+
+    it 'includes prompt template names in series when prompts and answers exist' do
+      template = create(:prompt_template, company: company, title: 'Growth Questions')
+      question = create(:prompt_question, prompt_template: template, position: 1)
+      prompt = create(:prompt, company_teammate: person_teammate, prompt_template: template, closed_at: nil)
+      create(:prompt_answer, prompt: prompt, prompt_question: question, text: 'A substantial answer with more than ten characters.')
+      get :prompts, params: { organization_id: company.id }
+      chart = assigns(:prompts_answers_chart_data)
+      expect(chart[:series].map { |s| s[:name] }).to include('Growth Questions')
+    end
+
+    it 'assigns teammates chart data with categories and series' do
+      get :prompts, params: { organization_id: company.id }
+      chart = assigns(:prompts_teammates_chart_data)
+      expect(chart).to be_a(Hash)
+      expect(chart[:categories]).to be_an(Array)
+      expect(chart[:series]).to be_an(Array)
+      expect(chart[:categories].size).to be_between(12, 14)
+    end
+
+    it 'teammates chart series are cumulative (count grows or stays same per template)' do
+      template = create(:prompt_template, company: company, title: 'Growth')
+      question = create(:prompt_question, prompt_template: template, position: 1)
+      prompt = create(:prompt, company_teammate: person_teammate, prompt_template: template, closed_at: nil)
+      create(:prompt_answer, prompt: prompt, prompt_question: question, text: 'Enough content here for the chart.')
+      get :prompts, params: { organization_id: company.id }
+      chart = assigns(:prompts_teammates_chart_data)
+      growth_series = chart[:series].find { |s| s[:name] == 'Growth' }
+      expect(growth_series).to be_present
+      data = growth_series[:data]
+      next_vals = data.each_cons(2).to_a
+      next_vals.each { |a, b| expect(b).to be >= a }
+    end
+
+    it 'assigns prompts_download_teammate_count' do
+      get :prompts, params: { organization_id: company.id }
+      expect(assigns(:prompts_download_teammate_count)).to be_a(Integer)
+      expect(assigns(:prompts_download_teammate_count)).to be >= 0
+    end
+  end
+
+  describe 'GET #prompts_download' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
+    end
+
+    it 'returns http success and CSV with correct headers' do
+      get :prompts_download, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.content_type).to include('text/csv')
+      expect(response.body).to include('Teammate')
+      expect(response.body).to include('Prompt template name')
+      expect(response.body).to include('Date created')
+    end
+
+    it 'includes data row when open prompts exist' do
+      template = create(:prompt_template, company: company, title: 'My Template')
+      question = create(:prompt_question, prompt_template: template, position: 1, label: 'Q1')
+      prompt = create(:prompt, company_teammate: person_teammate, prompt_template: template, closed_at: nil)
+      create(:prompt_answer, prompt: prompt, prompt_question: question, text: 'My answer')
+      get :prompts_download, params: { organization_id: company.id }
+      expect(response.body).to include('My Template')
+      expect(response.body).to include('My answer')
+    end
+
+    it 'sets Content-Disposition to attachment with filename' do
+      get :prompts_download, params: { organization_id: company.id }
+      expect(response.headers['Content-Disposition']).to match(/attachment.*active_prompts_.*\.csv/)
+    end
+
+    context 'when user has manage_employment' do
+      before do
+        allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
+      end
+
+      it 'includes prompts from all active teammates in organization' do
+        other_teammate = create(:teammate, person: create(:person, first_name: 'Other', last_name: 'User'), organization: company, first_employed_at: 1.year.ago)
+        template = create(:prompt_template, company: company, title: 'Shared Template')
+        question = create(:prompt_question, prompt_template: template, position: 1)
+        create(:prompt, company_teammate: person_teammate, prompt_template: template, closed_at: nil)
+        other_prompt = create(:prompt, company_teammate: other_teammate, prompt_template: template, closed_at: nil)
+        create(:prompt_answer, prompt: other_prompt, prompt_question: question, text: 'Other user answer')
+        get :prompts_download, params: { organization_id: company.id }
+        expect(response.body).to include('Other User')
+        expect(response.body).to include('Other user answer')
+      end
+    end
+
+    context 'when user lacks manage_employment and can_manage_prompts (self and reports only)' do
+      before do
+        allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(false)
+        allow_any_instance_of(CompanyTeammate).to receive(:can_manage_prompts?).and_return(false)
+      end
+
+      it 'includes only prompts for current user and reporting structure' do
+        template = create(:prompt_template, company: company, title: 'My Template')
+        question = create(:prompt_question, prompt_template: template, position: 1)
+        my_prompt = create(:prompt, company_teammate: person_teammate, prompt_template: template, closed_at: nil)
+        create(:prompt_answer, prompt: my_prompt, prompt_question: question, text: 'My own answer')
+        other_teammate = create(:teammate, person: create(:person, first_name: 'Unrelated', last_name: 'Person'), organization: company, first_employed_at: 1.year.ago)
+        other_prompt = create(:prompt, company_teammate: other_teammate, prompt_template: template, closed_at: nil)
+        create(:prompt_answer, prompt: other_prompt, prompt_question: question, text: 'Unrelated answer')
+        get :prompts_download, params: { organization_id: company.id }
+        expect(response.body).to include('My own answer')
+        expect(response.body).not_to include('Unrelated Person')
+        expect(response.body).not_to include('Unrelated answer')
+      end
+    end
+  end
 end

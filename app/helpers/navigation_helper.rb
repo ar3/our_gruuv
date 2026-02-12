@@ -194,6 +194,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Prompts',
+            icon: 'bi-journal-text',
+            path: organization_insights_prompts_path(current_organization),
+            policy_check: -> { policy(current_company).view_prompts? },
+            coming_soon: false
+          },
+          {
             label: 'Huddles',
             icon: 'bi-chat-dots',
             path: huddles_review_organization_path(current_organization),

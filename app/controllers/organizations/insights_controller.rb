@@ -75,6 +75,30 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @total_goals = Goal.where(company: company).count
   end
 
+  def prompts
+    authorize company, :view_prompts?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range = date_range_for(@timeframe)
+    chart_range = range || (52.weeks.ago..Time.current)
+    @prompts_answers_chart_data = prompts_answers_chart_series(chart_range)
+    @prompts_teammates_chart_data = prompts_teammates_chart_series(chart_range)
+    @prompts_download_teammate_count = prompts_download_teammate_scope.count
+  end
+
+  def prompts_download
+    authorize company, :view_prompts?
+
+    teammate_ids = prompts_download_teammate_scope.pluck(:id)
+    csv_content = PromptsInsightsCsvBuilder.new(company, teammate_ids: teammate_ids).call
+    filename = "active_prompts_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
+    send_data csv_content,
+              filename: filename,
+              type: 'text/csv',
+              disposition: 'attachment'
+  end
+
   def observations
     authorize company, :view_observations?
 
@@ -150,6 +174,82 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     else
       90.days.ago..Time.current
     end
+  end
+
+  def prompts_download_teammate_scope
+    base = CompanyTeammate.for_organization_hierarchy(company)
+      .where.not(first_employed_at: nil)
+      .where(last_terminated_at: nil)
+
+    if policy(company).manage_employment? || current_company_teammate&.can_manage_prompts?
+      base
+    else
+      return base.none unless current_company_teammate
+      hierarchy_ids = CompanyTeammate.self_and_reporting_hierarchy(current_company_teammate, company).pluck(:id)
+      base.where(id: hierarchy_ids)
+    end
+  end
+
+  def prompts_answers_chart_series(chart_range)
+    # Query from Prompt so joins to company_teammates and prompt_templates are correct
+    base_scope = PromptAnswer
+      .joins(:prompt)
+      .joins('INNER JOIN teammates ON teammates.id = prompts.company_teammate_id')
+      .joins('INNER JOIN prompt_templates ON prompt_templates.id = prompts.prompt_template_id')
+      .where(prompts: { closed_at: nil })
+      .where(teammates: { organization_id: company.id })
+      .where(prompt_templates: { company_id: company.id })
+      .where("LENGTH(TRIM(COALESCE(prompt_answers.text, ''))) > 10")
+
+    rows = base_scope.pluck('prompt_templates.id', 'prompt_templates.title', 'prompt_answers.created_at')
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    all_templates = PromptTemplate.where(company_id: company.id).ordered
+    series = all_templates.map do |template|
+      {
+        name: template.title,
+        data: week_dates.map do |wd|
+          week_end = wd.to_time.end_of_week.end_of_day
+          rows.count { |id, _title, created_at| id == template.id && created_at && created_at <= week_end }
+        end
+      }
+    end
+    { categories: categories, series: series }
+  end
+
+  def prompts_teammates_chart_series(chart_range)
+    # Prompts (open) that have at least one answer with content, scoped to company
+    prompts_with_content = Prompt
+      .open
+      .joins('INNER JOIN teammates ON teammates.id = prompts.company_teammate_id')
+      .joins('INNER JOIN prompt_templates ON prompt_templates.id = prompts.prompt_template_id')
+      .where(teammates: { organization_id: company.id })
+      .where(prompt_templates: { company_id: company.id })
+      .where(id: PromptAnswer.where("LENGTH(TRIM(COALESCE(prompt_answers.text, ''))) > 10").select(:prompt_id))
+
+    rows = prompts_with_content.distinct.pluck('prompt_templates.id', 'prompt_templates.title', 'teammates.id', 'prompts.created_at')
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    all_templates = PromptTemplate.where(company_id: company.id).ordered
+    series = all_templates.map do |template|
+      {
+        name: template.title,
+        data: week_dates.map do |wd|
+          week_end = wd.to_time.end_of_week.end_of_day
+          teammate_ids = rows.select { |tid, _title, teammate_id, created_at| tid == template.id && created_at && created_at <= week_end }.map { |_t, _title, tid, _ca| tid }.uniq
+          teammate_ids.size
+        end
+      }
+    end
+    { categories: categories, series: series }
   end
 
   def observations_chart_series_by_privacy(base_scope, chart_range)
