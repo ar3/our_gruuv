@@ -72,6 +72,25 @@
       .collapse{id: "snapshot_#{snapshot.id}_details"}
         .card.border-light.m-2
           .card-body
+            - check_in_sentences = format_snapshot_check_in_sentences(snapshot, person, organization)
+            - has_check_in_sentences = check_in_sentences[:position_sentence].present? || check_in_sentences[:assignment_sentences].any? || check_in_sentences[:aspiration_sentences].any?
+            - if has_check_in_sentences
+              .mb-3.pb-3.border-bottom
+                %h6.text-muted.mb-2
+                  %i.bi.bi-chat-quote.me-2
+                  Check-in
+                - if check_in_sentences[:position_sentence].present?
+                  .mb-3
+                    %strong.small.text-muted Position
+                    .mt-1.small{style: "white-space: pre-line;"}= check_in_sentences[:position_sentence]
+                - check_in_sentences[:assignment_sentences].each do |item|
+                  .mb-3
+                    %strong.small.text-muted Assignment: #{item[:assignment_name]}
+                    .mt-1.small{style: "white-space: pre-line;"}= item[:sentences]
+                - check_in_sentences[:aspiration_sentences].each do |item|
+                  .mb-3
+                    %strong.small.text-muted Aspiration: #{item[:aspiration_name]}
+                    .mt-1.small{style: "white-space: pre-line;"}= item[:sentences]
             - if all_fields[:employment].present?
               .mb-3
                 .d-flex.justify-content-between.align-items-center.mb-2

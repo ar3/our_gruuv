@@ -734,6 +734,10 @@ RSpec.describe CheckInFinalizationService, type: :service do
           
           snapshot = MaapSnapshot.last
           expect(snapshot.change_type).to eq('bulk_check_in_finalization')
+
+          aspiration_check_in.reload
+          expect(aspiration_check_in.maap_snapshot_id).to eq(snapshot.id)
+          expect(aspiration_check_in.maap_snapshot).to eq(snapshot)
         end
       end
     end

@@ -250,6 +250,13 @@ class CheckInFinalizationService
         assignment_result[:check_in].update!(maap_snapshot: snapshot)
       end
     end
+
+    # Link aspiration check-ins
+    if results[:aspirations]
+      results[:aspirations].each do |aspiration_result|
+        aspiration_result[:check_in].update!(maap_snapshot: snapshot)
+      end
+    end
   end
   
   def anything_finalized?(results)

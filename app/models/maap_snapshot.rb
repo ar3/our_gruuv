@@ -3,6 +3,11 @@ class MaapSnapshot < ApplicationRecord
   belongs_to :employee_company_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :creator_company_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :company, class_name: 'Organization', optional: true
+
+  # Check-ins linked when this snapshot was created by check-in finalization
+  has_one :position_check_in, dependent: nil
+  has_many :assignment_check_ins, dependent: nil
+  has_many :aspiration_check_ins, dependent: nil
   
   # Change metadata
   validates :change_type, presence: true, inclusion: { 
@@ -127,6 +132,19 @@ class MaapSnapshot < ApplicationRecord
   
   def primary_potential_observer
     employee_company_teammate
+  end
+
+  # Check-ins linked to this snapshot (from finalization). Used for audit check-in sentence display.
+  def linked_position_check_in
+    position_check_in
+  end
+
+  def linked_assignment_check_ins
+    assignment_check_ins
+  end
+
+  def linked_aspiration_check_ins
+    aspiration_check_ins
   end
 
   private

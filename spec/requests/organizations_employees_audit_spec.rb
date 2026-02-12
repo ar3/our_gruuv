@@ -195,8 +195,41 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       expect(response.body).to include(maap_snapshot1.reason)
       expect(response.body).to include(maap_snapshot2.reason)
     end
+
+    it 'shows check-in sentences in snapshot details when snapshot has linked check-ins' do
+      assignment = create(:assignment, company: organization, title: 'Audit Test Assignment')
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 1.month.ago)
+      snapshot_with_check_in = create(:maap_snapshot,
+        employee_company_teammate: employee_teammate,
+        creator_company_teammate: maap_manager_teammate,
+        company: organization,
+        change_type: 'bulk_check_in_finalization',
+        reason: 'Check-in finalization with linked check-in',
+        effective_date: 1.day.ago,
+        maap_data: { 'position' => nil, 'assignments' => [], 'abilities' => [], 'aspirations' => [] })
+      ac = create(:assignment_check_in,
+        :ready_for_finalization,
+        teammate: employee_teammate,
+        assignment: assignment,
+        employee_rating: 'meeting',
+        manager_rating: 'exceeding',
+        manager_completed_by_teammate: maap_manager_teammate)
+      ac.update!(
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 'meeting',
+        finalized_by_teammate: maap_manager_teammate,
+        maap_snapshot_id: snapshot_with_check_in.id)
+
+      get audit_organization_employee_path(organization, employee_teammate)
+
+      expect(response).to be_successful
+      expect(response.body).to include('Check-in')
+      expect(response.body).to include('they agreed')
+      expect(response.body).to include('Shared Notes')
+      expect(response.body).to include(employee.casual_name)
+    end
   end
-  
+
   describe 'when there are no snapshots' do
     let(:employee_without_snapshots) { create(:person) }
     let!(:employee_without_snapshots_teammate) { create(:company_teammate, person: employee_without_snapshots, organization: organization, first_employed_at: 1.year.ago) }

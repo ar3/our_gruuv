@@ -48,6 +48,19 @@ module CheckInHelper
       ["#{data[:emoji]} #{data[:label]}", value]
     end
   end
+
+  # Phrase for "they <alignment> taking on this assignment" in audit check-in sentences
+  def assignment_alignment_phrase(alignment)
+    return 'did not specify alignment' if alignment.blank?
+    case alignment.to_s
+    when 'love' then 'loved'
+    when 'like' then 'liked'
+    when 'neutral' then 'were neutral about'
+    when 'prefer_not' then 'preferred not'
+    when 'only_if_necessary' then 'would only if necessary'
+    else alignment.to_s.humanize.downcase
+    end
+  end
   
   def energy_percentage_options
     (0..20).map { |i| ["#{i * 5}%", i * 5] }

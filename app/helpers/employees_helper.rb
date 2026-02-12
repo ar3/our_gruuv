@@ -33,6 +33,33 @@ module EmployeesHelper
       aspirations: format_aspirations_all_fields(old_data, new_data, organization)
     }
   end
+
+  # Returns a hash with :position_sentence, :assignment_sentences, :aspiration_sentences for the audit
+  # check-in block. Only present when the snapshot has linked check-ins from finalization.
+  def format_snapshot_check_in_sentences(snapshot, person, organization)
+    return { position_sentence: nil, assignment_sentences: [], aspiration_sentences: [] } unless snapshot
+
+    employee_name = person&.casual_name.presence || 'Employee'
+    position_sentence = format_position_check_in_sentences(snapshot.linked_position_check_in, employee_name)
+    assignment_sentences = snapshot.linked_assignment_check_ins.includes(:assignment).map do |check_in|
+      {
+        assignment_name: check_in.assignment&.title.presence || "Assignment #{check_in.assignment_id}",
+        sentences: format_assignment_check_in_sentences(check_in, employee_name)
+      }
+    end
+    aspiration_sentences = snapshot.linked_aspiration_check_ins.includes(:aspiration).map do |check_in|
+      {
+        aspiration_name: check_in.aspiration&.name.presence || "Aspiration #{check_in.aspiration_id}",
+        sentences: format_aspiration_check_in_sentences(check_in, employee_name)
+      }
+    end
+
+    {
+      position_sentence: position_sentence,
+      assignment_sentences: assignment_sentences,
+      aspiration_sentences: aspiration_sentences
+    }
+  end
   
   private
   
@@ -47,6 +74,82 @@ module EmployeesHelper
                 .where('created_at < ?', snapshot.created_at)
                 .order(created_at: :desc)
                 .first
+  end
+
+  def check_in_sentence_date(datetime)
+    datetime.present? ? format_date_in_user_timezone(datetime, nil, format: '%Y-%m-%d') : '(not completed)'
+  end
+
+  def check_in_notes_display(notes)
+    notes.present? ? notes : '--no notes--'
+  end
+
+  def format_position_check_in_sentences(check_in, employee_name)
+    return nil unless check_in
+
+    position_name = check_in.employment_tenure&.position&.display_name.presence || 'Position'
+    manager_name = check_in.manager_completed_by_teammate&.person&.casual_name.presence || 'Manager'
+    emp_date = check_in_sentence_date(check_in.employee_completed_at)
+    mgr_date = check_in_sentence_date(check_in.manager_completed_at)
+    final_date = check_in_sentence_date(check_in.official_check_in_completed_at)
+    emp_rating = position_rating_display(check_in.employee_rating)
+    mgr_rating = position_rating_display(check_in.manager_rating)
+    final_rating = position_rating_display(check_in.official_rating)
+    emp_notes = check_in_notes_display(check_in.employee_private_notes)
+    mgr_notes = check_in_notes_display(check_in.manager_private_notes)
+    shared_notes = check_in_notes_display(check_in.shared_notes)
+
+    lines = []
+    lines << "On #{emp_date} #{employee_name} said they were #{emp_rating} overall for the position #{position_name} since their last check-in. Notes: #{emp_notes}"
+    lines << "On #{mgr_date} #{manager_name} reflected and said #{employee_name} was #{mgr_rating}. Notes: #{mgr_notes}"
+    lines << "On #{final_date} they agreed #{employee_name} was actually #{final_rating}. Shared Notes: #{shared_notes}"
+    lines.join("\n")
+  end
+
+  def format_assignment_check_in_sentences(check_in, employee_name)
+    return '' unless check_in
+
+    assignment_name = check_in.assignment&.title.presence || 'Assignment'
+    manager_name = check_in.manager_completed_by_teammate&.person&.casual_name.presence || 'Manager'
+    emp_date = check_in_sentence_date(check_in.employee_completed_at)
+    mgr_date = check_in_sentence_date(check_in.manager_completed_at)
+    final_date = check_in_sentence_date(check_in.official_check_in_completed_at)
+    emp_rating = assignment_rating_display(check_in.employee_rating)
+    mgr_rating = assignment_rating_display(check_in.manager_rating)
+    final_rating = assignment_rating_display(check_in.official_rating)
+    energy = check_in.actual_energy_percentage.present? ? check_in.actual_energy_percentage : '—'
+    alignment_phrase = assignment_alignment_phrase(check_in.employee_personal_alignment)
+    emp_notes = check_in_notes_display(check_in.employee_private_notes)
+    mgr_notes = check_in_notes_display(check_in.manager_private_notes)
+    shared_notes = check_in_notes_display(check_in.shared_notes)
+
+    lines = []
+    lines << "On #{emp_date} #{employee_name} said they were #{emp_rating} expectations for the Assignment #{assignment_name}. They also said they spent #{energy}% of their energy on this since their last check-in, and they #{alignment_phrase} taking on this assignment. Notes: #{emp_notes}"
+    lines << "On #{mgr_date} #{manager_name} reflected and said #{employee_name} was #{mgr_rating} expectations since the last check-in. Notes: #{mgr_notes}"
+    lines << "On #{final_date} they agreed #{employee_name} was actually #{final_rating} expectations. Shared Notes: #{shared_notes}"
+    lines.join("\n")
+  end
+
+  def format_aspiration_check_in_sentences(check_in, employee_name)
+    return '' unless check_in
+
+    aspiration_name = check_in.aspiration&.name.presence || 'Aspiration'
+    manager_name = check_in.manager_completed_by_teammate&.person&.casual_name.presence || 'Manager'
+    emp_date = check_in_sentence_date(check_in.employee_completed_at)
+    mgr_date = check_in_sentence_date(check_in.manager_completed_at)
+    final_date = check_in_sentence_date(check_in.official_check_in_completed_at)
+    emp_rating = aspiration_rating_display(check_in.employee_rating)
+    mgr_rating = aspiration_rating_display(check_in.manager_rating)
+    final_rating = aspiration_rating_display(check_in.official_rating)
+    emp_notes = check_in_notes_display(check_in.employee_private_notes)
+    mgr_notes = check_in_notes_display(check_in.manager_private_notes)
+    shared_notes = check_in_notes_display(check_in.shared_notes)
+
+    lines = []
+    lines << "On #{emp_date} #{employee_name} said they were #{emp_rating} expectations for the Aspirational Value #{aspiration_name} since their last check-in. Notes: #{emp_notes}"
+    lines << "On #{mgr_date} #{manager_name} reflected and said #{employee_name} was #{mgr_rating} expectations. Notes: #{mgr_notes}"
+    lines << "On #{final_date} they agreed #{employee_name} was actually #{final_rating} expectations. Shared Notes: #{shared_notes}"
+    lines.join("\n")
   end
 
   def parse_date(value)

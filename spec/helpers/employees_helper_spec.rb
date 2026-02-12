@@ -1057,5 +1057,125 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
     end
   end
+
+  describe '#format_snapshot_check_in_sentences' do
+    let(:position_major_level) { create(:position_major_level) }
+    let(:title) { create(:title, company: organization, position_major_level: position_major_level, external_title: 'Engineer') }
+    let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
+    let(:position) { create(:position, title: title, position_level: position_level) }
+    let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
+    let(:aspiration) { create(:aspiration, company: organization, name: 'Test Aspiration') }
+
+    it 'returns empty structure for nil snapshot' do
+      result = helper.format_snapshot_check_in_sentences(nil, person, organization)
+      expect(result).to eq({ position_sentence: nil, assignment_sentences: [], aspiration_sentences: [] })
+    end
+
+    it 'returns empty sections when snapshot has no linked check-ins' do
+      snapshot = create(:maap_snapshot,
+        employee_company_teammate: teammate,
+        creator_company_teammate: manager_teammate,
+        company: organization,
+        change_type: 'exploration',
+        maap_data: { 'position' => nil, 'assignments' => [], 'abilities' => [], 'aspirations' => [] })
+      result = helper.format_snapshot_check_in_sentences(snapshot, person, organization)
+      expect(result[:position_sentence]).to be_nil
+      expect(result[:assignment_sentences]).to eq([])
+      expect(result[:aspiration_sentences]).to eq([])
+    end
+
+    it 'includes position sentence when snapshot has linked position check-in' do
+      employment_tenure = create(:employment_tenure,
+        teammate: teammate,
+        company: organization,
+        manager_teammate: manager_teammate,
+        position: position,
+        started_at: 1.month.ago)
+      snapshot = create(:maap_snapshot,
+        employee_company_teammate: teammate,
+        creator_company_teammate: manager_teammate,
+        company: organization,
+        change_type: 'position_tenure',
+        maap_data: { 'position' => nil, 'assignments' => [], 'abilities' => [], 'aspirations' => [] })
+      position_check_in = create(:position_check_in,
+        :closed,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        employee_rating: 2,
+        manager_rating: 2,
+        official_rating: 2,
+        manager_completed_by_teammate: manager_teammate)
+      position_check_in.update!(maap_snapshot_id: snapshot.id)
+      snapshot.reload
+
+      result = helper.format_snapshot_check_in_sentences(snapshot, person, organization)
+      expect(result[:position_sentence]).to be_present
+      expect(result[:position_sentence]).to include(person.casual_name)
+      expect(result[:position_sentence]).to include('they agreed')
+      expect(result[:position_sentence]).to include('Shared Notes')
+    end
+
+    it 'includes assignment sentences when snapshot has linked assignment check-ins' do
+      create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 1.month.ago)
+      snapshot = create(:maap_snapshot,
+        employee_company_teammate: teammate,
+        creator_company_teammate: manager_teammate,
+        company: organization,
+        change_type: 'bulk_check_in_finalization',
+        maap_data: { 'position' => nil, 'assignments' => [], 'abilities' => [], 'aspirations' => [] })
+      assignment_check_in = create(:assignment_check_in,
+        :ready_for_finalization,
+        teammate: teammate,
+        assignment: assignment,
+        employee_rating: 'meeting',
+        manager_rating: 'exceeding',
+        manager_completed_by_teammate: manager_teammate,
+        actual_energy_percentage: 50,
+        employee_personal_alignment: 'like')
+      assignment_check_in.update!(
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 'meeting',
+        finalized_by_teammate: manager_teammate,
+        maap_snapshot_id: snapshot.id)
+      snapshot.reload
+
+      result = helper.format_snapshot_check_in_sentences(snapshot, person, organization)
+      expect(result[:assignment_sentences].length).to eq(1)
+      expect(result[:assignment_sentences].first[:assignment_name]).to eq('Test Assignment')
+      expect(result[:assignment_sentences].first[:sentences]).to include(person.casual_name)
+      expect(result[:assignment_sentences].first[:sentences]).to include('they agreed')
+      expect(result[:assignment_sentences].first[:sentences]).to include('50%')
+      expect(result[:assignment_sentences].first[:sentences]).to include('liked')
+    end
+
+    it 'includes aspiration sentences when snapshot has linked aspiration check-ins' do
+      snapshot = create(:maap_snapshot,
+        employee_company_teammate: teammate,
+        creator_company_teammate: manager_teammate,
+        company: organization,
+        change_type: 'aspiration_management',
+        maap_data: { 'position' => nil, 'assignments' => [], 'abilities' => [], 'aspirations' => [] })
+      aspiration_check_in = create(:aspiration_check_in,
+        :ready_for_finalization,
+        teammate: teammate,
+        aspiration: aspiration,
+        employee_rating: 'meeting',
+        manager_rating: 'exceeding',
+        manager_completed_by_teammate: manager_teammate)
+      aspiration_check_in.update!(
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 'exceeding',
+        finalized_by_teammate: manager_teammate,
+        maap_snapshot_id: snapshot.id)
+      snapshot.reload
+
+      result = helper.format_snapshot_check_in_sentences(snapshot, person, organization)
+      expect(result[:aspiration_sentences].length).to eq(1)
+      expect(result[:aspiration_sentences].first[:aspiration_name]).to eq('Test Aspiration')
+      expect(result[:aspiration_sentences].first[:sentences]).to include(person.casual_name)
+      expect(result[:aspiration_sentences].first[:sentences]).to include('Aspirational Value')
+      expect(result[:aspiration_sentences].first[:sentences]).to include('Shared Notes')
+    end
+  end
 end
 
