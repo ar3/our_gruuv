@@ -32,19 +32,26 @@
                   - if ability_data[:required_milestones].any?
                     - ability_data[:required_milestones].each do |req|
                       %tr
-                        %td{colspan: 2} 
+                        %td{colspan: 2}
                           %i.bi.bi-arrow-90deg-down.rotate-270
                           %i.bi.bi-arrow-90deg-down.rotate-270
-                          Is a requirement of the assignment...
+                          - if req[:assignment]
+                            Is a requirement of the assignment...
+                          - else
+                            Is a requirement of the position...
                           %i.bi.bi-arrow-90deg-down.rotate-270
                           %i.bi.bi-arrow-90deg-down.rotate-270
-                        %td= link_to req[:assignment].title, organization_assignment_path(organization, req[:assignment]), target: "_blank", rel: "noopener noreferrer"
+                        %td
+                          - if req[:assignment]
+                            = link_to req[:assignment].title, organization_assignment_path(organization, req[:assignment]), target: "_blank", rel: "noopener noreferrer"
+                          - else
+                            = req[:position].display_name
                         %td
                           %span.badge.bg-secondary Requires Milestone #{req[:milestone_level]}
                   - else
                     %tr
                       %td{colspan: 3}
-                        %p.text-muted.mb-0 No assignments require this ability
+                        %p.text-muted.mb-0 No assignments or positions require this ability
 - else
   .alert.alert-info
     %h6.mb-2

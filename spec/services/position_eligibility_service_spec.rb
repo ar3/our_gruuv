@@ -57,4 +57,36 @@ RSpec.describe PositionEligibilityService do
       expect(unique_check[:details][:total_assignments]).to eq(0)
     end
   end
+
+  describe 'milestone requirements (derived including position direct)' do
+    let(:organization) { create(:organization, :company) }
+    let(:title) { create(:title, company: organization) }
+    let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
+    let(:teammate) { create(:company_teammate, organization: organization) }
+    let(:ability) { create(:ability, company: organization) }
+
+    it 'includes position_abilities in derived milestone requirements and checks teammate' do
+      create(:position_ability, position: position, ability: ability, milestone_level: 2)
+      create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 2)
+
+      report = described_class.new.check_eligibility(teammate, position)
+      milestone_check = report[:checks].find { |c| c[:key] == :milestone_requirements }
+
+      expect(milestone_check[:status]).to eq(:passed)
+      expect(milestone_check[:details][:requirements].size).to eq(1)
+      expect(milestone_check[:details][:requirements].first[:ability_id]).to eq(ability.id)
+      expect(milestone_check[:details][:requirements].first[:minimum_milestone_level]).to eq(2)
+    end
+
+    it 'fails when teammate does not meet position direct milestone level' do
+      create(:position_ability, position: position, ability: ability, milestone_level: 3)
+      create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 1)
+
+      report = described_class.new.check_eligibility(teammate, position)
+      milestone_check = report[:checks].find { |c| c[:key] == :milestone_requirements }
+
+      expect(milestone_check[:status]).to eq(:failed)
+    end
+  end
 end

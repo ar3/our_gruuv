@@ -18,6 +18,9 @@ module Observations
       # Add active assignments with given energy as 'na' ratings
       add_active_assignments_as_ratings(observee.teammate)
 
+      # Add ability ratings for abilities from required/active assignments and position direct milestones
+      add_relevant_abilities_as_ratings(observee.teammate)
+
       observee
     end
 
@@ -31,6 +34,60 @@ module Observations
 
     def existing_observee
       @observation.observees.find_by(teammate_id: @teammate_id)
+    end
+
+    def add_relevant_abilities_as_ratings(teammate)
+      ability_ids = relevant_ability_ids_for_observee(teammate)
+      ability_ids.each do |ability_id|
+        next if rating_exists_for_ability?(ability_id)
+
+        @observation.observation_ratings.create!(
+          rateable_type: 'Ability',
+          rateable_id: ability_id,
+          rating: 'na'
+        )
+      end
+    end
+
+    def relevant_ability_ids_for_observee(teammate)
+      ids = Set.new
+      company = @observation.company
+      org_ids = company.self_and_descendants.pluck(:id)
+
+      # From position's required assignments and direct milestone requirements
+      active_tenure = teammate.active_employment_tenure
+      if active_tenure&.position
+        position = active_tenure.position
+        # Required assignments' abilities (same org as position)
+        position.required_assignments
+          .joins(assignment: { assignment_abilities: :ability })
+          .where(abilities: { company_id: org_ids })
+          .pluck('assignment_abilities.ability_id')
+          .each { |id| ids.add(id) }
+        # Position direct milestone requirements
+        position.position_abilities
+          .joins(:ability)
+          .where(abilities: { company_id: org_ids })
+          .pluck(:ability_id)
+          .each { |id| ids.add(id) }
+      end
+
+      # From teammate's active assignment tenures (with given energy)
+      teammate.assignment_tenures
+        .active_and_given_energy
+        .joins(assignment: :assignment_abilities)
+        .where(assignments: { company_id: org_ids })
+        .pluck('assignment_abilities.ability_id')
+        .each { |id| ids.add(id) }
+
+      ids.to_a
+    end
+
+    def rating_exists_for_ability?(ability_id)
+      @observation.observation_ratings.exists?(
+        rateable_type: 'Ability',
+        rateable_id: ability_id
+      )
     end
 
     def add_active_assignments_as_ratings(teammate)

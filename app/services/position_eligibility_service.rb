@@ -182,7 +182,7 @@ class PositionEligibilityService
   def derived_milestone_requirements(position)
     return [] unless position
 
-    position.required_assignments.flat_map do |position_assignment|
+    from_assignments = position.required_assignments.flat_map do |position_assignment|
       position_assignment.assignment.assignment_abilities.map do |assignment_ability|
         {
           ability_id: assignment_ability.ability_id,
@@ -190,6 +190,15 @@ class PositionEligibilityService
         }
       end
     end
+
+    from_position_direct = position.position_abilities.map do |position_ability|
+      {
+        ability_id: position_ability.ability_id,
+        minimum_milestone_level: position_ability.milestone_level
+      }
+    end
+
+    from_assignments + from_position_direct
   end
 
   def unique_to_you_assignments(teammate, position)

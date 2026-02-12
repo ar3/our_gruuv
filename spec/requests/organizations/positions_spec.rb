@@ -88,5 +88,34 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('onclick')
     end
   end
+
+  describe 'GET /organizations/:organization_id/positions/:id/job_description' do
+    let(:position) { create(:position, title: title, position_level: position_level) }
+
+    it 'renders job description successfully' do
+      get job_description_organization_position_path(organization, position)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(position.display_name)
+    end
+
+    it 'shows Additional Abilities required section when position has direct milestone requirements' do
+      ability = create(:ability, company: organization, created_by: person, updated_by: person, name: 'Collaboration')
+      create(:position_ability, position: position, ability: ability, milestone_level: 2)
+
+      get job_description_organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Additional Abilities required')
+      expect(response.body).to include('Collaboration')
+      expect(response.body).to include('needing Abilities such as')
+    end
+
+    it 'does not show Additional Abilities required section when position has no direct milestone requirements' do
+      get job_description_organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('Additional Abilities required')
+    end
+  end
 end
 

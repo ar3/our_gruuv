@@ -45,6 +45,22 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need position management permissions to manage assignments"}
     
     %li
+      - if controller_name == 'ability_milestones'
+        .dropdown-item.text-muted
+          %i.bi.bi-award.me-2
+          Direct Milestone Requirements (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@position).update?
+        = link_to organization_position_ability_milestones_path(@organization, @position), class: 'dropdown-item' do
+          %i.bi.bi-award.me-2
+          Direct Milestone Requirements
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-award.me-2
+          Direct Milestone Requirements
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need position management permissions to manage direct milestone requirements"}
+    
+    %li
       = link_to organization_public_maap_position_path(@organization, @position), class: 'dropdown-item', target: '_blank' do
         %i.bi.bi-globe.me-2
         Public View

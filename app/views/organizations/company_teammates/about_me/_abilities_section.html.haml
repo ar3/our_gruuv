@@ -11,18 +11,19 @@
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(abilities_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#abilitiesSection", "aria-expanded" => "false", "aria-controls" => "abilitiesSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:abilities), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(abilities_indicator)} #{status_indicator_badge_class(abilities_indicator)} me-2"}
-    - if @required_assignments_for_abilities.any?
+    - if @required_assignments_for_abilities.any? || (@abilities_data && @abilities_data.any? { |d| d[:position_direct] })
       = "there are ".html_safe
       %span.inline-sentence-highlight= pluralize(@total_ability_milestones_count, 'ability milestone')
       = " associated with the ".html_safe
-      %span.inline-sentence-highlight= pluralize(@required_assignments_for_abilities.count, 'required assignment')
-      = " for ".html_safe
+      - if @required_assignments_for_abilities.any?
+        %span.inline-sentence-highlight= pluralize(@required_assignments_for_abilities.count, 'required assignment')
+        = " for ".html_safe
       %span.inline-sentence-highlight= @position_display_name_for_abilities
       = ", and #{@teammate.person.casual_name} is meeting the required milestone for ".html_safe
       %span.inline-sentence-highlight= pluralize(@ability_milestones_met_count, 'ability milestone')
       = " of these ability milestones.".html_safe
     - else
-      No required assignments
+      No required assignments or position milestones
 
 -# Collapsible content
 .collapse#abilitiesSection
@@ -32,12 +33,15 @@
         - @abilities_data.each do |assignment_data|
           .mb-4
             %h5.mb-2
-              = link_to assignment_data[:assignment].title, organization_assignment_path(organization, assignment_data[:assignment]), class: "text-decoration-none"
+              - if assignment_data[:position_direct]
+                = assignment_data[:label]
+              - else
+                = link_to assignment_data[:assignment].title, organization_assignment_path(organization, assignment_data[:assignment]), class: "text-decoration-none"
               - if assignment_data[:fully_qualified]
                 %span.badge.bg-success.ms-2 Fully Qualified
               - else
                 %span.badge.bg-warning.text-dark.ms-2 Apprentice
-            
+
             - if assignment_data[:abilities].any?
               .ms-4
                 .table-responsive
@@ -60,9 +64,13 @@
                               %span.badge.bg-warning.text-dark Milestone #{ability_info[:current_milestone]}
             - else
               .ms-4
-                %p.text-muted.mb-0 No ability requirements for this assignment
+                %p.text-muted.mb-0
+                  - if assignment_data[:position_direct]
+                    No direct position ability requirements
+                  - else
+                    No ability requirements for this assignment
       - else
-        %p.text-muted.mb-3 No required assignments with ability requirements found.
+        %p.text-muted.mb-3 No required assignments or position milestone requirements found.
       
       .d-grid.mt-3
         = link_to "Go to Check-In Mode", 

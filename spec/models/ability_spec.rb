@@ -69,14 +69,17 @@ RSpec.describe Ability, type: :model do
   end
 
   describe 'versioning' do
-    before do
+    around do |example|
+      was_enabled = PaperTrail.enabled?
+      was_request_enabled = PaperTrail.request.enabled?
       PaperTrail.enabled = true
+      PaperTrail.request.enabled = true
+      example.run
+    ensure
+      PaperTrail.enabled = was_enabled
+      PaperTrail.request.enabled = was_request_enabled
     end
-    
-    after do
-      PaperTrail.enabled = false
-    end
-    
+
     it 'has paper trail enabled' do
       expect(Ability.new).to respond_to(:versions)
     end

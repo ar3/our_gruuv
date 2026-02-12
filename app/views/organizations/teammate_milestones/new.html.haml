@@ -105,17 +105,27 @@
                     - else
                       %p.text-muted.mb-0 This Milestone has not been defined.
                     
-                    / Assignment requirements
+                    / Assignment and position requirements
                     - if @ability_data && @ability_data[:required_assignments]
                       - required_for_this_level = @ability_data[:required_assignments].select { |ra| level <= ra[:milestone_level] }
-                      - if required_for_this_level.any?
+                      - assignment_reqs = required_for_this_level.select { |ra| ra[:assignment].present? }
+                      - position_reqs = required_for_this_level.select { |ra| ra[:position].present? }
+                      - if assignment_reqs.any?
                         .mt-3.pt-3.border-top
                           %p.mb-2.small.text-muted
                             %strong Assignment Requirements:
                           .d-flex.flex-wrap.gap-2
-                            - required_for_this_level.each do |ra|
+                            - assignment_reqs.each do |ra|
                               %span.badge.bg-info
                                 Required Milestone #{ra[:milestone_level]} for #{ra[:assignment].title}
+                      - if position_reqs.any?
+                        .mt-3.pt-3.border-top
+                          %p.mb-2.small.text-muted
+                            %strong Position Requirements:
+                          .d-flex.flex-wrap.gap-2
+                            - position_reqs.each do |ra|
+                              %span.badge.bg-info
+                                Required Milestone #{ra[:milestone_level]} for #{ra[:position].display_name}
                 
                 - if is_disabled
                   - if is_awarded

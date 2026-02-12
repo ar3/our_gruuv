@@ -121,9 +121,9 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
 
   def show
     authorize @teammate_milestone
-    
+
     @observable_moment = ObservableMoment.find_by(momentable: @teammate_milestone)
-    
+
     # Find assignments that require at least this milestone level
     assignment_abilities = AssignmentAbility
       .joins(:assignment)
@@ -132,11 +132,28 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       .where(assignments: { company: organization.self_and_descendants })
       .includes(:assignment)
       .distinct
-    
+
     @required_assignments = assignment_abilities.map do |assignment_ability|
       {
         assignment: assignment_ability.assignment,
         milestone_level: assignment_ability.milestone_level
+      }
+    end
+
+    # Find positions that require at least this milestone level (direct position milestones)
+    position_abilities = PositionAbility
+      .joins(:position)
+      .joins('INNER JOIN titles ON titles.id = positions.title_id')
+      .where(ability: @teammate_milestone.ability)
+      .where('position_abilities.milestone_level <= ?', @teammate_milestone.milestone_level)
+      .where(titles: { company_id: organization.self_and_descendants.map(&:id) })
+      .includes(:position)
+      .distinct
+
+    @required_positions = position_abilities.map do |position_ability|
+      {
+        position: position_ability.position,
+        milestone_level: position_ability.milestone_level
       }
     end
   end
@@ -268,15 +285,16 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       end
     end
     
-    # Also include abilities from current position's required assignments
+    # Also include abilities from current position's required assignments and direct position milestones
     active_tenure = teammate.active_employment_tenure
-    
+
     if active_tenure&.position
       active_tenure.position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
         position_assignment.assignment.assignment_abilities.each do |assignment_ability|
           ability_ids.add(assignment_ability.ability_id)
         end
       end
+      active_tenure.position.position_abilities.pluck(:ability_id).each { |id| ability_ids.add(id) }
     end
     
     # Load all abilities with their data
@@ -300,13 +318,13 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
         end
       end
       
-      # Also check position's required assignments
+      # Also check position's required assignments and direct position milestones
       if active_tenure&.position
-        active_tenure.position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+        position = active_tenure.position
+        position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
           assignment_ability = position_assignment.assignment.assignment_abilities.find_by(ability: ability)
           if assignment_ability
-            # Only add if not already in required_milestones (to avoid duplicates)
-            unless required_milestones.any? { |rm| rm[:assignment].id == position_assignment.assignment.id }
+            unless required_milestones.any? { |rm| rm[:assignment] && rm[:assignment].id == position_assignment.assignment.id }
               required_milestones << {
                 assignment: position_assignment.assignment,
                 milestone_level: assignment_ability.milestone_level
@@ -314,8 +332,15 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
             end
           end
         end
+        position.position_abilities.where(ability: ability).each do |position_ability|
+          required_milestones << {
+            assignment: nil,
+            position: position,
+            milestone_level: position_ability.milestone_level
+          }
+        end
       end
-      
+
       abilities_data << {
         ability: ability,
         current_milestone: current_milestone,
@@ -349,14 +374,14 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       end
     end
     
-    # Also check position's required assignments
+    # Also check position's required assignments and direct position milestones
     active_tenure = teammate.active_employment_tenure
-    
+
     if active_tenure&.position
-      active_tenure.position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+      position = active_tenure.position
+      position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
         assignment_ability = position_assignment.assignment.assignment_abilities.find_by(ability: ability)
         if assignment_ability
-          # Only add if not already in required_assignments (to avoid duplicates)
           unless required_assignments.any? { |ra| ra[:assignment].id == position_assignment.assignment.id }
             required_assignments << {
               assignment: position_assignment.assignment,
@@ -365,8 +390,15 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
           end
         end
       end
+      position.position_abilities.where(ability: ability).each do |position_ability|
+        required_assignments << {
+          assignment: nil,
+          position: position,
+          milestone_level: position_ability.milestone_level
+        }
+      end
     end
-    
+
     {
       ability: ability,
       current_milestone: current_milestone,

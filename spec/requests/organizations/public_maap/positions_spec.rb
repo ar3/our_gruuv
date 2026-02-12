@@ -278,6 +278,21 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
         expect(response.body).to include('Must have 5 years experience')
       end
     end
+
+    context 'when position has direct milestone requirements' do
+      let(:ability) { create(:ability, company: company, name: 'Public Collaboration') }
+
+      before do
+        create(:position_ability, position: position_company, ability: ability, milestone_level: 2)
+      end
+
+      it 'displays Additional Abilities required section' do
+        get organization_public_maap_position_path(company, position_company)
+        expect(response.body).to include('Additional Abilities required')
+        expect(response.body).to include('Public Collaboration')
+        expect(response.body).to include('needing Abilities such as')
+      end
+    end
   end
 end
 

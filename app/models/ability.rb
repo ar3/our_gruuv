@@ -8,6 +8,8 @@ class Ability < ApplicationRecord
   belongs_to :updated_by, class_name: 'Person'
   has_many :assignment_abilities, dependent: :destroy
   has_many :assignments, through: :assignment_abilities
+  has_many :position_abilities, dependent: :destroy
+  has_many :positions, through: :position_abilities
   has_many :teammate_milestones, dependent: :destroy
   has_many :people, through: :teammate_milestones
   has_many :observation_ratings, as: :rateable, dependent: :destroy
@@ -85,6 +87,18 @@ class Ability < ApplicationRecord
 
   def is_required_by_assignments?
     assignment_abilities.exists?
+  end
+
+  def required_by_positions
+    position_abilities.by_milestone_level.includes(position: :title)
+  end
+
+  def required_by_positions_count
+    position_abilities.count
+  end
+
+  def is_required_by_positions?
+    position_abilities.exists?
   end
 
   def highest_milestone_required_by_assignment(assignment)

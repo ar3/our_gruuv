@@ -294,6 +294,7 @@ Rails.application.routes.draw do
         get :manage_eligibility
         patch :update_eligibility
       end
+      resource :ability_milestones, only: [:show, :update], module: :positions
     end
     
     # Titles management

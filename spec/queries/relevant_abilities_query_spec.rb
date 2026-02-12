@@ -158,6 +158,37 @@ RSpec.describe RelevantAbilitiesQuery, type: :query do
       end
     end
 
+    context 'when employee has position with direct milestone requirements (position_abilities)' do
+      let(:title) { create(:title, company: organization) }
+      let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+      let(:position) { create(:position, title: title, position_level: position_level) }
+      let(:ability_from_position) { create(:ability, name: 'Position Ability', company: organization) }
+      let!(:position_ability) { create(:position_ability, position: position, ability: ability_from_position, milestone_level: 2) }
+      let!(:employment_tenure) do
+        et = create(:employment_tenure, company_teammate: teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        et.update!(position: position)
+        et
+      end
+
+      it 'includes abilities from position direct milestone requirements' do
+        query = RelevantAbilitiesQuery.new(teammate: teammate, organization: organization)
+        results = query.call
+
+        ability_data = results.find { |a| a[:ability].id == ability_from_position.id }
+        expect(ability_data).to be_present
+        expect(ability_data[:position_requirements]).to be_present
+        expect(ability_data[:position_requirements].map(&:milestone_level)).to include(2)
+      end
+
+      it 'includes position_requirements for each ability' do
+        query = RelevantAbilitiesQuery.new(teammate: teammate, organization: organization)
+        results = query.call
+
+        ability_data = results.find { |a| a[:ability].id == ability_from_position.id }
+        expect(ability_data[:position_requirements]).to include(position_ability)
+      end
+    end
+
     context 'empty state' do
       it 'returns empty array when employee has no milestones or active assignments' do
         query = RelevantAbilitiesQuery.new(teammate: teammate, organization: organization)

@@ -1,0 +1,74 @@
+- content_for :title, "Direct Milestone Requirements - #{@position.display_name}"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-link-45deg.me-2
+    #{@position.display_name} - Direct Milestone Requirements
+
+- content_for :header_action do
+  = render 'view_switcher'
+
+- content_for :go_back_link do
+  = link_to organization_position_path(@organization, @position), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@position.display_name}
+
+= form_with model: @form, url: organization_position_ability_milestones_path(@organization, @position), method: :patch, local: true do |f|
+  .row.justify-content-center
+    .col-lg-10
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-list-check.me-2
+            Select Milestone Requirements for Each Ability
+        .card-body
+          - if @abilities.any?
+            .table-responsive
+              %table.table.table-hover
+                %thead
+                  %tr
+                    %th{scope: "col"} Ability Name
+                    %th{scope: "col", colspan: "6"} Milestone Level
+                %tbody
+                  - @abilities.each do |ability|
+                    - current_milestone = @existing_associations[ability.id]
+                    %tr
+                      %td
+                        %strong= ability.name
+                        %br
+                        %small.text-muted= ability.description.truncate(100)
+                      %td
+                        .btn-group.btn-group-sm{role: "group", "aria-label": "Milestone level for #{ability.name}"}
+                          - [1, 2, 3, 4, 5].each do |level|
+                            = radio_button_tag "position_ability_milestones_form[ability_milestones][#{ability.id}]", level, (current_milestone == level), class: "btn-check", id: "ability_#{ability.id}_milestone_#{level}", disabled: !policy(@position).update?
+                            = label_tag "ability_#{ability.id}_milestone_#{level}", class: "btn btn-outline-primary" do
+                              = level
+                          = radio_button_tag "position_ability_milestones_form[ability_milestones][#{ability.id}]", 0, current_milestone.nil?, class: "btn-check", id: "ability_#{ability.id}_no_association", disabled: !policy(@position).update?
+                          = label_tag "ability_#{ability.id}_no_association", class: "btn btn-outline-secondary" do
+                            %em No Association
+          - if @abilities.empty?
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              No abilities found in this organization hierarchy.
+
+      .card.mb-4
+        .card-body
+          - if policy(@position).update?
+            = f.submit "Save Direct Milestone Requirements", class: "btn btn-primary btn-lg"
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-primary.btn-lg.w-100.disabled{disabled: true, type: "button"}
+                  Save Direct Milestone Requirements
+              %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need position management permissions to update direct milestone requirements"}
+
+- if @form.errors.any?
+  .row.justify-content-center
+    .col-lg-10
+      .alert.alert-danger
+        %h6
+          %i.bi.bi-exclamation-triangle.me-2
+          Please fix the following errors:
+        %ul.mb-0
+          - @form.errors.full_messages.each do |message|
+            %li= message

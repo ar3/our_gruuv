@@ -192,11 +192,18 @@ class CheckInHealthService
       .where(assignments: { company: organization.self_and_descendants })
       .includes(assignment: :assignment_abilities)
 
-    # Collect all required milestone requirements from assignments
+    # Collect all required milestone requirements from assignments and position direct
     required_milestones = Set.new
     active_assignments.each do |tenure|
       tenure.assignment.assignment_abilities.each do |assignment_ability|
         required_milestones.add([assignment_ability.ability_id, assignment_ability.milestone_level])
+      end
+    end
+
+    active_tenure = teammate.active_employment_tenure
+    if active_tenure&.position
+      active_tenure.position.position_abilities.each do |position_ability|
+        required_milestones.add([position_ability.ability_id, position_ability.milestone_level])
       end
     end
 

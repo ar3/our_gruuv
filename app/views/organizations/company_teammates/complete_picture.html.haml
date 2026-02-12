@@ -40,6 +40,13 @@
             .mt-3
               %h6 Summary:
               %p= @current_employment.position.position_summary
+          - position_direct_abilities = @current_employment.position.position_abilities.includes(:ability)
+          - if position_direct_abilities.any?
+            .mt-3
+              %h6 Direct Milestone Requirements:
+              %ul.mb-0
+                - position_direct_abilities.each do |position_ability|
+                  %li= "#{position_ability.ability.name} - Level #{position_ability.milestone_level}"
         .col-md-4.border-start.border-secondary
           .d-grid.gap-2
             = link_to organization_position_path(@current_organization, @current_employment.position), class: "btn btn-outline-primary" do

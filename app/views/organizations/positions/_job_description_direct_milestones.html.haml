@@ -1,0 +1,17 @@
+-# Additional Abilities required (position direct milestone requirements)
+-# Renders after assignments on Job Description view. Style matches milestone list within assignment cards.
+-# Usage: = render 'job_description_direct_milestones', position: position, organization: organization, public_view: false (optional)
+
+- public_view = defined?(public_view) ? public_view : (params[:controller].to_s.include?('public_maap') rescue false)
+
+- if position.position_abilities.any?
+  %hr.mb-4.mt-4/
+  %h3.mb-3
+    %strong Additional Abilities required
+  .ms-4.ps-3.border-start.border-2.border-secondary
+    %p.mb-2.text-muted
+      = render 'shared/abilities_sentence',
+               assignment_abilities: position.position_abilities.by_milestone_level,
+               public_view: public_view,
+               show_milestone_parentheticals: true,
+               include_prefix: true

@@ -77,6 +77,22 @@
               %p.mb-0.text-muted.small
                 Required milestone level: #{milestone_level_display(assignment_ability.milestone_level)} (M#{assignment_ability.milestone_level})
 
+    - if @ability.is_required_by_positions?
+      .card.mb-4{ role: "region", "aria-labelledby": "positions" }
+        .card-header
+          %h5.mb-0{ id: "positions" }
+            %i.bi.bi-briefcase.me-2
+            Positions Requiring This Ability
+        .card-body
+          - @ability.required_by_positions.each_with_index do |position_ability, index|
+            - if index > 0
+              %hr
+            .mb-3
+              = link_to organization_position_path(position_ability.position.company, position_ability.position), class: "text-decoration-none" do
+                %h6.mb-1= position_ability.position.display_name
+              %p.mb-0.text-muted.small
+                Required milestone level: #{milestone_level_display(position_ability.milestone_level)} (M#{position_ability.milestone_level})
+
   .col-md-4
     .card.mb-4
       .card-header
@@ -99,6 +115,10 @@
             %span Required by:
             %strong= @ability.required_by_assignments_count
             %small.text-muted assignments
+          .d-flex.justify-content-between
+            %span Required by (position):
+            %strong= @ability.required_by_positions_count
+            %small.text-muted positions
           .d-flex.justify-content-between
             %span People with milestones:
             %strong= @ability.person_attainments_count
@@ -128,6 +148,14 @@
             %p.small
               %i.bi.bi-clipboard.text-muted.me-1
               Not required by any assignments
+          - if @ability.is_required_by_positions?
+            %p.small
+              %i.bi.bi-briefcase.text-primary.me-1
+              Required by #{@ability.required_by_positions_count} position#{'s' if @ability.required_by_positions_count != 1}
+          - else
+            %p.small
+              %i.bi.bi-briefcase.text-muted.me-1
+              Not required by any positions
         
         .mb-3
           %h6.text-muted.small.mb-2 Actions

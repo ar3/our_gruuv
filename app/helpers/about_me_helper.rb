@@ -180,13 +180,13 @@ module AboutMeHelper
 
   def abilities_status_indicator(teammate, organization)
     active_tenure = teammate.active_employment_tenure
-    
+
     return :yellow unless active_tenure&.position
-    
-    required_assignments = active_tenure.position.required_assignments.includes(assignment: :assignment_abilities)
-    return :yellow if required_assignments.empty?
-    
-    # Collect all required milestones
+
+    position = active_tenure.position
+    required_assignments = position.required_assignments.includes(assignment: :assignment_abilities)
+
+    # Collect all required milestones (from assignments and position direct)
     all_required_milestones = []
     required_assignments.each do |position_assignment|
       assignment = position_assignment.assignment
@@ -197,7 +197,13 @@ module AboutMeHelper
         }
       end
     end
-    
+    position.position_abilities.includes(:ability).each do |position_ability|
+      all_required_milestones << {
+        ability: position_ability.ability,
+        required_level: position_ability.milestone_level
+      }
+    end
+
     return :yellow if all_required_milestones.empty?
     
     # Check teammate's current milestone for each required ability

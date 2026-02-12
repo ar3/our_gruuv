@@ -1191,49 +1191,84 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   def load_abilities_data
     # Get required assignments and their ability requirements
     active_tenure = @teammate.active_employment_tenure
-    
+
     if active_tenure&.position
-      @required_assignments_for_abilities = active_tenure.position.required_assignments.includes(assignment: :assignment_abilities)
-      @position_display_name_for_abilities = active_tenure.position.display_name
-      
-      # Collect all ability milestones
+      position = active_tenure.position
+      @required_assignments_for_abilities = position.required_assignments.includes(assignment: :assignment_abilities)
+      @position_display_name_for_abilities = position.display_name
+
+      # Collect all ability milestones (from assignments and position direct)
       all_ability_milestones = []
       @abilities_data = @required_assignments_for_abilities.map do |position_assignment|
         assignment = position_assignment.assignment
         assignment_abilities = assignment.assignment_abilities.includes(:ability)
-        
+
         abilities_info = assignment_abilities.map do |assignment_ability|
           ability = assignment_ability.ability
           teammate_milestone = @teammate.teammate_milestones.find_by(ability: ability)
           current_milestone = teammate_milestone&.milestone_level || 0
           required_milestone = assignment_ability.milestone_level
-          
+
           all_ability_milestones << {
             ability: ability,
             required_milestone: required_milestone,
             current_milestone: current_milestone,
             met: current_milestone >= required_milestone
           }
-          
+
           {
             ability: ability,
             required_milestone: required_milestone,
             current_milestone: current_milestone
           }
         end
-        
+
         # Check if all milestones are met
         all_milestones_met = abilities_info.all? do |info|
           info[:current_milestone] >= info[:required_milestone]
         end
-        
+
         {
           assignment: assignment,
           abilities: abilities_info,
           fully_qualified: all_milestones_met
         }
       end
-      
+
+      # Add position direct milestone requirements block
+      position.position_abilities.includes(:ability).each do |position_ability|
+        ability = position_ability.ability
+        teammate_milestone = @teammate.teammate_milestones.find_by(ability: ability)
+        current_milestone = teammate_milestone&.milestone_level || 0
+        required_milestone = position_ability.milestone_level
+
+        all_ability_milestones << {
+          ability: ability,
+          required_milestone: required_milestone,
+          current_milestone: current_milestone,
+          met: current_milestone >= required_milestone
+        }
+      end
+
+      if position.position_abilities.any?
+        position_abilities_info = position.position_abilities.includes(:ability).map do |position_ability|
+          ability = position_ability.ability
+          teammate_milestone = @teammate.teammate_milestones.find_by(ability: ability)
+          current_milestone = teammate_milestone&.milestone_level || 0
+          {
+            ability: ability,
+            required_milestone: position_ability.milestone_level,
+            current_milestone: current_milestone
+          }
+        end
+        @abilities_data << {
+          position_direct: true,
+          label: 'Position (direct)',
+          abilities: position_abilities_info,
+          fully_qualified: position_abilities_info.all? { |info| info[:current_milestone] >= info[:required_milestone] }
+        }
+      end
+
       @total_ability_milestones_count = all_ability_milestones.count
       @ability_milestones_met_count = all_ability_milestones.count { |m| m[:met] }
     else

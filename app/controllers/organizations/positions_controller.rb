@@ -485,7 +485,7 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def set_position
-    @position = @organization.positions.find(params[:id])
+    @position = @organization.positions.includes(position_abilities: :ability).find(params[:id])
   end
 
   def set_related_data
@@ -514,13 +514,17 @@ class Organizations::PositionsController < ApplicationController
   def calculate_minimum_mileage_from_assignments
     mileage_service = MilestoneMileageService.new
     total_points = 0
-    
+
     @position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
       position_assignment.assignment.assignment_abilities.each do |assignment_ability|
         total_points += mileage_service.milestone_points(assignment_ability.milestone_level)
       end
     end
-    
+
+    @position.position_abilities.each do |position_ability|
+      total_points += mileage_service.milestone_points(position_ability.milestone_level)
+    end
+
     total_points
   end
 end

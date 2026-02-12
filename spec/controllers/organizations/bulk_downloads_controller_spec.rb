@@ -403,7 +403,7 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
           csv = CSV.parse(response.body, headers: true)
           expect(csv.headers).to include(
             'External Title', 'Level', 'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
-            'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Version Count',
+            'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Direct Milestone Requirements', 'Version Count',
             'Title', 'Position Summary', 'Seats', 'Other Uploads'
           )
         end

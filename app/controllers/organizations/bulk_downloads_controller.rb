@@ -378,14 +378,15 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
     CSV.generate(headers: true) do |csv|
       csv << [
         'External Title', 'Level', 'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
-        'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Version Count',
+        'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Direct Milestone Requirements', 'Version Count',
         'Title', 'Position Summary', 'Seats', 'Other Uploads'
       ]
       
       Position.includes(
         title: [:company, :seats, :department],
         position_level: [],
-        position_assignments: :assignment
+        position_assignments: :assignment,
+        position_abilities: :ability
       )
               .joins(title: :company)
               .where(organizations: { id: company.self_and_descendants.map(&:id) })
@@ -432,6 +433,11 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # PaperTrail versions count
         version_count = position.versions.count
         
+        # Direct milestone requirements: "Ability Name - Milestone X" separated by newlines
+        direct_milestones = position.position_abilities.by_milestone_level.map do |pa|
+          "#{pa.ability.name} - Milestone #{pa.milestone_level}"
+        end.join("\n")
+        
         # Title (external_title)
         title_value = position.title&.external_title || ''
         
@@ -462,6 +468,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           public_url,
           active_tenures_count,
           assignments_list,
+          direct_milestones,
           version_count,
           title_value,
           position_summary,

@@ -42,7 +42,16 @@
                   - @required_assignments.each do |ra|
                     %span.badge.bg-info
                       Required Milestone #{ra[:milestone_level]} for #{ra[:assignment].title}
-        
+            / Position requirements (direct milestone requirements)
+            - if @required_positions&.any?
+              .mt-3.pt-3.border-top
+                %p.mb-2.small.text-muted
+                  %strong Position Requirements:
+                .d-flex.flex-wrap.gap-2
+                  - @required_positions.each do |rp|
+                    %span.badge.bg-info
+                      Required Milestone #{rp[:milestone_level]} for #{rp[:position].display_name}
+
         .row.mb-3
           .col-md-4
             %strong Teammate:

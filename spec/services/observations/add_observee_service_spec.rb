@@ -188,6 +188,58 @@ RSpec.describe Observations::AddObserveeService, type: :service do
       end
     end
 
+    context 'when observee has position with direct milestone requirements (position_abilities)' do
+      let(:title) { create(:title, company: company) }
+      let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+      let(:position_with_direct_milestones) { create(:position, title: title, position_level: position_level) }
+      let(:ability_from_position) { create(:ability, company: company) }
+      let!(:position_ability) do
+        create(:position_ability, position: position_with_direct_milestones, ability: ability_from_position, milestone_level: 2)
+      end
+      let!(:employment_tenure) do
+        et = create(:employment_tenure, company_teammate: teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+        et.update!(position: position_with_direct_milestones)
+        et
+      end
+
+      it 'adds ability ratings for position direct milestone abilities' do
+        service = described_class.new(observation: observation, teammate_id: teammate.id)
+        expect { service.call }.to change { observation.observation_ratings.where(rateable_type: 'Ability').count }.by(1)
+
+        rating = observation.observation_ratings.find_by(rateable_type: 'Ability', rateable_id: ability_from_position.id)
+        expect(rating).to be_present
+        expect(rating.rating).to eq('na')
+      end
+    end
+
+    context 'when observee has required assignments with ability milestones' do
+      let(:title) { create(:title, company: company) }
+      let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+      let(:position_with_required) { create(:position, title: title, position_level: position_level) }
+      let(:required_assignment) { create(:assignment, company: company) }
+      let(:ability_from_assignment) { create(:ability, company: company) }
+      let!(:assignment_ability) do
+        create(:assignment_ability, assignment: required_assignment, ability: ability_from_assignment, milestone_level: 1)
+      end
+      let!(:position_assignment) do
+        create(:position_assignment, position: position_with_required, assignment: required_assignment, assignment_type: 'required')
+      end
+      let!(:employment_tenure) do
+        et = create(:employment_tenure, company_teammate: teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+        et.update!(position: position_with_required)
+        et
+      end
+
+      it 'adds ability ratings for abilities from required assignments' do
+        service = described_class.new(observation: observation, teammate_id: teammate.id)
+        expect { service.call }.to change { observation.observation_ratings.where(rateable_type: 'Ability').count }.by(1)
+
+        rating = observation.observation_ratings.find_by(rateable_type: 'Ability', rateable_id: ability_from_assignment.id)
+        expect(rating).to be_present
+        expect(rating.rating).to eq('na')
+      end
+    end
+
     context 'when observee already exists' do
       let!(:existing_observee) { create(:observee, observation: observation, teammate: teammate) }
 

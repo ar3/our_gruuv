@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_09_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_11_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -869,6 +869,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_09_120000) do
     t.index ["searchable_type", "searchable_id"], name: "index_pg_search_documents_on_searchable"
   end
 
+  create_table "position_abilities", force: :cascade do |t|
+    t.bigint "position_id", null: false
+    t.bigint "ability_id", null: false
+    t.integer "milestone_level", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ability_id"], name: "index_position_abilities_on_ability_id"
+    t.index ["milestone_level"], name: "index_position_abilities_on_milestone_level"
+    t.index ["position_id", "ability_id"], name: "index_position_abilities_on_position_and_ability_unique", unique: true
+    t.index ["position_id"], name: "index_position_abilities_on_position_id"
+  end
+
   create_table "position_assignments", force: :cascade do |t|
     t.bigint "position_id", null: false
     t.bigint "assignment_id", null: false
@@ -1308,6 +1320,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_09_120000) do
   add_foreign_key "organizations", "teammates", column: "observable_moment_notifier_teammate_id"
   add_foreign_key "page_visits", "people"
   add_foreign_key "person_identities", "people"
+  add_foreign_key "position_abilities", "abilities"
+  add_foreign_key "position_abilities", "positions"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"
   add_foreign_key "position_check_ins", "employment_tenures"

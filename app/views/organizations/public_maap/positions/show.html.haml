@@ -16,6 +16,8 @@
 
 = render 'organizations/positions/job_description_suggested_assignments', position: @position, organization: @position.company, public_view: true
 
+= render 'organizations/positions/job_description_direct_milestones', position: @position, organization: @position.company, public_view: true
+
 = render 'organizations/positions/job_description_no_assignments', position: @position
 
 = render 'organizations/positions/job_description_footer'

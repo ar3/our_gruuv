@@ -15,6 +15,7 @@
           - ability = ability_data[:ability]
           - milestone_attainments = ability_data[:milestone_attainments]
           - assignment_requirements = ability_data[:assignment_requirements]
+          - position_requirements = ability_data[:position_requirements] || []
           %tr
             %td
               - begin
@@ -32,6 +33,8 @@
               - assignment_requirements.each do |assignment_ability|
                 - assignment = assignment_ability.assignment
                 - relevance_items << "You need Milestone #{assignment_ability.milestone_level} for #{assignment.title}"
+              - position_requirements.each do |position_ability|
+                - relevance_items << "You need Milestone #{position_ability.milestone_level} for this position"
               - if relevance_items.any?
                 %ul.mb-0.pl-3{style: "list-style: disc;"}
                   - relevance_items.each do |item|
