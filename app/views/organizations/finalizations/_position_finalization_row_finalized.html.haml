@@ -7,7 +7,7 @@
   %td
     = position_rating_display(check_in.manager_rating)
   %td
-    = simple_format(check_in.shared_notes) if check_in.shared_notes.present?
+    = simple_format(check_in.shared_notes.presence || '--no notes--')
   %td
     %strong= position_rating_display(check_in.official_rating)
   %td.text-center
