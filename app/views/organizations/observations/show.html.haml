@@ -26,6 +26,11 @@
     - elsif @observation.soft_deleted? && policy(@observation).restore?
       = button_to 'Restore', restore_organization_observation_path(@organization, @observation), method: :patch, class: 'btn btn-outline-success', data: { turbo: false }
     = render 'mode_switcher', organization: @organization, observation: @observation
+/ Draft nudge - shown when observation is draft and user can publish (observer)
+- if @observation.draft? && current_person == @observation.observer
+  .row
+    .col-12
+      = render 'nudge_to_publish_draft'
 / Share prompt section - shown when observation is published, has no notifications, is not journal, and user is the observer
 - if @observation.published? && @observation.notifications.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
   .row

@@ -302,6 +302,24 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
     end
 
+    context 'when observation is a draft' do
+      let(:draft_observation) do
+        obs = build(:observation, observer: observer, company: company, published_at: nil, story: 'Draft observation story')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'shows draft publish nudge to observer with Almost done! and giant Publish button' do
+        get :show, params: { organization_id: company.id, id: draft_observation.id }
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Almost done!')
+        expect(response.body).to include('You have to publish this or it is like it never happened')
+        expect(response.body).to include('Publish')
+        expect(response.body).to include('btn-lg')
+      end
+    end
+
     context 'observer_only privacy' do
       let(:observer_only_observation) do
         obs = build(:observation, observer: observer, company: company, privacy_level: :observer_only)

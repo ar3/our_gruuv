@@ -259,6 +259,95 @@ RSpec.  describe 'organizations/observations/show', type: :view do
     end
   end
 
+  describe 'draft publish nudge' do
+    let(:draft_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil, story: 'Draft story')
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs
+    end
+
+    context 'when observation is draft and current user is the observer' do
+      before do
+        assign(:organization, company)
+        assign(:observation, draft_observation)
+        assign(:observee_names, [observee_person.casual_name])
+        assign(:direct_manager_names, [])
+        assign(:other_manager_names, [])
+        obs = observer
+        view.instance_variable_set(:@current_person, obs)
+        view.define_singleton_method(:current_person) { obs }
+        allow(view).to receive(:policy) do |obj|
+          if obj == draft_observation
+            double(publish?: true, post_to_slack?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false)
+          else
+            double(publish?: false, post_to_slack?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false)
+          end
+        end
+        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}")
+        allow(view).to receive(:publish_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}/publish")
+        allow_any_instance_of(Observation).to receive(:decorate).and_return(
+          double(
+            story_html: '<p>Draft story</p>',
+            gifs_html: '',
+            visibility_text_style: 'text-primary',
+            visibility_text: 'Public to Company',
+            visibility_icon: '',
+            feelings_display_html: '',
+            permalink_url: "https://example.com/observations/#{draft_observation.id}"
+          )
+        )
+        allow(draft_observation).to receive(:format_ratings_by_type_and_level).and_return([])
+        render
+      end
+
+      it 'displays Almost done! heading' do
+        expect(rendered).to have_content('Almost done!')
+      end
+
+      it 'displays nudge copy about publishing' do
+        expect(rendered).to have_content('You have to publish this or it is like it never happened')
+      end
+
+      it 'displays a prominent Publish button' do
+        expect(rendered).to have_css('input[type="submit"][value="Publish"]')
+        expect(rendered).to have_css('.btn-lg')
+      end
+    end
+
+    context 'when observation is published' do
+      before do
+        assign(:organization, company)
+        assign(:observation, observation)
+        assign(:observee_names, [observee_person.casual_name])
+        assign(:direct_manager_names, [])
+        assign(:other_manager_names, [])
+        obs = observer
+        view.instance_variable_set(:@current_person, obs)
+        view.define_singleton_method(:current_person) { obs }
+        allow(view).to receive(:policy).and_return(double(publish?: false, post_to_slack?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false))
+        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}")
+        allow_any_instance_of(Observation).to receive(:decorate).and_return(
+          double(
+            story_html: '<p>Test story</p>',
+            gifs_html: '',
+            visibility_text_style: 'text-primary',
+            visibility_text: 'Public to Company',
+            visibility_icon: '',
+            feelings_display_html: '',
+            permalink_url: "https://example.com/observations/#{observation.id}"
+          )
+        )
+        allow(observation).to receive(:format_ratings_by_type_and_level).and_return([])
+        render
+      end
+
+      it 'does not display the draft publish nudge' do
+        expect(rendered).not_to have_content('You have to publish this or it is like it never happened')
+      end
+    end
+  end
+
   describe 'share prompt section' do
     context 'when observation is published, has no notifications, and is not journal' do
       before do

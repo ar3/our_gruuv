@@ -1,0 +1,10 @@
+.card.mb-4.border-warning{ role: "region", "aria-labelledby": "draft-publish-nudge" }
+  .card-body.bg-light
+    .text-center.py-4
+      %h4.mb-2{ id: "draft-publish-nudge" }
+        Almost done!
+      %p.mb-4.text-muted
+        You have to publish this or it is like it never happened.
+      - if policy(@observation).publish?
+        = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, data: { turbo: false }, html: { class: 'd-inline-block' } do |form|
+          = form.submit 'Publish', class: 'btn btn-primary btn-lg px-5 py-3'
