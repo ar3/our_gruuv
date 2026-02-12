@@ -22,6 +22,7 @@ class Organizations::SearchController < Organizations::OrganizationNamespaceBase
         observations: [],
         assignments: [],
         abilities: [],
+        titles: [],
         total_count: 0
       }
     end

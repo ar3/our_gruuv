@@ -1,4 +1,6 @@
 class Title < ApplicationRecord
+  include PgSearch::Model
+
   # Associations
   belongs_to :company, class_name: 'Organization'
   belongs_to :position_major_level
@@ -18,6 +20,13 @@ class Title < ApplicationRecord
   validates :external_title, uniqueness: { scope: [:company_id, :position_major_level_id] }
   validate :company_must_be_company_type
   validate :department_must_belong_to_company
+
+  # pg_search configuration
+  pg_search_scope :search_by_full_text,
+    against: { external_title: 'A' },
+    using: { tsearch: { prefix: true, any_word: true } }
+
+  multisearchable against: [:external_title]
 
   # Scopes
   scope :ordered, -> { order(:external_title) }

@@ -136,6 +136,7 @@ The following models use `multisearchable`:
 - **Observation**: `story`, `primary_feeling`, `secondary_feeling`
 - **Assignment**: `title`, `tagline`, `required_activities`, `handbook`
 - **Ability**: `name`, `description`
+- **Title**: `external_title`
 
 ## Implementation Details
 

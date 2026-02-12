@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe GlobalSearchQuery, type: :query do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+  let(:teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_maap: true) }
   let(:query) { GlobalSearchQuery.new(query: 'test', current_organization: organization, current_teammate: teammate) }
 
   before do
@@ -23,7 +23,13 @@ RSpec.describe GlobalSearchQuery, type: :query do
         expect(results[:observations]).to be_empty
         expect(results[:assignments]).to be_empty
         expect(results[:abilities]).to be_empty
+        expect(results[:titles]).to be_empty
         expect(results[:total_count]).to eq(0)
+      end
+
+      it 'includes titles key in results' do
+        results = query.call
+        expect(results).to have_key(:titles)
       end
     end
 
@@ -36,7 +42,25 @@ RSpec.describe GlobalSearchQuery, type: :query do
         expect(results).to have_key(:observations)
         expect(results).to have_key(:assignments)
         expect(results).to have_key(:abilities)
+        expect(results).to have_key(:titles)
         expect(results).to have_key(:total_count)
+      end
+    end
+
+    context 'searching for titles by external_title' do
+      let!(:searchable_title) { create(:title, external_title: 'UniqueProductArchitect', company: organization) }
+      let!(:other_company) { create(:organization, :company) }
+      let!(:other_title) { create(:title, external_title: 'OtherEngineer', company: other_company) }
+      let(:query) { GlobalSearchQuery.new(query: 'UniqueProductArchitect', current_organization: organization, current_teammate: teammate) }
+
+      before do
+        PgSearch::Multisearch.rebuild(Title)
+      end
+
+      it 'finds title by external_title' do
+        results = query.call
+        expect(results[:titles]).to include(searchable_title)
+        expect(results[:titles]).not_to include(other_title)
       end
     end
 

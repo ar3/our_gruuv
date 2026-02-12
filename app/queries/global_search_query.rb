@@ -22,6 +22,7 @@ class GlobalSearchQuery
       observations: [],
       assignments: [],
       abilities: [],
+      titles: [],
       total_count: 0
     }
   end
@@ -33,6 +34,7 @@ class GlobalSearchQuery
       observations: [],
       assignments: [],
       abilities: [],
+      titles: [],
       total_count: 0
     }
 
@@ -63,6 +65,11 @@ class GlobalSearchQuery
         if can_view_ability?(ability)
           results[:abilities] << ability
         end
+      when 'Title'
+        title = search_result.searchable
+        if can_view_title?(title)
+          results[:titles] << title
+        end
       end
     end
 
@@ -72,6 +79,7 @@ class GlobalSearchQuery
     results[:observations] = scope_observations_to_organization(results[:observations])
     results[:assignments] = scope_assignments_to_organization(results[:assignments])
     results[:abilities] = scope_abilities_to_organization(results[:abilities])
+    results[:titles] = scope_titles_to_organization(results[:titles])
 
     # Calculate total count
     results[:total_count] = results.values.sum(&:size)
@@ -126,6 +134,13 @@ class GlobalSearchQuery
     policy.show?
   end
 
+  def can_view_title?(title)
+    return false unless @current_teammate
+    pundit_user = OpenStruct.new(user: @current_teammate, real_user: @current_teammate)
+    policy = TitlePolicy.new(pundit_user, title)
+    policy.show?
+  end
+
   def scope_people_to_organization(people)
     return [] unless @current_organization
 
@@ -170,6 +185,15 @@ class GlobalSearchQuery
     
     abilities.select do |ability|
       ability.company_id == company&.id
+    end
+  end
+
+  def scope_titles_to_organization(titles)
+    return [] unless @current_organization
+
+    titles.select do |title|
+      title.company == @current_organization ||
+        @current_organization.descendants.include?(title.company)
     end
   end
 end

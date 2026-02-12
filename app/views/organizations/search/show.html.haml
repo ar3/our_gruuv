@@ -22,7 +22,7 @@
             .col-md-10
               = f.text_field :q, 
                   value: @query, 
-                  placeholder: "Search people, organizations, observations, assignments, and abilities...", 
+                  placeholder: "Search people, organizations, observations, assignments, abilities, and titles...", 
                   class: "form-control form-control-lg",
                   autofocus: true,
                   style: "font-size: 1.25rem; padding: 1rem;"
@@ -165,6 +165,31 @@
                           .btn-group.btn-group-sm
                             = link_to organization_ability_path(@organization, ability), class: "btn btn-outline-primary" do
                               %i.bi.bi-eye
+
+        - if @results[:titles].any?
+          .card.mb-4
+            .card-header
+              %h5.mb-0
+                %i.bi.bi-briefcase-fill.me-2
+                Titles (#{@results[:titles].count})
+            .card-body
+              .table-responsive
+                %table.table.table-hover
+                  %thead
+                    %tr
+                      %th Title
+                      %th Company
+                      %th Actions
+                  %tbody
+                    - @results[:titles].each do |title|
+                      %tr
+                        %td
+                          = link_to title.external_title, organization_title_path(@organization, title), class: "text-decoration-none fw-bold"
+                        %td= title.company.display_name
+                        %td
+                          .btn-group.btn-group-sm
+                            = link_to organization_title_path(@organization, title), class: "btn btn-outline-primary" do
+                              %i.bi.bi-eye
   - else
     .row.justify-content-center
       .col-lg-12
@@ -175,7 +200,7 @@
           %p.mb-2 
             No results found for "#{@query}". Try different keywords or check your spelling.
           %p.mb-0
-            %small.text-muted Search across people, organizations, observations, assignments, and abilities in #{@organization.display_name}.
+            %small.text-muted Search across people, organizations, observations, assignments, abilities, and titles in #{@organization.display_name}.
 - else
   .row.justify-content-center
     .col-lg-12
@@ -184,6 +209,6 @@
           %i.bi.bi-search.me-2
           Start Searching
         %p.mb-2 
-          Enter a search term above to find people, organizations, observations, assignments, and abilities.
+          Enter a search term above to find people, organizations, observations, assignments, abilities, and titles.
         %p.mb-0
           %small.text-muted Search is scoped to #{@organization.display_name} and respects your permissions.
