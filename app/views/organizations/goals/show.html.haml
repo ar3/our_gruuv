@@ -267,6 +267,7 @@
               - if calculated_due_date.present?
                 = " by #{calculated_due_date.strftime('%B %d, %Y')}"
               = "."
+              = render 'shared/on_track_pill', status: @goal.on_track_status_for_check_in(last_check_in)
           - else
             .alert.alert-info.mb-3
               %i.bi.bi-info-circle.me-2

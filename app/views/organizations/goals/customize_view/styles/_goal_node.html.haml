@@ -53,7 +53,8 @@
             / Most recent check-in display
             - if most_recent_check_in.present?
               .small.text-muted.mb-2
-                = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal
+                = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
+                = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
             
             / Inline check-in form (only if can_check_in and goal is check-in eligible)
             - if can_check_in && goal.check_in_eligible? && goal.completed_at.nil?

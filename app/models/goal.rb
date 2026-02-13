@@ -288,6 +288,34 @@ class Goal < ApplicationRecord
     end
   end
 
+  # On-track status for a specific check-in (uses that check-in's week and confidence, not the latest).
+  # Returns :good_green, :green, :yellow, :red, or :na. Use with shared/on_track_pill partial.
+  def on_track_status_for_check_in(check_in)
+    return :na if progress_status_na? || started_at.nil?
+    return :na unless check_in&.check_in_week_start && check_in.confidence_percentage.present?
+
+    confidence = check_in.confidence_percentage.to_i
+    ranges = Goals::GoalProgressStatusConfidenceRangeCalculator.call(
+      initial_confidence: initial_confidence&.to_sym || :stretch,
+      earliest_target_date: earliest_target_date || most_likely_target_date,
+      latest_target_date: latest_target_date || most_likely_target_date,
+      most_likely_target_date: most_likely_target_date,
+      started_at: started_at,
+      progress_check_date: check_in.check_in_week_start
+    )
+    return :na unless ranges
+
+    if confidence >= ranges[:ahead_of_schedule_if_confidence_above]
+      :good_green
+    elsif confidence >= ranges[:on_schedule_if_confidence_above]
+      :green
+    elsif confidence >= ranges[:behind_schedule_if_confidence_below]
+      :yellow
+    else
+      :red
+    end
+  end
+
   def progress_status_na?
     earliest_target_date.nil? && most_likely_target_date.nil? && latest_target_date.nil?
   end

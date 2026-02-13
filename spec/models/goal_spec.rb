@@ -969,6 +969,29 @@ RSpec.describe Goal, type: :model do
       end
     end
 
+    describe '#on_track_status_for_check_in' do
+      let(:started_at) { 4.weeks.ago }
+      let(:most_likely) { 4.weeks.from_now.to_date }
+
+      it 'returns :na when goal has no target dates' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: started_at,
+          earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+        check_in = build(:goal_check_in, goal: goal, check_in_week_start: Date.current.beginning_of_week(:monday), confidence_percentage: 50)
+        expect(goal.on_track_status_for_check_in(check_in)).to eq(:na)
+      end
+
+      it 'returns one of the four statuses for a check-in when goal has target dates and started_at' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: started_at, most_likely_target_date: most_likely)
+        check_in = create(:goal_check_in, goal: goal, check_in_week_start: Date.current.beginning_of_week(:monday), confidence_percentage: 75, confidence_reporter: person)
+        expect(%i[red yellow green good_green]).to include(goal.on_track_status_for_check_in(check_in))
+      end
+
+      it 'returns :na when check_in is nil' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: started_at, most_likely_target_date: most_likely)
+        expect(goal.on_track_status_for_check_in(nil)).to eq(:na)
+      end
+    end
+
     describe '#calculated_target_date' do
       let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
       

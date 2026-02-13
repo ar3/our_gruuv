@@ -304,5 +304,36 @@ RSpec.describe GoalsHelper, type: :helper do
       expect(result).to include('32px')
     end
   end
+
+  describe '#on_track_pill_options' do
+    it 'returns nil for :na or blank' do
+      expect(helper.on_track_pill_options(:na)).to be_nil
+      expect(helper.on_track_pill_options(nil)).to be_nil
+    end
+
+    it 'returns dark green "On Track" for :good_green' do
+      opts = helper.on_track_pill_options(:good_green)
+      expect(opts[:label]).to eq('On Track')
+      expect(opts[:style]).to include('#198754')
+    end
+
+    it 'returns light green "On Track" for :green' do
+      opts = helper.on_track_pill_options(:green)
+      expect(opts[:label]).to eq('On Track')
+      expect(opts[:style]).to include('#a3cfbb')
+    end
+
+    it 'returns yellow "On Track" for :yellow' do
+      opts = helper.on_track_pill_options(:yellow)
+      expect(opts[:label]).to eq('On Track')
+      expect(opts[:class]).to include('bg-warning')
+    end
+
+    it 'returns red "Off Track" for :red' do
+      opts = helper.on_track_pill_options(:red)
+      expect(opts[:label]).to eq('Off Track')
+      expect(opts[:class]).to include('bg-danger')
+    end
+  end
 end
 

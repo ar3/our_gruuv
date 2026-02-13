@@ -40,6 +40,7 @@
                   Week of #{check_in.check_in_week_start.strftime('%B %d')} - #{check_in.check_in_week_start.end_of_week(:sunday).strftime('%B %d, %Y')}
                 %p.mb-1
                   = render 'organizations/goals/goal_check_in_sentence', check_in: check_in, goal: @goal
+                  = render 'shared/on_track_pill', status: @goal.on_track_status_for_check_in(check_in)
                 - if check_in.confidence_reason.present?
                   %p.mb-1
                     %strong Notes:
