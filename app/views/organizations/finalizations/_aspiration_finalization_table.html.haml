@@ -13,7 +13,7 @@
       %tbody
         - if @ready_aspiration_check_ins
           - @ready_aspiration_check_ins.each do |check_in|
-            = render 'aspiration_finalization_row_ready', check_in: check_in, form: form, view_mode: view_mode
+            = render 'aspiration_finalization_row_ready', check_in: check_in, form: form, view_mode: view_mode, organization: organization, teammate: @teammate
         - if @incomplete_aspiration_check_ins&.any?
           - @incomplete_aspiration_check_ins.each do |check_in|
-            = render 'aspiration_finalization_row_incomplete', check_in: check_in
+            = render 'aspiration_finalization_row_incomplete', check_in: check_in, organization: organization, teammate: @teammate

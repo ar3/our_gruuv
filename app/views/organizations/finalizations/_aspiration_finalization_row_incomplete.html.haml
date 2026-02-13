@@ -2,6 +2,8 @@
 %tr.bg-light
   %td
     %strong= check_in.aspiration.name
+    = link_to organization_teammate_aspiration_path(organization, teammate, check_in.aspiration), target: '_blank', rel: 'noopener noreferrer', class: 'ms-2', title: 'View aspiration' do
+      %i.bi.bi-box-arrow-up-right
   %td{colspan: 5}
     .d-flex.align-items-center.gap-2
       %i.bi.bi-info-circle.text-info

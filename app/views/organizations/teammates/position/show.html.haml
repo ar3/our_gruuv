@@ -157,10 +157,12 @@
           %h5.mb-0 Current Position
         .card-body
           %p.mb-0
-            %strong= @current_employment.position.display_name
+            %strong= link_to @current_employment.position.display_name, organization_position_path(@organization, @current_employment.position), class: 'text-decoration-none'
             - if @current_employment.manager_teammate
               %br
-              %small.text-muted Manager: #{@current_employment.manager_teammate.person.display_name}
+              %small.text-muted
+                Manager:
+                = link_to @current_employment.manager_teammate.person.display_name, internal_organization_company_teammate_path(@organization, @current_employment.manager_teammate), class: 'text-decoration-none'
           
           / Inline Edit Form
           - can_manage = policy(@teammate).update?
@@ -287,10 +289,10 @@
                         %small.text-muted= format_time_in_user_timezone(tenure.ended_at, format: '%I:%M %p')
                       - else
                         %span.text-muted —
-                    %td= tenure.position.display_name
+                    %td= link_to tenure.position.display_name, organization_position_path(@organization, tenure.position), class: 'text-decoration-none'
                     %td
                       - if tenure.manager_teammate
-                        = tenure.manager_teammate.person.display_name
+                        = link_to tenure.manager_teammate.person.display_name, internal_organization_company_teammate_path(@organization, tenure.manager_teammate), class: 'text-decoration-none'
                       - else
                         %span.text-muted —
                     %td

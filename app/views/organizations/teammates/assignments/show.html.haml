@@ -87,8 +87,8 @@
                         - @assignment_abilities.each do |assignment_ability|
                           .form-control-plaintext.mb-1
                             %i.bi.bi-star.text-warning.me-2
-                            = assignment_ability.ability.name
-                            %small.text-muted (Level #{assignment_ability.milestone_level})
+                            = "#{milestone_level_display(assignment_ability.milestone_level)} ".html_safe + link_to(assignment_ability.ability.name, organization_ability_path(@organization, assignment_ability.ability), class: 'text-decoration-none')
+                            %small.text-muted (Milestone #{assignment_ability.milestone_level})
                     - else
                       .mb-3
                         %label.form-label.fw-bold Required Abilities

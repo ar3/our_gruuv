@@ -16,9 +16,17 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
     # Load ALL check-ins for display (ready for finalization + incomplete ones)
     # Ready to finalize
     @ready_position_check_in = PositionCheckIn.where(company_teammate: @teammate).ready_for_finalization.first
-    @ready_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).ready_for_finalization
-    @ready_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).ready_for_finalization
-    
+    @ready_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).ready_for_finalization.includes(:assignment)
+    @ready_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).ready_for_finalization.includes(:aspiration)
+
+    # Sort aspirations by name
+    @ready_aspiration_check_ins = @ready_aspiration_check_ins.sort_by { |ci| ci.aspiration.name }
+
+    # Sort assignments by active tenure percentage (desc) then alphabetically by title
+    assignment_ids = @ready_assignment_check_ins.map(&:assignment_id).uniq
+    tenures_by_assignment = AssignmentTenure.where(company_teammate: @teammate, assignment_id: assignment_ids).active.index_by(&:assignment_id)
+    @ready_assignment_check_ins = @ready_assignment_check_ins.sort_by { |ci| [-(tenures_by_assignment[ci.assignment_id]&.anticipated_energy_percentage || 0), ci.assignment.title] }
+
     # Partially complete (for display in read-only rows)
     @incomplete_position_check_ins = PositionCheckIn.where(company_teammate: @teammate)
                                                     .open
@@ -29,11 +37,19 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
                                                           .open
                                                           .where.not(id: @ready_assignment_check_ins.map(&:id))
                                                           .where("(employee_completed_at IS NOT NULL AND manager_completed_at IS NULL) OR (employee_completed_at IS NULL AND manager_completed_at IS NOT NULL)")
-    
+                                                          .includes(:assignment)
+    if @incomplete_assignment_check_ins.any?
+      inc_assignment_ids = @incomplete_assignment_check_ins.map(&:assignment_id).uniq
+      inc_tenures = AssignmentTenure.where(company_teammate: @teammate, assignment_id: inc_assignment_ids).active.index_by(&:assignment_id)
+      @incomplete_assignment_check_ins = @incomplete_assignment_check_ins.sort_by { |ci| [-(inc_tenures[ci.assignment_id]&.anticipated_energy_percentage || 0), ci.assignment.title] }
+    end
+
     @incomplete_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate)
                                                            .open
                                                            .where.not(id: @ready_aspiration_check_ins.map(&:id))
                                                            .where("(employee_completed_at IS NOT NULL AND manager_completed_at IS NULL) OR (employee_completed_at IS NULL AND manager_completed_at IS NOT NULL)")
+                                                           .includes(:aspiration)
+                                                           .sort_by { |ci| ci.aspiration.name }
     
     # Load already finalized check-ins for acknowledgment view
     @finalized_position_check_in = PositionCheckIn.where(company_teammate: @teammate).closed.order(:official_check_in_completed_at).last

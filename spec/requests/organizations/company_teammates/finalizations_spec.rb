@@ -39,6 +39,29 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
     sign_in_as_teammate_for_request(manager, organization)
   end
 
+  describe "GET finalization show (review mode)" do
+    it "includes links to position, assignment, and aspiration show pages that open in new window" do
+      assignment = create(:assignment, company: organization)
+      aspiration = create(:aspiration, company: organization, name: "Review Test Aspiration")
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 1.month.ago)
+      create(:assignment_check_in, :ready_for_finalization, teammate: employee_teammate, assignment: assignment, manager_completed_by_teammate: manager_teammate)
+      create(:aspiration_check_in, :ready_for_finalization, teammate: employee_teammate, aspiration: aspiration, manager_completed_by_teammate: manager_teammate)
+
+      get organization_company_teammate_finalization_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:ok)
+      body = response.body
+      position_url = organization_teammate_position_path(organization, employee_teammate)
+      assignment_url = organization_teammate_assignment_path(organization, employee_teammate, assignment)
+      aspiration_url = organization_teammate_aspiration_path(organization, employee_teammate, aspiration)
+      expect(body).to match(/target=["']?_blank["']?/)
+      expect(body).to match(/rel=["']?noopener\s+noreferrer["']?/)
+      expect(body).to include(position_url)
+      expect(body).to include(assignment_url)
+      expect(body).to include(aspiration_url)
+    end
+  end
+
   describe "POST /organizations/:org_id/company_teammates/:company_teammate_id/finalization" do
     context "position check-in finalization" do
       let(:finalization_params) do

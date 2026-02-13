@@ -13,7 +13,7 @@
           %th Finalize?
       %tbody
         - if @ready_position_check_in
-          = render 'position_finalization_row_ready', check_in: @ready_position_check_in, form: form, view_mode: view_mode
+          = render 'position_finalization_row_ready', check_in: @ready_position_check_in, form: form, view_mode: view_mode, organization: organization, teammate: @teammate
         - if @incomplete_position_check_ins&.any?
           - @incomplete_position_check_ins.each do |check_in|
-            = render 'position_finalization_row_incomplete', check_in: check_in
+            = render 'position_finalization_row_incomplete', check_in: check_in, organization: organization, teammate: @teammate

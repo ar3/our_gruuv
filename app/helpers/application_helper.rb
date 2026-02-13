@@ -3,6 +3,7 @@ module ApplicationHelper
   include Pagy::Frontend
   include CheckInHelper
   include CompanyLabelHelper
+  include PositionsHelper
 
   # Color helper methods for consistent UI
   def rating_color(rating)

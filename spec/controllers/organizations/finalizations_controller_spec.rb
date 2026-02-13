@@ -56,6 +56,34 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
       expect(response.status).to eq(200)
       expect(assigns(:ready_assignment_check_ins)).to include(assignment_check_in)
     end
+
+    it 'sorts ready assignment check-ins by active tenure percentage then by assignment title' do
+      assignment_b = create(:assignment, company: organization, title: 'Alpha Assignment')
+      assignment_c = create(:assignment, company: organization, title: 'Beta Assignment')
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_b, anticipated_energy_percentage: 25, started_at: 1.month.ago)
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_c, anticipated_energy_percentage: 75, started_at: 1.month.ago)
+      manager_ct = CompanyTeammate.find(manager_teammate.id)
+      check_in_b = create(:assignment_check_in, teammate: employee_teammate, assignment: assignment_b, employee_rating: 'meeting', manager_rating: 'exceeding', employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_ct)
+      check_in_c = create(:assignment_check_in, teammate: employee_teammate, assignment: assignment_c, employee_rating: 'meeting', manager_rating: 'exceeding', employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_ct)
+      # assignment (50%) should come after assignment_c (75%) and before assignment_b (25%) by percentage; then alpha by title
+      get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+      ready = assigns(:ready_assignment_check_ins)
+      titles = ready.map { |ci| ci.assignment.title }
+      # Order by percentage desc then title: 75% Beta, 50% Test, 25% Alpha
+      expect(titles).to eq(['Beta Assignment', assignment.title, 'Alpha Assignment'])
+    end
+
+    it 'sorts ready aspiration check-ins by aspiration name' do
+      aspiration_z = create(:aspiration, company: organization, name: 'Zebra')
+      aspiration_a = create(:aspiration, company: organization, name: 'Alpha')
+      manager_ct = CompanyTeammate.find(manager_teammate.id)
+      create(:aspiration_check_in, :ready_for_finalization, teammate: employee_teammate, aspiration: aspiration_z, manager_completed_by_teammate: manager_ct)
+      create(:aspiration_check_in, :ready_for_finalization, teammate: employee_teammate, aspiration: aspiration_a, manager_completed_by_teammate: manager_ct)
+      get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+      ready = assigns(:ready_aspiration_check_ins)
+      names = ready.map { |ci| ci.aspiration.name }
+      expect(names).to eq(names.sort)
+    end
     
     it 'authorizes access to finalization' do
       # Authorization is tested via the before_action and policy specs

@@ -2,6 +2,8 @@
 %tr.bg-light
   %td
     %strong= check_in.employment_tenure.position.display_name
+    = link_to organization_teammate_position_path(organization, teammate), target: '_blank', rel: 'noopener noreferrer', class: 'ms-2', title: 'View position' do
+      %i.bi.bi-box-arrow-up-right
   %td{colspan: 5}
     .d-flex.align-items-center.gap-2
       %i.bi.bi-info-circle.text-info

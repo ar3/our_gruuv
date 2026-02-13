@@ -13,7 +13,7 @@
       %tbody
         - if @ready_assignment_check_ins
           - @ready_assignment_check_ins.each do |check_in|
-            = render 'assignment_finalization_row_ready', check_in: check_in, form: form, view_mode: view_mode
+            = render 'assignment_finalization_row_ready', check_in: check_in, form: form, view_mode: view_mode, organization: organization, teammate: @teammate
         - if @incomplete_assignment_check_ins&.any?
           - @incomplete_assignment_check_ins.each do |check_in|
-            = render 'assignment_finalization_row_incomplete', check_in: check_in
+            = render 'assignment_finalization_row_incomplete', check_in: check_in, organization: organization, teammate: @teammate
