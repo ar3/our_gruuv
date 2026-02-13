@@ -189,8 +189,13 @@ module ApplicationHelper
       footnotes: true
     )
     
-    # Render markdown and then convert remaining newlines to <br/> tags
+    # Render markdown and then convert remaining newlines to <br/> tags.
+    # First collapse newlines so list structure doesn't get extra <br/>:
+    # - Between HTML tags (e.g. </li>\n<li>) so sibling items don't get gaps.
+    # - Before an opening tag (e.g. "Parent item\n<ul>") so nested lists don't get a gap.
     rendered = markdown.render(text)
+    rendered = rendered.gsub(/>\s*\n\s*</m, '><')
+    rendered = rendered.gsub(/\n\s*</m, '<')
     rendered.gsub(/\n/, '<br/>').gsub(/<br\/>$/, '').html_safe
   end
 
