@@ -66,4 +66,51 @@ RSpec.describe Organizations::CheckInsHealthController, type: :controller do
       end
     end
   end
+
+  describe 'GET #export' do
+    it 'authorizes with check_ins_health? and returns CSV' do
+      get :export, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.content_type).to include('text/csv')
+      expect(response.headers['Content-Disposition']).to include('attachment')
+    end
+
+    it 'generates CSV with expected check-in headers' do
+      get :export, params: { organization_id: company.id }
+      csv = CSV.parse(response.body, headers: true)
+      expect(csv.headers).to include(
+        'Teammate Name',
+        'Teammate Email',
+        'Teammate Manager Name',
+        'Teammate Manager Email',
+        'Check-in Object',
+        'Check-in Started',
+        'Check-in Finalized',
+        'Check-ins Finalized Before this',
+        'Manager Check-in Completed At',
+        'Manager who completed Check-in',
+        'Employee Check-in Completed At',
+        'Rating',
+        'Shared Notes',
+        'Employee Rating',
+        'Employee Notes',
+        'Manager Rating',
+        'Manager Notes',
+        'Expected Energy Percentage',
+        'Actual Energy Percentage',
+        'Employee Personal Alignment'
+      )
+    end
+
+    context 'when user does not have check_ins_health access' do
+      before do
+        teammate.update!(first_employed_at: nil, last_terminated_at: nil)
+      end
+
+      it 'redirects with authorization error' do
+        get :export, params: { organization_id: company.id }
+        expect(response).to have_http_status(:redirect)
+      end
+    end
+  end
 end

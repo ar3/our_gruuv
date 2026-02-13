@@ -127,7 +127,8 @@ Rails.application.routes.draw do
     
     # Check-ins health dashboard
     get :check_ins_health, to: 'organizations/check_ins_health#index'
-    
+    get :check_ins_health_export, to: 'organizations/check_ins_health#export'
+
     # Employment management wizard
     resources :employment_management, only: [:index, :new, :create], controller: 'organizations/employment_management' do
       collection do
