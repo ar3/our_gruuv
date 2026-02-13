@@ -258,6 +258,40 @@ class Goal < ApplicationRecord
     deleted_at.present?
   end
   
+  # On-track status from confidence vs expected thresholds. Returns :na when no due date, no started_at, or no check-in.
+  def progress_status(progress_check_date: Date.current)
+    return :na if progress_status_na?
+    return :na if started_at.nil?
+
+    last_check_in = goal_check_ins.recent.first
+    return :na unless last_check_in
+
+    confidence = last_check_in.confidence_percentage.to_i
+    ranges = Goals::GoalProgressStatusConfidenceRangeCalculator.call(
+      initial_confidence: initial_confidence&.to_sym || :stretch,
+      earliest_target_date: earliest_target_date || most_likely_target_date,
+      latest_target_date: latest_target_date || most_likely_target_date,
+      most_likely_target_date: most_likely_target_date,
+      started_at: started_at,
+      progress_check_date: progress_check_date
+    )
+    return :na unless ranges
+
+    if confidence >= ranges[:ahead_of_schedule_if_confidence_above]
+      :good_green
+    elsif confidence >= ranges[:on_schedule_if_confidence_above]
+      :green
+    elsif confidence >= ranges[:behind_schedule_if_confidence_below]
+      :yellow
+    else
+      :red
+    end
+  end
+
+  def progress_status_na?
+    earliest_target_date.nil? && most_likely_target_date.nil? && latest_target_date.nil?
+  end
+
   def calculated_target_date
     # Return nil if all three dates are nil
     return nil if earliest_target_date.nil? && most_likely_target_date.nil? && latest_target_date.nil?

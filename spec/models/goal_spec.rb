@@ -925,6 +925,50 @@ RSpec.describe Goal, type: :model do
       end
     end
     
+    describe '#progress_status_na?' do
+      it 'returns true when all target dates are nil' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate,
+          earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+        expect(goal.progress_status_na?).to be true
+      end
+
+      it 'returns false when any target date is set' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: Date.today + 1.month)
+        expect(goal.progress_status_na?).to be false
+      end
+    end
+
+    describe '#progress_status' do
+      let(:started_at) { 4.weeks.ago }
+      let(:most_likely) { 4.weeks.from_now.to_date }
+
+      it 'returns :na when goal has no target dates' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate,
+          started_at: started_at, earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+        expect(goal.progress_status).to eq(:na)
+      end
+
+      it 'returns :na when goal has no started_at' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: most_likely)
+        goal.update_column(:started_at, nil)
+        expect(goal.progress_status).to eq(:na)
+      end
+
+      it 'returns :na when goal has no check-ins' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: started_at, most_likely_target_date: most_likely)
+        expect(goal.progress_status).to eq(:na)
+      end
+
+      context 'with check-ins' do
+        it 'returns one of the four statuses (not :na) when goal has target dates, started_at, and a check-in' do
+          goal = create(:goal, creator: creator_teammate, owner: creator_teammate,
+            started_at: started_at, most_likely_target_date: most_likely)
+          create(:goal_check_in, goal: goal, check_in_week_start: Date.current.beginning_of_week(:monday), confidence_percentage: 50, confidence_reporter: person)
+          expect(%i[red yellow green good_green]).to include(goal.progress_status)
+        end
+      end
+    end
+
     describe '#calculated_target_date' do
       let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
       

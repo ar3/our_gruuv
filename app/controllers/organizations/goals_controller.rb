@@ -261,6 +261,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       .includes(:confidence_reporter)
       .first
     
+    # Progress chart: thresholds + actual check-ins (only when goal has target dates and started_at)
+    @progress_chart_data = Goals::ProgressChartDataBuilder.call(goal: @goal)
+    
     # Set return_url and return_text from params (for mode switcher navigation)
     @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
     @return_text = params[:return_text] || 'Back to Goal'

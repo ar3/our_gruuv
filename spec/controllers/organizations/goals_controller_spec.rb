@@ -988,6 +988,25 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:return_url)).to eq(organization_goal_path(company, goal))
       expect(assigns(:return_text)).to eq('Back to Goal')
     end
+
+    it 'assigns progress_chart_data when goal has target dates and started_at' do
+      goal.update!(
+        most_likely_target_date: 8.weeks.from_now.to_date,
+        started_at: 4.weeks.ago
+      )
+      get :weekly_update, params: { organization_id: company.id, id: goal.id }
+      chart = assigns(:progress_chart_data)
+      expect(chart).to be_a(Hash)
+      expect(chart[:categories]).to be_an(Array)
+      expect(chart[:series]).to be_an(Array)
+      expect(chart[:series].map { |s| s[:name] }).to include('Behind schedule', 'On schedule band', 'Ahead band', 'Ahead of schedule', 'Actual confidence')
+    end
+
+    it 'assigns progress_chart_data as nil when goal has no target dates' do
+      goal.update!(earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+      get :weekly_update, params: { organization_id: company.id, id: goal.id }
+      expect(assigns(:progress_chart_data)).to be_nil
+    end
   end
   
   describe 'PATCH #update' do

@@ -468,6 +468,26 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Goal Started')
     end
+
+    it 'includes progress confidence chart when goal has target dates and started_at' do
+      goal.update!(
+        started_at: 4.weeks.ago,
+        earliest_target_date: 2.weeks.from_now.to_date,
+        most_likely_target_date: 6.weeks.from_now.to_date,
+        latest_target_date: 10.weeks.from_now.to_date
+      )
+      get weekly_update_organization_goal_path(organization, goal)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('goal-progress-confidence-chart')
+      expect(response.body).to include('Confidence vs. On-Track Thresholds')
+    end
+
+    it 'does not include progress chart when goal has no target dates' do
+      goal.update!(earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+      get weekly_update_organization_goal_path(organization, goal)
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('goal-progress-confidence-chart')
+    end
     
     it 'accepts return_url and return_text params' do
       return_url = organization_goals_path(organization)
