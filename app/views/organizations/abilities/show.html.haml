@@ -12,12 +12,9 @@
   = link_to organization_abilities_path(@organization), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-2
     Back to Abilities
-  %span.text-muted.mx-2 |
-  = link_to "View Public Version", organization_public_maap_ability_path(@organization, @ability), class: "text-muted text-decoration-none"
 
 - content_for :header_action do
   = render 'mode_switcher'
-  = link_to "View Public Version", organization_public_maap_ability_path(@organization, @ability), class: "btn btn-outline-secondary btn-sm ms-2"
 
 .row
   .col-md-8
@@ -33,7 +30,7 @@
           %dt.col-sm-3 Description:
           %dd.col-sm-9
             - if @ability.description.present?
-              = render_markdown(@ability.description)
+              .markdown-content= render_markdown(@ability.description)
             - else
               %em.text-muted No description provided
           %dt.col-sm-3 Version:
@@ -57,7 +54,7 @@
           - if description.present?
             .mb-3
               %h6.text-primary Milestone #{level}
-              = render_markdown(description)
+              .markdown-content.markdown-content--bordered= render_markdown(description)
         - if (1..5).all? { |level| @ability.send("milestone_#{level}_description").blank? }
           %em.text-muted No milestone descriptions provided
 

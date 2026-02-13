@@ -105,6 +105,53 @@ class Ability < ApplicationRecord
     assignment_abilities.where(assignment: assignment).maximum(:milestone_level)
   end
 
+  # Default milestone description templates (used to prefill edit form when all five are blank)
+  def self.default_milestone_description(level)
+    return nil unless (1..5).include?(level)
+    DEFAULT_MILESTONE_DESCRIPTIONS[level]
+  end
+
+  EXAMPLES_BLOCK = <<~EXAMPLES.strip
+    -----
+
+    ##### Examples
+
+    | Example 1    | Example 2 |
+    | --- | --- |
+    | Example 3  | Example 4    |
+    | Example 5 | Example 6     |
+
+    *This is NOT a checklist, but instead a list of example activities or results that indicate a demonstration of this ability.*
+  EXAMPLES
+
+  DEFAULT_MILESTONE_DESCRIPTIONS = {
+    1 => <<~TEXT.strip,
+      I have observed this person showing a consistent, comfortable, continuous, and clear positive impact to a squad when wielding this ability, and therefore I would put them in situations where they can **employ this ability with only a small amount of guidance**
+
+      #{EXAMPLES_BLOCK}
+    TEXT
+    2 => <<~TEXT.strip,
+      I have observed this person showing a consistent, comfortable, continuous, and clear positive impact to a squad when wielding this ability, and therefore I would put them in situations where they can **employ this ability, with no assistance as well as being a trusted active or passive mentor to others**
+
+      #{EXAMPLES_BLOCK}
+    TEXT
+    3 => <<~TEXT.strip,
+      I have observed this person showing a consistent, comfortable, continuous, and clear positive impact to a squad when wielding this ability, and therefore I would put them in situations where they can **employ this ability as well as being considered an expert within this discipline**
+
+      #{EXAMPLES_BLOCK}
+    TEXT
+    4 => <<~TEXT.strip,
+      I have observed this person showing a consistent, comfortable, continuous, and clear positive impact to a squad when wielding this ability, and therefore I would put them in situations where they **can not only employ this ability at an expert level but where they set the tone for this at the entire company**
+
+      #{EXAMPLES_BLOCK}
+    TEXT
+    5 => <<~TEXT.strip,
+      I have observed this person showing a consistent, comfortable, continuous, and clear positive impact to **both the entire company, as well as the community/industry in general when wielding this ability -- and they are recognized by the community/industry as an expert**
+
+      #{EXAMPLES_BLOCK}
+    TEXT
+  }.freeze
+
   # Milestone-related methods
   def milestone_description(level)
     return nil unless (1..5).include?(level)

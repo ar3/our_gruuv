@@ -26,91 +26,145 @@
     Customize View
 
 / Spotlight Section
-.row.justify-content-center.mb-4
-  .col-lg-12
-    .card.border-0.shadow-sm
-      .card-body
-        .row
-          .col-md-8
-            .row.text-center
-              .col-3
-                .h3.text-primary= @abilities.count
-                %small.text-muted Total Abilities
-              .col-3
-                .h3.text-success= @abilities.count { |a| a.teammate_milestones.exists? }
-                %small.text-muted With Milestones
-              .col-3
-                .h3.text-info= @abilities.count { |a| a.created_at >= 30.days.ago }
-                %small.text-muted Recent (30 days)
-              .col-3
-                .h3.text-warning= @abilities.joins(:teammate_milestones).distinct.count
-                %small.text-muted Active Abilities
-            .row.mt-3
-              .col-12
-                %h6.text-muted.mb-2 Top Abilities by Milestones
-                .row
-                  - @abilities.sort_by { |a| -a.teammate_milestones.count }.first(3).each do |ability|
-                    .col-4
-                      .d-flex.align-items-center
-                        %span.badge.bg-primary.me-2= ability.teammate_milestones.count
-                        %small= ability.name
-          .col-md-4
-            .text-center
-              - if @abilities.any?
-                .alert.alert-success.small
-                  %i.bi.bi-lightning.me-2
-                  %strong #{pluralize(@abilities.count, 'ability')} defined!
-              - else
-                .alert.alert-info.small
-                  %i.bi.bi-info-circle.me-2
-                  %strong No abilities yet - create your first!
-      .card-footer.bg-light
-        .row.align-items-center
-          .col-md-6
-            %small.text-muted
-              %i.bi.bi-funnel.me-1
-              Filters: All Abilities
-              %br
-              %i.bi.bi-sort-down.me-1
-              Sort: Most Recent
-          .col-md-6.text-end
-            %small.text-muted
-              %i.bi.bi-table.me-1
-              View: Table
-              %br
-              %i.bi.bi-eye.me-1
-              Spotlight: Ability Overview
+- if @current_spotlight && @current_spotlight != 'none'
+  .row.justify-content-center.mb-4
+    .col-lg-12
+      .card.border-0.shadow-sm
+        .card-body
+          - case @current_spotlight
+          - when 'by_department'
+            = render partial: 'organizations/abilities/spotlights/by_organization'
+          - else
+            .row
+              .col-md-8
+                .row.text-center
+                  .col-3
+                    .h3.text-primary= @abilities.count
+                    %small.text-muted Total Abilities
+                  .col-3
+                    .h3.text-success= @abilities.count { |a| a.teammate_milestones.exists? }
+                    %small.text-muted With Milestones
+                  .col-3
+                    .h3.text-info= @abilities.count { |a| a.created_at >= 30.days.ago }
+                    %small.text-muted Recent (30 days)
+                  .col-3
+                    .h3.text-warning= @abilities.joins(:teammate_milestones).distinct.count
+                    %small.text-muted Active Abilities
+                .row.mt-3
+                  .col-12
+                    %h6.text-muted.mb-2 Top Abilities by Milestones
+                    .row
+                      - @abilities.sort_by { |a| -a.teammate_milestones.count }.first(3).each do |ability|
+                        .col-4
+                          .d-flex.align-items-center
+                            %span.badge.bg-primary.me-2= ability.teammate_milestones.count
+                            %small= ability.name
+              .col-md-4
+                .text-center
+                  - if @abilities.any?
+                    .alert.alert-success.small
+                      %i.bi.bi-lightning.me-2
+                      %strong #{pluralize(@abilities.count, 'ability')} defined!
+                  - else
+                    .alert.alert-info.small
+                      %i.bi.bi-info-circle.me-2
+                      %strong No abilities yet - create your first!
+        .card-footer.bg-light
+          .row.align-items-center
+            .col-md-6
+              %small.text-muted
+                %i.bi.bi-funnel.me-1
+                Filters:
+                - if @current_filters[:name].present?
+                  = "Name: #{@current_filters[:name]}"
+                - if @current_filters[:department_id].present?
+                  = @current_filters[:department_id] == 'none' ? 'No department' : "Department filter"
+                - if @current_filters[:milestone_status].present?
+                  = "Milestones: #{Array(@current_filters[:milestone_status]).join(', ')}"
+                - if @current_filters[:major_version].present?
+                  = "v#{@current_filters[:major_version]}.x.x"
+                - unless @current_filters[:name].present? || @current_filters[:department_id].present? || @current_filters[:milestone_status].present? || @current_filters[:major_version].present?
+                  All
+                %br
+                %i.bi.bi-sort-down.me-1
+                Sort:
+                - sort_display = case @current_sort
+                - when 'department_and_name'
+                  - 'Department and Name'
+                - when 'name'
+                  - 'Name (A-Z)'
+                - when 'milestones'
+                  - 'Most Milestones'
+                - when 'milestones_desc'
+                  - 'Fewest Milestones'
+                - when 'created_at'
+                  - 'Created (Newest)'
+                - when 'created_at_asc'
+                  - 'Created (Oldest)'
+                - when 'version'
+                  - 'Version'
+                - else
+                  - 'Department and Name'
+                = sort_display
+            .col-md-6.text-end
+              %small.text-muted
+                %i.bi.bi-table.me-1
+                View: Table
+                %br
+                %i.bi.bi-eye.me-1
+                Spotlight: #{@current_spotlight&.humanize || 'None'}
 
 .row.justify-content-center
   .col-lg-12
-    - if @abilities.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
-            %tr
-              %th Name
-              %th Description
-              %th Version
-              %th Milestones
-              %th Actions
-          %tbody
-            - @abilities.each do |ability|
-              %tr
-                %td
-                  = link_to organization_ability_path(@organization, ability), class: "text-decoration-none" do
-                    %strong= ability.name
-                %td= truncate(ability.description, length: 100)
-                %td= ability.semantic_version
-                %td
-                  %span.badge.bg-primary= ability.teammate_milestones.count
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to organization_ability_path(@organization, ability), class: "btn btn-outline-primary", title: "View" do
-                      %i.bi.bi-eye
-                    = link_to edit_organization_ability_path(@organization, ability), class: "btn btn-outline-secondary", title: "Edit" do
-                      %i.bi.bi-pencil
-                    = link_to organization_ability_path(@organization, ability), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
-                      %i.bi.bi-trash
+    - if @abilities_by_department.any?
+      - @abilities_by_department.each do |department, abilities|
+        - stats = @department_stats[department] || { abilities_count: 0 }
+        .card.mb-4
+          .card-header.bg-primary.text-white
+            %h5.mb-0.d-flex.align-items-center.justify-content-between
+              .d-flex.align-items-center
+                - if department
+                  %i.bi.bi-building.me-2
+                  = department.display_name
+                  = link_to organization_department_path(@organization, department), class: "text-white ms-2", title: "View department" do
+                    %i.bi.bi-link-45deg
+                - else
+                  %i.bi.bi-question-circle.me-2
+                  No Department
+              .d-flex.align-items-center.gap-2
+                %span.badge.bg-light.text-dark
+                  = stats[:abilities_count]
+                  ability#{'ies' if stats[:abilities_count] != 1}
+          .card-body.p-0
+            .table-responsive
+              %table.table.table-hover.mb-0
+                %thead.table-light
+                  %tr
+                    %th Name
+                    %th Description
+                    %th Version
+                    %th Milestones
+                    %th Actions
+                %tbody
+                  - abilities.each do |ability|
+                    %tr
+                      %td
+                        %strong
+                          = link_to ability.name, organization_ability_path(@organization, ability), class: "text-decoration-none"
+                        %small.text-muted.ms-2
+                          v#{ability.semantic_version}
+                      %td= truncate(ability.description, length: 100)
+                      %td= ability.semantic_version
+                      %td
+                        %span.badge.bg-primary= ability.teammate_milestones.count
+                      %td
+                        .btn-group.btn-group-sm
+                          = link_to organization_ability_path(@organization, ability), class: "btn btn-outline-primary", title: "View" do
+                            %i.bi.bi-eye
+                          = link_to edit_organization_ability_path(@organization, ability), class: "btn btn-outline-secondary", title: "Edit" do
+                            %i.bi.bi-pencil
+                          = link_to organization_ability_path(@organization, ability), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
+                            %i.bi.bi-trash
     - else
       .alert.alert-info
         %h6.mb-2

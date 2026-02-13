@@ -169,7 +169,11 @@ module ApplicationHelper
     Pundit.policy(pundit_user_struct, record)
   end
 
-  # Markdown rendering helper
+  # Markdown rendering helper (Redcarpet with GFM-style tables).
+  # Tables require a separator row after the header, e.g.:
+  #   | Col A | Col B |
+  #   | --- | --- |
+  #   | cell | cell |
   def render_markdown(text)
     return '' if text.blank?
     

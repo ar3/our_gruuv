@@ -31,9 +31,9 @@
         .mb-3
           = form.label "milestone_#{level}_description", "Milestone #{level}", class: "form-label"
           - if @ability&.persisted?
-            = form.text_area "milestone_#{level}_description", class: "form-control", rows: 2, placeholder: "Describe what Milestone #{level} means for this ability...", value: @ability.send("milestone_#{level}_description")
+            = form.text_area "milestone_#{level}_description", class: "form-control", rows: 8, placeholder: "Describe what Milestone #{level} means for this ability...", value: @ability.send("milestone_#{level}_description")
           - else
-            = form.text_area "milestone_#{level}_description", class: "form-control", rows: 2, placeholder: "Describe what Milestone #{level} means for this ability..."
+            = form.text_area "milestone_#{level}_description", class: "form-control", rows: 8, placeholder: "Describe what Milestone #{level} means for this ability..."
     
     .card.mt-4
       .card-header

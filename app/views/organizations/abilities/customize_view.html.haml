@@ -52,7 +52,7 @@
           %label.form-label.fw-bold Select What Order You See Them In
           .mb-3
             %label.form-label Sort By
-            - sort_options = [['Name (A-Z)', 'name'], ['Most Milestones', 'milestones'], ['Fewest Milestones', 'milestones_desc'], ['Created Date (Newest)', 'created_at'], ['Created Date (Oldest)', 'created_at_asc'], ['Version', 'version']]
+            - sort_options = [['Department and Name', 'department_and_name'], ['Name (A-Z)', 'name'], ['Most Milestones', 'milestones'], ['Fewest Milestones', 'milestones_desc'], ['Created Date (Newest)', 'created_at'], ['Created Date (Oldest)', 'created_at_asc'], ['Version', 'version']]
             = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
           .mb-3
             %label.form-label Direction
@@ -96,7 +96,10 @@
         .card-body
           %label.form-label.fw-bold Select the Spotlight for Them
           .form-check
-            = radio_button_tag 'spotlight', 'ability_overview', (@current_spotlight.blank? || @current_spotlight == 'ability_overview'), class: 'form-check-input', id: 'spotlight_ability_overview'
+            = radio_button_tag 'spotlight', 'by_department', (@current_spotlight.blank? || @current_spotlight == 'by_department'), class: 'form-check-input', id: 'spotlight_by_department'
+            = label_tag 'spotlight_by_department', 'By Department', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'ability_overview', @current_spotlight == 'ability_overview', class: 'form-check-input', id: 'spotlight_ability_overview'
             = label_tag 'spotlight_ability_overview', 'Ability Overview', class: 'form-check-label'
           .form-check
             = radio_button_tag 'spotlight', 'most_popular', @current_spotlight == 'most_popular', class: 'form-check-input', id: 'spotlight_most_popular'

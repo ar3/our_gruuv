@@ -58,7 +58,7 @@ class AbilityDecorator < SimpleDelegator
         version_text: "Version #{major}.#{minor}.#{patch + 1}",
         text_class: "text-info",
         description: "Small fixes, minor updates",
-        checked: false
+        checked: true
       }
     ]
   end

@@ -1,0 +1,32 @@
+.row.text-center.mb-3
+  .col-3
+    .h3.text-spice-1= @spotlight_stats[:total_abilities] || 0
+    %small.text-muted Total Abilities
+  .col-3
+    .h3.text-spice-2= @spotlight_stats[:total_departments] || 0
+    %small.text-muted Departments
+  .col-3
+    .h3.text-spice-3= (@spotlight_stats[:total_abilities].to_f / [@spotlight_stats[:total_departments], 1].max).round(1)
+    %small.text-muted Avg per Dept
+  .col-3
+    .h3.text-spice-4= @spotlight_stats[:departments]&.values&.map { |v| v[:count] }&.max || 0
+    %small.text-muted Max per Dept
+
+- if @spotlight_stats[:departments]&.any?
+  .row.mt-3
+    - sorted_departments = @spotlight_stats[:departments].values.sort_by { |v| -v[:count] }
+    - midpoint = (sorted_departments.length / 2.0).ceil
+    - left_column = sorted_departments[0...midpoint]
+    - right_column = sorted_departments[midpoint..-1] || []
+    .col-md-6
+      %ul.list-unstyled.mb-0
+        - left_column.each do |dept_data|
+          %li.mb-2
+            = dept_data[:display_name]
+            %span.badge.bg-primary.ms-1= dept_data[:count]
+    .col-md-6
+      %ul.list-unstyled.mb-0
+        - right_column.each do |dept_data|
+          %li.mb-2
+            = dept_data[:display_name]
+            %span.badge.bg-primary.ms-1= dept_data[:count]

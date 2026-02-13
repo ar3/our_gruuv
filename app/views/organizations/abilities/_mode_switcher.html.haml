@@ -29,3 +29,7 @@
           %i.bi.bi-pencil.me-2
           Edit Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to edit abilities"}
+    %li
+      = link_to organization_public_maap_ability_path(@organization, @ability), class: 'dropdown-item' do
+        %i.bi.bi-globe.me-2
+        Public version

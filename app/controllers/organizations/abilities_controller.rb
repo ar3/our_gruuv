@@ -7,7 +7,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def index
     authorize company, :view_abilities?
-    @abilities = policy_scope(Ability).for_company(company)
+    @abilities = policy_scope(Ability).for_company(company).includes(:department)
     
     # Apply filters
     @abilities = @abilities.where("name ILIKE ?", "%#{params[:name]}%") if params[:name].present?
@@ -38,10 +38,12 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       @abilities = @abilities.where("semantic_version LIKE ?", "#{major_version}.%")
     end
     
-    # Apply sorting
+    # Apply sorting (default department_and_name for grouped-by-department style)
     case params[:sort]
     when 'name'
       @abilities = @abilities.order(:name)
+    when 'department_and_name'
+      @abilities = @abilities.left_joins(:department).order(Arel.sql("COALESCE(departments.name, '')"), :name)
     when 'milestones'
       @abilities = @abilities.left_joins(:teammate_milestones).group('abilities.id').order('COUNT(teammate_milestones.id) DESC')
     when 'milestones_desc'
@@ -53,12 +55,43 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     when 'version'
       @abilities = @abilities.order(:semantic_version)
     else
-      @abilities = @abilities.recent
+      # Default: sort by department then name (for grouped-by-department view)
+      @abilities = @abilities.left_joins(:department).order(Arel.sql("COALESCE(departments.name, '')"), :name)
     end
     
     # Apply direction if specified
     if params[:direction] == 'desc' && params[:sort] == 'name'
       @abilities = @abilities.order(name: :desc)
+    end
+    
+    # Group abilities by department (nil = "No Department"), sorted like assignments index
+    abilities_array = @abilities.to_a
+    grouped = abilities_array.group_by(&:department)
+    @abilities_by_department = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
+    @abilities_by_department.transform_values! { |list| list.sort_by(&:name) }
+    @department_stats = {}
+    @abilities_by_department.each do |dept, list|
+      @department_stats[dept] = { abilities_count: list.size }
+    end
+    
+    # Current filters, sort, view, spotlight for display (default spotlight: by_department)
+    @current_spotlight = params[:spotlight].presence || 'by_department'
+    @current_sort = params[:sort].presence || 'department_and_name'
+    @current_view = params[:view].presence || 'table'
+    @current_filters = {
+      name: params[:name],
+      department_id: params[:department_id],
+      milestone_status: params[:milestone_status],
+      major_version: params[:major_version],
+      sort: @current_sort,
+      direction: params[:direction],
+      view: @current_view,
+      spotlight: @current_spotlight
+    }
+    
+    # Spotlight stats for by_department
+    if @current_spotlight == 'by_department'
+      @spotlight_stats = calculate_abilities_by_department_stats(abilities_array)
     end
   end
 
@@ -71,7 +104,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     @ability_decorator = AbilityDecorator.new(@ability)
     @form = AbilityForm.new(@ability)
     @form.current_person = current_person
-    @departments = Department.for_company(company).active.ordered
+    @departments = Department.for_company(company).active.ordered.sort_by(&:display_name)
     authorize @ability
   end
 
@@ -85,7 +118,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     
     @form = AbilityForm.new(Ability.new(company: company))
     @form.current_person = current_person
-    @departments = Department.for_company(company).active.ordered
+    @departments = Department.for_company(company).active.ordered.sort_by(&:display_name)
     
     # Set flag for empty form data validation
     @form.instance_variable_set(:@form_data_empty, ability_params.empty?)
@@ -101,9 +134,15 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def edit
     @ability_decorator = AbilityDecorator.new(@ability)
+    # Prefill milestone descriptions when all five are blank (for display only; not persisted until save)
+    if (1..5).all? { |level| @ability.send("milestone_#{level}_description").blank? }
+      (1..5).each do |level|
+        @ability.send("milestone_#{level}_description=", Ability.default_milestone_description(level))
+      end
+    end
     @form = AbilityForm.new(@ability)
     @form.current_person = current_person
-    @departments = Department.for_company(company).active.ordered
+    @departments = Department.for_company(company).active.ordered.sort_by(&:display_name)
     authorize @ability
   end
 
@@ -114,7 +153,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     @ability_decorator = AbilityDecorator.new(@ability)
     @form = AbilityForm.new(@ability)
     @form.current_person = current_person
-    @departments = Department.for_company(company).active.ordered
+    @departments = Department.for_company(company).active.ordered.sort_by(&:display_name)
     
     # Reform handles validation and parameter extraction
     # Handle case where no ability parameters are provided
@@ -148,16 +187,16 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       milestone_status: params[:milestone_status],
       major_version: params[:major_version],
       department_id: params[:department_id],
-      sort: params[:sort] || 'name',
+      sort: params[:sort] || 'department_and_name',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'table',
-      spotlight: params[:spotlight] || 'ability_overview'
+      spotlight: params[:spotlight] || 'by_department'
     }
     
     @current_sort = @current_filters[:sort]
     @current_view = @current_filters[:view]
     @current_spotlight = @current_filters[:spotlight]
-    @departments = Department.for_company(company).active.ordered
+    @departments = Department.for_company(company).active.ordered.sort_by(&:display_name)
     
     # Preserve current params for return URL
     return_params = params.except(:controller, :action, :page).permit!.to_h
@@ -179,5 +218,23 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def set_ability
     @ability = company.abilities.find(params[:id])
+  end
+
+  def calculate_abilities_by_department_stats(abilities)
+    by_dept = abilities.group_by(&:department)
+    stats = {}
+    by_dept.each do |dept, list|
+      key = dept&.id || :none
+      stats[key] = {
+        department: dept,
+        display_name: dept ? dept.display_name : 'No Department',
+        count: list.size
+      }
+    end
+    {
+      total_abilities: abilities.size,
+      total_departments: by_dept.size,
+      departments: stats
+    }
   end
 end
