@@ -77,7 +77,8 @@ class FeedbackRequestPolicy < ApplicationPolicy
   def answer?
     return false unless viewing_teammate
     return false if viewing_teammate.terminated?
-    
+    return false if record.archived?
+
     # Must be a designated responder
     record.responders.include?(viewing_teammate)
   end

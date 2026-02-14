@@ -213,10 +213,10 @@
           Add Respondents
       - if policy(@feedback_request).destroy?
         - if @feedback_request.archived?
-          = link_to restore_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-success" do
+          = button_to restore_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-success", form: { style: "display: inline;" } do
             %i.bi.bi-arrow-counterclockwise.me-2
             Restore
         - else
-          = link_to archive_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this feedback request?" } do
+          = button_to archive_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-danger", form: { data: { confirm: "Are you sure you want to archive this feedback request?" }, style: "display: inline;" } do
             %i.bi.bi-archive.me-2
             Archive

@@ -36,6 +36,8 @@
         - if @requests_of_me.any?
           %ul.list-group.list-group-flush
             - @requests_of_me.each do |request|
+              - responder_record = request.feedback_request_responders.find { |frr| frr.teammate_id == current_company_teammate&.id }
+              - completed = request.archived? || responder_record&.completed_at.present?
               %li.list-group-item.d-flex.justify-content-between.align-items-center.px-0
                 .d-flex.flex-column
                   %span
@@ -43,7 +45,13 @@
                     %strong= request.subject_of_feedback_teammate.person.display_name
                   %small.text-muted
                     From #{request.requestor_teammate.person.display_name} · #{format_time_in_user_timezone(request.created_at)}
-                = link_to "Respond", answer_organization_feedback_request_path(organization, request), class: "btn btn-sm btn-outline-primary"
+                - if completed
+                  - if request.archived?
+                    %span.badge.bg-secondary Archived
+                  - else
+                    %span.badge.bg-success Complete
+                - else
+                  = link_to "Respond", answer_organization_feedback_request_path(organization, request), class: "btn btn-sm btn-outline-primary"
         - else
           %p.text-muted.mb-0
             - if @requests_of_me_filter == 'open'
@@ -154,6 +162,13 @@
                     - if policy(request).answer?
                       = link_to answer_organization_feedback_request_path(organization, request), class: "btn btn-outline-success", title: "Respond" do
                         %i.bi.bi-reply
+                    - if policy(request).destroy?
+                      - if request.archived?
+                        = button_to restore_organization_feedback_request_path(organization, request), method: :post, class: "btn btn-outline-success", title: "Restore", form: { style: "display: inline;" } do
+                          %i.bi.bi-arrow-counterclockwise
+                      - else
+                        = button_to archive_organization_feedback_request_path(organization, request), method: :post, class: "btn btn-outline-danger", title: "Archive", form: { data: { confirm: "Are you sure you want to archive this feedback request?" }, style: "display: inline;" } do
+                          %i.bi.bi-archive
     - else
       .alert.alert-info
         %h6.mb-2

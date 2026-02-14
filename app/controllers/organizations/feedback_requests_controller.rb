@@ -29,19 +29,20 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       :responders
     )
     
-    # Requests of me: where current user is a responder; filter by open (completed_at nil) or all
+    # Requests of me: where current user is a responder; filter by open (incomplete + not archived) or all
+    # When archived, request behaves as completed for responders (excluded from "open", no Respond link).
+    # In "all": exclude archived requests where the respondent hasn't answered (don't show as completed).
     @requests_of_me = if current_company_teammate
       scope = base_scope
         .joins(:feedback_request_responders)
         .where(feedback_request_responders: { teammate_id: current_company_teammate.id })
-        .not_deleted
         .order(created_at: :desc)
-        .includes(:requestor_teammate, :subject_of_feedback_teammate)
+        .includes(:requestor_teammate, :subject_of_feedback_teammate, :feedback_request_responders)
         .distinct
       if params[:requests_of_me] == 'all'
-        scope
+        scope.where("feedback_requests.deleted_at IS NULL OR feedback_request_responders.completed_at IS NOT NULL")
       else
-        scope.where(feedback_request_responders: { completed_at: nil })
+        scope.where(feedback_request_responders: { completed_at: nil }).where(feedback_requests: { deleted_at: nil })
       end
     else
       FeedbackRequest.none
@@ -463,7 +464,12 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
   def answer
     authorize @feedback_request, :answer?
-    
+    if @feedback_request.archived?
+      redirect_to organization_feedback_requests_path(organization),
+                  notice: 'This feedback request has been archived and is no longer accepting responses.'
+      return
+    end
+
     @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
     # Existing observations from this responder, keyed by question id (for prefilling and observation link)
     @observation_by_question_id = @feedback_request.observations
