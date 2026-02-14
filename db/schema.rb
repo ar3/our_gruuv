@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_14_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_14_191819) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -428,6 +428,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_14_000001) do
     t.bigint "teammate_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "completed_at"
     t.index ["feedback_request_id", "teammate_id"], name: "index_feedback_request_responders_on_request_and_teammate", unique: true
     t.index ["feedback_request_id"], name: "index_feedback_request_responders_on_feedback_request_id"
     t.index ["teammate_id"], name: "index_feedback_request_responders_on_teammate_id"

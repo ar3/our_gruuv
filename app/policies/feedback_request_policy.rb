@@ -3,12 +3,13 @@ class FeedbackRequestPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false if viewing_teammate.terminated?
     
-    # Requestor can always view
+    # Creator (requestor) can view
     return true if viewing_teammate == record.requestor_teammate
     
-    # Designated responders can view
-    return true if record.responders.include?(viewing_teammate)
+    # Subject of the request can view (but not edit/update)
+    return true if viewing_teammate == record.subject_of_feedback_teammate
     
+    # Responders can only see the answer (feedback response) page, not the show page
     false
   end
 
@@ -94,8 +95,9 @@ class FeedbackRequestPolicy < ApplicationPolicy
       return scope.none unless viewing_teammate
       
       # Users can see requests where they are the requestor, subject, or a responder
+      # Use table name for id so the condition is unambiguous when scope is joined (e.g. with feedback_request_responders)
       scope.where(
-        "(requestor_teammate_id = ? OR subject_of_feedback_teammate_id = ? OR id IN (?))",
+        "(feedback_requests.requestor_teammate_id = ? OR feedback_requests.subject_of_feedback_teammate_id = ? OR feedback_requests.id IN (?))",
         viewing_teammate.id,
         viewing_teammate.id,
         FeedbackRequestResponder.where(company_teammate: viewing_teammate).select(:feedback_request_id)

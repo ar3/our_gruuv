@@ -88,10 +88,8 @@
       %ol
         - @questions.each do |question|
           %li.mb-2
-            .markdown-content= render_markdown(question.question_text)
             - if question.rateable
-              %br
-              %small.text-muted
+              %small.text-muted.d-block.mb-1
                 - case question.rateable.class.name
                 - when 'Position'
                   %i.bi.bi-briefcase.me-1
@@ -105,6 +103,7 @@
                 - when 'Aspiration'
                   %i.bi.bi-bullseye.me-1
                   About: #{question.rateable.name}
+            .markdown-content= render_markdown(question.question_text)
     - else
       %p.text-muted No questions defined.
 
@@ -113,13 +112,61 @@
     %h5.mb-0 Responders
   .card-body
     - if @responders.any?
-      %ul.list-unstyled
-        - @responders.each do |responder|
-          %li.mb-1
-            %i.bi.bi-person.me-2
-            = responder.person.display_name
+      - if @questions.any?
+        .table-responsive
+          %table.table.table-sm.table-hover
+            %thead
+              %tr
+                %th Responder
+                - @questions.each do |question|
+                  %th
+                    - if question.rateable
+                      - case question.rateable.class.name
+                      - when 'Assignment'
+                        %span.badge.bg-primary= question.rateable.title
+                      - when 'Ability'
+                        %span.badge.bg-info= question.rateable.name
+                      - when 'Aspiration'
+                        %span.badge.bg-success= question.rateable.name
+                      - else
+                        = question.question_text.truncate(40)
+                    - else
+                      = question.question_text.truncate(40)
+            %tbody
+              - @responders.each do |responder|
+                - responder_record = @responder_records_by_teammate_id[responder.id]
+                - is_current_user = responder == current_company_teammate
+                - completed = responder_record&.completed_at.present?
+                %tr
+                  %td
+                    = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
+                    - if completed
+                      %span.badge.bg-success.ms-2 Complete
+                    - elsif is_current_user
+                      %span.ms-2
+                        = link_to "Respond", answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-sm btn-outline-primary"
+                  - @questions.each do |question|
+                    - obs = @observation_by_observer_and_question[[responder.person_id, question.id]]
+                    %td
+                      - if obs
+                        = link_to "View", organization_observation_path(organization, obs), class: "btn btn-sm btn-outline-primary"
+                      - else
+                        %span.text-muted --
+      - else
+        %ul.list-unstyled.mb-0
+          - @responders.each do |responder|
+            - responder_record = @responder_records_by_teammate_id[responder.id]
+            - is_current_user = responder == current_company_teammate
+            - completed = responder_record&.completed_at.present?
+            %li.mb-2
+              = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
+              - if completed
+                %span.badge.bg-success.ms-2 Complete
+              - elsif is_current_user
+                %span.ms-2
+                  = link_to "Respond", answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-sm btn-outline-primary"
     - else
-      %p.text-muted No responders assigned.
+      %p.text-muted.mb-0 No responders assigned.
 
 - if @observations.any?
   .card.mb-3

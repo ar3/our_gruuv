@@ -53,7 +53,7 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
     it 'renders the multi-teammate selector (Add button and selected list area)' do
       get select_respondents_organization_feedback_request_path(company, feedback_request)
       expect(response.body).to include('Add')
-      expect(response.body).to include('Create Feedback Request')
+      expect(response.body).to include('Save Feedback Request')
     end
 
     it 'requires authorization' do

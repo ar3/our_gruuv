@@ -104,7 +104,82 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include('No Feedback Requests')
-      expect(response.body).to include('There are no archived feedback requests.')
+      expect(response.body).to include('There are no archived feedback requests that you created.')
+    end
+
+    context 'when a request has one question answered (one observation created)' do
+      before do
+        feedback_request.feedback_request_questions.destroy_all
+        question = create(:feedback_request_question, feedback_request: feedback_request, question_text: 'How did it go?', position: 1)
+        feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+        observation = create(:observation,
+          observer: responder_person,
+          company: company,
+          story: 'One answered question.',
+          feedback_request_question: question,
+          privacy_level: :observed_and_managers
+        )
+        observation.observees.destroy_all
+        observation.observees.build(teammate: subject_teammate)
+        observation.save!
+      end
+
+      it 'renders the index and shows the request with one observation in the Observations column' do
+        get organization_feedback_requests_path(company)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include(feedback_request.subject_of_feedback_teammate.person.display_name)
+        expect(response.body).to include('Observations')
+        # Table row for this request shows observation count 1 (badge)
+        expect(response.body).to include('>1</span>')
+      end
+    end
+
+    describe 'Requests of me toggle' do
+      let(:other_requestor) { create(:company_teammate, organization: company) }
+      let(:open_subject) { create(:company_teammate, organization: company) }
+      let(:completed_subject) { create(:company_teammate, organization: company) }
+      let(:open_request) do
+        create(:feedback_request,
+          company: company,
+          requestor_teammate: other_requestor,
+          subject_of_feedback_teammate: open_subject,
+          subject_line: 'Open request'
+        ).tap do |fr|
+          fr.feedback_request_responders.create!(teammate: requestor_teammate)
+        end
+      end
+      let(:completed_request) do
+        create(:feedback_request,
+          company: company,
+          requestor_teammate: other_requestor,
+          subject_of_feedback_teammate: completed_subject,
+          subject_line: 'Completed request'
+        ).tap do |fr|
+          fr.feedback_request_responders.create!(teammate: requestor_teammate, completed_at: 1.day.ago)
+        end
+      end
+
+      before do
+        open_request
+        completed_request
+        sign_in_as_teammate_for_request(requestor_person, company)
+      end
+
+      it 'View open requests of me shows only requests where completed_at is nil' do
+        get organization_feedback_requests_path(company, requests_of_me: 'open')
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include(open_subject.person.display_name)
+        expect(response.body).not_to include(completed_subject.person.display_name)
+        expect(response.body).to include('View open requests of me')
+        expect(response.body).to include('View all requests of me')
+      end
+
+      it 'View all requests of me shows all requests where user is responder' do
+        get organization_feedback_requests_path(company, requests_of_me: 'all')
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include(open_subject.person.display_name)
+        expect(response.body).to include(completed_subject.person.display_name)
+      end
     end
   end
 
@@ -184,6 +259,20 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       get organization_feedback_request_path(company, feedback_request)
       expect(response).to have_http_status(:redirect)
     end
+
+    it 'allows subject to view show page' do
+      sign_in_as_teammate_for_request(subject_person, company)
+      get organization_feedback_request_path(company, feedback_request)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(/Feedback Request|Subject/)
+    end
+
+    it 'denies responder from viewing show page (responders only see answer page)' do
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      sign_in_as_teammate_for_request(responder_person, company)
+      get organization_feedback_request_path(company, feedback_request)
+      expect(response).to have_http_status(:redirect)
+    end
   end
 
   describe 'GET /organizations/:organization_id/feedback_requests/:id/select_focus' do
@@ -204,7 +293,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
 
     it 'renders the wizard header' do
       get select_focus_organization_feedback_request_path(company, feedback_request)
-      expect(response.body).to include('Step 1: Who & Why')
+      expect(response.body).to include('Step 1: Who & Why'.gsub('&', '&amp;'))
       expect(response.body).to include('Step 2: Select Focus')
       expect(response.body).to include('Step 4: Select Respondents')
     end
@@ -270,7 +359,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
     it 'renders the wizard header with steps' do
       get edit_organization_feedback_request_path(company, feedback_request)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Step 1: Who & Why')
+      expect(response.body).to include('Step 1: Who & Why'.gsub('&', '&amp;'))
       expect(response.body).to include('Step 2: Select Focus')
       expect(response.body).to include('Step 3: Edit Questions')
       expect(response.body).to include('Step 4: Select Respondents')
@@ -386,6 +475,93 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       get answer_organization_feedback_request_path(company, feedback_request)
       expect(response).to have_http_status(:redirect)
     end
+
+    context 'with assignment, aspiration, and ability questions' do
+      let(:assignment) { create(:assignment, company: company) }
+      let(:ability) { create(:ability, company: company) }
+      let(:aspiration) { create(:aspiration, company: company) }
+
+      before do
+        FeedbackRequestQuestion.where(feedback_request: feedback_request).destroy_all
+        create(:feedback_request_question, feedback_request: feedback_request, question_text: 'How did they do on this assignment?', position: 1, rateable: assignment)
+        create(:feedback_request_question, feedback_request: feedback_request, question_text: 'How did they demonstrate this value?', position: 2, rateable: aspiration)
+        create(:feedback_request_question, feedback_request: feedback_request, question_text: 'How did they demonstrate this ability?', position: 3, rateable: ability)
+        feedback_request.reload
+      end
+
+      it 'renders one section per object with 4-column left (object link, divider, question) and 8-column right (rating)' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+
+        # Object names linked to show pages in new window
+        expect(response.body).to include(assignment.title)
+        expect(response.body).to include(ability.name)
+        expect(response.body).to include(aspiration.name)
+        expect(response.body).to include('target="_blank"')
+        expect(response.body).to include(organization_assignment_path(company, assignment))
+        expect(response.body).to include(organization_ability_path(company, ability))
+        expect(response.body).to include(organization_aspiration_path(company, aspiration))
+
+        # Question text in each section
+        expect(response.body).to include('How did they do on this assignment?')
+        expect(response.body).to include('How did they demonstrate this value?')
+        expect(response.body).to include('How did they demonstrate this ability?')
+
+        # Rating UI (from rating_button_group partial)
+        expect(response.body).to include('Exceptional')
+        expect(response.body).to include('Solid')
+        expect(response.body).to include('N/A')
+
+        # 4/8 column layout and vertical border
+        expect(response.body).to include('col-md-4')
+        expect(response.body).to include('col-md-8')
+        expect(response.body).to include('border-end')
+      end
+
+      it 'shows Save and Keep Incomplete and Save and Complete buttons' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response.body).to include('Save and Keep Incomplete')
+        expect(response.body).to include('Save and Complete')
+        expect(response.body).to include('submit')
+      end
+    end
+
+    context 'when the responder has a previously saved observation for a question' do
+      before do
+        FeedbackRequestQuestion.where(feedback_request: feedback_request).destroy_all
+      end
+      let!(:existing_observation) do
+        assignment = create(:assignment, company: company)
+        question = create(:feedback_request_question,
+          feedback_request: feedback_request,
+          question_text: 'How did they do?',
+          position: 1,
+          rateable: assignment
+        )
+        feedback_request.feedback_request_responders.find_or_create_by!(teammate_id: requestor_teammate.id)
+        obs = create(:observation,
+          observer: requestor_person,
+          company: company,
+          story: 'My previous saved story.',
+          feedback_request_question: question,
+          privacy_level: :observed_and_managers
+        )
+        obs.observees.destroy_all
+        obs.observees.build(teammate: subject_teammate)
+        obs.save!
+        obs.observation_ratings.create!(rateable: assignment, rating: 'agree')
+        obs
+      end
+
+      it 'defaults story and rating from the observation and shows link to the observation' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('My previous saved story.')
+        expect(response.body).to include('the observation itself')
+        expect(response.body).to include(organization_observation_path(company, existing_observation))
+        expect(response.body).to include('created from your answer')
+      end
+    end
   end
 
   describe 'POST /organizations/:organization_id/feedback_requests/:id/submit_answers' do
@@ -450,9 +626,168 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
             privacy_level: 'observed_and_managers'
           }
         },
-        privacy_level: 'observed_and_managers'
+        privacy_level: 'observed_and_managers',
+        save_and_complete: 'Save and Complete'
       }
       expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
+    end
+
+    it 'sets completed_at when Save and Complete is clicked' do
+      feedback_request.reload
+      question = feedback_request.feedback_request_questions.first
+      responder_record = feedback_request.feedback_request_responders.find_by(teammate_id: requestor_teammate.id)
+      expect(responder_record.completed_at).to be_nil
+
+      post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          question.id.to_s => { story: 'Done', privacy_level: 'observed_and_managers' }
+        },
+        privacy_level: 'observed_and_managers',
+        save_and_complete: 'Save and Complete'
+      }
+      expect(response).to have_http_status(:redirect)
+      responder_record.reload
+      expect(responder_record.completed_at).to be_within(5.seconds).of(Time.current)
+    end
+
+    it 'sets completed_at to nil when Save and Keep Incomplete is clicked' do
+      feedback_request.reload
+      responder_record = feedback_request.feedback_request_responders.find_by(teammate_id: requestor_teammate.id)
+      responder_record.update!(completed_at: 1.day.ago)
+
+      question = feedback_request.feedback_request_questions.first
+      post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          question.id.to_s => { story: 'WIP', privacy_level: 'observed_and_managers' }
+        },
+        privacy_level: 'observed_and_managers',
+        save_and_keep_incomplete: 'Save and Keep Incomplete'
+      }
+      expect(response).to have_http_status(:redirect)
+      responder_record.reload
+      expect(responder_record.completed_at).to be_nil
+    end
+
+    it 'keeps observations as drafts when Save and Keep Incomplete is clicked' do
+      feedback_request.reload
+      question = feedback_request.feedback_request_questions.first
+      post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          question.id.to_s => {
+            story: 'Draft story.',
+            privacy_level: 'observed_and_managers'
+          }
+        },
+        privacy_level: 'observed_and_managers',
+        save_and_keep_incomplete: 'Save and Keep Incomplete'
+      }
+      expect(response).to have_http_status(:redirect)
+      observation = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
+      expect(observation).to be_present
+      expect(observation).not_to be_published
+    end
+
+    it 'publishes observations when Save and Complete is clicked' do
+      feedback_request.reload
+      question = feedback_request.feedback_request_questions.first
+      post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          question.id.to_s => {
+            story: 'Final story.',
+            privacy_level: 'observed_and_managers'
+          }
+        },
+        privacy_level: 'observed_and_managers',
+        save_and_complete: 'Save and Complete'
+      }
+      expect(response).to have_http_status(:redirect)
+      observation = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
+      expect(observation).to be_present
+      expect(observation).to be_published
+    end
+
+    it 'creates observation when only rating is present (no story)' do
+      feedback_request.reload
+      question = feedback_request.feedback_request_questions.first
+      expect {
+        post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+          answers: {
+            question.id.to_s => {
+              story: '',
+              rating: 'agree',
+              privacy_level: 'observed_and_managers'
+            }
+          },
+          privacy_level: 'observed_and_managers',
+          save_and_keep_incomplete: 'Save and Keep Incomplete'
+        }
+      }.to change { Observation.count }.by(1)
+    end
+
+    it 'does not create observation when both story and rating are blank/na' do
+      feedback_request.reload
+      question = feedback_request.feedback_request_questions.first
+      expect {
+        post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+          answers: {
+            question.id.to_s => {
+              story: '',
+              rating: 'na',
+              privacy_level: 'observed_and_managers'
+            }
+          },
+          privacy_level: 'observed_and_managers',
+          save_and_keep_incomplete: 'Save and Keep Incomplete'
+        }
+      }.not_to change { Observation.count }
+    end
+
+    it 'updates existing observation when saving again (does not create a second observation)' do
+      feedback_request.reload
+      feedback_request.feedback_request_questions.destroy_all
+      assignment = create(:assignment, company: company)
+      question = create(:feedback_request_question,
+        feedback_request: feedback_request,
+        question_text: 'How did they do?',
+        position: 1,
+        rateable: assignment
+      )
+      feedback_request.reload
+
+      post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          question.id.to_s => {
+            story: 'First save.',
+            rating: 'agree',
+            privacy_level: 'observed_and_managers'
+          }
+        },
+        privacy_level: 'observed_and_managers',
+        save_and_keep_incomplete: 'Save and Keep Incomplete'
+      }
+      expect(response).to have_http_status(:redirect)
+      observation = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
+      expect(observation).to be_present
+      expect(observation.story).to eq('First save.')
+      expect(observation.observation_ratings.find_by(rateable: assignment).rating).to eq('agree')
+
+      expect {
+        post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+          answers: {
+            question.id.to_s => {
+              story: 'Updated story.',
+              rating: 'strongly_agree',
+              privacy_level: 'observed_and_managers'
+            }
+          },
+          privacy_level: 'observed_and_managers',
+          save_and_keep_incomplete: 'Save and Keep Incomplete'
+        }
+      }.not_to change { Observation.count }
+
+      observation.reload
+      expect(observation.story).to eq('Updated story.')
+      expect(observation.observation_ratings.find_by(rateable: assignment).rating).to eq('strongly_agree')
     end
   end
 

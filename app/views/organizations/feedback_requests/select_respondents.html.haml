@@ -30,4 +30,4 @@
     = form_with url: update_respondents_organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true, class: 'mt-4' do |form|
       .d-flex.justify-content-between
         = link_to 'Cancel', organization_feedback_requests_path(organization), class: 'btn btn-secondary'
-        = form.submit 'Create Feedback Request', class: 'btn btn-primary'
+        = form.submit 'Save Feedback Request', class: 'btn btn-primary'

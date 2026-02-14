@@ -14,27 +14,46 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     # Get base scope using policy_scope (required by Pundit)
     base_scope = policy_scope(FeedbackRequest).where(company: company)
     
-    # Apply filters from query object
-    @feedback_requests = base_scope
-    @feedback_requests = query.filter_by_archived(@feedback_requests)
+    # Requests I made: only where current user is the requestor
+    my_requests_scope = base_scope.where(requestor_teammate_id: current_company_teammate&.id)
+    @feedback_requests = query.filter_by_archived(my_requests_scope)
     @feedback_requests = query.filter_by_subject(@feedback_requests)
     @feedback_requests = query.filter_by_requestor(@feedback_requests)
     @feedback_requests = query.filter_by_rateable(@feedback_requests)
     @feedback_requests = query.apply_sort(@feedback_requests)
     
     @feedback_requests = @feedback_requests.includes(
-      :requestor_teammate, 
+      :requestor_teammate,
       :subject_of_feedback_teammate,
       { feedback_request_questions: [] },
       :responders
     )
+    
+    # Requests of me: where current user is a responder; filter by open (completed_at nil) or all
+    @requests_of_me = if current_company_teammate
+      scope = base_scope
+        .joins(:feedback_request_responders)
+        .where(feedback_request_responders: { teammate_id: current_company_teammate.id })
+        .not_deleted
+        .order(created_at: :desc)
+        .includes(:requestor_teammate, :subject_of_feedback_teammate)
+        .distinct
+      if params[:requests_of_me] == 'all'
+        scope
+      else
+        scope.where(feedback_request_responders: { completed_at: nil })
+      end
+    else
+      FeedbackRequest.none
+    end
+    @requests_of_me_filter = params[:requests_of_me] == 'all' ? 'all' : 'open'
     
     @current_filters = query.current_filters
     @current_sort = query.current_sort
     @current_view = query.current_view
     @current_spotlight = query.current_spotlight
     
-    # Calculate spotlight statistics
+    # Calculate spotlight statistics (for "Requests I made")
     @spotlight_stats = calculate_spotlight_stats
   end
 
@@ -79,6 +98,9 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
     @responders = @feedback_request.responders.includes(:person)
     @observations = @feedback_request.observations.includes(:observer, :observed_teammates)
+    @responder_records_by_teammate_id = @feedback_request.feedback_request_responders.index_by(&:teammate_id)
+    @observations_by_observer_id = @feedback_request.observations.includes(:feedback_request_question).group_by(&:observer_id)
+    @observation_by_observer_and_question = @feedback_request.observations.includes(:feedback_request_question).index_by { |o| [o.observer_id, o.feedback_request_question_id] }
   end
 
   def new
@@ -443,6 +465,11 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     authorize @feedback_request, :answer?
     
     @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
+    # Existing observations from this responder, keyed by question id (for prefilling and observation link)
+    @observation_by_question_id = @feedback_request.observations
+      .where(observer: current_person)
+      .includes(:observation_ratings)
+      .index_by(&:feedback_request_question_id)
     
     # Load resources for optional ratings (for questions without rateable)
     @assignments = company.assignments.ordered
@@ -455,19 +482,31 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     
     answers = params[:answers] || {}
     privacy_level = params[:privacy_level] || 'observed_and_managers'
+    complete = params[:save_and_complete].present?
     
     result = FeedbackRequests::AnswerService.call(
       feedback_request: @feedback_request,
       answers: answers,
       responder_teammate: current_company_teammate,
-      privacy_level: privacy_level
+      privacy_level: privacy_level,
+      complete: complete
     )
     
     if result.ok?
-      redirect_to organization_feedback_request_path(organization, @feedback_request),
-                  notice: 'Your feedback has been submitted successfully.'
+      responder_record = @feedback_request.feedback_request_responders.find_by(teammate_id: current_company_teammate.id)
+      if responder_record
+        responder_record.update!(completed_at: complete ? Time.current : nil)
+      end
+
+      redirect_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : organization_feedback_requests_path(organization)
+      notice = complete ? 'Your feedback has been submitted and marked complete.' : 'Your feedback has been saved and kept incomplete.'
+      redirect_to redirect_path, notice: notice
     else
       @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
+      @observation_by_question_id = @feedback_request.observations
+        .where(observer: current_person)
+        .includes(:observation_ratings)
+        .index_by(&:feedback_request_question_id)
       @assignments = company.assignments.ordered
       @abilities = company.abilities.order(:name)
       @aspirations = company.aspirations.ordered
@@ -480,7 +519,9 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
   private
 
   def calculate_spotlight_stats
+    # Spotlight reflects "Requests I made" only
     all_requests = FeedbackRequestsQuery.new(organization, params.except(:sort), current_person: current_person).call
+    all_requests = current_company_teammate ? all_requests.where(requestor_teammate_id: current_company_teammate.id) : all_requests.none
     
     case @current_spotlight
     when 'open_requests'

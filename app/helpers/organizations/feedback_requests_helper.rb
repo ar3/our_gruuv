@@ -43,5 +43,19 @@ module Organizations
     def feedback_request_wizard_step_name(step)
       FEEDBACK_REQUEST_WIZARD_STEPS.fetch(step, {})[:name] || "Step #{step}"
     end
+
+    # Display labels used on the answer page (Exceptional, Solid, etc.) instead of enum values (strongly_agree, etc.)
+    OBSERVATION_RATING_TO_LABEL = {
+      'strongly_agree' => 'Exceptional',
+      'agree' => 'Solid',
+      'na' => 'N/A',
+      'disagree' => 'Mis-aligned',
+      'strongly_disagree' => 'Concerning'
+    }.freeze
+
+    def observation_rating_display_label(rating)
+      return 'N/A' if rating.blank?
+      OBSERVATION_RATING_TO_LABEL[rating.to_s] || rating.to_s.humanize
+    end
   end
 end

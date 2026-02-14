@@ -1,15 +1,19 @@
 - content_for :title, "Answer Feedback Request"
 
 - content_for :go_back_link do
-  = link_to organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
+  - back_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : organization_feedback_requests_path(organization)
+  = link_to back_path, class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to Feedback Request
+    = policy(@feedback_request).show? ? 'Back to Feedback Request' : 'Back to Feedback Requests'
 
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-reply.me-2
       Answer Feedback Request
+
+- rateable_types = %w[Assignment Ability Aspiration]
+- questions_with_objects = @questions.select { |q| q.rateable.present? && rateable_types.include?(q.rateable_type) }
 
 .card.mb-3
   .card-header
@@ -18,7 +22,7 @@
     %p
       %strong Subject:
       = @feedback_request.subject_of_feedback_teammate.person.display_name
-    %p
+    %p.mb-0
       %strong Resources:
       - rateables = @questions.map(&:rateable).compact.uniq
       - if rateables.any?
@@ -33,71 +37,96 @@
       - else
         %span.text-muted Generic
 
-.card
-  .card-header
-    %h5.mb-0 Answer Questions
-  .card-body
-    = form_with url: submit_answers_organization_feedback_request_path(organization, @feedback_request), method: :post, local: true do |form|
-      - if flash[:alert]
-        .alert.alert-danger= flash[:alert]
-      
-      - @questions.each_with_index do |question, index|
-        .card.mb-3
-          .card-header
-            %h6.mb-0 Question #{index + 1}
-          .card-body
-            .markdown-content.mb-3= render_markdown(question.question_text)
-            
-            .mb-3
-              = label_tag "answers[#{question.id}][story]", "Your Answer", class: 'form-label'
-              %span.text-danger *
-              = text_area_tag "answers[#{question.id}][story]", '', class: 'form-control', rows: 4, required: true
-            
-            - if question.rateable.present?
-              .mb-3
-                %label.form-label Rating
-                = select_tag "answers[#{question.id}][rating]", options_for_select([['N/A', 'na'], ['Strongly Disagree', 'strongly_disagree'], ['Disagree', 'disagree'], ['Agree', 'agree'], ['Strongly Agree', 'strongly_agree']], 'na'), { class: 'form-select' }
-                %small.text-muted.d-block.mt-1
-                  - case question.rateable.class.name
-                  - when 'Assignment'
-                    Rating for: #{question.rateable.title}
-                  - when 'Ability'
-                    Rating for: #{question.rateable.name}
-                  - when 'Aspiration'
-                    Rating for: #{question.rateable.name}
-            
-            - unless question.rateable.present?
-              .mb-3
-                %label.form-label Optional Ratings
-                %small.text-muted.d-block You can optionally add ratings for assignments, abilities, or aspirations.
-                .row
-                  .col-md-4
-                    = label_tag "answers[#{question.id}][ratings][0][rateable_type]", "Type", class: 'form-label'
-                    = select_tag "answers[#{question.id}][ratings][0][rateable_type]", options_for_select([['', ''], ['Assignment', 'Assignment'], ['Ability', 'Ability'], ['Aspiration', 'Aspiration']], ''), { class: 'form-select' }
-                  .col-md-4
-                    = label_tag "answers[#{question.id}][ratings][0][rateable_id]", "Resource", class: 'form-label'
-                    %select.form-select{name: "answers[#{question.id}][ratings][0][rateable_id]", id: "answers_#{question.id}_ratings_0_rateable_id"}
-                      %option{value: ""} Select...
-                      - if @assignments
-                        %optgroup{label: "Assignments"}
-                          - @assignments.each do |assignment|
-                            %option{value: assignment.id}= assignment.title
-                      - if @abilities
-                        %optgroup{label: "Abilities"}
-                          - @abilities.each do |ability|
-                            %option{value: ability.id}= ability.name
-                      - if @aspirations
-                        %optgroup{label: "Aspirations"}
-                          - @aspirations.each do |aspiration|
-                            %option{value: aspiration.id}= aspiration.name
-                  .col-md-4
-                    = label_tag "answers[#{question.id}][ratings][0][rating]", "Rating", class: 'form-label'
-                    = select_tag "answers[#{question.id}][ratings][0][rating]", options_for_select([['N/A', 'na'], ['Strongly Disagree', 'strongly_disagree'], ['Disagree', 'disagree'], ['Agree', 'agree'], ['Strongly Agree', 'strongly_agree']], 'na'), { class: 'form-select' }
-            
-            .mb-3
-              = label_tag "answers[#{question.id}][privacy_level]", "Privacy Level", class: 'form-label'
-              = select_tag "answers[#{question.id}][privacy_level]", options_for_select([['For them and their managers', 'observed_and_managers'], ['For them only', 'observed_only'], ['For managers only', 'managers_only'], ['Public to company', 'public_to_company']], 'observed_and_managers'), { class: 'form-select' }
-      
-      .d-flex.justify-content-between
-        = link_to 'Cancel', organization_feedback_request_path(organization, @feedback_request), class: 'btn btn-secondary'
-        = form.submit 'Submit Answers', class: 'btn btn-primary'
+= form_with url: submit_answers_organization_feedback_request_path(organization, @feedback_request), method: :post, local: true do |form|
+  - if flash[:alert]
+    .alert.alert-danger= flash[:alert]
+
+  - questions_with_objects.each do |question|
+    - rateable = question.rateable
+    - object_name = rateable.is_a?(Assignment) ? rateable.title : rateable.name
+    - object_url = case rateable
+    -   when Assignment then organization_assignment_path(organization, rateable)
+    -   when Ability then organization_ability_path(organization, rateable)
+    -   when Aspiration then organization_aspiration_path(organization, rateable)
+    -   else nil
+    - existing_observation = @observation_by_question_id[question.id]
+    - raw_rating = existing_observation&.observation_ratings&.find { |r| r.rateable_id == rateable.id && r.rateable_type == rateable.class.name }&.rating
+    - current_rating = observation_rating_display_label(raw_rating)
+    - story_value = existing_observation&.story.to_s
+
+    .card.mb-3
+      .card-body.p-0
+        .row.g-0
+          .col-12.col-md-4.p-3.border-end
+            %h6.mb-2
+              = link_to object_name, object_url, target: '_blank', rel: 'noopener noreferrer', class: 'text-decoration-none'
+            %hr
+            .markdown-content.small= render_markdown(question.question_text)
+          .col-12.col-md-8.p-3
+            .text-muted="This story is a..."
+            .mt-2
+            = render 'organizations/observations/rating_button_group',
+                field_name: "answers[#{question.id}][rating]",
+                rating_key: "question_#{question.id}",
+                current_value: current_rating,
+                rateable_type: question.rateable_type,
+                rateable_id: rateable.id
+            %div
+              - verb = case rateable
+              -   when Assignment then 'execution'
+              -   when Ability then 'demonstration'
+              -   when Aspiration then 'example'
+              -   else 'display'
+              - link_title = rateable.is_a?(Assignment) ? 'View assignment' : (rateable.is_a?(Ability) ? 'View ability' : 'View aspirational value')
+              - case rateable
+              - when Assignment
+                = "... #{verb} of being #{indefinite_article(rateable.title)} "
+                %span.rateable-title= rateable.title
+              - when Ability, Aspiration
+                = "... #{verb} of "
+                %span.rateable-title= rateable.name
+              = link_to object_url, class: "ms-2", target: "_blank", rel: "noopener noreferrer", title: link_title do
+                %i.bi.bi-box-arrow-up-right
+
+            .mt-2
+            = label_tag "answers_#{question.id}_story", 'Your story(ies)', class: 'form-label small'
+            = text_area_tag "answers[#{question.id}][story]", story_value, class: 'form-control form-control-sm', rows: 10, id: "answers_#{question.id}_story"
+            .form-text.mt-1
+              %small.text-muted
+                = link_to "Use the OG take on the Non-Violent Communication and feedback framework to tell the most powerful stories", "#", class: "text-muted", data: { controller: "maap-framework", action: "click->maap-framework#insertTemplate", maap_framework_target_value: "answers_#{question.id}_story" }
+            - if existing_observation
+              %hr.mt-3.mb-2
+              %p.small.text-muted.mb-0
+                This observation was #{existing_observation.published_at? ? 'published' : 'created'} from your answer. You can update it here, or edit it further on
+                = link_to 'the observation itself', organization_observation_path(organization, existing_observation), class: 'text-muted'
+                \.
+            = hidden_field_tag "answers[#{question.id}][privacy_level]", (existing_observation&.privacy_level&.to_s.presence || 'observed_and_managers')
+
+  - (@questions - questions_with_objects).each do |question|
+    - next if question.rateable.present? && question.rateable_type == 'Position'
+    - existing_observation = @observation_by_question_id[question.id]
+    - story_value = existing_observation&.story.to_s
+    .card.mb-3
+      .card-body
+        %h6.mb-2 Question (no rating)
+        .markdown-content.mb-3= render_markdown(question.question_text)
+        = label_tag "answers_#{question.id}_story", 'Your story(ies)', class: 'form-label'
+        = text_area_tag "answers[#{question.id}][story]", story_value, class: 'form-control', rows: 10, id: "answers_#{question.id}_story"
+        - if existing_observation
+          %hr.mt-3.mb-2
+          %p.small.text-muted.mb-0
+            This observation was #{existing_observation.published_at? ? 'published' : 'created'} from your answer. You can update it here, or edit it further on
+            = link_to 'the observation itself', organization_observation_path(organization, existing_observation), class: 'text-muted'
+            \.
+        .form-text.mt-1
+          %small.text-muted
+            = link_to "Use the OG take on the Non-Violent Communication and feedback framework to tell the most powerful stories", "#", class: "text-muted", data: { controller: "maap-framework", action: "click->maap-framework#insertTemplate", maap_framework_target_value: "answers_#{question.id}_story" }
+        = hidden_field_tag "answers[#{question.id}][rating]", 'na'
+        = hidden_field_tag "answers[#{question.id}][privacy_level]", (existing_observation&.privacy_level&.to_s.presence || 'observed_and_managers')
+
+  .d-flex.justify-content-between.pt-2
+    - cancel_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : organization_feedback_requests_path(organization)
+    = link_to 'Cancel', cancel_path, class: 'btn btn-secondary'
+    .btn-group
+      = form.submit 'Save and Keep Incomplete', name: 'save_and_keep_incomplete', class: 'btn btn-outline-primary'
+      = form.submit 'Save and Complete', name: 'save_and_complete', class: 'btn btn-primary'

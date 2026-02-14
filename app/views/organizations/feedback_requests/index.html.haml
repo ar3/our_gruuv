@@ -21,10 +21,44 @@
     %i.bi.bi-gear.me-2
     Customize
 
-/ Spotlight Section
+/ Requests of me
 .row.justify-content-center.mb-4
   .col-lg-12
     .card.border-0.shadow-sm
+      .card-header.bg-transparent.border-0.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-inbox.me-2
+          Requests of me
+        .btn-group.btn-group-sm
+          = link_to "View open requests of me", organization_feedback_requests_path(organization, requests_of_me: 'open'), class: "btn #{@requests_of_me_filter == 'open' ? 'btn-primary' : 'btn-outline-primary'}"
+          = link_to "View all requests of me", organization_feedback_requests_path(organization, requests_of_me: 'all'), class: "btn #{@requests_of_me_filter == 'all' ? 'btn-primary' : 'btn-outline-primary'}"
+      .card-body
+        - if @requests_of_me.any?
+          %ul.list-group.list-group-flush
+            - @requests_of_me.each do |request|
+              %li.list-group-item.d-flex.justify-content-between.align-items-center.px-0
+                .d-flex.flex-column
+                  %span
+                    Feedback on
+                    %strong= request.subject_of_feedback_teammate.person.display_name
+                  %small.text-muted
+                    From #{request.requestor_teammate.person.display_name} · #{format_time_in_user_timezone(request.created_at)}
+                = link_to "Respond", answer_organization_feedback_request_path(organization, request), class: "btn btn-sm btn-outline-primary"
+        - else
+          %p.text-muted.mb-0
+            - if @requests_of_me_filter == 'open'
+              You have no open feedback requests.
+            - else
+              No one has requested your feedback yet.
+
+/ Requests I made — Spotlight
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-transparent.border-0
+        %h5.mb-0
+          %i.bi.bi-send.me-2
+          Requests I made
       .card-body
         - case @current_spotlight
         - when 'open_requests'
@@ -40,7 +74,7 @@
           .col-md-6
             %small.text-muted
               %i.bi.bi-funnel.me-1
-              Filters: 
+              Filters:
               - filter_parts = []
               - filter_parts << (@current_filters[:show_archived] == '1' ? 'Archived' : 'Active')
               - filter_parts << (@current_filters[:subject] ? "Subject: #{CompanyTeammate.find(@current_filters[:subject])&.person&.display_name}" : 'All Subjects')
@@ -66,7 +100,7 @@
               %i.bi.bi-eye.me-1
               Spotlight: #{@current_spotlight&.humanize || 'Overview'}
 
-/ Feedback Requests Table
+/ Requests I made — Table
 .row.justify-content-center
   .col-lg-12
     - if @feedback_requests.any?
@@ -111,13 +145,14 @@
                 %td= format_time_in_user_timezone(request.created_at)
                 %td
                   .btn-group.btn-group-sm
-                    = link_to organization_feedback_request_path(organization, request), class: "btn btn-outline-primary", title: "View" do
-                      %i.bi.bi-eye
+                    - if policy(request).show?
+                      = link_to organization_feedback_request_path(organization, request), class: "btn btn-outline-primary", title: "View" do
+                        %i.bi.bi-eye
                     - if policy(request).update?
                       = link_to edit_organization_feedback_request_path(organization, request), class: "btn btn-outline-secondary", title: "Edit" do
                         %i.bi.bi-pencil
                     - if policy(request).answer?
-                      = link_to answer_organization_feedback_request_path(organization, request), class: "btn btn-outline-success", title: "Answer" do
+                      = link_to answer_organization_feedback_request_path(organization, request), class: "btn btn-outline-success", title: "Respond" do
                         %i.bi.bi-reply
     - else
       .alert.alert-info
@@ -126,7 +161,7 @@
           No Feedback Requests
         %p.mb-2
           - if @current_filters[:show_archived] == '1'
-            There are no archived feedback requests.
+            There are no archived feedback requests that you created.
           - else
             Create your first feedback request to gather structured feedback from teammates.
         - if policy(FeedbackRequest.new(company: organization.root_company || organization)).create?

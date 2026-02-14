@@ -31,13 +31,13 @@ RSpec.describe FeedbackRequestPolicy, type: :policy do
       expect(subject).to permit(pundit_user_requestor, feedback_request)
     end
 
-    it "allows responder to view" do
-      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
-      expect(subject).to permit(pundit_user_responder, feedback_request)
+    it "allows subject to view" do
+      expect(subject).to permit(pundit_user_subject, feedback_request)
     end
 
-    it "denies subject from viewing (unless they are also a responder)" do
-      expect(subject).not_to permit(pundit_user_subject, feedback_request)
+    it "denies responder from viewing (responders only see the answer page)" do
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      expect(subject).not_to permit(pundit_user_responder, feedback_request)
     end
 
     it "denies other users from viewing" do
