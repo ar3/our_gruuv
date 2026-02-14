@@ -115,15 +115,17 @@ RSpec.describe NavigationHelper, type: :helper do
       helper.instance_variable_set(:@current_company, company)
     end
 
-    it 'uses company_label_plural for prompts navigation label' do
+    it 'uses company_label_plural for prompts navigation label under About Me' do
       company = create(:organization, :company, name: 'Test Company')
       helper.instance_variable_set(:@current_organization, company)
       helper.instance_variable_set(:@current_company, company)
-      
+
       structure = helper.navigation_structure
-      prompts_item = structure.find { |item| item[:path]&.include?('prompts') }
+      about_me_section = structure.find { |item| item[:label] == 'About Me' }
+      expect(about_me_section).to be_present
+      prompts_item = about_me_section[:items].find { |item| item[:path]&.include?('prompts') }
       expect(prompts_item).to be_present
-      expect(prompts_item[:label]).to eq('Prompts') # Default when no custom label
+      expect(prompts_item[:label]).to eq('My Prompts') # Default when no custom label
     end
 
     context 'when company has custom label preference' do
@@ -135,11 +137,39 @@ RSpec.describe NavigationHelper, type: :helper do
         helper.instance_variable_set(:@current_company, company)
       end
 
-      it 'uses the custom plural label' do
+      it 'uses the custom plural label under About Me' do
         structure = helper.navigation_structure
-        prompts_item = structure.find { |item| item[:path]&.include?('prompts') }
+        about_me_section = structure.find { |item| item[:label] == 'About Me' }
+        expect(about_me_section).to be_present
+        prompts_item = about_me_section[:items].find { |item| item[:path]&.include?('prompts') }
         expect(prompts_item).to be_present
-        expect(prompts_item[:label]).to eq('Reflections')
+        expect(prompts_item[:label]).to eq('My Reflections')
+      end
+    end
+
+    describe 'About Me section' do
+      it 'includes About Me section first in navigation structure' do
+        structure = helper.navigation_structure
+        about_me_section = structure.find { |item| item[:label] == 'About Me' }
+        expect(about_me_section).to be_present
+        expect(about_me_section[:section]).to eq('about_me')
+        expect(about_me_section[:icon]).to eq('bi-person')
+        expect(structure.first[:label]).to eq('About Me')
+      end
+
+      it 'has the expected six sub-items: About teammate, My Check-In, OGO\'s involving me, My Prompts, My Goals, My Huddles' do
+        structure = helper.navigation_structure
+        about_me_section = structure.find { |item| item[:label] == 'About Me' }
+        items = about_me_section[:items]
+        labels = items.map { |item| item[:label] }
+
+        expect(items.length).to eq(6)
+        expect(labels[0]).to match(/\AAbout .+\z/)
+        expect(labels[1]).to eq('My Check-In')
+        expect(labels[2]).to eq("OGO's involving me")
+        expect(labels[3]).to eq('My Prompts')
+        expect(labels[4]).to eq('My Goals')
+        expect(labels[5]).to eq('My Huddles')
       end
     end
 
@@ -401,18 +431,13 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(highlights_item[:label]).to eq('Acme Corp Kudos')
       end
 
-      it 'places Observations (OGO) section after My Check-In and before Prompts' do
+      it 'places About Me first and Observations (OGO) second in navigation' do
         structure = helper.navigation_structure
-        my_checkin_index = structure.find_index { |item| item[:label] == 'My Check-In' }
+        about_me_index = structure.find_index { |item| item[:label] == 'About Me' }
         ogo_index = structure.find_index { |item| item[:label] == 'Observations (OGO)' }
-        prompts_item = structure.find { |item| item[:label] == 'Prompts' }
-        prompts_index = structure.find_index { |item| item[:label] == 'Prompts' }
 
-        expect(my_checkin_index).to be_present
-        expect(ogo_index).to be_present
-        expect(prompts_index).to be_present
-        expect(ogo_index).to eq(my_checkin_index + 1)
-        expect(ogo_index).to be < prompts_index
+        expect(about_me_index).to eq(0)
+        expect(ogo_index).to eq(1)
       end
     end
   end

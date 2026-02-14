@@ -18,18 +18,53 @@ module NavigationHelper
     
     [
       {
-        label: "About #{current_company_teammate&.person&.casual_name || 'Me'}",
+        label: 'About Me',
         icon: 'bi-person',
-        path: about_me_organization_company_teammate_path(current_organization, current_company_teammate),
-        section: nil,
-        policy_check: -> { current_company_teammate && policy(current_company_teammate).view_check_ins? }
-      },
-      {
-        label: 'My Check-In',
-        icon: 'bi-clipboard-check',
-        path: organization_company_teammate_check_ins_path(current_organization, current_company_teammate),
-        section: nil,
-        policy_check: -> { policy(current_company_teammate).view_check_ins? }
+        section: 'about_me',
+        items: [
+          {
+            label: "About #{current_company_teammate&.person&.casual_name || 'Me'}",
+            icon: 'bi-person',
+            path: about_me_organization_company_teammate_path(current_organization, current_company_teammate),
+            policy_check: -> { current_company_teammate && policy(current_company_teammate).view_check_ins? },
+            coming_soon: false
+          },
+          {
+            label: 'My Check-In',
+            icon: 'bi-clipboard-check',
+            path: organization_company_teammate_check_ins_path(current_organization, current_company_teammate),
+            policy_check: -> { policy(current_company_teammate).view_check_ins? },
+            coming_soon: false
+          },
+          {
+            label: "OGO's involving me",
+            icon: 'bi-person',
+            path: organization_observations_path(current_organization, involving_teammate_id: current_company_teammate&.id),
+            policy_check: -> { current_company_teammate.present? && policy(current_company).view_observations? },
+            coming_soon: false
+          },
+          {
+            label: "My #{company_label_plural('prompt', 'Prompts')}",
+            icon: 'bi-journal-text',
+            path: organization_prompts_path(current_organization),
+            policy_check: -> { policy(current_company).view_prompts? },
+            coming_soon: false
+          },
+          {
+            label: 'My Goals',
+            icon: 'bi-bullseye',
+            path: organization_goals_path(current_organization),
+            policy_check: -> { policy(current_company).view_goals? },
+            coming_soon: false
+          },
+          {
+            label: 'My Huddles',
+            icon: 'bi-person',
+            path: my_huddles_path,
+            policy_check: -> { policy(Huddle).show? },
+            coming_soon: false
+          }
+        ]
       },
       {
         label: 'Observations (OGO)',
@@ -103,20 +138,6 @@ module NavigationHelper
             coming_soon: false
           }
         ]
-      },
-      {
-        label: company_label_plural('prompt', 'Prompts'),
-        icon: 'bi-journal-text',
-        path: organization_prompts_path(current_organization),
-        section: nil,
-        policy_check: -> { policy(current_company).view_prompts? }
-      },
-      {
-        label: 'Goals',
-        icon: 'bi-bullseye',
-        path: organization_goals_path(current_organization),
-        section: nil,
-        policy_check: -> { policy(current_company).view_goals? }
       },
       {
         label: 'Celebrate Milestones',

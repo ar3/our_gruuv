@@ -211,6 +211,18 @@ RSpec.describe 'Vertical Navigation', type: :request do
       end
     end
     
+    context 'when on a page within About Me section' do
+      it 'expands the About Me section when on about me page' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('id="navSectionAbout_me"')
+        about_me_div = response.body[/<div[^>]*id="navSectionAbout_me"[^>]*>/]
+        expect(about_me_div).to be_present
+        expect(about_me_div).to include('class="collapse show"')
+      end
+    end
+
     context 'when on a page within Teammate Directory section' do
       it 'expands the Teammate Directory section when on employees index with View Teammates params' do
         get organization_employees_path(organization, spotlight: 'teammate_tenures')
