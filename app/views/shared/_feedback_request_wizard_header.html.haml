@@ -1,0 +1,24 @@
+- current_step ||= 1
+- step_paths = { 1 => edit_organization_feedback_request_path(organization, feedback_request), 2 => select_focus_organization_feedback_request_path(organization, feedback_request), 3 => feedback_prompt_organization_feedback_request_path(organization, feedback_request), 4 => select_respondents_organization_feedback_request_path(organization, feedback_request) }
+- progress_width = current_step == 1 ? 25 : (current_step == 2 ? 50 : (current_step == 3 ? 75 : 100))
+
+.card.mb-4
+  .card-body
+    .progress.mb-3{style: "height: 4px;"}
+      .progress-bar{role: "progressbar", 'aria-valuenow': progress_width.to_s, 'aria-valuemin': "0", 'aria-valuemax': "100", style: "width: #{progress_width}%;"}
+    .d-flex.justify-content-between.flex-wrap.gap-2
+      - [1, 2, 3, 4].each do |step|
+        - step_name = feedback_request_wizard_step_name(step)
+        - enabled = feedback_request_wizard_step_enabled?(feedback_request, step)
+        - tooltip = feedback_request_wizard_step_tooltip(feedback_request, step)
+        - if enabled
+          - if current_step == step
+            = link_to step_paths[step], class: "text-primary fw-bold text-decoration-none" do
+              Step #{step}: #{step_name}
+          - else
+            = link_to step_paths[step], class: "text-muted text-decoration-none" do
+              Step #{step}: #{step_name}
+        - else
+          %span.d-inline-flex.align-items-center.text-muted{style: "cursor: not-allowed;", tabindex: "0", "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": tooltip}
+            Step #{step}: #{step_name}
+            %i.bi.bi-exclamation-triangle.text-warning.ms-1{"aria-label": "Prerequisite not met"}

@@ -201,6 +201,13 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Select Focus')
     end
+
+    it 'renders the wizard header' do
+      get select_focus_organization_feedback_request_path(company, feedback_request)
+      expect(response.body).to include('Step 1: Who & Why')
+      expect(response.body).to include('Step 2: Select Focus')
+      expect(response.body).to include('Step 4: Select Respondents')
+    end
   end
 
   describe 'PATCH /organizations/:organization_id/feedback_requests/:id/update_focus' do
@@ -258,6 +265,15 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       get edit_organization_feedback_request_path(company, feedback_request)
       # Edit page may redirect to wizard steps if incomplete, or render if complete
       expect(response.status).to be_between(200, 399).inclusive
+    end
+
+    it 'renders the wizard header with steps' do
+      get edit_organization_feedback_request_path(company, feedback_request)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Step 1: Who & Why')
+      expect(response.body).to include('Step 2: Select Focus')
+      expect(response.body).to include('Step 3: Edit Questions')
+      expect(response.body).to include('Step 4: Select Respondents')
     end
 
     it 'requires authorization' do

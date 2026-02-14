@@ -13,6 +13,8 @@
     %i.bi.bi-arrow-left.me-2
     Back to Select Focus
 
+= render 'shared/feedback_request_wizard_header', organization: organization, feedback_request: @feedback_request, current_step: 3
+
 .card
   .card-body
     = form_with url: update_questions_organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true do |form|

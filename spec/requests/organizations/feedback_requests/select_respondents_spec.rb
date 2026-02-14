@@ -45,6 +45,14 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
       expect(response.body).to include('Select Respondents')
     end
 
+    it 'renders the wizard header' do
+      get select_respondents_organization_feedback_request_path(company, feedback_request)
+      expect(response.body).to include('Step 1: Who & Why')
+      expect(response.body).to include('Step 2: Select Focus')
+      expect(response.body).to include('Step 3: Edit Questions')
+      expect(response.body).to include('Step 4: Select Respondents')
+    end
+
     it 'requires authorization' do
       other_person = create(:person)
       sign_in_as_teammate_for_request(other_person, company)

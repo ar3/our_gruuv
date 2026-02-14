@@ -11,6 +11,8 @@
     %i.bi.bi-arrow-left.me-2
     Back to Feedback Request
 
+= render 'shared/feedback_request_wizard_header', organization: organization, feedback_request: @feedback_request, current_step: 1
+
 .card
   .card-body
     = form_with model: [organization, @feedback_request], url: organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true do |form|

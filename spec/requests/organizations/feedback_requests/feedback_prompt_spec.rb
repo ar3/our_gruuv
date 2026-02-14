@@ -40,6 +40,14 @@ RSpec.describe 'Organizations::FeedbackRequests::FeedbackPrompt', type: :request
       expect(response.body).to include('Feedback Questions')
     end
 
+    it 'renders the wizard header' do
+      get feedback_prompt_organization_feedback_request_path(company, feedback_request)
+      expect(response.body).to include('Step 1: Who & Why')
+      expect(response.body).to include('Step 2: Select Focus')
+      expect(response.body).to include('Step 3: Edit Questions')
+      expect(response.body).to include('Step 4: Select Respondents')
+    end
+
     it 'defaults blank assignment question to sentiment outcomes separated by double newlines' do
       assignment = create(:assignment, company: company)
       create(:assignment_outcome, :sentiment, assignment: assignment, description: 'Team agrees: We ship on time')
