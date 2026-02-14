@@ -157,19 +157,20 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(structure.first[:label]).to eq('About Me')
       end
 
-      it 'has the expected six sub-items: About teammate, My Check-In, OGO\'s involving me, My Prompts, My Goals, My Huddles' do
+      it 'has the expected seven sub-items: About teammate, My Check-In, OGO\'s involving me, My Feedback Requests, My Prompts, My Goals, My Huddles' do
         structure = helper.navigation_structure
         about_me_section = structure.find { |item| item[:label] == 'About Me' }
         items = about_me_section[:items]
         labels = items.map { |item| item[:label] }
 
-        expect(items.length).to eq(6)
+        expect(items.length).to eq(7)
         expect(labels[0]).to match(/\AAbout .+\z/)
         expect(labels[1]).to eq('My Check-In')
         expect(labels[2]).to eq("OGO's involving me")
-        expect(labels[3]).to eq('My Prompts')
-        expect(labels[4]).to eq('My Goals')
-        expect(labels[5]).to eq('My Huddles')
+        expect(labels[3]).to eq('My Feedback Requests')
+        expect(labels[4]).to eq('My Prompts')
+        expect(labels[5]).to eq('My Goals')
+        expect(labels[6]).to eq('My Huddles')
       end
     end
 
@@ -328,14 +329,13 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels.any? { |l| l&.end_with?(' Preferences') }).to be true
       end
 
-      it 'includes Beta section with Eligibility Requirements and Feedback Requests' do
+      it 'includes Beta section with Eligibility Requirements' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Beta' }
         expect(section).to be_present
         expect(section[:section]).to eq('beta')
         labels = section[:items].map { |item| item[:label] }
         expect(labels).to include('Eligibility Requirements')
-        expect(labels).to include('Feedback Requests')
       end
 
       it 'includes Admin section with Prompt Templates, Bulk Events, Bulk Downloads, Slack Settings' do

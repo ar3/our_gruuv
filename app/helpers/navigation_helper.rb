@@ -44,6 +44,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'My Feedback Requests',
+            icon: 'bi-chat-dots',
+            path: organization_feedback_requests_path(current_organization),
+            policy_check: -> { policy(current_company).view_feedback_requests? },
+            coming_soon: false
+          },
+          {
             label: "My #{company_label_plural('prompt', 'Prompts')}",
             icon: 'bi-journal-text',
             path: organization_prompts_path(current_organization),
@@ -394,13 +401,6 @@ module NavigationHelper
             icon: 'bi-check2-circle',
             path: organization_eligibility_requirements_path(current_organization),
             policy_check: -> { policy(:eligibility_requirement).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Feedback Requests',
-            icon: 'bi-chat-dots',
-            path: organization_feedback_requests_path(current_organization),
-            policy_check: -> { policy(current_company).view_feedback_requests? },
             coming_soon: false
           }
         ]
