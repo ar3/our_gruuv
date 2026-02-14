@@ -46,7 +46,7 @@
                   %br
                   = question.rateable.name
               %td
-                = text_area_tag "questions[#{question.id}][question_text]", question.question_text, class: 'form-control', rows: 3, required: true, placeholder: 'Enter your question about this focus item...'
+                = text_area_tag "questions[#{question.id}][question_text]", question.prompt_default_text, class: 'form-control', rows: 3, required: true, placeholder: 'Enter your question about this focus item...'
       
       .d-flex.justify-content-between.mt-3
         = link_to 'Cancel', organization_feedback_requests_path(organization), class: 'btn btn-secondary'

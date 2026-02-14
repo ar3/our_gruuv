@@ -40,6 +40,55 @@ RSpec.describe 'Organizations::FeedbackRequests::FeedbackPrompt', type: :request
       expect(response.body).to include('Feedback Questions')
     end
 
+    it 'defaults blank assignment question to sentiment outcomes separated by double newlines' do
+      assignment = create(:assignment, company: company)
+      create(:assignment_outcome, :sentiment, assignment: assignment, description: 'Team agrees: We ship on time')
+      create(:assignment_outcome, :sentiment, assignment: assignment, description: 'Stakeholders agree: Communication is clear')
+      build(:feedback_request_question, :with_blank_text, feedback_request: feedback_request, position: 3, rateable: assignment).save(validate: false)
+
+      get feedback_prompt_organization_feedback_request_path(company, feedback_request)
+
+      expect(response).to have_http_status(:success)
+      # Default text should appear in the textarea value for the assignment question
+      expect(response.body).to include('Team agrees: We ship on time')
+      expect(response.body).to include('Stakeholders agree: Communication is clear')
+      expect(response.body).to include("Team agrees: We ship on time\n\nStakeholders agree: Communication is clear")
+    end
+
+    it 'defaults blank assignment question without sentiment outcomes to experience-of-subject-being-assignment sentence' do
+      assignment = create(:assignment, company: company, title: 'Product Lead')
+      create(:assignment_outcome, :quantitative, assignment: assignment, description: 'Ship 5 features')
+      build(:feedback_request_question, :with_blank_text, feedback_request: feedback_request, position: 3, rateable: assignment).save(validate: false)
+
+      get feedback_prompt_organization_feedback_request_path(company, feedback_request)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('When I think about my recent experience of ')
+      expect(response.body).to include(' being a Product Lead...')
+    end
+
+    it 'defaults blank ability question to demonstrating sentence' do
+      ability = create(:ability, company: company, name: 'Technical Communication')
+      build(:feedback_request_question, :with_blank_text, feedback_request: feedback_request, position: 3, rateable: ability).save(validate: false)
+
+      get feedback_prompt_organization_feedback_request_path(company, feedback_request)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('When I think about my recent experience of ')
+      expect(response.body).to include(' demonstrating Technical Communication...')
+    end
+
+    it 'defaults blank aspiration question to demonstrating sentence' do
+      aspiration = create(:aspiration, company: company, name: 'Growing as a leader')
+      build(:feedback_request_question, :with_blank_text, feedback_request: feedback_request, position: 3, rateable: aspiration).save(validate: false)
+
+      get feedback_prompt_organization_feedback_request_path(company, feedback_request)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('When I think about my recent experience of ')
+      expect(response.body).to include(' demonstrating Growing as a leader...')
+    end
+
     it 'requires authorization' do
       other_person = create(:person)
       sign_in_as_teammate_for_request(other_person, company)

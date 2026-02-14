@@ -23,7 +23,7 @@
       .mb-3
         = form.label :subject_of_feedback_teammate_id, "Subject (who the feedback is about)", class: 'form-label'
         %span.text-danger *
-        = form.collection_select :subject_of_feedback_teammate_id, @teammates, :id, ->(t) { t.person.display_name }, { prompt: 'Select subject...' }, { class: 'form-select', required: true }
+        = form.select :subject_of_feedback_teammate_id, grouped_options_for_select(@teammates_grouped_for_select, nil), { prompt: 'Select subject...' }, { class: 'form-select', required: true }
       
       .mb-3
         = form.label :subject_line, "Subject Line", class: 'form-label'

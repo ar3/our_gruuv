@@ -186,6 +186,64 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/feedback_requests/:id/select_focus' do
+    let(:feedback_request) do
+      create(:feedback_request,
+        company: company,
+        requestor_teammate: requestor_teammate,
+        subject_of_feedback_teammate: subject_teammate,
+        subject_line: 'Test feedback request'
+      )
+    end
+
+    it 'renders the select focus page' do
+      get select_focus_organization_feedback_request_path(company, feedback_request)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Select Focus')
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/feedback_requests/:id/update_focus' do
+    let(:feedback_request) do
+      create(:feedback_request,
+        company: company,
+        requestor_teammate: requestor_teammate,
+        subject_of_feedback_teammate: subject_teammate,
+        subject_line: 'Test feedback request'
+      )
+    end
+    let(:assignment) { create(:assignment, company: company) }
+
+    before do
+      feedback_request.feedback_request_questions.destroy_all
+    end
+
+    it 'creates placeholder questions with blank question_text and redirects to feedback_prompt' do
+      patch update_focus_organization_feedback_request_path(company, feedback_request), params: {
+        assignment_ids: [assignment.id]
+      }
+
+      expect(response).to redirect_to(feedback_prompt_organization_feedback_request_path(company, feedback_request))
+      feedback_request.reload
+      expect(feedback_request.feedback_request_questions.count).to eq(1)
+      expect(feedback_request.feedback_request_questions.first.question_text).to eq('')
+      expect(feedback_request.feedback_request_questions.first.rateable).to eq(assignment)
+    end
+
+    it 'redirects back to select_focus with alert when no focus items selected' do
+      patch update_focus_organization_feedback_request_path(company, feedback_request), params: {
+        assignment_ids: [],
+        ability_ids: [],
+        aspiration_ids: []
+      }
+
+      expect(response).to redirect_to(select_focus_organization_feedback_request_path(company, feedback_request))
+      expect(flash[:alert]).to eq('Please select at least one focus item.')
+      feedback_request.reload
+      expect(feedback_request.feedback_request_questions.count).to eq(0)
+    end
+  end
+
   describe 'GET /organizations/:organization_id/feedback_requests/:id/edit' do
     let(:feedback_request) do
       create(:feedback_request,

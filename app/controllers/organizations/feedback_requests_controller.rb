@@ -85,8 +85,10 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     @feedback_request = FeedbackRequest.new(company: company)
     authorize @feedback_request
     
-    # Load eligible teammates for subject selection
+    # Load eligible teammates for subject selection (with department for optgroups)
     @teammates = eligible_subjects_for_feedback_request
+                  .includes(:person, employment_tenures: { seat: { title: :department } })
+    @teammates_grouped_for_select = teammates_grouped_by_department_for_select(@teammates, company)
   end
 
   def create
@@ -108,6 +110,8 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       redirect_to select_focus_organization_feedback_request_path(organization, @feedback_request)
     else
       @teammates = eligible_subjects_for_feedback_request
+                    .includes(:person, employment_tenures: { seat: { title: :department } })
+      @teammates_grouped_for_select = teammates_grouped_by_department_for_select(@teammates, company)
       render :new, status: :unprocessable_entity
     end
   end
@@ -121,8 +125,10 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       return
     end
     
-    # Load eligible teammates for subject selection
+    # Load eligible teammates for subject selection (with department for optgroups)
     @teammates = eligible_subjects_for_feedback_request
+                  .includes(:person, employment_tenures: { seat: { title: :department } })
+    @teammates_grouped_for_select = teammates_grouped_by_department_for_select(@teammates, company)
   end
 
   def update
@@ -149,6 +155,8 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       end
     else
       @teammates = eligible_subjects_for_feedback_request
+                    .includes(:person, employment_tenures: { seat: { title: :department } })
+      @teammates_grouped_for_select = teammates_grouped_by_department_for_select(@teammates, company)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -180,7 +188,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
   def select_focus
     authorize @feedback_request, :update?
-    
+
     @subject_teammate = @feedback_request.subject_of_feedback_teammate
     @active_tenure = @subject_teammate.active_employment_tenure if @subject_teammate.is_a?(CompanyTeammate)
     @active_position = @active_tenure&.position
@@ -234,13 +242,13 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
   def update_focus
     authorize @feedback_request, :update?
-    
+
     unless @feedback_request.can_be_edited?
       redirect_to organization_feedback_request_path(organization, @feedback_request),
                   alert: 'This feedback request cannot be edited in its current state.'
       return
     end
-    
+
     # Clear existing questions
     @feedback_request.feedback_request_questions.destroy_all
     
@@ -268,14 +276,14 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     aspiration_attrs = Aspiration.where(id: aspiration_ids, company: company).map { |a| { rateable_type: 'Aspiration', rateable_id: a.id } }
     
     all_focus_items = [position_attr].compact + assignment_attrs + ability_attrs + aspiration_attrs
-    
+
     if all_focus_items.empty?
       # State will be computed as invalid automatically
       redirect_to select_focus_organization_feedback_request_path(organization, @feedback_request),
                   alert: 'Please select at least one focus item.'
       return
     end
-    
+
     all_focus_items.each_with_index do |item, index|
       @feedback_request.feedback_request_questions.create!(
         question_text: '', # Will be filled in feedback_prompt
@@ -284,7 +292,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
         rateable_id: item[:rateable_id]
       )
     end
-    
+
     redirect_to feedback_prompt_organization_feedback_request_path(organization, @feedback_request)
   end
 
@@ -535,5 +543,25 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
                    .where(last_terminated_at: nil)
                    .includes(:person)
                    .order('people.last_name, people.first_name')
+  end
+
+  # Build grouped options for subject dropdown: optgroups by department, sorted by department
+  # then within each group by last_name, preferred_name, first_name.
+  def teammates_grouped_by_department_for_select(teammates, org_company)
+    list = teammates.respond_to?(:to_a) ? teammates.to_a : teammates
+    by_dept = list.group_by do |t|
+      tenure = t.employment_tenures.select { |et| et.ended_at.nil? && et.company_id == org_company.id }.first
+      tenure&.seat&.title&.department
+    end
+    # Sort department groups: "No department" first, then by department display_name
+    sorted_depts = by_dept.keys.sort_by { |d| d.nil? ? '' : d.display_name }
+    sorted_depts.map do |dept|
+      teammates_in_dept = by_dept[dept].sort_by do |t|
+        p = t.person
+        [p.last_name.to_s, p.preferred_name.to_s, p.first_name.to_s]
+      end
+      label = dept.nil? ? 'No department' : dept.display_name
+      [label, teammates_in_dept.map { |t| [t.person.display_name, t.id] }]
+    end
   end
 end
