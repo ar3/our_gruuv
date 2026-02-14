@@ -19,7 +19,9 @@ module FeedbackRequests
         @company,
         @feedback_request
       )
+      requestor_same_as_subject = @feedback_request.requestor_teammate_id == @feedback_request.subject_of_feedback_teammate_id
       subject_name = @feedback_request.subject_of_feedback_teammate&.person&.display_name.presence || 'a colleague'
+      subject_casual_name = @feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || subject_name
       requestor_name = @feedback_request.requestor_teammate&.person&.display_name.presence || 'Someone'
 
       slack_service = SlackService.new(@company)
@@ -28,16 +30,22 @@ module FeedbackRequests
 
       responders_with_slack.each do |responder|
         blocks = build_message_blocks(
+          requestor_same_as_subject: requestor_same_as_subject,
+          subject_casual_name: subject_casual_name,
           subject_name: subject_name,
           requestor_name: requestor_name,
           answer_url: answer_url
         )
-        fallback_text = "You've been asked to give feedback about #{subject_name}. Respond here: #{answer_url}"
+        fallback_text = if requestor_same_as_subject
+          "#{subject_casual_name} has requested your feedback. Respond here: #{answer_url}"
+        else
+          "You've been asked to give feedback about #{subject_name}. Respond here: #{answer_url}"
+        end
 
         notification = @feedback_request.notifications.create!(
           notification_type: 'feedback_request',
           status: 'preparing_to_send',
-          metadata: { channel: responder.slack_user_id },
+          metadata: { channel: responder.slack_user_id, teammate_id: responder.id },
           rich_message: blocks,
           fallback_text: fallback_text
         )
@@ -63,10 +71,16 @@ module FeedbackRequests
 
     private
 
-    def build_message_blocks(subject_name:, requestor_name:, answer_url:)
-      text = "*Feedback request*\n\n#{requestor_name} has requested your feedback about #{subject_name}. " \
-             "Please share your input using the link below.\n\n" \
-             "<#{answer_url}|Respond to this feedback request>"
+    def build_message_blocks(requestor_same_as_subject:, subject_casual_name:, subject_name:, requestor_name:, answer_url:)
+      text = if requestor_same_as_subject
+        "*Feedback request*\n\n#{subject_casual_name} has requested your feedback. " \
+          "Please share your input using the link below.\n\n" \
+          "<#{answer_url}|Respond to this feedback request>"
+      else
+        "*Feedback request*\n\n#{requestor_name} has requested your feedback about #{subject_name}. " \
+          "Please share your input using the link below.\n\n" \
+          "<#{answer_url}|Respond to this feedback request>"
+      end
       [
         {
           type: 'section',

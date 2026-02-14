@@ -55,13 +55,17 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
   def show
     authorize @feedback_request
-    
+
     @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
     @responders = @feedback_request.responders.includes(:person)
     @observations = @feedback_request.observations.includes(:observer, :observed_teammates)
     @responder_records_by_teammate_id = @feedback_request.feedback_request_responders.index_by(&:teammate_id)
     @observations_by_observer_id = @feedback_request.observations.includes(:feedback_request_question).group_by(&:observer_id)
     @observation_by_observer_and_question = @feedback_request.observations.includes(:feedback_request_question).index_by { |o| [o.observer_id, o.feedback_request_question_id] }
+
+    @notifications_sent = @feedback_request.respondent_notifications_sent
+    teammate_ids = @notifications_sent.filter_map { |n| n.metadata&.dig('teammate_id') }.uniq.map(&:to_i)
+    @teammates_by_id = CompanyTeammate.where(id: teammate_ids).includes(:person).index_by(&:id)
   end
 
   def new

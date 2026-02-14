@@ -290,6 +290,23 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Notify Respondents')
     end
+
+    it 'shows Notifications Sent section with who was notified and when' do
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      feedback_request.notifications.create!(
+        notification_type: 'feedback_request',
+        status: 'sent_successfully',
+        metadata: { channel: 'U123', teammate_id: responder_teammate.id },
+        fallback_text: 'Test'
+      )
+      sign_in_as_teammate_for_request(requestor_person, company)
+
+      get organization_feedback_request_path(company, feedback_request)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Notifications Sent')
+      expect(response.body).to include(responder_teammate.person.display_name)
+    end
   end
 
   describe 'GET /organizations/:organization_id/feedback_requests/:id/select_focus' do

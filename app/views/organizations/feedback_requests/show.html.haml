@@ -168,6 +168,21 @@
     - else
       %p.text-muted.mb-0 No responders assigned.
 
+- if @notifications_sent.any?
+  .card.mb-3
+    .card-header
+      %h5.mb-0 Notifications Sent
+    .card-body
+      %p.text-muted.small.mb-2 The following respondents were notified via Slack:
+      %ul.list-unstyled.mb-0
+        - @notifications_sent.each do |notification|
+          - teammate = @teammates_by_id[notification.metadata&.dig('teammate_id')&.to_i]
+          - if teammate
+            %li.mb-1
+              = link_to teammate.person.display_name, internal_organization_company_teammate_path(organization, teammate), class: "text-decoration-none"
+              %span.text-muted.ms-1
+                = format_time_in_user_timezone(notification.created_at)
+
 - if @observations.any?
   .card.mb-3
     .card-header

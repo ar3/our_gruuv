@@ -59,13 +59,40 @@ RSpec.describe FeedbackRequests::NotifyRespondentsService, type: :service do
         expect(feedback_request.notifications.where(notification_type: 'feedback_request').count).to eq(1)
       end
 
-      it 'creates notification with correct channel and message content' do
+      it 'creates notification with correct channel, teammate_id, and message content' do
         described_class.call(feedback_request: feedback_request)
 
         notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
         expect(notification.metadata['channel']).to eq('U111')
+        expect(notification.metadata['teammate_id']).to eq(responder1.id)
         expect(notification.fallback_text).to include('Respond here:')
         expect(notification.rich_message).to be_present
+      end
+    end
+
+    context 'when requestor is the same as subject' do
+      let(:feedback_request) do
+        create(:feedback_request,
+          company: company,
+          requestor_teammate: requestor_teammate,
+          subject_of_feedback_teammate: requestor_teammate,
+          subject_line: 'Feedback about me'
+        )
+      end
+
+      before do
+        create(:teammate_identity, teammate: responder1, provider: 'slack', uid: 'U111')
+        allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '1.0' })
+      end
+
+      it 'uses message that subject has requested your feedback (no "about X")' do
+        described_class.call(feedback_request: feedback_request)
+
+        notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
+        text = notification.rich_message.first['text']['text']
+        expect(text).to include('has requested your feedback.')
+        expect(text).not_to include('has requested your feedback about')
+        expect(notification.fallback_text).to match(/\A#{requestor_teammate.person.casual_name} has requested your feedback\./)
       end
     end
 

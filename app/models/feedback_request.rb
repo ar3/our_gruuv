@@ -87,6 +87,14 @@ class FeedbackRequest < ApplicationRecord
     'invalid' # fallback
   end
 
+  # Notifications sent to respondents (Slack DMs) for this feedback request.
+  # Each notification has metadata['teammate_id'] so we can list who was notified and when.
+  def respondent_notifications_sent
+    notifications
+      .where(notification_type: 'feedback_request', status: 'sent_successfully')
+      .order(created_at: :desc)
+  end
+
   # Check if notifications have been sent to responders
   def notifications_sent?
     # Check if there are any successful notifications for this feedback request
