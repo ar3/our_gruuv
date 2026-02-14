@@ -311,6 +311,30 @@ RSpec.describe Ability, type: :model do
     end
   end
 
+  describe '.default_milestone_description' do
+    it 'returns template for levels 1 through 5' do
+      (1..5).each do |level|
+        text = Ability.default_milestone_description(level)
+        expect(text).to be_present
+        expect(text).to include('I have observed this person')
+        expect(text).to include('this ability')
+      end
+    end
+
+    it 'returns nil for invalid level' do
+      expect(Ability.default_milestone_description(0)).to be_nil
+      expect(Ability.default_milestone_description(6)).to be_nil
+    end
+
+    it 'returns different content per level' do
+      one = Ability.default_milestone_description(1)
+      five = Ability.default_milestone_description(5)
+      expect(one).not_to eq(five)
+      expect(one).to include('small amount of guidance')
+      expect(five).to include('community/industry')
+    end
+  end
+
   describe '#to_param' do
     let(:created_by) { create(:person) }
     let(:updated_by) { create(:person) }

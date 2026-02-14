@@ -37,6 +37,17 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
       # This test ensures the error is fixed
       expect(Rails.application.routes.url_helpers).not_to respond_to(:company_abilities_path)
     end
+
+    it 'assigns ability with default milestone descriptions for the form' do
+      get :new, params: { organization_id: organization.id }
+
+      ability = assigns(:ability)
+      expect(ability).to be_new_record
+      expect(ability.milestone_1_description).to be_present
+      expect(ability.milestone_1_description).to include('employ this ability with only a small amount of guidance')
+      expect(ability.milestone_5_description).to be_present
+      expect(ability.milestone_5_description).to include('community/industry')
+    end
   end
 
   describe 'POST #create' do
@@ -272,6 +283,25 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
       form = assigns(:form)
       expect(form.errors[:version_type]).to include("can't be blank")
       expect(form.errors[:base]).to be_empty
+    end
+  end
+
+  describe 'GET #edit' do
+    it 'prefills default milestone descriptions when all five are blank' do
+      ability_with_blank_milestones = create(:ability, company: organization,
+        milestone_1_description: nil,
+        milestone_2_description: nil,
+        milestone_3_description: nil,
+        milestone_4_description: nil,
+        milestone_5_description: nil
+      )
+
+      get :edit, params: { organization_id: organization.id, id: ability_with_blank_milestones.id }
+
+      ability = assigns(:ability)
+      expect(ability.milestone_1_description).to be_present
+      expect(ability.milestone_1_description).to include('employ this ability with only a small amount of guidance')
+      expect(ability.milestone_5_description).to include('community/industry')
     end
   end
 

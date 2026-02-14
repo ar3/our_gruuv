@@ -10,7 +10,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     @abilities = policy_scope(Ability).for_company(company).includes(:department)
     
     # Apply filters
-    @abilities = @abilities.where("name ILIKE ?", "%#{params[:name]}%") if params[:name].present?
+    @abilities = @abilities.where("abilities.name ILIKE ?", "%#{params[:name]}%") if params[:name].present?
     
     # Filter by department
     if params[:department_id].present?
@@ -41,9 +41,9 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     # Apply sorting (default department_and_name for grouped-by-department style)
     case params[:sort]
     when 'name'
-      @abilities = @abilities.order(:name)
+      @abilities = @abilities.order('abilities.name')
     when 'department_and_name'
-      @abilities = @abilities.left_joins(:department).order(Arel.sql("COALESCE(departments.name, '')"), :name)
+      @abilities = @abilities.left_joins(:department).order(Arel.sql("COALESCE(departments.name, '')"), Arel.sql("abilities.name"))
     when 'milestones'
       @abilities = @abilities.left_joins(:teammate_milestones).group('abilities.id').order('COUNT(teammate_milestones.id) DESC')
     when 'milestones_desc'
@@ -56,12 +56,12 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       @abilities = @abilities.order(:semantic_version)
     else
       # Default: sort by department then name (for grouped-by-department view)
-      @abilities = @abilities.left_joins(:department).order(Arel.sql("COALESCE(departments.name, '')"), :name)
+      @abilities = @abilities.left_joins(:department).order(Arel.sql("COALESCE(departments.name, '')"), Arel.sql("abilities.name"))
     end
     
     # Apply direction if specified
     if params[:direction] == 'desc' && params[:sort] == 'name'
-      @abilities = @abilities.order(name: :desc)
+      @abilities = @abilities.order(Arel.sql("abilities.name DESC"))
     end
     
     # Group abilities by department (nil = "No Department"), sorted like assignments index
@@ -101,6 +101,10 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def new
     @ability = Ability.new(company: company)
+    # Prefill default milestone descriptions for the form (not persisted until save)
+    (1..5).each do |level|
+      @ability.send("milestone_#{level}_description=", Ability.default_milestone_description(level))
+    end
     @ability_decorator = AbilityDecorator.new(@ability)
     @form = AbilityForm.new(@ability)
     @form.current_person = current_person
