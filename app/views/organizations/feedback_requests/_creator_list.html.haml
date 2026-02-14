@@ -1,0 +1,125 @@
+- # Spotlight and table for "I'm the subject" and "I asked for others" tabs. Expects @feedback_requests, @current_filters, @current_sort, @current_view, @current_spotlight, @spotlight_stats
+- empty_heading = local_assigns[:empty_heading] || "No Feedback Requests"
+- empty_message = local_assigns[:empty_message] || "There are no feedback requests in this view."
+- empty_cta = local_assigns[:empty_cta]
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-transparent.border-0
+        %h5.mb-0
+          %i.bi.bi-send.me-2
+          Requests in this view
+      .card-body
+        - case @current_spotlight
+        - when 'open_requests'
+          = render partial: 'organizations/feedback_requests/spotlights/open_requests'
+        - when 'open_responders'
+          = render partial: 'organizations/feedback_requests/spotlights/open_responders'
+        - when 'responder_count'
+          = render partial: 'organizations/feedback_requests/spotlights/responder_count'
+        - else
+          = render partial: 'organizations/feedback_requests/spotlights/overview'
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-funnel.me-1
+              Filters:
+              - filter_parts = []
+              - filter_parts << (@current_filters[:show_archived] == '1' ? 'Archived' : 'Active')
+              - filter_parts << (@current_filters[:subject] ? "Subject: #{CompanyTeammate.find(@current_filters[:subject])&.person&.display_name}" : 'All Subjects')
+              - filter_parts << (@current_filters[:requestor] ? "Requestor: #{CompanyTeammate.find(@current_filters[:requestor])&.person&.display_name}" : 'All Requestors')
+              - filter_parts << (@current_filters[:rateable_type] ? "#{@current_filters[:rateable_type]}" : 'All Types')
+              = filter_parts.join(' / ')
+              %br
+              %i.bi.bi-sort-down.me-1
+              - sort_display = case @current_sort
+              - when 'created_at_desc' then 'Created Date (Newest First)'
+              - when 'created_at_asc' then 'Created Date (Oldest First)'
+              - when 'updated_at_desc' then 'Updated Date (Newest First)'
+              - when 'updated_at_asc' then 'Updated Date (Oldest First)'
+              - when 'subject_name' then 'Subject Name (A-Z)'
+              - when 'subject_name_desc' then 'Subject Name (Z-A)'
+              - else 'Created Date (Newest First)'
+              Sort: #{sort_display}
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-table.me-1
+              View: #{@current_view.capitalize}
+              %br
+              %i.bi.bi-eye.me-1
+              Spotlight: #{@current_spotlight&.humanize || 'Overview'}
+
+.row.justify-content-center
+  .col-lg-12
+    - if @feedback_requests.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Subject
+              %th Requestor
+              %th Resource
+              %th Questions
+              %th Responders
+              %th Observations
+              %th Created
+              %th Actions
+          %tbody
+            - @feedback_requests.each do |request|
+              %tr{class: "#{'text-muted' if request.archived?}"}
+                %td
+                  = request.subject_of_feedback_teammate.person.display_name
+                  - if request.archived?
+                    %span.badge.bg-secondary.ms-2 Archived
+                %td= request.requestor_teammate.person.display_name
+                %td
+                  - rateable = request.feedback_request_questions.first&.rateable
+                  - if rateable
+                    - case rateable.class.name
+                    - when 'Assignment'
+                      %span.badge.bg-primary= rateable.title
+                    - when 'Ability'
+                      %span.badge.bg-info= rateable.name
+                    - when 'Aspiration'
+                      %span.badge.bg-success= rateable.name
+                  - else
+                    %span.text-muted Generic
+                %td
+                  %span.badge.bg-secondary= request.feedback_request_questions.count
+                %td
+                  %span.badge.bg-secondary= request.responders.count
+                %td
+                  %span.badge.bg-secondary= request.observations.count
+                %td= format_time_in_user_timezone(request.created_at)
+                %td
+                  .btn-group.btn-group-sm
+                    - if policy(request).show?
+                      = link_to organization_feedback_request_path(organization, request), class: "btn btn-outline-primary", title: "View" do
+                        %i.bi.bi-eye
+                    - if policy(request).update?
+                      = link_to edit_organization_feedback_request_path(organization, request), class: "btn btn-outline-secondary", title: "Edit" do
+                        %i.bi.bi-pencil
+                    - if policy(request).answer?
+                      = link_to answer_organization_feedback_request_path(organization, request), class: "btn btn-outline-success", title: "Respond" do
+                        %i.bi.bi-reply
+                    - if policy(request).destroy?
+                      - if request.archived?
+                        = button_to restore_organization_feedback_request_path(organization, request), method: :post, class: "btn btn-outline-success", title: "Restore", form: { style: "display: inline;" } do
+                          %i.bi.bi-arrow-counterclockwise
+                      - else
+                        = button_to archive_organization_feedback_request_path(organization, request), method: :post, class: "btn btn-outline-danger", title: "Archive", form: { data: { confirm: "Are you sure you want to archive this feedback request?" }, style: "display: inline;" } do
+                          %i.bi.bi-archive
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          = empty_heading
+        %p.mb-2
+          - if @current_filters[:show_archived] == '1'
+            There are no archived feedback requests in this view.
+          - else
+            = empty_message
+        - if empty_cta
+          = empty_cta

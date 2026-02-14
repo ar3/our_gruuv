@@ -8,6 +8,8 @@
   = @return_text || "Back to Feedback Requests"
 
 = form_with url: update_view_organization_feedback_requests_path(@organization), method: :patch, local: true do |form|
+  - if @return_to.present?
+    = hidden_field_tag :return_to, @return_to
   .row
     .col-md-4
       .mb-4

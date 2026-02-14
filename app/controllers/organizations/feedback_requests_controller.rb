@@ -3,35 +3,13 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
   before_action :set_feedback_request, only: [:show, :edit, :update, :destroy, :select_focus, :update_focus, :feedback_prompt, :update_questions, :select_respondents, :update_respondents, :add_respondent, :remove_respondent, :answer, :submit_answers, :archive, :restore]
 
   after_action :verify_authorized
-  after_action :verify_policy_scoped, only: :index
+  after_action :verify_policy_scoped, only: [:index, :as_subject, :requested_for_others]
 
   def index
     authorize company, :view_feedback_requests?
-    
-    # Use query object to get filtered and sorted feedback requests
-    query = FeedbackRequestsQuery.new(organization, params, current_person: current_person)
-    
-    # Get base scope using policy_scope (required by Pundit)
     base_scope = policy_scope(FeedbackRequest).where(company: company)
-    
-    # Requests I made: only where current user is the requestor
-    my_requests_scope = base_scope.where(requestor_teammate_id: current_company_teammate&.id)
-    @feedback_requests = query.filter_by_archived(my_requests_scope)
-    @feedback_requests = query.filter_by_subject(@feedback_requests)
-    @feedback_requests = query.filter_by_requestor(@feedback_requests)
-    @feedback_requests = query.filter_by_rateable(@feedback_requests)
-    @feedback_requests = query.apply_sort(@feedback_requests)
-    
-    @feedback_requests = @feedback_requests.includes(
-      :requestor_teammate,
-      :subject_of_feedback_teammate,
-      { feedback_request_questions: [] },
-      :responders
-    )
-    
-    # Requests of me: where current user is a responder; filter by open (incomplete + not archived) or all
-    # When archived, request behaves as completed for responders (excluded from "open", no Respond link).
-    # In "all": exclude archived requests where the respondent hasn't answered (don't show as completed).
+
+    # Tab: I'm the Respondent — requests where I'm a respondent
     @requests_of_me = if current_company_teammate
       scope = base_scope
         .joins(:feedback_request_responders)
@@ -48,49 +26,60 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       FeedbackRequest.none
     end
     @requests_of_me_filter = params[:requests_of_me] == 'all' ? 'all' : 'open'
-    
-    @current_filters = query.current_filters
-    @current_sort = query.current_sort
-    @current_view = query.current_view
-    @current_spotlight = query.current_spotlight
-    
-    # Calculate spotlight statistics (for "Requests I made")
-    @spotlight_stats = calculate_spotlight_stats
+
+    set_feedback_request_tab_counts(base_scope)
+    @active_feedback_tab = :respondent
+    @customize_return_path = organization_feedback_requests_path(organization)
+  end
+
+  def as_subject
+    authorize company, :view_feedback_requests?
+    base_scope = policy_scope(FeedbackRequest).where(company: company)
+    load_feedback_requests_for_tab(
+      base_scope.where(subject_of_feedback_teammate_id: current_company_teammate&.id)
+    )
+    set_feedback_request_tab_counts(base_scope)
+    @active_feedback_tab = :as_subject
+    @customize_return_path = as_subject_organization_feedback_requests_path(organization)
+  end
+
+  def requested_for_others
+    authorize company, :view_feedback_requests?
+    base_scope = policy_scope(FeedbackRequest).where(company: company)
+    my_id = current_company_teammate&.id
+    creator_not_subject_scope = base_scope
+      .where(requestor_teammate_id: my_id)
+      .where.not(subject_of_feedback_teammate_id: my_id)
+    load_feedback_requests_for_tab(creator_not_subject_scope)
+    set_feedback_request_tab_counts(base_scope)
+    @active_feedback_tab = :requested_for_others
+    @customize_return_path = requested_for_others_organization_feedback_requests_path(organization)
   end
 
   def customize_view
     authorize company, :view_feedback_requests?
-    
-    # Load current state from params
     query = FeedbackRequestsQuery.new(organization, params, current_person: current_person)
-    
     @current_filters = query.current_filters
     @current_sort = query.current_sort
     @current_view = query.current_view
     @current_spotlight = query.current_spotlight
-    
-    # Get available options for filters
     @available_subjects = CompanyTeammate.where(organization: company).where(last_terminated_at: nil).includes(:person).order('people.last_name, people.first_name')
     @available_requestors = CompanyTeammate.where(organization: company).where(last_terminated_at: nil).includes(:person).order('people.last_name, people.first_name')
     @available_assignments = company.assignments.ordered
     @available_abilities = company.abilities.order(:name)
     @available_aspirations = company.aspirations.ordered
-    
-    # Preserve current params for return URL
     return_params = params.except(:controller, :action, :page).permit!.to_h
-    @return_url = organization_feedback_requests_path(organization, return_params)
+    @return_to = return_params[:return_to]
+    @return_url = feedback_requests_path_for_return_to(@return_to, return_params)
     @return_text = "Back to Feedback Requests"
-    
     render layout: 'overlay'
   end
 
   def update_view
     authorize company, :view_feedback_requests?
-    
-    # Build redirect URL with all view customization params
     redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h
-    
-    redirect_to organization_feedback_requests_path(organization, redirect_params)
+    return_to = redirect_params.delete(:return_to)
+    redirect_to feedback_requests_path_for_return_to(return_to, redirect_params)
   end
 
   def show
@@ -524,26 +513,88 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
   private
 
-  def calculate_spotlight_stats
-    # Spotlight reflects "Requests I made" only
-    all_requests = FeedbackRequestsQuery.new(organization, params.except(:sort), current_person: current_person).call
-    all_requests = current_company_teammate ? all_requests.where(requestor_teammate_id: current_company_teammate.id) : all_requests.none
-    
+  def set_feedback_request_tab_counts(base_scope)
+    unless current_company_teammate
+      @incomplete_respondent_count = @as_subject_count = @requested_for_others_count = 0
+      return
+    end
+    my_id = current_company_teammate.id
+    # Incomplete where I'm the respondent (open requests where I haven't completed)
+    @incomplete_respondent_count = base_scope
+      .joins(:feedback_request_responders)
+      .where(feedback_request_responders: { teammate_id: my_id, completed_at: nil })
+      .where(feedback_requests: { deleted_at: nil })
+      .distinct
+      .count
+    # Unarchived where I'm the subject
+    @as_subject_count = base_scope
+      .where(subject_of_feedback_teammate_id: my_id)
+      .where(deleted_at: nil)
+      .count
+    # Unarchived where I'm the creator but not the subject
+    @requested_for_others_count = base_scope
+      .where(requestor_teammate_id: my_id)
+      .where.not(subject_of_feedback_teammate_id: my_id)
+      .where(deleted_at: nil)
+      .count
+  end
+
+  def load_feedback_requests_for_tab(scope)
+    query = FeedbackRequestsQuery.new(organization, params, current_person: current_person)
+    @feedback_requests = query.filter_by_archived(scope)
+    @feedback_requests = query.filter_by_subject(@feedback_requests)
+    @feedback_requests = query.filter_by_requestor(@feedback_requests)
+    @feedback_requests = query.filter_by_rateable(@feedback_requests)
+    @feedback_requests = query.apply_sort(@feedback_requests)
+    @feedback_requests = @feedback_requests.includes(
+      :requestor_teammate,
+      :subject_of_feedback_teammate,
+      { feedback_request_questions: [] },
+      :responders
+    )
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @current_spotlight = query.current_spotlight
+    @spotlight_stats = calculate_spotlight_stats(requests_scope: @feedback_requests)
+  end
+
+  def feedback_requests_path_for_return_to(return_to, query_params = {})
+    case return_to
+    when 'as_subject'
+      as_subject_organization_feedback_requests_path(organization, query_params)
+    when 'requested_for_others'
+      requested_for_others_organization_feedback_requests_path(organization, query_params)
+    else
+      organization_feedback_requests_path(organization, query_params)
+    end
+  end
+
+  def calculate_spotlight_stats(requests_scope: nil)
+    all_requests = if requests_scope
+      requests_scope
+    else
+      base = FeedbackRequestsQuery.new(organization, params.except(:sort), current_person: current_person).call
+      current_company_teammate ? base.where(requestor_teammate_id: current_company_teammate.id) : base.none
+    end
+    open_requests_scope = all_requests.respond_to?(:not_deleted) ? all_requests.not_deleted : all_requests.where(deleted_at: nil)
+
     case @current_spotlight
     when 'open_requests'
-      open_requests = all_requests.not_deleted
+      open_requests = open_requests_scope
+      open_list = open_requests.to_a
       {
         open_requests: open_requests.count,
         total_requests: all_requests.count,
-        with_responses: open_requests.select { |r| r.has_responses? }.count,
-        without_responses: open_requests.select { |r| !r.has_responses? }.count
+        with_responses: open_list.count { |r| r.has_responses? },
+        without_responses: open_list.count { |r| !r.has_responses? }
       }
     when 'open_responders'
-      open_requests = all_requests.not_deleted
-      total_responders = open_requests.sum { |r| r.responders.count }
-      responded_count = open_requests.sum { |r| r.responder_response_count }
+      open_requests = open_requests_scope
+      open_list = open_requests.includes(:responders).to_a
+      total_responders = open_list.sum { |r| r.responders.count }
+      responded_count = open_list.sum { |r| r.responder_response_count }
       unanswered_count = total_responders - responded_count
-      
       {
         total_responders: total_responders,
         responded_count: responded_count,
@@ -551,20 +602,22 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
         open_requests: open_requests.count
       }
     when 'responder_count'
-      open_requests = all_requests.not_deleted
+      open_requests = open_requests_scope
+      open_list = open_requests.includes(:responders).to_a
       {
-        total_responders: open_requests.sum { |r| r.responders.count },
-        responded_count: open_requests.sum { |r| r.responder_response_count },
+        total_responders: open_list.sum { |r| r.responders.count },
+        responded_count: open_list.sum { |r| r.responder_response_count },
         open_requests: open_requests.count
       }
     else # 'overview'
-      open_requests = all_requests.not_deleted
+      open_requests = open_requests_scope
+      open_list = open_requests.includes(:responders).to_a
       {
         open_requests: open_requests.count,
         total_requests: all_requests.count,
-        with_responses: open_requests.select { |r| r.has_responses? }.count,
-        total_responders: open_requests.sum { |r| r.responders.count },
-        responded_count: open_requests.sum { |r| r.responder_response_count }
+        with_responses: open_list.count { |r| r.has_responses? },
+        total_responders: open_list.sum { |r| r.responders.count },
+        responded_count: open_list.sum { |r| r.responder_response_count }
       }
     end
   end

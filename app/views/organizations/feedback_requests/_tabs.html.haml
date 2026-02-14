@@ -1,0 +1,19 @@
+- # Tabs for feedback request index / as_subject / requested_for_others
+- incomplete = @incomplete_respondent_count.to_i
+- as_subject_count = @as_subject_count.to_i
+- for_others_count = @requested_for_others_count.to_i
+
+%ul.nav.nav-tabs.mb-3{role: "tablist"}
+  %li.nav-item{role: "presentation"}
+    = link_to organization_feedback_requests_path(organization), class: "nav-link #{@active_feedback_tab == :respondent ? 'active' : ''}", role: "tab" do
+      I'm the Respondent
+      %span.badge.bg-primary.ms-1= incomplete
+  %li.nav-item{role: "presentation"}
+    = link_to as_subject_organization_feedback_requests_path(organization), class: "nav-link #{@active_feedback_tab == :as_subject ? 'active' : ''}", role: "tab" do
+      I'm the subject
+      %span.badge.bg-secondary.ms-1= as_subject_count
+  - if for_others_count > 0
+    %li.nav-item{role: "presentation"}
+      = link_to requested_for_others_organization_feedback_requests_path(organization), class: "nav-link #{@active_feedback_tab == :requested_for_others ? 'active' : ''}", role: "tab" do
+        I asked for others
+        %span.badge.bg-secondary.ms-1= for_others_count

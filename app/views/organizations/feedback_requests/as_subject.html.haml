@@ -1,0 +1,27 @@
+- content_for :title, "Feedback Requests — I'm the subject"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-chat-dots.me-2
+      Feedback Requests
+    .d-flex.align-items-center
+      - if policy(FeedbackRequest.new(company: organization.root_company || organization)).create?
+        = link_to new_organization_feedback_request_path(organization), class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus
+          New Request
+
+- content_for :go_back_link do
+  = link_to dashboard_organization_path(organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Dashboard
+
+- content_for :header_action do
+  - customize_params = params.except(:controller, :action, :page).permit!.to_h.merge(return_to: 'as_subject')
+  = link_to customize_view_organization_feedback_requests_path(organization, customize_params), class: "btn btn-outline-secondary" do
+    %i.bi.bi-gear.me-2
+    Customize
+
+= render partial: 'organizations/feedback_requests/tabs'
+
+= render partial: 'organizations/feedback_requests/creator_list', locals: { empty_heading: "No Feedback Requests About You", empty_message: "No one has requested feedback about you yet.", empty_cta: nil }

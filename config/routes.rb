@@ -383,6 +383,8 @@ Rails.application.routes.draw do
     # Feedback Requests management
     resources :feedback_requests, module: :organizations do
       collection do
+        get :as_subject
+        get :requested_for_others
         get :customize_view
         patch :update_view
       end

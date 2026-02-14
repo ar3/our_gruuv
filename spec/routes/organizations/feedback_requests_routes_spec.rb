@@ -41,6 +41,22 @@ RSpec.describe "Organizations::FeedbackRequests Routes", type: :routing do
       expect(organization_feedback_requests_path(organization_id)).to eq("/organizations/#{organization_id}/feedback_requests")
     end
 
+    it "routes GET /organizations/:organization_id/feedback_requests/as_subject to organizations/feedback_requests#as_subject" do
+      expect(get: "/organizations/#{organization_id}/feedback_requests/as_subject").to route_to(
+        controller: "organizations/feedback_requests",
+        action: "as_subject",
+        organization_id: organization_id
+      )
+    end
+
+    it "routes GET /organizations/:organization_id/feedback_requests/requested_for_others to organizations/feedback_requests#requested_for_others" do
+      expect(get: "/organizations/#{organization_id}/feedback_requests/requested_for_others").to route_to(
+        controller: "organizations/feedback_requests",
+        action: "requested_for_others",
+        organization_id: organization_id
+      )
+    end
+
     it "routes GET /organizations/:organization_id/feedback_requests/customize_view to organizations/feedback_requests#customize_view" do
       expect(get: "/organizations/#{organization_id}/feedback_requests/customize_view").to route_to(
         controller: "organizations/feedback_requests",

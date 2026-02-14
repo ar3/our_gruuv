@@ -45,32 +45,36 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response.body).to include('Feedback Requests')
     end
 
-    it 'excludes archived requests by default' do
-      # Create archived request with a different subject so we can distinguish it
+    it 'excludes archived requests by default on as_subject' do
+      # Current user (requestor) is the subject of the active request; archived is about someone else
+      feedback_request.update!(subject_of_feedback_teammate: requestor_teammate)
       archived_subject_person = create(:person)
       archived_subject_teammate = CompanyTeammate.find_or_create_by!(person: archived_subject_person, organization: company)
       archived_request = create(:feedback_request, :archived,
         company: company,
         requestor_teammate: requestor_teammate,
-        subject_of_feedback_teammate: archived_subject_teammate
+        subject_of_feedback_teammate: archived_subject_teammate,
+        subject_line: 'Archived about other'
       )
 
-      get organization_feedback_requests_path(company)
+      get as_subject_organization_feedback_requests_path(company)
       expect(response.body).to include(feedback_request.subject_of_feedback_teammate.person.display_name)
       expect(response.body).not_to include(archived_request.subject_of_feedback_teammate.person.display_name)
     end
 
-    it 'includes archived requests when show_archived=1' do
-      archived_request = create(:feedback_request, :archived,
+    it 'includes archived requests when show_archived=1 on as_subject' do
+      feedback_request.update!(subject_of_feedback_teammate: requestor_teammate)
+      create(:feedback_request, :archived,
         company: company,
         requestor_teammate: requestor_teammate,
-        subject_of_feedback_teammate: subject_teammate,
-        subject_line: 'Archived request'
+        subject_of_feedback_teammate: requestor_teammate,
+        subject_line: 'Archived about me'
       )
 
-      get organization_feedback_requests_path(company, show_archived: '1')
-      expect(response.body).to include(feedback_request.subject_of_feedback_teammate.person.display_name)
-      expect(response.body).to include(archived_request.subject_of_feedback_teammate.person.display_name)
+      get as_subject_organization_feedback_requests_path(company, show_archived: '1')
+      expect(response.body).to include(requestor_teammate.person.display_name)
+      # Table shows both active and archived; archived row has "Archived" badge
+      expect(response.body).to include('Archived')
     end
 
     it 'requires authorization' do
@@ -82,29 +86,28 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response).to have_http_status(:redirect)
     end
 
-    it 'displays empty state when there are no feedback requests' do
-      # Delete the feedback request created in let! to test empty state
+    it 'displays empty state on index when there are no requests of me' do
       feedback_request.destroy
-      
       get organization_feedback_requests_path(company)
-      
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('No Feedback Requests')
-      expect(response.body).to include('Create your first feedback request to gather structured feedback from teammates.')
-      expect(response.body).to include('Create First Feedback Request')
-      # Table should not be rendered when empty
-      expect(response.body).not_to match(/<table[^>]*>/)
+      expect(response.body).to include('Requests of me')
+      expect(response.body).to include('You have no open feedback requests').or include('No one has requested your feedback yet')
     end
 
-    it 'displays empty state for archived when all requests are active and show_archived=1' do
-      # Delete the active request created in let!
+    it 'displays empty state on as_subject when there are no feedback requests about you' do
       feedback_request.destroy
-      
-      get organization_feedback_requests_path(company, show_archived: '1')
-      
+      get as_subject_organization_feedback_requests_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('No Feedback Requests About You')
+      expect(response.body).to include('No one has requested feedback about you yet')
+    end
+
+    it 'displays empty state for archived on as_subject when all requests are active and show_archived=1' do
+      feedback_request.destroy
+      get as_subject_organization_feedback_requests_path(company, show_archived: '1')
       expect(response).to have_http_status(:success)
       expect(response.body).to include('No Feedback Requests')
-      expect(response.body).to include('There are no archived feedback requests that you created.')
+      expect(response.body).to include('There are no archived feedback requests in this view')
     end
 
     context 'when a request has one question answered (one observation created)' do
@@ -124,12 +127,12 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         observation.save!
       end
 
-      it 'renders the index and shows the request with one observation in the Observations column' do
-        get organization_feedback_requests_path(company)
+      it 'renders as_subject and shows the request with one observation in the Observations column' do
+        sign_in_as_teammate_for_request(subject_person, company)
+        get as_subject_organization_feedback_requests_path(company)
         expect(response).to have_http_status(:success)
         expect(response.body).to include(feedback_request.subject_of_feedback_teammate.person.display_name)
         expect(response.body).to include('Observations')
-        # Table row for this request shows observation count 1 (badge)
         expect(response.body).to include('>1</span>')
       end
     end
