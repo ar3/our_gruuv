@@ -1,6 +1,6 @@
 class Organizations::FeedbackRequestsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_feedback_request, only: [:show, :edit, :update, :destroy, :select_focus, :update_focus, :feedback_prompt, :update_questions, :select_respondents, :update_respondents, :answer, :submit_answers, :archive, :restore]
+  before_action :set_feedback_request, only: [:show, :edit, :update, :destroy, :select_focus, :update_focus, :feedback_prompt, :update_questions, :select_respondents, :update_respondents, :add_respondent, :remove_respondent, :answer, :submit_answers, :archive, :restore]
 
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
@@ -331,45 +331,110 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
   def select_respondents
     authorize @feedback_request, :update?
-    
-    @teammates = CompanyTeammate.where(organization: company).where(last_terminated_at: nil).includes(:person).order('people.last_name, people.first_name')
-    @selected_respondents = @feedback_request.responders.pluck(:id)
-    
+
+    # All active teammates, sorted by last name, preferred name, first name
+    all_teammates = CompanyTeammate
+      .where(organization: company)
+      .where(last_terminated_at: nil)
+      .joins(:person)
+      .includes(:person, employment_tenures: { position: { title: :department } })
+      .order(Arel.sql('people.last_name ASC NULLS LAST, people.preferred_name ASC NULLS LAST, people.first_name ASC NULLS LAST'))
+
+    # Group by department (from active employment tenure's position title)
+    teammates_by_department = {}
+    all_teammates.each do |t|
+      tenure = t.employment_tenures.detect { |et| et.ended_at.nil? && et.company_id == company.id }
+      dept = tenure&.position&.title&.department
+      teammates_by_department[dept] ||= []
+      teammates_by_department[dept] << t
+    end
+    teammates_by_department.each_value do |list|
+      list.sort_by! { |t| [t.person.last_name.to_s, t.person.preferred_name.to_s, t.person.first_name.to_s] }
+    end
+
+    selected_ids = @feedback_request.responders.pluck(:id).to_set
+    @selected_respondent_teammates = @feedback_request.responders
+      .joins(:person)
+      .includes(:person)
+      .order(Arel.sql('people.last_name ASC NULLS LAST, people.preferred_name ASC NULLS LAST, people.first_name ASC NULLS LAST'))
+
+    # Grouped options for dropdown: only teammates not already in the list
+    teammates_by_department.each_key do |dept|
+      teammates_by_department[dept] = teammates_by_department[dept].reject { |t| selected_ids.include?(t.id) }
+    end
+    teammates_by_department.delete_if { |_, list| list.empty? }
+
+    @grouped_respondent_options = teammates_by_department.keys
+      .sort_by { |dept| dept.nil? ? [1, ''] : [0, dept.display_name] }
+      .map do |dept|
+        label = dept ? dept.display_name : 'No department'
+        options = teammates_by_department[dept].map { |t| [t.person.display_name, t.id] }
+        [label, options]
+      end
+
     render :select_respondents
+  end
+
+  def add_respondent
+    authorize @feedback_request, :update?
+    unless @feedback_request.can_be_edited? || @feedback_request.can_add_responders?
+      redirect_to organization_feedback_request_path(organization, @feedback_request), alert: 'This feedback request cannot be edited.'
+      return
+    end
+
+    teammate_id = params[:respondent_id].to_i
+    if teammate_id.zero?
+      redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request), alert: 'Please select a teammate to add.'
+      return
+    end
+
+    unless CompanyTeammate.exists?(id: teammate_id, organization: company)
+      redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request), alert: 'Invalid teammate.'
+      return
+    end
+
+    if @feedback_request.responders.exists?(id: teammate_id)
+      redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request)
+      return
+    end
+
+    @feedback_request.feedback_request_responders.create!(teammate_id: teammate_id)
+    redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request)
+  end
+
+  def remove_respondent
+    authorize @feedback_request, :update?
+    unless @feedback_request.can_be_edited? || @feedback_request.can_add_responders?
+      redirect_to organization_feedback_request_path(organization, @feedback_request), alert: 'This feedback request cannot be edited.'
+      return
+    end
+
+    teammate_id = params[:respondent_id].to_i
+    if teammate_id.zero?
+      redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request)
+      return
+    end
+
+    @feedback_request.feedback_request_responders.where(teammate_id: teammate_id).destroy_all
+    redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request)
   end
 
   def update_respondents
     authorize @feedback_request, :update?
-    
+
     unless @feedback_request.can_be_edited? || @feedback_request.can_add_responders?
       redirect_to organization_feedback_request_path(organization, @feedback_request),
                   alert: 'This feedback request cannot be edited in its current state.'
       return
     end
-    
-    responder_ids = Array(params[:respondent_ids]).map(&:to_i).reject(&:zero?)
-    
-    if responder_ids.empty? && @feedback_request.responders.empty?
-      # State will be computed as invalid automatically
+
+    # Respondents are managed via add_respondent/remove_respondent; this action finalizes the list
+    if @feedback_request.responders.empty?
       redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request),
                   alert: 'Please select at least one respondent.'
       return
     end
-    
-    # Update responders (only add if active, replace if invalid/ready)
-    if @feedback_request.active?
-      # Only add new responders, don't remove existing
-      current_ids = @feedback_request.responders.pluck(:id).map(&:to_i)
-      new_ids = responder_ids - current_ids
-      new_ids.each do |teammate_id|
-        @feedback_request.feedback_request_responders.create(teammate_id: teammate_id)
-      end
-    else
-      # Replace all responders
-      update_responders(responder_ids)
-    end
-    
-    # State is now computed, so no need to validate/update it
+
     redirect_to organization_feedback_request_path(organization, @feedback_request),
                 notice: 'Feedback request was successfully created.'
   end

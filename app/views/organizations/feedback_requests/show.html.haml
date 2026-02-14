@@ -88,7 +88,7 @@
       %ol
         - @questions.each do |question|
           %li.mb-2
-            = question.question_text
+            .markdown-content= render_markdown(question.question_text)
             - if question.rateable
               %br
               %small.text-muted

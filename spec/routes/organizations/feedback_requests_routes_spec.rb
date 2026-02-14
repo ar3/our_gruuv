@@ -178,6 +178,24 @@ RSpec.describe "Organizations::FeedbackRequests Routes", type: :routing do
       )
     end
 
+    it "routes POST /organizations/:organization_id/feedback_requests/:id/add_respondent to organizations/feedback_requests#add_respondent" do
+      expect(post: "/organizations/#{organization_id}/feedback_requests/#{feedback_request_id}/add_respondent").to route_to(
+        controller: "organizations/feedback_requests",
+        action: "add_respondent",
+        organization_id: organization_id,
+        id: feedback_request_id
+      )
+    end
+
+    it "routes DELETE /organizations/:organization_id/feedback_requests/:id/remove_respondent to organizations/feedback_requests#remove_respondent" do
+      expect(delete: "/organizations/#{organization_id}/feedback_requests/#{feedback_request_id}/remove_respondent").to route_to(
+        controller: "organizations/feedback_requests",
+        action: "remove_respondent",
+        organization_id: organization_id,
+        id: feedback_request_id
+      )
+    end
+
     it "routes GET /organizations/:organization_id/feedback_requests/:id/answer to organizations/feedback_requests#answer" do
       expect(get: "/organizations/#{organization_id}/feedback_requests/#{feedback_request_id}/answer").to route_to(
         controller: "organizations/feedback_requests",

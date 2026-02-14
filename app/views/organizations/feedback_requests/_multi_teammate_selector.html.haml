@@ -1,0 +1,22 @@
+-# Multi-teammate selector: dropdown (grouped by department) + Add button, then list of selected with remove (X)
+-# Expects: organization, feedback_request, grouped_respondent_options, selected_respondent_teammates
+
+.multi-teammate-selector
+  .row.mb-3
+    .col-md-8
+      - if grouped_respondent_options.any?
+        = form_with url: add_respondent_organization_feedback_request_path(organization, feedback_request), method: :post, local: true, class: 'd-flex gap-2 align-items-start' do |f|
+          .flex-grow-1
+            = select_tag :respondent_id, grouped_options_for_select(grouped_respondent_options), { class: 'form-select', prompt: '— Select a teammate —' }
+          = f.submit 'Add', class: 'btn btn-outline-primary'
+      - else
+        .text-muted.small All teammates have been added.
+  - if selected_respondent_teammates.any?
+    %ul.list-group.list-group-flush
+      - selected_respondent_teammates.each do |teammate|
+        %li.list-group-item.d-flex.justify-content-between.align-items-center
+          = teammate.person.display_name
+          = button_to remove_respondent_organization_feedback_request_path(organization, feedback_request, respondent_id: teammate.id), method: :delete, class: 'btn btn-sm btn-outline-danger', title: 'Remove', form: { data: { confirm: 'Remove this respondent?' } } do
+            %i.bi.bi-x-lg
+  - else
+    .text-muted.small.mb-0 No respondents selected yet. Choose from the list above and click Add.

@@ -17,17 +17,17 @@
 
 .card
   .card-body
-    = form_with url: update_respondents_organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true do |form|
-      - if flash[:alert]
-        .alert.alert-danger= flash[:alert]
-      
-      .mb-3
-        %label.form-label
-          Select who can respond to this feedback request
-          %span.text-danger *
-        %small.text-muted.d-block Select at least one respondent
-        = select_tag 'respondent_ids[]', options_from_collection_for_select(@teammates, :id, ->(t) { t.person.display_name }, @selected_respondents), { class: 'form-select', multiple: true, required: true, size: 10 }
-      
+    - if flash[:alert]
+      .alert.alert-danger= flash[:alert]
+
+    %label.form-label
+      Select who can respond to this feedback request
+      %span.text-danger *
+    %small.text-muted.d-block Add teammates below; at least one respondent is required.
+
+    = render 'organizations/feedback_requests/multi_teammate_selector', organization: organization, feedback_request: @feedback_request, grouped_respondent_options: @grouped_respondent_options, selected_respondent_teammates: @selected_respondent_teammates
+
+    = form_with url: update_respondents_organization_feedback_request_path(organization, @feedback_request), method: :patch, local: true, class: 'mt-4' do |form|
       .d-flex.justify-content-between
         = link_to 'Cancel', organization_feedback_requests_path(organization), class: 'btn btn-secondary'
         = form.submit 'Create Feedback Request', class: 'btn btn-primary'

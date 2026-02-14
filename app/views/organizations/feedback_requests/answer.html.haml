@@ -46,7 +46,7 @@
           .card-header
             %h6.mb-0 Question #{index + 1}
           .card-body
-            %p.mb-3= question.question_text
+            .markdown-content.mb-3= render_markdown(question.question_text)
             
             .mb-3
               = label_tag "answers[#{question.id}][story]", "Your Answer", class: 'form-label'

@@ -393,6 +393,8 @@ Rails.application.routes.draw do
         patch :update_questions
         get :select_respondents
         patch :update_respondents
+        post :add_respondent
+        delete :remove_respondent
         get :answer
         post :submit_answers
         post :archive
