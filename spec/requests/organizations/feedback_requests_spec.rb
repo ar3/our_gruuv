@@ -276,6 +276,20 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       get organization_feedback_request_path(company, feedback_request)
       expect(response).to have_http_status(:redirect)
     end
+
+    it 'shows Notify Respondents button when Slack is configured and request has responders' do
+      company_with_slack = create(:organization, :with_slack_config)
+      requestor_teammate.update!(organization: company_with_slack)
+      subject_teammate.update!(organization: company_with_slack)
+      feedback_request.update!(company: company_with_slack)
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      sign_in_as_teammate_for_request(requestor_person, company_with_slack)
+
+      get organization_feedback_request_path(company_with_slack, feedback_request)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Notify Respondents')
+    end
   end
 
   describe 'GET /organizations/:organization_id/feedback_requests/:id/select_focus' do
@@ -845,6 +859,113 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
     it 'redirects to show page' do
       post restore_organization_feedback_request_path(company, feedback_request)
       expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/feedback_requests/:id/notify_respondents' do
+    let(:company_with_slack) { create(:organization, :company, :with_slack_config) }
+    let(:feedback_request) do
+      create(:feedback_request,
+        company: company_with_slack,
+        requestor_teammate: requestor_teammate,
+        subject_of_feedback_teammate: subject_teammate,
+        subject_line: 'Test feedback request'
+      )
+    end
+
+    before do
+      requestor_teammate.update!(organization: company_with_slack)
+      subject_teammate.update!(organization: company_with_slack)
+      responder_teammate.update!(organization: company_with_slack)
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'How did it go?', position: 1)
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      sign_in_as_teammate_for_request(requestor_person, company_with_slack)
+    end
+
+    context 'when responder has Slack identity' do
+      before do
+        create(:teammate_identity, teammate: responder_teammate, provider: 'slack', uid: 'U123456')
+        allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '123.456' })
+      end
+
+      it 'sends Slack notifications and redirects with notice' do
+        expect {
+          post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)
+        }.to change { feedback_request.notifications.where(notification_type: 'feedback_request').count }.by(1)
+
+        expect(response).to redirect_to(organization_feedback_request_path(company_with_slack, feedback_request))
+        expect(flash[:notice]).to match(/Slack notification sent to 1 respondent/)
+      end
+
+      it 'creates a notification with answer URL in the message' do
+        post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)
+
+        notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
+        expect(notification).to be_present
+        expect(notification.metadata['channel']).to eq('U123456')
+        expect(notification.fallback_text).to include('Respond here:')
+        expect(notification.rich_message).to be_present
+        expect(notification.rich_message.first['text']['text']).to include('feedback')
+      end
+    end
+
+    context 'when no responder has Slack identity' do
+      it 'redirects with notice that no notifications were sent' do
+        post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)
+
+        expect(response).to redirect_to(organization_feedback_request_path(company_with_slack, feedback_request))
+        expect(flash[:notice]).to eq('No respondents have Slack connected; no notifications were sent.')
+      end
+    end
+
+    context 'when organization has no Slack configured' do
+      let(:company_no_slack) { create(:organization) }
+      let(:feedback_request_no_slack) do
+        create(:feedback_request,
+          company: company_no_slack,
+          requestor_teammate: requestor_teammate,
+          subject_of_feedback_teammate: subject_teammate,
+          subject_line: 'Test'
+        )
+      end
+
+      before do
+        requestor_teammate.update!(organization: company_no_slack)
+        subject_teammate.update!(organization: company_no_slack)
+        responder_teammate.update!(organization: company_no_slack)
+        create(:feedback_request_question, feedback_request: feedback_request_no_slack, question_text: 'Q?', position: 1)
+        feedback_request_no_slack.feedback_request_responders.create!(teammate: responder_teammate)
+        sign_in_as_teammate_for_request(requestor_person, company_no_slack)
+      end
+
+      it 'redirects with alert' do
+        post notify_respondents_organization_feedback_request_path(company_no_slack, feedback_request_no_slack)
+
+        expect(response).to redirect_to(organization_feedback_request_path(company_no_slack, feedback_request_no_slack))
+        expect(flash[:alert]).to eq('Slack is not configured for this organization.')
+      end
+    end
+
+    context 'when feedback request has no responders' do
+      before do
+        feedback_request.feedback_request_responders.destroy_all
+      end
+
+      it 'redirects with alert' do
+        post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)
+
+        expect(response).to redirect_to(organization_feedback_request_path(company_with_slack, feedback_request))
+        expect(flash[:alert]).to eq('There are no respondents to notify.')
+      end
+    end
+
+    it 'requires authorization (only requestor can notify)' do
+      other_person = create(:person)
+      create(:company_teammate, person: other_person, organization: company_with_slack)
+      sign_in_as_teammate_for_request(other_person, company_with_slack)
+
+      post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)
+      expect(response).to have_http_status(:redirect)
     end
   end
 end

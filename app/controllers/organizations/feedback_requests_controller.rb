@@ -1,6 +1,6 @@
 class Organizations::FeedbackRequestsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_feedback_request, only: [:show, :edit, :update, :destroy, :select_focus, :update_focus, :feedback_prompt, :update_questions, :select_respondents, :update_respondents, :add_respondent, :remove_respondent, :answer, :submit_answers, :archive, :restore]
+  before_action :set_feedback_request, only: [:show, :edit, :update, :destroy, :select_focus, :update_focus, :feedback_prompt, :update_questions, :select_respondents, :update_respondents, :add_respondent, :remove_respondent, :answer, :submit_answers, :notify_respondents, :archive, :restore]
 
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: [:index, :as_subject, :requested_for_others]
@@ -167,6 +167,32 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     # State is now computed, so no need to update it
     redirect_to organization_feedback_request_path(organization, @feedback_request),
                 notice: 'Feedback request was successfully restored.'
+  end
+
+  def notify_respondents
+    authorize @feedback_request, :update?
+
+    unless organization.slack_configured?
+      redirect_to organization_feedback_request_path(organization, @feedback_request),
+                  alert: 'Slack is not configured for this organization.'
+      return
+    end
+
+    if @feedback_request.responders.empty?
+      redirect_to organization_feedback_request_path(organization, @feedback_request),
+                  alert: 'There are no respondents to notify.'
+      return
+    end
+
+    result = FeedbackRequests::NotifyRespondentsService.call(feedback_request: @feedback_request)
+
+    if result.ok?
+      message = result.value[:sent].positive? ? "Slack notification sent to #{result.value[:sent]} respondent(s)." : 'No respondents have Slack connected; no notifications were sent.'
+      redirect_to organization_feedback_request_path(organization, @feedback_request), notice: message
+    else
+      redirect_to organization_feedback_request_path(organization, @feedback_request),
+                  alert: "Failed to send some notifications: #{result.error}"
+    end
   end
 
   def select_focus

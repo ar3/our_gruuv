@@ -185,11 +185,15 @@
 
 .card
   .card-body
-    .d-flex.gap-2
+    .d-flex.gap-2.flex-wrap
       - if policy(@feedback_request).answer?
         = link_to answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-primary" do
           %i.bi.bi-reply.me-2
           Answer Request
+      - if policy(@feedback_request).update? && organization.slack_configured? && @feedback_request.responders.any?
+        = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-info", form: { style: "display: inline;" } do
+          %i.bi.bi-slack.me-2
+          Notify Respondents
       - if policy(@feedback_request).update? && @feedback_request.can_be_edited?
         - if @feedback_request.feedback_request_questions.empty?
           = link_to select_focus_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do

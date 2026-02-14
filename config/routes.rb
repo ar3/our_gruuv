@@ -397,6 +397,7 @@ Rails.application.routes.draw do
         delete :remove_respondent
         get :answer
         post :submit_answers
+        post :notify_respondents
         post :archive
         post :restore
       end
