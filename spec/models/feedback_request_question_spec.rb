@@ -66,6 +66,19 @@ RSpec.describe FeedbackRequestQuestion, type: :model do
       expect(question.prompt_default_text).to eq('Squad agrees: We learn continuously')
     end
 
+    it 'returns working-with-subject-stories sentence when question blank and rateable is Position' do
+      person = create(:person, first_name: 'Alex', last_name: 'Lee', preferred_name: 'Alex')
+      feedback_request = create(:feedback_request)
+      teammate = create(:company_teammate, person: person, organization: feedback_request.company)
+      feedback_request.update!(subject_of_feedback_teammate: teammate)
+      position_major_level = create(:position_major_level)
+      position_level = create(:position_level, position_major_level: position_major_level)
+      title = create(:title, position_major_level: position_major_level, company: feedback_request.company)
+      position = create(:position, title: title, position_level: position_level)
+      question = create(:feedback_request_question, :with_blank_text, feedback_request: feedback_request, position: 1, rateable: position)
+      expect(question.prompt_default_text).to eq('When I think about my recent experience working with Alex I am reminded of the following stories...')
+    end
+
     it 'returns demonstrating sentence when question blank and rateable is Ability' do
       feedback_request = create(:feedback_request)
       ability = create(:ability, company: feedback_request.company, name: 'Technical Communication')

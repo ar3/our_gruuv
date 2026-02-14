@@ -11,6 +11,7 @@ class FeedbackRequestQuestion < ApplicationRecord
   scope :ordered, -> { order(:position) }
 
   # For the feedback_prompt step: show question_text if set, else default by rateable type:
+  # - Position: "When I think about my recent experience working with <casual name> I am reminded of the following stories..."
   # - Assignment with sentiment outcomes: those outcomes separated by double newlines.
   # - Assignment with no sentiment outcomes: "When I think about my recent experience of <casual name> being a <assignment>..."
   # - Ability or Aspiration: "When I think about my recent experience of <casual name> demonstrating <name>..."
@@ -21,6 +22,8 @@ class FeedbackRequestQuestion < ApplicationRecord
     subject_name = feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || 'the subject'
 
     case rateable_type
+    when 'Position'
+      "When I think about my recent experience working with #{subject_name} I am reminded of the following stories..."
     when 'Assignment'
       sentiment_descriptions = rateable.assignment_outcomes
         .where(outcome_type: 'sentiment')

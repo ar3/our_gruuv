@@ -98,6 +98,20 @@ RSpec.describe 'Organizations::FeedbackRequests::FeedbackPrompt', type: :request
       expect(response.body).to include(' demonstrating Growing as a leader...')
     end
 
+    it 'defaults blank position question to working-with-subject-stories sentence' do
+      position_major_level = create(:position_major_level)
+      position_level = create(:position_level, position_major_level: position_major_level)
+      title = create(:title, position_major_level: position_major_level, company: company)
+      position = create(:position, title: title, position_level: position_level)
+      build(:feedback_request_question, :with_blank_text, feedback_request: feedback_request, position: 3, rateable: position).save(validate: false)
+
+      get feedback_prompt_organization_feedback_request_path(company, feedback_request)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('When I think about my recent experience working with ')
+      expect(response.body).to include(' I am reminded of the following stories...')
+    end
+
     it 'requires authorization' do
       other_person = create(:person)
       sign_in_as_teammate_for_request(other_person, company)
