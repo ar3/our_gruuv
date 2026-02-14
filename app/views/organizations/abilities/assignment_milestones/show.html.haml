@@ -32,22 +32,26 @@
                     %th{scope: "col"} Assignment Title
                     %th{scope: "col", colspan: "6"} Milestone Level
                 %tbody
-                  - @assignments.each do |assignment|
-                    - current_milestone = @existing_associations[assignment.id]
-                    %tr
-                      %td
-                        %strong= assignment.title
-                        %br
-                        %small.text-muted= assignment.tagline.truncate(100) if assignment.tagline.present?
-                      %td
-                        .btn-group.btn-group-sm{role: "group", "aria-label": "Milestone level for #{assignment.title}"}
-                          - [1, 2, 3, 4, 5].each do |level|
-                            = radio_button_tag "ability_assignment_milestones_form[assignment_milestones][#{assignment.id}]", level, (current_milestone == level), class: "btn-check", id: "assignment_#{assignment.id}_milestone_#{level}", disabled: !policy(@ability).update?
-                            = label_tag "assignment_#{assignment.id}_milestone_#{level}", class: "btn btn-outline-primary" do
-                              = level
-                          = radio_button_tag "ability_assignment_milestones_form[assignment_milestones][#{assignment.id}]", 0, current_milestone.nil?, class: "btn-check", id: "assignment_#{assignment.id}_no_association", disabled: !policy(@ability).update?
-                          = label_tag "assignment_#{assignment.id}_no_association", class: "btn btn-outline-secondary" do
-                            %em No Association
+                  - @assignments_by_department.each do |department, assignments|
+                    %tr.table-secondary
+                      %td.border-top.py-2{colspan: 7}
+                        %strong= department ? department.display_name : 'No Department'
+                    - assignments.each do |assignment|
+                      - current_milestone = @existing_associations[assignment.id]
+                      %tr
+                        %td
+                          %strong= assignment.title
+                          %br
+                          %small.text-muted= assignment.tagline.truncate(100) if assignment.tagline.present?
+                        %td
+                          .btn-group.btn-group-sm{role: "group", "aria-label": "Milestone level for #{assignment.title}"}
+                            - [1, 2, 3, 4, 5].each do |level|
+                              = radio_button_tag "ability_assignment_milestones_form[assignment_milestones][#{assignment.id}]", level, (current_milestone == level), class: "btn-check", id: "assignment_#{assignment.id}_milestone_#{level}", disabled: !policy(@ability).update?
+                              = label_tag "assignment_#{assignment.id}_milestone_#{level}", class: "btn btn-outline-primary" do
+                                = level
+                            = radio_button_tag "ability_assignment_milestones_form[assignment_milestones][#{assignment.id}]", 0, current_milestone.nil?, class: "btn-check", id: "assignment_#{assignment.id}_no_association", disabled: !policy(@ability).update?
+                            = label_tag "assignment_#{assignment.id}_no_association", class: "btn btn-outline-secondary" do
+                              %em No Association
           - if @assignments.empty?
             .alert.alert-info
               %i.bi.bi-info-circle.me-2

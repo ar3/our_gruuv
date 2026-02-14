@@ -31,7 +31,11 @@ class Organizations::Abilities::AssignmentMilestonesController < Organizations::
   end
 
   def load_assignments_in_hierarchy
-    @assignments = Assignment.where(company: @ability.company).order(:title)
+    assignments = Assignment.where(company: @ability.company).includes(:department).order(:title)
+    grouped = assignments.group_by(&:department)
+    # Sort departments: nil (No Department) first, then by display_name; assignments already ordered by title
+    @assignments_by_department = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
+    @assignments = assignments
   end
 
   def load_existing_associations
