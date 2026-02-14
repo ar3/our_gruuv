@@ -16,12 +16,6 @@
     %i.bi.bi-arrow-left.me-2
     Back to Dashboard
 
-- content_for :header_action do
-  - customize_params = params.except(:controller, :action, :page).permit!.to_h.merge(return_to: 'requested_for_others')
-  = link_to customize_view_organization_feedback_requests_path(organization, customize_params), class: "btn btn-outline-secondary" do
-    %i.bi.bi-gear.me-2
-    Customize
-
 = render partial: 'organizations/feedback_requests/tabs'
 
 - requested_for_others_cta = (policy(FeedbackRequest.new(company: organization.root_company || organization)).create? ? link_to("Create Feedback Request", new_organization_feedback_request_path(organization), class: "btn btn-primary btn-sm") : nil)

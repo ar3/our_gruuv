@@ -385,8 +385,6 @@ Rails.application.routes.draw do
       collection do
         get :as_subject
         get :requested_for_others
-        get :customize_view
-        patch :update_view
       end
       member do
         get :select_focus

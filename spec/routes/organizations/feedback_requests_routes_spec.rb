@@ -56,22 +56,6 @@ RSpec.describe "Organizations::FeedbackRequests Routes", type: :routing do
         organization_id: organization_id
       )
     end
-
-    it "routes GET /organizations/:organization_id/feedback_requests/customize_view to organizations/feedback_requests#customize_view" do
-      expect(get: "/organizations/#{organization_id}/feedback_requests/customize_view").to route_to(
-        controller: "organizations/feedback_requests",
-        action: "customize_view",
-        organization_id: organization_id
-      )
-    end
-
-    it "routes PATCH /organizations/:organization_id/feedback_requests/update_view to organizations/feedback_requests#update_view" do
-      expect(patch: "/organizations/#{organization_id}/feedback_requests/update_view").to route_to(
-        controller: "organizations/feedback_requests",
-        action: "update_view",
-        organization_id: organization_id
-      )
-    end
   end
 
   describe "Member routes" do

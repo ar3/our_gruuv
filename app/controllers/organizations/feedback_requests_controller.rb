@@ -29,7 +29,6 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
     set_feedback_request_tab_counts(base_scope)
     @active_feedback_tab = :respondent
-    @customize_return_path = organization_feedback_requests_path(organization)
   end
 
   def as_subject
@@ -40,7 +39,6 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     )
     set_feedback_request_tab_counts(base_scope)
     @active_feedback_tab = :as_subject
-    @customize_return_path = as_subject_organization_feedback_requests_path(organization)
   end
 
   def requested_for_others
@@ -53,33 +51,6 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     load_feedback_requests_for_tab(creator_not_subject_scope)
     set_feedback_request_tab_counts(base_scope)
     @active_feedback_tab = :requested_for_others
-    @customize_return_path = requested_for_others_organization_feedback_requests_path(organization)
-  end
-
-  def customize_view
-    authorize company, :view_feedback_requests?
-    query = FeedbackRequestsQuery.new(organization, params, current_person: current_person)
-    @current_filters = query.current_filters
-    @current_sort = query.current_sort
-    @current_view = query.current_view
-    @current_spotlight = query.current_spotlight
-    @available_subjects = CompanyTeammate.where(organization: company).where(last_terminated_at: nil).includes(:person).order('people.last_name, people.first_name')
-    @available_requestors = CompanyTeammate.where(organization: company).where(last_terminated_at: nil).includes(:person).order('people.last_name, people.first_name')
-    @available_assignments = company.assignments.ordered
-    @available_abilities = company.abilities.order(:name)
-    @available_aspirations = company.aspirations.ordered
-    return_params = params.except(:controller, :action, :page).permit!.to_h
-    @return_to = return_params[:return_to]
-    @return_url = feedback_requests_path_for_return_to(@return_to, return_params)
-    @return_text = "Back to Feedback Requests"
-    render layout: 'overlay'
-  end
-
-  def update_view
-    authorize company, :view_feedback_requests?
-    redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h
-    return_to = redirect_params.delete(:return_to)
-    redirect_to feedback_requests_path_for_return_to(return_to, redirect_params)
   end
 
   def show
@@ -557,17 +528,6 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     @current_view = query.current_view
     @current_spotlight = query.current_spotlight
     @spotlight_stats = calculate_spotlight_stats(requests_scope: @feedback_requests)
-  end
-
-  def feedback_requests_path_for_return_to(return_to, query_params = {})
-    case return_to
-    when 'as_subject'
-      as_subject_organization_feedback_requests_path(organization, query_params)
-    when 'requested_for_others'
-      requested_for_others_organization_feedback_requests_path(organization, query_params)
-    else
-      organization_feedback_requests_path(organization, query_params)
-    end
   end
 
   def calculate_spotlight_stats(requests_scope: nil)
