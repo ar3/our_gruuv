@@ -1,0 +1,56 @@
+- content_for :title, "Edit #{@assignment_flow.name}"
+
+- content_for :go_back_link do
+  = link_to organization_assignment_flow_path(@organization, @assignment_flow), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignment Flow
+
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1 Edit: #{@assignment_flow.name}
+        = link_to organization_assignment_flow_path(@organization, @assignment_flow), class: "btn btn-outline-secondary" do
+          %i.bi.bi-eye.me-2
+          View
+
+      .card
+        .card-body
+          %p.text-muted
+            Enter a number in the Placement column to include an assignment in this flow. Order is by placement (ascending), then by title. Leave blank to exclude.
+          = form_with model: [@organization, @assignment_flow], url: organization_assignment_flow_path(@organization, @assignment_flow), local: true, method: :patch do |form|
+            = form.hidden_field :name
+            - @assignments_by_department.each do |department, assignments|
+              .mb-4
+                .card
+                  .card-header.bg-light
+                    %h6.mb-0
+                      - if department
+                        %i.bi.bi-building.me-2
+                        = department.display_name
+                      - else
+                        %i.bi.bi-question-circle.me-2
+                        No Department
+                  .card-body.p-0
+                    .table-responsive
+                      %table.table.table-hover.mb-0
+                        %thead.table-light
+                          %tr
+                            %th Group name
+                            %th Assignment
+                            %th Placement
+                        %tbody
+                          - assignments.each do |assignment|
+                            %tr
+                              %td
+                                %input.form-control.form-control-sm{ type: "text", name: "group_names[#{assignment.id}]", value: @group_name_by_assignment_id[assignment.id], placeholder: "—", style: "min-width: 8rem;" }
+                              %td
+                                = assignment.title
+                                - if assignment.tagline.present?
+                                  %br
+                                  %small.text-muted= assignment.tagline
+                              %td
+                                %input.form-control.form-control-sm{ type: "number", name: "placements[#{assignment.id}]", value: @placement_by_assignment_id[assignment.id], min: "0", placeholder: "—", style: "width: 6rem;" }
+            .d-flex.gap-2.mt-3
+              = form.submit "Save Assignment Flow", class: "btn btn-primary"
+              = link_to "Cancel", organization_assignment_flow_path(@organization, @assignment_flow), class: "btn btn-outline-secondary"

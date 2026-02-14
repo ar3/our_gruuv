@@ -1,0 +1,53 @@
+- content_for :title, "Assignment Flows"
+
+- content_for :go_back_link do
+  = link_to organization_assignments_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignments
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0
+      %i.bi.bi-diagram-3.me-2
+      Assignment Flows
+    - if policy(AssignmentFlow.new(company: company)).create?
+      = link_to new_organization_assignment_flow_path(@organization), class: "btn btn-primary" do
+        %i.bi.bi-plus.me-2
+        New Assignment Flow
+
+.row.justify-content-center
+  .col-lg-12
+    - if @assignment_flows.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Name
+              %th Created by
+              %th Last updated by
+              %th Actions
+          %tbody
+            - @assignment_flows.each do |flow|
+              %tr
+                %td
+                  = link_to flow.name, organization_assignment_flow_path(@organization, flow), class: "text-decoration-none"
+                %td
+                  %small.text-muted= flow.created_by.person&.display_name
+                %td
+                  %small.text-muted= flow.updated_by.person&.display_name
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to organization_assignment_flow_path(@organization, flow), class: "btn btn-outline-primary" do
+                      %i.bi.bi-eye
+                    = link_to edit_organization_assignment_flow_path(@organization, flow), class: "btn btn-outline-secondary" do
+                      %i.bi.bi-pencil
+                    = link_to organization_assignment_flow_path(@organization, flow), data: { turbo_method: :delete, turbo_confirm: "Are you sure?" }, class: "btn btn-outline-danger" do
+                      %i.bi.bi-trash
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Assignment Flows
+        %p.mb-2
+          Assignment flows let you order a set of assignments to ensure all outcomes are accounted for.
+        = link_to "Create First Assignment Flow", new_organization_assignment_flow_path(@organization), class: "btn btn-primary btn-sm"

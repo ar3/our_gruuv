@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_11_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_14_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -144,6 +144,34 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_11_000001) do
     t.index ["official_check_in_completed_at"], name: "index_assignment_check_ins_on_official_check_in_completed_at"
     t.index ["teammate_id"], name: "index_assignment_check_ins_on_teammate_id"
     t.check_constraint "actual_energy_percentage IS NULL OR actual_energy_percentage >= 0 AND actual_energy_percentage <= 100", name: "check_actual_energy_percentage_range"
+  end
+
+  create_table "assignment_flow_memberships", force: :cascade do |t|
+    t.bigint "assignment_flow_id", null: false
+    t.bigint "assignment_id", null: false
+    t.integer "placement", null: false
+    t.bigint "added_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "group_name"
+    t.index ["added_by_id"], name: "index_assignment_flow_memberships_on_added_by_id"
+    t.index ["assignment_flow_id", "assignment_id"], name: "idx_afm_flow_assignment_unique", unique: true
+    t.index ["assignment_flow_id", "placement"], name: "idx_afm_flow_placement"
+    t.index ["assignment_flow_id"], name: "index_assignment_flow_memberships_on_assignment_flow_id"
+    t.index ["assignment_id"], name: "index_assignment_flow_memberships_on_assignment_id"
+  end
+
+  create_table "assignment_flows", force: :cascade do |t|
+    t.string "name", null: false
+    t.bigint "company_id", null: false
+    t.bigint "created_by_id", null: false
+    t.bigint "updated_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "name"], name: "index_assignment_flows_on_company_id_and_name", unique: true
+    t.index ["company_id"], name: "index_assignment_flows_on_company_id"
+    t.index ["created_by_id"], name: "index_assignment_flows_on_created_by_id"
+    t.index ["updated_by_id"], name: "index_assignment_flows_on_updated_by_id"
   end
 
   create_table "assignment_outcomes", force: :cascade do |t|
@@ -1243,6 +1271,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_11_000001) do
   add_foreign_key "assignment_check_ins", "assignments"
   add_foreign_key "assignment_check_ins", "maap_snapshots"
   add_foreign_key "assignment_check_ins", "teammates"
+  add_foreign_key "assignment_flow_memberships", "assignment_flows"
+  add_foreign_key "assignment_flow_memberships", "assignments"
+  add_foreign_key "assignment_flow_memberships", "teammates", column: "added_by_id"
+  add_foreign_key "assignment_flows", "organizations", column: "company_id"
+  add_foreign_key "assignment_flows", "teammates", column: "created_by_id"
+  add_foreign_key "assignment_flows", "teammates", column: "updated_by_id"
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignment_supply_relationships", "assignments", column: "consumer_assignment_id"
   add_foreign_key "assignment_supply_relationships", "assignments", column: "supplier_assignment_id"

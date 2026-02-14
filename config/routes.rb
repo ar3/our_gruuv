@@ -210,6 +210,9 @@ Rails.application.routes.draw do
       resources :assignment_outcomes, only: [:edit, :update], module: :assignments
       resource :consumer_assignments, only: [:show, :update], module: :assignments
     end
+
+    # Assignment Flows (ordered lists of assignments)
+    resources :assignment_flows, module: :organizations, only: [:index, :show, :new, :create, :edit, :update, :destroy]
     
     # Comments management
     resources :comments, module: :organizations, only: [:index, :show, :create, :update] do

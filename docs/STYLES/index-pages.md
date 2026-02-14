@@ -125,7 +125,33 @@ This document defines the standard style guide for all index pages in the OurGru
 - **Data**: Controller should provide `@spotlight_stats` hash with relevant metrics
 - **Clean Design**: Minimal visual elements to avoid competing with page header
 
-### 5. Main Content Area
+### 5. Bulk Action Row (Optional)
+- **Purpose**: Row of secondary actions (Filter/Sort, View Flows, Download, View Analytics, etc.) between spotlight and main content
+- **Styling**: Use a bordered band with `border-top border-bottom py-3 my-3` for visual separation
+- **Buttons**: **All buttons in the bulk action row MUST use secondary styling** so the row reads as supporting actions, not primary CTAs
+  - Use `btn btn-sm btn-outline-secondary` for every button in this row (Filter/Sort, View X, Download all, View Analytics, etc.)
+  - Do not use `btn-outline-primary` or `btn-primary` in the bulk action row
+- **Layout**: Left-aligned group (e.g. Filter/Sort, View Flows) and right-aligned group (e.g. View Analytics, Download all) using `d-flex justify-content-between` with `gap-2`
+- **Apply to**: Use this same pattern on all index pages that have a bulk action row
+
+```haml
+.border-top.border-bottom.py-3.my-3
+  .row.justify-content-center
+    .col-lg-12
+      .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2
+        .d-flex.gap-2.align-items-center
+          = link_to [filter_path], class: "btn btn-sm btn-outline-secondary" do
+            %i.bi.bi-sliders.me-2
+            Filter/Sort
+          / ... other left-side actions
+        .d-flex.gap-2.align-items-center
+          / ... right-side actions (e.g. View Analytics, Download all)
+          = link_to [download_path], class: "btn btn-sm btn-outline-secondary" do
+            %i.bi.bi-download.me-2
+            Download all
+```
+
+### 6. Main Content Area
 - **Container**: Use `.row.justify-content-center` with `.col-lg-12`
 - **Table View**: Default to table view with responsive wrapper
 - **Empty State**: Use alert with info styling and call-to-action
@@ -161,7 +187,7 @@ This document defines the standard style guide for all index pages in the OurGru
           = link_to "Create First [Resource]", new_[resource]_path, class: "btn btn-primary btn-sm"
 ```
 
-### 6. Filter & Sort Modal
+### 7. Filter & Sort Modal
 - **Modal ID**: Use `#[resource]FilterModal`
 - **Title**: Include "(coming soon)" in the title
 - **Disabled Save Button**: The "Apply Filters" button should be disabled

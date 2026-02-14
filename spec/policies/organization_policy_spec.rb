@@ -582,5 +582,27 @@ RSpec.describe OrganizationPolicy, type: :policy do
       expect(policy.download_own_bulk_download?).to be true
     end
   end
+
+  describe '#view_assignment_flows?' do
+    it 'allows viewing assignment flows for employed teammate' do
+      policy = OrganizationPolicy.new(pundit_user_employed, organization)
+      expect(policy.view_assignment_flows?).to be true
+    end
+
+    it 'allows viewing assignment flows for admin' do
+      policy = OrganizationPolicy.new(pundit_user_admin, organization)
+      expect(policy.view_assignment_flows?).to be true
+    end
+
+    it 'denies viewing assignment flows for non-employed teammate' do
+      policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+      expect(policy.view_assignment_flows?).to be false
+    end
+
+    it 'denies viewing assignment flows for different organization' do
+      policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+      expect(policy.view_assignment_flows?).to be false
+    end
+  end
 end
 

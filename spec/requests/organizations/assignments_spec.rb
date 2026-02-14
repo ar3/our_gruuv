@@ -7,9 +7,9 @@ RSpec.describe 'Organizations::Assignments', type: :request do
   let(:manager) { create(:person) }
   let(:assignment) { create(:assignment, company: organization) }
 
-  let(:person_teammate) { create(:teammate, person: person, organization: organization) }
-  let(:admin_teammate) { create(:teammate, person: admin, organization: organization) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true) }
+  let(:person_teammate) { create(:teammate, :unassigned_employee, person: person, organization: organization) }
+  let(:admin_teammate) { create(:teammate, :unassigned_employee, person: admin, organization: organization) }
+  let(:manager_teammate) { create(:teammate, :unassigned_employee, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true) }
 
   before do
     # Temporarily disable PaperTrail for request tests to avoid controller_info issues
@@ -32,6 +32,12 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         get organization_assignments_path(organization)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Assignments')
+      end
+
+      it 'shows action row with View Assignment Flows when user can view assignment flows' do
+        get organization_assignments_path(organization)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('View Assignment Flows')
       end
     end
 

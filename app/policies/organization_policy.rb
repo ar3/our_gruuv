@@ -112,6 +112,13 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  def view_assignment_flows?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    return false unless viewing_teammate.employed?
+    admin_bypass? || true
+  end
+
   def view_aspirations?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?

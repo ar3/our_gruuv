@@ -1,0 +1,68 @@
+- content_for :title, @assignment_flow.name
+
+- content_for :go_back_link do
+  = link_to organization_assignment_flows_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignment Flows
+
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1= @assignment_flow.name
+        .d-flex.gap-2
+          - if policy(@assignment_flow).update?
+            = link_to "Edit", edit_organization_assignment_flow_path(@organization, @assignment_flow), class: "btn btn-primary"
+          = link_to "Assignment Flows", organization_assignment_flows_path(@organization), class: "btn btn-outline-secondary"
+
+      %small.text-muted
+        Created by #{@assignment_flow.created_by.person&.display_name}
+        | Last updated by #{@assignment_flow.updated_by.person&.display_name}
+
+      - if @ordered_memberships.any?
+        .card.mt-4
+          .card-body.p-0
+            .table-responsive
+              %table.table.table-hover.mb-0
+                %thead.table-light
+                  %tr
+                    %th Group
+                    %th.col-3 Assignment
+                    %th.col-6 Outcomes
+                    %th.col-3 Required activities & positions
+                %tbody
+                  - @ordered_memberships.each_with_index do |membership, idx|
+                    - assignment = membership.assignment
+                    - row_attrs = @group_name_row_attrs[idx]
+                    %tr
+                      - if row_attrs[:first_of_run]
+                        %td{ rowspan: row_attrs[:rowspan], class: "align-top" }
+                          = row_attrs[:group_name].presence || "—"
+                      %td.col-3
+                        %strong
+                          = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
+                        %br
+                        %small.text-muted= assignment.tagline
+                        %br
+                        %small.text-muted
+                          Added by #{membership.added_by.person&.display_name}
+                      %td.col-6
+                        - if assignment.assignment_outcomes.any?
+                          %ul.list-unstyled.mb-0
+                            - assignment.assignment_outcomes.ordered.each do |outcome|
+                              %li= outcome.description
+                        - else
+                          %span.text-muted None
+                      %td.col-3
+                        - if assignment.required_activities.present?
+                          = simple_format(assignment.required_activities, {}, wrapper_tag: 'div')
+                        - else
+                          %span.text-muted —
+                        - titles = assignment.required_by_position_titles
+                        - if titles.any?
+                          %br
+                          %small.text-muted
+                            Required by: #{titles.join(', ')}
+      - else
+        .alert.alert-info.mt-4
+          %p.mb-0 No assignments in this flow yet. Edit the flow to add and order assignments.

@@ -22,7 +22,9 @@ class Assignment < ApplicationRecord
   has_many :consumer_supply_relationships, class_name: 'AssignmentSupplyRelationship', foreign_key: 'consumer_assignment_id', dependent: :destroy
   has_many :consumer_assignments, through: :supplier_supply_relationships, source: :consumer_assignment
   has_many :supplier_assignments, through: :consumer_supply_relationships, source: :supplier_assignment
-  
+  has_many :assignment_flow_memberships, dependent: :destroy
+  has_many :assignment_flows, through: :assignment_flow_memberships
+
   # Validations
   validates :title, presence: true, uniqueness: { scope: :company_id }
   validates :tagline, presence: true
@@ -106,6 +108,16 @@ class Assignment < ApplicationRecord
   # Outcomes convenience method
   def outcomes
     assignment_outcomes.ordered
+  end
+
+  # Titles (external_title) of positions that have this assignment as a required assignment
+  def required_by_position_titles
+    position_assignments
+      .required
+      .includes(position: :title)
+      .map { |pa| pa.position.title.external_title }
+      .uniq
+      .sort
   end
 
 

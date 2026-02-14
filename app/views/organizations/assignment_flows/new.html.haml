@@ -1,0 +1,31 @@
+- content_for :title, "New Assignment Flow"
+
+- content_for :go_back_link do
+  = link_to organization_assignment_flows_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignment Flows
+
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1 New Assignment Flow
+
+      .card
+        .card-body
+          = form_with model: [@organization, @assignment_flow], url: organization_assignment_flows_path(@organization), local: true do |form|
+            - if @assignment_flow.errors.any?
+              .alert.alert-danger
+                %h4= "#{pluralize(@assignment_flow.errors.count, 'error')} prohibited this assignment flow from being saved:"
+                %ul.mb-0
+                  - @assignment_flow.errors.full_messages.each do |message|
+                    %li= message
+
+            .mb-3
+              = form.label :name, "Name", class: "form-label"
+              = form.text_field :name, class: "form-control", placeholder: "e.g. Engineering career ladder"
+              %small.form-text.text-muted A short name for this flow (e.g. role progression, onboarding checklist).
+
+            .d-flex.gap-2
+              = form.submit "Create Assignment Flow", class: "btn btn-primary"
+              = link_to "Cancel", organization_assignment_flows_path(@organization), class: "btn btn-outline-secondary"

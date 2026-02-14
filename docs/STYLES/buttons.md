@@ -76,6 +76,9 @@ For index pages, use this header structure with conditional create button:
 - **Delete**: `btn-outline-danger` with `bi-trash` icon
 - **Group**: Use `.btn-group.btn-group-sm` for action buttons
 
+### Index page bulk action row
+- **All secondary**: Every button in the bulk action row (Filter/Sort, View Flows, Download all, View Analytics, etc.) MUST use `btn btn-sm btn-outline-secondary`. See [Index Pages](index-pages.md#5-bulk-action-row-optional).
+
 ### Icons
 - **Plus**: `bi-plus` for create buttons
 - **Filter**: `bi-funnel` for filter buttons
