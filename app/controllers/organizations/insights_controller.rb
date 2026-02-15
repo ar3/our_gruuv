@@ -59,8 +59,25 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   
   def assignments
     authorize company, :view_assignments?
-    
+
+    @organization = company
     @total_assignments = Assignment.where(company: company).count
+    assignments_scope = Assignment.for_company(company)
+    @outcomes_distribution_chart_data = assignments_outcomes_distribution_chart_data(assignments_scope)
+    @positions_distribution_chart_data = assignments_positions_distribution_chart_data(assignments_scope)
+
+    @timeframe = parse_timeframe(params[:timeframe])
+    range = date_range_for(@timeframe)
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = case @timeframe
+      when :'90_days' then 'Last 90 Days'
+      when :year then 'Last Year'
+      when :all_time then 'Last 52 Weeks'
+      else 'Last 90 Days'
+    end
+    @assignments_updated_chart_data = assignments_updated_chart_data(company, chart_range)
+    @finalized_check_ins_chart_data = assignments_finalized_check_ins_chart_data(company, chart_range)
+    @observation_ratings_chart_data = assignments_observation_ratings_chart_data(company, chart_range)
   end
   
   def abilities
@@ -472,6 +489,102 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       { name: 'Employees with goals, no check-in that week', data: no_check_in_data },
       { name: 'Employees with at least one goal checked in that week', data: with_check_in_data }
     ]
+    { categories: categories, series: series }
+  end
+
+  # --- Assignments insights chart data ---
+
+  def assignments_outcomes_distribution_chart_data(assignments_scope)
+    counts = assignments_scope.left_joins(:assignment_outcomes).group(:id).count('assignment_outcomes.id')
+    histogram = counts.values.tally.sort_by { |k, _| k }.to_h
+    max_n = histogram.keys.max || 0
+    categories = (0..max_n).to_a.map(&:to_s)
+    data = categories.map { |n| histogram[n.to_i] || 0 }
+    { categories: categories, series: [{ name: 'Assignments', data: data }] }
+  end
+
+  def assignments_positions_distribution_chart_data(assignments_scope)
+    required = assignments_scope.joins(:position_assignments).where(position_assignments: { assignment_type: 'required' }).group(:id).count
+    suggested = assignments_scope.joins(:position_assignments).where(position_assignments: { assignment_type: 'suggested' }).group(:id).count
+    required_hist = required.values.tally
+    suggested_hist = suggested.values.tally
+    max_n = (required_hist.keys + suggested_hist.keys).max || 0
+    categories = (0..max_n).to_a.map(&:to_s)
+    required_data = categories.map { |n| required_hist[n.to_i] || 0 }
+    suggested_data = categories.map { |n| suggested_hist[n.to_i] || 0 }
+    {
+      categories: categories,
+      series: [
+        { name: 'Requirement', data: required_data },
+        { name: 'Suggested', data: suggested_data }
+      ]
+    }
+  end
+
+  def assignments_updated_chart_data(company, chart_range)
+    return { categories: [], series: [] } if chart_range.nil?
+    assignment_ids = Assignment.for_company(company).pluck(:id)
+    return { categories: [], series: [] } if assignment_ids.empty?
+    scope = PaperTrail::Version.where(item_type: 'Assignment', item_id: assignment_ids, event: 'update').where(created_at: chart_range)
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    data = week_dates.map do |wd|
+      week_start = wd.to_time
+      week_end = wd.to_time.end_of_week.end_of_day
+      scope.where(created_at: week_start..week_end).distinct.count(:item_id)
+    end
+    series = [{ name: 'Assignments updated', data: data }]
+    { categories: categories, series: series }
+  end
+
+  def assignments_finalized_check_ins_chart_data(company, chart_range)
+    return { categories: [], series: [] } if chart_range.nil?
+    base = AssignmentCheckIn.joins(:assignment).where(assignments: { company_id: company.id }).closed.where(official_check_in_completed_at: chart_range)
+    raw = base.group(Arel.sql("date_trunc('week', official_check_in_completed_at)::date"), :official_rating).count
+    raw_normalized = raw.each_with_object(Hash.new(0)) { |((w, r), c), h| h[[w.to_s, r]] = c }
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    rating_order = %w[working_to_meet meeting exceeding]
+    series = rating_order.map do |rating|
+      {
+        name: rating.humanize.titleize,
+        data: week_dates.map { |wd| raw_normalized[[wd.to_s, rating]] || 0 }
+      }
+    end
+    { categories: categories, series: series }
+  end
+
+  def assignments_observation_ratings_chart_data(company, chart_range)
+    return { categories: [], series: [] } if chart_range.nil?
+    base = ObservationRating
+      .joins(:observation)
+      .where(rateable_type: 'Assignment')
+      .where(observations: { company_id: company.id })
+      .merge(Observation.not_soft_deleted.published)
+      .where(observations: { published_at: chart_range })
+    raw = base.group(Arel.sql("date_trunc('week', observations.published_at)::date"), :rating).count
+    raw_normalized = raw.each_with_object(Hash.new(0)) { |((w, r), c), h| h[[w.to_s, r]] = c }
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    rating_labels = {
+      'strongly_agree' => 'Exceptional',
+      'agree' => 'Solid',
+      'disagree' => 'Misaligned',
+      'strongly_disagree' => 'Concerning'
+    }
+    rating_order = %w[strongly_agree agree disagree strongly_disagree]
+    series = rating_order.map do |rating|
+      {
+        name: rating_labels[rating] || rating.humanize,
+        data: week_dates.map { |wd| raw_normalized[[wd.to_s, rating]] || 0 }
+      }
+    end
     { categories: categories, series: series }
   end
 end

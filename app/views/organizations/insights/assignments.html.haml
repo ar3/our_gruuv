@@ -1,21 +1,149 @@
 - content_for :title, "Insights: Assignments"
 
+- content_for :go_back_link do
+  = link_to organization_assignments_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignments
+
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-bar-chart-line.me-2
       Insights: Assignments
 
-.container-fluid
-  .row.justify-content-center
-    .col-lg-8
-      .card.border-0.shadow-sm
-        .card-body.text-center.py-5
-          .display-1.text-primary.mb-4
-            %i.bi.bi-list-check
-          .display-4.text-primary.mb-3= @total_assignments
-          %h4.text-muted Total Assignments
-          
-          .alert.alert-info.mt-4
-            %i.bi.bi-info-circle.me-2
-            More analytics for Assignments are coming soon. Stay tuned!
+/ Outcomes distribution chart
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-primary.text-white
+        %h5.mb-0
+          %i.bi.bi-pie-chart.me-2
+          Distribution of outcomes per assignment
+      .card-body
+        #outcomes-distribution-chart{style: "height: 320px;"}
+
+/ Positions distribution (Requirement vs Suggested)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-secondary.text-white
+        %h5.mb-0
+          %i.bi.bi-bar-chart-steps.me-2
+          Assignments by number of positions (Requirement vs Suggested)
+      .card-body
+        #positions-distribution-chart{style: "height: 320px;"}
+
+%hr.my-5
+%h5.text-muted.mb-3 Below are time-based analytics
+.mb-4
+  .btn-group{role: "group"}
+    = link_to organization_insights_assignments_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}" do
+      Last 90 days
+    = link_to organization_insights_assignments_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}" do
+      Last Year
+    = link_to organization_insights_assignments_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}" do
+      All-Time
+
+/ Assignments with updates (by week)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-info.text-white
+        %h5.mb-0
+          %i.bi.bi-pencil-square.me-2
+          Assignments with updates (by week) — #{@chart_title_period}
+      .card-body
+        #assignments-updated-chart{style: "height: 320px;"}
+
+/ Finalized check-ins by rating (by week)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-success.text-white
+        %h5.mb-0
+          %i.bi.bi-check2-square.me-2
+          Finalized check-ins by rating (by week) — #{@chart_title_period}
+      .card-body
+        #finalized-check-ins-chart{style: "height: 320px;"}
+
+/ Assignment ratings in published observations (by week)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-warning.text-dark
+        %h5.mb-0
+          %i.bi.bi-star.me-2
+          Assignment ratings in published observations (by week) — #{@chart_title_period}
+      .card-body
+        #observation-ratings-chart{style: "height: 320px;"}
+
+:javascript
+  (function() {
+    var outcomesData = #{@outcomes_distribution_chart_data.to_json};
+    var positionsData = #{@positions_distribution_chart_data.to_json};
+    var updatedData = #{@assignments_updated_chart_data.to_json};
+    var checkInsData = #{@finalized_check_ins_chart_data.to_json};
+    var obsRatingsData = #{@observation_ratings_chart_data.to_json};
+
+    // Same as UI: Working to meet (warning), Meeting (primary), Exceeding (success)
+    var finalizedCheckInColors = ['#fd7e14', '#1e40af', '#166534'];
+
+    // Same as observation rating buttons: Exceptional (success), Solid (primary), Misaligned (warning), Concerning (danger)
+    var observationRatingColors = ['#166534', '#1e40af', '#fd7e14', '#dc3545'];
+
+    function chart(elId, title, categories, series, stacked, seriesColors) {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById(elId);
+      if (!el) return;
+      var xTitle = stacked ? 'Week of' : (elId === 'positions-distribution-chart' ? 'Number of positions' : 'Number of outcomes');
+      var s = series;
+      if (seriesColors && seriesColors.length) {
+        s = series.map(function(ser, i) {
+          var out = { name: ser.name, data: ser.data };
+          if (seriesColors[i]) out.color = seriesColors[i];
+          return out;
+        });
+      }
+      Highcharts.chart(elId, {
+        chart: { type: 'column' },
+        title: { text: title },
+        accessibility: { enabled: false },
+        xAxis: { categories: categories, title: { text: xTitle } },
+        yAxis: { min: 0, title: { text: stacked ? 'Count' : 'Number of assignments' }, stackLabels: { enabled: !!stacked } },
+        plotOptions: { column: { stacking: stacked ? 'normal' : null, dataLabels: { enabled: false } } },
+        series: s
+      });
+    }
+
+    function initCharts() {
+      if (typeof Highcharts === 'undefined') return;
+      chart('outcomes-distribution-chart', 'Outcomes per assignment', outcomesData.categories, outcomesData.series, false);
+      chart('positions-distribution-chart', 'Requirement vs Suggested', positionsData.categories, positionsData.series, true);
+      chart('assignments-updated-chart', 'Assignments with updates', updatedData.categories, updatedData.series, false);
+      chart('finalized-check-ins-chart', 'Finalized check-ins by rating', checkInsData.categories, checkInsData.series, true, finalizedCheckInColors);
+      chart('observation-ratings-chart', 'Assignment ratings in published observations', obsRatingsData.categories, obsRatingsData.series, true, observationRatingColors);
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initCharts;
+        document.head.appendChild(script);
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initCharts();
+    });
+  })();
