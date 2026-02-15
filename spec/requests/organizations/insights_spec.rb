@@ -142,4 +142,43 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Date created')
     end
   end
+
+  describe 'GET /organizations/:organization_id/insights/goals' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_goals?).and_return(true)
+    end
+
+    it 'returns http success' do
+      get organization_insights_goals_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders goals insights page with timeframe links' do
+      get organization_insights_goals_path(organization)
+      expect(response.body).to include('Insights: Goals')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+    end
+
+    it 'returns success with timeframe=year' do
+      get organization_insights_goals_path(organization, timeframe: 'year')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns success with timeframe=all_time' do
+      get organization_insights_goals_path(organization, timeframe: 'all_time')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'includes the goals by week chart container' do
+      get organization_insights_goals_path(organization)
+      expect(response.body).to include('goals-by-week-chart')
+    end
+
+    it 'includes the goals employees chart container' do
+      get organization_insights_goals_path(organization)
+      expect(response.body).to include('goals-employees-chart')
+    end
+  end
 end

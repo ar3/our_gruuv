@@ -1,21 +1,131 @@
 - content_for :title, "Insights: Goals"
 
+- chart_title_period = case @timeframe when :'90_days' then "Last 90 Days" when :year then "Last Year" when :all_time then "Last 52 Weeks" else "Last 90 Days" end
+
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-bar-chart-line.me-2
       Insights: Goals
 
+/ Timeframe selector
+.mb-4
+  .btn-group{role: "group"}
+    = link_to "Last 90 days", organization_insights_goals_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Last Year", organization_insights_goals_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "All-Time", organization_insights_goals_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+
 .container-fluid
-  .row.justify-content-center
-    .col-lg-8
+  / Goals by week stacked: started, check-in that week, ongoing no check-in, completed
+  .row.mb-4
+    .col-12
       .card.border-0.shadow-sm
-        .card-body.text-center.py-5
-          .display-1.text-primary.mb-4
-            %i.bi.bi-bullseye
-          .display-4.text-primary.mb-3= @total_goals
-          %h4.text-muted Total Goals
-          
-          .alert.alert-info.mt-4
-            %i.bi.bi-info-circle.me-2
-            More analytics for Goals are coming soon. Stay tuned!
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-bullseye.me-2
+            Goals by Week (#{chart_title_period})
+        .card-body
+          #goals-by-week-chart{style: "height: 400px;"}
+
+  %hr.my-5
+
+  / Employees with goals: no check-in vs at least one check-in that week
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-secondary.text-white
+          %h4.mb-0
+            %i.bi.bi-people.me-2
+            Employees with Goals by Week (#{chart_title_period})
+        .card-body
+          #goals-employees-chart{style: "height: 400px;"}
+
+:javascript
+  (function() {
+    var goalsChartData = #{@goals_chart_data.to_json};
+    var employeesChartData = #{@goals_employees_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+
+    function initializeGoalsChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('goals-by-week-chart');
+      if (!el) return;
+      Highcharts.chart('goals-by-week-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Goals by week (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: goalsChartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of goals' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: goalsChartData.series
+      });
+    }
+
+    function initializeEmployeesChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('goals-employees-chart');
+      if (!el) return;
+      Highcharts.chart('goals-employees-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Employees with goals by week (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: employeesChartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of employees' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: employeesChartData.series
+      });
+    }
+
+    function initializeCharts() {
+      initializeGoalsChart();
+      initializeEmployeesChart();
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeCharts;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeCharts();
+    });
+  })();
