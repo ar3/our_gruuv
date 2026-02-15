@@ -194,7 +194,7 @@ class Huddles::PostAnnouncementJob < ApplicationJob
           elements: [
             {
               type: "mrkdwn",
-              text: "✅ 100% participation achieved • Nat 20 Score: #{huddle.nat_20_score || 'N/A'}"
+              text: "✅ 100% participation achieved • S.E.E. 20 Score: #{huddle.nat_20_score || 'N/A'}"
             }
           ]
         },

@@ -35,9 +35,9 @@ Individual ratings use colors to provide immediate visual feedback:
 | 3 | Warning (Yellow/Orange) | Average performance, room for improvement |
 | 4-5 | Success (Green) | Good to excellent performance |
 
-## Nat 20 Score Color Mapping
+## S.E.E. 20 Score Color Mapping
 
-The Nat 20 score is a composite score representing overall huddle performance:
+The S.E.E. 20 score is a composite score representing overall huddle performance:
 
 | Score Range | Color | Meaning |
 |-------------|-------|---------|
@@ -96,10 +96,10 @@ rating_color(rating)           # Returns color class for a rating
 rating_badge(rating)           # Returns a badge with rating and appropriate color
 ```
 
-### Nat 20 Score Helpers
+### S.E.E. 20 Score Helpers
 ```ruby
-nat_20_color(score)            # Returns color class for a Nat 20 score
-nat_20_badge(score)            # Returns a badge with Nat 20 score and appropriate color
+nat_20_color(score)            # Returns color class for a S.E.E. 20 score
+nat_20_badge(score)            # Returns a badge with S.E.E. 20 score and appropriate color
 ```
 
 ### Feedback Participation Helpers
@@ -139,7 +139,7 @@ text_class(color)              # Returns "text-{color}"
 / Rating badge
 = rating_badge(4)
 
-/ Nat 20 score badge
+/ S.E.E. 20 score badge
 = nat_20_badge(18)
 
 / Feedback participation badge
@@ -178,7 +178,7 @@ All color mappings are defined in `config/initializers/huddle_constants.rb`:
 
 - `HuddleConstants::COLORS` - General color meanings
 - `HuddleConstants::RATING_COLORS` - Individual rating colors
-- `HuddleConstants::NAT_20_COLORS` - Nat 20 score colors
+- `HuddleConstants::NAT_20_COLORS` - S.E.E. 20 score colors
 - `HuddleConstants::STATUS_COLORS` - Status-specific colors
 - `HuddleConstants::FEEDBACK_COLORS` - Feedback type colors
 - `HuddleConstants::CONFLICT_STYLE_COLORS` - Conflict style colors
@@ -209,9 +209,9 @@ Individual ratings use colors to provide immediate visual feedback:
 | 3 | Warning (Yellow/Orange) | Average performance, room for improvement |
 | 4-5 | Success (Green) | Good to excellent performance |
 
-## Nat 20 Score Color Mapping
+## S.E.E. 20 Score Color Mapping
 
-The Nat 20 score is a composite score representing overall huddle performance:
+The S.E.E. 20 score is a composite score representing overall huddle performance:
 
 | Score Range | Color | Meaning |
 |-------------|-------|---------|
@@ -270,10 +270,10 @@ rating_color(rating)           # Returns color class for a rating
 rating_badge(rating)           # Returns a badge with rating and appropriate color
 ```
 
-### Nat 20 Score Helpers
+### S.E.E. 20 Score Helpers
 ```ruby
-nat_20_color(score)            # Returns color class for a Nat 20 score
-nat_20_badge(score)            # Returns a badge with Nat 20 score and appropriate color
+nat_20_color(score)            # Returns color class for a S.E.E. 20 score
+nat_20_badge(score)            # Returns a badge with S.E.E. 20 score and appropriate color
 ```
 
 ### Feedback Participation Helpers
@@ -313,7 +313,7 @@ text_class(color)              # Returns "text-{color}"
 / Rating badge
 = rating_badge(4)
 
-/ Nat 20 score badge
+/ S.E.E. 20 score badge
 = nat_20_badge(18)
 
 / Feedback participation badge
@@ -352,7 +352,7 @@ All color mappings are defined in `config/initializers/huddle_constants.rb`:
 
 - `HuddleConstants::COLORS` - General color meanings
 - `HuddleConstants::RATING_COLORS` - Individual rating colors
-- `HuddleConstants::NAT_20_COLORS` - Nat 20 score colors
+- `HuddleConstants::NAT_20_COLORS` - S.E.E. 20 score colors
 - `HuddleConstants::STATUS_COLORS` - Status-specific colors
 - `HuddleConstants::FEEDBACK_COLORS` - Feedback type colors
 - `HuddleConstants::CONFLICT_STYLE_COLORS` - Conflict style colors

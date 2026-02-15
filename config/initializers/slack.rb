@@ -27,6 +27,6 @@ module SlackConstants
     huddle_started: "🚀 Huddle starting: *%{huddle_name}* - Join now!",
     huddle_reminder: "⏰ Reminder: *%{huddle_name}* starts in %{time_until_start}",
     feedback_requested: "📝 Feedback requested for *%{huddle_name}* - %{participation_rate}%% participation",
-    huddle_completed: "✅ Huddle completed: *%{huddle_name}* - Nat 20 Score: %{nat_20_score}"
+    huddle_completed: "✅ Huddle completed: *%{huddle_name}* - S.E.E. 20 Score: %{nat_20_score}"
   }.freeze
 end 

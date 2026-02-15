@@ -63,7 +63,7 @@ module HuddleConstants
     5 => 'success'    # Excellent
   }.freeze
 
-  # Nat 20 score color mapping (composite score, different from individual ratings)
+  # S.E.E. 20 score color mapping (composite score, different from individual ratings)
   NAT_20_COLORS = {
     0.0..9.9 => 'danger',     # Critical issues, needs immediate attention
     10.0..12.9 => 'warning',   # Significant room for improvement

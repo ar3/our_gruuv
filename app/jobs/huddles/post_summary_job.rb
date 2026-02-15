@@ -86,7 +86,7 @@ class Huddles::PostSummaryJob < ApplicationJob
   end
 
   def build_summary_fallback_text(huddle)
-    "📊 Huddle Summary - Participation: #{huddle.huddle_feedbacks.count}/#{huddle.huddle_participants.count} participants • Nat 20 Score: #{huddle.nat_20_score || 'N/A'} • Average Ratings: Informed: #{huddle.average_rating_by_category[:informed] || 'N/A'}/5, Connected: #{huddle.average_rating_by_category[:connected] || 'N/A'}/5, Goals: #{huddle.average_rating_by_category[:goals] || 'N/A'}/5, Valuable: #{huddle.average_rating_by_category[:valuable] || 'N/A'}/5 • Insights: #{huddle.feedback_insights.first(2).join(', ') || 'No insights yet'}"
+    "📊 Huddle Summary - Participation: #{huddle.huddle_feedbacks.count}/#{huddle.huddle_participants.count} participants • S.E.E. 20 Score: #{huddle.nat_20_score || 'N/A'} • Average Ratings: Informed: #{huddle.average_rating_by_category[:informed] || 'N/A'}/5, Connected: #{huddle.average_rating_by_category[:connected] || 'N/A'}/5, Goals: #{huddle.average_rating_by_category[:goals] || 'N/A'}/5, Valuable: #{huddle.average_rating_by_category[:valuable] || 'N/A'}/5 • Insights: #{huddle.feedback_insights.first(2).join(', ') || 'No insights yet'}"
   end
 
   def build_summary_blocks(huddle, is_thread: false)
@@ -110,7 +110,7 @@ class Huddles::PostSummaryJob < ApplicationJob
             },
             {
               type: "mrkdwn",
-              text: "*Nat 20 Score:*\n#{huddle.nat_20_score || 'N/A'}"
+              text: "*S.E.E. 20 Score:*\n#{huddle.nat_20_score || 'N/A'}"
             }
           ]
         },
@@ -164,7 +164,7 @@ class Huddles::PostSummaryJob < ApplicationJob
           elements: [
             {
               type: "mrkdwn",
-              text: "📈 #{huddle.huddle_feedbacks.count}/#{huddle.huddle_participants.count} participants submitted feedback • Nat 20 Score: #{huddle.nat_20_score || 'N/A'}"
+              text: "📈 #{huddle.huddle_feedbacks.count}/#{huddle.huddle_participants.count} participants submitted feedback • S.E.E. 20 Score: #{huddle.nat_20_score || 'N/A'}"
             }
           ]
         }

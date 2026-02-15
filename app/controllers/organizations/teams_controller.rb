@@ -6,7 +6,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
 
   def index
     authorize @organization, :show?
-    @teams = Team.for_company(@organization).active.ordered.includes(:team_members, :company_teammates)
+    @teams = Team.for_company(@organization).active.ordered.includes(:team_members, :company_teammates, :huddles)
   end
 
   def show

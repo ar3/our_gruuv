@@ -111,7 +111,7 @@ bundle exec rake seed:scenarios
 The seeding system works perfectly with the new color system:
 
 - **Feedback participation badges** will show different colors based on completion percentage
-- **Nat 20 scores** will have appropriate colors based on the composite score
+- **S.E.E. 20 scores** will have appropriate colors based on the composite score
 - **Individual ratings** will show colors based on the 1-5 scale
 - **Status badges** will reflect the current state
 

@@ -30,9 +30,12 @@
                 %tr
                   %th Name
                   %th Members
+                  %th Huddle
                   %th Actions
               %tbody
                 - @teams.each do |team|
+                  - last_huddle = team.huddles.max_by(&:started_at)
+                  - active_huddle = team.huddles.select { |h| h.expires_at && h.expires_at > Time.current }.max_by(&:started_at)
                   %tr
                     %td
                       = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
@@ -42,6 +45,22 @@
                       %span.badge.bg-secondary
                         = team.team_members.count
                         = "member".pluralize(team.team_members.count)
+                    %td
+                      .d-flex.flex-column.gap-1
+                        - if last_huddle
+                          %span.small.text-muted
+                            Last:
+                            = format_date_in_user_timezone(last_huddle.started_at, nil, format: "%b %d, %Y")
+                        - else
+                          %span.small.text-muted Never
+                        - if active_huddle
+                          = link_to join_huddle_path(active_huddle), class: "btn btn-sm btn-success" do
+                            %i.bi.bi-box-arrow-in-right.me-1
+                            Join
+                        - elsif team.huddle_slack_configured?
+                          = button_to start_huddle_from_team_huddles_path(team_id: team.id), method: :post, class: "btn btn-sm btn-primary", data: { turbo: false } do
+                            %i.bi.bi-plus-circle.me-1
+                            Start
                     %td
                       .d-flex.gap-2
                         = link_to organization_team_path(@organization, team), class: "btn btn-sm btn-outline-primary" do

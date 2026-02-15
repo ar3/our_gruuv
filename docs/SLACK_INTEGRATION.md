@@ -142,7 +142,7 @@ The system automatically sends notifications for:
 
 2. **Huddle Completed** (`:huddle_completed`)
    ```
-   ✅ Huddle completed: *Acme Corp > Engineering - January 15, 2024* - Nat 20 Score: 4.2
+   ✅ Huddle completed: *Acme Corp > Engineering - January 15, 2024* - S.E.E. 20 Score: 4.2
    ```
 
 ### Manual Notifications
@@ -191,7 +191,7 @@ Messages use Ruby string interpolation with the following variables:
 - `%{huddle_name}` - Full huddle display name
 - `%{creator_name}` - Name of huddle creator
 - `%{participation_rate}` - Percentage of participants who submitted feedback
-- `%{nat_20_score}` - Average Nat 20 score
+- `%{nat_20_score}` - Average S.E.E. 20 score
 - `%{time_until_start}` - Time until huddle starts (for reminders)
 
 ## Background Jobs

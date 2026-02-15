@@ -123,4 +123,25 @@ RSpec.describe ApplicationHelper, type: :helper do
       expect(timezone_names).to include('UTC')
     end
   end
+
+  describe 'S.E.E. 20 helpers' do
+    describe '#see_20_tooltip_title' do
+      it 'returns the S.E.E. 20 tagline' do
+        expect(helper.see_20_tooltip_title).to eq("Don't just meet; Sync – Execute – and Evolve")
+      end
+    end
+
+    describe '#see_20_label_with_tooltip' do
+      it 'returns HTML span with S.E.E. 20 text and tooltip attributes' do
+        html = helper.see_20_label_with_tooltip
+        expect(html).to include('S.E.E. 20')
+        # Title is HTML-escaped in the attribute (e.g. apostrophe → &#39;)
+        expect(html).to include('title=')
+        expect(html).to include('Don')
+        expect(html).to include('Sync – Execute – and Evolve')
+        expect(html).to include('data-bs-toggle="tooltip"')
+        expect(html).to include('data-bs-placement="top"')
+      end
+    end
+  end
 end 

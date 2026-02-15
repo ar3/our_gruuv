@@ -56,7 +56,19 @@ module ApplicationHelper
     content_tag(:span, content, class: badge_class(color))
   end
 
-  # Helper for Nat 20 score badges
+  # S.E.E. 20 (Sync – Execute – Evolve) tooltip shown on hover of "S.E.E. 20" text
+  SEE_20_TOOLTIP_TITLE = "Don't just meet; Sync – Execute – and Evolve"
+
+  def see_20_tooltip_title
+    SEE_20_TOOLTIP_TITLE
+  end
+
+  # Renders "S.E.E. 20" with Bootstrap tooltip
+  def see_20_label_with_tooltip
+    content_tag(:span, "S.E.E. 20", data: { bs_toggle: "tooltip", bs_placement: "top" }, title: see_20_tooltip_title)
+  end
+
+  # Helper for S.E.E. 20 score badges (method name kept for backward compatibility)
   def nat_20_badge(score, show_number = true)
     color = nat_20_color(score)
     content = show_number ? score : ''

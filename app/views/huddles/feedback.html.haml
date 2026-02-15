@@ -7,7 +7,7 @@
         .card-header.bg-primary.text-white
           %h3.mb-0
             %i.bi.bi-star-fill.me-2
-            Nat 20 Huddle Feedback
+            #{see_20_label_with_tooltip} Huddle Feedback
           %p.mb-0.mt-2= "Share your thoughts on #{@huddle.display_name}"
         
         .card-body
@@ -49,7 +49,7 @@
               .col-12
                 %h5.text-primary.help-text
                   %i.bi.bi-star.me-2
-                  Nat 20 Rating System
+                  #{see_20_label_with_tooltip} Rating System
                   %small.text-muted.ms-2 (Rate your agreement with each statement)
                 
                 .row
@@ -224,7 +224,7 @@
                   = form.submit @existing_feedback ? "Update Complete Feedback" : "Submit Complete Feedback", class: "btn btn-success btn-lg"
                   %small.text-muted.mt-2.d-block
                     %i.bi.bi-shield-check.me-1
-                    Your feedback helps improve future huddles and achieve Nat 20 scores!
+                    Your feedback helps improve future huddles and achieve #{see_20_label_with_tooltip} scores!
 
           :javascript
             document.addEventListener('DOMContentLoaded', function() {

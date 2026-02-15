@@ -109,7 +109,7 @@
               .col-md-6.col-sm-12
                 - if @huddle.nat_20_score
                   %p
-                    %strong Current Nat 20 Score:
+                    %strong Current #{see_20_label_with_tooltip} Score:
                     = nat_20_badge(@huddle.nat_20_score)
                 - if current_person
                   - participant = @huddle.huddle_participants.joins(:company_teammate).find_by(teammates: { person: current_person })
@@ -309,7 +309,8 @@
                           .mt-3
                             %h4 Overall Score
                             %h2.text-center{class: text_class(nat_20_color(@huddle.nat_20_score))}= @huddle.nat_20_score
-                            %p.text-center.text-muted Nat 20 Score
+                            %p.text-center.text-muted
+                              #{see_20_label_with_tooltip} Score
                         - else
                           %p.text-muted No ratings available
                   .col-md-6

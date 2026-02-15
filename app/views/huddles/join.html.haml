@@ -11,20 +11,20 @@
           %p.mb-0.mt-2= "Join #{@huddle.display_name}"
         
         .card-body
-          - current_participant = @huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: @current_person }) if @current_person
+          - current_participant = @huddle.huddle_participants.joins(:company_teammate).find_by(teammates: { person: @current_person }) if @current_person
           
           - if @current_person && current_participant
             / State 3: Already logged in and associated with huddle
             .alert.alert-success
               %i.bi.bi-check-circle.me-2
-              %strong Welcome back, #{@current_person.full_name}!
+              %strong Welcome back, #{@current_person.casual_name}!
               %br
               %small You're already a member of this huddle. Please verify your role.
             
             = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
               .mb-3.field-readonly
                 = form.label :name, "Your name", class: "form-label"
-                = form.text_field :name, value: @current_person.full_name, readonly: true, class: "form-control"
+                = form.text_field :name, value: @current_person.casual_name, readonly: true, class: "form-control"
               
               .mb-3.field-readonly
                 = form.label :email, "Your email", class: "form-label"
@@ -44,20 +44,20 @@
             - if teammate&.follower?
               .alert.alert-warning
                 %i.bi.bi-heart.me-2
-                %strong Welcome, #{@current_person.full_name}!
+                %strong Welcome, #{@current_person.casual_name}!
                 %br
                 %small You're following this organization. Please confirm your information and select your role to participate in this huddle.
             - else
               .alert.alert-info
                 %i.bi.bi-person-check.me-2
-                %strong Welcome, #{@current_person.full_name}!
+                %strong Welcome, #{@current_person.casual_name}!
                 %br
                 %small You're logged in. Please confirm your information and select your role.
             
             = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
               .mb-3.field-readonly
                 = form.label :name, "Your name", class: "form-label"
-                = form.text_field :name, value: @current_person.full_name, readonly: true, class: "form-control"
+                = form.text_field :name, value: @current_person.casual_name, readonly: true, class: "form-control"
               
               .mb-3.field-readonly
                 = form.label :email, "Your email", class: "form-label"
