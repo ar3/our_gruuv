@@ -824,11 +824,27 @@ class SlackService
         { success: false, error: error }
       end
     rescue Slack::Web::Api::Errors::SlackError => e
-      Rails.logger.error "Slack: Error posting thread message - #{e.message}"
+      Sentry.with_scope do |scope|
+        scope.set_context('slack_thread_message', {
+          channel_id: channel_id,
+          thread_ts: thread_ts,
+          text: text,
+          slack_error: e.message
+        })
+        Rails.logger.error "Slack: Error posting thread message - #{e.message}"
+      end
       store_slack_response('chat_postMessage_thread', { channel: channel_id, thread_ts: thread_ts }, { error: e.message })
       { success: false, error: e.message }
     rescue => e
-      Rails.logger.error "Slack: Unexpected error posting thread message - #{e.message}"
+      Sentry.with_scope do |scope|
+        scope.set_context('slack_thread_message', {
+          channel_id: channel_id,
+          thread_ts: thread_ts,
+          text: text,
+          unexpected_error: e.message
+        })
+        Rails.logger.error "Slack: Unexpected error posting thread message - #{e.message}"
+      end
       { success: false, error: "Unexpected error: #{e.message}" }
     end
   end
