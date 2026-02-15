@@ -96,13 +96,15 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   
   def create_new_person_and_employment
     ActiveRecord::Base.transaction do
-      @person = Person.new(person_params)
-      @person.save!
+      # Reuse existing person if email matches (case-insensitive)
+      @person = Person.find_by_email_insensitive(person_params[:email])
+      unless @person
+        @person = Person.new(person_params)
+        @person.save!
+      end
       
-      # Create teammate for this person and organization
-      teammate = @person.teammates.create!(
-        organization: @organization
-      )
+      # Create or find teammate for this person and organization
+      teammate = @person.teammates.find_or_create_by!(organization: @organization)
       
       @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
       @employment_tenure.company = @organization

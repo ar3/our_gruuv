@@ -274,28 +274,30 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # For creating a new person and employment simultaneously
     authorize @organization, :manage_employment?
     
-    # Create person and employment in a transaction
+    # Create person and employment in a transaction (reuse existing person if email matches, case-insensitive)
     ActiveRecord::Base.transaction do
       person_attrs = person_params.to_h
       # Map phone_number to unique_textable_phone_number if present
       if person_attrs.key?('phone_number')
         person_attrs['unique_textable_phone_number'] = person_attrs.delete('phone_number')
       end
-      @person = Person.new(person_attrs)
-      @person.save!
+      @person = Person.find_by_email_insensitive(person_attrs['email'])
+      unless @person
+        @person = Person.new(person_attrs)
+        @person.save!
+      end
       
       # Extract started_at from employment_tenure_params for first_employed_at
       employment_params = employment_tenure_params.to_h
       start_date = employment_params['started_at']
       
-      # Create teammate for this person and organization
-      teammate_attrs = {
-        organization: @organization
-      }
-      # Set first_employed_at to the start date if provided
+      # Create or find teammate for this person and organization
+      teammate_attrs = { organization: @organization }
       teammate_attrs[:first_employed_at] = start_date if start_date.present?
-      
-      teammate = @person.teammates.create!(teammate_attrs)
+      teammate = @person.teammates.find_or_create_by!(organization: @organization) do |t|
+        t.first_employed_at = start_date if start_date.present?
+      end
+      teammate.update!(first_employed_at: start_date) if start_date.present? && teammate.first_employed_at != start_date
       
       @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
       @employment_tenure.company = @organization

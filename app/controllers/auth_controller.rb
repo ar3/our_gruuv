@@ -147,16 +147,16 @@ class AuthController < ApplicationController
       return person
     end
     
-    # Then, try to find by email
+    # Then, try to find by email (case-insensitive)
     email = auth.info.email
-    existing_person = Person.find_by(email: email)
+    existing_person = Person.find_by_email_insensitive(email)
     if existing_person
       # Ensure teammate exists
       ensure_teammate_for_person(existing_person)
       return existing_person
     end
     
-    # Create new person
+    # Create new person (email normalized to lowercase in Person model)
     person = Person.create!(
       email: email,
       full_name: auth.info.name || email.split('@').first.titleize,

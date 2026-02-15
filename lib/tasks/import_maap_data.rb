@@ -69,11 +69,12 @@ class MaapDataImporter
     @abilities = {}
     
     ability_data.each do |data|
+      system_person = Person.find_by_email_insensitive('system@careerplug.com') || Person.create!(first_name: 'System', last_name: 'User', email: 'system@careerplug.com')
       ability = Ability.find_or_create_by(name: data[:name], organization: @organization) do |a|
         a.description = data[:description]
         a.semantic_version = '1.0.0'
-        a.created_by = Person.first || Person.create!(first_name: 'System', last_name: 'User', email: 'system@careerplug.com')
-        a.updated_by = Person.first || Person.create!(first_name: 'System', last_name: 'User', email: 'system@careerplug.com')
+        a.created_by = system_person
+        a.updated_by = system_person
       end
       
       @abilities[data[:name]] = ability

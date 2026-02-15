@@ -20,6 +20,7 @@ class Person < ApplicationRecord
   has_many :slack_identities, -> { where(provider: 'slack') }, through: :company_teammates, source: :teammate_identities
 
   # Callbacks
+  before_validation :normalize_email
   before_save :normalize_phone_number
 
   # Validations
@@ -34,6 +35,30 @@ class Person < ApplicationRecord
     allow_blank: true
   }
   validate :ensure_valid_timezone
+
+  # Case-insensitive email lookup and find-or-create (use downcased email to avoid duplicates)
+  scope :by_email_insensitive, ->(email) { where('LOWER(email) = ?', email.to_s.downcase) }
+
+  class << self
+    def find_by_email_insensitive(email)
+      return nil if email.blank?
+      by_email_insensitive(email).first
+    end
+
+    def find_or_create_by_email!(email, **attrs, &block)
+      return nil if email.blank?
+      normalized = email.to_s.downcase
+      person = find_by_email_insensitive(normalized)
+      if person
+        person
+      else
+        person = new(attrs.merge(email: normalized))
+        yield person if block_given?
+        person.save!
+        person
+      end
+    end
+  end
 
   # Virtual attribute for full name - getter and setter methods
   def full_name
@@ -335,6 +360,10 @@ class Person < ApplicationRecord
   # Active employment tenure convenience methods (active_employment_tenure_for defined above)
 
   private
+
+  def normalize_email
+    self.email = email.to_s.downcase if email.present?
+  end
 
   def normalize_phone_number
     self.unique_textable_phone_number = nil if unique_textable_phone_number.blank?

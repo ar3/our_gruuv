@@ -6,7 +6,7 @@ class ImpersonationsController < ApplicationController
   def create
     # Accept either person_id or email parameter
     if params[:email].present?
-      person = Person.find_by(email: params[:email])
+      person = Person.find_by_email_insensitive(params[:email])
       unless person
         flash[:error] = "No user found with email: #{params[:email]}"
         redirect_back(fallback_location: root_path)

@@ -183,7 +183,7 @@ class EmploymentDataUploadProcessor
   def find_or_create_person(person_data)
     # Try to find by email first
     if person_data['email'].present?
-      person = Person.find_by(email: person_data['email'])
+      person = Person.find_by_email_insensitive(person_data['email'])
       return person, false if person
     end
     

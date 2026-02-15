@@ -424,7 +424,7 @@ class UnassignedEmployeeUploadParser
       action = 'create'
       
       if employee_data['email'].present?
-        existing_person = Person.find_by(email: employee_data['email'])
+        existing_person = Person.find_by_email_insensitive(employee_data['email'])
       end
       
       if existing_person.nil? && employee_data['name'].present?
@@ -495,7 +495,7 @@ class UnassignedEmployeeUploadParser
       action = 'create'
       
       if manager_data['email'].present?
-        existing_manager = Person.find_by(email: manager_data['email'])
+        existing_manager = Person.find_by_email_insensitive(manager_data['email'])
       end
       
       if existing_manager.nil? && manager_data['name'].present?
@@ -600,7 +600,7 @@ class UnassignedEmployeeUploadParser
       action = 'create'
       
       if teammate_data['person_email'].present?
-        person = Person.find_by(email: teammate_data['person_email'])
+        person = Person.find_by_email_insensitive(teammate_data['person_email'])
         if person
           # We need organization context - this would need to be passed in
           # For now, we'll assume it's a create action
@@ -636,7 +636,7 @@ class UnassignedEmployeeUploadParser
       action = 'create'
       
       if employment_tenure_data['person_email'].present?
-        person = Person.find_by(email: employment_tenure_data['person_email'])
+        person = Person.find_by_email_insensitive(employment_tenure_data['person_email'])
         if person
           # We need company context - this would need to be passed in
           # For now, we'll assume it's a create action

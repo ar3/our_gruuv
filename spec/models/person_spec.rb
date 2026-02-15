@@ -87,6 +87,60 @@ RSpec.describe Person, type: :model do
     end
   end
 
+  describe 'email normalization' do
+    it 'downcases email before validation' do
+      person.email = 'User@Example.COM'
+      person.save!
+      expect(person.reload.email).to eq('user@example.com')
+    end
+  end
+
+  describe '.find_by_email_insensitive' do
+    it 'returns person when email matches ignoring case' do
+      created = create(:person, email: 'user@example.com')
+      expect(Person.find_by_email_insensitive('USER@EXAMPLE.COM')).to eq(created)
+      expect(Person.find_by_email_insensitive('user@example.com')).to eq(created)
+    end
+
+    it 'returns nil for blank email' do
+      expect(Person.find_by_email_insensitive('')).to be_nil
+      expect(Person.find_by_email_insensitive(nil)).to be_nil
+    end
+
+    it 'returns nil when no person has that email' do
+      expect(Person.find_by_email_insensitive('nobody@example.com')).to be_nil
+    end
+  end
+
+  describe '.find_or_create_by_email!' do
+    it 'returns existing person when email matches ignoring case' do
+      created = create(:person, email: 'existing@example.com')
+      found = Person.find_or_create_by_email!('EXISTING@EXAMPLE.COM') do |p|
+        p.first_name = 'Other'
+      end
+      expect(found).to eq(created)
+      expect(found.first_name).not_to eq('Other')
+    end
+
+    it 'creates new person when email does not exist' do
+      expect {
+        Person.find_or_create_by_email!('new@example.com') do |p|
+          p.first_name = 'New'
+          p.last_name = 'User'
+        end
+      }.to change(Person, :count).by(1)
+      person = Person.find_by_email_insensitive('new@example.com')
+      expect(person.email).to eq('new@example.com')
+      expect(person.first_name).to eq('New')
+      expect(person.last_name).to eq('User')
+    end
+
+    it 'stores email in lowercase when creating' do
+      Person.find_or_create_by_email!('Mixed@Case.COM') { |p| p.first_name = 'Test' }
+      expect(Person.find_by_email_insensitive('mixed@case.com').email).to eq('mixed@case.com')
+    end
+  end
+
   describe '#timezone_or_default' do
     it 'returns the timezone when set' do
       person.timezone = 'Pacific Time (US & Canada)'

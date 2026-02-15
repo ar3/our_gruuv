@@ -203,12 +203,12 @@ namespace :seed do
     
     participants = []
     count.times do |i|
-      person = Person.create!(
-        first_name: first_names[i % first_names.length],
-        last_name: last_names[i % last_names.length],
-        email: "#{first_names[i % first_names.length].downcase}.#{last_names[i % last_names.length].downcase}@#{team.parent.name.downcase.gsub(/\s+/, '')}.com",
-        timezone: ActiveSupport::TimeZone.all.map(&:name).sample
-      )
+      email = "#{first_names[i % first_names.length].downcase}.#{last_names[i % last_names.length].downcase}@#{team.parent.name.downcase.gsub(/\s+/, '')}.com"
+      person = Person.find_or_create_by_email!(email) do |p|
+        p.first_name = first_names[i % first_names.length]
+        p.last_name = last_names[i % last_names.length]
+        p.timezone = ActiveSupport::TimeZone.all.map(&:name).sample
+      end
       participants << person
     end
     

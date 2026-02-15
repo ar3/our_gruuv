@@ -473,7 +473,7 @@ class EmploymentDataUploadParser
       action = 'create'
       
       if person_data['email'].present?
-        existing_person = Person.find_by(email: person_data['email'])
+        existing_person = Person.find_by_email_insensitive(person_data['email'])
       end
       
       if existing_person.nil? && person_data['name'].present?
@@ -642,7 +642,7 @@ class EmploymentDataUploadParser
 
   def find_existing_person(person_data)
     if person_data['email'].present?
-      Person.find_by(email: person_data['email'])
+      Person.find_by_email_insensitive(person_data['email'])
     elsif person_data['name'].present?
       name_parts = person_data['name'].split(' ', 2)
       Person.find_by(

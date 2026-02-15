@@ -108,7 +108,7 @@ class InitialMaapSnapshotService
     
     unless og_automation_person
       # Try to find by email as fallback
-      og_automation_person = Person.find_by(email: 'automation@og.local')
+      og_automation_person = Person.find_by_email_insensitive('automation@og.local')
       if og_automation_person && og_automation_person.id != -1
         # Update existing person's id to -1
         Person.connection.execute(
@@ -156,7 +156,7 @@ class InitialMaapSnapshotService
     )
   rescue ActiveRecord::RecordNotUnique, PG::UniqueViolation, ActiveRecord::RecordNotFound
     # If another process created it during our transaction, find it
-    og_person = Person.find_by(id: -1) || Person.find_by(email: 'automation@og.local')
+    og_person = Person.find_by(id: -1) || Person.find_by_email_insensitive('automation@og.local')
     CompanyTeammate.find_or_create_by!(
       person: og_person,
       organization: @organization

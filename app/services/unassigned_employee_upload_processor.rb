@@ -109,10 +109,10 @@ class UnassignedEmployeeUploadProcessor
         manager_email = manager_data['email']
         next if manager_name.blank? && manager_email.blank?
 
-        # Check if manager already exists
+        # Check if manager already exists (case-insensitive email)
         existing_manager = nil
         if manager_email.present?
-          existing_manager = Person.find_by(email: manager_email)
+          existing_manager = Person.find_by_email_insensitive(manager_email)
         end
         
         if existing_manager.nil? && manager_name.present?
@@ -135,7 +135,7 @@ class UnassignedEmployeeUploadProcessor
             id: existing_manager.id
           }
         else
-          # Create new manager
+          # Create new manager (email normalized in Person model)
           name_parts = manager_name.split(' ', 2)
           manager = Person.create!(
             first_name: name_parts.first,
@@ -178,10 +178,10 @@ class UnassignedEmployeeUploadProcessor
         start_date = employee_data['start_date']
         department_name = employee_data['department']
 
-        # Check if employee already exists
+        # Check if employee already exists (case-insensitive email)
         existing_employee = nil
         if employee_email.present?
-          existing_employee = Person.find_by(email: employee_email)
+          existing_employee = Person.find_by_email_insensitive(employee_email)
         end
         
         if existing_employee.nil? && employee_name.present?
@@ -212,7 +212,7 @@ class UnassignedEmployeeUploadProcessor
           
           results[:summary][:successful_updates] += 1
         else
-          # Create new employee
+          # Create new employee (email normalized in Person model)
           name_parts = employee_name.split(' ', 2)
           employee = Person.create!(
             first_name: name_parts.first,

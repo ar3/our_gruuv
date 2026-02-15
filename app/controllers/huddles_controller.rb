@@ -234,7 +234,7 @@ class HuddlesController < ApplicationController
 
       # Auto-generate name from email if not provided and person doesn't exist
       if name.blank?
-        existing_person = Person.find_by(email: email)
+        existing_person = Person.find_by_email_insensitive(email)
         if existing_person&.full_name.present?
           name = existing_person.full_name
         else
@@ -245,8 +245,8 @@ class HuddlesController < ApplicationController
       # If no timezone provided, try to detect from request
       timezone ||= detect_timezone_from_request
 
-      # Find or create the person
-      person = Person.find_or_create_by!(email: email) do |p|
+      # Find or create the person (case-insensitive email match)
+      person = Person.find_or_create_by_email!(email) do |p|
         p.full_name = name
         p.safe_timezone = timezone if timezone.present?
       end
