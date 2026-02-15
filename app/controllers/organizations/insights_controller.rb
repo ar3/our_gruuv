@@ -99,6 +99,20 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
               disposition: 'attachment'
   end
 
+  def feedback_requests
+    authorize company, :view_feedback_requests?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range = date_range_for(@timeframe)
+    chart_range = range || (52.weeks.ago..Time.current)
+    @feedback_requests_created_chart_data = feedback_requests_created_chart_series(chart_range)
+    @feedback_observations_published_chart_data = feedback_observations_published_chart_series(chart_range)
+    @top_feedback_givers = top_feedback_givers_for_insights(range)
+    @top_assignments_feedback_requested = top_assignments_feedback_requested_for_insights(range)
+    @top_abilities_feedback_requested = top_abilities_feedback_requested_for_insights(range)
+  end
+
   def observations
     authorize company, :view_observations?
 
@@ -268,5 +282,89 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       }
     end
     { categories: categories, series: series }
+  end
+
+  def feedback_requests_created_chart_series(chart_range)
+    scope = FeedbackRequest.where(company: company).where(created_at: chart_range)
+    raw = scope.group(Arel.sql("date_trunc('week', created_at)::date")).count
+    raw_normalized = raw.transform_keys { |k| k.to_s }
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map { |d| d.beginning_of_week }.uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    data = week_dates.map { |wd| raw_normalized[wd.to_s] || 0 }
+    series = [{ name: 'Feedback requests created', data: data }]
+    { categories: categories, series: series }
+  end
+
+  def feedback_observations_published_chart_series(chart_range)
+    scope = Observation
+      .for_company(company)
+      .not_soft_deleted
+      .published
+      .where.not(feedback_request_question_id: nil)
+      .where(published_at: chart_range)
+    raw = scope.group(Arel.sql("date_trunc('week', published_at)::date")).count
+    raw_normalized = raw.transform_keys { |k| k.to_s }
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map { |d| d.beginning_of_week }.uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    data = week_dates.map { |wd| raw_normalized[wd.to_s] || 0 }
+    series = [{ name: 'Feedback-related observations published', data: data }]
+    { categories: categories, series: series }
+  end
+
+  def top_feedback_givers_for_insights(range)
+    scope = Observation
+      .for_company(company)
+      .not_soft_deleted
+      .published
+      .where.not(feedback_request_question_id: nil)
+    scope = scope.where(published_at: range) if range
+    counts = scope.group(:observer_id).count
+    top_10 = counts.sort_by { |_, c| -c }.first(10)
+    return [] if top_10.blank?
+
+    persons_by_id = Person.where(id: top_10.map(&:first)).index_by(&:id)
+    teammate_by_person_id = CompanyTeammate
+      .where(organization: company, person_id: top_10.map(&:first))
+      .index_by(&:person_id)
+    top_10.filter_map do |observer_id, count|
+      person = persons_by_id[observer_id]
+      next unless person
+
+      { person: person, company_teammate: teammate_by_person_id[observer_id], count: count }
+    end
+  end
+
+  def top_assignments_feedback_requested_for_insights(range)
+    scope = FeedbackRequestQuestion
+      .joins(:feedback_request)
+      .where(feedback_requests: { company_id: company.id }, rateable_type: 'Assignment')
+      .where.not(rateable_id: nil)
+    scope = scope.where(feedback_requests: { created_at: range }) if range
+    counts = scope.group(:rateable_id).count
+    top_10 = counts.sort_by { |_, c| -c }.first(10)
+    return [] if top_10.blank?
+
+    assignments_by_id = Assignment.where(id: top_10.map(&:first)).index_by(&:id)
+    top_10.map { |rateable_id, count| { assignment: assignments_by_id[rateable_id], count: count } }.select { |h| h[:assignment].present? }
+  end
+
+  def top_abilities_feedback_requested_for_insights(range)
+    scope = FeedbackRequestQuestion
+      .joins(:feedback_request)
+      .where(feedback_requests: { company_id: company.id }, rateable_type: 'Ability')
+      .where.not(rateable_id: nil)
+    scope = scope.where(feedback_requests: { created_at: range }) if range
+    counts = scope.group(:rateable_id).count
+    top_10 = counts.sort_by { |_, c| -c }.first(10)
+    return [] if top_10.blank?
+
+    abilities_by_id = Ability.where(id: top_10.map(&:first)).index_by(&:id)
+    top_10.map { |rateable_id, count| { ability: abilities_by_id[rateable_id], count: count } }.select { |h| h[:ability].present? }
   end
 end

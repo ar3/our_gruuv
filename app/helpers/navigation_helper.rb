@@ -194,6 +194,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Feedback Requests',
+            icon: 'bi-chat-square-text',
+            path: organization_insights_feedback_requests_path(current_organization),
+            policy_check: -> { policy(current_company).view_feedback_requests? },
+            coming_soon: false
+          },
+          {
             label: 'Seats, Titles, Positions',
             icon: 'bi-briefcase',
             path: organization_insights_seats_titles_positions_path(current_organization),

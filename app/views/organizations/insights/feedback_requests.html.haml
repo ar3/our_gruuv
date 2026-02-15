@@ -1,0 +1,183 @@
+- content_for :title, "Insights: Feedback Requests"
+
+- chart_title_period = case @timeframe when :'90_days' then "Last 90 Days" when :year then "Last Year" when :all_time then "Last 52 Weeks" else "Last 90 Days" end
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bar-chart-line.me-2
+      Insights: Feedback Requests
+
+/ Timeframe selector
+.mb-4
+  .btn-group{role: "group"}
+    = link_to "Last 90 days", organization_insights_feedback_requests_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Last Year", organization_insights_feedback_requests_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "All-Time", organization_insights_feedback_requests_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+
+.container-fluid
+  / Feedback requests created by week
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-chat-square-text.me-2
+            Feedback Requests Created by Week (#{chart_title_period})
+        .card-body
+          #feedback-requests-created-chart{style: "height: 400px;"}
+
+  %hr.my-5
+
+  / Feedback-related observations published by week
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-success.text-white
+          %h4.mb-0
+            %i.bi.bi-eye.me-2
+            Feedback-Related Observations Published by Week (#{chart_title_period})
+        .card-body
+          #feedback-observations-published-chart{style: "height: 400px;"}
+
+  %hr.my-5
+
+  / Top 10 lists in 3 columns
+  .row.mb-4
+    .col-md-4
+      .card.border-0.shadow-sm.h-100
+        .card-header.bg-info.text-white
+          %h5.mb-0
+            %i.bi.bi-person-lines-fill.me-2
+            Top 10 Feedback Givers
+        .card-body
+          - if @top_feedback_givers.any?
+            %ol.ps-3.mb-0
+              - @top_feedback_givers.each do |entry|
+                %li.mb-1
+                  - if entry[:company_teammate]
+                    = link_to entry[:person].display_name, internal_organization_company_teammate_path(@organization, entry[:company_teammate]), class: 'text-decoration-none'
+                  - else
+                    = entry[:person].display_name
+                  %span.text-muted.ms-1
+                    = "(#{entry[:count]})"
+          - else
+            %p.text-muted.mb-0 No data for this period.
+    .col-md-4
+      .card.border-0.shadow-sm.h-100
+        .card-header.bg-warning.text-dark
+          %h5.mb-0
+            %i.bi.bi-list-check.me-2
+            Top 10 Assignments Requested
+        .card-body
+          - if @top_assignments_feedback_requested.any?
+            %ol.ps-3.mb-0
+              - @top_assignments_feedback_requested.each do |entry|
+                %li.mb-1
+                  = link_to entry[:assignment].display_name, organization_assignment_path(@organization, entry[:assignment]), class: 'text-decoration-none'
+                  %span.text-muted.ms-1
+                    = "(#{entry[:count]})"
+          - else
+            %p.text-muted.mb-0 No data for this period.
+    .col-md-4
+      .card.border-0.shadow-sm.h-100
+        .card-header.bg-secondary.text-white
+          %h5.mb-0
+            %i.bi.bi-award.me-2
+            Top 10 Abilities Requested
+        .card-body
+          - if @top_abilities_feedback_requested.any?
+            %ol.ps-3.mb-0
+              - @top_abilities_feedback_requested.each do |entry|
+                %li.mb-1
+                  = link_to entry[:ability].display_name, organization_ability_path(@organization, entry[:ability]), class: 'text-decoration-none'
+                  %span.text-muted.ms-1
+                    = "(#{entry[:count]})"
+          - else
+            %p.text-muted.mb-0 No data for this period.
+
+:javascript
+  (function() {
+    var createdChartData = #{@feedback_requests_created_chart_data.to_json};
+    var publishedChartData = #{@feedback_observations_published_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+
+    function initializeCreatedChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('feedback-requests-created-chart');
+      if (!el) return;
+      Highcharts.chart('feedback-requests-created-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Feedback requests created by week (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: createdChartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of feedback requests' }
+        },
+        plotOptions: {
+          column: {
+            dataLabels: { enabled: false }
+          }
+        },
+        series: createdChartData.series
+      });
+    }
+
+    function initializePublishedChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('feedback-observations-published-chart');
+      if (!el) return;
+      Highcharts.chart('feedback-observations-published-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Feedback-related observations published by week (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: publishedChartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of observations' }
+        },
+        plotOptions: {
+          column: {
+            dataLabels: { enabled: false }
+          }
+        },
+        series: publishedChartData.series
+      });
+    }
+
+    function initializeCharts() {
+      initializeCreatedChart();
+      initializePublishedChart();
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeCharts;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeCharts();
+    });
+  })();

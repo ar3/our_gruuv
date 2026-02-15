@@ -289,6 +289,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Assignments')
         expect(labels).to include('Abilities')
         expect(labels).to include('Goals')
+        expect(labels).to include('Feedback Requests')
         expect(labels).to include('Huddles')
         expect(labels.last).to eq('Check-ins Health')
       end

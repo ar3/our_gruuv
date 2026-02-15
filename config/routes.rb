@@ -425,6 +425,7 @@ Rails.application.routes.draw do
     # Insights analytics
     namespace :insights, module: :organizations do
       get 'observations', to: 'insights#observations'
+      get 'feedback_requests', to: 'insights#feedback_requests'
       get 'prompts/download', to: 'insights#prompts_download'
       get 'prompts', to: 'insights#prompts'
       get 'seats_titles_positions', to: 'insights#seats_titles_positions'

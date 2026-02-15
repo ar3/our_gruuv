@@ -37,6 +37,52 @@ RSpec.describe 'Organizations::Insights', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/insights/feedback_requests' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_feedback_requests?).and_return(true)
+    end
+
+    it 'returns http success' do
+      get organization_insights_feedback_requests_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders feedback requests insights page with timeframe links' do
+      get organization_insights_feedback_requests_path(organization)
+      expect(response.body).to include('Insights: Feedback Requests')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+    end
+
+    it 'returns success with timeframe=year' do
+      get organization_insights_feedback_requests_path(organization, timeframe: 'year')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns success with timeframe=all_time' do
+      get organization_insights_feedback_requests_path(organization, timeframe: 'all_time')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'includes the feedback requests created chart container' do
+      get organization_insights_feedback_requests_path(organization)
+      expect(response.body).to include('feedback-requests-created-chart')
+    end
+
+    it 'includes the feedback observations published chart container' do
+      get organization_insights_feedback_requests_path(organization)
+      expect(response.body).to include('feedback-observations-published-chart')
+    end
+
+    it 'includes top 10 feedback givers, assignments, and abilities sections' do
+      get organization_insights_feedback_requests_path(organization)
+      expect(response.body).to include('Top 10 Feedback Givers')
+      expect(response.body).to include('Top 10 Assignments Requested')
+      expect(response.body).to include('Top 10 Abilities Requested')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/insights/prompts' do
     before do
       allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
