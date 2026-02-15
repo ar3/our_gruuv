@@ -32,11 +32,11 @@ module Huddles
 
     # Public method for accessing huddles in range (used in tests)
     def huddles_in_range
-      @huddles_in_range ||= Huddle.joins(team: :company)
-                                   .where(teams: { company_id: organization.id })
-                                   .where(started_at: date_range.begin.beginning_of_day..date_range.end.end_of_day)
-                                   .includes(:huddle_feedbacks, :huddle_participants, team: :company)
-                                   .order(started_at: :desc)
+    @huddles_in_range ||= Huddle.joins(team: :company)
+                                 .where(teams: { company_id: organization.id })
+                                 .where(started_at: date_range.begin.beginning_of_day..date_range.end.end_of_day)
+                                 .includes(:huddle_feedbacks, :huddle_participants, team: [:company, :department, :team_members])
+                                 .order(started_at: :desc)
     end
 
     # Public methods for testing (used in specs)
@@ -134,11 +134,21 @@ module Huddles
         rating_stats = calculate_rating_stats_for_huddles(team_huddles)
         weekly_trends = calculate_team_weekly_trends(team_huddles)
 
+        member_count = team.team_members.count
+        member_attendance_rate = if member_count.positive?
+          (participation_stats[:distinct_participant_count].to_f / member_count * 100).round(1)
+        else
+          0
+        end
+
         team_stats[team.id] = {
           id: team.id,
           display_name: team.display_name,
           company_id: team.company&.id,
           company_name: team.company&.display_name || 'Unknown Company',
+          department_name: team.department&.display_name || nil,
+          member_count: member_count,
+          member_attendance_rate: member_attendance_rate,
           total_huddles: team_huddles.count,
           **participation_stats,
           **rating_stats,

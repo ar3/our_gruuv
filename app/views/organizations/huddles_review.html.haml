@@ -197,12 +197,13 @@
                     %thead
                       %tr
                         %th Team
-                        %th Company
+                        %th Department
                         %th Huddles
                         %th Distinct Participants
+                        %th Member Attendance Rate
                         %th Feedbacks
                         %th Avg Rating
-                        %th Participation Rate
+                        %th Participant Feedback Given Rate
                         %th Actions
                     %tbody
                       - @team_metrics.sort_by { |team_id, metrics| -metrics[:average_rating] }.each do |team_id, metrics|
@@ -212,9 +213,12 @@
                           %td
                             %strong= team.display_name
                           %td
-                            %small= team.company&.display_name || 'Unknown Company'
+                            %small= team.department&.display_name || '—'
                           %td= metrics[:total_huddles]
                           %td{title: metrics[:distinct_participant_names]&.join(", ") || "No participants", data: {bs_toggle: "tooltip", bs_placement: "top"}}= metrics[:distinct_participant_count]
+                          %td
+                            %span{class: (metrics[:member_attendance_rate] || 0) >= 80 ? 'text-success' : (metrics[:member_attendance_rate] || 0) >= 60 ? 'text-warning' : 'text-danger'}
+                              = "#{metrics[:member_attendance_rate] || 0}%"
                           %td= metrics[:total_feedbacks]
                           %td
                             %span{class: metrics[:average_rating] >= 16 ? 'text-success' : metrics[:average_rating] >= 12 ? 'text-warning' : 'text-danger'}
@@ -446,7 +450,7 @@
         teamTrendsData = Object.keys(teamMetrics).map(function(key) {
           var team = teamMetrics[key];
           return {
-            name: team.display_name + ' (' + team.company_name + ')',
+            name: team.display_name + ' (' + (team.department_name || '—') + ')',
             data: team.weekly_trends ? Object.keys(team.weekly_trends).sort().map(function(week) {
               return [new Date(week).getTime(), team.weekly_trends[week].average_rating];
             }) : []
