@@ -181,4 +181,36 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('goals-employees-chart')
     end
   end
+
+  describe 'GET /organizations/:organization_id/insights/abilities' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_abilities?).and_return(true)
+    end
+
+    it 'returns http success' do
+      get organization_insights_abilities_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders abilities insights page with chart containers and timeframe links' do
+      get organization_insights_abilities_path(organization)
+      expect(response.body).to include('Insights: Abilities')
+      expect(response.body).to include('Back to Abilities')
+      expect(response.body).to include('Distribution of defined Milestones per Ability')
+      expect(response.body).to include('Abilities by number of Assignments (grouped by Required Milestone)')
+      expect(response.body).to include('Below are time-based analytics')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('milestones-distribution-chart')
+      expect(response.body).to include('assignments-per-ability-chart')
+      expect(response.body).to include('abilities-updated-chart')
+      expect(response.body).to include('milestones-earned-chart')
+      expect(response.body).to include('Milestones earned (by week)')
+      expect(response.body).to include('observation-ratings-chart')
+    end
+
+    it 'returns success with timeframe=year' do
+      get organization_insights_abilities_path(organization, timeframe: 'year')
+      expect(response).to have_http_status(:success)
+    end
+  end
 end

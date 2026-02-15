@@ -82,8 +82,25 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   
   def abilities
     authorize company, :view_abilities?
-    
+
+    @organization = company
     @total_abilities = Ability.where(company: company).count
+    abilities_scope = Ability.for_company(company)
+    @milestones_distribution_chart_data = abilities_milestones_distribution_chart_data(abilities_scope)
+    @assignments_per_ability_chart_data = abilities_assignments_per_milestone_chart_data(abilities_scope)
+
+    @timeframe = parse_timeframe(params[:timeframe])
+    range = date_range_for(@timeframe)
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = case @timeframe
+      when :'90_days' then 'Last 90 Days'
+      when :year then 'Last Year'
+      when :all_time then 'Last 52 Weeks'
+      else 'Last 90 Days'
+    end
+    @abilities_updated_chart_data = abilities_updated_chart_data(company, chart_range)
+    @milestones_earned_chart_data = abilities_milestones_earned_chart_data(company, chart_range)
+    @observation_ratings_chart_data = abilities_observation_ratings_chart_data(company, chart_range)
   end
   
   def goals
@@ -563,6 +580,108 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     base = ObservationRating
       .joins(:observation)
       .where(rateable_type: 'Assignment')
+      .where(observations: { company_id: company.id })
+      .merge(Observation.not_soft_deleted.published)
+      .where(observations: { published_at: chart_range })
+    raw = base.group(Arel.sql("date_trunc('week', observations.published_at)::date"), :rating).count
+    raw_normalized = raw.each_with_object(Hash.new(0)) { |((w, r), c), h| h[[w.to_s, r]] = c }
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    rating_labels = {
+      'strongly_agree' => 'Exceptional',
+      'agree' => 'Solid',
+      'disagree' => 'Misaligned',
+      'strongly_disagree' => 'Concerning'
+    }
+    rating_order = %w[strongly_agree agree disagree strongly_disagree]
+    series = rating_order.map do |rating|
+      {
+        name: rating_labels[rating] || rating.humanize,
+        data: week_dates.map { |wd| raw_normalized[[wd.to_s, rating]] || 0 }
+      }
+    end
+    { categories: categories, series: series }
+  end
+
+  # --- Abilities insights chart data ---
+
+  def abilities_milestones_distribution_chart_data(abilities_scope)
+    rows = abilities_scope.pluck(:milestone_1_description, :milestone_2_description, :milestone_3_description, :milestone_4_description, :milestone_5_description)
+    counts = rows.map { |row| row.count { |x| x.present? } }
+    histogram = counts.tally
+    max_n = histogram.keys.max || 0
+    categories = (0..max_n).to_a.map(&:to_s)
+    data = categories.map { |n| histogram[n.to_i] || 0 }
+    { categories: categories, series: [{ name: 'Abilities', data: data }] }
+  end
+
+  def abilities_assignments_per_milestone_chart_data(abilities_scope)
+    ability_ids = abilities_scope.pluck(:id)
+    return { categories: ['0'], series: (1..5).map { |ml| { name: "Milestone #{ml}", data: [0] } } } if ability_ids.empty?
+
+    aa_counts = AssignmentAbility.where(ability_id: ability_ids).group(:ability_id, :milestone_level).count
+    max_n = 0
+    (1..5).each do |ml|
+      ability_ids.each do |aid|
+        c = aa_counts[[aid, ml]] || 0
+        max_n = c if c > max_n
+      end
+    end
+    categories = (0..max_n).to_a.map(&:to_s)
+    series = (1..5).map do |ml|
+      hist = ability_ids.each_with_object(Hash.new(0)) { |aid, h| h[aa_counts[[aid, ml]] || 0] += 1 }
+      { name: "Milestone #{ml}", data: categories.map { |k| hist[k.to_i] || 0 } }
+    end
+    { categories: categories, series: series }
+  end
+
+  def abilities_updated_chart_data(company, chart_range)
+    return { categories: [], series: [] } if chart_range.nil?
+    ability_ids = Ability.for_company(company).pluck(:id)
+    return { categories: [], series: [] } if ability_ids.empty?
+    scope = PaperTrail::Version.where(item_type: 'Ability', item_id: ability_ids, event: 'update').where(created_at: chart_range)
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    data = week_dates.map do |wd|
+      week_start = wd.to_time
+      week_end = wd.to_time.end_of_week.end_of_day
+      scope.where(created_at: week_start..week_end).distinct.count(:item_id)
+    end
+    series = [{ name: 'Abilities updated', data: data }]
+    { categories: categories, series: series }
+  end
+
+  def abilities_milestones_earned_chart_data(company, chart_range)
+    return { categories: [], series: [] } if chart_range.nil?
+    date_range = chart_range.begin.to_date..chart_range.end.to_date
+    base = TeammateMilestone
+      .joins(:ability)
+      .where(abilities: { company_id: company.id })
+      .where(attained_at: date_range)
+    raw = base.group(Arel.sql("date_trunc('week', teammate_milestones.attained_at)::date"), :milestone_level).count
+    raw_normalized = raw.each_with_object(Hash.new(0)) { |((w, ml), c), h| h[[w.to_s, ml]] = c }
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+    series = (1..5).map do |ml|
+      {
+        name: "Milestone #{ml}",
+        data: week_dates.map { |wd| raw_normalized[[wd.to_s, ml]] || 0 }
+      }
+    end
+    { categories: categories, series: series }
+  end
+
+  def abilities_observation_ratings_chart_data(company, chart_range)
+    return { categories: [], series: [] } if chart_range.nil?
+    base = ObservationRating
+      .joins(:observation)
+      .where(rateable_type: 'Ability')
       .where(observations: { company_id: company.id })
       .merge(Observation.not_soft_deleted.published)
       .where(observations: { published_at: chart_range })

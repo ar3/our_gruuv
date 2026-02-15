@@ -1,21 +1,161 @@
 - content_for :title, "Insights: Abilities"
 
+- content_for :go_back_link do
+  = link_to organization_abilities_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Abilities
+
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-bar-chart-line.me-2
       Insights: Abilities
 
-.container-fluid
-  .row.justify-content-center
-    .col-lg-8
-      .card.border-0.shadow-sm
-        .card-body.text-center.py-5
-          .display-1.text-primary.mb-4
-            %i.bi.bi-award
-          .display-4.text-primary.mb-3= @total_abilities
-          %h4.text-muted Total Abilities
-          
-          .alert.alert-info.mt-4
-            %i.bi.bi-info-circle.me-2
-            More analytics for Abilities are coming soon. Stay tuned!
+/ Milestones distribution chart
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-primary.text-white
+        %h5.mb-0
+          %i.bi.bi-pie-chart.me-2
+          Distribution of defined Milestones per Ability
+      .card-body
+        #milestones-distribution-chart{style: "height: 320px;"}
+
+/ Abilities by number of Assignments (grouped by Required Milestone)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-secondary.text-white
+        %h5.mb-0
+          %i.bi.bi-bar-chart-steps.me-2
+          Abilities by number of Assignments (grouped by Required Milestone)
+      .card-body
+        #assignments-per-ability-chart{style: "height: 320px;"}
+
+%hr.my-5
+%h5.text-muted.mb-3 Below are time-based analytics
+.mb-4
+  .btn-group{role: "group"}
+    = link_to organization_insights_abilities_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}" do
+      Last 90 days
+    = link_to organization_insights_abilities_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}" do
+      Last Year
+    = link_to organization_insights_abilities_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}" do
+      All-Time
+
+/ Abilities with updates (by week)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-info.text-white
+        %h5.mb-0
+          %i.bi.bi-pencil-square.me-2
+          Abilities with updates (by week) — #{@chart_title_period}
+      .card-body
+        #abilities-updated-chart{style: "height: 320px;"}
+
+/ Milestones earned (by week)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-success.text-white
+        %h5.mb-0
+          %i.bi.bi-trophy.me-2
+          Milestones earned (by week) — #{@chart_title_period}
+      .card-body
+        #milestones-earned-chart{style: "height: 320px;"}
+
+/ Ability ratings in published observations (by week)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-warning.text-dark
+        %h5.mb-0
+          %i.bi.bi-star.me-2
+          Ability ratings in published observations (by week) — #{@chart_title_period}
+      .card-body
+        #observation-ratings-chart{style: "height: 320px;"}
+
+:javascript
+  (function() {
+    var milestonesData = #{@milestones_distribution_chart_data.to_json};
+    var assignmentsPerAbilityData = #{@assignments_per_ability_chart_data.to_json};
+    var updatedData = #{@abilities_updated_chart_data.to_json};
+    var milestonesEarnedData = #{@milestones_earned_chart_data.to_json};
+    var obsRatingsData = #{@observation_ratings_chart_data.to_json};
+
+    // Milestone levels 1-5 (distinct colors for stacked chart)
+    var milestonesEarnedColors = ['#0d6efd', '#198754', '#ffc107', '#fd7e14', '#6f42c1'];
+
+    // Same as observation rating buttons: Exceptional (success), Solid (primary), Misaligned (warning), Concerning (danger)
+    var observationRatingColors = ['#166534', '#1e40af', '#fd7e14', '#dc3545'];
+
+    function xTitleFor(elId, stacked) {
+      if (stacked) return 'Week of';
+      if (elId === 'milestones-distribution-chart') return 'Number of defined milestones';
+      if (elId === 'assignments-per-ability-chart') return 'Number of assignments';
+      return 'Count';
+    }
+
+    function yTitleFor(elId, stacked) {
+      if (stacked) return 'Count';
+      if (elId === 'milestones-distribution-chart' || elId === 'assignments-per-ability-chart') return 'Number of abilities';
+      return 'Count';
+    }
+
+    function chart(elId, title, categories, series, stacked, seriesColors) {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById(elId);
+      if (!el) return;
+      var s = series;
+      if (seriesColors && seriesColors.length) {
+        s = series.map(function(ser, i) {
+          var out = { name: ser.name, data: ser.data };
+          if (seriesColors[i]) out.color = seriesColors[i];
+          return out;
+        });
+      }
+      Highcharts.chart(elId, {
+        chart: { type: 'column' },
+        title: { text: title },
+        accessibility: { enabled: false },
+        xAxis: { categories: categories, title: { text: xTitleFor(elId, stacked) } },
+        yAxis: { min: 0, title: { text: yTitleFor(elId, stacked) }, stackLabels: { enabled: !!stacked } },
+        plotOptions: { column: { stacking: stacked ? 'normal' : null, dataLabels: { enabled: false } } },
+        series: s
+      });
+    }
+
+    function initCharts() {
+      if (typeof Highcharts === 'undefined') return;
+      chart('milestones-distribution-chart', 'Defined milestones per ability', milestonesData.categories, milestonesData.series, false);
+      chart('assignments-per-ability-chart', 'Abilities by number of assignments (by required milestone)', assignmentsPerAbilityData.categories, assignmentsPerAbilityData.series, true);
+      chart('abilities-updated-chart', 'Abilities with updates', updatedData.categories, updatedData.series, false);
+      chart('milestones-earned-chart', 'Milestones earned by level', milestonesEarnedData.categories, milestonesEarnedData.series, true, milestonesEarnedColors);
+      chart('observation-ratings-chart', 'Ability ratings in published observations', obsRatingsData.categories, obsRatingsData.series, true, observationRatingColors);
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initCharts;
+        document.head.appendChild(script);
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initCharts();
+    });
+  })();
