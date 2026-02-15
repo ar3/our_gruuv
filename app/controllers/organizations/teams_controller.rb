@@ -12,6 +12,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   def show
     authorize @team, :show?
     @team_members = @team.team_members.includes(company_teammate: :person).order('people.last_name, people.first_name')
+    @team.huddles.preload(:huddle_participants).load
   end
 
   def new

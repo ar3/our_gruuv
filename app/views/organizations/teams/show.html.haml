@@ -35,6 +35,12 @@
             = @team_members.count
       .card-body
         - if @team_members.any?
+          .d-flex.align-items-center.justify-content-center.flex-wrap.gap-0.mb-4{style: "margin-left: -0.5rem;"}
+            - @team_members.each_with_index do |team_member, idx|
+              - teammate = team_member.company_teammate
+              = link_to organization_company_teammate_path(@organization, teammate), class: "d-inline-block text-decoration-none", style: "margin-left: #{idx.zero? ? 0 : -1.25}rem; z-index: #{@team_members.size - idx};", title: teammate.person.preferred_first_then_last_display_name, data: { bs_toggle: "tooltip", bs_placement: "top" } do
+                .rounded-circle.border.border-3.border-white.shadow-sm{style: "width: 80px; height: 80px; overflow: hidden; box-sizing: content-box;"}
+                  = teammate_profile_image(teammate, size: 80)
           .table-responsive
             %table.table.table-hover.mb-0
               %thead
@@ -59,7 +65,7 @@
                 = link_to "Add members", manage_members_organization_team_path(@organization, @team), class: "alert-link"
                 to get started.
 
-    .card
+    .card.mb-4
       .card-header
         %h5.mb-0
           %i.bi.bi-info-circle.me-2
@@ -74,3 +80,51 @@
               %dd.col-sm-8= @team.company.display_name
               %dt.col-sm-4 Created
               %dd.col-sm-8= @team.created_at.strftime('%B %d, %Y')
+
+    .card
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-calendar-event.me-2
+          Huddles
+          %span.badge.bg-secondary.ms-2= @team.huddles.size
+        .btn-group.btn-group-sm{role: "group"}
+          = button_to start_huddle_from_team_huddles_path(team_id: @team.id), method: :post, class: "btn btn-outline-primary btn-sm", data: { turbo: false } do
+            %i.bi.bi-plus-circle.me-1
+            Start Huddle
+          - if @team.huddles.any?
+            = link_to huddles_path(organization_id: @organization.id, team_id: @team.id), class: "btn btn-outline-info btn-sm" do
+              %i.bi.bi-list.me-1
+              View Huddles
+      .card-body
+        %dl.row.mb-0
+          %dt.col-sm-3 Huddle Channel
+          %dd.col-sm-9
+            - if @team.huddle_channel_id.present?
+              %code= @team.huddle_channel&.display_name || @team.huddle_channel_id
+            - else
+              %small.text-muted Not configured
+          - if @team.huddles.any?
+            %dt.col-sm-3 Recent Activity
+            %dd.col-sm-9
+              - latest_huddle = @team.huddles.max_by(&:created_at)
+              %small.text-muted
+                Last huddle: #{time_ago_in_words(latest_huddle.created_at)} ago
+                - if latest_huddle.huddle_participants.any?
+                  %span.badge.bg-success.ms-1= "#{latest_huddle.huddle_participants.size} participants"
+            %dt.col-sm-3 Recent Huddles
+            %dd.col-sm-9
+              %ul.list-unstyled.mb-0
+                - @team.huddles.sort_by(&:created_at).reverse.first(5).each do |huddle|
+                  %li.mb-1
+                    = link_to huddle_path(huddle), class: "text-decoration-none" do
+                      %i.bi.bi-calendar-event.me-1
+                      = huddle.display_name
+                      %small.text-muted.ms-2= format_date_in_user_timezone(huddle.created_at, format: "%b %d, %Y")
+                      - if huddle.huddle_participants.any?
+                        %span.badge.bg-success.ms-1= huddle.huddle_participants.size
+        - unless @team.huddles.any?
+          .alert.alert-light.mb-0.mt-2
+            %small.text-muted
+              No huddles yet for this team.
+              = button_to "Start a huddle", start_huddle_from_team_huddles_path(team_id: @team.id), method: :post, class: "btn btn-link p-0 align-baseline alert-link text-muted", data: { turbo: false }
+              to get started.
