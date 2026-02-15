@@ -77,6 +77,12 @@ RSpec.describe Organizations::TeamsController, type: :controller do
       patch :update, params: { organization_id: company.id, id: team.id, team: { name: 'Updated Name' } }
       expect(response).to redirect_to(organization_team_path(company, team.reload))
     end
+
+    it 'updates huddle_channel_id when Slack is configured' do
+      channel = create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C123', display_name: '#general')
+      patch :update, params: { organization_id: company.id, id: team.id, team: { name: team.name, huddle_channel_id: channel.third_party_id } }
+      expect(team.reload.huddle_channel_id).to eq(channel.third_party_id)
+    end
   end
 
   describe 'PATCH #archive' do

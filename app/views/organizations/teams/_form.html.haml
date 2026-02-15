@@ -17,6 +17,15 @@
     .form-text
       Give your team a descriptive name that identifies its purpose or members.
 
+  - if team.persisted? && defined?(@slack_channels) && @slack_channels.present?
+    .mb-3
+      = form.label :huddle_channel_id, "Slack channel for huddles", class: "form-label"
+      - used_ids = @huddle_channel_ids_used_by_other_teams || Set.new
+      - channel_options = @slack_channels.map { |ch| [ch.display_name, ch.third_party_id, { disabled: used_ids.include?(ch.third_party_id) && ch.third_party_id != team.huddle_channel_id }] }
+      = form.select :huddle_channel_id, options_for_select(channel_options, team.huddle_channel_id), { prompt: 'Select channel', include_blank: 'None' }, { class: 'form-select' }
+    .form-text.text-muted
+      Huddle start and summary notifications will be posted to this channel. Channels already used by other teams are disabled.
+
   .d-flex.gap-2
     = form.submit team.persisted? ? 'Update Team' : 'Create Team', class: "btn btn-primary"
     = link_to 'Cancel', team.persisted? ? organization_team_path(@organization, team) : organization_teams_path(@organization), class: "btn btn-outline-secondary"

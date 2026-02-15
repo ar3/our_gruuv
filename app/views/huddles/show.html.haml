@@ -103,8 +103,14 @@
                   - else
                     %p.text-muted.mb-2
                       %i.bi.bi-slack.me-2
-                      Slack is not installed for this company. 
-                      = link_to "Install it now", organization_slack_path(@huddle.company&.root_company), class: "text-decoration-none"
+                      - company_slack_configured = @huddle.team&.slack_configuration&.configured?
+                      - if company_slack_configured
+                        = link_to(@huddle.team&.display_name || 'This team', organization_team_path(@huddle.team.company, @huddle.team), class: 'text-decoration-none')
+                        \ doesn't have their Slack channel configured.
+                        = link_to "Configure it", edit_organization_team_path(@huddle.team.company, @huddle.team), class: "text-decoration-none ms-1"
+                      - else
+                        Slack is not installed for this company.
+                        = link_to "Install it now", organization_slack_path(@huddle.company&.root_company), class: "text-decoration-none"
 
               .col-md-6.col-sm-12
                 - if @huddle.nat_20_score

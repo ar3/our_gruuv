@@ -16,7 +16,7 @@ class TeamPolicy < ApplicationPolicy
   def update?
     return false unless viewing_teammate
     return false unless team_in_company?
-    admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
+    admin_bypass? || viewing_teammate.can_manage_departments_and_teams? || viewing_teammate_is_team_member?
   end
 
   def archive?
@@ -44,6 +44,11 @@ class TeamPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return true if record.new_record? # Allow new records
     record.company_id == viewing_teammate.organization_id
+  end
+
+  def viewing_teammate_is_team_member?
+    return false unless viewing_teammate && record.persisted?
+    record.team_members.exists?(company_teammate_id: viewing_teammate.id)
   end
 
   class Scope < ApplicationPolicy::Scope

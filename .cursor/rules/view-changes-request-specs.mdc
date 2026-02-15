@@ -1,0 +1,24 @@
+---
+description: When changing views, find and run associated request specs
+globs: app/views/**/*
+alwaysApply: false
+---
+
+# View changes: run associated request specs
+
+When you make changes to a view (templates, partials, or view-related helpers):
+
+1. **Find relevant request specs**
+   - Look in `spec/requests/` for specs that hit the same controller/action or URL as the view.
+   - Match by path: e.g. `app/views/huddles/show.html.haml` → look for request specs that `get huddle_path(...)` or `get "/huddles/:id"`.
+   - Also check specs named after the resource (e.g. `spec/requests/organizations/teams_*`, `spec/requests/organizations/slack/channels_spec.rb` for Slack channel views).
+
+2. **Run those specs**
+   - Run the specific request spec file(s) that exercise the changed view.
+   - If no request spec clearly targets that view, run any request specs that touch the same controller or feature area.
+
+3. **Fix or note**
+   - If any fail, fix the view or spec as appropriate.
+   - If there are no request specs for that view, consider noting it; do not block the change.
+
+Example: after editing `app/views/organizations/teams/_form.html.haml`, run `spec/requests/organizations_spec.rb` and any `spec/requests/**/teams*` or `spec/requests/**/slack/channels*` that might render the teams or Slack channel UI.

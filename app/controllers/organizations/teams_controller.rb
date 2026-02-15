@@ -34,6 +34,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
 
   def edit
     authorize @team, :update?
+    load_slack_channels_for_team_edit
   end
 
   def update
@@ -42,6 +43,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     if @team.update(team_params)
       redirect_to organization_team_path(@organization, @team), notice: 'Team was successfully updated.'
     else
+      load_slack_channels_for_team_edit
       render :edit, status: :unprocessable_entity
     end
   end
@@ -122,7 +124,25 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def team_params
-    params.require(:team).permit(:name)
+    params.require(:team).permit(:name, :huddle_channel_id)
+  end
+
+  def load_slack_channels_for_team_edit
+    @slack_config = @organization.calculated_slack_config
+    if @slack_config&.configured?
+      @slack_channels = @organization.third_party_objects.slack_channels.order(:display_name)
+      # Channel third_party_ids already used as huddle_channel by other teams (excluding current)
+      used_channel_ids = @organization.teams
+        .active
+        .where.not(id: @team.id)
+        .joins(third_party_object_associations: :third_party_object)
+        .where(third_party_object_associations: { association_type: 'huddle_channel' })
+        .pluck('third_party_objects.third_party_id')
+      @huddle_channel_ids_used_by_other_teams = used_channel_ids.to_set
+    else
+      @slack_channels = []
+      @huddle_channel_ids_used_by_other_teams = Set.new
+    end
   end
 
   def require_authentication

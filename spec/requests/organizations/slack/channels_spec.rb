@@ -5,7 +5,11 @@ require 'rails_helper'
 RSpec.describe 'Organizations::Slack::Channels (edit-company page)', type: :request do
   let(:organization) { create(:organization, name: 'Careerplug') }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  # Employed teammate with manage_employment so view_slack_settings? and manage_employment? pass
+  let(:teammate) do
+    create(:teammate, person: person, organization: organization,
+           first_employed_at: 1.year.ago, last_terminated_at: nil, can_manage_employment: true)
+  end
   let(:slack_config) { create(:slack_configuration, organization: organization) }
 
   before do

@@ -114,16 +114,19 @@ class HuddlesController < ApplicationController
                            .first
 
     if existing_huddle
-      # Add the creator as a participant to the existing huddle
       teammate = person.teammates.find_by(organization: existing_huddle.company)
-      participant = existing_huddle.huddle_participants.find_or_create_by!(teammate: teammate) do |p|
+      unless teammate
+        redirect_to new_huddle_path, alert: 'You must be added to this organization before you can create or join a huddle. Please ask someone with access to add you.'
+        return
+      end
+
+      participant = existing_huddle.huddle_participants.find_or_create_by!(teammate_id: teammate.id) do |p|
         p.role = 'facilitator'
       end
 
       # Store only the person ID in session
       session[:current_person_id] = person.id
 
-      # Redirect to the existing huddle with a notice
       redirect_to huddle_path(existing_huddle), notice: 'A huddle for this team is already active this week. You have been added as a participant!'
       return
     end
@@ -137,18 +140,17 @@ class HuddlesController < ApplicationController
 
     authorize @huddle
 
+    # Require existing teammate for this organization before creating huddle
+    teammate = person.teammates.find_by(organization: team.company)
+    unless teammate
+      redirect_to new_huddle_path, alert: 'You must be added to this organization before you can create a huddle. Please ask someone with access to add you.'
+      return
+    end
+
     if @huddle.save
-      # Find teammate for this person and company
-      teammate = person.teammates.find_by(organization: @huddle.company)
-
-      # Create teammate if it doesn't exist
-      unless teammate
-        teammate = person.teammates.create!(organization: @huddle.company, type: 'CompanyTeammate')
-      end
-
       # Add the creator as a participant (default to facilitator)
       @huddle.huddle_participants.create!(
-        teammate: teammate,
+        teammate_id: teammate.id,
         role: 'facilitator'
       )
 
@@ -305,34 +307,28 @@ class HuddlesController < ApplicationController
       return
     end
 
-    # Find or create teammate for this person and company
+    # Require existing teammate for this organization (no auto-creation; manage employment only)
     teammate = current_person.teammates.find_by(organization: @huddle.company)
-
-    # Create follower teammate if it doesn't exist
     unless teammate
-      teammate = current_person.teammates.create!(
-        organization: @huddle.company,
-        type: 'CompanyTeammate'
-        # No employment dates = follower status
-      )
+      redirect_to join_huddle_path(@huddle), alert: 'You must be added to this organization before you can join this huddle. Please ask someone with access to add you.'
+      return
     end
 
     # Add or update the person as a participant to the huddle
-    participant = @huddle.huddle_participants.find_or_create_by!(teammate: teammate) do |p|
+    participant = @huddle.huddle_participants.find_or_create_by!(teammate_id: teammate.id) do |p|
       p.role = join_params[:role]
     end
 
-    # Update teammate if it changed
-    if participant.teammate != teammate
-      participant.update!(teammate: teammate)
+    # Update teammate_id if it changed
+    if participant.teammate_id != teammate.id
+      participant.update!(teammate_id: teammate.id)
     end
 
     # Update role if it changed
     role_changed = participant.role != join_params[:role]
     participant.update!(role: join_params[:role]) if role_changed
 
-    # Store only the person ID in session
-    session[:current_person_id] = current_person.id
+    # Keep current session context (e.g. OurGruuv Demo); do not switch to huddle's org
 
     # Run required jobs when someone joins
     if @huddle.company&.root_company
@@ -379,21 +375,15 @@ class HuddlesController < ApplicationController
     @existing_participant = HuddleParticipant.joins(:company_teammate).find_by(huddle: @huddle, teammates: { person: current_person })
 
     unless @existing_participant
-      # Find or create follower teammate for this person and company
       teammate = current_person.teammates.find_by(organization: @huddle.company)
-
-      # Create follower teammate if it doesn't exist
       unless teammate
-        teammate = current_person.teammates.create!(
-          organization: @huddle.company,
-          type: 'CompanyTeammate'
-          # No employment dates = follower status
-        )
+        redirect_to join_huddle_path(@huddle), alert: 'You must be added to this organization before you can give feedback. Please join the huddle first or ask someone with access to add you.'
+        return
       end
 
-      # Auto-create participant with role "active"
+      # Auto-create participant with role "active" (they already have a teammate for this org)
       @existing_participant = @huddle.huddle_participants.create!(
-        teammate: teammate,
+        teammate_id: teammate.id,
         role: 'active'
       )
 
@@ -465,7 +455,7 @@ class HuddlesController < ApplicationController
 
       # Create new feedback
       @feedback = @huddle.huddle_feedbacks.build(
-        teammate: teammate,
+        teammate_id: teammate.id,
         informed_rating: feedback_params[:informed_rating],
         connected_rating: feedback_params[:connected_rating],
         goals_rating: feedback_params[:goals_rating],
@@ -556,7 +546,7 @@ class HuddlesController < ApplicationController
       person = current_person
       if person
         teammate = person.teammates.find_by(organization: team.company)
-        participant = existing_huddle.huddle_participants.find_or_create_by!(teammate: teammate) do |p|
+        participant = existing_huddle.huddle_participants.find_or_create_by!(teammate_id: teammate.id) do |p|
           p.role = 'active'
         end
 

@@ -39,37 +39,47 @@
                 = form.submit "Update Role", class: "btn btn-success btn-lg"
           
           - elsif @current_person
-            / State 2: Logged in but not associated with huddle
             - teammate = @current_person.teammates.find_by(organization: @huddle.company)
-            - if teammate&.follower?
+            - if teammate.nil?
+              / State 2b: Logged in but no teammate record for this organization — cannot join
               .alert.alert-warning
-                %i.bi.bi-heart.me-2
-                %strong Welcome, #{@current_person.casual_name}!
+                %i.bi.bi-lock.me-2
+                %strong You can't join this huddle yet
                 %br
-                %small You're following this organization. Please confirm your information and select your role to participate in this huddle.
+                %small You must be added to #{@huddle.company.name} by someone with access (e.g. an admin or manager) before you can join. We don't create organization access from a link for security reasons.
+              .d-grid.gap-2.d-md-flex.justify-content-md-end.mt-3
+                = link_to "Back to huddles", huddles_path, class: "btn btn-outline-secondary"
             - else
-              .alert.alert-info
-                %i.bi.bi-person-check.me-2
-                %strong Welcome, #{@current_person.casual_name}!
-                %br
-                %small You're logged in. Please confirm your information and select your role.
-            
-            = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
-              .mb-3.field-readonly
-                = form.label :name, "Your name", class: "form-label"
-                = form.text_field :name, value: @current_person.casual_name, readonly: true, class: "form-control"
+              / State 2a: Logged in, has teammate for this org, not yet in huddle
+              - if teammate.follower?
+                .alert.alert-warning
+                  %i.bi.bi-heart.me-2
+                  %strong Welcome, #{@current_person.casual_name}!
+                  %br
+                  %small You're following this organization. Please confirm your information and select your role to participate in this huddle.
+              - else
+                .alert.alert-info
+                  %i.bi.bi-person-check.me-2
+                  %strong Welcome, #{@current_person.casual_name}!
+                  %br
+                  %small You're logged in. Please confirm your information and select your role.
               
-              .mb-3.field-readonly
-                = form.label :email, "Your email", class: "form-label"
-                = form.email_field :email, value: @current_person.email, readonly: true, class: "form-control"
-              
-              .mb-3
-                = form.label :role, "What role will you play in this huddle?", class: "form-label"
-                = form.select :role, role_options_for_select, { class: "form-select", required: true }
-              
-              .d-grid.gap-2.d-md-flex.justify-content-md-end
-                = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
-                = form.submit "Join Huddle", class: "btn btn-success btn-lg"
+              = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
+                .mb-3.field-readonly
+                  = form.label :name, "Your name", class: "form-label"
+                  = form.text_field :name, value: @current_person.casual_name, readonly: true, class: "form-control"
+                
+                .mb-3.field-readonly
+                  = form.label :email, "Your email", class: "form-label"
+                  = form.email_field :email, value: @current_person.email, readonly: true, class: "form-control"
+                
+                .mb-3
+                  = form.label :role, "What role will you play in this huddle?", class: "form-label"
+                  = form.select :role, role_options_for_select, { class: "form-select", required: true }
+                
+                .d-grid.gap-2.d-md-flex.justify-content-md-end
+                  = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
+                  = form.submit "Join Huddle", class: "btn btn-success btn-lg"
           
           - else
             / State 1: Not logged in - require authentication
