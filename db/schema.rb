@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_15_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_15_120001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1106,6 +1106,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_120000) do
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
   end
 
+  create_table "team_asana_links", force: :cascade do |t|
+    t.bigint "team_id", null: false
+    t.string "url"
+    t.jsonb "deep_integration_config", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["team_id"], name: "index_team_asana_links_on_team_id", unique: true
+  end
+
   create_table "team_members", force: :cascade do |t|
     t.bigint "team_id", null: false
     t.bigint "company_teammate_id", null: false
@@ -1259,7 +1268,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_120000) do
 
   add_foreign_key "abilities", "departments"
   add_foreign_key "abilities", "organizations", column: "company_id"
-  add_foreign_key "abilities", "organizations", column: "company_id"
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
   add_foreign_key "addresses", "people"
@@ -1267,7 +1275,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_120000) do
   add_foreign_key "aspiration_check_ins", "maap_snapshots"
   add_foreign_key "aspiration_check_ins", "teammates"
   add_foreign_key "aspirations", "departments"
-  add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "assignment_abilities", "abilities"
   add_foreign_key "assignment_abilities", "assignments"
@@ -1381,6 +1388,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_120000) do
   add_foreign_key "seats", "titles"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"
+  add_foreign_key "team_asana_links", "teams"
   add_foreign_key "team_members", "teammates", column: "company_teammate_id"
   add_foreign_key "team_members", "teams"
   add_foreign_key "teammate_identities", "teammates"
@@ -1394,7 +1402,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_120000) do
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
   add_foreign_key "titles", "departments"
-  add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "position_major_levels"
   add_foreign_key "user_preferences", "people"

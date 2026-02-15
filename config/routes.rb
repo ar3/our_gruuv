@@ -74,6 +74,7 @@ Rails.application.routes.draw do
       patch :update_huddle_review_channel
       post :trigger_weekly_notification
       get :dashboard
+      get :my_teams
       get :celebrate_milestones
       post :refresh_slack_profiles
       get :pundit_healthcheck
@@ -468,6 +469,14 @@ Rails.application.routes.draw do
         patch :archive
         get :manage_members
         patch :update_members
+      end
+      resource :team_asana_link, path: 'asana_link', only: [:show, :create, :update], controller: 'teams/team_asana_links' do
+        member do
+          post :sync
+          post :associate_project
+          post :disassociate_project
+        end
+        resources :items, only: [:show], controller: 'teams/team_asana_links/items'
       end
     end
     

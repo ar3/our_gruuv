@@ -98,6 +98,8 @@
                     %li= link_to "Huddle Review", huddles_review_organization_path(current_organization), class: "dropdown-item"
                   - if policy(Huddle).show?
                     %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
+                  - if current_organization && policy(Team).show?
+                    %li= link_to "My Teams", my_teams_organization_path(current_organization), class: "dropdown-item"
                   - if policy(Huddle).show?
                     %li= link_to "Today's Huddles", huddles_path, class: "dropdown-item"
             

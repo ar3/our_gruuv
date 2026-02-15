@@ -181,4 +181,31 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
       end
     end
   end
+
+  describe 'GET /organizations/:id/my_teams' do
+    it 'redirects to teams index with member_of=me' do
+      get my_teams_organization_path(organization)
+      expect(response).to have_http_status(:redirect)
+      expect(response.redirect_url).to include("/organizations/#{organization.to_param}/teams")
+      expect(response.redirect_url).to include('member_of=me')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/teams with member_of=me' do
+    it 'shows only teams the current teammate is a member of' do
+      other_team = create(:team, company: organization, name: 'Other Team')
+      create(:team_member, team: team, company_teammate: teammate)
+      get organization_teams_path(organization, member_of: 'me')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('My Teams')
+      expect(response.body).to include(team.name)
+      expect(response.body).not_to include(other_team.name)
+    end
+
+    it 'shows "All teams" link when filtered' do
+      get organization_teams_path(organization, member_of: 'me')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('All teams')
+    end
+  end
 end

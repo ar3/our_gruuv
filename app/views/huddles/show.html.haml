@@ -131,152 +131,312 @@
                         = link_to "Submit Feedback", feedback_huddle_path(@huddle), class: "btn btn-success btn-sm"
 
 
-      / Sync Section
-      %section#sync.mb-5
-        .card.border-success
-          .card-header.bg-success.text-white
-            %h3.mb-0
-              %i.bi.bi-arrow-repeat.me-2
-              Sync
-              %small.text-white-50.ms-2 "Are we aligned and informed?"
-          .card-body
-            %p.card-text.mb-3 Coming soon - tools to help you start and structure your huddle effectively.
-            .text-center
-              %span.badge.bg-secondary Coming Soon
-            
-            .mt-4
-              %h6.text-success.mb-3
-                %i.bi.bi-list-check.me-2
-                Huddle Opening Checklist
+      - if @huddle_team_asana_cache.present? && @huddle_team_asana_link.present? && @huddle_team_asana_source.present?
+        .row
+          .col-lg-6
+            / Sync Section
+            %section#sync.mb-5
+              .card.border-success
+                .card-header.bg-success.text-white
+                  %h3.mb-0
+                    %i.bi.bi-arrow-repeat.me-2
+                    Sync
+                    %small.text-white-50.ms-2 "Are we aligned and informed?"
+                .card-body
+                  %p.card-text.mb-3 Coming soon - tools to help you start and structure your huddle effectively.
+                  .text-center
+                    %span.badge.bg-secondary Coming Soon
+                  
+                  .mt-4
+                    %h6.text-success.mb-3
+                      %i.bi.bi-list-check.me-2
+                      Huddle Opening Checklist
+                    
+                    .list-group.list-group-flush
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-1-circle.text-success.me-3.mt-1
+                        .flex-grow-1
+                          %strong Mission, Vision, Values!
+                          %br
+                          %small.text-muted Stay grounded by stating your team's core purpose and principles
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-2-circle.text-success.me-3.mt-1
+                        .flex-grow-1
+                          %strong Something good, business and/or professional since we last met
+                          %br
+                          %small.text-muted Celebrate wins and positive developments
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-3-circle.text-success.me-3.mt-1
+                        .flex-grow-1
+                          %strong Let's review what we relied on each other for last week aka TODOs
+                          %br
+                          %small.text-muted Check in on commitments and dependencies
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-4-circle.text-success.me-3.mt-1
+                        .flex-grow-1
+                          %strong Let's review any headlines to make sure we are all informed
+                          %br
+                          %small.text-muted Ensure everyone has the latest context and updates
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-5-circle.text-success.me-3.mt-1
+                        .flex-grow-1
+                          %strong Let's review our OKR3s and set confidence in hitting them, together
+                          %br
+                          %small.text-muted Assess progress and align on objectives and key results
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-6-circle.text-success.me-3.mt-1
+                        .flex-grow-1
+                          %strong Let's take a step back and review the overall success signals for our team
+                          %br
+                          %small.text-muted Evaluate team health and performance indicators
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-7-circle.text-success.me-3.mt-1
+                        .flex-grow-1
+                          %strong Ok, before we begin to vote for opportunities to pursue, do we all agree that we understand the items in the opportunity list, and that this represents the absolute most important topics for us to discuss as a team
+                          %br
+                          %small.text-muted Ensure alignment on priorities before diving into discussion
+                  
+                  %small.text-muted.mt-3.d-block This structured opening ensures everyone is grounded, informed, and aligned before diving into the collaborative work ahead.
+
+            / Execute Section
+            %section#execute.mb-5
+              .card.border-info
+                .card-header.bg-info.text-white
+                  %h3.mb-0
+                    %i.bi.bi-play-circle.me-2
+                    Execute
+                    %small.text-white-50.ms-2 "Did we focus and make progress?"
+                .card-body
+                  %p.card-text.mb-3 Coming soon - real-time collaboration tools for your huddle.
+                  .text-center
+                    %span.badge.bg-secondary Coming Soon
+                  
+                  .mt-4
+                    %h6.text-info.mb-3
+                      %i.bi.bi-lightbulb.me-2
+                      Collaboration Framework
+                    
+                    .list-group.list-group-flush
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-1-circle.text-info.me-3.mt-1
+                        .flex-grow-1
+                          %strong All opportunities/issues must be 'Good' opportunities/issues, meaning...
+                          %br
+                          %small.text-muted Focus on constructive, actionable items that move the team forward
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-2-circle.text-info.me-3.mt-1
+                        .flex-grow-1
+                          %strong Let's make sure we know why we are talking about this by having the observation/context that led to this being on the list
+                          %br
+                          %small.text-muted Establish shared understanding of the problem or opportunity
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-3-circle.text-info.me-3.mt-1
+                        .flex-grow-1
+                          %strong Now let's be clear about our intentions: Detoxify a Judgement, Solve a clearly defined and observable issue, Have a freeform time-boxed discussion
+                          %br
+                          %small.text-muted Set clear expectations for the type of conversation we're having
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-4-circle.text-info.me-3.mt-1
+                        .flex-grow-1
+                          %strong Let's get a bit more specific about what constitutes this opportunity truly being solved... a likert we can all agree to, or some other way to measure 'done'
+                          %br
+                          %small.text-muted Define success criteria and measurable outcomes
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-5-circle.text-info.me-3.mt-1
+                        .flex-grow-1
+                          %strong The greatest teams can disagree and commit... who is the decider/are the deciders on this?
+                          %br
+                          %small.text-muted Clarify decision-making authority and accountability
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-6-circle.text-info.me-3.mt-1
+                        .flex-grow-1
+                          %strong Now we are all aiming at the same thing and have the same context, let's Diverge (NO BAD IDEAS)
+                          %br
+                          %small.text-muted Generate creative solutions without judgment or criticism
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-7-circle.text-info.me-3.mt-1
+                        .flex-grow-1
+                          %strong Now that everyone should feel heard, let's go around the room and place our chips (all-in, this-and-that-both-now, this-then-that-later, this-or-that-undecided, just-not-that)
+                          %br
+                          %small.text-muted Use structured voting to gauge team preferences and priorities
+                      
+                      .list-group-item.d-flex.align-items-start
+                        %i.bi.bi-8-circle.text-info.me-3.mt-1
+                        .flex-grow-1
+                          %strong Ok, time for the decider(s) to decide, and set TODOs for the next steps and followup/feedback loop
+                          %br
+                          %small.text-muted Make the final decision and establish clear next steps and accountability
+                  
+                  %small.text-muted.mt-3.d-block This structured approach ensures effective collaboration through the Diverge<=>Converge technique, leading to better decisions and stronger team commitment.
+
+          .col-lg-6
+            %section#team-asana-project.mb-5
+              = render 'shared/external_project/project_display',
+                     cache: @huddle_team_asana_cache,
+                     cacheable: @huddle_team_asana_link,
+                     current_teammate: current_company_teammate,
+                     source: @huddle_team_asana_source,
+                     return_url: huddle_path(@huddle)
+
+      - else
+        / Sync Section (full width when no team Asana project)
+        %section#sync.mb-5
+          .card.border-success
+            .card-header.bg-success.text-white
+              %h3.mb-0
+                %i.bi.bi-arrow-repeat.me-2
+                Sync
+                %small.text-white-50.ms-2 "Are we aligned and informed?"
+            .card-body
+              %p.card-text.mb-3 Coming soon - tools to help you start and structure your huddle effectively.
+              .text-center
+                %span.badge.bg-secondary Coming Soon
               
-              .list-group.list-group-flush
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-1-circle.text-success.me-3.mt-1
-                  .flex-grow-1
-                    %strong Mission, Vision, Values!
-                    %br
-                    %small.text-muted Stay grounded by stating your team's core purpose and principles
+              .mt-4
+                %h6.text-success.mb-3
+                  %i.bi.bi-list-check.me-2
+                  Huddle Opening Checklist
                 
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-2-circle.text-success.me-3.mt-1
-                  .flex-grow-1
-                    %strong Something good, business and/or professional since we last met
-                    %br
-                    %small.text-muted Celebrate wins and positive developments
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-3-circle.text-success.me-3.mt-1
-                  .flex-grow-1
-                    %strong Let's review what we relied on each other for last week aka TODOs
-                    %br
-                    %small.text-muted Check in on commitments and dependencies
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-4-circle.text-success.me-3.mt-1
-                  .flex-grow-1
-                    %strong Let's review any headlines to make sure we are all informed
-                    %br
-                    %small.text-muted Ensure everyone has the latest context and updates
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-5-circle.text-success.me-3.mt-1
-                  .flex-grow-1
-                    %strong Let's review our OKR3s and set confidence in hitting them, together
-                    %br
-                    %small.text-muted Assess progress and align on objectives and key results
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-6-circle.text-success.me-3.mt-1
-                  .flex-grow-1
-                    %strong Let's take a step back and review the overall success signals for our team
-                    %br
-                    %small.text-muted Evaluate team health and performance indicators
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-7-circle.text-success.me-3.mt-1
-                  .flex-grow-1
+                .list-group.list-group-flush
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-1-circle.text-success.me-3.mt-1
+                    .flex-grow-1
+                      %strong Mission, Vision, Values!
+                      %br
+                      %small.text-muted Stay grounded by stating your team's core purpose and principles
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-2-circle.text-success.me-3.mt-1
+                    .flex-grow-1
+                      %strong Something good, business and/or professional since we last met
+                      %br
+                      %small.text-muted Celebrate wins and positive developments
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-3-circle.text-success.me-3.mt-1
+                    .flex-grow-1
+                      %strong Let's review what we relied on each other for last week aka TODOs
+                      %br
+                      %small.text-muted Check in on commitments and dependencies
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-4-circle.text-success.me-3.mt-1
+                    .flex-grow-1
+                      %strong Let's review any headlines to make sure we are all informed
+                      %br
+                      %small.text-muted Ensure everyone has the latest context and updates
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-5-circle.text-success.me-3.mt-1
+                    .flex-grow-1
+                      %strong Let's review our OKR3s and set confidence in hitting them, together
+                      %br
+                      %small.text-muted Assess progress and align on objectives and key results
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-6-circle.text-success.me-3.mt-1
+                    .flex-grow-1
+                      %strong Let's take a step back and review the overall success signals for our team
+                      %br
+                      %small.text-muted Evaluate team health and performance indicators
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-7-circle.text-success.me-3.mt-1
+                    .flex-grow-1
                     %strong Ok, before we begin to vote for opportunities to pursue, do we all agree that we understand the items in the opportunity list, and that this represents the absolute most important topics for us to discuss as a team
                     %br
                     %small.text-muted Ensure alignment on priorities before diving into discussion
-            
-            %small.text-muted.mt-3.d-block This structured opening ensures everyone is grounded, informed, and aligned before diving into the collaborative work ahead.
-
-      / Execute Section
-      %section#execute.mb-5
-        .card.border-info
-          .card-header.bg-info.text-white
-            %h3.mb-0
-              %i.bi.bi-play-circle.me-2
-              Execute
-              %small.text-white-50.ms-2 "Did we focus and make progress?"
-          .card-body
-            %p.card-text.mb-3 Coming soon - real-time collaboration tools for your huddle.
-            .text-center
-              %span.badge.bg-secondary Coming Soon
-            
-            .mt-4
-              %h6.text-info.mb-3
-                %i.bi.bi-lightbulb.me-2
-                Collaboration Framework
               
-              .list-group.list-group-flush
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-1-circle.text-info.me-3.mt-1
-                  .flex-grow-1
-                    %strong All opportunities/issues must be 'Good' opportunities/issues, meaning...
-                    %br
-                    %small.text-muted Focus on constructive, actionable items that move the team forward
+              %small.text-muted.mt-3.d-block This structured opening ensures everyone is grounded, informed, and aligned before diving into the collaborative work ahead.
+
+        / Execute Section (full width when no team Asana project)
+        %section#execute.mb-5
+          .card.border-info
+            .card-header.bg-info.text-white
+              %h3.mb-0
+                %i.bi.bi-play-circle.me-2
+                Execute
+                %small.text-white-50.ms-2 "Did we focus and make progress?"
+            .card-body
+              %p.card-text.mb-3 Coming soon - real-time collaboration tools for your huddle.
+              .text-center
+                %span.badge.bg-secondary Coming Soon
+              
+              .mt-4
+                %h6.text-info.mb-3
+                  %i.bi.bi-lightbulb.me-2
+                  Collaboration Framework
                 
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-2-circle.text-info.me-3.mt-1
-                  .flex-grow-1
-                    %strong Let's make sure we know why we are talking about this by having the observation/context that led to this being on the list
-                    %br
-                    %small.text-muted Establish shared understanding of the problem or opportunity
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-3-circle.text-info.me-3.mt-1
-                  .flex-grow-1
-                    %strong Now let's be clear about our intentions: Detoxify a Judgement, Solve a clearly defined and observable issue, Have a freeform time-boxed discussion
-                    %br
-                    %small.text-muted Set clear expectations for the type of conversation we're having
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-4-circle.text-info.me-3.mt-1
-                  .flex-grow-1
-                    %strong Let's get a bit more specific about what constitutes this opportunity truly being solved... a likert we can all agree to, or some other way to measure 'done'
-                    %br
-                    %small.text-muted Define success criteria and measurable outcomes
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-5-circle.text-info.me-3.mt-1
-                  .flex-grow-1
-                    %strong The greatest teams can disagree and commit... who is the decider/are the deciders on this?
-                    %br
-                    %small.text-muted Clarify decision-making authority and accountability
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-6-circle.text-info.me-3.mt-1
-                  .flex-grow-1
-                    %strong Now we are all aiming at the same thing and have the same context, let's Diverge (NO BAD IDEAS)
-                    %br
-                    %small.text-muted Generate creative solutions without judgment or criticism
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-7-circle.text-info.me-3.mt-1
-                  .flex-grow-1
-                    %strong Now that everyone should feel heard, let's go around the room and place our chips (all-in, this-and-that-both-now, this-then-that-later, this-or-that-undecided, just-not-that)
-                    %br
-                    %small.text-muted Use structured voting to gauge team preferences and priorities
-                
-                .list-group-item.d-flex.align-items-start
-                  %i.bi.bi-8-circle.text-info.me-3.mt-1
-                  .flex-grow-1
-                    %strong Ok, time for the decider(s) to decide, and set TODOs for the next steps and followup/feedback loop
-                    %br
-                    %small.text-muted Make the final decision and establish clear next steps and accountability
-            
-            %small.text-muted.mt-3.d-block This structured approach ensures effective collaboration through the Diverge<=>Converge technique, leading to better decisions and stronger team commitment.
+                .list-group.list-group-flush
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-1-circle.text-info.me-3.mt-1
+                    .flex-grow-1
+                      %strong All opportunities/issues must be 'Good' opportunities/issues, meaning...
+                      %br
+                      %small.text-muted Focus on constructive, actionable items that move the team forward
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-2-circle.text-info.me-3.mt-1
+                    .flex-grow-1
+                      %strong Let's make sure we know why we are talking about this by having the observation/context that led to this being on the list
+                      %br
+                      %small.text-muted Establish shared understanding of the problem or opportunity
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-3-circle.text-info.me-3.mt-1
+                    .flex-grow-1
+                      %strong Now let's be clear about our intentions: Detoxify a Judgement, Solve a clearly defined and observable issue, Have a freeform time-boxed discussion
+                      %br
+                      %small.text-muted Set clear expectations for the type of conversation we're having
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-4-circle.text-info.me-3.mt-1
+                    .flex-grow-1
+                      %strong Let's get a bit more specific about what constitutes this opportunity truly being solved... a likert we can all agree to, or some other way to measure 'done'
+                      %br
+                      %small.text-muted Define success criteria and measurable outcomes
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-5-circle.text-info.me-3.mt-1
+                    .flex-grow-1
+                      %strong The greatest teams can disagree and commit... who is the decider/are the deciders on this?
+                      %br
+                      %small.text-muted Clarify decision-making authority and accountability
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-6-circle.text-info.me-3.mt-1
+                    .flex-grow-1
+                      %strong Now we are all aiming at the same thing and have the same context, let's Diverge (NO BAD IDEAS)
+                      %br
+                      %small.text-muted Generate creative solutions without judgment or criticism
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-7-circle.text-info.me-3.mt-1
+                    .flex-grow-1
+                      %strong Now that everyone should feel heard, let's go around the room and place our chips (all-in, this-and-that-both-now, this-then-that-later, this-or-that-undecided, just-not-that)
+                      %br
+                      %small.text-muted Use structured voting to gauge team preferences and priorities
+                  
+                  .list-group-item.d-flex.align-items-start
+                    %i.bi.bi-8-circle.text-info.me-3.mt-1
+                    .flex-grow-1
+                      %strong Ok, time for the decider(s) to decide, and set TODOs for the next steps and followup/feedback loop
+                      %br
+                      %small.text-muted Make the final decision and establish clear next steps and accountability
+              
+              %small.text-muted.mt-3.d-block This structured approach ensures effective collaboration through the Diverge<=>Converge technique, leading to better decisions and stronger team commitment.
 
       / Evolve Section
       %section#evolve.mb-5

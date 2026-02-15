@@ -158,6 +158,12 @@ class ExternalProjectCacheService
       else
         ExternalProjectUrlParser.extract_project_id(cacheable.url, source)
       end
+    when TeamAsanaLink
+      if source == 'asana'
+        cacheable.asana_project_id || ExternalProjectUrlParser.extract_project_id(cacheable.url, source)
+      else
+        ExternalProjectUrlParser.extract_project_id(cacheable.url, source)
+      end
     else
       # Future: Handle Huddle and Goal
       nil
@@ -167,6 +173,8 @@ class ExternalProjectCacheService
   def self.get_project_url(cacheable, source)
     case cacheable
     when OneOnOneLink
+      cacheable.url
+    when TeamAsanaLink
       cacheable.url
     else
       # Future: Handle Huddle and Goal

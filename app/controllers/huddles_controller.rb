@@ -70,6 +70,15 @@ class HuddlesController < ApplicationController
     # Set up variables for the Evolve section
     @current_person = current_person
     @is_facilitator = @existing_participant&.facilitator? || @huddle.company&.department_head == @current_person
+
+    # Team Asana project for Sync/Execute split (when linked and synced)
+    if @huddle.team.present?
+      @huddle_team_asana_link = @huddle.team.team_asana_link
+      if @huddle_team_asana_link&.url.present?
+        @huddle_team_asana_cache = @huddle_team_asana_link.external_project_cache_for('asana')
+        @huddle_team_asana_source = @huddle_team_asana_link.external_project_source if @huddle_team_asana_cache.present?
+      end
+    end
   end
 
 

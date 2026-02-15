@@ -171,5 +171,29 @@ RSpec.describe ExternalProjectCacheService do
       end
     end
   end
+
+  describe 'TeamAsanaLink support' do
+    let(:team) { create(:team, company: organization) }
+    let(:team_asana_link) { create(:team_asana_link, team: team, url: 'https://app.asana.com/0/999888/777', deep_integration_config: { 'asana_project_id' => '999888' }) }
+    let(:asana_service) { instance_double(AsanaService) }
+
+    before do
+      allow(AsanaService).to receive(:new).with(teammate).and_return(asana_service)
+      allow(asana_service).to receive(:authenticated?).and_return(true)
+      allow(asana_service).to receive(:fetch_project_sections).and_return(success: true, sections: [])
+      allow(asana_service).to receive(:fetch_all_project_tasks).and_return(success: true, incomplete: [], completed: [])
+      allow(asana_service).to receive(:format_for_cache).and_return(sections: [], tasks: [])
+    end
+
+    it 'syncs project for TeamAsanaLink using asana_project_id' do
+      create(:teammate_identity, :asana, teammate: teammate)
+      expect {
+        ExternalProjectCacheService.sync_project(team_asana_link, 'asana', teammate)
+      }.to change(ExternalProjectCache, :count).by(1)
+      cache = ExternalProjectCache.find_by(cacheable: team_asana_link, source: 'asana')
+      expect(cache).to be_present
+      expect(cache.external_project_id).to eq('999888')
+    end
+  end
 end
 

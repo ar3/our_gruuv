@@ -74,6 +74,27 @@ module ExternalProjectHelper
           source: source
         )
       end
+    when TeamAsanaLink
+      case action
+      when :sync
+        sync_organization_team_team_asana_link_path(
+          cacheable.team.company,
+          cacheable.team,
+          source: source
+        )
+      when :associate
+        associate_project_organization_team_team_asana_link_path(
+          cacheable.team.company,
+          cacheable.team,
+          source: source
+        )
+      when :disassociate
+        disassociate_project_organization_team_team_asana_link_path(
+          cacheable.team.company,
+          cacheable.team,
+          source: source
+        )
+      end
     else
       # Future: Handle Huddle and Goal
       '#'
@@ -86,6 +107,13 @@ module ExternalProjectHelper
       organization_company_teammate_one_on_one_link_item_path(
         cacheable.teammate.organization,
         cacheable.teammate,
+        item_gid,
+        source: source
+      )
+    when TeamAsanaLink
+      organization_team_team_asana_link_item_path(
+        cacheable.team.company,
+        cacheable.team,
         item_gid,
         source: source
       )
@@ -103,6 +131,19 @@ module ExternalProjectHelper
         asana_oauth_authorize_one_on_one_organization_company_teammate_one_on_one_link_path(
           cacheable.teammate.organization,
           cacheable.teammate,
+          return_to: request.fullpath
+        )
+      else
+        '#'
+      end
+    when TeamAsanaLink
+      case source
+      when 'asana'
+        # Use current user's Asana OAuth with return_to back to team Asana link page
+        return '#' unless current_company_teammate
+        organization_company_teammate_asana_oauth_authorize_path(
+          cacheable.team.company,
+          current_company_teammate,
           return_to: request.fullpath
         )
       else

@@ -1,4 +1,4 @@
-- content_for :title, "Teams"
+- content_for :title, @my_teams_filter ? "My Teams" : "Teams"
 
 - content_for :go_back_link do
   = link_to organization_path(@organization), class: "go-back-link" do
@@ -9,7 +9,9 @@
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-people.me-2
-      Teams
+      = @my_teams_filter ? "My Teams" : "Teams"
+    - if @my_teams_filter
+      = link_to "All teams", organization_teams_path(@organization), class: "btn btn-outline-secondary ms-2"
     .d-flex.align-items-center
       - if policy(@organization).manage_departments_and_teams?
         = link_to new_organization_team_path(@organization), class: "btn btn-primary ml-2" do
@@ -29,7 +31,6 @@
               %thead
                 %tr
                   %th Name
-                  %th Members
                   %th Huddle
                   %th Actions
               %tbody
@@ -38,13 +39,24 @@
                   - active_huddle = team.huddles.select { |h| h.expires_at && h.expires_at > Time.current }.max_by(&:started_at)
                   %tr
                     %td
-                      = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
-                        %i.bi.bi-people.me-2
-                        = team.name
-                    %td
-                      %span.badge.bg-secondary
-                        = team.team_members.count
-                        = "member".pluralize(team.team_members.count)
+                      .d-flex.flex-column
+                        = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
+                          %i.bi.bi-people.me-2
+                          = team.name
+                        - member_teammates = team.team_members.first(10).map(&:company_teammate)
+                        - member_count = team.team_members.count
+                        .d-flex.align-items-center.mt-1.flex-wrap
+                          - if member_teammates.any?
+                            .d-flex.align-items-center{style: "margin-left: -0.25rem;"}
+                              - member_teammates.each_with_index do |teammate, idx|
+                                = link_to organization_company_teammate_path(@organization, teammate), class: "d-inline-block text-decoration-none rounded-circle border border-2 border-white shadow-sm", style: "width: 28px; height: 28px; overflow: hidden; box-sizing: content-box; margin-left: #{idx.zero? ? 0 : -0.5}rem; z-index: #{member_teammates.size - idx};", title: teammate.person.preferred_first_then_last_display_name, data: { bs_toggle: "tooltip", bs_placement: "top" } do
+                                  = teammate_profile_image(teammate, size: 28)
+                            - if member_count > 10
+                              %span.small.text-muted.ms-1 and more
+                          %span.small.text-muted.ms-1
+                            |
+                            = member_count
+                            = "member".pluralize(member_count)
                     %td
                       .d-flex.flex-column.gap-1
                         - if last_huddle
@@ -72,9 +84,13 @@
       .alert.alert-info
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
-          No Teams Created
+          = @my_teams_filter ? "No Teams You're In" : "No Teams Created"
         %p.mb-2
-          This organization doesn't have any teams yet.
-          Create your first team to get started!
-        - if policy(@organization).manage_departments_and_teams?
+          - if @my_teams_filter
+            You're not a member of any teams yet.
+            = link_to "View all teams", organization_teams_path(@organization), class: "alert-link"
+          - else
+            This organization doesn't have any teams yet.
+            Create your first team to get started!
+        - if !@my_teams_filter && policy(@organization).manage_departments_and_teams?
           = link_to "Create First Team", new_organization_team_path(@organization), class: "btn btn-primary btn-sm"

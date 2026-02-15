@@ -81,6 +81,63 @@
               %dt.col-sm-4 Created
               %dd.col-sm-8= @team.created_at.strftime('%B %d, %Y')
 
+    - team_asana_link_policy_record = @team.team_asana_link.presence || TeamAsanaLink.new(team_id: @team.id)
+    - can_access_asana_link_page = policy(team_asana_link_policy_record).update?
+    - asana_link_access_tooltip = "You need to be a team member or have manage teams permission to access the team Asana link."
+    - if policy(team_asana_link_policy_record).show?
+      .card.mb-4
+        .card-header.d-flex.justify-content-between.align-items-center
+          %h5.mb-0
+            %i.bi.bi-link-45deg.me-2
+            Team Asana Link
+          - if @team.team_asana_link&.url.present?
+            - if can_access_asana_link_page
+              = link_to organization_team_team_asana_link_path(@organization, @team), class: "btn btn-sm btn-outline-primary" do
+                %i.bi.bi-box-arrow-up-right.me-1
+                View &amp; sync
+            - else
+              .d-inline-flex.align-items-center
+                .btn.btn-sm.btn-outline-secondary.disabled{ style: "opacity: 0.6; cursor: not-allowed;" }
+                  %i.bi.bi-box-arrow-up-right.me-1
+                  View &amp; sync
+                %i.bi.bi-exclamation-triangle.text-warning.ms-2{ "data-bs-toggle" => "tooltip", "data-bs-title" => asana_link_access_tooltip }
+        .card-body
+          - if @team.team_asana_link&.url.present?
+            - asana_cache = @team.team_asana_link.external_project_cache_for('asana')
+            - if asana_cache
+              %p.mb-2
+                - section_count = asana_cache.sections_data.size
+                - task_count = asana_cache.items_data.size
+                %span.text-muted
+                  = "#{section_count} #{'section'.pluralize(section_count)} with #{task_count} #{'task'.pluralize(task_count)}"
+                  - if asana_cache.last_synced_at
+                    , last synced
+                    = asana_cache.last_synced_at.strftime('%b %d, %Y at %I:%M %p')
+                    - if asana_cache.last_synced_by_teammate
+                      by
+                      = asana_cache.last_synced_by_teammate.person.display_name
+            - else
+              %p.mb-2
+                Team Asana project is configured but not synced yet. Connect Asana and sync to see sections and tasks.
+              - if can_access_asana_link_page
+                = form_with url: sync_organization_team_team_asana_link_path(@organization, @team), method: :post, local: true, class: "d-inline" do
+                  = hidden_field_tag :source, 'asana'
+                  = button_tag type: "submit", class: "btn btn-primary me-2" do
+                    %i.bi.bi-arrow-repeat.me-1
+                    Sync
+            %p.mb-0
+              - if can_access_asana_link_page
+                = link_to "Open team Asana link", organization_team_team_asana_link_path(@organization, @team), class: "btn btn-outline-primary"
+              - else
+                .btn.btn-outline-secondary.disabled{ style: "opacity: 0.6; cursor: not-allowed;" }
+                  Open team Asana link
+                %i.bi.bi-exclamation-triangle.text-warning.ms-2{ "data-bs-toggle" => "tooltip", "data-bs-title" => asana_link_access_tooltip }
+          - else
+            %p.mb-0.text-muted
+              No team Asana link yet.
+            - if can_access_asana_link_page
+              = link_to "Set up team Asana link", organization_team_team_asana_link_path(@organization, @team), class: "btn btn-sm btn-primary"
+
     .card
       .card-header.d-flex.justify-content-between.align-items-center
         %h5.mb-0

@@ -131,29 +131,6 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     end
   end
 
-  def associate_project
-    authorize @one_on_one_link, :update?
-    # Future: Implement project association logic
-    redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), notice: 'Project association not yet implemented.'
-  end
-
-  def disassociate_project
-    authorize @one_on_one_link, :update?
-    
-    source = params[:source] || @one_on_one_link.external_project_source
-    return redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), alert: 'No project source detected.' unless source.present?
-    
-    cache = @one_on_one_link.external_project_cache_for(source)
-    if cache
-      cache.destroy
-      redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), notice: 'Project cache removed successfully.'
-    else
-      redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), alert: 'No cache found to remove.'
-    end
-  end
-
-  private
-
   def set_teammate
     @teammate = organization.teammates.find(params[:company_teammate_id])
     unless @teammate

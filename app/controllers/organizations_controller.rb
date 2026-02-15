@@ -232,6 +232,10 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @end_date = end_date
   end
 
+  def my_teams
+    redirect_to organization_teams_path(organization_id: organization.to_param, member_of: 'me')
+  end
+
   def refresh_slack_channels
     @organization = Organization.find(params[:id])
     

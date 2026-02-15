@@ -7,6 +7,10 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   def index
     authorize @organization, :show?
     @teams = Team.for_company(@organization).active.ordered.includes(:team_members, :company_teammates, :huddles)
+    if params[:member_of] == 'me' && current_company_teammate
+      @teams = @teams.joins(:team_members).where(team_members: { company_teammate_id: current_company_teammate.id }).distinct
+      @my_teams_filter = true
+    end
   end
 
   def show

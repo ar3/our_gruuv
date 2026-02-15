@@ -6,6 +6,7 @@ class Team < ApplicationRecord
   has_many :people, through: :company_teammates, source: :person
   has_many :huddles, dependent: :destroy
   has_many :third_party_object_associations, as: :associatable, dependent: :destroy
+  has_one :team_asana_link, dependent: :destroy
 
   # Validations
   validates :name, presence: true

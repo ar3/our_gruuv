@@ -1,0 +1,107 @@
+- content_for :title, "Team Asana Link - #{@team.name}"
+
+- content_for :header do
+  %h1.mb-0 Team Asana Link – #{@team.name}
+  %p.text-muted.mb-0 View and sync this team's Asana project
+
+- content_for :go_back_link do
+  - return_url = params[:return_url].presence || organization_team_path(organization, @team)
+  - return_text = params[:return_text].presence || "Back to #{@team.name}"
+  = link_to return_url, class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    = return_text
+
+- return_to_team_url = params[:return_url].presence || organization_team_path(organization, @team)
+- return_to_team_text = "Back to #{@team.name}"
+
+- if @team_asana_link.url.present?
+  .card.mb-4
+    .card-header.d-flex.justify-content-between.align-items-center
+      %h5.mb-0
+        %i.bi.bi-link-45deg.me-2
+        Team Asana Link
+      = link_to return_to_team_url, class: "btn btn-sm btn-outline-secondary" do
+        %i.bi.bi-arrow-left.me-2
+        = return_to_team_text
+
+    .card-body
+      .mb-3
+        %strong Current Link:
+        = link_to @team_asana_link.url, @team_asana_link.url, target: '_blank', rel: 'noopener noreferrer', class: "ms-2"
+        - if @source
+          %span.badge.bg-info.ms-2= "#{source_display_name(@source)} Project Detected"
+
+      - source = @team_asana_link.external_project_source
+      - cache = @team_asana_link.external_project_cache_for(source) if source
+      - viewing_user_has_identity = has_external_identity?(current_company_teammate, source) if source
+
+      - if source == 'asana' && !viewing_user_has_identity
+        = render 'shared/external_project/associate_prompt',
+                cacheable: @team_asana_link,
+                current_teammate: current_company_teammate,
+                source: source,
+                return_url: request.fullpath
+
+      - if source && cache
+        .mb-3
+        = render 'shared/external_project/project_display',
+               cache: cache,
+               cacheable: @team_asana_link,
+               current_teammate: current_company_teammate,
+               source: source,
+               return_url: request.fullpath
+      - elsif source && !cache && viewing_user_has_identity
+        = render 'shared/external_project/sync_prompt',
+               cacheable: @team_asana_link,
+               current_teammate: current_company_teammate,
+               source: source,
+               return_url: request.fullpath,
+               has_project_access: @has_project_access
+      - else
+        .mb-3
+          %iframe{src: @team_asana_link.url, style: "width: 100%; height: 600px; border: 1px solid #dee2e6; border-radius: 0.25rem;"}
+
+  .card
+    .card-header.d-flex.justify-content-between.align-items-center
+      %h5.mb-0 Change the team Asana link
+      = link_to return_to_team_url, class: "btn btn-sm btn-outline-secondary" do
+        %i.bi.bi-arrow-left.me-2
+        = return_to_team_text
+
+    .card-body
+      = form_with model: @team_asana_link, url: organization_team_team_asana_link_path(organization, @team), method: :patch, local: true do |f|
+        .mb-3
+          = f.label :url, "Asana project URL", class: "form-label"
+          = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789"
+          - if @team_asana_link.errors[:url].any?
+            .invalid-feedback.d-block
+              = @team_asana_link.errors[:url].join(', ')
+          %small.form-text.text-muted
+            Enter an Asana project URL. Team members with Asana connected can sync and view sections and tasks.
+
+        .d-flex.gap-2
+          = f.submit "Save Team Asana Link", class: "btn btn-primary"
+          = link_to "Cancel", return_to_team_url, class: "btn btn-outline-secondary"
+
+- else
+  .card
+    .card-header.d-flex.justify-content-between.align-items-center
+      %h5.mb-0 Set up team Asana link
+      = link_to return_to_team_url, class: "btn btn-sm btn-outline-secondary" do
+        %i.bi.bi-arrow-left.me-2
+        = return_to_team_text
+
+    .card-body
+      = form_with model: @team_asana_link, url: organization_team_team_asana_link_path(organization, @team), method: :post, local: true do |f|
+        .mb-3
+          = f.label :url, "Asana project URL", class: "form-label"
+          = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789"
+          - if @team_asana_link.errors[:url].any?
+            .invalid-feedback.d-block
+              = @team_asana_link.errors[:url].join(', ')
+          %small.form-text.text-muted
+            Enter an Asana project URL. Team members with Asana connected can sync and view sections and tasks.
+
+        .d-flex.gap-2
+          = f.submit "Save Team Asana Link", class: "btn btn-primary"
+          = link_to "Cancel", return_to_team_url, class: "btn btn-outline-secondary"
