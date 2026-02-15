@@ -23,63 +23,80 @@
 
 .row.justify-content-center
   .col-lg-12
-    - if @teams.any?
-      .card
-        .card-body
-          .table-responsive
-            %table.table.table-hover.mb-0
-              %thead
-                %tr
-                  %th Name
-                  %th Huddle
-                  %th Actions
-              %tbody
-                - @teams.each do |team|
-                  - last_huddle = team.huddles.max_by(&:started_at)
-                  - active_huddle = team.huddles.select { |h| h.expires_at && h.expires_at > Time.current }.max_by(&:started_at)
+    - if @teams_by_department.any?
+      - @teams_by_department.each do |department, teams|
+        - stats = @department_stats[department] || { teams_count: 0 }
+        .card.mb-4
+          .card-header.bg-primary.text-white
+            %h5.mb-0.d-flex.align-items-center.justify-content-between
+              .d-flex.align-items-center
+                - if department
+                  %i.bi.bi-building.me-2
+                  = department.display_name
+                  = link_to organization_department_path(@organization, department), class: "text-white ms-2", title: "View department" do
+                    %i.bi.bi-link-45deg
+                - else
+                  %i.bi.bi-question-circle.me-2
+                  No Department
+              .d-flex.align-items-center.gap-2
+                %span.badge.bg-light.text-dark
+                  = stats[:teams_count]
+                  team#{'s' if stats[:teams_count] != 1}
+          .card-body.p-0
+            .table-responsive
+              %table.table.table-hover.mb-0
+                %thead.table-light
                   %tr
-                    %td
-                      .d-flex.flex-column
-                        = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
-                          %i.bi.bi-people.me-2
-                          = team.name
-                        - member_teammates = team.team_members.first(10).map(&:company_teammate)
-                        - member_count = team.team_members.count
-                        .d-flex.align-items-center.mt-1.flex-wrap
-                          - if member_teammates.any?
-                            .d-flex.align-items-center{style: "margin-left: -0.25rem;"}
-                              - member_teammates.each_with_index do |teammate, idx|
-                                = link_to organization_company_teammate_path(@organization, teammate), class: "d-inline-block text-decoration-none rounded-circle border border-2 border-white shadow-sm", style: "width: 28px; height: 28px; overflow: hidden; box-sizing: content-box; margin-left: #{idx.zero? ? 0 : -0.5}rem; z-index: #{member_teammates.size - idx};", title: teammate.person.preferred_first_then_last_display_name, data: { bs_toggle: "tooltip", bs_placement: "top" } do
-                                  = teammate_profile_image(teammate, size: 28)
-                            - if member_count > 10
-                              %span.small.text-muted.ms-1 and more
-                          %span.small.text-muted.ms-1
-                            |
-                            = member_count
-                            = "member".pluralize(member_count)
-                    %td
-                      .d-flex.flex-column.gap-1
-                        - if last_huddle
-                          %span.small.text-muted
-                            Last:
-                            = format_date_in_user_timezone(last_huddle.started_at, nil, format: "%b %d, %Y")
-                        - else
-                          %span.small.text-muted Never
-                        - if active_huddle
-                          = link_to join_huddle_path(active_huddle), class: "btn btn-sm btn-success" do
-                            %i.bi.bi-box-arrow-in-right.me-1
-                            Join
-                        - elsif team.huddle_slack_configured?
-                          = button_to start_huddle_from_team_huddles_path(team_id: team.id), method: :post, class: "btn btn-sm btn-primary", data: { turbo: false } do
-                            %i.bi.bi-plus-circle.me-1
-                            Start
-                    %td
-                      .d-flex.gap-2
-                        = link_to organization_team_path(@organization, team), class: "btn btn-sm btn-outline-primary" do
-                          %i.bi.bi-eye
-                        - if policy(team).update?
-                          = link_to edit_organization_team_path(@organization, team), class: "btn btn-sm btn-outline-secondary" do
-                            %i.bi.bi-pencil
+                    %th Name
+                    %th Huddle
+                    %th Actions
+                %tbody
+                  - teams.each do |team|
+                    - last_huddle = team.huddles.max_by(&:started_at)
+                    - active_huddle = team.huddles.select { |h| h.expires_at && h.expires_at > Time.current }.max_by(&:started_at)
+                    %tr
+                      %td
+                        .d-flex.flex-column
+                          = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
+                            %i.bi.bi-people.me-2
+                            = team.name
+                          - member_teammates = team.team_members.first(10).map(&:company_teammate)
+                          - member_count = team.team_members.count
+                          .d-flex.align-items-center.mt-1.flex-wrap
+                            - if member_teammates.any?
+                              .d-flex.align-items-center{style: "margin-left: -0.25rem;"}
+                                - member_teammates.each_with_index do |teammate, idx|
+                                  = link_to organization_company_teammate_path(@organization, teammate), class: "d-inline-block text-decoration-none rounded-circle border border-2 border-white shadow-sm", style: "width: 28px; height: 28px; overflow: hidden; box-sizing: content-box; margin-left: #{idx.zero? ? 0 : -0.5}rem; z-index: #{member_teammates.size - idx};", title: teammate.person.preferred_first_then_last_display_name, data: { bs_toggle: "tooltip", bs_placement: "top" } do
+                                    = teammate_profile_image(teammate, size: 28)
+                              - if member_count > 10
+                                %span.small.text-muted.ms-1 and more
+                            %span.small.text-muted.ms-1
+                              |
+                              = member_count
+                              = "member".pluralize(member_count)
+                      %td
+                        .d-flex.flex-column.gap-1
+                          - if last_huddle
+                            %span.small.text-muted
+                              Last:
+                              = format_date_in_user_timezone(last_huddle.started_at, nil, format: "%b %d, %Y")
+                          - else
+                            %span.small.text-muted Never
+                          - if active_huddle
+                            = link_to join_huddle_path(active_huddle), class: "btn btn-sm btn-success" do
+                              %i.bi.bi-box-arrow-in-right.me-1
+                              Join
+                          - elsif team.huddle_slack_configured?
+                            = button_to start_huddle_from_team_huddles_path(team_id: team.id), method: :post, class: "btn btn-sm btn-primary", data: { turbo: false } do
+                              %i.bi.bi-plus-circle.me-1
+                              Start
+                      %td
+                        .d-flex.gap-2
+                          = link_to organization_team_path(@organization, team), class: "btn btn-sm btn-outline-primary" do
+                            %i.bi.bi-eye
+                          - if policy(team).update?
+                            = link_to edit_organization_team_path(@organization, team), class: "btn btn-sm btn-outline-secondary" do
+                              %i.bi.bi-pencil
     - else
       .alert.alert-info
         %h6.mb-2

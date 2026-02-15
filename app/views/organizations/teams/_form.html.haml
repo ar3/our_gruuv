@@ -17,6 +17,13 @@
     .form-text
       Give your team a descriptive name that identifies its purpose or members.
 
+  - if defined?(@departments) && @departments.present?
+    .mb-3
+      = form.label :department_id, "Department", class: "form-label"
+      = form.select :department_id, options_from_collection_for_select(@departments, :id, :display_name, team.department_id), { include_blank: "Company-wide (no department)" }, { class: "form-select" }
+      .form-text.text-muted
+        The department this team belongs to (optional).
+
   - if team.persisted? && defined?(@slack_channels) && @slack_channels.present?
     .mb-3
       = form.label :huddle_channel_id, "Slack channel for huddles", class: "form-label"

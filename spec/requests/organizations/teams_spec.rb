@@ -36,6 +36,14 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
       expect(response.body).to include(organization_team_path(organization, team))
     end
 
+    it 'includes department select when organization has departments' do
+      dept = create(:department, company: organization, name: 'Engineering')
+      get edit_path
+      expect(response.body).to include('Department')
+      expect(response.body).to include('Company-wide (no department)')
+      expect(response.body).to include(dept.display_name)
+    end
+
     it 'includes form that submits to team update path' do
       get edit_path
       expect(response.body).to include(organization_team_path(organization, team))
@@ -142,6 +150,18 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
     end
   end
 
+  describe 'POST /organizations/:organization_id/teams' do
+    it 'creates a team with department_id when provided' do
+      dept = create(:department, company: organization, name: 'Engineering')
+      expect {
+        post organization_teams_path(organization), params: { team: { name: 'New Team', department_id: dept.id } }
+      }.to change(Team, :count).by(1)
+      expect(response).to have_http_status(:redirect)
+      created = Team.find_by(name: 'New Team', company: organization)
+      expect(created.department_id).to eq(dept.id)
+    end
+  end
+
   describe 'PATCH /organizations/:organization_id/teams/:id' do
     let(:update_path) { organization_team_path(organization, team) }
 
@@ -179,6 +199,54 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
         expect(response).to have_http_status(:redirect)
         expect(team.reload.huddle_channel_id).to be_nil
       end
+    end
+
+    it 'updates department_id when provided' do
+      dept = create(:department, company: organization, name: 'Product')
+      patch update_path, params: { team: { name: team.name, department_id: dept.id } }
+      expect(response).to have_http_status(:redirect)
+      expect(team.reload.department_id).to eq(dept.id)
+    end
+
+    it 'clears department when department_id is blank' do
+      dept = create(:department, company: organization, name: 'Product')
+      team.update!(department_id: dept.id)
+      patch update_path, params: { team: { name: team.name, department_id: '' } }
+      expect(response).to have_http_status(:redirect)
+      expect(team.reload.department_id).to be_nil
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/teams' do
+    it 'groups teams by department with No Department section' do
+      team_no_dept = create(:team, company: organization, name: 'Standalone', department_id: nil)
+      dept = create(:department, company: organization, name: 'Engineering')
+      team_in_dept = create(:team, company: organization, name: 'Backend', department: dept)
+      get organization_teams_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('No Department')
+      expect(response.body).to include(dept.display_name)
+      expect(response.body).to include(team_no_dept.name)
+      expect(response.body).to include(team_in_dept.name)
+      expect(response.body).to include(organization_department_path(organization, dept))
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/teams/:id' do
+    it 'displays department when set' do
+      dept = create(:department, company: organization, name: 'Engineering')
+      team.update!(department: dept)
+      get organization_team_path(organization, team)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Department')
+      expect(response.body).to include(dept.display_name)
+      expect(response.body).to include(organization_department_path(organization, dept))
+    end
+
+    it 'displays No department when team has no department' do
+      get organization_team_path(organization, team)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('No department')
     end
   end
 

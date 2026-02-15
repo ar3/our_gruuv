@@ -1,6 +1,7 @@
 class Team < ApplicationRecord
   # Associations
   belongs_to :company, class_name: 'Organization'
+  belongs_to :department, class_name: 'Department', optional: true
   has_many :team_members, dependent: :destroy
   has_many :company_teammates, through: :team_members
   has_many :people, through: :company_teammates, source: :person

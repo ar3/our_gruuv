@@ -6,10 +6,18 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
 
   def index
     authorize @organization, :show?
-    @teams = Team.for_company(@organization).active.ordered.includes(:team_members, :company_teammates, :huddles)
+    @teams = Team.for_company(@organization).active.ordered.includes(:department, :team_members, :company_teammates, :huddles)
     if params[:member_of] == 'me' && current_company_teammate
       @teams = @teams.joins(:team_members).where(team_members: { company_teammate_id: current_company_teammate.id }).distinct
       @my_teams_filter = true
+    end
+    teams_array = @teams.to_a
+    grouped = teams_array.group_by(&:department)
+    @teams_by_department = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
+    @teams_by_department.each_value { |list| list.sort_by!(&:name) }
+    @department_stats = {}
+    @teams_by_department.each do |dept, list|
+      @department_stats[dept] = { teams_count: list.size }
     end
   end
 
@@ -22,6 +30,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   def new
     @team = Team.new(company: @organization)
     authorize @team, :create?
+    @departments = Department.for_company(@organization).active.ordered.sort_by(&:display_name)
   end
 
   def create
@@ -32,12 +41,14 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     if @team.save
       redirect_to organization_teams_path(@organization), notice: 'Team was successfully created.'
     else
+      @departments = Department.for_company(@organization).active.ordered.sort_by(&:display_name)
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
     authorize @team, :update?
+    @departments = Department.for_company(@organization).active.ordered.sort_by(&:display_name)
     load_slack_channels_for_team_edit
   end
 
@@ -47,6 +58,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     if @team.update(team_params)
       redirect_to organization_team_path(@organization, @team), notice: 'Team was successfully updated.'
     else
+      @departments = Department.for_company(@organization).active.ordered.sort_by(&:display_name)
       load_slack_channels_for_team_edit
       render :edit, status: :unprocessable_entity
     end
@@ -128,7 +140,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def team_params
-    params.require(:team).permit(:name, :huddle_channel_id)
+    params.require(:team).permit(:name, :huddle_channel_id, :department_id)
   end
 
   def load_slack_channels_for_team_edit

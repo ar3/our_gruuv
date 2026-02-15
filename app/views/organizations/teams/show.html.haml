@@ -78,6 +78,12 @@
               %dd.col-sm-8= @team.name
               %dt.col-sm-4 Company
               %dd.col-sm-8= @team.company.display_name
+              %dt.col-sm-4 Department
+              %dd.col-sm-8
+                - if @team.department.present?
+                  = link_to @team.department.display_name, organization_department_path(@organization, @team.department), class: "text-decoration-none"
+                - else
+                  No department
               %dt.col-sm-4 Created
               %dd.col-sm-8= @team.created_at.strftime('%B %d, %Y')
 

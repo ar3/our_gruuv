@@ -2,6 +2,11 @@ FactoryBot.define do
   factory :team do
     sequence(:name) { |n| "Team #{n}" }
     association :company, factory: :organization
+    department { nil }
+
+    trait :with_department do
+      department { association(:department, company: company) }
+    end
 
     trait :archived do
       deleted_at { Time.current }

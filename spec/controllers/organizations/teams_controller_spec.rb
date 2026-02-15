@@ -25,6 +25,12 @@ RSpec.describe Organizations::TeamsController, type: :controller do
       expect(assigns(:teams)).to include(active_team)
       expect(assigns(:teams)).not_to include(archived_team)
     end
+
+    it 'assigns teams_by_department and department_stats' do
+      get :index, params: { organization_id: company.id }
+      expect(assigns(:teams_by_department)).to be_a(Hash)
+      expect(assigns(:department_stats)).to be_a(Hash)
+    end
   end
 
   describe 'GET #show' do
@@ -46,6 +52,12 @@ RSpec.describe Organizations::TeamsController, type: :controller do
       expect {
         post :create, params: { organization_id: company.id, team: { name: 'New Team' } }
       }.to change(Team, :count).by(1)
+    end
+
+    it 'creates a team with department_id when permitted' do
+      dept = create(:department, company: company, name: 'Engineering')
+      post :create, params: { organization_id: company.id, team: { name: 'New Team', department_id: dept.id } }
+      expect(Team.find_by(name: 'New Team', company: company).department_id).to eq(dept.id)
     end
 
     it 'redirects to teams index on success' do
@@ -82,6 +94,12 @@ RSpec.describe Organizations::TeamsController, type: :controller do
       channel = create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C123', display_name: '#general')
       patch :update, params: { organization_id: company.id, id: team.id, team: { name: team.name, huddle_channel_id: channel.third_party_id } }
       expect(team.reload.huddle_channel_id).to eq(channel.third_party_id)
+    end
+
+    it 'updates department_id when provided' do
+      dept = create(:department, company: company, name: 'Product')
+      patch :update, params: { organization_id: company.id, id: team.id, team: { name: team.name, department_id: dept.id } }
+      expect(team.reload.department_id).to eq(dept.id)
     end
   end
 

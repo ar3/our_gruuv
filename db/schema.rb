@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_15_120001) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_15_164042) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1199,8 +1199,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_120001) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "department_id"
     t.index ["company_id"], name: "index_teams_on_company_id"
     t.index ["deleted_at"], name: "index_teams_on_deleted_at"
+    t.index ["department_id"], name: "index_teams_on_department_id"
     t.index ["migrate_from_organization_id"], name: "index_teams_on_migrate_from_organization_id", unique: true
   end
 
@@ -1398,6 +1400,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_120001) do
   add_foreign_key "teammate_milestones", "teammates", column: "published_by_teammate_id"
   add_foreign_key "teammates", "organizations"
   add_foreign_key "teammates", "people"
+  add_foreign_key "teams", "departments"
   add_foreign_key "teams", "organizations", column: "company_id"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"

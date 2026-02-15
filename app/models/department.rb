@@ -9,6 +9,7 @@ class Department < ApplicationRecord
   has_many :aspirations, dependent: :nullify
   has_many :titles, dependent: :nullify
   has_many :assignments, dependent: :nullify
+  has_many :teams, dependent: :nullify
   has_many :seats, through: :titles
   
   # Third party associations (similar to Team)
