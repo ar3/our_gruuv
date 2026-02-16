@@ -21,9 +21,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Dropdown uses "Company" label but Goal stores owner_type as Organization
     params[:owner_type] = 'Organization' if params[:owner_type] == 'Company'
 
-    # Get current teammate for this organization
-    current_teammate = current_person.teammates.find_by(organization: @organization)
-    
+    # Current teammate already ensured by ensure_teammate_matches_organization
+    current_teammate = current_company_teammate
+
     # Default to logged in user if no owner is selected (unless using special filters)
     unless @everyone_in_company_filter || @created_by_me_filter || (params[:owner_type].present? && params[:owner_id].present?)
       if current_teammate
@@ -276,9 +276,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    # Find CompanyTeammate at the company level (not DepartmentTeammate or TeamTeammate)
-    current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
-    @form.current_teammate = current_teammate
+    @form.current_teammate = current_company_teammate
     # Set defaults
     @form.goal_type = 'inspirational_objective' # Default to objective
     @form.privacy_level = 'only_creator_owner_and_managers'
@@ -307,15 +305,13 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def create
     authorize Goal.new
-    
+
     company = @organization.root_company || @organization
     @goal = Goal.new(company: company)
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    # Find CompanyTeammate at the company level (not DepartmentTeammate or TeamTeammate)
-    current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
-    @form.current_teammate = current_teammate
-    
+    @form.current_teammate = current_company_teammate
+
     goal_params = params[:goal] || {}
     
     if @form.validate(goal_params) && @form.save
@@ -330,11 +326,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   def bulk_new
     authorize Goal.new
-    company = @organization.root_company || @organization
-    current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
-    # Resolve owner from params, or default to current teammate
-    @owner = resolve_owner_for_bulk(current_teammate)
-    @owner ||= current_teammate
+    # Resolve owner from params, or default to current teammate (already ensured by ensure_teammate_matches_organization)
+    @owner = resolve_owner_for_bulk(current_company_teammate)
+    @owner ||= current_company_teammate
     unless @owner
       redirect_to organization_goals_path(@organization),
                   alert: 'You must be a company teammate to bulk create goals.'
@@ -345,9 +339,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   def bulk_create
     authorize Goal.new
-    company = @organization.root_company || @organization
-    current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
-    @owner = resolve_owner_for_bulk(current_teammate)
+    @owner = resolve_owner_for_bulk(current_company_teammate)
     unless @owner
       redirect_to organization_goals_path(@organization),
                   alert: 'Please select an owner to bulk create goals.'
@@ -377,7 +369,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     service = Goals::BulkCreateUnlinkedService.new(
       @organization,
       current_person,
-      current_teammate,
+      current_company_teammate,
       @owner,
       parse_result[:goals],
       default_goal_type: 'quantitative_key_result',
@@ -399,8 +391,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    @form.current_teammate = current_person.teammates.find_by(organization: @organization)
-    
+    @form.current_teammate = current_company_teammate
+
     # Preload linked goals for display (read-only on edit page)
     linked_goal_ids = (@goal.outgoing_links.pluck(:child_id) + @goal.incoming_links.pluck(:parent_id)).uniq
     if linked_goal_ids.any?
@@ -433,10 +425,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def update
     authorize @goal
-    
+
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    @form.current_teammate = current_person.teammates.find_by(organization: @organization)
+    @form.current_teammate = current_company_teammate
     
     goal_params = params[:goal] || {}
     
@@ -535,10 +527,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    @form.current_teammate = current_person.teammates.find_by(organization: @organization)
-    
+    @form.current_teammate = current_company_teammate
+
     goal_params = {}
-    
+
     if timeframe == 'vision'
       # Convert to vision goal - only change goal_type, don't set target dates
       goal_params = {
@@ -614,10 +606,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Default to logged in user if no owner is selected
     unless params[:owner_type].present? && params[:owner_id].present?
-      current_teammate = current_person.teammates.find_by(organization: @organization)
-      if current_teammate
+      if current_company_teammate
         params[:owner_type] = 'CompanyTeammate'
-        params[:owner_id] = current_teammate.id.to_s
+        params[:owner_id] = current_company_teammate.id.to_s
       end
     end
     
@@ -951,11 +942,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
     options << ["All goals created by me", "created_by_me"]
 
-    # 1) Viewing teammate first
-    company_descendant_ids = company.self_and_descendants.pluck(:id)
-    current_teammate = current_person.teammates
-                                     .where(organization_id: company_descendant_ids)
-                                     .first
+    # 1) Viewing teammate first (already ensured by ensure_teammate_matches_organization)
+    current_teammate = current_company_teammate
     if current_teammate && current_person&.display_name.present?
       options << ["Teammate: #{current_person.display_name}", "CompanyTeammate_#{current_teammate.id}"]
     end

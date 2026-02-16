@@ -45,14 +45,13 @@ class GoalForm < Reform::Form
     # Set default most_likely_target_date based on timeframe if not explicitly set
     set_default_target_date_from_timeframe
     
-    # Let Reform sync the form data to the model first
-    super
-    
-    # Set creator to current_teammate
-    # Only set if current_teammate is present (validation should catch if it's missing)
+    # Set creator before Reform persists (super syncs + model.save); otherwise creator_id is null at save (OURGRUUV-178)
     if model.new_record? && current_teammate.present?
       model.creator = current_teammate
     end
+    
+    # Let Reform sync the form data to the model and persist
+    super
     
     # Set owner polymorphic association (already parsed in before_validation)
     # Only allow CompanyTeammate, Company, Department, or Team as owner types
