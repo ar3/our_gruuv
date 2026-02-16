@@ -1,0 +1,24 @@
+- # Thin button-group radio for per-question visibility. Options: observed_only, managers_only, observed_and_managers.
+- field_name = local_assigns[:field_name]
+- current_value = (local_assigns[:current_value].presence || 'observed_and_managers').to_s
+- subject_name = local_assigns[:subject_casual_name].presence || 'the subject'
+- manager_name = local_assigns[:manager_casual_name].presence || 'their manager'
+
+- observed_only_id = "#{field_name.to_s.parameterize}_observed_only"
+- managers_only_id = "#{field_name.to_s.parameterize}_managers_only"
+- observed_and_managers_id = "#{field_name.to_s.parameterize}_observed_and_managers"
+
+.mt-3.pt-2.border-top
+  .small.text-muted.mb-1 Visible to:
+  .btn-group.btn-group-sm{role: "group", 'aria-label': "Who can see this answer"}
+    %input{type: "radio", name: field_name, value: "observed_only", id: observed_only_id, checked: (current_value == 'observed_only'), class: "btn-check"}
+    %label.btn.btn-outline-secondary.btn-sm{for: observed_only_id}
+      Just #{subject_name}
+
+    %input{type: "radio", name: field_name, value: "managers_only", id: managers_only_id, checked: (current_value == 'managers_only'), class: "btn-check"}
+    %label.btn.btn-outline-secondary.btn-sm{for: managers_only_id}
+      Just #{manager_name}
+
+    %input{type: "radio", name: field_name, value: "observed_and_managers", id: observed_and_managers_id, checked: (current_value == 'observed_and_managers'), class: "btn-check"}
+    %label.btn.btn-outline-secondary.btn-sm{for: observed_and_managers_id}
+      #{subject_name} and #{manager_name}

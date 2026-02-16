@@ -1,5 +1,8 @@
 - content_for :title, "Answer Feedback Request"
 
+- subject_casual_name = @feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || 'the subject'
+- manager_casual_name = @feedback_request.subject_of_feedback_teammate&.current_manager&.casual_name.presence
+
 - content_for :go_back_link do
   - back_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : organization_feedback_requests_path(organization)
   = link_to back_path, class: "go-back-link" do
@@ -100,7 +103,11 @@
                 This observation was #{existing_observation.published_at? ? 'published' : 'created'} from your answer. You can update it here, or edit it further on
                 = link_to 'the observation itself', organization_observation_path(organization, existing_observation), class: 'text-muted'
                 \.
-            = hidden_field_tag "answers[#{question.id}][privacy_level]", (existing_observation&.privacy_level&.to_s.presence || 'observed_and_managers')
+            = render 'organizations/feedback_requests/answer_privacy_selector',
+                field_name: "answers[#{question.id}][privacy_level]",
+                current_value: existing_observation&.privacy_level&.to_s.presence || 'observed_and_managers',
+                subject_casual_name: subject_casual_name,
+                manager_casual_name: manager_casual_name
 
   - (@questions - questions_with_objects).each do |question|
     - next if question.rateable.present? && question.rateable_type == 'Position'
@@ -122,7 +129,11 @@
           %small.text-muted
             = link_to "Use the OG take on the Non-Violent Communication and feedback framework to tell the most powerful stories", "#", class: "text-muted", data: { controller: "maap-framework", action: "click->maap-framework#insertTemplate", maap_framework_target_value: "answers_#{question.id}_story" }
         = hidden_field_tag "answers[#{question.id}][rating]", 'na'
-        = hidden_field_tag "answers[#{question.id}][privacy_level]", (existing_observation&.privacy_level&.to_s.presence || 'observed_and_managers')
+        = render 'organizations/feedback_requests/answer_privacy_selector',
+            field_name: "answers[#{question.id}][privacy_level]",
+            current_value: existing_observation&.privacy_level&.to_s.presence || 'observed_and_managers',
+            subject_casual_name: subject_casual_name,
+            manager_casual_name: manager_casual_name
 
   .d-flex.justify-content-between.pt-2
     - cancel_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : organization_feedback_requests_path(organization)

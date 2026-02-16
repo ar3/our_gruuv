@@ -558,6 +558,15 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include('Save and Complete')
         expect(response.body).to include('submit')
       end
+
+      it 'shows per-question privacy selector (Visible to) with observed_only, managers_only, observed_and_managers' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Visible to:')
+        expect(response.body).to include('observed_only')
+        expect(response.body).to include('managers_only')
+        expect(response.body).to include('observed_and_managers')
+      end
     end
 
     context 'when the responder has a previously saved observation for a question' do
@@ -822,6 +831,30 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       observation.reload
       expect(observation.story).to eq('Updated story.')
       expect(observation.observation_ratings.find_by(rateable: assignment).rating).to eq('strongly_agree')
+    end
+
+    it 'persists per-question privacy level when respondent chooses different visibility per answer' do
+      feedback_request.reload
+      feedback_request.feedback_request_questions.destroy_all
+      q1 = create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q1?', position: 1)
+      q2 = create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q2?', position: 2)
+      feedback_request.reload
+
+      post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          q1.id.to_s => { story: 'Answer 1', privacy_level: 'observed_only' },
+          q2.id.to_s => { story: 'Answer 2', privacy_level: 'managers_only' }
+        },
+        save_and_keep_incomplete: 'Save and Keep Incomplete'
+      }
+      expect(response).to have_http_status(:redirect)
+
+      obs1 = Observation.find_by(feedback_request_question_id: q1.id, observer_id: requestor_person.id)
+      obs2 = Observation.find_by(feedback_request_question_id: q2.id, observer_id: requestor_person.id)
+      expect(obs1).to be_present
+      expect(obs2).to be_present
+      expect(obs1.privacy_level).to eq('observed_only')
+      expect(obs2.privacy_level).to eq('managers_only')
     end
   end
 

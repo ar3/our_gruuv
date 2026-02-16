@@ -220,5 +220,36 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
         expect(existing.observation_ratings.find_by(rateable: question_with_rateable.rateable).rating).to eq('strongly_agree')
       end
     end
+
+    context 'when answers have different privacy_level per question' do
+      it 'persists each observation with its chosen privacy_level' do
+        question_with_rateable
+        question_without_rateable
+        answers = {
+          question_with_rateable.id.to_s => {
+            story: 'Story 1',
+            rating: 'na',
+            privacy_level: 'observed_only'
+          },
+          question_without_rateable.id.to_s => {
+            story: 'Story 2',
+            privacy_level: 'managers_only'
+          }
+        }
+
+        described_class.call(
+          feedback_request: feedback_request,
+          answers: answers,
+          responder_teammate: responder,
+          privacy_level: 'observed_and_managers',
+          complete: false
+        )
+
+        obs1 = Observation.find_by(feedback_request_question_id: question_with_rateable.id, observer_id: responder.person_id)
+        obs2 = Observation.find_by(feedback_request_question_id: question_without_rateable.id, observer_id: responder.person_id)
+        expect(obs1.privacy_level).to eq('observed_only')
+        expect(obs2.privacy_level).to eq('managers_only')
+      end
+    end
   end
 end
