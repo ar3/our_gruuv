@@ -102,14 +102,16 @@ class ApplicationController < ActionController::Base
         end
       end
       
-      # Add user context if available
+      # Add user context if available (safe navigation in case person is nil)
       if respond_to?(:current_company_teammate) && current_company_teammate
         person = current_company_teammate.person
-        event.set_user(
-          id: person.id,
-          email: person.email,
-          name: person.display_name
-        )
+        if person
+          event.set_user(
+            id: person.id,
+            email: person.email,
+            name: person.display_name
+          )
+        end
       end
     end
   end

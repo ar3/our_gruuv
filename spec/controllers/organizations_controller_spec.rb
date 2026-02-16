@@ -137,6 +137,17 @@ RSpec.describe OrganizationsController, type: :controller do
       expect(metrics[:distinct_participant_names].length).to eq(2) # Ensure no duplicates
     end
 
+    it 'succeeds when a huddle has a participant with nil teammate (orphaned data)' do
+      # Simulate orphaned data: participant record with teammate_id nil (Fixes OURGRUUV-1H)
+      orphan_participant = create(:huddle_participant, huddle: huddle1, teammate: person.teammates.find_by(organization: organization))
+      orphan_participant.update_column(:teammate_id, nil)
+
+      get :huddles_review, params: { id: organization.id }
+
+      expect(response).to have_http_status(:success)
+      expect(assigns(:overall_metrics)).to be_present
+    end
+
     it 'assigns team metrics correctly' do
       test_team = create(:team, company: organization)
       huddle = create(:huddle, team: test_team)
