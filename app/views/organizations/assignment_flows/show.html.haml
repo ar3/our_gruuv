@@ -34,10 +34,11 @@
                   - @ordered_memberships.each_with_index do |membership, idx|
                     - assignment = membership.assignment
                     - row_attrs = @group_name_row_attrs[idx]
+                    - req_activities_id = "req-act-#{@assignment_flow.id}-#{assignment.id}"
                     %tr
                       - if row_attrs[:first_of_run]
                         %td{ rowspan: row_attrs[:rowspan], class: "align-top" }
-                          = row_attrs[:group_name].presence || "—"
+                          %h3.h6.mb-0= row_attrs[:group_name].presence || "—"
                       %td.col-3
                         %strong
                           = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
@@ -48,21 +49,33 @@
                           Added by #{membership.added_by.person&.display_name}
                       %td.col-6
                         - if assignment.assignment_outcomes.any?
-                          %ul.list-unstyled.mb-0
+                          %ul.mb-0
                             - assignment.assignment_outcomes.ordered.each do |outcome|
                               %li= outcome.description
                         - else
                           %span.text-muted None
                       %td.col-3
-                        - if assignment.required_activities.present?
-                          = simple_format(assignment.required_activities, {}, wrapper_tag: 'div')
-                        - else
-                          %span.text-muted —
-                        - titles = assignment.required_by_position_titles
-                        - if titles.any?
-                          %br
-                          %small.text-muted
-                            Required by: #{titles.join(', ')}
+                        - required_activities_lines = assignment.required_activities.present? ? assignment.required_activities.lines.size : 0
+                        %a.text-decoration-none{ href: "##{req_activities_id}", role: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{req_activities_id}", "aria-expanded": "false", "aria-controls": req_activities_id, style: "cursor: pointer;" }
+                          %span.not-collapsed
+                            %i.bi.bi-chevron-up.me-1
+                            %small.text-muted Hide the #{required_activities_lines} #{'line'.pluralize(required_activities_lines)} of required activities
+                          %span.collapsed
+                            %i.bi.bi-chevron-down.me-1
+                            %small.text-muted Show the #{required_activities_lines} #{'line'.pluralize(required_activities_lines)} of required activities
+                        .collapse{ id: req_activities_id }
+                          - if assignment.required_activities.present?
+                            = simple_format(assignment.required_activities, {}, wrapper_tag: 'div')
+                          - else
+                            %span.text-muted —
+                        - required_titles = assignment.required_by_titles
+                        - if required_titles.any?
+                          %small.text-muted.d-block.mt-1
+                            Required by:
+                            - required_titles.sort_by(&:external_title).each_with_index do |title, i|
+                              - if i > 0
+                                = ", "
+                              = link_to title.external_title, organization_title_path(@organization, title), class: "text-muted text-decoration-none", target: "_blank", rel: "noopener noreferrer"
       - else
         .alert.alert-info.mt-4
           %p.mb-0 No assignments in this flow yet. Edit the flow to add and order assignments.

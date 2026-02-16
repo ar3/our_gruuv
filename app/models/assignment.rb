@@ -112,12 +112,16 @@ class Assignment < ApplicationRecord
 
   # Titles (external_title) of positions that have this assignment as a required assignment
   def required_by_position_titles
+    required_by_titles.map(&:external_title).sort
+  end
+
+  # Title records for positions that have this assignment as a required assignment (for linking)
+  def required_by_titles
     position_assignments
       .required
       .includes(position: :title)
-      .map { |pa| pa.position.title.external_title }
+      .map { |pa| pa.position.title }
       .uniq
-      .sort
   end
 
 
