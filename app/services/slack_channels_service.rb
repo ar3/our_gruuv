@@ -43,7 +43,9 @@ class SlackChannelsService
 
     channels.each do |channel|
       Rails.logger.info "SlackChannelsService: Processing channel: #{channel.inspect}"
-      
+      # Slack IM/DM conversations don't have a 'name' field; use ID as fallback to satisfy validations
+      channel_name = channel['name'].presence || "Channel #{channel['id']}"
+
       # Find or create the channel record
       channel_record = @organization.third_party_objects.slack_channels
                                    .with_deleted
@@ -51,17 +53,17 @@ class SlackChannelsService
 
       # Update the record
       channel_record.assign_attributes(
-        display_name: channel['name'],
-        third_party_name: channel['name'],
+        display_name: channel_name,
+        third_party_name: channel_name,
         third_party_object_type: 'channel',
         third_party_source: 'slack',
         deleted_at: nil
       )
 
       if channel_record.save!
-        Rails.logger.info "SlackChannelsService: Saved channel #{channel['name']} (ID: #{channel['id']})"
+        Rails.logger.info "SlackChannelsService: Saved channel #{channel_name} (ID: #{channel['id']})"
       else
-        Rails.logger.error "SlackChannelsService: Failed to save channel #{channel['name']}: #{channel_record.errors.full_messages}"
+        Rails.logger.error "SlackChannelsService: Failed to save channel #{channel_name}: #{channel_record.errors.full_messages}"
       end
     end
     
