@@ -4,9 +4,9 @@ class PromptGoalPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate && record.prompt
     
-    # Same authorization as PromptPolicy#update?
+    # Same authorization as PromptPolicy#show? (owner, can_manage_prompts, or in managerial hierarchy can link goals)
     prompt_policy = PromptPolicy.new(pundit_user, record.prompt)
-    prompt_policy.update?
+    prompt_policy.show?
   end
 
   def destroy?

@@ -78,9 +78,15 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
       # Dashboard may redirect to about_me; accept either path
       expect(page).to have_current_path(/organizations\/.+\/(dashboard|company_teammates\/\d+\/about_me)/, wait: 5)
       
-      # Verify state persisted in database
-      user_preference.reload
-      expect(user_preference.vertical_nav_locked?).to eq(true)
+      # Verify state persisted in database (poll briefly in case of async persistence)
+      locked = nil
+      10.times do
+        user_preference.reload
+        locked = user_preference.vertical_nav_locked?
+        break if locked
+        sleep 0.25
+      end
+      expect(locked).to eq(true)
       
       # Verify the page reloaded with locked state by checking the data attribute
       expect(page).to have_css('.vertical-nav[data-locked="true"]', wait: 2)

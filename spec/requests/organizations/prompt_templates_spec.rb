@@ -2,8 +2,8 @@ require 'rails_helper'
 
 RSpec.describe 'Prompt Templates', type: :request do
   let(:person) { create(:person) }
-  let(:organization) { create(:organization) }
-  let(:teammate) { create(:teammate, person: person, organization: organization, can_manage_prompts: true) }
+  let(:organization) { create(:organization, :company) }
+  let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_prompts: true, first_employed_at: 1.day.ago) }
 
   before do
     teammate # Ensure teammate exists before signing in

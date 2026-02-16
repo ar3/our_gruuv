@@ -28,6 +28,8 @@ end
 
 Capybara.javascript_driver = :selenium_chrome
 Capybara.default_max_wait_time = 5
+# Single-thread Puma for system tests to avoid extra DB connections and deadlocks
+Capybara.server = :puma, { Silent: true, Threads: '1:1' }
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in

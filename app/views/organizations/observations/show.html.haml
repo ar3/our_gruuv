@@ -16,7 +16,7 @@
 - content_for :header_action do
   .d-flex.align-items-center.gap-2
     - if @observation.draft? && policy(@observation).publish?
-      = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, data: { turbo: false } do |form|
+      = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, data: { turbo: false, test_id: 'observation-publish-header' } do |form|
         = form.submit 'Publish', class: 'btn btn-primary'
     - elsif @observation.draft? && !policy(@observation).publish?
       .d-flex.align-items-center.gap-2

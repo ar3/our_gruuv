@@ -44,6 +44,7 @@ RSpec.describe 'Slack Integration', type: :system do
     it 'displays the Slack integration dashboard' do
       # Use company instead of team since Slack configuration is only available for companies
       teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      teammate.update!(first_employed_at: 1.day.ago, last_terminated_at: nil) unless teammate.employed?
       sign_in_as(person, company)
       visit organization_slack_path(company)
       expect(page).to have_content('Slack Configuration')
@@ -52,6 +53,7 @@ RSpec.describe 'Slack Integration', type: :system do
     it 'shows configuration status' do
       # Use company instead of team since Slack configuration is only available for companies
       teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      teammate.update!(first_employed_at: 1.day.ago, last_terminated_at: nil) unless teammate.employed?
       sign_in_as(person, company)
       visit organization_slack_path(company)
       expect(page).to have_content('Slack Not Connected')
@@ -60,7 +62,8 @@ RSpec.describe 'Slack Integration', type: :system do
     it 'shows workspace info and installed by when Slack is configured' do
       company_with_slack = create(:organization, :company, name: 'Company With Slack')
       create(:slack_configuration, organization: company_with_slack, created_by: person, workspace_name: 'My Workspace', workspace_id: 'T999')
-      CompanyTeammate.find_or_create_by!(person: person, organization: company_with_slack)
+      teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company_with_slack)
+      teammate.update!(first_employed_at: 1.day.ago, last_terminated_at: nil) unless teammate.employed?
       sign_in_as(person, company_with_slack)
       visit organization_slack_path(company_with_slack)
       expect(page).to have_content('Workspace')
@@ -315,6 +318,8 @@ RSpec.describe 'Slack Integration', type: :system do
       team1
       team2
       teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      teammate.update!(first_employed_at: 1.day.ago, last_terminated_at: nil) unless teammate.employed?
+      teammate.update!(can_manage_employment: true)
       sign_in_as(person, company)
     end
 

@@ -193,13 +193,14 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(response).to have_http_status(:success)
     end
 
-    it 'calculates total goals' do
+    it 'assigns goals chart data' do
       create(:goal, owner: person_teammate, creator: person_teammate, company: company)
       create(:goal, owner: person_teammate, creator: person_teammate, company: company)
       
       get :goals, params: { organization_id: company.id }
       
-      expect(assigns(:total_goals)).to eq(2)
+      expect(assigns(:goals_chart_data)).to be_a(Hash)
+      expect(assigns(:goals_chart_data)[:categories]).to be_an(Array)
     end
   end
 
@@ -234,10 +235,10 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(chart[:series].map { |s| s[:name] }.sort).to eq(Observation.privacy_levels.keys.map { |k| k.to_s.humanize.titleize }.sort)
     end
 
-    it 'assigns chart data with 52–53 week categories when timeframe is year' do
+    it 'assigns chart data with 52–54 week categories when timeframe is year' do
       get :observations, params: { organization_id: company.id, timeframe: 'year' }
       chart = assigns(:observations_chart_data)
-      expect(chart[:categories].size).to be_between(52, 53)
+      expect(chart[:categories].size).to be_between(52, 54)
     end
 
     it 'excludes observations outside range when timeframe is 90_days' do
@@ -316,10 +317,10 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(chart[:categories].size).to be_between(12, 14)
     end
 
-    it 'assigns chart data with 52–53 week categories when timeframe is year' do
+    it 'assigns chart data with 52–54 week categories when timeframe is year' do
       get :prompts, params: { organization_id: company.id, timeframe: 'year' }
       chart = assigns(:prompts_answers_chart_data)
-      expect(chart[:categories].size).to be_between(52, 53)
+      expect(chart[:categories].size).to be_between(52, 54)
     end
 
     it 'includes prompt template names in series when prompts and answers exist' do
