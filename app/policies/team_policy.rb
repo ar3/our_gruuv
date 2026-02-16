@@ -42,6 +42,8 @@ class TeamPolicy < ApplicationPolicy
 
   def team_in_company?
     return false unless viewing_teammate
+    # Class-level policy check (e.g. policy(Team).show? in layout) — allow when in an org
+    return true if record.is_a?(Class)
     return true if record.new_record? # Allow new records
     record.company_id == viewing_teammate.organization_id
   end

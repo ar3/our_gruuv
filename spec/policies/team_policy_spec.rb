@@ -28,6 +28,10 @@ RSpec.describe TeamPolicy, type: :policy do
       expect(subject).to permit(pundit_user, team)
     end
 
+    it 'allows class-level check when teammate is in an organization (e.g. nav link)' do
+      expect(subject).to permit(pundit_user, Team)
+    end
+
     it 'denies when teammate is in different organization' do
       other_company = create(:organization, name: 'Other')
       other_teammate = create(:company_teammate, person: create(:person), organization: other_company)
