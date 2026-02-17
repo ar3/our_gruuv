@@ -12,7 +12,7 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
     bulk_goal_titles = params[:bulk_goal_titles].to_s.split("\n").map(&:strip).reject(&:blank?)
     
     if goal_ids.empty? && bulk_goal_titles.empty?
-      redirect_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: params[:return_url], return_text: params[:return_text]),
+      redirect_to choose_manage_goals_organization_prompt_path(@organization, @prompt, return_url: params[:return_url], return_text: params[:return_text]),
                   alert: 'Please select at least one existing goal or provide at least one new goal title.'
       return
     end

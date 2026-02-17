@@ -1,7 +1,7 @@
-- content_for :title, "Manage Goals"
+- content_for :title, "Create New Goals"
 
 - content_for :header do
-  Associate Goals with "#{@prompt.prompt_template.title}"
+  Create new goals and associate with "#{@prompt.prompt_template.title}"
 
 - content_for :return_url do
   = @return_url || edit_organization_prompt_path(@organization, @prompt)
@@ -13,15 +13,15 @@
   .card-header
     %h5.mb-0
       %i.bi.bi-bullseye.me-2
-      Associate Goals
+      Create new goals
       %small.text-muted.ms-2
-        Select one or more goals to associate with this prompt.
+        Each goal will be created and associated with this prompt.
   .card-body
     = form_with url: organization_prompt_prompt_goals_path(@organization, @prompt), method: :post, local: true do |f|
       = hidden_field_tag :return_url, @return_url if @return_url.present?
       = hidden_field_tag :return_text, @return_text if @return_text.present?
-      
-      .mb-4.mt-4
+
+      .mb-4
         %label.form-label.fw-bold
           Create New Goals
           %i.bi.bi-info-circle.text-muted.ms-2{
@@ -30,61 +30,14 @@
           }
         %small.text-muted.d-block.mb-2
           Enter one goal per line. Each goal will be created as a stepping stone goal with a due date 90 days from now.
-        = text_area_tag "bulk_goal_titles", nil, 
-                        class: "form-control", 
+        = text_area_tag "bulk_goal_titles", nil,
+                        class: "form-control",
                         rows: 6,
                         placeholder: "Goal 1\nGoal 2\nObjective 3\n* Key Result 3-1\n* Key Result 3-2\n* Key Result 3-3\nObjective 4\n1. Step 4-1\n2. Step 4-2\n3. Step 4-3"
-      
-      .d-flex.gap-2.mt-3
-        = f.submit 'Create Goals', class: 'btn btn-primary', id: 'create-goals-btn'
 
-
-      - if @available_goals_with_status.any?
-        .mb-4
-          %label.form-label.fw-bold Existing Goals
-          %small.text-muted.d-block.mb-2
-            Select one or more existing goals to associate with this prompt.
-          .list-group
-            - @available_goals_with_status.each do |goal_status|
-              - goal = goal_status[:goal]
-              - disabled = goal_status[:already_linked]
-              - checked = goal_status[:already_linked]
-              - already_linked = goal_status[:already_linked]
-              
-              .list-group-item{class: "#{'bg-light' if disabled}"}
-                .form-check
-                  = check_box_tag "goal_ids[]", goal.id, checked,
-                                  class: "form-check-input",
-                                  id: "goal_ids_#{goal.id}",
-                                  disabled: disabled
-                  = label_tag "goal_ids_#{goal.id}", class: "form-check-label #{'text-muted' if disabled}" do
-                    %strong= goal.title
-                    %br
-                    %small.text-muted
-                      %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
-                        = goal_category_label(goal)
-                      | 
-                      %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
-                        = goal_privacy_rings_with_label(goal)
-                      | 
-                      Owner: 
-                      - if goal.owner_type == 'CompanyTeammate'
-                        = goal.owner.person.display_name
-                      - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
-                        = goal.owner.display_name
-                      - else
-                        = goal.owner.display_name
-                      - if already_linked
-                        %span.badge.bg-success.ms-2{style: "font-size: 0.75em;"}
-                          Already Associated
-      - else
-        .alert.alert-info
-          %i.bi.bi-info-circle.me-2
-          No goals available to associate. Create goals first from the Goals section.
-      
       .d-flex.gap-2.mt-3
         = link_to @return_url, class: 'btn btn-outline-secondary' do
           %i.bi.bi-arrow-left.me-1
           = @return_text || 'Cancel'
-        = f.submit 'Associate Goals', class: 'btn btn-primary', id: 'associate-goals-btn'
+        = f.submit 'Create and associate goals', class: 'btn btn-primary', id: 'create-and-associate-goals-btn', data: { test_id: 'create-and-associate-goals' }
 

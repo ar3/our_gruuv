@@ -1,6 +1,6 @@
 class Organizations::PromptsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_prompt, only: [:edit, :update, :close, :close_and_start_new, :manage_goals]
+  before_action :set_prompt, only: [:edit, :update, :close, :close_and_start_new, :manage_goals, :choose_manage_goals, :associate_existing_goals]
 
   after_action :verify_authorized
 
@@ -267,7 +267,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     # Determine redirect based on button clicked
     if params[:save_and_manage_goals].present?
       # Save and go to manage goals page
-      redirect_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: edit_organization_prompt_path(@organization, @prompt), return_text: @prompt.prompt_template.title),
+      redirect_to choose_manage_goals_organization_prompt_path(@organization, @prompt, return_url: edit_organization_prompt_path(@organization, @prompt), return_text: @prompt.prompt_template.title),
                   notice: 'Prompt answers saved successfully.'
     elsif params[:save_and_edit_goals].present?
       # Save and go to goals index with teammate selected and prompt filter
@@ -336,28 +336,71 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
                 notice: 'Prompt closed successfully.'
   end
 
-  def manage_goals
+  def choose_manage_goals
     authorize @prompt, :update?
-    
-    company = @organization.root_company || @organization
-    current_teammate = current_person.teammates.find_by(organization: company)
-    
-    # Get available goals for the current teammate
-    available_goals = Goal.for_teammate(current_teammate)
-                          .where(deleted_at: nil, completed_at: nil)
-                          .includes(:owner, :creator)
-    
-    # Mark which goals are already associated
-    @available_goals_with_status = available_goals.map do |goal|
-      {
-        goal: goal,
-        already_linked: @prompt.goals.include?(goal)
-      }
-    end
-    
     @return_url = params[:return_url] || edit_organization_prompt_path(@organization, @prompt)
     @return_text = params[:return_text] || 'Back to Prompt'
-    
+    render layout: 'overlay'
+  end
+
+  def associate_existing_goals
+    authorize @prompt, :update?
+
+    if request.get?
+      candidate_goals = Goals::PromptGoalCandidatesQuery.new(prompt: @prompt).call
+      associated_goal_ids = @prompt.goal_ids.to_set
+      @available_goals_with_status = candidate_goals.map do |g|
+        { goal: g, already_associated: associated_goal_ids.include?(g.id) }
+      end
+      @return_url = params[:return_url] || edit_organization_prompt_path(@organization, @prompt)
+      @return_text = params[:return_text] || 'Back to Prompt'
+      render layout: 'overlay'
+      return
+    end
+
+    goal_ids = Array(params[:goal_ids]).reject(&:blank?)
+    return_url = params[:return_url] || edit_organization_prompt_path(@organization, @prompt)
+
+    if goal_ids.empty?
+      redirect_to associate_existing_goals_organization_prompt_path(
+        @organization, @prompt, return_url: return_url, return_text: params[:return_text]
+      ), alert: 'Please select at least one goal.'
+      return
+    end
+
+    success_count = 0
+    errors = []
+
+    goal_ids.each do |goal_id|
+      goal = Goal.find_by(id: goal_id)
+      next unless goal
+
+      prompt_goal = @prompt.prompt_goals.build(goal: goal)
+      authorize prompt_goal, :create?
+      if prompt_goal.save
+        success_count += 1
+      else
+        errors.concat(prompt_goal.errors.full_messages)
+      end
+    end
+
+    if success_count > 0 && errors.empty?
+      redirect_to return_url,
+                  notice: "#{success_count} #{'goal'.pluralize(success_count)} #{success_count == 1 ? 'was' : 'were'} successfully associated."
+    elsif success_count > 0 && errors.any?
+      redirect_to return_url,
+                  alert: "Some goals were associated, but there were errors: #{errors.join(', ')}"
+    else
+      redirect_to associate_existing_goals_organization_prompt_path(
+        @organization, @prompt, return_url: return_url, return_text: params[:return_text]
+      ), alert: "Failed to associate goals: #{errors.join(', ')}"
+    end
+  end
+
+  def manage_goals
+    authorize @prompt, :update?
+    @return_url = params[:return_url] || edit_organization_prompt_path(@organization, @prompt)
+    @return_text = params[:return_text] || 'Back to Prompt'
     render layout: 'overlay'
   end
 

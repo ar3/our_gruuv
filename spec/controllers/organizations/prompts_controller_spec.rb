@@ -443,7 +443,7 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
 
     context 'with save_and_manage_goals (name attribute determines redirect, like observations)' do
-      it 'saves answers and redirects to manage_goals with return_url=edit and return_text=template title' do
+      it 'saves answers and redirects to choose_manage_goals with return_url=edit and return_text=template title' do
         patch :update, params: {
           organization_id: organization.id,
           id: open_prompt.id,
@@ -458,7 +458,7 @@ RSpec.describe Organizations::PromptsController, type: :controller do
 
         expect(response).to have_http_status(:redirect)
         redirect_location = response.headers['Location']
-        expect(redirect_location).to include('manage_goals')
+        expect(redirect_location).to include('choose_manage_goals')
         expect(redirect_location).to include('return_url=')
         expect(redirect_location).to include('return_text=')
         expect(redirect_location).to include(organization.id.to_s)
@@ -673,10 +673,114 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
   end
 
-  describe 'GET #manage_goals' do
+  describe 'GET #choose_manage_goals' do
+    let(:open_prompt) { create(:prompt, :open, company_teammate: teammate, prompt_template: template) }
+
+    it 'renders the choose_manage_goals template with overlay layout' do
+      get :choose_manage_goals, params: { organization_id: organization.id, id: open_prompt.id }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:choose_manage_goals)
+      expect(response).to render_template(layout: 'overlay')
+    end
+
+    it 'assigns return_url and return_text from params' do
+      return_url = '/close_tab?return_text=close+tab+when+done'
+      return_text = 'close tab when done'
+      get :choose_manage_goals, params: {
+        organization_id: organization.id,
+        id: open_prompt.id,
+        return_url: return_url,
+        return_text: return_text
+      }
+      expect(assigns(:return_url)).to eq(return_url)
+      expect(assigns(:return_text)).to eq(return_text)
+    end
+
+    context 'when prompt is closed' do
+      let(:closed_prompt) { create(:prompt, :closed, company_teammate: teammate, prompt_template: template) }
+
+      it 'denies access' do
+        get :choose_manage_goals, params: { organization_id: organization.id, id: closed_prompt.id }
+        expect(response).to have_http_status(:redirect)
+      end
+    end
+  end
+
+  describe 'GET #associate_existing_goals' do
     let(:open_prompt) { create(:prompt, :open, company_teammate: teammate, prompt_template: template) }
     let!(:goal1) { create(:goal, owner: teammate, creator: teammate, company: organization) }
     let!(:goal2) { create(:goal, owner: teammate, creator: teammate, company: organization) }
+
+    it 'renders the associate_existing_goals template with overlay layout' do
+      get :associate_existing_goals, params: { organization_id: organization.id, id: open_prompt.id }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:associate_existing_goals)
+      expect(response).to render_template(layout: 'overlay')
+    end
+
+    it 'assigns available goals with status (candidates; already_associated disabled)' do
+      get :associate_existing_goals, params: { organization_id: organization.id, id: open_prompt.id }
+      expect(assigns(:available_goals_with_status)).to be_present
+      expect(assigns(:available_goals_with_status).length).to be >= 2
+    end
+
+    it 'marks already associated goals' do
+      PromptGoal.create!(prompt: open_prompt, goal: goal1)
+      get :associate_existing_goals, params: { organization_id: organization.id, id: open_prompt.id }
+      goal_status = assigns(:available_goals_with_status).find { |gs| gs[:goal] == goal1 }
+      expect(goal_status[:already_associated]).to be true
+    end
+
+    it 'assigns return_url and return_text from params' do
+      return_url = '/close_tab'
+      return_text = 'close tab'
+      get :associate_existing_goals, params: {
+        organization_id: organization.id,
+        id: open_prompt.id,
+        return_url: return_url,
+        return_text: return_text
+      }
+      expect(assigns(:return_url)).to eq(return_url)
+      expect(assigns(:return_text)).to eq(return_text)
+    end
+  end
+
+  describe 'POST #associate_existing_goals' do
+    let(:open_prompt) { create(:prompt, :open, company_teammate: teammate, prompt_template: template) }
+    let!(:goal1) { create(:goal, owner: teammate, creator: teammate, company: organization) }
+
+    it 'creates PromptGoals and redirects to return_url with notice' do
+      expect {
+        post :associate_existing_goals, params: {
+          organization_id: organization.id,
+          id: open_prompt.id,
+          goal_ids: [goal1.id],
+          return_url: edit_organization_prompt_path(organization, open_prompt),
+          return_text: 'Back to Prompt'
+        }
+      }.to change(PromptGoal, :count).by(1)
+
+      expect(response).to redirect_to(edit_organization_prompt_path(organization, open_prompt))
+      expect(flash[:notice]).to match(/1 goal.*successfully associated/)
+    end
+
+    it 'redirects back with alert when no goal_ids selected' do
+      post :associate_existing_goals, params: {
+        organization_id: organization.id,
+        id: open_prompt.id,
+        goal_ids: [],
+        return_url: edit_organization_prompt_path(organization, open_prompt),
+        return_text: 'Back'
+      }
+      expect(response).to redirect_to(associate_existing_goals_organization_prompt_path(
+        organization, open_prompt, return_url: edit_organization_prompt_path(organization, open_prompt), return_text: 'Back'
+      ))
+      expect(flash[:alert]).to eq('Please select at least one goal.')
+    end
+  end
+
+  describe 'GET #manage_goals' do
+    let(:open_prompt) { create(:prompt, :open, company_teammate: teammate, prompt_template: template) }
 
     it 'renders the manage_goals template with overlay layout' do
       get :manage_goals, params: { organization_id: organization.id, id: open_prompt.id }
@@ -685,24 +789,11 @@ RSpec.describe Organizations::PromptsController, type: :controller do
       expect(response).to render_template(layout: 'overlay')
     end
 
-    it 'assigns available goals with status' do
-      get :manage_goals, params: { organization_id: organization.id, id: open_prompt.id }
-      expect(assigns(:available_goals_with_status)).to be_present
-      expect(assigns(:available_goals_with_status).length).to be >= 2
-    end
-
-    it 'marks already linked goals' do
-      PromptGoal.create!(prompt: open_prompt, goal: goal1)
-      get :manage_goals, params: { organization_id: organization.id, id: open_prompt.id }
-      goal_status = assigns(:available_goals_with_status).find { |gs| gs[:goal] == goal1 }
-      expect(goal_status[:already_linked]).to be true
-    end
-
     it 'assigns return_url and return_text from params' do
       return_url = '/close_tab?return_text=close+tab+when+done'
       return_text = 'close tab when done'
-      get :manage_goals, params: { 
-        organization_id: organization.id, 
+      get :manage_goals, params: {
+        organization_id: organization.id,
         id: open_prompt.id,
         return_url: return_url,
         return_text: return_text
@@ -716,7 +807,6 @@ RSpec.describe Organizations::PromptsController, type: :controller do
 
       it 'denies access' do
         get :manage_goals, params: { organization_id: organization.id, id: closed_prompt.id }
-        # Pundit redirects unauthorized users
         expect(response).to have_http_status(:redirect)
       end
     end
@@ -756,9 +846,18 @@ RSpec.describe Organizations::PromptsController, type: :controller do
         expect(response).to have_http_status(:redirect)
       end
 
+      it 'denies choose_manage_goals access' do
+        get :choose_manage_goals, params: { organization_id: organization.id, id: other_prompt.id }
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'denies associate_existing_goals access' do
+        get :associate_existing_goals, params: { organization_id: organization.id, id: other_prompt.id }
+        expect(response).to have_http_status(:redirect)
+      end
+
       it 'denies manage_goals access' do
         get :manage_goals, params: { organization_id: organization.id, id: other_prompt.id }
-        # Pundit redirects unauthorized users, so we check for redirect
         expect(response).to have_http_status(:redirect)
       end
     end

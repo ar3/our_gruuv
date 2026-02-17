@@ -4,6 +4,7 @@ module ApplicationHelper
   include CheckInHelper
   include CompanyLabelHelper
   include PositionsHelper
+  include GoalsHelper
 
   # Color helper methods for consistent UI
   def rating_color(rating)

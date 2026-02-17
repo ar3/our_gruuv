@@ -42,8 +42,8 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     allow(view).to receive(:organization_prompts_path).and_return("/organizations/#{organization.id}/prompts")
     allow(view).to receive(:edit_organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}/edit")
     allow(view).to receive(:organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}")
-    allow(view).to receive(:manage_goals_organization_prompt_path) do |org, prompt_obj, options = {}|
-      base_path = "/organizations/#{org.id}/prompts/#{prompt_obj.id}/manage_goals"
+    allow(view).to receive(:choose_manage_goals_organization_prompt_path) do |org, prompt_obj, options = {}|
+      base_path = "/organizations/#{org.id}/prompts/#{prompt_obj.id}/choose_manage_goals"
       if options.present?
         query_params = options.map { |k, v| "#{k}=#{CGI.escape(v.to_s)}" }.join('&')
         "#{base_path}?#{query_params}"
@@ -174,7 +174,7 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
   end
 
   context 'when can_edit is true' do
-    it 'shows Add New / Associate Goals as submit button (name=save_and_manage_goals) that saves and redirects to manage_goals' do
+    it 'shows Add New / Associate Goals as submit button (name=save_and_manage_goals) that saves and redirects to choose_manage_goals' do
       render
       button = Capybara.string(rendered).find('button[name="save_and_manage_goals"]')
       expect(button[:form]).to eq('prompt-edit-form')

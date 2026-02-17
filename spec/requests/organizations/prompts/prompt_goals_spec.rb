@@ -157,12 +157,12 @@ RSpec.describe 'Organizations::Prompts::PromptGoals', type: :request do
     end
 
     context 'with empty goal_ids and empty bulk_goal_titles' do
-      it 'redirects to manage_goals with alert' do
+      it 'redirects to choose_manage_goals with alert' do
         post organization_prompt_prompt_goals_path(organization, prompt), params: {
           goal_ids: [],
           bulk_goal_titles: ""
         }
-        expect(response).to redirect_to(manage_goals_organization_prompt_path(organization, prompt))
+        expect(response).to redirect_to(choose_manage_goals_organization_prompt_path(organization, prompt))
         expect(flash[:alert]).to include('Please select at least one existing goal or provide at least one new goal title')
       end
     end

@@ -1,0 +1,58 @@
+- content_for :title, "Associate Existing Goals"
+
+- content_for :header do
+  Associate existing goals with "#{@prompt.prompt_template.title}"
+
+- content_for :return_url do
+  = @return_url || edit_organization_prompt_path(@organization, @prompt)
+
+- content_for :return_text do
+  = @return_text || "Back to Prompt"
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-bullseye.me-2
+      Select goals to associate
+      %small.text-muted.ms-2
+        Goals already associated with this prompt are disabled.
+  .card-body
+    = form_with url: associate_existing_goals_organization_prompt_path(@organization, @prompt), method: :post, local: true do |f|
+      = hidden_field_tag :return_url, @return_url
+      = hidden_field_tag :return_text, @return_text
+
+      - if @available_goals_with_status.any?
+        .list-group.mb-4
+          - @available_goals_with_status.each do |goal_status|
+            - goal = goal_status[:goal]
+            - disabled = goal_status[:already_associated]
+
+            .list-group-item{class: "#{'bg-light' if disabled}"}
+              .form-check
+                = check_box_tag "goal_ids[]", goal.id, false,
+                                class: "form-check-input",
+                                id: "goal_ids_#{goal.id}",
+                                disabled: disabled
+                = label_tag "goal_ids_#{goal.id}", class: "form-check-label #{'text-muted' if disabled}" do
+                  %strong= goal.title
+                  %br
+                  %small.text-muted
+                    %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
+                      = goal_category_label(goal)
+                    |
+                    %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
+                      = goal_privacy_rings_with_label(goal)
+                    - if disabled
+                      %span.badge.bg-success.ms-2{style: "font-size: 0.75em;"}
+                        Already Associated
+      - else
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          No goals available to associate. Create goals first or use "Create new goals" from the previous step.
+
+      .d-flex.gap-2.mt-3
+        = link_to @return_url, class: 'btn btn-outline-secondary' do
+          %i.bi.bi-arrow-left.me-1
+          = @return_text || 'Cancel'
+        - if @available_goals_with_status.any?
+          = f.submit 'Associate selected', class: 'btn btn-primary', id: 'associate-selected-prompt-goals-btn', data: { test_id: 'associate-selected-prompt-goals' }

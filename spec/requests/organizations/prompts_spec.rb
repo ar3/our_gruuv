@@ -148,7 +148,7 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       expect(response).to redirect_to(edit_organization_prompt_path(organization, open_prompt))
     end
 
-    it 'Add New / Associate Goals button (save_and_manage_goals) saves answers and redirects to manage_goals to add/link goals' do
+    it 'Add New / Associate Goals button (save_and_manage_goals) saves answers and redirects to choose_manage_goals to add/link goals' do
       patch organization_prompt_path(organization, open_prompt), params: {
         save_and_manage_goals: '1',
         prompt_answers: {
@@ -158,16 +158,16 @@ RSpec.describe 'Organizations::Prompts', type: :request do
 
       expect(response).to have_http_status(:redirect)
       redirect_url = response.redirect_url
-      expect(redirect_url).to include(manage_goals_organization_prompt_path(organization, open_prompt))
+      expect(redirect_url).to include(choose_manage_goals_organization_prompt_path(organization, open_prompt))
       expect(redirect_url).to include('return_url=')
       expect(redirect_url).to include('return_text=')
       expect(flash[:notice]).to eq('Prompt answers saved successfully.')
 
-      # Ensure we land on the page where we can add or link goals to the prompt
       follow_redirect!
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Associate Goals')
-      expect(response.body).to include('Select one or more goals to associate with this prompt')
+      expect(response.body).to include('Associate goals')
+      expect(response.body).to include('Create new goals')
+      expect(response.body).to include('Associate existing goals with this prompt')
     end
 
     it 'save_and_edit_goals saves answers and redirects to goals index with teammate and prompt_id' do
@@ -212,6 +212,39 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       patch close_organization_prompt_path(organization, open_prompt)
       expect(response).to redirect_to(edit_organization_prompt_path(organization, open_prompt))
       expect(open_prompt.reload.closed?).to be true
+    end
+  end
+
+  describe 'GET choose_manage_goals and associate_existing_goals' do
+    let(:open_prompt) { create(:prompt, :open, company_teammate: teammate, prompt_template: template) }
+
+    it 'GET choose_manage_goals renders choice page' do
+      get choose_manage_goals_organization_prompt_path(organization, open_prompt)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Create new goals')
+      expect(response.body).to include('Associate existing goals with this prompt')
+    end
+
+    it 'GET associate_existing_goals renders candidate goals list' do
+      goal = create(:goal, owner: teammate, creator: teammate, company: organization, title: 'My Goal')
+      get associate_existing_goals_organization_prompt_path(organization, open_prompt)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('My Goal')
+      expect(response.body).to include('Associate selected')
+    end
+
+    it 'POST associate_existing_goals creates prompt_goals and redirects to return_url' do
+      goal = create(:goal, owner: teammate, creator: teammate, company: organization, title: 'To Associate')
+      return_url = edit_organization_prompt_path(organization, open_prompt)
+      expect {
+        post associate_existing_goals_organization_prompt_path(organization, open_prompt), params: {
+          goal_ids: [goal.id],
+          return_url: return_url,
+          return_text: 'Back to Prompt'
+        }
+      }.to change { open_prompt.prompt_goals.count }.by(1)
+      expect(response).to redirect_to(return_url)
+      expect(flash[:notice]).to match(/successfully associated/)
     end
   end
 

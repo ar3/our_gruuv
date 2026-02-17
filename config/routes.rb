@@ -197,6 +197,9 @@ Rails.application.routes.draw do
         patch :close
         post :close_and_start_new
         get :manage_goals
+        get :choose_manage_goals
+        get :associate_existing_goals
+        post :associate_existing_goals
       end
       resources :prompt_goals, module: :prompts, only: [:create, :destroy]
     end
