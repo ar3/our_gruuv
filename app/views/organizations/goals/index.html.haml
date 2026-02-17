@@ -48,12 +48,11 @@
         = form_with url: organization_goals_path(@organization), method: :get, local: true, id: "owner-selection-form" do |f|
           .row.align-items-end
             .col-md-10
-              %label.form-label.fw-bold.fs-5.mb-2 Select Owner
-              - selected_value = @current_filters[:owner_id] == 'everyone_in_company' ? 'everyone_in_company' : "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"
+              %label.form-label.fw-bold.fs-5.mb-2 Primary filter
+              - selected_value = @current_filters[:owner_id] == 'everyone_in_company' ? 'everyone_in_company' : (@current_filters[:owner_id] == 'created_by_me' ? 'created_by_me' : primary_filter_select_value)
               = render 'goal_owner_select',
-                options: available_goal_owners,
+                grouped_options: available_goal_owners_grouped,
                 selected_value: selected_value,
-                include_filter_options: true,
                 name: 'owner_id',
                 id: 'owner-select',
                 select_class: 'form-select form-select-lg',

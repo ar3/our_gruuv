@@ -1,5 +1,11 @@
--# Shared goal owner dropdown: same sort order everywhere (viewing teammate, teammates alphabetically, company, departments hierarchically+alphabetically, teams).
--# Local variables: options (array of [label, value]), selected_value, include_filter_options (default: false — when false, excludes "All goals visible to everyone" and "All goals created by me"; set true only for index filter), name (default: 'owner_id'), id (optional), select_class (default: 'form-select'), required (default: false), html_options (hash, optional)
+-# Shared goal owner dropdown. Supports either flat options or grouped options (for index primary filter).
+-# Local variables:
+-#   grouped_options (optional): array of [group_label, [ [option_label, option_value], ... ] ] for optgroups
+-#   options (optional): flat array of [label, value] when not using grouped_options
+-#   selected_value: value to select
+-#   include_filter_options (default: false): when false, excludes "All goals visible to everyone" and "All goals created by me"; set true only when using flat options for a filter
+-#   name (default: 'owner_id'), id (optional), select_class (default: 'form-select'), required (default: false), html_options (hash, optional)
+- grouped_options = local_assigns[:grouped_options]
 - options = local_assigns[:options] || []
 - include_filter_options = local_assigns.fetch(:include_filter_options, false)
 - options = options.reject { |_label, value| value.in?(%w[everyone_in_company created_by_me]) } unless include_filter_options
@@ -12,4 +18,5 @@
 - select_attrs = { class: select_class }.merge(html_options)
 - select_attrs[:id] = id if id.present?
 - select_attrs[:required] = true if required
-= select_tag name, options_for_select(options, selected_value), select_attrs
+- option_tags = grouped_options.present? ? grouped_options_for_select(grouped_options, selected_value) : options_for_select(options, selected_value)
+= select_tag name, option_tags, select_attrs

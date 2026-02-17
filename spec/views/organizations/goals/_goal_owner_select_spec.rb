@@ -76,4 +76,19 @@ RSpec.describe 'organizations/goals/_goal_owner_select', type: :view do
     expect(rendered).to include('created_by_me')
     expect(rendered).to include('Teammate: Alice')
   end
+
+  it 'renders optgroups when grouped_options is provided' do
+    grouped_options = [
+      ['Filter', [['All goals', 'everyone_in_company'], ['My goals', 'created_by_me']]],
+      ['Teammates', [['Teammate: Alice', 'CompanyTeammate_1']]],
+      ['Company', [['Company: Acme', 'Company_2']]]
+    ]
+    render partial: 'organizations/goals/goal_owner_select',
+           locals: { grouped_options: grouped_options, selected_value: 'Company_2', name: 'owner_id' }
+
+    expect(rendered).to include('<optgroup label="Filter">')
+    expect(rendered).to include('<optgroup label="Teammates">')
+    expect(rendered).to include('<optgroup label="Company">')
+    expect(rendered).to include('selected="selected" value="Company_2"')
+  end
 end

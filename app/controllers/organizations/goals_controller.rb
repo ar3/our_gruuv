@@ -985,6 +985,64 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
   helper_method :available_goal_owners
 
+  # Value for the primary filter dropdown that matches option values (dropdown uses "Company_" but store uses Organization)
+  def primary_filter_select_value
+    return nil if @current_filters[:owner_type].blank? || @current_filters[:owner_id].blank?
+    type = @current_filters[:owner_type]
+    type = 'Company' if type == 'Organization'
+    "#{type}_#{@current_filters[:owner_id]}"
+  end
+  helper_method :primary_filter_select_value
+
+  # Grouped options for index primary filter: [ [ "Filter", [ [label, value], ... ] ], [ "Teammates", ... ], ... ]
+  def available_goal_owners_grouped
+    company = @organization.root_company || @organization
+    groups = []
+
+    filter_opts = []
+    filter_opts << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"] if company.display_name.present?
+    filter_opts << ["All goals created by me", "created_by_me"]
+    groups << ["Filter", filter_opts] if filter_opts.any?
+
+    teammate_opts = []
+    current_teammate = current_company_teammate
+    if current_teammate && current_person&.display_name.present?
+      teammate_opts << ["Teammate: #{current_person.display_name}", "CompanyTeammate_#{current_teammate.id}"]
+    end
+    current_manager_teammate = current_person.teammates.where(organization_id: company.id).first
+    managed_teammates = if current_manager_teammate
+      CompanyTeammate.joins(:employment_tenures)
+                     .where(employment_tenures: { company: company, manager_teammate_id: current_manager_teammate.id, ended_at: nil })
+                     .where.not(id: current_teammate&.id)
+                     .includes(:person)
+                     .distinct
+                     .order('people.last_name', 'people.first_name')
+    else
+      CompanyTeammate.none
+    end
+    managed_teammates.each do |teammate|
+      next unless teammate.person&.display_name.present? && teammate.id.present?
+      teammate_opts << ["Teammate: #{teammate.person.display_name}", "CompanyTeammate_#{teammate.id}"]
+    end
+    groups << ["Teammates", teammate_opts] if teammate_opts.any?
+
+    company_opts = []
+    company_opts << ["Company: #{company.display_name}", "Company_#{company.id}"] if company.display_name.present? && company.id.present?
+    groups << ["Company", company_opts] if company_opts.any?
+
+    dept_opts = department_goal_owner_options(company)
+    groups << ["Departments", dept_opts] if dept_opts.any?
+
+    team_opts = Team.where(company: company).ordered.filter_map do |t|
+      next unless t.display_name.present? && t.id.present?
+      ["Team: #{t.display_name}", "Team_#{t.id}"]
+    end
+    groups << ["Teams", team_opts] if team_opts.any?
+
+    groups
+  end
+  helper_method :available_goal_owners_grouped
+
   # Returns goal owners for bulk create form (excludes filter options that aren't actual owners)
   def available_goal_owners_for_bulk
     available_goal_owners.reject { |_label, value| value.in?(['everyone_in_company', 'created_by_me']) }

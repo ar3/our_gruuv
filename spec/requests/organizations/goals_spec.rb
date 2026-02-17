@@ -1213,6 +1213,27 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('All goals visible to everyone at Acme Corp')
     end
+
+    it 'displays Company as selected in primary filter when Company owner is selected' do
+      organization.update!(name: 'Acme Corp')
+      create(:goal, creator: teammate, owner: organization, title: 'Company Goal', started_at: 1.week.ago)
+
+      get organization_goals_path(organization, owner_id: "Company_#{organization.id}")
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(/selected="selected" value="Company_#{organization.id}"/)
+      expect(response.body).to include('Company Goal')
+    end
+
+    it 'index page shows Primary filter label and optgroups' do
+      get organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Primary filter')
+      expect(response.body).to include('<optgroup label="Filter">')
+      expect(response.body).to include('<optgroup label="Teammates">')
+      expect(response.body).to include('<optgroup label="Company">')
+    end
   end
 
   describe 'GET /organizations/:organization_id/goals/bulk_new' do
