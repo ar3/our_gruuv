@@ -1,7 +1,9 @@
 - content_for :title, "About #{@teammate.person.casual_name}"
 
 - content_for :header do
-  %h1.mb-0 About #{@teammate.person.casual_name}
+  .d-flex.align-items-center.gap-3
+    = teammate_profile_image(@teammate, size: 48)
+    %h1.mb-0 About #{@teammate.person.casual_name}
         
 - content_for :header_action do
   = render 'people/view_switcher'
