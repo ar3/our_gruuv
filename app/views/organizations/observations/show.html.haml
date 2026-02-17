@@ -55,7 +55,7 @@
           %i.bi.bi-chat-text.me-2
           Story
       .card-body
-        = @observation.decorate.story_html.html_safe
+        .markdown-content= render_markdown(@observation.story)
         
     - if @observation.decorate.gifs_html.present?
       .card.mb-4{ role: "region", "aria-labelledby": "observation-gifs" }
