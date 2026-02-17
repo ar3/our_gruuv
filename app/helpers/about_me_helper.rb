@@ -18,17 +18,20 @@ module AboutMeHelper
   end
 
   def goals_status_indicator(teammate)
+    # Same scope as about_me goals section: only goals where teammate is the owner
+    goals_owned = Goal.where(owner: teammate)
+
     # Check if any goal (active or completed) completed in last 90 days
-    completed_recently = Goal.for_teammate(teammate)
+    completed_recently = goals_owned
       .where('completed_at >= ?', 90.days.ago)
       .where(deleted_at: nil)
       .exists?
-    
+
     if completed_recently
       return :green
     end
-    
-    all_goals = Goal.for_teammate(teammate).active.includes(:goal_check_ins)
+
+    all_goals = goals_owned.active.includes(:goal_check_ins)
     
     return :red if all_goals.empty?
     

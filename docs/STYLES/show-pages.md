@@ -14,14 +14,14 @@ This document defines the standard style guide for all show pages in the OurGruu
 ```haml
 - content_for :title, @position.display_name
 - content_for :title, "Edit Position"
-- content_for :title, "About Me - #{@teammate.person.casual_name}"
+- content_for :title, "About #{@teammate.person.casual_name}"
 ```
 
 **Examples:**
 - Show pages: `@resource.name`, `@resource.title`, `@resource.display_name`
 - Edit pages: `"Edit Position"`, `"Edit Assignment"`
 - Custom pages: `"Manage Assignments for #{@position.position_type.external_title}"`
-- Person pages: `"About Me - #{@teammate.person.casual_name}"`
+- Person pages: `"About #{@teammate.person.casual_name}"`
 
 **Note**: Page titles are automatically tracked in `PageVisit` records and appear in browser tabs. Always include a descriptive title for every page.
 

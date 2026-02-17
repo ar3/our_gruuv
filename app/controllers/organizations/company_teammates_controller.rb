@@ -785,9 +785,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   # Data loading methods for about_me page
   def load_goals_for_about_me
     if @teammate
-      # Get ALL active goals (not filtered by timeframe scopes)
-      # This ensures status indicator and view use the same query
-      base_goals = Goal.for_teammate(@teammate).active.includes(:goal_check_ins)
+      # Only goals where this teammate is the owner (same scope for list and collapsed alert)
+      base_goals = Goal.where(owner: @teammate).active.includes(:goal_check_ins)
       all_active_goals = base_goals.to_a
       
       # Categorize goals by timeframe using instance method (includes goals without target dates)
@@ -842,14 +841,14 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         .uniq
       @goals_with_recent_check_ins_count = all_active_goals.count { |goal| recent_check_in_goal_ids.include?(goal.id) }
       
-      # Calculate goals completed in the last 90 days
-      @goals_completed_count = Goal.for_teammate(@teammate)
+      # Calculate goals completed in the last 90 days (owner-only, same scope as list)
+      @goals_completed_count = Goal.where(owner: @teammate)
         .where('completed_at >= ?', 90.days.ago)
         .where(deleted_at: nil)
         .count
-      
-      # Calculate draft goals count
-      @draft_goals_count = Goal.for_teammate(@teammate)
+
+      # Calculate draft goals count (owner-only, same scope as list)
+      @draft_goals_count = Goal.where(owner: @teammate)
         .draft
         .where(deleted_at: nil)
         .count

@@ -93,6 +93,14 @@ RSpec.describe 'About Me Page', type: :request do
     end
   end
 
+  describe 'Page title and header' do
+    it 'uses title and header "About <casual name>"' do
+      get about_me_organization_company_teammate_path(organization, teammate)
+      expect(response.body).to include("<title>About #{person.casual_name}</title>")
+      expect(response.body).to include("About #{person.casual_name}")
+    end
+  end
+
   describe 'Sections rendering' do
     it 'renders stories section' do
       get about_me_organization_company_teammate_path(organization, teammate)
@@ -869,6 +877,36 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to include(goal_with_date.title)
         expect(response.body).to include(goal_without_date.title)
         expect(response.body).to include("2 active goals")
+      end
+
+      it 'shows only goals owned by the about-me teammate, not goals where they are only creator' do
+        other_person = create(:person)
+        other_teammate = create(:company_teammate, person: other_person, organization: organization)
+        create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+
+        create(:goal,
+               title: 'Goal I own',
+               owner: teammate,
+               creator: teammate,
+               company: organization,
+               started_at: 1.day.ago,
+               completed_at: nil,
+               deleted_at: nil)
+        # Goal owned by other_teammate but created by teammate - should NOT appear on teammate's about_me
+        create(:goal,
+               title: 'Goal owned by other person',
+               owner: other_teammate,
+               creator: teammate,
+               company: organization,
+               started_at: 1.day.ago,
+               completed_at: nil,
+               deleted_at: nil)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+
+        expect(response.body).to include('Goal I own')
+        expect(response.body).not_to include('Goal owned by other person')
+        expect(response.body).to include('1 active goal')
       end
     end
 
