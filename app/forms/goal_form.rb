@@ -149,7 +149,9 @@ class GoalForm < Reform::Form
     # Only set default if most_likely_target_date is not already set explicitly
     # If dates are explicitly set in advanced settings, they override timeframe selection
     return if most_likely_target_date.present?
-    
+    # When user chose "Custom" timeframe, use their date fields; do not apply preset defaults
+    return if timeframe == 'custom'
+
     # Set based on timeframe selection if provided
     case timeframe
     when 'near_term'

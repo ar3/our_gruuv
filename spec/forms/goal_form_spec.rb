@@ -288,6 +288,22 @@ RSpec.describe GoalForm, type: :form do
       expect(goal.started_at).to be_within(1.second).of(1.day.ago)
       expect(goal.owner_type).to eq('CompanyTeammate')
     end
+
+    it 'when timeframe is custom, preserves user-provided target dates (does not apply preset defaults)' do
+      custom_date = Date.today + 5.months
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.timeframe = "custom"
+      form.most_likely_target_date = custom_date
+      form.earliest_target_date = Date.today + 2.months
+      form.latest_target_date = Date.today + 8.months
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = creator_teammate.id
+
+      expect(form.save).to be true
+      expect(goal.reload.most_likely_target_date).to eq(custom_date)
+    end
     
     it 'handles optional became_top_priority' do
       form.title = "Test Goal"

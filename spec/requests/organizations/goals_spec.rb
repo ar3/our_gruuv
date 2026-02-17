@@ -32,6 +32,21 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Title')
       expect(response.body).to include('Create Goal')
     end
+
+    it 'shows Owner as the first field above Title and includes Custom timeframe option' do
+      get new_organization_goal_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Owner')
+      expect(response.body).to include('Title')
+      # Owner field (owner_id) should appear before title field in the form
+      owner_field_pos = response.body.index('goal[owner_id]')
+      title_field_pos = response.body.index('goal[title]')
+      expect(owner_field_pos).to be < title_field_pos
+      expect(response.body).to include('Custom')
+      expect(response.body).to include('goal-custom-dates')
+      expect(response.body).to include('timeframe_custom')
+    end
     
     it 'defaults owner to viewing teammate' do
       get new_organization_goal_path(organization)

@@ -48,25 +48,7 @@
               = form.label :description, class: 'form-label'
               = form.text_area :description, class: 'form-control', rows: 4
 
-            .mb-3
-              %label.form-label Goal dates
-              .goal-dates-sentence
-                %p.mb-2
-                  The goal started on
-                  = form.date_field :started_at, class: 'form-control form-control-sm d-inline-block w-auto mx-1', style: 'vertical-align: middle;'
-                  = "."
-                %p.mb-2
-                  %span.text-muted (Optional)
-                  The most likely date of its completion is
-                  = form.date_field :most_likely_target_date, class: 'form-control form-control-sm d-inline-block w-auto mx-1', style: 'vertical-align: middle;'
-                  = "."
-                %p.mb-2
-                  %span.text-muted (Even more optional)
-                  However, the earliest this goal could be hit is
-                  = form.date_field :earliest_target_date, class: 'form-control form-control-sm d-inline-block w-auto mx-1', style: 'vertical-align: middle;'
-                  and the latest it must be hit by is
-                  = form.date_field :latest_target_date, class: 'form-control form-control-sm d-inline-block w-auto mx-1', style: 'vertical-align: middle;'
-                  = "."
+            = render 'goal_dates_sentence', form: form
 
             .mb-3
               = render 'goal_type_selection', form: form

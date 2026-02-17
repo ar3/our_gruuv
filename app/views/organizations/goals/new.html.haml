@@ -24,6 +24,22 @@
             
             / Hidden field for privacy_level (defaulted in controller)
             = form.hidden_field :privacy_level, value: @form.privacy_level || 'only_creator_owner_and_managers'
+
+            .mb-3
+              = form.label :owner_id, class: 'form-label' do
+                Owner
+                %span.text-danger *
+              - viewing_teammate_id = current_company_teammate&.id || @form.current_teammate&.id
+              - default_owner_id = @form.owner_id || (viewing_teammate_id ? "CompanyTeammate_#{viewing_teammate_id}" : nil)
+              - raise "MAJOR ISSUE WITH GOALS... SOMEHOW THE CURRENT TEAMMATE IS NIL?!?!" if default_owner_id.blank?
+              = render 'goal_owner_select',
+                options: available_goal_owners,
+                selected_value: default_owner_id,
+                name: 'goal[owner_id]',
+                select_class: 'form-select',
+                required: true
+              %small.form-text.text-muted
+                Choose who this goal belongs to: yourself, an employee, a team, department, or company
             
             .mb-3
               = form.label :title, class: 'form-label' do
@@ -54,25 +70,15 @@
                 
                 = form.radio_button :timeframe, 'near_term', class: 'btn-check', id: 'timeframe_near_term', checked: false
                 = form.label :timeframe, 'Near-term goal', value: 'near_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_near_term'
+                
+                = form.radio_button :timeframe, 'custom', class: 'btn-check', id: 'timeframe_custom', checked: false
+                = form.label :timeframe, 'Custom', value: 'custom', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_custom'
               
               %small.form-text.text-muted.mt-2.d-block
-                Select a timeframe to automatically set the target date.
+                Select a timeframe to automatically set the target date, or Custom to choose your own dates.
             
-            .mb-3
-              = form.label :owner_id, class: 'form-label' do
-                Owner
-                %span.text-danger *
-              - viewing_teammate_id = current_company_teammate&.id || @form.current_teammate&.id
-              - default_owner_id = @form.owner_id || (viewing_teammate_id ? "CompanyTeammate_#{viewing_teammate_id}" : nil)
-              - raise "MAJOR ISSUE WITH GOALS... SOMEHOW THE CURRENT TEAMMATE IS NIL?!?!" if default_owner_id.blank?
-              = render 'goal_owner_select',
-                options: available_goal_owners,
-                selected_value: default_owner_id,
-                name: 'goal[owner_id]',
-                select_class: 'form-select',
-                required: true
-              %small.form-text.text-muted
-                Choose who this goal belongs to: yourself, an employee, a team, department, or company
+            #goal-custom-dates.mb-4{style: "display: none;"}
+              = render 'goal_dates_sentence', form: form
             
             .alert.alert-info.mb-4
               %i.bi.bi-info-circle.me-2
@@ -113,24 +119,43 @@
   
   function updateTargetDateDisplay() {
     var timeframeInfo = document.getElementById('timeframe-target-date-info');
-    if (!timeframeInfo) return;
-    
+    var customDatesBlock = document.getElementById('goal-custom-dates');
     var selectedTimeframe = document.querySelector('input[name="goal[timeframe]"]:checked');
     
     if (!selectedTimeframe) {
-      timeframeInfo.style.display = 'none';
+      if (timeframeInfo) timeframeInfo.style.display = 'none';
+      if (customDatesBlock) customDatesBlock.style.display = 'none';
       return;
     }
     
-    var targetDate = calculateTargetDate(selectedTimeframe.value);
-    
-    if (targetDate) {
-      var formattedDate = formatDate(targetDate);
-      timeframeInfo.textContent = 'Target date: ' + formattedDate + '. This date can be changed after creating the goal.';
-      timeframeInfo.style.display = 'block';
-    } else {
-      timeframeInfo.style.display = 'none';
+    if (selectedTimeframe.value === 'custom') {
+      if (timeframeInfo) timeframeInfo.style.display = 'none';
+      if (customDatesBlock) customDatesBlock.style.display = 'block';
+      return;
     }
+    
+    if (customDatesBlock) customDatesBlock.style.display = 'none';
+    
+    if (timeframeInfo) {
+      var targetDate = calculateTargetDate(selectedTimeframe.value);
+      if (targetDate) {
+        var formattedDate = formatDate(targetDate);
+        timeframeInfo.textContent = 'Target date: ' + formattedDate + '. This date can be changed after creating the goal.';
+        timeframeInfo.style.display = 'block';
+      } else {
+        timeframeInfo.style.display = 'none';
+      }
+    }
+  }
+  
+  function clearDateFieldsIfNotCustom(form) {
+    var selectedTimeframe = form.querySelector('input[name="goal[timeframe]"]:checked');
+    if (selectedTimeframe && selectedTimeframe.value === 'custom') return;
+    var names = ['goal[started_at]', 'goal[most_likely_target_date]', 'goal[earliest_target_date]', 'goal[latest_target_date]'];
+    names.forEach(function(name) {
+      var input = form.querySelector('input[name="' + name + '"]');
+      if (input) input.value = '';
+    });
   }
   
   function setupTimeframeListeners() {
@@ -138,14 +163,24 @@
     timeframeRadios.forEach(function(radio) {
       radio.addEventListener('change', updateTargetDateDisplay);
     });
-    
-    // Initial check in case a timeframe is pre-selected
     updateTargetDateDisplay();
+  }
+  
+  function setupFormSubmit() {
+    var timeframeInput = document.querySelector('input[name="goal[timeframe]"]');
+    var form = timeframeInput ? timeframeInput.closest('form') : null;
+    if (!form || form.getAttribute('data-goal-new-submit-hooked')) return;
+    form.setAttribute('data-goal-new-submit-hooked', '1');
+    form.addEventListener('submit', function() {
+      clearDateFieldsIfNotCustom(form);
+    });
   }
   
   document.addEventListener('DOMContentLoaded', function() {
     setupTimeframeListeners();
+    setupFormSubmit();
   });
   document.addEventListener('turbo:load', function() {
     setupTimeframeListeners();
+    setupFormSubmit();
   });
