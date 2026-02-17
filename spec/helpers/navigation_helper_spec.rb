@@ -285,6 +285,7 @@ RSpec.describe NavigationHelper, type: :helper do
         
         labels = items.map { |item| item[:label] }
         expect(labels.first).to eq('Observations')
+        expect(labels).to include('Who is doing what')
         expect(labels).to include('Seats, Titles, Positions')
         expect(labels).to include('Assignments')
         expect(labels).to include('Abilities')

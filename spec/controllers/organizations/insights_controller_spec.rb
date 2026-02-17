@@ -278,6 +278,62 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     end
   end
 
+  describe 'GET #who_is_doing_what' do
+    it 'returns http success' do
+      get :who_is_doing_what, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'assigns organization' do
+      get :who_is_doing_what, params: { organization_id: company.id }
+      expect(assigns(:organization)).to eq(company)
+    end
+
+    it 'assigns pie counts (with vs without page visit)' do
+      get :who_is_doing_what, params: { organization_id: company.id }
+      expect(assigns(:active_teammates_with_visit)).to be_a(Integer)
+      expect(assigns(:active_teammates_without_visit)).to be_a(Integer)
+    end
+
+    it 'assigns top_pages as array of hashes with url, visit_count, page_title' do
+      get :who_is_doing_what, params: { organization_id: company.id }
+      expect(assigns(:top_pages)).to be_an(Array)
+      assigns(:top_pages).each do |page|
+        expect(page).to have_key(:url)
+        expect(page).to have_key(:visit_count)
+        expect(page).to have_key(:page_title)
+      end
+    end
+
+    it 'assigns teammate_visit_counts with label and count' do
+      get :who_is_doing_what, params: { organization_id: company.id }
+      expect(assigns(:teammate_visit_counts)).to be_an(Array)
+      assigns(:teammate_visit_counts).each do |row|
+        expect(row).to have_key(:label)
+        expect(row).to have_key(:count)
+      end
+    end
+
+    it 'assigns period_stats with week, month, 90_days' do
+      get :who_is_doing_what, params: { organization_id: company.id }
+      expect(assigns(:period_stats)).to be_a(Hash)
+      expect(assigns(:period_stats)).to have_key(:week)
+      expect(assigns(:period_stats)).to have_key(:month)
+      expect(assigns(:period_stats)).to have_key(:'90_days')
+      assigns(:period_stats).each_value do |stats|
+        expect(stats).to have_key(:unique_page_visits)
+        expect(stats).to have_key(:unique_users)
+      end
+    end
+
+    it 'counts teammate with page visit in pie' do
+      create(:page_visit, person: person, url: '/org/dashboard', visit_count: 1, visited_at: 1.hour.ago)
+      get :who_is_doing_what, params: { organization_id: company.id }
+      expect(assigns(:active_teammates_with_visit)).to eq(1)
+      expect(assigns(:active_teammates_without_visit)).to eq(0)
+    end
+  end
+
   describe 'GET #prompts' do
     before do
       allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)

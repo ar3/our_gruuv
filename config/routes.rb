@@ -433,6 +433,7 @@ Rails.application.routes.draw do
       get 'assignments', to: 'insights#assignments'
       get 'abilities', to: 'insights#abilities'
       get 'goals', to: 'insights#goals'
+      get 'who_is_doing_what', to: 'insights#who_is_doing_what'
     end
     
     # Seats management

@@ -194,6 +194,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Who is doing what',
+            icon: 'bi-pie-chart',
+            path: organization_insights_who_is_doing_what_path(current_organization),
+            policy_check: -> { policy(current_company).view_observations? },
+            coming_soon: false
+          },
+          {
             label: 'Feedback Requests',
             icon: 'bi-chat-square-text',
             path: organization_insights_feedback_requests_path(current_organization),

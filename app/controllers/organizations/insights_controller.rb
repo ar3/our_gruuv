@@ -193,6 +193,64 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @privacy_levels = Observation.privacy_levels.keys
   end
 
+  def who_is_doing_what
+    authorize company, :view_observations?
+
+    @organization = company
+    active_teammates = CompanyTeammate.where(organization: company).employed
+    teammate_person_ids = active_teammates.pluck(:person_id).uniq
+
+    # Pie: active teammates with ≥1 page visit vs without
+    person_ids_with_visit = PageVisit.where(person_id: teammate_person_ids).distinct.pluck(:person_id)
+    with_visit_count = person_ids_with_visit.size
+    without_visit_count = [0, teammate_person_ids.size - with_visit_count].max
+    @active_teammates_with_visit = with_visit_count
+    @active_teammates_without_visit = without_visit_count
+
+    # Top 10 pages (by total visit_count) in this org
+    top_by_url = PageVisit
+      .where(person_id: teammate_person_ids)
+      .group(:url)
+      .sum(:visit_count)
+      .sort_by { |_url, count| -count }
+      .first(10)
+    # Get one page_title per url for display
+    urls = top_by_url.map(&:first)
+    titles_by_url = PageVisit
+      .where(person_id: teammate_person_ids, url: urls)
+      .order(visited_at: :desc)
+      .pluck(:url, :page_title)
+      .each_with_object({}) { |(url, title), h| h[url] = title.presence || url unless h.key?(url) }
+    @top_pages = top_by_url.map do |url, count|
+      { url: url, visit_count: count, page_title: titles_by_url[url] || url }
+    end
+
+    # Histogram: each active teammate labeled by department + id, value = total page visits (top 30)
+    active_teammates_with_dept = active_teammates
+      .includes(:person, employment_tenures: { position: { title: :department } })
+    visit_totals_by_person = PageVisit.where(person_id: teammate_person_ids).group(:person_id).sum(:visit_count)
+    @teammate_visit_counts = active_teammates_with_dept.map do |tm|
+      dept_name = tm.active_employment_tenure&.position&.title&.department&.name.presence || 'No Department'
+      label = "#{dept_name} ##{tm.id}"
+      count = visit_totals_by_person[tm.person_id].to_i
+      { label: label, count: count }
+    end.sort_by { |h| -h[:count] }.first(30)
+
+    # Period stats: unique page visits (records with visited_at in range) and unique users
+    @period_stats = {}
+    [
+      [7.days.ago..Time.current, :week],
+      [30.days.ago..Time.current, :month],
+      [90.days.ago..Time.current, :'90_days']
+    ].each do |range, key|
+      scope = PageVisit.where(person_id: teammate_person_ids).where(visited_at: range)
+      @period_stats[key] = {
+        unique_page_visits: scope.count,
+        unique_users: scope.distinct.count(:person_id)
+      }
+    end
+  end
+
   private
   
   def build_department_breakdown(seats_scope)

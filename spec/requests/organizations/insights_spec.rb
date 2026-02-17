@@ -10,6 +10,26 @@ RSpec.describe 'Organizations::Insights', type: :request do
     allow_any_instance_of(OrganizationPolicy).to receive(:view_observations?).and_return(true)
   end
 
+  describe 'GET /organizations/:organization_id/insights/who_is_doing_what' do
+    it 'returns http success' do
+      get organization_insights_who_is_doing_what_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders Who is doing what insights page with pie, top pages, histogram, and period stats' do
+      get organization_insights_who_is_doing_what_path(organization)
+      expect(response.body).to include('Insights: Who is doing what')
+      expect(response.body).to include('Active teammates (has page visit vs has not)')
+      expect(response.body).to include('Top 10 pages by visit count')
+      expect(response.body).to include('Page visits by teammate')
+      expect(response.body).to include('Unique page visits and users by period')
+      expect(response.body).to include('who-is-doing-what-pie-chart')
+      expect(response.body).to include('Past 7 days')
+      expect(response.body).to include('Past 30 days')
+      expect(response.body).to include('Past 90 days')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/insights/observations' do
     it 'returns http success' do
       get organization_insights_observations_path(organization)

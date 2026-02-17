@@ -1,0 +1,197 @@
+- content_for :title, "Insights: Who is doing what"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bar-chart-line.me-2
+      Insights: Who is doing what
+
+.container-fluid
+  / Pie: active teammates with vs without page visit
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-pie-chart.me-2
+            Active teammates (has page visit vs has not)
+        .card-body
+          .row
+            .col-md-6
+              #who-is-doing-what-pie-chart{style: "height: 400px;"}
+
+  %hr.my-5
+
+  / Top 10 pages by visit count
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-success.text-white
+          %h4.mb-0
+            %i.bi.bi-list-ol.me-2
+            Top 10 pages by visit count
+        .card-body
+          - if @top_pages.present?
+            %table.table.table-sm
+              %thead
+                %tr
+                  %th Page
+                  %th.text-end Visit count
+              %tbody
+                - @top_pages.each do |page|
+                  %tr
+                    %td
+                      = page[:page_title].presence || page[:url]
+                    %td.text-end= number_with_delimiter(page[:visit_count])
+          - else
+            %p.text-muted.mb-0 No page visits in this organization yet.
+
+  %hr.my-5
+
+  / Histogram: teammates (department #id) vs total page visits
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-info.text-white
+          %h4.mb-0
+            %i.bi.bi-bar-chart.me-2
+            Page visits by teammate (department and id, top 30)
+        .card-body
+          - if @teammate_visit_counts.present?
+            #who-is-doing-what-histogram-chart{style: "height: 600px;"}
+          - else
+            %p.text-muted.mb-0 No active teammates to display.
+
+  %hr.my-5
+
+  / Period stats: unique page visits and unique users
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-secondary.text-white
+          %h4.mb-0
+            %i.bi.bi-calendar-range.me-2
+            Unique page visits and users by period
+        .card-body
+          .row
+            - if @period_stats.present?
+              .col-md-4
+                .card.bg-light.mb-2
+                  .card-body
+                    %h5.card-title Past 7 days
+                    %p.card-text
+                      = number_with_delimiter(@period_stats[:week][:unique_page_visits])
+                      unique page visits from
+                      = number_with_delimiter(@period_stats[:week][:unique_users])
+                      unique users
+              .col-md-4
+                .card.bg-light.mb-2
+                  .card-body
+                    %h5.card-title Past 30 days
+                    %p.card-text
+                      = number_with_delimiter(@period_stats[:month][:unique_page_visits])
+                      unique page visits from
+                      = number_with_delimiter(@period_stats[:month][:unique_users])
+                      unique users
+              .col-md-4
+                .card.bg-light.mb-2
+                  .card-body
+                    %h5.card-title Past 90 days
+                    %p.card-text
+                      = number_with_delimiter(@period_stats[:'90_days'][:unique_page_visits])
+                      unique page visits from
+                      = number_with_delimiter(@period_stats[:'90_days'][:unique_users])
+                      unique users
+            - else
+              %p.text-muted.mb-0 No period stats available.
+
+:javascript
+  (function() {
+    var pieData = #{who_is_doing_what_pie_chart_data.to_json};
+    var histCategories = #{who_is_doing_what_histogram_categories.to_json};
+    var histData = #{who_is_doing_what_histogram_data.to_json};
+
+    function initializePieChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('who-is-doing-what-pie-chart');
+      if (!el) return;
+      Highcharts.chart('who-is-doing-what-pie-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Active teammates: has page visit vs has not' },
+        accessibility: { enabled: false },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+            }
+          }
+        },
+        series: [{
+          name: 'Teammates',
+          colorByPoint: true,
+          data: pieData
+        }]
+      });
+    }
+
+    function initializeHistogramChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('who-is-doing-what-histogram-chart');
+      if (!el || histCategories.length === 0) return;
+      Highcharts.chart('who-is-doing-what-histogram-chart', {
+        chart: { type: 'bar' },
+        title: { text: 'Page visits by teammate (department and id)' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: histCategories,
+          title: { text: 'Teammate (department #id)' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Total page visits' }
+        },
+        plotOptions: {
+          bar: {
+            dataLabels: { enabled: true }
+          }
+        },
+        series: [{
+          name: 'Page visits',
+          data: histData,
+          color: '#0dcaf0'
+        }]
+      });
+    }
+
+    function initializeCharts() {
+      initializePieChart();
+      initializeHistogramChart();
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeCharts;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeCharts();
+    });
+  })();

@@ -77,4 +77,30 @@ module InsightsHelper
     return [0] if @positions_by_required_assignment_count.empty?
     @positions_by_required_assignment_count.values
   end
+
+  # Who is doing what: pie chart (teammates with vs without page visit)
+  def who_is_doing_what_pie_chart_data
+    with_visit = @active_teammates_with_visit.to_i
+    without_visit = @active_teammates_without_visit.to_i
+    total = with_visit + without_visit
+    if total.zero?
+      return [{ name: 'No data', y: 0, color: '#6c757d' }]
+    end
+    [
+      { name: 'Has page visit', y: with_visit, color: '#28a745' },
+      { name: 'No page visit', y: without_visit, color: '#6c757d' }
+    ].reject { |d| d[:y].zero? }
+  end
+
+  # Who is doing what: histogram categories (department #id labels)
+  def who_is_doing_what_histogram_categories
+    return [] unless @teammate_visit_counts.is_a?(Array)
+    @teammate_visit_counts.map { |h| h[:label] }
+  end
+
+  # Who is doing what: histogram data (visit counts)
+  def who_is_doing_what_histogram_data
+    return [] unless @teammate_visit_counts.is_a?(Array)
+    @teammate_visit_counts.map { |h| h[:count] }
+  end
 end
