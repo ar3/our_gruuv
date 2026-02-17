@@ -23,15 +23,15 @@
 
 .assignment-details.ms-4.ps-3.border-start.border-2{class: assignment_type == 'required' ? 'border-primary' : 'border-info'}
   - if pa.assignment.tagline.present?
-    %p.mb-2= pa.assignment.tagline
+    .markdown-content.mb-2= render_markdown(pa.assignment.tagline)
   
   %p.mb-1.text-muted
     %span='… as measured by –'
     - if pa.assignment.outcomes.any?
       %ul.mt-0
         - pa.assignment.outcomes.each do |outcome|
-          %li.text-muted
-            = outcome.description
+          %li.text-muted.markdown-content
+            = render_markdown(outcome.description)
     - else
       %span.text-muted outcomes to be determined
   

@@ -84,7 +84,13 @@ class Position < ApplicationRecord
     draft_external_reference&.url
   end
 
-  
+  # Summary for job description and public views: title summary first, then position summary.
+  def combined_summary
+    parts = [title&.position_summary, position_summary].compact_blank
+    return nil if parts.empty?
+    parts.join("\n\n")
+  end
+
   # pg_search configuration
   pg_search_scope :search_by_full_text,
     associated_against: {

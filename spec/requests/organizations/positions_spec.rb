@@ -89,6 +89,33 @@ RSpec.describe 'Organizations::Positions', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/positions/:id' do
+    let(:position) { create(:position, title: title, position_level: position_level) }
+
+    it 'displays Department (not Company) and shows department link when title has a department' do
+      department = create(:department, company: organization, name: 'Product')
+      title_with_dept = create(:title, company: organization, department: department,
+        position_major_level: title.position_major_level, external_title: 'Product Manager')
+      position_with_dept = create(:position, title: title_with_dept, position_level: position_level)
+
+      get organization_position_path(organization, position_with_dept)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Department')
+      expect(response.body).not_to include('Company')
+      expect(response.body).to include('Product')
+      expect(response.body).to include(organization_department_path(organization, department))
+    end
+
+    it 'displays Department section with placeholder when title has no department' do
+      get organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Department')
+      expect(response.body).not_to include('Company')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/positions/:id/job_description' do
     let(:position) { create(:position, title: title, position_level: position_level) }
 

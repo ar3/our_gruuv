@@ -1,17 +1,26 @@
 .card
   .card-header.bg-primary.text-white
     %h3.mb-0= @position.display_name
-    %p.mb-0.text-light= @position.position_summary
   
   .card-body
+    .row
+      .col-12
+        - if @position.combined_summary.present?
+          .markdown-content= render_markdown(@position.combined_summary)
+        - else
+          %p.mb-0 No summary provided
+
     .row
       .col-lg-9.col-md-12
         .row
           .col-md-4.col-sm-12
             %h5.mb-2
               %i.bi.bi-building.me-2
-              Company
-            %p= link_to @position.company.display_name, organization_path(@organization), class: "text-decoration-none"
+              Department
+            - if @position.title.department.present?
+              %p= link_to @position.title.department.display_name, organization_department_path(@organization, @position.title.department), class: "text-decoration-none"
+            - else
+              %p.text-muted —
           
             %h5.mb-2
               %i.bi.bi-tag.me-2
@@ -23,17 +32,17 @@
               Position Level
             %p= @position.position_level.level_name
             
-            - if @position.position_summary.present?
+            - if @position.combined_summary.present?
               %h5.mb-2
                 %i.bi.bi-file-text.me-2
                 Summary
-              %p= @position.position_summary
+              .markdown-content= render_markdown(@position.combined_summary)
             
             - if @position.eligibility_requirements_summary.present?
               %h5.mb-2.mt-3
                 %i.bi.bi-check-circle.me-2
                 Eligibility Requirements
-              %p.text-pre-wrap= @position.eligibility_requirements_summary
+              .markdown-content= render_markdown(@position.eligibility_requirements_summary)
 
           .col-md-8.col-sm-12
             - if @position.required_assignments.any? || @position.suggested_assignments.any?
