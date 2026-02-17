@@ -178,7 +178,7 @@
               Pursuing #{@goal.title}, is in part in service to the following goals/visions
             - if policy(@goal).update?
               .mb-3
-                = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-primary" do
+                = link_to choose_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-primary" do
                   %i.bi.bi-plus.me-1
                   Add Parent Goal
             - if @goal.incoming_links.any?
@@ -194,7 +194,7 @@
             - else
               %em.text-muted No Parent Goals linked to this goal yet.
               - if policy(@goal).update?
-                = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "text-decoration-none" do
+                = link_to choose_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "text-decoration-none" do
                   Add a link to a parent goal
 
   .col-md-4

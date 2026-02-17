@@ -1,0 +1,36 @@
+- content_for :title, "Add Parent Goal"
+
+- content_for :header do
+  Add parent goal(s) to "#{@goal.title}"
+
+- content_for :return_url do
+  = @return_url || organization_goal_path(@organization, @goal)
+
+- content_for :return_text do
+  = @return_text || "Back to the #{@goal.title} goal"
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-link-45deg.me-2
+      How do you want to add parent goals?
+  .card-body
+    .list-group.list-group-flush
+      %a.list-group-item.list-group-item-action.d-flex.align-items-center{href: new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: @return_url, return_text: @return_text), data: { test_id: 'choose-create-new-parent-goals', turbo: false }}
+        %i.bi.bi-plus-circle.me-3.fs-4
+        .flex-grow-1
+          %strong Create new parent goals
+          %small.d-block.text-muted
+            Add one or more new goals that will be parents of this goal.
+        %i.bi.bi-chevron-right
+      %a.list-group-item.list-group-item-action.d-flex.align-items-center{href: associate_existing_incoming_organization_goal_goal_links_path(@organization, @goal, return_url: @return_url, return_text: @return_text), data: { turbo: false }}
+        %i.bi.bi-link-45deg.me-3.fs-4
+        .flex-grow-1
+          %strong Associate "#{@goal.title}" as child to existing goals
+          %small.d-block.text-muted
+            Choose from goals you can see that can be parents of this goal.
+        %i.bi.bi-chevron-right
+    .mt-3
+      = link_to @return_url, class: 'btn btn-outline-secondary' do
+        %i.bi.bi-arrow-left.me-1
+        = @return_text || 'Cancel'

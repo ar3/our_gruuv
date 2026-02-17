@@ -51,19 +51,36 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
   end
 
   describe 'GET #new_incoming_link' do
+    it 'returns success and renders create-new form (no existing goals list)' do
+      get :new_incoming_link, params: { organization_id: company.id, goal_id: goal1.id }
+      expect(response).to have_http_status(:ok)
+      expect(assigns(:available_goals_with_status)).to be_nil
+    end
+  end
+
+  describe 'GET #choose_incoming_link' do
+    it 'returns success' do
+      get :choose_incoming_link, params: { organization_id: company.id, goal_id: goal1.id }
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe 'GET #associate_existing_incoming' do
     let(:teammate_parent_candidate) do
       create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Teammate parent candidate')
     end
     let(:org_parent_candidate) do
-      create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Org parent candidate')
+      create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Org parent candidate',
+             privacy_level: 'everyone_in_company')
     end
 
-    it 'excludes teammate goals from linkable parents when child is org/department/team-owned' do
-      child_org_goal = create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Child org goal')
+    it 'excludes teammate goals from candidate parents when child is org-owned' do
+      child_org_goal = create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Child org goal',
+                              privacy_level: 'everyone_in_company')
       teammate_parent_candidate
       org_parent_candidate
 
-      get :new_incoming_link, params: { organization_id: company.id, goal_id: child_org_goal.id }
+      get :associate_existing_incoming, params: { organization_id: company.id, goal_id: child_org_goal.id }
 
       expect(response).to have_http_status(:ok)
       available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
@@ -76,12 +93,28 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
       teammate_parent_candidate
       org_parent_candidate
 
-      get :new_incoming_link, params: { organization_id: company.id, goal_id: goal1.id }
+      get :associate_existing_incoming, params: { organization_id: company.id, goal_id: goal1.id }
 
       expect(response).to have_http_status(:ok)
       available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
       expect(available_goals).to include(teammate_parent_candidate)
       expect(available_goals).to include(org_parent_candidate)
+    end
+  end
+
+  describe 'POST #associate_existing_incoming' do
+    it 'creates parent links from selected goal_ids' do
+      expect {
+        post :associate_existing_incoming, params: {
+          organization_id: company.id,
+          goal_id: goal1.id,
+          goal_ids: [goal2.id]
+        }
+      }.to change(GoalLink, :count).by(1)
+
+      link = GoalLink.last
+      expect(link.parent).to eq(goal2)
+      expect(link.child).to eq(goal1)
     end
   end
   

@@ -77,15 +77,30 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(page).to have_content('Goal 2')
     end
     
-    it 'navigates to new_incoming_link page from show page' do
+    it 'goal show page links to choose_incoming_link for adding parent goals' do
       visit organization_goal_path(organization, goal1)
-      
-      # Visit the URL directly to verify the route works  
+
+      # Add Parent Goal is inside Advanced Settings; ensure link points to choice page
+      click_button 'Advanced Settings'
+      expect(page).to have_css('#advancedSettings.show', wait: 2)
+      link = find_link('Add Parent Goal', match: :first)
+      expect(link[:href]).to include('choose_incoming_link')
+
+      # Visiting the choice page directly shows the two options
+      visit choose_incoming_link_organization_goal_goal_links_path(organization, goal1)
+      expect(page).to have_content('How do you want to add parent goals?')
+      expect(page).to have_link('Create new parent goals')
+      expect(page).to have_content('Associate')
+    end
+
+    it 'from choice page can go to new_incoming_link (create new parent goals)' do
+      visit choose_incoming_link_organization_goal_goal_links_path(organization, goal1)
+      expect(page).to have_css("a[href*='new_incoming_link']", text: /Create new parent goals/)
+
       visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
-      
       expect(page.current_path).to include('new_incoming_link')
-      expect(page).to have_content('Create Links from Other Goals')
-      expect(page).to have_link('Goal')
+      expect(page).to have_content('Create new parent goals')
+      expect(page).to have_button('Create and associate goals')
     end
     
     it 'passes return_url and return_text correctly' do
@@ -199,24 +214,24 @@ RSpec.describe 'Goal Link Creation', type: :system do
   end
   
   describe 'selecting existing goals (incoming links)' do
-    it 'displays list of available goals as checkboxes' do
-      visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
-      
-      expect(page).to have_content('Existing Goals')
+    it 'displays list of candidate parent goals on associate_existing_incoming page' do
+      visit associate_existing_incoming_organization_goal_goal_links_path(organization, goal1)
+
+      expect(page.current_path).to include('associate_existing_incoming')
+      expect(page).to have_content('Select parent goals')
       expect(page).to have_unchecked_field('goal_ids[]', with: goal2.id.to_s)
       expect(page).to have_unchecked_field('goal_ids[]', with: goal3.id.to_s)
     end
-    
-    it 'creates an incoming link when selecting an existing goal' do
-      visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
-      
+
+    it 'creates an incoming link when selecting an existing goal on associate_existing_incoming' do
+      visit associate_existing_incoming_organization_goal_goal_links_path(organization, goal1)
+
       check "goal_ids_#{goal2.id}"
-      click_button 'Create Links', id: 'create-existing-links-btn'
-      
-      # Check for toast element in DOM (may not be visible immediately due to JS)
+      click_button 'Associate selected'
+
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
-      
+
       link = GoalLink.find_by(parent: goal2, child: goal1)
       expect(link).to be_present
     end
@@ -355,31 +370,31 @@ RSpec.describe 'Goal Link Creation', type: :system do
   describe 'creating new goals via bulk creation (incoming links)' do
     it 'creates new goals as inspirational_objective for incoming links' do
       unique_title = "Bulk Objective #{SecureRandom.hex(4)}"
-      visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
-      
+      visit choose_incoming_link_organization_goal_goal_links_path(organization, goal1)
+      click_link 'Create new parent goals'
+
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links', id: 'create-existing-links-btn'
-      
-      # Wait for redirect and success message before checking database
+      click_button 'Create and associate goals', id: 'create-and-associate-btn'
+
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden, wait: 5)
-      
+
       created_goal = Goal.find_by(title: unique_title)
       expect(created_goal).to be_present
       expect(created_goal.goal_type).to eq('inspirational_objective')
     end
-    
+
     it 'creates incoming links correctly for bulk goals' do
       unique_title = "Bulk Objective Incoming #{SecureRandom.hex(4)}"
-      visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
-      
+      visit choose_incoming_link_organization_goal_goal_links_path(organization, goal1)
+      click_link 'Create new parent goals'
+
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links', id: 'create-existing-links-btn'
-      
-      # Wait for redirect and success message before checking database
+      click_button 'Create and associate goals', id: 'create-and-associate-btn'
+
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden, wait: 5)
-      
+
       created_goal = Goal.find_by(title: unique_title)
       expect(created_goal).to be_present
       link = GoalLink.find_by(parent: created_goal, child: goal1)

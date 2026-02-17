@@ -334,6 +334,9 @@ Rails.application.routes.draw do
         collection do
           get :new_outgoing_link
           get :new_incoming_link
+          get :choose_incoming_link
+          get :associate_existing_incoming
+          post :associate_existing_incoming
         end
       end
     end

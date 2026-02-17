@@ -40,6 +40,32 @@ RSpec.describe 'Organizations::GoalLinks', type: :request do
       expect(response).to have_http_status(:ok)
     end
   end
+
+  describe 'GET choose_incoming_link' do
+    it 'returns success' do
+      get choose_incoming_link_organization_goal_goal_links_path(organization, goal1)
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe 'GET associate_existing_incoming' do
+    it 'returns success' do
+      get associate_existing_incoming_organization_goal_goal_links_path(organization, goal1)
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe 'POST associate_existing_incoming' do
+    it 'creates parent links and redirects to goal' do
+      post associate_existing_incoming_organization_goal_goal_links_path(organization, goal1),
+           params: { goal_ids: [goal2.id] }
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(organization_goal_path(organization, goal1))
+      follow_redirect!
+      expect(response.body).to include('Goal link was successfully created')
+      expect(GoalLink.find_by(parent: goal2, child: goal1)).to be_present
+    end
+  end
   
   describe 'DELETE /organizations/:organization_id/goals/:goal_id/goal_links/:id' do
     context 'with outgoing link' do

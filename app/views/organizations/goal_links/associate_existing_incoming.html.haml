@@ -1,0 +1,65 @@
+- content_for :title, "Associate Existing Parent Goals"
+
+- content_for :header do
+  Associate "#{@goal.title}" as child to existing goals
+
+- content_for :return_url do
+  = @return_url || organization_goal_path(@organization, @goal)
+
+- content_for :return_text do
+  = @return_text || "Back to the #{@goal.title} goal"
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-link-45deg.me-2
+      Select parent goals
+      %small.text-muted.ms-2
+        Goals already in this goal's hierarchy are disabled.
+  .card-body
+    = form_with url: associate_existing_incoming_organization_goal_goal_links_path(@organization, @goal), method: :post, local: true do |f|
+      = hidden_field_tag :return_url, @return_url
+      = hidden_field_tag :return_text, @return_text
+
+      - if @available_goals_with_status.any?
+        .list-group.mb-4
+          - @available_goals_with_status.each do |goal_status|
+            - goal = goal_status[:goal]
+            - disabled = goal_status[:in_hierarchy]
+
+            .list-group-item{class: "#{'bg-light' if disabled}"}
+              .form-check
+                = check_box_tag "goal_ids[]", goal.id, false,
+                                class: "form-check-input",
+                                id: "goal_ids_#{goal.id}",
+                                disabled: disabled
+                = label_tag "goal_ids_#{goal.id}", class: "form-check-label #{'text-muted' if disabled}" do
+                  %strong= goal.title
+                  %br
+                  %small.text-muted
+                    %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
+                      = goal_category_label(goal)
+                    |
+                    %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
+                      = goal_privacy_rings_with_label(goal)
+                    |
+                    Owner:
+                    - if goal.owner_type == 'CompanyTeammate'
+                      = goal.owner.person.display_name
+                    - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
+                      = goal.owner.display_name
+                    - else
+                      = goal.owner.display_name
+                    - if disabled
+                      %span.badge.bg-secondary.ms-2{style: "font-size: 0.75em;"}
+                        In hierarchy
+      - else
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          No other goals available to associate as parents. Create goals first or use "Create new parent goals" from the previous step.
+
+      .d-flex.gap-2.mt-3
+        = link_to @return_url, class: 'btn btn-outline-secondary' do
+          %i.bi.bi-arrow-left.me-1
+          = @return_text || 'Cancel'
+        = f.submit 'Associate selected', class: 'btn btn-primary', id: 'associate-selected-btn', data: { test_id: 'associate-selected' }
