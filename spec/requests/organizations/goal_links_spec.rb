@@ -25,12 +25,38 @@ RSpec.describe 'Organizations::GoalLinks', type: :request do
       get new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       expect(response).to have_http_status(:ok)
     end
+  end
+
+  describe 'GET choose_outgoing_link' do
+    it 'returns success' do
+      get choose_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe 'GET associate_existing_outgoing' do
+    it 'returns success' do
+      get associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+      expect(response).to have_http_status(:ok)
+    end
 
     it 'excludes org-owned goals from list when parent goal is teammate-owned' do
-      org_goal = create(:goal, creator: teammate, owner: organization, title: 'Company-wide initiative', goal_type: 'stepping_stone_activity', company: organization)
-      get new_outgoing_link_organization_goal_goal_links_path(organization, goal1, goal_type: 'stepping_stone_activity')
+      org_goal = create(:goal, creator: teammate, owner: organization, title: 'Company-wide initiative', goal_type: 'stepping_stone_activity', company: organization, privacy_level: 'everyone_in_company')
+      get associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1, goal_type: 'stepping_stone_activity')
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include('Company-wide initiative')
+    end
+  end
+
+  describe 'POST associate_existing_outgoing' do
+    it 'creates child links and redirects to goal' do
+      post associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1),
+           params: { goal_ids: [goal2.id] }
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(organization_goal_path(organization, goal1))
+      follow_redirect!
+      expect(response.body).to include('Goal link was successfully created')
+      expect(GoalLink.find_by(parent: goal1, child: goal2)).to be_present
     end
   end
 

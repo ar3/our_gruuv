@@ -1,0 +1,39 @@
+- content_for :title, "Add Child Goal"
+
+- content_for :header do
+  Add child goal(s) to "#{@goal.title}"
+
+- content_for :return_url do
+  = @return_url || organization_goal_path(@organization, @goal)
+
+- content_for :return_text do
+  = @return_text || "Back to the #{@goal.title} goal"
+
+- goal_type_labels = { 'stepping_stone_activity' => 'stepping stones/activities', 'quantitative_key_result' => 'measurable outcomes', 'qualitative_key_result' => 'sentiment outcomes', 'inspirational_objective' => 'objectives' }
+- goal_type_label = goal_type_labels[@goal_type] || 'goals'
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-link-45deg.me-2
+      How do you want to add child goals?
+  .card-body
+    .list-group.list-group-flush
+      %a.list-group-item.list-group-item-action.d-flex.align-items-center{href: new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: @goal_type, return_url: @return_url, return_text: @return_text), data: { test_id: 'choose-create-new-child-goals', turbo: false }}
+        %i.bi.bi-plus-circle.me-3.fs-4
+        .flex-grow-1
+          %strong Create new #{goal_type_label}
+          %small.d-block.text-muted
+            Add one or more new goals that will be children of this goal.
+        %i.bi.bi-chevron-right
+      %a.list-group-item.list-group-item-action.d-flex.align-items-center{href: associate_existing_outgoing_organization_goal_goal_links_path(@organization, @goal, goal_type: @goal_type, return_url: @return_url, return_text: @return_text), data: { turbo: false }}
+        %i.bi.bi-link-45deg.me-3.fs-4
+        .flex-grow-1
+          %strong Associate "#{@goal.title}" as parent to existing goals
+          %small.d-block.text-muted
+            Choose from goals you can see that can be children of this goal.
+        %i.bi.bi-chevron-right
+    .mt-3
+      = link_to @return_url, class: 'btn btn-outline-secondary' do
+        %i.bi.bi-arrow-left.me-1
+        = @return_text || 'Cancel'

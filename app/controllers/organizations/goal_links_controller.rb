@@ -1,6 +1,6 @@
 class Organizations::GoalLinksController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_goal, except: [:new_outgoing_link, :new_incoming_link, :choose_incoming_link, :associate_existing_incoming]
+  before_action :set_goal, except: [:new_outgoing_link, :new_incoming_link, :choose_incoming_link, :associate_existing_incoming, :choose_outgoing_link, :associate_existing_outgoing]
 
   after_action :verify_authorized
 
@@ -74,32 +74,85 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     end
   end
 
+  def choose_outgoing_link
+    @organization = Organization.find(params[:organization_id])
+    @goal = Goal.find(params[:goal_id])
+    authorize @goal, :update?
+    @goal_type = params[:goal_type] || 'stepping_stone_activity'
+    @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
+    @return_text = params[:return_text] || 'Goal'
+    render layout: 'overlay'
+  end
+
+  def associate_existing_outgoing
+    @organization = Organization.find(params[:organization_id])
+    @goal = Goal.find(params[:goal_id])
+    authorize @goal, :update?
+    @goal_type = params[:goal_type] || 'stepping_stone_activity'
+
+    if request.get?
+      current_teammate = current_person.teammates.find_by(organization: @organization)
+      candidate_goals = Goals::ChildCandidatesQuery.new(goal: @goal, current_teammate: current_teammate).call
+      hierarchy_ids = Goals::GoalHierarchyIdsQuery.new(@goal).call
+      @available_goals_with_status = candidate_goals.map do |g|
+        { goal: g, in_hierarchy: hierarchy_ids.include?(g.id) }
+      end
+      @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
+      @return_text = params[:return_text] || 'Goal'
+      render layout: 'overlay'
+      return
+    end
+
+    goal_ids = Array(params[:goal_ids]).reject(&:blank?)
+    return_url = params[:return_url] || organization_goal_path(@organization, @goal)
+
+    if goal_ids.empty?
+      redirect_to associate_existing_outgoing_organization_goal_goal_links_path(
+        @organization, @goal, goal_type: @goal_type, return_url: return_url, return_text: params[:return_text]
+      ), alert: 'Please select at least one goal.'
+      return
+    end
+
+    success_count = 0
+    errors = []
+    current_teammate = current_person.teammates.find_by(organization: @organization)
+
+    goal_ids.each do |goal_id|
+      goal_link = GoalLink.new
+      form = GoalLinkForm.new(goal_link)
+      form.organization = @organization
+      form.current_person = current_person
+      form.current_teammate = current_teammate
+      form.linking_goal = @goal
+      form_params = { link_direction: 'outgoing', child_id: goal_id }
+      form_params[:metadata_notes] = params[:metadata_notes] if params[:metadata_notes].present?
+
+      if form.validate(form_params) && form.save
+        success_count += 1
+      else
+        errors.concat(form.errors.full_messages)
+      end
+    end
+
+    if success_count > 0 && errors.empty?
+      redirect_to return_url, notice: 'Goal link was successfully created.'
+    elsif success_count > 0 && errors.any?
+      redirect_to return_url, alert: "Some links were created, but there were errors: #{errors.join(', ')}"
+    else
+      redirect_to associate_existing_outgoing_organization_goal_goal_links_path(
+        @organization, @goal, goal_type: @goal_type, return_url: return_url, return_text: params[:return_text]
+      ), alert: "Failed to create links: #{errors.join(', ')}"
+    end
+  end
+
   def new_outgoing_link
     @organization = Organization.find(params[:organization_id])
     @goal = Goal.find(params[:goal_id])
     authorize @goal, :update?
-    
     @direction = 'outgoing'
     @goal_type = params[:goal_type] || 'stepping_stone_activity'
-    # Don't filter by started_at for goal linking - allow linking to draft goals
-    available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
-                          .where(deleted_at: nil, completed_at: nil)
-                          .where.not(id: @goal.id)
-                          .where(goal_type: @goal_type)
-    available_goals = available_goals.owned_by_teammate if @goal.owner_type == 'CompanyTeammate'
-
-    @available_goals_with_status = available_goals.map do |candidate_goal|
-      {
-        goal: candidate_goal,
-        would_create_circular_dependency: would_create_circular_dependency?(candidate_goal, @goal, 'outgoing'),
-        already_linked: already_linked?(candidate_goal, @goal, 'outgoing'),
-        existing_link: existing_link_for_goal(candidate_goal, @goal, 'outgoing')
-      }
-    end
-    
     @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
     @return_text = params[:return_text] || 'Goal'
-    
     render layout: 'overlay'
   end
   

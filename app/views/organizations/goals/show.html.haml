@@ -132,10 +132,10 @@
                   %i.bi.bi-node-plus-fill.text-success
                   New Child Goal
                 %ul.dropdown-menu
-                  %li= link_to "... this new stepping stone / activity / output", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-                  %li= link_to "... this new measurable outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-                  %li= link_to "... this new sentiment outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-                  %li= link_to "... this new objective", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+                  %li= link_to "... this new stepping stone / activity / output", choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+                  %li= link_to "... this new measurable outcome", choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+                  %li= link_to "... this new sentiment outcome", choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+                  %li= link_to "... this new objective", choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
 
         - non_archived_outgoing_links = @goal.outgoing_links.includes(:child).select { |link| link.child&.deleted_at.nil? }
         - if non_archived_outgoing_links.any?

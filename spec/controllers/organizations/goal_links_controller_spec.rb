@@ -13,6 +13,21 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
   end
 
   describe 'GET #new_outgoing_link' do
+    it 'returns success and renders create-new form (no existing goals list)' do
+      get :new_outgoing_link, params: { organization_id: company.id, goal_id: goal1.id }
+      expect(response).to have_http_status(:ok)
+      expect(assigns(:available_goals_with_status)).to be_nil
+    end
+  end
+
+  describe 'GET #choose_outgoing_link' do
+    it 'returns success' do
+      get :choose_outgoing_link, params: { organization_id: company.id, goal_id: goal1.id }
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe 'GET #associate_existing_outgoing' do
     let(:parent_teammate_goal) do
       create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Parent', goal_type: 'stepping_stone_activity')
     end
@@ -20,15 +35,15 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
       create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Teammate candidate', goal_type: 'stepping_stone_activity')
     end
     let(:org_candidate) do
-      create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Company candidate', goal_type: 'stepping_stone_activity')
+      create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Company candidate', goal_type: 'stepping_stone_activity', privacy_level: 'everyone_in_company')
     end
 
-    it 'excludes team/department/company goals from linkable children when parent is teammate-owned' do
+    it 'excludes org goals from candidate children when parent is teammate-owned' do
       parent_teammate_goal
       teammate_candidate
       org_candidate
 
-      get :new_outgoing_link, params: { organization_id: company.id, goal_id: parent_teammate_goal.id }
+      get :associate_existing_outgoing, params: { organization_id: company.id, goal_id: parent_teammate_goal.id }
 
       expect(response).to have_http_status(:ok)
       available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
@@ -36,17 +51,35 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
       expect(available_goals).not_to include(org_candidate)
     end
 
-    it 'includes both teammate and org goals when parent is org-owned' do
-      parent_org_goal = create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Parent org', goal_type: 'stepping_stone_activity')
+    it 'includes goals with everyone_in_company when parent is org-owned' do
+      parent_org_goal = create(:goal, creator: creator_teammate, company: company, owner: company, title: 'Parent org', goal_type: 'stepping_stone_activity', privacy_level: 'everyone_in_company')
       teammate_candidate
+      teammate_with_company_privacy = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Teammate company visibility', privacy_level: 'everyone_in_company')
       org_candidate
 
-      get :new_outgoing_link, params: { organization_id: company.id, goal_id: parent_org_goal.id }
+      get :associate_existing_outgoing, params: { organization_id: company.id, goal_id: parent_org_goal.id }
 
       expect(response).to have_http_status(:ok)
       available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
-      expect(available_goals).to include(teammate_candidate)
+      expect(available_goals).to include(teammate_with_company_privacy)
       expect(available_goals).to include(org_candidate)
+      expect(available_goals).not_to include(teammate_candidate)
+    end
+  end
+
+  describe 'POST #associate_existing_outgoing' do
+    it 'creates child links from selected goal_ids' do
+      expect {
+        post :associate_existing_outgoing, params: {
+          organization_id: company.id,
+          goal_id: goal1.id,
+          goal_ids: [goal2.id]
+        }
+      }.to change(GoalLink, :count).by(1)
+
+      link = GoalLink.last
+      expect(link.parent).to eq(goal1)
+      expect(link.child).to eq(goal2)
     end
   end
 

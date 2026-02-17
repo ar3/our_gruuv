@@ -51,18 +51,20 @@ RSpec.describe 'Goal Link Creation', type: :system do
   end
   
   describe 'navigating to overlay pages' do
-    it 'navigates to new_outgoing_link page from show page' do
+    it 'navigates to new_outgoing_link (New Child Goal) from show page' do
       visit organization_goal_path(organization, goal1)
-      
+
       expect(page).to have_content('In order to achieve')
       expect(page).to have_button('New Child Goal')
-      
-      # Visit the URL directly to verify the route works
+
+      visit choose_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      expect(page.current_path).to include('choose_outgoing_link')
+      expect(page).to have_content('How do you want to add child goals?')
+
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
       expect(page.current_path).to include('new_outgoing_link')
-      expect(page).to have_content('Create Links to Other Goals')
-      expect(page).to have_link('Goal')
+      expect(page).to have_content('Create new')
+      expect(page).to have_button('Create and associate goals')
     end
     
     it 'shows Add Child Goal button even when there are existing child goals' do
@@ -105,109 +107,91 @@ RSpec.describe 'Goal Link Creation', type: :system do
     
     it 'passes return_url and return_text correctly' do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, return_url: organization_goal_path(organization, goal1), return_text: 'Goal')
-      
-      expect(page).to have_content('Create Links to Other Goals')
+
+      expect(page).to have_content('Create new')
       expect(page).to have_link('Goal', href: organization_goal_path(organization, goal1))
     end
   end
   
   describe 'selecting existing goals (outgoing links)' do
-    it 'displays list of available goals as checkboxes' do
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      expect(page).to have_content('Existing Goals')
+    it 'displays list of available goals as checkboxes on associate_existing_outgoing' do
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1, goal_type: 'stepping_stone_activity')
+
+      expect(page).to have_content('Select child goals')
       expect(page).to have_unchecked_field('goal_ids[]', with: goal2.id.to_s)
       expect(page).to have_unchecked_field('goal_ids[]', with: goal3.id.to_s)
       expect(page).to have_content('Goal 2')
       expect(page).to have_content('Goal 3')
     end
-    
+
     it 'excludes current goal from list' do
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      # Check that goal1 checkbox is not in the form
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       expect(page).not_to have_field("goal_ids_#{goal1.id}")
-      
-      # Check that goal2 and goal3 are in the list
       expect(page).to have_field("goal_ids_#{goal2.id}")
       expect(page).to have_field("goal_ids_#{goal3.id}")
     end
-    
+
     it 'creates a link when selecting a single existing goal' do
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       check "goal_ids_#{goal2.id}"
-      
-      click_button 'Create Links', id: 'create-existing-links-btn'
-      
-      # Check for toast element in DOM (may not be visible immediately due to JS)
+      click_button 'Associate selected'
+
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
       expect(page).to have_content('Goal 2')
-      
+
       link = GoalLink.find_by(parent: goal1, child: goal2)
       expect(link).to be_present
     end
-    
+
     it 'creates multiple links when selecting multiple existing goals' do
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       check "goal_ids_#{goal2.id}"
       check "goal_ids_#{goal3.id}"
-      
-      click_button 'Create Links', id: 'create-existing-links-btn'
-      
-      # Check for toast element in DOM (may not be visible immediately due to JS)
+      click_button 'Associate selected'
+
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
-      
-      link2 = GoalLink.find_by(parent: goal1, child: goal2)
-      link3 = GoalLink.find_by(parent: goal1, child: goal3)
-      expect(link2).to be_present
-      expect(link3).to be_present
+
+      expect(GoalLink.find_by(parent: goal1, child: goal2)).to be_present
+      expect(GoalLink.find_by(parent: goal1, child: goal3)).to be_present
     end
-    
+
     it 'shows validation error when no goals selected and no bulk titles provided' do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
 
-      click_button 'Create Links', id: 'create-existing-links-btn'
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
 
-      expect(page).to have_content(/error|required|select/i)
-      expected_path = new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      expect(URI.parse(page.current_url).path).to eq(expected_path)
+      expect(page).to have_content(/error|required|select|please/i)
+      expect(page.current_path).to include('new_outgoing_link')
     end
-    
+
     it 'prevents self-linking' do
-      # This test might not be needed since current goal is excluded from list
-      # But we should test that if somehow self-linking is attempted, it's prevented
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      # Current goal shouldn't be in the list
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       expect(page).not_to have_field('goal_ids[]', with: goal1.id.to_s)
     end
-    
-    it 'prevents duplicate links' do
-      # Create existing link
+
+    it 'prevents duplicate links (goal in hierarchy shown disabled)' do
       create(:goal_link, parent: goal1, child: goal2)
-      
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      # Goal2 should be checked and disabled (already linked)
+
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       goal2_checkbox = find("input#goal_ids_#{goal2.id}")
       expect(goal2_checkbox).to be_disabled
-      expect(goal2_checkbox).to be_checked
-      
-      expect(page).to have_content('Already Linked')
-      
-      # Should only have one link
+      expect(page).to have_content('In hierarchy')
+
       expect(GoalLink.where(parent: goal1, child: goal2).count).to eq(1)
     end
 
     it 'does not show team/department/company goals when parent goal is teammate-owned' do
       org_goal = create(:goal, creator: teammate, owner: organization, title: 'Company-wide initiative', goal_type: 'stepping_stone_activity', company: organization, privacy_level: 'everyone_in_company')
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, goal_type: 'stepping_stone_activity')
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1, goal_type: 'stepping_stone_activity')
 
-      expect(page).to have_content('Existing Goals')
+      expect(page).to have_content('Select child goals')
       expect(page).not_to have_content('Company-wide initiative')
       expect(page).to have_content('Goal 2')
     end
@@ -244,7 +228,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: titles.join("\n")
-      click_button 'Create Links', id: 'create-bulk-links-btn'
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -259,7 +243,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, goal_type: 'quantitative_key_result')
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links', id: 'create-bulk-links-btn'
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -275,7 +259,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links', id: 'create-bulk-links-btn'
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -295,7 +279,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, goal_type: 'inspirational_objective')
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links', id: 'create-bulk-links-btn'
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -317,7 +301,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       fill_in 'bulk_goal_titles', with: unique_title
       fill_in 'metadata_notes', with: note_text
-      click_button 'Create Links', id: 'create-bulk-links-btn'
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -343,7 +327,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links', id: 'create-bulk-links-btn'
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -359,7 +343,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: ""
-      click_button 'Create Links', id: 'create-bulk-links-btn'
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
       
       expect(page).to have_css('.toast, .alert', text: /select at least one|provide at least one/i, visible: :hidden)
       expect(page.current_path).to include('new_outgoing_link')
@@ -403,48 +387,43 @@ RSpec.describe 'Goal Link Creation', type: :system do
   end
   
   describe 'combining existing + bulk creation' do
-    it 'allows selecting existing goals AND entering bulk titles in one submission' do
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
+    it 'allows creating child links via associate_existing_outgoing and bulk via new_outgoing_link' do
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
       check "goal_ids_#{goal2.id}"
-      fill_in 'bulk_goal_titles', with: "Bulk Goal"
-      click_button 'Create Links', id: 'create-existing-links-btn'
-      
-      # Check for toast element in DOM (may not be visible immediately due to JS)
+      click_button 'Associate selected'
+
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
-      
-      # Check existing link was created
-      existing_link = GoalLink.find_by(parent: goal1, child: goal2)
-      expect(existing_link).to be_present
-      
-      # Check new goal was created and linked
+      expect(GoalLink.find_by(parent: goal1, child: goal2)).to be_present
+
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      fill_in 'bulk_goal_titles', with: "Bulk Goal"
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
+
+      expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       bulk_goal = Goal.find_by(title: 'Bulk Goal')
       expect(bulk_goal).to be_present
-      bulk_link = GoalLink.find_by(parent: goal1, child: bulk_goal)
-      expect(bulk_link).to be_present
+      expect(GoalLink.find_by(parent: goal1, child: bulk_goal)).to be_present
     end
   end
   
   describe 'error handling' do
     it 'displays validation errors on overlay page' do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      # Try to submit without selecting anything
-      click_button 'Create Links', id: 'create-existing-links-btn'
-      
-      expect(page).to have_css('.toast, .alert', text: /select at least one|provide at least one/i, visible: :hidden)
+
+      click_button 'Create and associate goals', id: 'create-and-associate-outgoing-btn'
+
+      expect(page).to have_css('.toast, .alert', text: /select at least one|provide at least one|please/i, visible: :hidden)
       expect(page.current_path).to include('new_outgoing_link')
     end
-    
+
     it 'redirects to return_url after successful creation' do
       return_url = organization_goal_path(organization, goal1)
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, return_url: return_url, return_text: 'Goal')
-      
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1, return_url: return_url, return_text: 'Goal')
+
       check "goal_ids_#{goal2.id}"
-      click_button 'Create Links', id: 'create-existing-links-btn'
-      
+      click_button 'Associate selected'
+
       expect(page).to have_current_path(return_url)
-      # Check for toast element in DOM (may not be visible immediately due to JS)
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
     end
     
@@ -461,85 +440,66 @@ RSpec.describe 'Goal Link Creation', type: :system do
   end
   
   describe 'circular dependency prevention' do
-    it 'disables checkboxes for goals that would create circular dependencies' do
-      # Create goal chain: goal1 -> goal2 -> goal3
+    it 'disables checkboxes for goals in hierarchy (would create cycle)' do
       create(:goal_link, parent: goal1, child: goal2)
       create(:goal_link, parent: goal2, child: goal3)
-      
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal3)
-      
-      # Goal1 should be disabled (would create cycle: goal3 -> goal1, but goal1 -> goal2 -> goal3 exists)
-      # Actually, goal1 wouldn't create a cycle directly, but let's check goal2 which would
-      # goal3 -> goal2 would create: goal3 -> goal2, but goal2 -> goal3 exists (cycle!)
-      
-      # Goal2 should be disabled because it would create a direct cycle
-      goal2_checkbox = find("input#goal_ids_#{goal2.id}")
-      expect(goal2_checkbox).to be_disabled
-      
-      # Goal1 might also be disabled if it would create a transitive cycle
-      # goal3 -> goal1: goal3 -> goal1, but goal1 -> goal2 -> goal3 exists (cycle!)
+
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal3)
+
+      # goal1 and goal2 are ancestors of goal3, so in hierarchy and disabled
       goal1_checkbox = find("input#goal_ids_#{goal1.id}")
+      goal2_checkbox = find("input#goal_ids_#{goal2.id}")
       expect(goal1_checkbox).to be_disabled
+      expect(goal2_checkbox).to be_disabled
     end
-    
-    it 'allows selection of goals that don\'t create cycles' do
-      # Create goal1 -> goal2 (no cycle with goal3)
+
+    it 'allows selection of goals that are not in hierarchy' do
       create(:goal_link, parent: goal1, child: goal2)
-      
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal3)
-      
-      # Goal1 and goal2 should be enabled (no cycles)
-      goal1_checkbox = find("input#goal_ids_#{goal1.id}")
-      goal2_checkbox = find("input#goal_ids_#{goal2.id}")
-      
-      expect(goal1_checkbox).not_to be_disabled
-      expect(goal2_checkbox).not_to be_disabled
+
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
+      # goal3 is not in goal1's hierarchy, so selectable
+      goal3_checkbox = find("input#goal_ids_#{goal3.id}")
+      expect(goal3_checkbox).not_to be_disabled
     end
   end
-  
+
   describe 'existing link detection' do
-    it 'checks and disables already-linked goals' do
-      # Create existing link
+    it 'checks and disables already-linked goals (in hierarchy)' do
       create(:goal_link, parent: goal1, child: goal2)
-      
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      # Goal2 should be checked and disabled
+
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       goal2_checkbox = find("input#goal_ids_#{goal2.id}")
       expect(goal2_checkbox).to be_disabled
-      expect(goal2_checkbox).to be_checked
-      
-      expect(page).to have_content('Already Linked')
+      expect(page).to have_content('In hierarchy')
     end
-    
+
     it 'allows selection of goals that are not already linked' do
-      # Create link between goal1 and goal2
       create(:goal_link, parent: goal1, child: goal2)
-      
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      # Goal3 should be enabled and unchecked (not already linked)
+
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       goal3_checkbox = find("input#goal_ids_#{goal3.id}")
       expect(goal3_checkbox).not_to be_disabled
       expect(goal3_checkbox).not_to be_checked
     end
   end
-  
+
   describe 'privacy level visualization' do
     it 'displays privacy levels as concentric circles' do
       goal_with_privacy = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator_and_owner', goal_type: 'stepping_stone_activity')
-      
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
+
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       expect(page).to have_content('🔘🔘○○ Creator & Owner')
     end
-    
+
     it 'shows tooltip with privacy level description' do
       goal_with_privacy = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator_and_owner', goal_type: 'stepping_stone_activity')
-      
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      # Check that privacy rings have tooltip
+
+      visit associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
       privacy_span = find('span', text: /🔘🔘○○/)
       expect(privacy_span['data-bs-toggle']).to eq('tooltip')
     end

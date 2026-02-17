@@ -337,6 +337,9 @@ Rails.application.routes.draw do
           get :choose_incoming_link
           get :associate_existing_incoming
           post :associate_existing_incoming
+          get :choose_outgoing_link
+          get :associate_existing_outgoing
+          post :associate_existing_outgoing
         end
       end
     end
