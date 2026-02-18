@@ -200,6 +200,12 @@
           %i.bi.bi-people.me-2
           Current Holders of This Assignment
       .card-body
+        - if @data_quality_warnings.present?
+          .alert.alert-warning.mb-3{ role: "alert" }
+            %strong Data quality (for debugging):
+            %ul.mb-0.mt-1
+              - @data_quality_warnings.each do |msg|
+                %li= msg
         - if @current_holders.any?
           .row
             - @current_holders.each_slice((@current_holders.count.to_f / 3).ceil) do |slice|

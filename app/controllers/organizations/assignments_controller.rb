@@ -50,10 +50,50 @@ class Organizations::AssignmentsController < ApplicationController
     
     # Load current holders (teammates with active assignment tenures)
     active_tenures = @assignment.assignment_tenures.active.includes(company_teammate: :person)
-    @current_holders = active_tenures.map(&:teammate).uniq
-    
+    bad_data_issues = []
+    @data_quality_warnings = []
+    nil_teammate_tenure_ids = []
+    raw_holders = active_tenures.filter_map do |tenure|
+      teammate = tenure.teammate
+      if teammate.nil?
+        bad_data_issues << { tenure_id: tenure.id, issue: "nil teammate (tenure has no company_teammate)" }
+        nil_teammate_tenure_ids << tenure.id
+        nil
+      else
+        teammate
+      end
+    end.uniq
+    if nil_teammate_tenure_ids.any?
+      @data_quality_warnings << "teammate missing for tenure(s): #{nil_teammate_tenure_ids.join(', ')}"
+    end
+
+    @data_quality_warnings = []
+    valid_holders = raw_holders.filter_map do |teammate|
+      person = teammate.person
+      if person.nil?
+        bad_data_issues << { teammate_id: teammate.id, issue: "nil person for teammate" }
+        @data_quality_warnings << "person missing for teammate: #{teammate.id}"
+        nil
+      else
+        teammate
+      end
+    end
+
+    if bad_data_issues.any?
+      Sentry.set_context("assignment_show_bad_data", {
+        assignment_id: @assignment.id,
+        assignment_slug: @assignment.slug,
+        issues: bad_data_issues
+      })
+      Sentry.capture_message(
+        "Assignment show: bad data (nil teammate or nil person)",
+        level: :warning,
+        extra: { assignment_id: @assignment.id, issues: bad_data_issues }
+      )
+    end
+
     # Sort by last name, preferred name, first name
-    @current_holders.sort_by! do |teammate|
+    @current_holders = valid_holders.sort_by do |teammate|
       person = teammate.person
       [
         person.last_name.to_s.downcase,
