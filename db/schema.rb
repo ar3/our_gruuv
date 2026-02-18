@@ -29,8 +29,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_164042) do
     t.text "milestone_4_description"
     t.text "milestone_5_description"
     t.bigint "department_id"
+    t.datetime "deleted_at"
     t.index ["company_id"], name: "index_abilities_on_company_id"
     t.index ["created_by_id"], name: "index_abilities_on_created_by_id"
+    t.index ["deleted_at"], name: "index_abilities_on_deleted_at"
     t.index ["department_id"], name: "index_abilities_on_department_id"
     t.index ["name", "company_id"], name: "index_abilities_on_name_and_company_id", unique: true
     t.index ["updated_by_id"], name: "index_abilities_on_updated_by_id"
@@ -222,7 +224,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_164042) do
     t.datetime "updated_at", null: false
     t.bigint "department_id"
     t.string "semantic_version", default: "0.0.1", null: false
+    t.datetime "deleted_at"
     t.index ["company_id"], name: "index_assignments_on_company_id"
+    t.index ["deleted_at"], name: "index_assignments_on_deleted_at"
     t.index ["department_id"], name: "index_assignments_on_department_id"
   end
 
@@ -988,6 +992,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_164042) do
     t.text "eligibility_requirements_summary"
     t.string "semantic_version", default: "0.0.1", null: false
     t.jsonb "eligibility_requirements_explicit", default: {}, null: false
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_positions_on_deleted_at"
     t.index ["eligibility_requirements_explicit"], name: "index_positions_on_eligibility_requirements_explicit", using: :gin
     t.index ["position_level_id"], name: "index_positions_on_position_level_id"
     t.index ["title_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true

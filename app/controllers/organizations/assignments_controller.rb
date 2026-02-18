@@ -82,7 +82,7 @@ class Organizations::AssignmentsController < ApplicationController
     if bad_data_issues.any?
       Sentry.set_context("assignment_show_bad_data", {
         assignment_id: @assignment.id,
-        assignment_slug: @assignment.slug,
+        assignment_slug: @assignment.to_param,
         issues: bad_data_issues
       })
       Sentry.capture_message(
