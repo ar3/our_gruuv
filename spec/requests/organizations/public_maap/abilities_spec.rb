@@ -45,6 +45,14 @@ RSpec.describe 'Organizations::PublicMaap::Abilities', type: :request do
       get organization_public_maap_abilities_path(company)
       expect(response.body).not_to include('View Authenticated Version')
     end
+
+    it 'excludes archived abilities from index' do
+      archived = create(:ability, company: company, name: 'Archived Ability', created_by: created_by, updated_by: updated_by)
+      archived.update_columns(deleted_at: 1.day.ago)
+      get organization_public_maap_abilities_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('Archived Ability')
+    end
   end
 
   describe 'GET /organizations/:organization_id/public_maap/abilities/:id' do
@@ -98,6 +106,16 @@ RSpec.describe 'Organizations::PublicMaap::Abilities', type: :request do
     it 'does not show "View Authenticated Version" when user is not logged in' do
       get organization_public_maap_ability_path(company, ability_company)
       expect(response.body).not_to include('View Authenticated Version')
+    end
+
+    context 'when ability is archived' do
+      before { ability_company.update_columns(deleted_at: 1.day.ago) }
+
+      it 'displays archived banner' do
+        get organization_public_maap_ability_path(company, ability_company)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archived as of')
+      end
     end
   end
 end

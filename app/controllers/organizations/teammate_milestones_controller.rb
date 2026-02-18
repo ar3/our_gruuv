@@ -298,7 +298,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     end
     
     # Load all abilities with their data
-    Ability.where(id: ability_ids.to_a, company: organization)
+    Ability.unarchived.where(id: ability_ids.to_a, company: organization)
           .includes(:assignment_abilities)
           .order(:name)
           .each do |ability|

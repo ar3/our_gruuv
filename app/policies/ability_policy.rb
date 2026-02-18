@@ -15,6 +15,14 @@ class AbilityPolicy < ApplicationPolicy
     admin_bypass? || user_has_maap_permission_for_record?
   end
 
+  def archive?
+    update?
+  end
+
+  def restore?
+    update?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate
@@ -22,16 +30,9 @@ class AbilityPolicy < ApplicationPolicy
       if person&.og_admin?
         scope.all
       else
-        viewing_teammate_org = viewing_teammate.organization
-        return scope.none unless viewing_teammate_org
-        
-        if viewing_teammate.can_manage_maap?
-          # Include abilities from viewing_teammate's company
-          company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
-          scope.where(company_id: company.id)
-        else
-          scope.none
-        end
+        return scope.none unless actual_organization
+        return scope.none unless viewing_teammate.can_manage_maap?
+        scope.where(company_id: actual_organization.id)
       end
     end
   end
@@ -42,20 +43,12 @@ class AbilityPolicy < ApplicationPolicy
     return false unless viewing_teammate
     organization = actual_organization
     return false unless organization
-    
-    viewing_teammate.can_manage_maap?
+    viewing_teammate.organization_id == organization.id && viewing_teammate.can_manage_maap?
   end
 
   def user_has_maap_permission_for_record?
     return false unless viewing_teammate
-    return false unless record&.company
-    viewing_teammate_org = viewing_teammate.organization
-    return false unless viewing_teammate_org
-    
-    # Check if record's company matches viewing_teammate's company
-    company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
-    return false unless company.id == record.company_id
-    
-    viewing_teammate.can_manage_maap?
+    return false unless record&.company_id
+    viewing_teammate.organization_id == record.company_id && viewing_teammate.can_manage_maap?
   end
 end

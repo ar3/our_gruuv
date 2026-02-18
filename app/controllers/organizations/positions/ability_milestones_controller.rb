@@ -37,7 +37,7 @@ module Organizations
       end
 
       def load_abilities_in_hierarchy
-        @abilities = Ability.where(company: @position.company).order(:name)
+        @abilities = Ability.unarchived.where(company: @position.company).order(:name)
       end
 
       def load_existing_associations

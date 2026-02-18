@@ -33,3 +33,14 @@
       = link_to organization_public_maap_ability_path(@organization, @ability), class: 'dropdown-item' do
         %i.bi.bi-globe.me-2
         Public version
+    - if @ability.archived?
+      - if policy(@ability).restore?
+        %li
+          = link_to restore_organization_ability_path(@organization, @ability), class: 'dropdown-item', data: { turbo_method: :patch, turbo_confirm: 'Restore this ability? It will appear in lists and selectors again.' } do
+            %i.bi.bi-arrow-counterclockwise.me-2
+            Restore ability
+    - elsif policy(@ability).archive?
+      %li
+        = link_to archive_organization_ability_path(@organization, @ability), class: 'dropdown-item' do
+          %i.bi.bi-archive.me-2
+          Archive ability

@@ -2,6 +2,13 @@
 
 %h1.mb-4= @ability.name
 
+- if @ability.archived?
+  .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
+    %h5.alert-heading
+      %i.bi.bi-archive.me-2
+      Archived as of #{l(@ability.deleted_at, format: :long)}
+    %p.mb-0 This ability is archived and is no longer listed in the public index.
+
 .mb-3
   = link_to organization_public_maap_abilities_path(@organization), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-2

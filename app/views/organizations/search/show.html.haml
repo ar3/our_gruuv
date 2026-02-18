@@ -160,7 +160,7 @@
                       %tr
                         %td= ability.name
                         %td= truncate(ability.description, length: 100)
-                        %td= ability.organization.display_name
+                        %td= ability.company.display_name
                         %td
                           .btn-group.btn-group-sm
                             = link_to organization_ability_path(@organization, ability), class: "btn btn-outline-primary" do

@@ -484,7 +484,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     # Load available rateables
     @assignments = organization.assignments.unarchived.ordered
     @aspirations = organization.aspirations
-    @abilities = organization.abilities.order(:name)
+    @abilities = organization.abilities.unarchived.order(:name)
     
     # Store return context - default to show page if editing existing observation, otherwise index or dashboard
     if @observation.persisted?
@@ -669,7 +669,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           # Re-populate the form with submitted values for re-rendering
           @assignments = organization.assignments.unarchived.ordered
           @aspirations = organization.aspirations
-          @abilities = organization.abilities.order(:name)
+          @abilities = organization.abilities.unarchived.order(:name)
           render :new, status: :unprocessable_entity
         end
       end
@@ -684,7 +684,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       
       @assignments = organization.assignments.unarchived.ordered
       @aspirations = organization.aspirations
-      @abilities = organization.abilities.order(:name)
+      @abilities = organization.abilities.unarchived.order(:name)
       render :new, status: :unprocessable_entity
     end
   end
@@ -757,7 +757,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       
       # Load available abilities and assignments for selected observees
       teammate_ids = wizard_data['teammate_ids'] || []
-      @available_abilities = organization.abilities
+      @available_abilities = organization.abilities.unarchived
       @available_assignments = organization.assignments.unarchived
       @available_aspirations = organization.aspirations
       
@@ -798,7 +798,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @form.observation_ratings_attributes = params[:observation][:observation_ratings_attributes] if params[:observation][:observation_ratings_attributes].present?
         
         teammate_ids = wizard_data['teammate_ids'] || []
-        @available_abilities = organization.abilities.where(id: teammate_ids.map(&:to_i))
+        @available_abilities = organization.abilities.unarchived.where(id: teammate_ids.map(&:to_i))
         @available_assignments = organization.assignments.unarchived.where(id: teammate_ids.map(&:to_i))
         @available_aspirations = organization.aspirations.where(id: teammate_ids.map(&:to_i))
         
@@ -1155,7 +1155,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @return_text = params[:return_text] || 'Back'
         @assignments = organization.assignments.unarchived.ordered
         @aspirations = organization.aspirations
-        @abilities = organization.abilities.order(:name)
+        @abilities = organization.abilities.unarchived.order(:name)
         render :new, layout: 'overlay', status: :unprocessable_entity
         return
       end
@@ -1243,7 +1243,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @return_text = params[:return_text]
       @assignments = organization.assignments.unarchived.ordered
       @aspirations = organization.aspirations
-      @abilities = organization.abilities.order(:name)
+      @abilities = organization.abilities.unarchived.order(:name)
       render :new, layout: 'overlay', status: :unprocessable_entity
     end
   end
@@ -1493,7 +1493,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @observation = Observation.find(params[:id])
     authorize @observation, :update?
     
-    @abilities = organization.abilities.order(:name)
+    @abilities = organization.abilities.unarchived.order(:name)
     
     @return_url = params[:return_url] || typed_observation_path_for(@observation)
     @return_text = params[:return_text] || 'Back'
@@ -1670,7 +1670,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @return_text = params[:return_text] || 'Back'
         @assignments = organization.assignments.unarchived.ordered
         @aspirations = organization.aspirations
-        @abilities = organization.abilities.order(:name)
+        @abilities = organization.abilities.unarchived.order(:name)
         flash[:alert] = "Cannot publish: #{@form.errors.full_messages.join(', ')}"
         render :new, layout: 'overlay', status: :unprocessable_entity
         return
@@ -1695,7 +1695,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           @return_text = params[:return_text] || 'Back'
           @assignments = organization.assignments.unarchived.ordered
           @aspirations = organization.aspirations
-          @abilities = organization.abilities.order(:name)
+          @abilities = organization.abilities.unarchived.order(:name)
           flash[:alert] = "Cannot publish: #{@form.errors.full_messages.join(', ')}"
           render :new, layout: 'overlay', status: :unprocessable_entity
           return
@@ -1739,7 +1739,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @return_text = params[:return_text] || 'Back'
         @assignments = organization.assignments.unarchived.ordered
         @aspirations = organization.aspirations
-        @abilities = organization.abilities.order(:name)
+        @abilities = organization.abilities.unarchived.order(:name)
         flash[:alert] = "Cannot publish: #{@observation.errors.full_messages.join(', ')}"
         render :new, layout: 'overlay', status: :unprocessable_entity
       else
@@ -1829,7 +1829,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     # Load available rateables
     @assignments = organization.assignments.unarchived.ordered
     @aspirations = organization.aspirations
-    @abilities = organization.abilities.order(:name)
+    @abilities = organization.abilities.unarchived.order(:name)
     
     # Store return context
     @return_url = params[:return_url] || organization_observations_path(organization)

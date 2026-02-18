@@ -106,6 +106,20 @@ RSpec.describe AbilityPolicy, type: :policy do
     end
   end
 
+  describe 'archive?' do
+    it 'delegates to update?' do
+      policy = AbilityPolicy.new(pundit_user_maap, ability)
+      expect(policy.archive?).to eq(policy.update?)
+    end
+  end
+
+  describe 'restore?' do
+    it 'delegates to update?' do
+      policy = AbilityPolicy.new(pundit_user_maap, ability)
+      expect(policy.restore?).to eq(policy.update?)
+    end
+  end
+
   describe 'destroy?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do

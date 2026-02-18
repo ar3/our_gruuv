@@ -170,6 +170,11 @@ Rails.application.routes.draw do
         get :customize_view
         patch :update_view
       end
+      member do
+        get :archive
+        patch :execute_archive
+        patch :restore
+      end
       resource :assignment_milestones, only: [:show, :update], module: :abilities
     end
     

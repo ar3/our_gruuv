@@ -112,14 +112,14 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
   # Abilities association
   def associate_abilities
     authorize @department, :update?
-    @unassociated_abilities = Ability.for_company(company).where(department_id: nil).ordered
+    @unassociated_abilities = Ability.unarchived.for_company(company).where(department_id: nil).ordered
   end
 
   def update_abilities_association
     authorize @department, :update?
     
     ability_ids = params[:ability_ids] || []
-    abilities_to_associate = Ability.for_company(company).where(id: ability_ids, department_id: nil)
+    abilities_to_associate = Ability.unarchived.for_company(company).where(id: ability_ids, department_id: nil)
     
     count = abilities_to_associate.count
     abilities_to_associate.update_all(department_id: @department.id)

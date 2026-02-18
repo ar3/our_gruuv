@@ -1,0 +1,81 @@
+- content_for :title, "Archive Ability - #{@ability.name}"
+- content_for :header do
+  Archive Ability: #{@ability.name}
+- content_for :go_back_link do
+  = link_to organization_ability_path(@organization, @ability), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Ability
+
+.row.justify-content-center
+  .col-lg-10
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-archive.me-2
+          What happens when you archive
+      .card-body
+        %p.mb-2
+          Archiving this ability will:
+        %ul
+          %li Remove it from ability lists and selectors (e.g. when linking abilities to assignments or positions).
+          %li Keep the ability page and public page reachable by direct URL, with an "Archived as of [date]" banner.
+          %li Preserve milestone attainments, observation ratings, and comments.
+        %p.mb-0.text-muted
+          You must remove this ability from all positions and all assignments before archiving.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-exclamation-triangle.me-2
+          Requirements before archiving
+      .card-body
+        %ul.list-unstyled.mb-0
+          %li.mb-3
+            - if @position_abilities_count.zero?
+              %i.bi.bi-check-circle.text-success.me-2
+              No positions require this ability
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              Remove from #{pluralize(@position_abilities_count, 'position')} (use Set Direct Milestone Requirements on each position)
+              %ul.mt-1.mb-0.ms-4
+                - @position_abilities.each do |pa|
+                  %li
+                    = link_to pa.position.display_name, organization_position_path(pa.position.company, pa.position), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      (
+                    = link_to 'Set direct milestone requirements', organization_position_ability_milestones_path(pa.position.company, pa.position), class: 'text-decoration-none'
+                    %span.text-muted
+                      )
+          %li
+            - if @assignment_abilities_count.zero?
+              %i.bi.bi-check-circle.text-success.me-2
+              No assignments require this ability
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              Remove from #{pluralize(@assignment_abilities_count, 'assignment')} (use Manage Ability Milestones on each assignment)
+              %ul.mt-1.mb-0.ms-4
+                - @assignment_abilities.each do |aa|
+                  %li
+                    = link_to aa.assignment.title, organization_assignment_path(aa.assignment.company, aa.assignment), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      (
+                    = link_to 'Manage ability milestones', organization_assignment_ability_milestones_path(aa.assignment.company, aa.assignment), class: 'text-decoration-none'
+                    %span.text-muted
+                      )
+
+    - if @archivable
+      .card.mb-4
+        .card-body
+          = form_with url: execute_archive_organization_ability_path(@organization, @ability), method: :patch, local: true do |f|
+            .form-check.mb-3
+              = check_box_tag :confirm_archive, '1', false, class: 'form-check-input', id: 'confirm_archive', required: true
+              = label_tag 'confirm_archive', 'I understand that this ability will be archived and removed from lists and selectors.', class: 'form-check-label'
+            = f.submit 'Archive ability', class: 'btn btn-warning'
+    - else
+      .card.mb-4.border-warning
+        .card-body
+          %p.mb-2.text-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            You cannot archive until this ability is removed from all positions and assignments.
+          %p.mb-0
+            = link_to 'Back to ability', organization_ability_path(@organization, @ability), class: 'btn btn-outline-secondary'

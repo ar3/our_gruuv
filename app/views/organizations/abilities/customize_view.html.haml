@@ -40,6 +40,11 @@
             - major_version_options = [['All Versions', '']] + (0..10).map { |v| ["v#{v}.x.x", v] }
             = select_tag 'major_version', options_for_select(major_version_options, @current_filters[:major_version]), class: 'form-select'
 
+          .mb-3
+            .form-check
+              = check_box_tag 'show_archived', '1', @current_show_archived, class: 'form-check-input', id: 'show_archived'
+              = label_tag 'show_archived', 'Show archived abilities', class: 'form-check-label'
+
   .row
     .col-md-4
       .mb-4

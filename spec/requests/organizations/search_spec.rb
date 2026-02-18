@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Organizations::Search', type: :request do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: true) }
 
   before do
     # Create active employment for the teammate
@@ -23,6 +23,20 @@ RSpec.describe 'Organizations::Search', type: :request do
           expect(response).to have_http_status(:success)
         end
 
+        it 'displays all searchable resource types on the page' do
+          get organization_search_path(organization)
+          expect(response).to have_http_status(:success)
+
+          body = response.body
+          # Placeholder and/or "Start Searching" copy list all searchable resources
+          expect(body).to include('people')
+          expect(body).to include('organizations')
+          expect(body).to include('observations')
+          expect(body).to include('assignments')
+          expect(body).to include('abilities')
+          expect(body).to include('titles')
+        end
+
         it 'assigns empty query' do
           get organization_search_path(organization)
           expect(assigns(:query)).to eq('')
@@ -37,6 +51,7 @@ RSpec.describe 'Organizations::Search', type: :request do
           expect(assigns(:results)[:observations]).to be_empty
           expect(assigns(:results)[:assignments]).to be_empty
           expect(assigns(:results)[:abilities]).to be_empty
+          expect(assigns(:results)[:titles]).to be_empty
         end
 
         it 'renders the show template' do
@@ -74,6 +89,7 @@ RSpec.describe 'Organizations::Search', type: :request do
           expect(assigns(:results)).to have_key(:observations)
           expect(assigns(:results)).to have_key(:assignments)
           expect(assigns(:results)).to have_key(:abilities)
+          expect(assigns(:results)).to have_key(:titles)
           expect(assigns(:results)).to have_key(:total_count)
         end
 
@@ -127,6 +143,37 @@ RSpec.describe 'Organizations::Search', type: :request do
           found_teammate = searchable_person.teammates.find_by(organization: organization)
           expect(found_teammate.id).to eq(searchable_teammate.id)
           expect(found_teammate).to be_a(CompanyTeammate)
+        end
+      end
+
+      context 'with abilities in search results' do
+        # Stub search results so the view is fully exercised for abilities; this would catch
+        # view bugs like calling ability.organization instead of ability.company (NoMethodError).
+        let(:searchable_ability) do
+          create(:ability, company: organization, name: 'UniqueSearchableAbility', description: 'Description for search')
+        end
+
+        before do
+          search_results = {
+            people: [],
+            organizations: [],
+            observations: [],
+            assignments: [],
+            abilities: [searchable_ability],
+            titles: [],
+            total_count: 1
+          }
+          query_double = instance_double(GlobalSearchQuery, call: search_results)
+          allow(GlobalSearchQuery).to receive(:new).and_return(query_double)
+        end
+
+        it 'renders abilities results without error (exercises full view for abilities)' do
+          get organization_search_path(organization, q: 'anything')
+          expect(response).to have_http_status(:success)
+          expect(assigns(:results)[:abilities]).to eq([searchable_ability])
+          expect(response.body).to include('UniqueSearchableAbility')
+          expect(response.body).to include(searchable_ability.company.display_name)
+          expect(response.body).to include(organization_ability_path(organization, searchable_ability))
         end
       end
     end

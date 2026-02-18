@@ -1,10 +1,8 @@
 class Organizations::PublicMaap::AbilitiesController < Organizations::PublicMaap::BaseController
   def index
-    # Get all abilities for this organization (company)
-    company = @organization.root_company || @organization
-    
     @abilities = Ability
-      .where(company: company)
+      .unarchived
+      .where(company: @organization)
       .includes(:company, :department)
       .ordered
     

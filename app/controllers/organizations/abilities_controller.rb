@@ -1,13 +1,15 @@
 class Organizations::AbilitiesController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_ability, only: [:show, :edit, :update, :destroy]
+  before_action :set_ability, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore]
 
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
 
   def index
-    authorize company, :view_abilities?
-    @abilities = policy_scope(Ability).for_company(company).includes(:department)
+    authorize @organization, :view_abilities?
+    scope = policy_scope(Ability).for_company(@organization).includes(:department)
+    scope = scope.unarchived unless params[:show_archived].to_s == '1'
+    @abilities = scope
     
     # Apply filters
     @abilities = @abilities.where("abilities.name ILIKE ?", "%#{params[:name]}%") if params[:name].present?
@@ -86,8 +88,10 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       sort: @current_sort,
       direction: params[:direction],
       view: @current_view,
-      spotlight: @current_spotlight
+      spotlight: @current_spotlight,
+      show_archived: params[:show_archived].to_s == '1'
     }
+    @current_show_archived = @current_filters[:show_archived]
     
     # Spotlight stats for by_department
     if @current_spotlight == 'by_department'
@@ -183,8 +187,6 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def customize_view
     authorize @organization, :show?
-    
-    # Load current state from params
     @current_filters = {
       name: params[:name],
       category: params[:category],
@@ -194,12 +196,13 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       sort: params[:sort] || 'department_and_name',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'table',
-      spotlight: params[:spotlight] || 'by_department'
+      spotlight: params[:spotlight] || 'by_department',
+      show_archived: params[:show_archived].to_s == '1'
     }
-    
     @current_sort = @current_filters[:sort]
     @current_view = @current_filters[:view]
     @current_spotlight = @current_filters[:spotlight]
+    @current_show_archived = @current_filters[:show_archived]
     @departments = Department.for_company(company).active.ordered.sort_by(&:display_name)
     
     # Preserve current params for return URL
@@ -212,16 +215,42 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def update_view
     authorize @organization, :show?
-    
-    # Build redirect URL with all view customization params
     redirect_params = params.except(:controller, :action, :utf8, :_method, :commit).permit!.to_h
+    redirect_params[:show_archived] = params[:show_archived] if params[:show_archived].present?
     redirect_to organization_abilities_path(@organization, redirect_params)
+  end
+
+  def archive
+    authorize @ability, :archive?
+    @position_abilities = @ability.position_abilities.includes(position: :title)
+    @assignment_abilities = @ability.assignment_abilities.includes(assignment: :company)
+    @position_abilities_count = @position_abilities.size
+    @assignment_abilities_count = @assignment_abilities.size
+    @archivable = @ability.archivable?
+    render layout: determine_layout
+  end
+
+  def execute_archive
+    authorize @ability, :archive?
+    unless @ability.archivable?
+      redirect_to archive_organization_ability_path(@organization, @ability),
+                  alert: 'Cannot archive: remove this ability from all positions and assignments first.'
+      return
+    end
+    @ability.archive!
+    redirect_to organization_ability_path(@organization, @ability), notice: 'Ability was successfully archived.'
+  end
+
+  def restore
+    authorize @ability, :restore?
+    @ability.restore!
+    redirect_to organization_ability_path(@organization, @ability), notice: 'Ability was successfully restored.'
   end
 
   private
 
   def set_ability
-    @ability = company.abilities.find(params[:id])
+    @ability = Ability.where(company: @organization).find(params[:id])
   end
 
   def calculate_abilities_by_department_stats(abilities)

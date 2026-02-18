@@ -188,6 +188,83 @@ RSpec.describe 'Organizations::Abilities', type: :request do
     end
   end
 
+  describe 'archiving' do
+    let(:ability) { create(:ability, company: organization) }
+
+    describe 'GET archive' do
+      it 'renders archive confirmation page' do
+        get archive_organization_ability_path(organization, ability)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archive Ability')
+        expect(response.body).to include(ability.name)
+      end
+    end
+
+    describe 'PATCH execute_archive' do
+      it 'archives ability when archivable and redirects to show' do
+        expect(ability.archivable?).to be true
+        patch execute_archive_organization_ability_path(organization, ability)
+        expect(response).to redirect_to(organization_ability_path(organization, ability))
+        expect(ability.reload.archived?).to be true
+      end
+
+      it 'redirects back with alert when not archivable' do
+        asg = create(:assignment, company: organization)
+        create(:assignment_ability, assignment: asg, ability: ability, milestone_level: 1)
+        expect(ability.reload.archivable?).to be false
+        patch execute_archive_organization_ability_path(organization, ability)
+        expect(response).to have_http_status(:redirect)
+        expect(ability.reload.archived?).to be false
+      end
+    end
+
+    describe 'PATCH restore' do
+      before { ability.update_columns(deleted_at: 1.day.ago) }
+
+      it 'restores ability and redirects to show' do
+        patch restore_organization_ability_path(organization, ability)
+        expect(response).to redirect_to(organization_ability_path(organization, ability))
+        expect(ability.reload.archived?).to be false
+      end
+    end
+
+    context 'when ability is archived' do
+      before { ability.update_columns(deleted_at: 1.day.ago) }
+
+      it 'show page displays archived banner' do
+        get organization_ability_path(organization, ability)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archived as of')
+      end
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/abilities (index) with show_archived' do
+    let!(:archived_ability) do
+      create(:ability, company: organization, name: 'Archived Ability').tap { |a| a.update_columns(deleted_at: 1.day.ago) }
+    end
+    let!(:visible_ability) { create(:ability, company: organization, name: 'Visible Ability') }
+
+    before do
+      teammate
+      sign_in_as_teammate_for_request(person, organization)
+    end
+
+    it 'excludes archived abilities by default' do
+      get organization_abilities_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(assigns(:abilities).to_a).not_to include(archived_ability)
+      expect(assigns(:abilities).to_a).to include(visible_ability)
+    end
+
+    it 'includes archived abilities when show_archived=1' do
+      get organization_abilities_path(organization, show_archived: '1')
+      expect(response).to have_http_status(:success)
+      list = assigns(:abilities).to_a
+      expect(list).to include(archived_ability, visible_ability)
+    end
+  end
+
   describe 'GET /organizations/:organization_id/abilities' do
     let!(:ability_v1) { create(:ability, company: organization, semantic_version: '1.0.0', name: 'Ability v1') }
     let!(:ability_v1_2) { create(:ability, company: organization, semantic_version: '1.2.3', name: 'Ability v1.2') }

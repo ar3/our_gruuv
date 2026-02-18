@@ -14,6 +14,75 @@ RSpec.describe Ability, type: :model do
     it { should belong_to(:department).optional }
   end
 
+  describe 'archiving' do
+    let(:ability) { create(:ability, company: company, created_by: person, updated_by: person) }
+
+    describe '.unarchived and .archived' do
+      it 'unarchived returns only abilities with nil deleted_at' do
+        a1 = create(:ability, company: company, created_by: person, updated_by: person, deleted_at: nil)
+        a2 = create(:ability, company: company, created_by: person, updated_by: person)
+        a2.update_columns(deleted_at: 1.day.ago)
+        expect(Ability.unarchived).to include(a1)
+        expect(Ability.unarchived).not_to include(a2)
+      end
+
+      it 'archived returns only abilities with deleted_at set' do
+        a1 = create(:ability, company: company, created_by: person, updated_by: person)
+        a2 = create(:ability, company: company, created_by: person, updated_by: person)
+        a2.update_columns(deleted_at: 1.day.ago)
+        expect(Ability.archived).to include(a2)
+        expect(Ability.archived).not_to include(a1)
+      end
+    end
+
+    describe '#archived?' do
+      it 'returns false when deleted_at is nil' do
+        expect(ability.archived?).to be false
+      end
+
+      it 'returns true when deleted_at is set' do
+        ability.update_columns(deleted_at: 1.day.ago)
+        expect(ability.reload.archived?).to be true
+      end
+    end
+
+    describe '#archive!' do
+      it 'sets deleted_at to current time' do
+        ability.archive!
+        expect(ability.reload.deleted_at).to be_present
+      end
+    end
+
+    describe '#restore!' do
+      it 'clears deleted_at' do
+        ability.update_columns(deleted_at: 1.day.ago)
+        ability.restore!
+        expect(ability.reload.deleted_at).to be_nil
+      end
+    end
+
+    describe '#archivable?' do
+      it 'returns true when no position_abilities and no assignment_abilities' do
+        expect(ability.archivable?).to be true
+      end
+
+      it 'returns false when ability has assignment_abilities' do
+        asg = create(:assignment, company: company)
+        create(:assignment_ability, assignment: asg, ability: ability, milestone_level: 1)
+        expect(ability.reload.archivable?).to be false
+      end
+
+      it 'returns false when ability has position_abilities' do
+        position_major_level = create(:position_major_level)
+        title = create(:title, company: company, position_major_level: position_major_level)
+        position_level = create(:position_level, position_major_level: position_major_level)
+        position = create(:position, title: title, position_level: position_level)
+        create(:position_ability, position: position, ability: ability, milestone_level: 1)
+        expect(ability.reload.archivable?).to be false
+      end
+    end
+  end
+
   describe 'validations' do
     it { should validate_presence_of(:name) }
     it { should validate_presence_of(:description) }
