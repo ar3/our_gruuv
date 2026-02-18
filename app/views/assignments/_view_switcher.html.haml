@@ -122,6 +122,30 @@
             %i.bi.bi-pencil.me-2
             Edit Assignment
             %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or admin access to edit assignments"}
+
+      - if @assignment && assignment_org
+        %li
+          %hr.dropdown-divider
+        %li
+          - if @assignment.archived?
+            - if policy(@assignment).restore?
+              = link_to restore_organization_assignment_path(assignment_org, @assignment), class: 'dropdown-item', data: { turbo_method: :patch, turbo_confirm: 'Restore this assignment? It will appear in lists and selectors again.' } do
+                %i.bi.bi-arrow-counterclockwise.me-2
+                Restore assignment
+            - else
+              .dropdown-item.text-muted.disabled
+                %i.bi.bi-arrow-counterclockwise.me-2
+                Restore assignment
+                %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You do not have permission to restore"}
+          - elsif policy(@assignment).archive?
+            = link_to archive_organization_assignment_path(assignment_org, @assignment), class: 'dropdown-item' do
+              %i.bi.bi-archive.me-2
+              Archive assignment
+          - else
+            .dropdown-item.text-muted.disabled
+              %i.bi.bi-archive.me-2
+              Archive assignment
+              %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You do not have permission to archive"}
       
       %li
         %hr.dropdown-divider

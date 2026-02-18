@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_15_164042) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_18_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -207,7 +207,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_15_164042) do
     t.integer "anticipated_energy_percentage"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "teammate_id"
+    t.bigint "teammate_id", null: false
     t.string "official_rating"
     t.index ["assignment_id"], name: "index_assignment_tenures_on_assignment_id"
     t.index ["teammate_id"], name: "index_assignment_tenures_on_teammate_id"

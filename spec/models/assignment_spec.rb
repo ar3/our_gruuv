@@ -150,6 +150,78 @@ RSpec.describe Assignment, type: :model do
     end
   end
 
+  describe 'archiving' do
+    describe '.unarchived and .archived' do
+      it 'unarchived returns only assignments with nil deleted_at' do
+        a1 = create(:assignment, company: organization, deleted_at: nil)
+        a2 = create(:assignment, company: organization, deleted_at: 1.day.ago)
+        expect(Assignment.unarchived).to include(a1)
+        expect(Assignment.unarchived).not_to include(a2)
+      end
+
+      it 'archived returns only assignments with deleted_at set' do
+        a1 = create(:assignment, company: organization, deleted_at: nil)
+        a2 = create(:assignment, company: organization, deleted_at: 1.day.ago)
+        expect(Assignment.archived).to include(a2)
+        expect(Assignment.archived).not_to include(a1)
+      end
+    end
+
+    describe '#archived?' do
+      it 'returns false when deleted_at is nil' do
+        expect(assignment.archived?).to be false
+      end
+
+      it 'returns true when deleted_at is set' do
+        assignment.update_columns(deleted_at: 1.day.ago)
+        expect(assignment.reload.archived?).to be true
+      end
+    end
+
+    describe '#archive!' do
+      it 'sets deleted_at to current time' do
+        assignment.archive!
+        expect(assignment.reload.deleted_at).to be_present
+        expect(assignment.reload.deleted_at).to be_within(5.seconds).of(Time.current)
+      end
+    end
+
+    describe '#restore!' do
+      it 'clears deleted_at' do
+        assignment.update_columns(deleted_at: 1.day.ago)
+        assignment.restore!
+        expect(assignment.reload.deleted_at).to be_nil
+      end
+    end
+
+    describe '#archivable?' do
+      it 'returns true when no position_assignments and no active assignment_tenures' do
+        expect(assignment.archivable?).to be true
+      end
+
+      it 'returns false when assignment has position_assignments' do
+        position_major_level = create(:position_major_level)
+        title = create(:title, company: organization, position_major_level: position_major_level)
+        position_level = create(:position_level, position_major_level: position_major_level)
+        position = create(:position, title: title, position_level: position_level)
+        create(:position_assignment, position: position, assignment: assignment)
+        expect(assignment.reload.archivable?).to be false
+      end
+
+      it 'returns false when assignment has active assignment_tenures' do
+        teammate = create(:teammate, organization: organization)
+        create(:assignment_tenure, assignment: assignment, teammate: teammate, started_at: 1.day.ago, ended_at: nil)
+        expect(assignment.reload.archivable?).to be false
+      end
+
+      it 'returns true when assignment has only ended assignment_tenures' do
+        teammate = create(:teammate, organization: organization)
+        create(:assignment_tenure, assignment: assignment, teammate: teammate, started_at: 2.days.ago, ended_at: 1.day.ago)
+        expect(assignment.reload.archivable?).to be true
+      end
+    end
+  end
+
   describe 'scopes' do
     describe '.for_company' do
       let(:other_company) { create(:company) }

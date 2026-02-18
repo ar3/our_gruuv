@@ -274,7 +274,8 @@ class Organizations::PositionsController < ApplicationController
     company = @position.title.company.root_company
     
     # Load all assignments for the company
-    @assignments = Assignment.where(company: company)
+    @assignments = Assignment.unarchived
+                            .where(company: company)
                             .includes(:department)
                             .ordered
     
@@ -504,7 +505,7 @@ class Organizations::PositionsController < ApplicationController
       @position_levels = []
     end
     
-    @assignments = @organization.assignments.ordered
+    @assignments = @organization.assignments.unarchived.ordered
   end
 
   def position_params

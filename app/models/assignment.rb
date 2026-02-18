@@ -35,9 +35,28 @@ class Assignment < ApplicationRecord
   attr_accessor :outcomes_textarea
   
   # Scopes
+  scope :unarchived, -> { where(deleted_at: nil) }
+  scope :archived, -> { where.not(deleted_at: nil) }
   scope :ordered, -> { order(:title) }
   scope :for_company, ->(company) { where(company_id: company.is_a?(Integer) ? company : company.id) }
   scope :for_department, ->(department) { where(department: department) }
+
+  # Archive (soft delete) – block if position_assignments or active assignment_tenures exist
+  def archived?
+    deleted_at.present?
+  end
+
+  def archive!
+    update!(deleted_at: Time.current)
+  end
+
+  def restore!
+    update!(deleted_at: nil)
+  end
+
+  def archivable?
+    position_assignments.empty? && assignment_tenures.active.empty?
+  end
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)

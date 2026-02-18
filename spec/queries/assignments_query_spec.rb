@@ -23,6 +23,25 @@ RSpec.describe AssignmentsQuery, type: :query do
       end
     end
 
+    context 'show_archived filter' do
+      let!(:archived_assignment) do
+        create(:assignment, company: organization, title: 'Archived One').tap { |a| a.update_columns(deleted_at: 1.day.ago) }
+      end
+
+      it 'excludes archived assignments by default' do
+        query = AssignmentsQuery.new(organization, {}, current_person: person, policy_scope: policy_scope)
+        results = query.call
+        expect(results).to include(assignment_company, assignment_department)
+        expect(results).not_to include(archived_assignment)
+      end
+
+      it 'includes archived assignments when show_archived=1' do
+        query = AssignmentsQuery.new(organization, { show_archived: '1' }, current_person: person, policy_scope: policy_scope)
+        results = query.call
+        expect(results).to include(assignment_company, assignment_department, archived_assignment)
+      end
+    end
+
     context 'filtering by no department (company)' do
       it 'returns only assignments with nil department when "none" is selected' do
         query = AssignmentsQuery.new(organization, { departments: 'none' }, current_person: person, policy_scope: policy_scope)
@@ -185,6 +204,11 @@ RSpec.describe AssignmentsQuery, type: :query do
     it 'excludes outcomes_filter when "all"' do
       query = AssignmentsQuery.new(organization, { outcomes_filter: 'all' }, current_person: person)
       expect(query.current_filters[:outcomes_filter]).to be_nil
+    end
+
+    it 'includes show_archived when present and 1' do
+      query = AssignmentsQuery.new(organization, { show_archived: '1' }, current_person: person)
+      expect(query.current_filters[:show_archived]).to be true
     end
   end
 

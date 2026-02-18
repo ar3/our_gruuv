@@ -11,6 +11,13 @@
     %i.bi.bi-arrow-left.me-2
     Back to Assignments
 
+- if @assignment.archived?
+  .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
+    %h5.alert-heading
+      %i.bi.bi-archive.me-2
+      Archived as of #{l(@assignment.deleted_at, format: :long)}
+    %p.mb-0 This assignment is archived. It no longer appears in lists or selectors but remains viewable and its data (check-ins, ratings, etc.) is preserved.
+
 .row.justify-content-center
   .col-12
     .card.mb-4

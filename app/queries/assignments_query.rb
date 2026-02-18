@@ -10,6 +10,7 @@ class AssignmentsQuery
 
   def call
     assignments = base_scope
+    assignments = assignments.unarchived unless show_archived?
     assignments = filter_by_organizations(assignments)
     assignments = filter_by_outcomes(assignments)
     assignments = filter_by_abilities(assignments)
@@ -20,6 +21,7 @@ class AssignmentsQuery
 
   def current_filters
     filters = {}
+    filters[:show_archived] = true if show_archived?
     if params[:departments].present?
       # Handle comma-separated list of department IDs
       department_ids = params[:departments].to_s.split(',').map(&:strip).reject(&:blank?)
@@ -29,6 +31,10 @@ class AssignmentsQuery
     filters[:abilities_filter] = params[:abilities_filter] if params[:abilities_filter].present? && params[:abilities_filter] != 'all'
     filters[:major_version] = params[:major_version] if params[:major_version].present?
     filters
+  end
+
+  def show_archived?
+    params[:show_archived].present? && params[:show_archived].to_s == '1'
   end
 
   def current_sort
@@ -51,9 +57,8 @@ class AssignmentsQuery
 
   def base_scope
     @base_scope ||= begin
-      company = organization.root_company || organization
       scope = policy_scope || Assignment.all
-      scope.where(company: company.self_and_descendants).includes(
+      scope.where(company: organization).includes(
         :assignment_outcomes,
         :published_external_reference,
         :draft_external_reference,
@@ -79,9 +84,7 @@ class AssignmentsQuery
 
     # If "none" is included, add condition for assignments with nil department
     if has_none
-      company = organization.root_company || organization
-      company_ids = company.self_and_descendants.pluck(:id).uniq
-      none_condition = assignments.arel_table[:company_id].in(company_ids)
+      none_condition = assignments.arel_table[:company_id].eq(organization.id)
         .and(assignments.arel_table[:department_id].eq(nil))
       conditions << none_condition
     end

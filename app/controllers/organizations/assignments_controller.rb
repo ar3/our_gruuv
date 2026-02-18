@@ -1,14 +1,13 @@
 class Organizations::AssignmentsController < ApplicationController
   before_action :authenticate_person!
   before_action :set_organization
-  before_action :set_assignment, only: [:show, :edit, :update, :destroy]
+  before_action :set_assignment, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore]
 
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
 
   def index
-    company = @organization.root_company || @organization
-    authorize company, :view_assignments?
+    authorize @organization, :view_assignments?
     
     # Use query object for filtering and sorting
     query = AssignmentsQuery.new(
@@ -274,9 +273,10 @@ class Organizations::AssignmentsController < ApplicationController
   def customize_view
     authorize @organization, :show?
     
-    # Use query object to get current state
+    # Use query object to get current state (no policy_scope needed for filters only)
     query = AssignmentsQuery.new(@organization, params, current_person: current_person)
     @current_filters = query.current_filters
+    @current_show_archived = query.show_archived?
     @current_sort = query.current_sort
     @current_view = query.current_view
     @current_spotlight = query.current_spotlight
@@ -289,12 +289,40 @@ class Organizations::AssignmentsController < ApplicationController
     render layout: 'overlay'
   end
 
+  def archive
+    authorize @assignment, :archive?
+    @position_assignments = @assignment.position_assignments.includes(position: :title)
+    @active_tenures = @assignment.assignment_tenures.active.includes(company_teammate: :person)
+    @position_assignments_count = @position_assignments.size
+    @active_tenures_count = @active_tenures.size
+    @archivable = @assignment.archivable?
+    render layout: determine_layout
+  end
+
+  def execute_archive
+    authorize @assignment, :archive?
+    unless @assignment.archivable?
+      redirect_to archive_organization_assignment_path(@organization, @assignment),
+                  alert: 'Cannot archive: remove all position assignments and active assignment tenures first.'
+      return
+    end
+    @assignment.archive!
+    redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully archived.'
+  end
+
+  def restore
+    authorize @assignment, :restore?
+    @assignment.restore!
+    redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully restored.'
+  end
+
   def update_view
     authorize @organization, :show?
     
     # Build redirect URL with all view customization params
     # Handle departments as comma-separated list
     redirect_params = {}
+    redirect_params[:show_archived] = params[:show_archived] if params[:show_archived].present?
     if params[:departments].present?
       # Convert array to comma-separated string if needed
       departments_value = if params[:departments].is_a?(Array)
@@ -322,7 +350,8 @@ class Organizations::AssignmentsController < ApplicationController
   end
 
   def set_assignment
-    @assignment = @organization.assignments.find(params[:id])
+    # Include archived so we can show/archive/restore archived assignments
+    @assignment = Assignment.where(company: @organization).find(params[:id])
   end
 
   def calculate_by_department_stats(assignments)

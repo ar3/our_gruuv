@@ -122,6 +122,20 @@ RSpec.describe AssignmentPolicy, type: :policy do
     end
   end
 
+  describe 'archive?' do
+    it 'delegates to update?' do
+      policy = AssignmentPolicy.new(pundit_user_maap, assignment)
+      expect(policy.archive?).to eq(policy.update?)
+    end
+  end
+
+  describe 'restore?' do
+    it 'delegates to update?' do
+      policy = AssignmentPolicy.new(pundit_user_maap, assignment)
+      expect(policy.restore?).to eq(policy.update?)
+    end
+  end
+
   describe 'manage_consumer_assignments?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do

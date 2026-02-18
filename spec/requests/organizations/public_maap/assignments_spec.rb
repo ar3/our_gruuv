@@ -56,6 +56,14 @@ RSpec.describe 'Organizations::PublicMaap::Assignments', type: :request do
       get organization_public_maap_assignments_path(company)
       expect(response.body).not_to include('View Authenticated Version')
     end
+
+    it 'excludes archived assignments from index' do
+      archived = create(:assignment, company: company, title: 'Archived Assignment', tagline: 'Archived').tap { |a| a.update_columns(deleted_at: 1.day.ago) }
+      get organization_public_maap_assignments_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Company Assignment')
+      expect(response.body).not_to include('Archived Assignment')
+    end
   end
 
   describe 'GET /organizations/:organization_id/public_maap/assignments/:id' do
@@ -134,6 +142,18 @@ RSpec.describe 'Organizations::PublicMaap::Assignments', type: :request do
         get organization_public_maap_assignment_path(company, assignment_company)
         expect(response.body).to include('Handbook')
         expect(response.body).to include('Handbook Content')
+      end
+    end
+
+    context 'when assignment is archived' do
+      before do
+        assignment_company.update_columns(deleted_at: 1.day.ago)
+      end
+
+      it 'displays archived banner' do
+        get organization_public_maap_assignment_path(company, assignment_company)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archived as of')
       end
     end
   end

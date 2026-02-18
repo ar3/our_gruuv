@@ -8,7 +8,8 @@ class Organizations::Assignments::ConsumerAssignmentsController < Organizations:
     # Load all assignments in organization hierarchy (excluding current assignment)
     company = @assignment.company
     company_hierarchy_ids = company.self_and_descendants.map(&:id)
-    all_assignments = Assignment.where(company_id: company_hierarchy_ids)
+    all_assignments = Assignment.unarchived
+                                .where(company_id: company_hierarchy_ids)
                                 .where.not(id: @assignment.id)
                                 .includes(:department, :company)
                                 .order(:title)

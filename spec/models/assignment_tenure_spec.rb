@@ -7,6 +7,12 @@ RSpec.describe AssignmentTenure, type: :model do
   let(:assignment) { create(:assignment, company: organization) }
 
   describe 'validations' do
+    it 'requires teammate_id' do
+      tenure = AssignmentTenure.new(assignment: assignment, started_at: Date.current)
+      expect(tenure).not_to be_valid
+      expect(tenure.errors[:teammate_id]).to include("can't be blank")
+    end
+
     it 'requires started_at' do
       tenure = AssignmentTenure.new(teammate: teammate, assignment: assignment)
       expect(tenure).not_to be_valid

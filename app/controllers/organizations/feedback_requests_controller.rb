@@ -225,7 +225,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
         @active_position.required_assignments.pluck(:assignment_id).each { |id| assignment_ids.add(id) }
       end
     end
-    @assignments = Assignment.where(id: assignment_ids.to_a, company: company.self_and_descendants).ordered
+    @assignments = Assignment.unarchived.where(id: assignment_ids.to_a, company: company.self_and_descendants).ordered
     
     # Get abilities required for all assignments above
     ability_ids = Set.new
@@ -284,7 +284,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     
     # Create placeholder questions (will be filled in feedback_prompt)
     position_attr = { rateable_type: 'Position', rateable_id: position.id } if position
-    assignment_attrs = Assignment.where(id: assignment_ids, company: company.self_and_descendants).map { |a| { rateable_type: 'Assignment', rateable_id: a.id } }
+    assignment_attrs = Assignment.unarchived.where(id: assignment_ids, company: company.self_and_descendants).map { |a| { rateable_type: 'Assignment', rateable_id: a.id } }
     ability_attrs = Ability.where(id: ability_ids, company: company).map { |a| { rateable_type: 'Ability', rateable_id: a.id } }
     aspiration_attrs = Aspiration.where(id: aspiration_ids, company: company).map { |a| { rateable_type: 'Aspiration', rateable_id: a.id } }
     

@@ -437,6 +437,96 @@ RSpec.describe 'Organizations::Assignments', type: :request do
     end
   end
 
+  describe 'archiving' do
+    context 'when user is manager with MAAP permissions' do
+      before do
+        manager_teammate
+        sign_in_as_teammate_for_request(manager, organization)
+      end
+
+      describe 'GET archive' do
+        it 'renders archive confirmation page' do
+          get archive_organization_assignment_path(organization, assignment)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('Archive Assignment')
+          expect(response.body).to include(assignment.title)
+        end
+      end
+
+      describe 'PATCH execute_archive' do
+        it 'archives assignment when archivable and redirects to show' do
+          expect(assignment.archivable?).to be true
+          patch execute_archive_organization_assignment_path(organization, assignment)
+          expect(response).to redirect_to(organization_assignment_path(organization, assignment))
+          expect(assignment.reload.archived?).to be true
+        end
+
+        it 'redirects back with alert when not archivable' do
+          teammate_for_tenure = create(:teammate, organization: organization)
+          create(:assignment_tenure, assignment: assignment, teammate: teammate_for_tenure, started_at: 1.day.ago, ended_at: nil)
+          expect(assignment.reload.archivable?).to be false
+          patch execute_archive_organization_assignment_path(organization, assignment)
+          expect(response).to have_http_status(:redirect)
+          expect(assignment.reload.archived?).to be false
+        end
+      end
+
+      describe 'PATCH restore' do
+        before { assignment.update_columns(deleted_at: 1.day.ago) }
+
+        it 'restores assignment and redirects to show' do
+          patch restore_organization_assignment_path(organization, assignment)
+          expect(response).to redirect_to(organization_assignment_path(organization, assignment))
+          expect(assignment.reload.archived?).to be false
+        end
+      end
+    end
+
+    context 'when assignment is archived' do
+      before do
+        assignment.update_columns(deleted_at: 1.day.ago)
+        person_teammate
+        sign_in_as_teammate_for_request(person, organization)
+      end
+
+      it 'show page displays archived banner' do
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archived as of')
+      end
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/assignments (index) with show_archived' do
+    let(:company) { create(:organization, :company) }
+    let(:assignment_in_index) { create(:assignment, company: company, title: 'Visible Assignment') }
+    let!(:archived_in_index) do
+      create(:assignment, company: company, title: 'Archived One').tap { |a| a.update_columns(deleted_at: 1.day.ago) }
+    end
+    let(:teammate_in_company) { create(:teammate, person: person, organization: company) }
+
+    before do
+      assignment_in_index
+      teammate_in_company
+      sign_in_as_teammate_for_request(person, company)
+    end
+
+    it 'excludes archived assignments by default' do
+      get organization_assignments_path(company)
+      expect(response).to have_http_status(:success)
+      list = assigns(:assignments).to_a
+      expect(list).not_to include(archived_in_index)
+      expect(list).to include(assignment_in_index)
+    end
+
+    it 'includes archived assignments when show_archived=1' do
+      get organization_assignments_path(company, show_archived: '1')
+      expect(response).to have_http_status(:success)
+      list = assigns(:assignments).to_a
+      expect(list).to include(archived_in_index, assignment_in_index)
+    end
+  end
+
   describe 'GET /organizations/:organization_id/assignments/new' do
     context 'when user is a regular teammate' do
       before do

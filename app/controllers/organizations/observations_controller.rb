@@ -482,7 +482,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @observation.observation_ratings.load if @observation.observation_ratings.loaded?
     
     # Load available rateables
-    @assignments = organization.assignments.ordered
+    @assignments = organization.assignments.unarchived.ordered
     @aspirations = organization.aspirations
     @abilities = organization.abilities.order(:name)
     
@@ -667,7 +667,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           redirect_to redirect_url, notice: 'Observation was successfully created.'
         else
           # Re-populate the form with submitted values for re-rendering
-          @assignments = organization.assignments.ordered
+          @assignments = organization.assignments.unarchived.ordered
           @aspirations = organization.aspirations
           @abilities = organization.abilities.order(:name)
           render :new, status: :unprocessable_entity
@@ -682,7 +682,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @form.privacy_level = params[:observation][:privacy_level] if params[:observation][:privacy_level].present?
       @form.observed_at = params[:observation][:observed_at] if params[:observation][:observed_at].present?
       
-      @assignments = organization.assignments.ordered
+      @assignments = organization.assignments.unarchived.ordered
       @aspirations = organization.aspirations
       @abilities = organization.abilities.order(:name)
       render :new, status: :unprocessable_entity
@@ -758,7 +758,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       # Load available abilities and assignments for selected observees
       teammate_ids = wizard_data['teammate_ids'] || []
       @available_abilities = organization.abilities
-      @available_assignments = organization.assignments
+      @available_assignments = organization.assignments.unarchived
       @available_aspirations = organization.aspirations
       
       render :set_ratings
@@ -799,7 +799,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         
         teammate_ids = wizard_data['teammate_ids'] || []
         @available_abilities = organization.abilities.where(id: teammate_ids.map(&:to_i))
-        @available_assignments = organization.assignments.where(id: teammate_ids.map(&:to_i))
+        @available_assignments = organization.assignments.unarchived.where(id: teammate_ids.map(&:to_i))
         @available_aspirations = organization.aspirations.where(id: teammate_ids.map(&:to_i))
         
         render :set_ratings, status: :unprocessable_entity
@@ -1153,7 +1153,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         flash[:alert] = "Failed to save: #{@form.errors.full_messages.join(', ')}"
         @return_url = determine_return_url
         @return_text = params[:return_text] || 'Back'
-        @assignments = organization.assignments.ordered
+        @assignments = organization.assignments.unarchived.ordered
         @aspirations = organization.aspirations
         @abilities = organization.abilities.order(:name)
         render :new, layout: 'overlay', status: :unprocessable_entity
@@ -1241,7 +1241,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       flash[:alert] = "Failed to update: #{@observation.errors.full_messages.join(', ')}"
       @return_url = determine_return_url
       @return_text = params[:return_text]
-      @assignments = organization.assignments.ordered
+      @assignments = organization.assignments.unarchived.ordered
       @aspirations = organization.aspirations
       @abilities = organization.abilities.order(:name)
       render :new, layout: 'overlay', status: :unprocessable_entity
@@ -1466,7 +1466,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     authorize @observation, :update?
     
     # Load available assignments
-    @assignments = organization.assignments.ordered
+    @assignments = organization.assignments.unarchived.ordered
     
     # Store return context
     @return_url = params[:return_url] || typed_observation_path_for(@observation)
@@ -1668,7 +1668,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         Rails.logger.error "Publish validation failed: #{@form.errors.full_messages}"
         @return_url = params[:return_url] || organization_observations_path(organization)
         @return_text = params[:return_text] || 'Back'
-        @assignments = organization.assignments.ordered
+        @assignments = organization.assignments.unarchived.ordered
         @aspirations = organization.aspirations
         @abilities = organization.abilities.order(:name)
         flash[:alert] = "Cannot publish: #{@form.errors.full_messages.join(', ')}"
@@ -1693,7 +1693,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           Rails.logger.error "Publish validation failed: #{@form.errors.full_messages}"
           @return_url = params[:return_url] || organization_observations_path(organization)
           @return_text = params[:return_text] || 'Back'
-          @assignments = organization.assignments.ordered
+          @assignments = organization.assignments.unarchived.ordered
           @aspirations = organization.aspirations
           @abilities = organization.abilities.order(:name)
           flash[:alert] = "Cannot publish: #{@form.errors.full_messages.join(', ')}"
@@ -1737,7 +1737,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         # From form/new page - render form with errors
         @return_url = params[:return_url] || organization_observations_path(organization)
         @return_text = params[:return_text] || 'Back'
-        @assignments = organization.assignments.ordered
+        @assignments = organization.assignments.unarchived.ordered
         @aspirations = organization.aspirations
         @abilities = organization.abilities.order(:name)
         flash[:alert] = "Cannot publish: #{@observation.errors.full_messages.join(', ')}"
@@ -1827,7 +1827,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @observation.observation_ratings.load if @observation.observation_ratings.loaded?
     
     # Load available rateables
-    @assignments = organization.assignments.ordered
+    @assignments = organization.assignments.unarchived.ordered
     @aspirations = organization.aspirations
     @abilities = organization.abilities.order(:name)
     

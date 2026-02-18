@@ -1,0 +1,78 @@
+- content_for :title, "Archive Assignment - #{@assignment.title}"
+- content_for :header do
+  Archive Assignment: #{@assignment.title}
+- content_for :go_back_link do
+  = link_to organization_assignment_path(@organization, @assignment), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignment
+
+.row.justify-content-center
+  .col-lg-10
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-archive.me-2
+          What happens when you archive
+      .card-body
+        %p.mb-2
+          Archiving this assignment will:
+        %ul
+          %li Remove it from assignment lists and selectors (e.g. when adding assignments to positions).
+          %li Keep the assignment page and public page reachable by direct URL, with an "Archived as of [date]" banner.
+          %li Preserve all check-ins, observation ratings, comments, assignment tenures (historical), and links from observations.
+        %p.mb-0.text-muted
+          You must remove all position assignments and active assignment tenures before archiving.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-exclamation-triangle.me-2
+          Requirements before archiving
+      .card-body
+        %ul.list-unstyled.mb-0
+          %li.mb-3
+            - if @position_assignments_count.zero?
+              %i.bi.bi-check-circle.text-success.me-2
+              No position assignments
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              Remove from #{pluralize(@position_assignments_count, 'position')} (use Manage assignments on each position)
+              %ul.mt-1.mb-0.ms-4
+                - @position_assignments.each do |pa|
+                  %li
+                    = link_to pa.position.display_name, organization_position_path(pa.position.company, pa.position), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      (
+                    = link_to 'Manage assignments', manage_assignments_organization_position_path(pa.position.company, pa.position), class: 'text-decoration-none'
+                    %span.text-muted
+                      )
+          %li
+            - if @active_tenures_count.zero?
+              %i.bi.bi-check-circle.text-success.me-2
+              No active assignment tenures
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              #{pluralize(@active_tenures_count, 'person')} currently has this assignment. End or reassign all active tenures first.
+              %ul.mt-1.mb-0.ms-4
+                - @active_tenures.each do |tenure|
+                  %li
+                    = link_to tenure.teammate.person.display_name, internal_organization_company_teammate_path(tenure.teammate.organization, tenure.teammate), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      (teammate internal view)
+
+    - if @archivable
+      .card.mb-4
+        .card-body
+          = form_with url: execute_archive_organization_assignment_path(@organization, @assignment), method: :patch, local: true do |f|
+            .form-check.mb-3
+              = check_box_tag :confirm_archive, '1', false, class: 'form-check-input', id: 'confirm_archive', required: true
+              = label_tag 'confirm_archive', 'I understand that this assignment will be archived and removed from lists and selectors.', class: 'form-check-label'
+            = f.submit 'Archive assignment', class: 'btn btn-warning'
+    - else
+      .card.mb-4.border-warning
+        .card-body
+          %p.mb-2.text-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            You cannot archive until all position assignments and active assignment tenures are removed.
+          %p.mb-0
+            = link_to 'Back to assignment', organization_assignment_path(@organization, @assignment), class: 'btn btn-outline-secondary'

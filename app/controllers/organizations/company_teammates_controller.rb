@@ -270,7 +270,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   def assignment_selection
     authorize @teammate, :manage_assignments?, policy_class: CompanyTeammatePolicy
     
-    @assignments = organization.assignments.includes(:position_assignments).ordered
+    @assignments = organization.assignments.unarchived.includes(:position_assignments).ordered
     @current_employment = @teammate&.employment_tenures&.active&.first
     
     # Get required assignment IDs from position
@@ -352,10 +352,11 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     
     # Load all assignments for the organization
     company = organization.root_company || organization
-    @assignments = Assignment.where(company: company.self_and_descendants)
+    @assignments = Assignment.unarchived
+                            .where(company: company.self_and_descendants)
                             .includes(:department, :company)
                             .ordered
-    
+
     # For each assignment, load tenure data
     @assignment_data = {}
     @assignments.each do |assignment|

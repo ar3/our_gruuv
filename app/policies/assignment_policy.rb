@@ -1,16 +1,9 @@
 class AssignmentPolicy < ApplicationPolicy
   def show?
     return true if admin_bypass?
-    
-    # Users can view assignments in their organization hierarchy
     return false unless viewing_teammate
-    user_org = viewing_teammate.organization
-    record_org = record.company
-    
-    # Check if record's organization is in user's organization hierarchy
-    return false unless user_org.self_and_descendants.include?(record_org)
-    
-    true
+    return false unless record&.company_id
+    viewing_teammate.organization_id == record.company_id
   end
 
   def create?
@@ -45,34 +38,28 @@ class AssignmentPolicy < ApplicationPolicy
     viewing_teammate.person.admin? || user_has_maap_permission_for_record?
   end
 
+  def archive?
+    update?
+  end
+
+  def restore?
+    update?
+  end
+
   private
 
   def user_has_maap_permission?
     return false unless viewing_teammate
-    
-    # For new records, get organization from record.company or actual_organization
-    # For existing records, use record.company
     organization = record.company || actual_organization
     return false unless organization
-    
-    # Check if organization is in user's hierarchy
-    user_org = viewing_teammate.organization
-    return false unless user_org.self_and_descendants.include?(organization)
-    
-    viewing_teammate.can_manage_maap?
+    viewing_teammate.organization_id == organization.id && viewing_teammate.can_manage_maap?
   end
 
+  # Teammates are attached to a single organization; assignment belongs to that org (company_id).
   def user_has_maap_permission_for_record?
     return false unless viewing_teammate
-    return false unless record&.company
-    viewing_teammate_org = viewing_teammate.organization
-    return false unless viewing_teammate_org
-    
-    # Check if record's organization is in viewing_teammate's organization hierarchy
-    orgs = viewing_teammate_org.self_and_descendants
-    return false unless orgs.include?(record.company)
-    
-    viewing_teammate.can_manage_maap?
+    return false unless record&.company_id
+    viewing_teammate.organization_id == record.company_id && viewing_teammate.can_manage_maap?
   end
 
   class Scope < ApplicationPolicy::Scope
@@ -80,12 +67,8 @@ class AssignmentPolicy < ApplicationPolicy
       return scope.none unless viewing_teammate
       person = viewing_teammate.person
       return scope.all if person.admin?
-      
-      # Only show assignments in user's organization
       return scope.none unless actual_organization
-      
-      company = actual_organization.root_company || actual_organization
-      scope.where(company: company.self_and_descendants)
+      scope.where(company: actual_organization)
     end
   end
 end

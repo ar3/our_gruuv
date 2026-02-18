@@ -44,7 +44,10 @@
                               "data-bs-html" => "true",
                               "data-bs-content" => latest_assignment_check_in_popover_content(check_in.teammate, check_in.assignment)
                 %i.bi.bi-clock-history.ms-1.text-muted
-                - if check_in.assignment_tenure&.active?
+                - if check_in.assignment.archived?
+                  %div.mt-1
+                    %span.badge.bg-danger Archived
+                - elsif check_in.assignment_tenure&.active?
                   %div.mt-1
                     %span.badge.bg-success
                       Active Assignment - #{check_in.assignment_tenure.anticipated_energy_percentage}%

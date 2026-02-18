@@ -1,10 +1,8 @@
 class Organizations::PublicMaap::AssignmentsController < Organizations::PublicMaap::BaseController
   def index
-    # Get all assignments for this organization (company)
-    company = @organization.root_company || @organization
-    
     @assignments = Assignment
-      .where(company: company)
+      .unarchived
+      .where(company: @organization)
       .includes(:company, :department)
       .ordered
     

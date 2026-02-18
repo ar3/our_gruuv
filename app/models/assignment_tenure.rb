@@ -4,6 +4,7 @@ class AssignmentTenure < ApplicationRecord
   alias_method :teammate=, :company_teammate=
   belongs_to :assignment
 
+  validates :teammate_id, presence: true
   validates :started_at, presence: true
   validates :ended_at, comparison: { greater_than_or_equal_to: :started_at }, allow_nil: true
   validates :anticipated_energy_percentage, 
