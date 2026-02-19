@@ -959,6 +959,24 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       end
     end
 
+    context 'when requestor and responder have Slack (group DM)' do
+      before do
+        create(:teammate_identity, teammate: requestor_teammate, provider: 'slack', uid: 'U_REQUESTOR')
+        create(:teammate_identity, teammate: responder_teammate, provider: 'slack', uid: 'U123456')
+        allow_any_instance_of(SlackService).to receive(:open_or_create_group_dm).with(user_ids: %w[U123456 U_REQUESTOR]).and_return({ success: true, channel_id: 'D_GROUP99' })
+        allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '123.456' })
+      end
+
+      it 'sends notification to group DM (respondent + requestor) and redirects with notice' do
+        post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)
+
+        expect(response).to redirect_to(organization_feedback_request_path(company_with_slack, feedback_request))
+        expect(flash[:notice]).to match(/Slack notification sent to 1 respondent/)
+        notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
+        expect(notification.metadata['channel']).to eq('D_GROUP99')
+      end
+    end
+
     context 'when no responder has Slack identity' do
       it 'redirects with notice that no notifications were sent' do
         post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)

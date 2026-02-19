@@ -59,14 +59,35 @@ RSpec.describe FeedbackRequests::NotifyRespondentsService, type: :service do
         expect(feedback_request.notifications.where(notification_type: 'feedback_request').count).to eq(1)
       end
 
-      it 'creates notification with correct channel, teammate_id, and message content' do
+      it 'creates notification with correct channel (1:1 when requestor has no Slack), teammate_id, and message content' do
         described_class.call(feedback_request: feedback_request)
 
         notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
         expect(notification.metadata['channel']).to eq('U111')
         expect(notification.metadata['teammate_id']).to eq(responder1.id)
         expect(notification.fallback_text).to include('Respond here:')
+        expect(notification.fallback_text).to include('(Feedback about performance)')
         expect(notification.rich_message).to be_present
+        expect(notification.rich_message.first['text']['text']).to include('(Feedback about performance)')
+      end
+    end
+
+    context 'when requestor and responder have Slack (group DM with requestor)' do
+      before do
+        create(:teammate_identity, teammate: requestor_teammate, provider: 'slack', uid: 'U_REQUESTOR')
+        create(:teammate_identity, teammate: responder1, provider: 'slack', uid: 'U111')
+        allow_any_instance_of(SlackService).to receive(:open_or_create_group_dm).with(user_ids: %w[U111 U_REQUESTOR]).and_return({ success: true, channel_id: 'D_GROUP123' })
+        allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '1.0' })
+      end
+
+      it 'opens group DM with respondent and requestor and posts there' do
+        result = described_class.call(feedback_request: feedback_request)
+
+        expect(result).to be_ok
+        expect(result.value[:sent]).to eq(1)
+        notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
+        expect(notification.metadata['channel']).to eq('D_GROUP123')
+        expect(notification.metadata['teammate_id']).to eq(responder1.id)
       end
     end
 
@@ -85,14 +106,15 @@ RSpec.describe FeedbackRequests::NotifyRespondentsService, type: :service do
         allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '1.0' })
       end
 
-      it 'uses message that subject has requested your feedback (no "about X")' do
+      it 'uses message that subject has requested your feedback (no "about X") and includes subject_line in parentheses' do
         described_class.call(feedback_request: feedback_request)
 
         notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
         text = notification.rich_message.first['text']['text']
         expect(text).to include('has requested your feedback.')
         expect(text).not_to include('has requested your feedback about')
-        expect(notification.fallback_text).to match(/\A#{requestor_teammate.person.casual_name} has requested your feedback\./)
+        expect(text).to include('(Feedback about me)')
+        expect(notification.fallback_text).to match(/\A#{Regexp.escape(requestor_teammate.person.casual_name)} \(Feedback about me\) has requested your feedback\./)
       end
     end
 
@@ -109,6 +131,27 @@ RSpec.describe FeedbackRequests::NotifyRespondentsService, type: :service do
         expect(result).to be_ok
         expect(result.value[:sent]).to eq(2)
         expect(feedback_request.notifications.where(notification_type: 'feedback_request').count).to eq(2)
+      end
+    end
+
+    context 'when requestor and all responders have Slack (group DMs)' do
+      before do
+        create(:teammate_identity, teammate: requestor_teammate, provider: 'slack', uid: 'U_REQUESTOR')
+        create(:teammate_identity, teammate: responder1, provider: 'slack', uid: 'U111')
+        create(:teammate_identity, teammate: responder2, provider: 'slack', uid: 'U222')
+        allow_any_instance_of(SlackService).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D_GROUP' })
+        allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '1.0' })
+      end
+
+      it 'opens a group DM (respondent + requestor) per responder and posts there' do
+        result = described_class.call(feedback_request: feedback_request)
+
+        expect(result).to be_ok
+        expect(result.value[:sent]).to eq(2)
+        expect(feedback_request.notifications.where(notification_type: 'feedback_request').count).to eq(2)
+        feedback_request.notifications.where(notification_type: 'feedback_request').each do |n|
+          expect(n.metadata['channel']).to eq('D_GROUP')
+        end
       end
     end
 
