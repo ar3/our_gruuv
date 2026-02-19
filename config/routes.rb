@@ -306,6 +306,9 @@ Rails.application.routes.draw do
         get :position_levels
       end
       member do
+        get :archive
+        patch :execute_archive
+        patch :restore
         get :job_description
         get :manage_assignments
         patch :update_assignments

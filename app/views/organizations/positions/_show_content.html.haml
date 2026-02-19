@@ -193,16 +193,15 @@
                       Manage Eligibility
                   %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need can_manage_maap permission on your company teammate record for this position's company to manage eligibility"}}
               
-              / Archive Position
-              - can_archive = policy(@position).destroy?
-              - if can_archive
-                = link_to organization_position_path(@organization, @position), method: :delete, data: { confirm: "Are you sure you want to archive this position? This action cannot be undone." }, class: "btn btn-outline-danger w-100" do
+              / Archive Position (links to confirmation page)
+              - if policy(@position).archive?
+                = link_to archive_organization_position_path(@organization, @position), class: "btn btn-outline-danger w-100" do
                   %i.bi.bi-archive.me-2
                   Archive Position
               - else
                 .d-flex.align-items-center.gap-2
                   .flex-grow-1
-                    = link_to organization_position_path(@organization, @position), method: :delete, class: "btn btn-outline-secondary w-100", disabled: true, style: "pointer-events: none;" do
+                    %span.btn.btn-outline-secondary.w-100.disabled
                       %i.bi.bi-archive.me-2
                       Archive Position
                   %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need can_manage_maap permission on your company teammate record for this position's company to archive positions"}}

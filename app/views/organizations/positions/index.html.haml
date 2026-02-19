@@ -121,8 +121,9 @@
                                   %i.bi.bi-file-text
                                 = link_to edit_organization_position_path(@organization, position), class: "btn btn-outline-secondary", title: "Edit" do
                                   %i.bi.bi-pencil
-                                %a.btn.btn-outline-secondary{href: "#", title: "Archive", role: "button", onclick: "alert('archive coming soon'); return false;"}
-                                  %i.bi.bi-archive
+                                - if policy(position).archive?
+                                  = link_to archive_organization_position_path(@organization, position), class: "btn btn-outline-secondary", title: "Archive" do
+                                    %i.bi.bi-archive
                                 = link_to organization_position_path(@organization, position), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
                                   %i.bi.bi-trash
                 - else

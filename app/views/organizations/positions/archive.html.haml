@@ -1,0 +1,91 @@
+- content_for :title, "Archive Position - #{@position.display_name}"
+- content_for :header do
+  Archive Position: #{@position.display_name}
+- content_for :go_back_link do
+  = link_to organization_position_path(@organization, @position), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Position
+
+.row.justify-content-center
+  .col-lg-10
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-archive.me-2
+          What happens when you archive
+      .card-body
+        %p.mb-2
+          Archiving this position will:
+        %ul
+          %li Remove it from position lists and selectors (e.g. when assigning positions to people or linking positions to assignments).
+          %li Keep the position page and public page reachable by direct URL, with an "Archived as of [date]" banner.
+          %li Preserve job description, assignments, ability requirements, and comments.
+        %p.mb-0.text-muted
+          You must remove all position assignments, ability requirements, and end all active employment in this position before archiving.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-exclamation-triangle.me-2
+          Requirements before archiving
+      .card-body
+        %ul.list-unstyled.mb-0
+          %li.mb-3
+            - if @position_assignments.empty?
+              %i.bi.bi-check-circle.text-success.me-2
+              No position assignments
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              Remove all assignments from this position
+              %ul.mt-1.mb-0.ms-4
+                - @position_assignments.each do |pa|
+                  %li
+                    = link_to pa.assignment.title, organization_assignment_path(pa.assignment.company, pa.assignment), class: 'text-decoration-none'
+                %li
+                  = link_to 'Manage Assignments', manage_assignments_organization_position_path(@organization, @position), class: 'text-decoration-none'
+          %li.mb-3
+            - if @position_abilities.empty?
+              %i.bi.bi-check-circle.text-success.me-2
+              No direct ability requirements
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              Remove #{pluralize(@position_abilities.size, 'ability requirement')} (use Direct Milestone Requirements on this position)
+              %ul.mt-1.mb-0.ms-4
+                - @position_abilities.each do |pa|
+                  %li
+                    = link_to pa.ability.name, organization_ability_path(pa.ability.company, pa.ability), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      (
+                    = link_to 'Set direct milestone requirements', organization_position_ability_milestones_path(@organization, @position), class: 'text-decoration-none'
+                    %span.text-muted
+                      )
+          %li
+            - if @active_employment_tenures.empty?
+              %i.bi.bi-check-circle.text-success.me-2
+              No active employment in this position
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              #{pluralize(@active_employment_tenures.size, 'person')} currently in this position. End employment or reassign first.
+              %ul.mt-1.mb-0.ms-4
+                - @active_employment_tenures.each do |et|
+                  %li
+                    = link_to et.teammate.person.display_name, internal_organization_company_teammate_path(et.teammate.organization, et.teammate), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      (teammate internal view)
+
+    - if @archivable
+      .card.mb-4
+        .card-body
+          = form_with url: execute_archive_organization_position_path(@organization, @position), method: :patch, local: true do |f|
+            .form-check.mb-3
+              = check_box_tag :confirm_archive, '1', false, class: 'form-check-input', id: 'confirm_archive', required: true
+              = label_tag 'confirm_archive', 'I understand that this position will be archived and removed from lists and selectors.', class: 'form-check-label'
+            = f.submit 'Archive position', class: 'btn btn-warning'
+    - else
+      .card.mb-4.border-warning
+        .card-body
+          %p.mb-2.text-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            You cannot archive until all position assignments, ability requirements, and active employment are removed.
+          %p.mb-0
+            = link_to 'Back to position', organization_position_path(@organization, @position), class: 'btn btn-outline-secondary'

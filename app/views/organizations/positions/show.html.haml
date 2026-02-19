@@ -11,7 +11,12 @@
     %i.bi.bi-arrow-left.me-2
     Back to Positions
 
-
+- if @position.archived?
+  .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
+    %h5.alert-heading
+      %i.bi.bi-archive.me-2
+      Archived as of #{l(@position.deleted_at, format: :long)}
+    %p.mb-0 This position is archived. It no longer appears in lists or selectors but remains viewable and its data is preserved.
 
 .row.justify-content-center
   .col-12

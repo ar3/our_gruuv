@@ -4,6 +4,7 @@ class Organizations::PublicMaap::PositionsController < Organizations::PublicMaap
     company = @organization.root_company || @organization
     
     @positions = Position
+      .unarchived
       .joins(:title)
       .where(titles: { company_id: company.id })
       .includes(title: [:company, :department], position_level: :position_major_level)

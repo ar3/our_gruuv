@@ -1,5 +1,12 @@
 - content_for :title, "Public MAAP - #{@position.display_name}"
 
+- if @position.archived?
+  .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
+    %h5.alert-heading
+      %i.bi.bi-archive.me-2
+      Archived as of #{l(@position.deleted_at, format: :long)}
+    %p.mb-0 This position is archived. It no longer appears in position lists but remains viewable.
+
 %h1.mb-4= @position.display_name
 
 .mb-3

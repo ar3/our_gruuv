@@ -79,13 +79,13 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('Individual contributor levels')
     end
 
-    it 'includes archive button that shows "archive coming soon" on click' do
+    it 'includes archive link for positions when user can archive' do
+      CompanyTeammate.find_by!(person: person, organization: organization).update!(can_manage_maap: true)
       get organization_positions_path(organization)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('bi-archive')
-      expect(response.body).to include('archive coming soon')
-      expect(response.body).to include('onclick')
+      expect(response.body).to include(archive_organization_position_path(organization, position_v1))
     end
   end
 
@@ -142,6 +142,82 @@ RSpec.describe 'Organizations::Positions', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).not_to include('Additional Abilities required')
+    end
+  end
+
+  describe 'position archiving' do
+    let(:organization) { create(:organization, :company) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
+
+    before do
+      CompanyTeammate.find_by!(person: person, organization: organization).update!(can_manage_maap: true)
+    end
+
+    describe 'GET archive' do
+      it 'renders archive confirmation page' do
+        get archive_organization_position_path(organization, position)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archive Position')
+        expect(response.body).to include('What happens when you archive')
+      end
+    end
+
+    describe 'PATCH execute_archive' do
+      it 'archives position when archivable and redirects to show' do
+        expect(position.archivable?).to be true
+        patch execute_archive_organization_position_path(organization, position)
+        expect(response).to redirect_to(organization_position_path(organization, position))
+        expect(position.reload.archived?).to be true
+      end
+
+      it 'redirects back with alert when not archivable' do
+        create(:position_assignment, position: position, assignment: create(:assignment, company: organization), assignment_type: 'required')
+        expect(position.reload.archivable?).to be false
+        patch execute_archive_organization_position_path(organization, position)
+        expect(response).to have_http_status(:redirect)
+        expect(position.reload.archived?).to be false
+      end
+    end
+
+    describe 'PATCH restore' do
+      before { position.update_columns(deleted_at: 1.day.ago) }
+
+      it 'restores position and redirects to show' do
+        patch restore_organization_position_path(organization, position)
+        expect(response).to redirect_to(organization_position_path(organization, position))
+        expect(position.reload.archived?).to be false
+      end
+    end
+
+    it 'show page displays archived banner when position is archived' do
+      position.update_columns(deleted_at: 1.day.ago)
+      get organization_position_path(organization, position)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Archived as of')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/positions (index) with show_archived' do
+    let!(:archived_position) do
+      create(:position, title: title, position_level: position_level).tap { |p| p.update_columns(deleted_at: 1.day.ago) }
+    end
+    let!(:visible_position) { create(:position, title: title, position_level: create(:position_level, position_major_level: title.position_major_level)) }
+
+    it 'excludes archived positions by default' do
+      get organization_positions_path(organization)
+      expect(response).to have_http_status(:success)
+      titles = controller.instance_variable_get(:@titles)
+      position_ids = titles.flat_map { |t| t.positions.map(&:id) }
+      expect(position_ids).not_to include(archived_position.id)
+      expect(position_ids).to include(visible_position.id)
+    end
+
+    it 'includes archived positions when show_archived=1' do
+      get organization_positions_path(organization, show_archived: '1')
+      expect(response).to have_http_status(:success)
+      titles = controller.instance_variable_get(:@titles)
+      position_ids = titles.flat_map { |t| t.positions.map(&:id) }
+      expect(position_ids).to include(archived_position.id, visible_position.id)
     end
   end
 end

@@ -46,7 +46,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   private
   
   def set_wizard_data
-    @positions = @organization.positions.includes(:title, :position_level)
+    @positions = @organization.positions.unarchived.includes(:title, :position_level)
     employee_person_ids = @organization.employees.select(:person_id)
     @managers = @organization.teammates
       .where(person_id: employee_person_ids)

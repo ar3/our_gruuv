@@ -1,10 +1,13 @@
 class Organizations::PositionsController < ApplicationController
   before_action :set_organization
-  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy, :manage_assignments, :update_assignments, :manage_eligibility, :update_eligibility]
+  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy, :archive, :execute_archive, :restore, :manage_assignments, :update_assignments, :manage_eligibility, :update_eligibility]
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
-    @positions = @organization.positions.includes(:title, :position_level)
+    @current_show_archived = params[:show_archived].to_s == '1'
+    scope = @organization.positions
+    scope = scope.unarchived unless @current_show_archived
+    @positions = scope.includes(:title, :position_level)
     
     # Apply filters
     @positions = @positions.where(title_id: params[:title]) if params[:title].present?
@@ -56,6 +59,10 @@ class Organizations::PositionsController < ApplicationController
         positions: [:position_level]
       )
       .order(:external_title)
+    # When not showing archived, filter out archived positions from each title’s list (view uses @current_show_archived to match)
+    unless @current_show_archived
+      @titles.each { |t| t.association(:positions).target = t.positions.to_a.reject(&:archived?) }
+    end
     
     # Preload position assignment counts to avoid N+1 queries
     # Get all position IDs first
@@ -244,12 +251,14 @@ class Organizations::PositionsController < ApplicationController
       sort: params[:sort] || 'name',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'table',
-      spotlight: params[:spotlight] || 'none'
+      spotlight: params[:spotlight] || 'none',
+      show_archived: params[:show_archived].to_s == '1'
     }
     
     @current_sort = @current_filters[:sort]
     @current_view = @current_filters[:view]
     @current_spotlight = @current_filters[:spotlight]
+    @current_show_archived = @current_filters[:show_archived]
     
     # Preserve current params for return URL
     return_params = params.except(:controller, :action, :page).permit!.to_h
@@ -264,7 +273,35 @@ class Organizations::PositionsController < ApplicationController
     
     # Build redirect URL with all view customization params
     redirect_params = params.except(:controller, :action, :utf8, :_method, :commit).permit!.to_h
+    redirect_params[:show_archived] = params[:show_archived] if params[:show_archived].present?
     redirect_to organization_positions_path(@organization, redirect_params)
+  end
+
+  def archive
+    authorize @position, :archive?
+    @position_assignments = @position.position_assignments.includes(assignment: :company)
+    @position_abilities = @position.position_abilities.includes(ability: :company)
+    @active_employment_tenures = EmploymentTenure.where(position: @position).active
+      .includes(company_teammate: :person)
+    @archivable = @position.archivable?
+    render layout: determine_layout
+  end
+
+  def execute_archive
+    authorize @position, :archive?
+    unless @position.archivable?
+      redirect_to archive_organization_position_path(@organization, @position),
+                  alert: 'Cannot archive: remove all position assignments, ability requirements, and active employment first.'
+      return
+    end
+    @position.archive!
+    redirect_to organization_position_path(@organization, @position), notice: 'Position was successfully archived.'
+  end
+
+  def restore
+    authorize @position, :restore?
+    @position.restore!
+    redirect_to organization_position_path(@organization, @position), notice: 'Position was successfully restored.'
   end
 
   def manage_assignments

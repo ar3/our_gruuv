@@ -144,6 +144,30 @@ RSpec.describe PositionPolicy, type: :policy do
     end
   end
 
+  describe '#archive?' do
+    it 'delegates to update?' do
+      company_teammate.update(can_manage_maap: true)
+      expect(subject.archive?).to be true
+    end
+
+    it 'denies when update? is false' do
+      company_teammate.update(can_manage_maap: false)
+      expect(subject.archive?).to be false
+    end
+  end
+
+  describe '#restore?' do
+    it 'delegates to update?' do
+      company_teammate.update(can_manage_maap: true)
+      expect(subject.restore?).to be true
+    end
+
+    it 'denies when update? is false' do
+      company_teammate.update(can_manage_maap: false)
+      expect(subject.restore?).to be false
+    end
+  end
+
   describe '#show?' do
     context 'when user is in the same organization hierarchy' do
       it 'allows viewing' do

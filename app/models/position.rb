@@ -25,8 +25,29 @@ class Position < ApplicationRecord
   before_save :normalize_eligibility_requirements_summary
   
   # Scopes
+  scope :unarchived, -> { where(deleted_at: nil) }
+  scope :archived, -> { where.not(deleted_at: nil) }
   scope :ordered, -> { joins(:title, :position_level).order('titles.external_title, position_levels.level') }
   scope :for_company, ->(company) { joins(:title).where(titles: { company_id: company.id }) }
+
+  # Archive (soft delete) – block if position_assignments, position_abilities, or active employment_tenures exist
+  def archived?
+    deleted_at.present?
+  end
+
+  def archive!
+    update!(deleted_at: Time.current)
+  end
+
+  def restore!
+    update!(deleted_at: nil)
+  end
+
+  def archivable?
+    position_assignments.empty? &&
+      position_abilities.empty? &&
+      EmploymentTenure.where(position: self).active.empty?
+  end
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)

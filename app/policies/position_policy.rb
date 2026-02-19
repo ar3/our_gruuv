@@ -39,6 +39,14 @@ class PositionPolicy < ApplicationPolicy
     viewing_teammate.person.admin? || can_manage_maap_for_position_company?
   end
 
+  def archive?
+    update?
+  end
+
+  def restore?
+    update?
+  end
+
   def manage_assignments?
     return true if admin_bypass?
     return false unless viewing_teammate

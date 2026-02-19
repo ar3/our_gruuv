@@ -69,11 +69,17 @@
       %hr.dropdown-divider
     
     %li
+      - if @position.archived?
+        - if policy(@position).restore?
+          = link_to restore_organization_position_path(@organization, @position), class: 'dropdown-item', data: { turbo_method: :patch, turbo_confirm: 'Restore this position? It will appear in lists and selectors again.' } do
+            %i.bi.bi-arrow-counterclockwise.me-2
+            Restore position
+      - elsif policy(@position).archive?
+        = link_to archive_organization_position_path(@organization, @position), class: 'dropdown-item' do
+          %i.bi.bi-archive.me-2
+          Archive position
+    
+    %li
       = link_to edit_organization_position_path(@organization, @position), class: 'dropdown-item' do
         %i.bi.bi-pencil.me-2
         Edit Position
-    
-    %li
-      = link_to organization_position_path(@organization, @position), method: :delete, data: { confirm: "Are you sure?" }, class: 'dropdown-item text-danger' do
-        %i.bi.bi-trash.me-2
-        Delete Position

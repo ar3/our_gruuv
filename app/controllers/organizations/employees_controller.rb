@@ -264,7 +264,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     authorize @organization, :manage_employment?
     @person = Person.new
     @employment_tenure = EmploymentTenure.new
-    @positions = @organization.positions.includes(:title, :position_level)
+    @positions = @organization.positions.unarchived.includes(:title, :position_level)
                                 .joins(:title)
                                 .order('titles.external_title')
     load_manager_data
@@ -314,13 +314,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employee was successfully created.'
     end
   rescue ActiveRecord::RecordInvalid
-    @positions = @organization.positions.includes(:title, :position_level)
+    @positions = @organization.positions.unarchived.includes(:title, :position_level)
                                 .joins(:title)
                                 .order('titles.external_title')
     load_manager_data
     render :new_employee, status: :unprocessable_entity
   rescue => e
-    @positions = @organization.positions.includes(:title, :position_level)
+    @positions = @organization.positions.unarchived.includes(:title, :position_level)
                                 .joins(:title)
                                 .order('titles.external_title')
     load_manager_data

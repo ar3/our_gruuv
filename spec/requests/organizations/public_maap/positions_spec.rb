@@ -301,6 +301,26 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
         expect(response.body).to include('needing Abilities such as')
       end
     end
+
+    context 'when position is archived' do
+      before { position_company.update_columns(deleted_at: 1.day.ago) }
+
+      it 'displays archived banner' do
+        get organization_public_maap_position_path(company, position_company)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archived as of')
+      end
+    end
+  end
+
+  describe 'GET index excludes archived positions' do
+    it 'does not list archived positions' do
+      position_company.update_columns(deleted_at: 1.day.ago)
+      get organization_public_maap_positions_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include(position_company.display_name)
+      expect(response.body).to include(position_department.display_name)
+    end
   end
 end
 

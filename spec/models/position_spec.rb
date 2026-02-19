@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Position, type: :model do
   let(:company) { create(:organization) }
+  let(:person) { create(:person) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:title) { create(:title, company: company, position_major_level: position_major_level) }
@@ -81,6 +82,86 @@ RSpec.describe Position, type: :model do
 
     it 'has one draft external reference' do
       expect(position.draft_external_reference).to be_nil
+    end
+  end
+
+  describe 'archiving' do
+    describe '.unarchived and .archived' do
+      it 'unarchived returns only positions with nil deleted_at' do
+        p1 = create(:position, title: title, position_level: position_level, deleted_at: nil)
+        p2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level))
+        p2.update_columns(deleted_at: 1.day.ago)
+        expect(Position.unarchived).to include(p1)
+        expect(Position.unarchived).not_to include(p2)
+      end
+
+      it 'archived returns only positions with deleted_at set' do
+        p1 = create(:position, title: title, position_level: position_level)
+        p2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level))
+        p2.update_columns(deleted_at: 1.day.ago)
+        expect(Position.archived).to include(p2)
+        expect(Position.archived).not_to include(p1)
+      end
+    end
+
+    describe '#archived?' do
+      it 'returns false when deleted_at is nil' do
+        expect(position.archived?).to be false
+      end
+
+      it 'returns true when deleted_at is set' do
+        position.update_columns(deleted_at: 1.day.ago)
+        expect(position.reload.archived?).to be true
+      end
+    end
+
+    describe '#archive!' do
+      it 'sets deleted_at to current time' do
+        position.archive!
+        expect(position.reload.deleted_at).to be_present
+      end
+    end
+
+    describe '#restore!' do
+      it 'clears deleted_at' do
+        position.update_columns(deleted_at: 1.day.ago)
+        position.restore!
+        expect(position.reload.deleted_at).to be_nil
+      end
+    end
+
+    describe '#archivable?' do
+      it 'returns true when no position_assignments, position_abilities, or active employment_tenures' do
+        expect(position.archivable?).to be true
+      end
+
+      it 'returns false when position has position_assignments' do
+        assignment = create(:assignment, company: company)
+        create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required')
+        expect(position.reload.archivable?).to be false
+      end
+
+      it 'returns false when position has position_abilities' do
+        ability = create(:ability, company: company, created_by: person, updated_by: person)
+        create(:position_ability, position: position, ability: ability, milestone_level: 1)
+        expect(position.reload.archivable?).to be false
+      end
+
+      it 'returns false when position has active employment_tenures' do
+        teammate = create(:company_teammate, person: person, organization: company)
+        et = build(:employment_tenure, company_teammate: teammate, company: company, started_at: 1.month.ago, ended_at: nil)
+        et.position = position
+        et.save!
+        expect(position.reload.archivable?).to be false
+      end
+
+      it 'returns true when employment_tenures are ended' do
+        teammate = create(:company_teammate, person: person, organization: company)
+        et = build(:employment_tenure, company_teammate: teammate, company: company, started_at: 2.months.ago, ended_at: 1.month.ago)
+        et.position = position
+        et.save!
+        expect(position.reload.archivable?).to be true
+      end
     end
   end
 
