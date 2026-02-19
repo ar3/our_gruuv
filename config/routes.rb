@@ -226,7 +226,11 @@ Rails.application.routes.draw do
     end
 
     # Assignment Flows (ordered lists of assignments)
-    resources :assignment_flows, module: :organizations, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+    resources :assignment_flows, module: :organizations, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
+      collection do
+        get :full_network_graph
+      end
+    end
     
     # Comments management
     resources :comments, module: :organizations, only: [:index, :show, :create, :update] do

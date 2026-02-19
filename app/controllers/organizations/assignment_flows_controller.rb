@@ -4,12 +4,27 @@ class Organizations::AssignmentFlowsController < Organizations::OrganizationName
   before_action :authenticate_person!
   before_action :set_assignment_flow, only: [:show, :edit, :update, :destroy]
 
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized, except: [:index, :full_network_graph]
   after_action :verify_policy_scoped, only: :index
 
   def index
     authorize company, :view_assignment_flows?
     @assignment_flows = policy_scope(AssignmentFlow).where(company: company).order(:name)
+    render layout: determine_layout
+  end
+
+  def full_network_graph
+    authorize company, :view_assignment_flows?
+    assignment_ids = policy_scope(Assignment).where(company: company).unarchived.pluck(:id)
+    relationships = AssignmentSupplyRelationship
+      .where(supplier_assignment_id: assignment_ids, consumer_assignment_id: assignment_ids)
+      .includes(:supplier_assignment, :consumer_assignment)
+    assignment_ids_in_graph = (relationships.pluck(:supplier_assignment_id) + relationships.pluck(:consumer_assignment_id)).uniq
+    @assignments = Assignment
+      .where(id: assignment_ids_in_graph)
+      .includes(:department, :assignment_outcomes)
+      .order(:title)
+    @supply_relationships = relationships
     render layout: determine_layout
   end
 

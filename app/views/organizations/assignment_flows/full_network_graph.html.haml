@@ -1,0 +1,104 @@
+- content_for :title, "Full network graph"
+
+- content_for :head do
+  %script{ src: "https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.12.0/mermaid.min.js", "data-turbo-track": "reload" }
+
+- content_for :go_back_link do
+  = link_to organization_assignment_flows_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignment Flows
+
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1
+          %i.bi.bi-diagram-3-fill.me-2
+          Full network graph
+        = link_to "Assignment Flows", organization_assignment_flows_path(@organization), class: "btn btn-outline-secondary"
+
+      %p.text-muted.mb-0
+        Automatic flow — every assignment that has a supply relationship (supplier or consumer) appears here.
+
+      - if @assignments.any?
+        .card.mt-4
+          .card-header
+            %h5.mb-0 Flowchart
+          .card-body
+            .assignment-flow-mermaid
+              %pre.mermaid
+                != mermaid_flowchart_dsl(@assignments, @supply_relationships, organization: @organization)
+            :javascript
+              (function() {
+                function initMermaid() {
+                  if (typeof mermaid === 'undefined') {
+                    setTimeout(initMermaid, 100);
+                    return;
+                  }
+                  mermaid.initialize({
+                    startOnLoad: false,
+                    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+                    securityLevel: 'loose'
+                  });
+                  var container = document.querySelector('.assignment-flow-mermaid');
+                  if (container && container.querySelector('.mermaid')) {
+                    mermaid.run({ nodes: container.querySelectorAll('.mermaid'), suppressErrors: true });
+                  }
+                }
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', initMermaid);
+                } else {
+                  initMermaid();
+                }
+              })();
+
+        .card.mt-4
+          .card-body.p-0
+            - consumers_by_supplier = @supply_relationships.group_by(&:supplier_assignment_id).transform_values { |rels| rels.map(&:consumer_assignment).compact.sort_by(&:title) }
+            - suppliers_by_consumer = @supply_relationships.group_by(&:consumer_assignment_id).transform_values { |rels| rels.map(&:supplier_assignment).compact.sort_by(&:title) }
+            .table-responsive
+              %table.table.table-hover.mb-0
+                %thead.table-light
+                  %tr
+                    %th.col-3 Assignment
+                    %th.col-5 Outcomes
+                    %th.col-2 Supplies →
+                    %th.col-2 Consumes from ←
+                %tbody
+                  - @assignments.each do |assignment|
+                    %tr
+                      %td.col-3
+                        %strong
+                          = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
+                        %br
+                        %small.text-muted= assignment.tagline
+                      %td.col-5
+                        - if assignment.assignment_outcomes.any?
+                          %ul.mb-0
+                            - assignment.assignment_outcomes.ordered.each do |outcome|
+                              %li= outcome.description
+                        - else
+                          %span.text-muted None
+                      %td.col-2
+                        - consumers = consumers_by_supplier[assignment.id].to_a
+                        - if consumers.any?
+                          - consumers.each do |c|
+                            %div
+                              = link_to c.title, organization_assignment_path(@organization, c), class: "text-decoration-none"
+                        - else
+                          %span.text-muted —
+                      %td.col-2
+                        - suppliers = suppliers_by_consumer[assignment.id].to_a
+                        - if suppliers.any?
+                          - suppliers.each do |s|
+                            %div
+                              = link_to s.title, organization_assignment_path(@organization, s), class: "text-decoration-none"
+                        - else
+                          %span.text-muted —
+      - else
+        .alert.alert-info.mt-4
+          %h6.mb-2
+            %i.bi.bi-info-circle.me-2
+            No assignments with supply relationships
+          %p.mb-0
+            This view shows assignments that supply or consume other assignments. Add consumer/supplier links on assignments to see them here.

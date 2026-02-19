@@ -21,7 +21,27 @@ RSpec.describe 'Organizations::AssignmentFlows', type: :request do
       get organization_assignment_flows_path(organization)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Assignment Flows')
+      expect(response.body).to include('Full network graph')
       expect(response.body).to include(assignment_flow.name)
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/assignment_flows/full_network_graph' do
+    it 'returns success and shows full network graph page' do
+      get full_network_graph_organization_assignment_flows_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Full network graph')
+      expect(response.body).to include('Automatic flow')
+    end
+
+    it 'shows assignments that have supply relationships' do
+      supplier = create(:assignment, company: organization, title: 'Supplier Assignment')
+      consumer = create(:assignment, company: organization, title: 'Consumer Assignment')
+      create(:assignment_supply_relationship, supplier_assignment: supplier, consumer_assignment: consumer)
+      get full_network_graph_organization_assignment_flows_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Supplier Assignment')
+      expect(response.body).to include('Consumer Assignment')
     end
   end
 

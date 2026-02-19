@@ -17,37 +17,52 @@
 
 .row.justify-content-center
   .col-lg-12
-    - if @assignment_flows.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
+    .table-responsive
+      %table.table.table-hover
+        %thead
+          %tr
+            %th Name
+            %th Created by
+            %th Last updated by
+            %th Actions
+        %tbody
+          / Automatic flow: full network graph from assignment supply relationships
+          %tr.table-light
+            %td
+              = link_to full_network_graph_organization_assignment_flows_path(@organization), class: "text-decoration-none fw-medium" do
+                %i.bi.bi-diagram-3-fill.me-2
+                Full network graph
+              %small.d-block.text-muted.ms-4
+                Automatic — assignments with supply relationships
+            %td
+              %small.text-muted —
+            %td
+              %small.text-muted —
+            %td
+              = link_to full_network_graph_organization_assignment_flows_path(@organization), class: "btn btn-sm btn-outline-primary" do
+                %i.bi.bi-eye
+                View
+          - @assignment_flows.each do |flow|
             %tr
-              %th Name
-              %th Created by
-              %th Last updated by
-              %th Actions
-          %tbody
-            - @assignment_flows.each do |flow|
-              %tr
-                %td
-                  = link_to flow.name, organization_assignment_flow_path(@organization, flow), class: "text-decoration-none"
-                %td
-                  %small.text-muted= flow.created_by.person&.display_name
-                %td
-                  %small.text-muted= flow.updated_by.person&.display_name
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to organization_assignment_flow_path(@organization, flow), class: "btn btn-outline-primary" do
-                      %i.bi.bi-eye
-                    = link_to edit_organization_assignment_flow_path(@organization, flow), class: "btn btn-outline-secondary" do
-                      %i.bi.bi-pencil
-                    = link_to organization_assignment_flow_path(@organization, flow), data: { turbo_method: :delete, turbo_confirm: "Are you sure?" }, class: "btn btn-outline-danger" do
-                      %i.bi.bi-trash
-    - else
-      .alert.alert-info
+              %td
+                = link_to flow.name, organization_assignment_flow_path(@organization, flow), class: "text-decoration-none"
+              %td
+                %small.text-muted= flow.created_by.person&.display_name
+              %td
+                %small.text-muted= flow.updated_by.person&.display_name
+              %td
+                .btn-group.btn-group-sm
+                  = link_to organization_assignment_flow_path(@organization, flow), class: "btn btn-outline-primary" do
+                    %i.bi.bi-eye
+                  = link_to edit_organization_assignment_flow_path(@organization, flow), class: "btn btn-outline-secondary" do
+                    %i.bi.bi-pencil
+                  = link_to organization_assignment_flow_path(@organization, flow), data: { turbo_method: :delete, turbo_confirm: "Are you sure?" }, class: "btn btn-outline-danger" do
+                    %i.bi.bi-trash
+    - if @assignment_flows.empty?
+      .alert.alert-info.mt-3
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
-          No Assignment Flows
+          No custom assignment flows
         %p.mb-2
           Assignment flows let you order a set of assignments to ensure all outcomes are accounted for.
-        = link_to "Create First Assignment Flow", new_organization_assignment_flow_path(@organization), class: "btn btn-primary btn-sm"
+        = link_to "Create an assignment flow", new_organization_assignment_flow_path(@organization), class: "btn btn-primary btn-sm"
