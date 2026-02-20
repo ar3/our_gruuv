@@ -55,13 +55,15 @@ module NavigationHelper
             icon: 'bi-journal-text',
             path: organization_prompts_path(current_organization),
             policy_check: -> { policy(current_company).view_prompts? },
+            active_check: -> { nav_prompts_item_active? },
             coming_soon: false
           },
           {
             label: 'My Goals',
             icon: 'bi-bullseye',
-            path: organization_goals_path(current_organization),
+            path: current_company_teammate ? organization_goals_path(current_organization, owner_id: "CompanyTeammate_#{current_company_teammate.id}") : organization_goals_path(current_organization),
             policy_check: -> { policy(current_company).view_goals? },
+            active_check: -> { nav_goals_item_active? },
             coming_soon: false
           },
           {
@@ -450,11 +452,42 @@ module NavigationHelper
       path_match && nav_query_params_match?(link_query, request)
     end
   end
+
+  # Check if a nav item is active, using optional active_check proc when present.
+  def nav_item_active_for?(item)
+    return false unless item
+    if item[:active_check]
+      item[:active_check].call
+    else
+      nav_item_active?(item[:path])
+    end
+  end
+
+  # Prompts (My Growth Plan) item is active only on exact prompts index or when editing own prompt.
+  def nav_prompts_item_active?
+    return false unless current_organization
+    prompts_index = organization_prompts_path(current_organization)
+    return true if request.path == prompts_index
+    edit_match = request.path.match(%r{\A/organizations/[^/]+/prompts/(\d+)/edit\z})
+    return false unless edit_match
+    prompt = Prompt.find_by(id: edit_match[1])
+    return false unless prompt && current_company_teammate
+    prompt.company_teammate_id == current_company_teammate.id
+  end
+
+  # My Goals item is active only when URL has owner_id=CompanyTeammate_<current_company_teammate.id>.
+  def nav_goals_item_active?
+    return false unless current_organization
+    goals_path_only = organization_goals_path(current_organization).split('?').first
+    return false unless request.path == goals_path_only
+    return false unless current_company_teammate
+    request.query_parameters['owner_id'] == "CompanyTeammate_#{current_company_teammate.id}"
+  end
   
   # Check if a section has any active items
   def section_has_active_item?(section_items)
     return false unless section_items
-    section_items.any? { |item| nav_item_active?(item[:path]) }
+    section_items.any? { |item| nav_item_active_for?(item) }
   end
   
   # Filter navigation items by permissions

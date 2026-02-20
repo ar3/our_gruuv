@@ -432,6 +432,44 @@ RSpec.describe 'Vertical Navigation', type: :request do
     end
   end
 
+  describe 'About Me prompts and goals active state' do
+    let(:organization) { create(:organization, :company) }
+
+    it 'marks prompts nav link active when on prompts index' do
+      get organization_prompts_path(organization)
+      expect(response).to have_http_status(:success)
+      prompts_path = organization_prompts_path(organization)
+      expect(response.body).to match(/\<a(?=[^>]*href="#{Regexp.escape(prompts_path)}")(?=[^>]*class="[^"]*active[^"]*")[^>]*>/)
+    end
+
+    it 'redirects when editing another teammate\'s prompt (nav active logic for that URL is covered in helper spec)' do
+      other_teammate = create(:company_teammate, organization: organization)
+      prompt_template = create(:prompt_template, company: organization)
+      prompt = create(:prompt, company_teammate: other_teammate, prompt_template: prompt_template)
+      get edit_organization_prompt_path(organization, prompt)
+      # App redirects when current user is not allowed to edit another teammate's prompt
+      expect(response).to have_http_status(:redirect)
+      # Helper spec verifies nav_prompts_item_active? returns false for this URL when prompt belongs to another teammate
+    end
+
+    it 'does not mark My Goals nav link active when on goals index without owner_id' do
+      get organization_goals_path(organization)
+      expect(response).to have_http_status(:success)
+      # The "My Goals" link (with owner_id) should not be active when current URL has no owner_id
+      link_re = /\<a(?=[^>]*href="[^"]*owner_id=CompanyTeammate_#{teammate.id}[^"]*")[^>]*class="([^"]*)"[^>]*\>|\<a[^>]*class="([^"]*)"[^>]*href="[^"]*owner_id=CompanyTeammate_#{teammate.id}[^"]*"[^>]*\>/
+      match = response.body.match(link_re)
+      expect(match).to be_present, 'Expected to find My Goals link in nav'
+      class_attr = match[1] || match[2]
+      expect(class_attr).not_to include('active'), 'My Goals link should not be active when URL has no owner_id'
+    end
+
+    it 'marks My Goals nav link active when on goals with owner_id=CompanyTeammate_<teammate.id>' do
+      get organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}")
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(/\<a(?=[^>]*href="[^"]*#{Regexp.escape("CompanyTeammate_#{teammate.id}")}[^"]*")(?=[^>]*class="[^"]*active[^"]*")[^>]*>/)
+    end
+  end
+
   describe 'header links' do
     it 'links top bar header to about me page' do
       get dashboard_organization_path(organization)

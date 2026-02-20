@@ -42,7 +42,7 @@
               %i.bi.bi-chevron-down.float-end
             .collapse{id: "navSection#{section[:section].capitalize}", class: "#{'show' if section_has_active}"}
               - visible_items.each do |item|
-                = link_to item[:path], class: "nav-link nav-item-link #{'active' if nav_item_active?(item[:path])}" do
+                = link_to item[:path], class: "nav-link nav-item-link #{'active' if nav_item_active_for?(item)}" do
                   %i.bi{class: item[:icon]}
                   = item[:label]
                   - if item[:coming_soon]

@@ -517,4 +517,163 @@ RSpec.describe NavigationHelper, type: :helper do
       expect(helper.nav_item_active?(nil)).to be false
     end
   end
+
+  describe '#nav_item_active_for?' do
+    let(:request_double) do
+      double('request').tap do |req|
+        allow(req).to receive(:path).and_return('/organizations/1/observations')
+        allow(req).to receive(:query_parameters).and_return({})
+      end
+    end
+
+    before do
+      allow(helper).to receive(:request).and_return(request_double)
+    end
+
+    it 'delegates to nav_item_active?(path) when item has no active_check' do
+      allow(request_double).to receive(:path).and_return('/organizations/1/observations')
+      item = { path: '/organizations/1/observations' }
+      expect(helper.nav_item_active_for?(item)).to be true
+    end
+
+    it 'uses active_check return value when present' do
+      item = { path: '/other', active_check: -> { true } }
+      expect(helper.nav_item_active_for?(item)).to be true
+
+      item_false = { path: '/other', active_check: -> { false } }
+      expect(helper.nav_item_active_for?(item_false)).to be false
+    end
+
+    it 'returns false when item is nil' do
+      expect(helper.nav_item_active_for?(nil)).to be false
+    end
+  end
+
+  describe '#nav_prompts_item_active?' do
+    let(:request_double) do
+      double('request').tap do |req|
+        allow(req).to receive(:path).and_return('/')
+        allow(req).to receive(:query_parameters).and_return({})
+      end
+    end
+
+    before do
+      def helper.current_organization
+        @current_organization
+      end
+
+      def helper.current_company_teammate
+        @current_company_teammate
+      end
+
+      helper.instance_variable_set(:@current_organization, company)
+      helper.instance_variable_set(:@current_company_teammate, teammate)
+      allow(helper).to receive(:request).and_return(request_double)
+    end
+
+    it 'returns true when path is exact prompts index' do
+      allow(request_double).to receive(:path).and_return(organization_prompts_path(company))
+      expect(helper.nav_prompts_item_active?).to be true
+    end
+
+    it 'returns false when path is prompts edit for another teammate\'s prompt' do
+      other_teammate = create(:company_teammate, organization: company)
+      prompt = create(:prompt, company_teammate: other_teammate, prompt_template: create(:prompt_template, company: company))
+      allow(request_double).to receive(:path).and_return(edit_organization_prompt_path(company, prompt))
+      expect(helper.nav_prompts_item_active?).to be false
+    end
+
+    it 'returns true when path is prompts edit for current teammate\'s prompt' do
+      prompt = create(:prompt, company_teammate: teammate, prompt_template: create(:prompt_template, company: company))
+      allow(request_double).to receive(:path).and_return(edit_organization_prompt_path(company, prompt))
+      expect(helper.nav_prompts_item_active?).to be true
+    end
+
+    it 'returns false when path is not prompts index or prompts edit' do
+      allow(request_double).to receive(:path).and_return(organization_goals_path(company))
+      expect(helper.nav_prompts_item_active?).to be false
+    end
+
+    it 'returns false when path looks like prompts edit but prompt id does not exist' do
+      allow(request_double).to receive(:path).and_return(edit_organization_prompt_path(company, 999999))
+      expect(helper.nav_prompts_item_active?).to be false
+    end
+  end
+
+  describe '#nav_goals_item_active?' do
+    let(:request_double) do
+      double('request').tap do |req|
+        allow(req).to receive(:path).and_return(organization_goals_path(company))
+        allow(req).to receive(:query_parameters).and_return({})
+      end
+    end
+
+    before do
+      def helper.current_organization
+        @current_organization
+      end
+
+      def helper.current_company_teammate
+        @current_company_teammate
+      end
+
+      helper.instance_variable_set(:@current_organization, company)
+      helper.instance_variable_set(:@current_company_teammate, teammate)
+      allow(helper).to receive(:request).and_return(request_double)
+    end
+
+    it 'returns true when on goals path with owner_id=CompanyTeammate_<current_teammate.id>' do
+      allow(request_double).to receive(:path).and_return(organization_goals_path(company).split('?').first)
+      allow(request_double).to receive(:query_parameters).and_return('owner_id' => "CompanyTeammate_#{teammate.id}")
+      expect(helper.nav_goals_item_active?).to be true
+    end
+
+    it 'returns false when on goals path with no owner_id' do
+      allow(request_double).to receive(:path).and_return(organization_goals_path(company).split('?').first)
+      allow(request_double).to receive(:query_parameters).and_return({})
+      expect(helper.nav_goals_item_active?).to be false
+    end
+
+    it 'returns false when on goals path with different owner_id' do
+      allow(request_double).to receive(:path).and_return(organization_goals_path(company).split('?').first)
+      allow(request_double).to receive(:query_parameters).and_return('owner_id' => 'CompanyTeammate_999')
+      expect(helper.nav_goals_item_active?).to be false
+    end
+
+    it 'returns false when current_company_teammate is nil' do
+      helper.instance_variable_set(:@current_company_teammate, nil)
+      allow(request_double).to receive(:path).and_return(organization_goals_path(company).split('?').first)
+      allow(request_double).to receive(:query_parameters).and_return('owner_id' => "CompanyTeammate_#{teammate.id}")
+      expect(helper.nav_goals_item_active?).to be false
+    end
+  end
+
+  describe '#section_has_active_item?' do
+    let(:request_double) do
+      double('request').tap do |req|
+        allow(req).to receive(:path).and_return('/organizations/1/observations')
+        allow(req).to receive(:query_parameters).and_return({})
+      end
+    end
+
+    before do
+      allow(helper).to receive(:request).and_return(request_double)
+    end
+
+    it 'returns true when an item with active_check returning true is in the section' do
+      section_items = [
+        { path: '/other', active_check: -> { false } },
+        { path: '/foo', active_check: -> { true } }
+      ]
+      expect(helper.section_has_active_item?(section_items)).to be true
+    end
+
+    it 'returns false when all items have active_check returning false' do
+      section_items = [
+        { path: '/a', active_check: -> { false } },
+        { path: '/b', active_check: -> { false } }
+      ]
+      expect(helper.section_has_active_item?(section_items)).to be false
+    end
+  end
 end
