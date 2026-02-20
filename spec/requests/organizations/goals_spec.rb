@@ -331,7 +331,27 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Active Child Goal')
       expect(response.body).not_to include('Archived Child Goal')
     end
-    
+
+    it 'displays Create/associate new child goal button in Actions card when user can update goal' do
+      get organization_goal_path(organization, goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Create/associate new child goal')
+      expect(response.body).to include(choose_outgoing_link_organization_goal_goal_links_path(organization, goal, goal_type: 'stepping_stone_activity'))
+    end
+
+    it 'does not display Create/associate new child goal button when user cannot update goal' do
+      other_person = create(:person)
+      other_teammate = create(:company_teammate, person: other_person, organization: organization)
+      other_goal = create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'everyone_in_company')
+
+      get organization_goal_path(organization, other_goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Other Goal')
+      expect(response.body).not_to include('Create/associate new child goal')
+    end
+
     context 'when goal is started' do
       let(:started_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Started Goal', started_at: 1.week.ago) }
       

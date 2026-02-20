@@ -334,3 +334,10 @@
               = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'vision' }, class: "btn btn-outline-primary" do
                 This is a vision, not a goal
 
+        - if policy(@goal).update?
+          %hr.my-3
+          .d-grid.gap-2
+            = link_to choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-secondary btn-sm w-100" do
+              %i.bi.bi-node-plus-fill.me-2
+              Create/associate new child goal
+
