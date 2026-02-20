@@ -131,6 +131,32 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Vertical View')
     end
+
+    context 'when current user is manager viewing someone else\'s prompt' do
+      let(:report_person) { create(:person) }
+      let(:report_teammate) do
+        CompanyTeammate.find_or_create_by!(person: report_person, organization: organization)
+      end
+      let(:other_prompt) { create(:prompt, :open, company_teammate: report_teammate, prompt_template: template) }
+
+      before do
+        create(:employment_tenure,
+          teammate: report_teammate,
+          company: organization,
+          manager: person,
+          started_at: 1.month.ago,
+          ended_at: nil)
+      end
+
+      it 'renders edit page with single "Go back to about [name]" button and no Save/Cancel' do
+        get edit_organization_prompt_path(organization, other_prompt)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Go back to about #{report_person.casual_name}")
+        expect(response.body).to include(about_me_organization_company_teammate_path(organization, report_teammate))
+        expect(response.body).not_to include('Save and continue editing')
+        expect(response.body).not_to match(/Cancel.*btn/)
+      end
+    end
   end
 
   describe 'PATCH /organizations/:organization_id/prompts/:id' do

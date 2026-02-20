@@ -40,6 +40,7 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     
     # Mock route helpers
     allow(view).to receive(:organization_prompts_path).and_return("/organizations/#{organization.id}/prompts")
+    allow(view).to receive(:about_me_organization_company_teammate_path).and_return("/organizations/#{organization.id}/company_teammates/#{teammate.id}/about_me")
     allow(view).to receive(:edit_organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}/edit")
     allow(view).to receive(:organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}")
     allow(view).to receive(:choose_manage_goals_organization_prompt_path) do |org, prompt_obj, options = {}|
@@ -209,15 +210,14 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     end
   end
 
-  context 'when can_edit is false' do
+  context 'when can_edit is false (viewing someone else\'s prompt)' do
     before { assign(:can_edit, false) }
 
-    it 'disables form fields and shows disabled buttons' do
+    it 'shows only one button: Go back to about [casual_name]' do
       render
-      # Submit buttons are replaced with disabled spans/buttons
-      expect(rendered).to include('Save and continue editing')
-      expect(rendered).to include('disabled')
-      # Add New / Associate Goals button and Associate goals link are hidden when cannot edit
+      expect(rendered).to have_link("Go back to about #{person.casual_name}", href: "/organizations/#{organization.id}/company_teammates/#{teammate.id}/about_me")
+      expect(rendered).not_to have_link('Cancel')
+      expect(rendered).not_to include('Save and continue editing')
       expect(rendered).not_to have_css('button[name="save_and_manage_goals"]')
       expect(rendered).not_to have_link('Associate goals')
       expect(rendered).not_to have_css('button[name="save_and_close_and_start_new"]')

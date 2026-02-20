@@ -1,9 +1,14 @@
 - content_for :title, "Edit #{@prompt_template.title} (#{@prompt.company_teammate.person.casual_name})"
 
 - content_for :go_back_link do
-  = link_to organization_prompts_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to My #{company_label_plural('reflection', 'Reflection')}
+  - if @can_edit
+    = link_to organization_prompts_path(@organization), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to My #{company_label_plural('reflection', 'Reflection')}
+  - else
+    = link_to about_me_organization_company_teammate_path(@organization, @prompt.company_teammate), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Go back to about #{@prompt.company_teammate.person.casual_name}
 
 - view_mode = params[:view] || 'split'
 - content_for :header do
@@ -99,21 +104,19 @@
                 .p-3.bg-light.rounded
                   = simple_format(answer.text)
       
-      .d-flex.justify-content-between.mt-4
-        = link_to 'Cancel', organization_prompts_path(@organization), class: 'btn btn-secondary'
-        .d-flex.gap-2
-          - if @can_edit
+      - if @can_edit
+        .d-flex.justify-content-between.mt-4
+          = link_to 'Cancel', organization_prompts_path(@organization), class: 'btn btn-secondary'
+          .d-flex.gap-2
             = form.submit 'Save and continue editing', class: 'btn btn-primary', name: 'save_and_continue'
             - if @next_prompt
               = form.submit "Save and go to #{@next_prompt.prompt_template.title}", class: 'btn btn-outline-primary', name: 'save_and_next'
-          - else
-            .btn.btn-primary.disabled Save and continue editing
-            - if @next_prompt
-              .btn.btn-outline-primary.disabled Save and go to #{@next_prompt.prompt_template.title}
-      - if @can_edit
         .mt-2
           = button_tag type: 'submit', form: 'prompt-edit-form', name: 'save_and_close_and_start_new', value: '1', class: "btn btn-link p-0 text-muted border-0 bg-transparent", style: "font-size: 0.9em; text-decoration: none;", data: { turbo_confirm: "Are you sure? You will not lose any data, but the form will clear so that you can start fresh." } do
             Close and Start Fresh
+      - else
+        .mt-4
+          = link_to "Go back to about #{@prompt.company_teammate.person.casual_name}", about_me_organization_company_teammate_path(@organization, @prompt.company_teammate), class: 'btn btn-primary'
 
 - quote_popover_content = capture do
   %div.markdown-content
