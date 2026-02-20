@@ -90,7 +90,7 @@ class Slack::ProcessInteractionJob < ApplicationJob
     # Extract form values
     state_values = payload.dig('view', 'state', 'values') || {}
     share_in_thread_block = state_values['share_in_thread'] || {}
-    share_in_thread_value = share_in_thread_block.dig('share_in_thread', 'selected_option', 'value') || 'yes'
+    share_in_thread_value = share_in_thread_block.dig('share_in_thread', 'selected_option', 'value') || 'no'
     notes_block = state_values['notes'] || {}
     notes = notes_block.dig('notes', 'value') || ''
     

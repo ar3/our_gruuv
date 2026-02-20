@@ -754,9 +754,9 @@ class SlackService
             initial_option: {
               text: {
                 type: 'plain_text',
-                text: 'Yes'
+                text: 'No'
               },
-              value: 'yes'
+              value: 'no'
             },
             options: [
               {

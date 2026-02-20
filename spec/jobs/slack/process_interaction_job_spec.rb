@@ -32,7 +32,7 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
             'share_in_thread' => {
               'share_in_thread' => {
                 'selected_option' => {
-                  'value' => 'yes'
+                  'value' => 'no'
                 }
               }
             },
@@ -144,6 +144,13 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
         end
 
         context 'when share_in_thread is yes' do
+          before do
+            updated_payload = view_submission_payload.deep_dup
+            updated_payload['view']['state']['values']['share_in_thread']['share_in_thread']['selected_option']['value'] = 'yes'
+            incoming_webhook.update!(payload: updated_payload)
+            incoming_webhook.reload
+          end
+
           it 'posts message to thread' do
             expect_any_instance_of(SlackService).to receive(:post_message_to_thread).with(
               channel_id: channel_id,
@@ -161,9 +168,9 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
           end
         end
 
-        context 'when share_in_thread is no' do
+        context 'when share_in_thread is no (default)' do
           before do
-            # Update payload to set share_in_thread to 'no'
+            # Payload already has 'no' as default; ensure it's set for this context
             updated_payload = view_submission_payload.deep_dup
             updated_payload['view']['state']['values']['share_in_thread']['share_in_thread']['selected_option']['value'] = 'no'
             incoming_webhook.update!(payload: updated_payload)
