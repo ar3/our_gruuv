@@ -132,9 +132,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       @goals = @goals.includes(:outgoing_links, :incoming_links, owner: :person)
     end
 
-    # Eager load prompt associations for hierarchical views (goal node shows "In reflection: ..." next to Owned by)
+    # Eager load owner (with person for CompanyTeammate) and prompt associations for hierarchical views
+    # (goal node shows owner image/name and "In reflection: ..." to avoid N+1)
     if @view_style.in?(%w[hierarchical-collapsible hierarchical-indented])
-      @goals = @goals.includes(prompt_goals: { prompt: :prompt_template })
+      @goals = @goals.includes(owner: :person, prompt_goals: { prompt: :prompt_template })
     end
     
     # For hierarchical-indented view, load most recent check-ins for display
