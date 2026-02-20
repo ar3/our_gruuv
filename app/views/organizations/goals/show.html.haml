@@ -52,10 +52,6 @@
             %dt.col-sm-4 Top Priority Since:
             %dd.col-sm-8= format_time_in_user_timezone(@goal.became_top_priority)
 
-          %dt.col-sm-4 Timeframe:
-          %dd.col-sm-8
-            %span.badge{class: timeframe_badge_class(@goal.timeframe)}
-              = @goal.timeframe.to_s.humanize
           %dt.col-sm-4 Target Dates:
           %dd.col-sm-8
             - if @goal.earliest_target_date.present? || @goal.most_likely_target_date.present? || @goal.latest_target_date.present?
@@ -214,7 +210,7 @@
               = button_to undelete_organization_goal_path(@organization, @goal), method: :patch, class: "btn btn-success w-100" do
                 %i.bi.bi-arrow-counterclockwise.me-2
                 Unarchive Goal
-        - if @goal.started_at.nil?
+        - if @goal.started_at.nil? && !goal_is_completed?(@goal)
           / Unstarted goal - show Start Now button
           - can_edit = policy(@goal).update?
           .d-grid.gap-2
@@ -274,16 +270,18 @@
               Add first check-in
           
           .d-grid.gap-2.mb-3
-            - if can_add_check_in
+            - if can_add_check_in && !goal_is_completed?(@goal)
               = link_to weekly_update_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-primary w-100" do
                 %i.bi.bi-calendar-check.me-2
                 Add/Edit & View All Check-In
             - else
+              - check_in_disabled_tooltip = goal_is_completed?(@goal) ? 'Goal is completed' : goal_no_check_in_access_tooltip(@goal)
+              - check_in_disabled_label = goal_is_completed?(@goal) ? 'Add/Edit & View All Check-In' : 'Check-In'
               .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal) do
+                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_disabled_tooltip do
                   %i.bi.bi-calendar-check.me-2
-                  Check-In
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal)}
+                  = check_in_disabled_label
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => check_in_disabled_tooltip}
           
           - if can_edit && !goal_is_completed?(@goal)
             .mt-3.pt-3.border-top

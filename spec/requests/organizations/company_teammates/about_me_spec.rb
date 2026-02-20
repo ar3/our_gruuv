@@ -853,6 +853,32 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to include("active goal")
       end
 
+      it 'expanded goals table has no Timeframe column and Last Confidence uses sentence format' do
+        reporter = create(:person, first_name: 'Sam', last_name: 'Reporter')
+        ct = CompanyTeammate.find(teammate.id)
+        goal = create(:goal,
+                     owner: ct,
+                     creator: ct,
+                     company: organization,
+                     title: 'Goal With Check-in',
+                     started_at: 1.day.ago,
+                     most_likely_target_date: 2.months.from_now,
+                     completed_at: nil,
+                     deleted_at: nil)
+        create(:goal_check_in,
+               goal: goal,
+               check_in_week_start: Date.current.beginning_of_week(:monday),
+               confidence_reporter: reporter,
+               confidence_percentage: 85)
+        get about_me_organization_company_teammate_path(organization, teammate)
+        body = response.body
+        expect(body).not_to match(/<th[^>]*>\s*Timeframe\s*<\/th>/i)
+        expect(body).to include(reporter.casual_name)
+        expect(body).to include('85%')
+        expect(body).to include('this will be hit by')
+        expect(body).to include(goal.most_likely_target_date.strftime('%b %d, %Y'))
+      end
+
       it 'status indicator and view show same goals count' do
         # Create goals with and without target dates
         goal_with_date = create(:goal,
@@ -907,6 +933,83 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to include('Goal I own')
         expect(response.body).not_to include('Goal owned by other person')
         expect(response.body).to include('1 active goal')
+      end
+
+      it 'orders goals hierarchically: each parent immediately followed by its children' do
+        ct = CompanyTeammate.find(teammate.id)
+        parent_a = create(:goal,
+                         title: 'Parent Objective',
+                         owner: ct,
+                         creator: ct,
+                         company: organization,
+                         started_at: 1.day.ago,
+                         most_likely_target_date: 2.months.from_now,
+                         completed_at: nil,
+                         deleted_at: nil)
+        child_a = create(:goal,
+                        title: 'Child Key Result',
+                        owner: ct,
+                        creator: ct,
+                        company: organization,
+                        started_at: 1.day.ago,
+                        most_likely_target_date: 2.months.from_now + 1.day,
+                        completed_at: nil,
+                        deleted_at: nil)
+        create(:goal_link, parent: parent_a, child: child_a)
+        parent_b = create(:goal,
+                         title: 'Other Parent',
+                         owner: ct,
+                         creator: ct,
+                         company: organization,
+                         started_at: 1.day.ago,
+                         most_likely_target_date: 2.months.from_now,
+                         completed_at: nil,
+                         deleted_at: nil)
+        child_b = create(:goal,
+                         title: 'Other Child',
+                         owner: ct,
+                         creator: ct,
+                         company: organization,
+                         started_at: 1.day.ago,
+                         completed_at: nil,
+                         deleted_at: nil)
+        create(:goal_link, parent: parent_b, child: child_b)
+        get about_me_organization_company_teammate_path(organization, teammate)
+        body = response.body
+        # Roots sorted by date then title, so "Other Parent" before "Parent Objective"; each child directly under its parent
+        pos_parent_a = body.index('Parent Objective')
+        pos_child_a = body.index('Child Key Result')
+        pos_parent_b = body.index('Other Parent')
+        pos_child_b = body.index('Other Child')
+        expect(pos_parent_b).to be < pos_child_b
+        expect(pos_child_b).to be < pos_parent_a
+        expect(pos_parent_a).to be < pos_child_a
+      end
+
+      it 'prefixes child goals with same icon as prompt edit page (bi-arrow-90deg-down)' do
+        ct = CompanyTeammate.find(teammate.id)
+        parent = create(:goal,
+                        title: 'Parent Goal',
+                        owner: ct,
+                        creator: ct,
+                        company: organization,
+                        started_at: 1.day.ago,
+                        completed_at: nil,
+                        deleted_at: nil)
+        child = create(:goal,
+                      title: 'Child Goal',
+                      owner: ct,
+                      creator: ct,
+                      company: organization,
+                      started_at: 1.day.ago,
+                      completed_at: nil,
+                      deleted_at: nil)
+        create(:goal_link, parent: parent, child: child)
+        get about_me_organization_company_teammate_path(organization, teammate)
+        # Child row should contain the same icon as prompt edit: bi-arrow-90deg-down and rotate-270
+        expect(response.body).to include('bi-arrow-90deg-down')
+        expect(response.body).to include('rotate-270')
+        expect(response.body).to include('Child Goal')
       end
     end
 

@@ -9,6 +9,8 @@
 
 -# Summary view (shown when collapsed)
 - all_goals = @now_goals + @next_goals + @later_goals
+- goals_for_table = @about_me_goals_ordered || all_goals
+- goal_child_ids = @about_me_goal_child_ids || Set.new
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(goals_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#goalsSection", "aria-expanded" => "false", "aria-controls" => "goalsSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:goals), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(goals_indicator)} #{status_indicator_badge_class(goals_indicator)} me-2"}
@@ -41,28 +43,26 @@
             %thead
               %tr
                 %th Goal
-                %th Timeframe
                 %th Last Confidence
                 %th Status
             %tbody
-              - all_goals.each do |goal|
+              - goals_for_table.each do |goal|
                 - latest_check_in = goal.instance_variable_get(:@latest_check_in)
                 - needs_check_in = goal.instance_variable_get(:@needs_check_in)
+                - is_child = goal_child_ids.include?(goal.id)
                 %tr
                   %td
+                    - if is_child
+                      %i.bi.bi-arrow-90deg-down.rotate-270{style: "margin-right: 0.5rem;"}
                     = link_to goal.title, organization_goal_path(organization, goal), class: "text-decoration-none"
                   %td
-                    - if @now_goals.include?(goal)
-                      %span.badge.bg-primary Now
-                    - elsif @next_goals.include?(goal)
-                      %span.badge.bg-info Next
-                    - elsif @later_goals.include?(goal)
-                      %span.badge.bg-secondary Later
-                  %td
                     - if latest_check_in
-                      %strong= "#{latest_check_in.confidence_percentage}%"
-                      %br
-                      %small.text-muted= latest_check_in.check_in_week_start.strftime('%b %d, %Y')
+                      - reporter_name = latest_check_in.confidence_reporter.casual_name
+                      - confidence = latest_check_in.confidence_percentage
+                      - calc_date = goal.calculated_target_date
+                      = "#{reporter_name}; #{confidence}%"
+                      - if calc_date.present?
+                        = " this will be hit by #{calc_date.strftime('%b %d, %Y')}"
                     - else
                       %span.text-muted No check-in yet
                   %td

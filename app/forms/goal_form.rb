@@ -207,8 +207,8 @@ class GoalForm < Reform::Form
 
   def current_teammate_present_for_new_goals
     return unless model.new_record?
-    return if current_teammate.present?
-    
+    return if current_teammate.present? && !current_teammate.destroyed?
+
     errors.add(:base, 'You must be a company teammate to create goals')
   end
   

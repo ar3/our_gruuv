@@ -159,7 +159,24 @@ module GoalsHelper
   def goal_index_due_phrase_has_dates?(goal)
     goal.earliest_target_date.present? || goal.most_likely_target_date.present? || goal.latest_target_date.present?
   end
-  
+
+  # Label for the goal's primary target date (for about_me last-confidence sentence).
+  # Returns "most likely", "earliest", or "latest" depending on which date calculated_target_date used.
+  def goal_primary_target_date_label(goal)
+    return nil if goal.blank?
+    calc = goal.calculated_target_date
+    return nil if calc.blank?
+    if goal.most_likely_target_date == calc
+      'most likely'
+    elsif goal.earliest_target_date == calc
+      'earliest'
+    elsif goal.latest_target_date == calc
+      'latest'
+    else
+      'most likely'
+    end
+  end
+
   def goal_privacy_rings(goal)
     case goal.privacy_level
     when 'only_creator'

@@ -200,6 +200,32 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
 
+  describe '#goal_primary_target_date_label' do
+    it 'returns "most likely" when calculated_target_date is most_likely_target_date' do
+      d = 1.month.from_now.to_date
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: d, earliest_target_date: d - 1.week, latest_target_date: d + 1.week)
+      expect(helper.goal_primary_target_date_label(goal)).to eq('most likely')
+    end
+
+    it 'returns "earliest" when only earliest_target_date is set' do
+      d = 1.month.from_now.to_date
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, earliest_target_date: d, most_likely_target_date: nil, latest_target_date: nil)
+      expect(helper.goal_primary_target_date_label(goal)).to eq('earliest')
+    end
+
+    it 'returns "latest" when calculated_target_date comes from latest_target_date' do
+      past = 1.day.ago.to_date
+      future = 1.month.from_now.to_date
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: past, earliest_target_date: past - 1.week, latest_target_date: future)
+      expect(helper.goal_primary_target_date_label(goal)).to eq('latest')
+    end
+
+    it 'returns nil when goal has no target dates' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+      expect(helper.goal_primary_target_date_label(goal)).to be_nil
+    end
+  end
+
   describe '#goal_index_info_sentence' do
     it 'includes status, goal type, and due phrase for active goal' do
       goal = create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: Date.current + 30, started_at: 1.day.ago)

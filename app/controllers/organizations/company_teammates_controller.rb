@@ -830,6 +830,34 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         goal.instance_variable_set(:@latest_check_in, latest_check_ins[goal.id])
         goal.instance_variable_set(:@needs_check_in, current_week_check_ins[goal.id].nil?)
       end
+
+      # Order goals hierarchically: each parent immediately followed by its children (then their children).
+      # Roots are sorted by date day then title (same as goal index); children under a parent same.
+      links = GoalLink.where(parent_id: goal_ids, child_id: goal_ids)
+      child_ids_in_set = links.pluck(:child_id).uniq.to_set
+      root_ids = goal_ids.reject { |id| child_ids_in_set.include?(id) }
+      parent_to_children = links.group_by(&:parent_id).transform_values { |rows| rows.map(&:child_id).uniq }
+      goals_by_id = all_active_goals.index_by(&:id)
+      sort_key = ->(id) {
+        g = goals_by_id[id]
+        [(g&.most_likely_target_date&.day) || 99, (g&.title&.downcase) || '']
+      }
+      sorted_root_ids = root_ids.sort_by { |id| sort_key[id] }
+      ordered_ids = []
+      append_subtree = lambda do |parent_id|
+        (parent_to_children[parent_id] || []).sort_by { |id| sort_key[id] }.each do |child_id|
+          ordered_ids << child_id
+          append_subtree.call(child_id)
+        end
+      end
+      sorted_root_ids.each do |root_id|
+        ordered_ids << root_id
+        append_subtree.call(root_id)
+      end
+      @about_me_goals_ordered = ordered_ids.map { |id| goals_by_id[id] }.compact
+      # Goals that are children of another goal in this set (for prefix icon in view)
+      child_ids = GoalLink.where(parent_id: goal_ids, child_id: goal_ids).pluck(:child_id).uniq
+      @about_me_goal_child_ids = Set.new(child_ids)
       
       # Check if any goals were completed in the last 90 days (for status indicator)
       @goals_completed_recently = base_goals.where('completed_at >= ?', 90.days.ago).exists?
@@ -864,6 +892,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       @now_goals = []
       @next_goals = []
       @later_goals = []
+      @about_me_goals_ordered = []
+      @about_me_goal_child_ids = Set.new
       @goals_with_recent_check_ins_count = 0
       @goals_completed_count = 0
       @draft_goals_count = 0

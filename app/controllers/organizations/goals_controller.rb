@@ -127,15 +127,16 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @view_style = params[:view] || 'hierarchical-collapsible'
     @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible].include?(@view_style)
     
-    # Eager load links and owner (with person for CompanyTeammate) for table/cards/list to avoid N+1
+    # Eager load links for table/cards/list to avoid N+1.
+    # Note: owner is polymorphic so we cannot use includes(owner: :person).
     if @view_style.in?(%w[table cards list])
-      @goals = @goals.includes(:outgoing_links, :incoming_links, owner: :person)
+      @goals = @goals.includes(:outgoing_links, :incoming_links)
     end
 
-    # Eager load owner (with person for CompanyTeammate) and prompt associations for hierarchical views
-    # (goal node shows owner image/name and "In reflection: ..." to avoid N+1)
+    # Eager load prompt associations for hierarchical views (goal node shows "In reflection: ...").
+    # Note: owner is polymorphic so we cannot use includes(owner: :person).
     if @view_style.in?(%w[hierarchical-collapsible hierarchical-indented])
-      @goals = @goals.includes(owner: :person, prompt_goals: { prompt: :prompt_template })
+      @goals = @goals.includes(prompt_goals: { prompt: :prompt_template })
     end
     
     # For hierarchical-indented view, load most recent check-ins for display
