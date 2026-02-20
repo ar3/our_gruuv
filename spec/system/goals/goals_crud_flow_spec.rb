@@ -464,14 +464,16 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       find('button.dropdown-toggle', text: 'New Child Goal').click
       find('a.dropdown-item', text: '... this new stepping stone / activity / output').click
       
-      # Should be on the new outgoing link page (overlay)
-      expect(page).to have_content('Create Links to Other Goals')
+      # Should be on the choose outgoing link page (overlay)
+      expect(page).to have_content('Add child goal(s) to "Goal 1"')
+      # Go to associate existing goals (page with checkboxes)
+      click_link 'Associate "Goal 1" as parent to existing goals'
       
       # Select goal2 from checkboxes
       check "goal_ids_#{goal2.id}"
       
       # Submit form
-      click_button 'Create Links', id: 'create-existing-links-btn'
+      click_button 'Associate selected', id: 'associate-selected-outgoing-btn'
       
       # Should be redirected to goal show page with success
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
@@ -485,8 +487,10 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       find('button.dropdown-toggle', text: 'New Child Goal').click
       find('a.dropdown-item', text: '... this new stepping stone / activity / output').click
       
-      # Should be on the new outgoing link page
-      expect(page).to have_content('Create Links to Other Goals')
+      # Should be on the choose outgoing link page
+      expect(page).to have_content('Add child goal(s) to "Goal 1"')
+      # Go to associate existing goals (page with checkboxes)
+      click_link 'Associate "Goal 1" as parent to existing goals'
       
       # Goal1 should not appear in the checkbox list (it's excluded)
       expect(page).not_to have_field("goal_ids_#{goal1.id}")

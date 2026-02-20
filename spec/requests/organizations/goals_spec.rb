@@ -408,6 +408,28 @@ RSpec.describe 'Organizations::Goals', type: :request do
         expect(response.body).to include('Add first check-in')
         expect(response.body).to include('alert-info')
       end
+
+      it 'displays Progress card with chart when goal has check-ins and target date' do
+        started_goal.update!(most_likely_target_date: 1.month.from_now)
+        create(:goal_check_in, goal: started_goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 80, confidence_reporter: person)
+
+        get organization_goal_path(organization, started_goal)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('goal-progress')
+        expect(response.body).to include('Progress')
+        expect(response.body).to include('goal-show-progress-confidence-chart')
+      end
+
+      it 'does not display progress chart when goal has no check-ins' do
+        started_goal.update!(most_likely_target_date: 1.month.from_now)
+
+        get organization_goal_path(organization, started_goal)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Progress')
+        expect(response.body).not_to include('goal-show-progress-confidence-chart')
+      end
     end
   end
   

@@ -245,80 +245,29 @@
                   Archive Goal
                 %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
         - else
-          / Started goal - show check-in button
+          / Started goal - Actions card only: Edit, Archive
           - can_edit = policy(@goal).update?
-          - can_add_check_in = policy(GoalCheckIn.new(goal: @goal)).create?
-          - return_url = request.url
-          - return_text = 'Goal'
-          
-          / Last check-in display
-          - last_check_in = @goal.goal_check_ins.includes(:confidence_reporter).recent.first
-          - if last_check_in.present?
-            - check_in_date = format_date_in_user_timezone(last_check_in.created_at)
-            - teammate_name = last_check_in.confidence_reporter.display_name
-            - confidence = last_check_in.confidence_percentage
-            - calculated_due_date = @goal.calculated_target_date
-            %p.mb-3
-              = "#{teammate_name} checked in on #{check_in_date}, and we are #{confidence}% confident we'll accomplish this goal"
-              - if calculated_due_date.present?
-                = " by #{calculated_due_date.strftime('%B %d, %Y')}"
-              = "."
-              = render 'shared/on_track_pill', status: @goal.on_track_status_for_check_in(last_check_in)
-          - else
-            .alert.alert-info.mb-3
-              %i.bi.bi-info-circle.me-2
-              Add first check-in
-          
-          .d-grid.gap-2.mb-3
-            - if can_add_check_in && !goal_is_completed?(@goal)
-              = link_to weekly_update_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-primary w-100" do
-                %i.bi.bi-calendar-check.me-2
-                Add/Edit & View All Check-In
+          .d-grid.gap-2
+            - if can_edit
+              = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm" do
+                %i.bi.bi-pencil.me-2
+                Edit Goal
             - else
-              - check_in_disabled_tooltip = goal_is_completed?(@goal) ? 'Goal is completed' : goal_no_check_in_access_tooltip(@goal)
-              - check_in_disabled_label = goal_is_completed?(@goal) ? 'Add/Edit & View All Check-In' : 'Check-In'
               .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_disabled_tooltip do
-                  %i.bi.bi-calendar-check.me-2
-                  = check_in_disabled_label
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => check_in_disabled_tooltip}
-          
-          - if can_edit && !goal_is_completed?(@goal)
-            .mt-3.pt-3.border-top
-              .d-grid.gap-2
-                = link_to done_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-success w-100" do
-                  %i.bi.bi-check-circle.me-2
-                  Mark Completed
-          - elsif !goal_is_completed?(@goal)
-            .mt-3.pt-3.border-top
-              .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-success w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                  %i.bi.bi-check-circle.me-2
-                  Mark Completed
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
-          
-          .mt-3.pt-3.border-top
-            .d-grid.gap-2
-              - if can_edit
-                = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm" do
+                = link_to "#", class: "btn btn-outline-secondary btn-sm disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
                   %i.bi.bi-pencil.me-2
                   Edit Goal
-              - else
-                .d-flex.align-items-center.gap-2
-                  = link_to "#", class: "btn btn-outline-secondary btn-sm disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                    %i.bi.bi-pencil.me-2
-                    Edit Goal
-                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
-              - if policy(@goal).destroy? && @goal.status != :deleted
-                = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger btn-sm w-100", data: { confirm: "Are you sure you want to archive this goal?" } do
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+            - if policy(@goal).destroy? && @goal.status != :deleted
+              = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger btn-sm w-100", data: { confirm: "Are you sure you want to archive this goal?" } do
+                %i.bi.bi-archive.me-2
+                Archive Goal
+            - elsif @goal.status != :deleted
+              .d-flex.align-items-center.gap-2
+                = link_to "#", class: "btn btn-outline-danger btn-sm w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
                   %i.bi.bi-archive.me-2
                   Archive Goal
-              - elsif @goal.status != :deleted
-                .d-flex.align-items-center.gap-2
-                  = link_to "#", class: "btn btn-outline-danger btn-sm w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                    %i.bi.bi-archive.me-2
-                    Archive Goal
-                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
           
         - if @goal.goal_type != 'inspirational_objective' && @goal.most_likely_target_date.nil?
           .mt-3.pt-3.border-top
@@ -340,4 +289,61 @@
             = link_to choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-secondary btn-sm w-100" do
               %i.bi.bi-node-plus-fill.me-2
               Create/associate new child goal
+
+    / Progress Card (started goals only)
+    - if @goal.started_at.present?
+      .card.mb-4{ role: "region", "aria-labelledby": "goal-progress" }
+        .card-header
+          %h5.mb-0{ id: "goal-progress" }
+            %i.bi.bi-graph-up.me-2
+            Progress
+        .card-body
+          - can_edit = policy(@goal).update?
+          - can_add_check_in = policy(GoalCheckIn.new(goal: @goal)).create?
+          - return_url = request.url
+          - return_text = 'Goal'
+          - last_check_in = @goal.goal_check_ins.includes(:confidence_reporter).recent.first
+          - if last_check_in.present?
+            - check_in_date = format_date_in_user_timezone(last_check_in.created_at)
+            - teammate_name = last_check_in.confidence_reporter.display_name
+            - confidence = last_check_in.confidence_percentage
+            - calculated_due_date = @goal.calculated_target_date
+            %p.mb-3
+              = "#{teammate_name} checked in on #{check_in_date}, and we are #{confidence}% confident we'll accomplish this goal"
+              - if calculated_due_date.present?
+                = " by #{calculated_due_date.strftime('%B %d, %Y')}"
+              = "."
+              = render 'shared/on_track_pill', status: @goal.on_track_status_for_check_in(last_check_in)
+          - else
+            .alert.alert-info.mb-3
+              %i.bi.bi-info-circle.me-2
+              Add first check-in
+          .d-grid.gap-2.mb-3
+            - if can_add_check_in && !goal_is_completed?(@goal)
+              = link_to weekly_update_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-primary w-100" do
+                %i.bi.bi-calendar-check.me-2
+                Add/Edit & View All Check-In
+            - else
+              - check_in_disabled_tooltip = goal_is_completed?(@goal) ? 'Goal is completed' : goal_no_check_in_access_tooltip(@goal)
+              - check_in_disabled_label = goal_is_completed?(@goal) ? 'Add/Edit & View All Check-In' : 'Check-In'
+              .d-flex.align-items-center.gap-2
+                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_disabled_tooltip do
+                  %i.bi.bi-calendar-check.me-2
+                  = check_in_disabled_label
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => check_in_disabled_tooltip}
+          - if can_edit && !goal_is_completed?(@goal)
+            .d-grid.gap-2.mb-3
+              = link_to done_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-success w-100" do
+                %i.bi.bi-check-circle.me-2
+                Mark Completed
+          - elsif !goal_is_completed?(@goal)
+            .d-grid.gap-2.mb-3
+              .d-flex.align-items-center.gap-2
+                = link_to "#", class: "btn btn-success w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                  %i.bi.bi-check-circle.me-2
+                  Mark Completed
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+          - if @progress_chart_data.present? && @goal.goal_check_ins.any?
+            .mt-3.pt-3.border-top
+              = render 'organizations/goals/progress_confidence_chart', progress_chart_data: @progress_chart_data, chart_dom_id: "goal-show-progress-confidence-chart"
 

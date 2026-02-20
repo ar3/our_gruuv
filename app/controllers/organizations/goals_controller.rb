@@ -141,7 +141,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # For hierarchical-indented view, load most recent check-ins for display
     if @view_style == 'hierarchical-indented'
-      goal_ids = @goals.pluck(:id)
+      goal_ids = @goals.unscope(:includes).pluck(:id)
       @most_recent_check_ins_by_goal = GoalCheckIn
         .where(goal_id: goal_ids)
         .includes(:confidence_reporter, :goal)
@@ -246,6 +246,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Load prompt associations for display
     @prompt_goals = @goal.prompt_goals.includes(:prompt, prompt: :prompt_template).order(created_at: :desc)
+
+    # Progress chart data for Progress card (only when started and has target date; chart shown only when also has check-in)
+    @progress_chart_data = Goals::ProgressChartDataBuilder.call(goal: @goal) if @goal.started_at.present? && (@goal.earliest_target_date.present? || @goal.most_likely_target_date.present? || @goal.latest_target_date.present?)
   end
   
   def weekly_update
@@ -307,6 +310,18 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def create
     authorize Goal.new
+
+    unless current_company_teammate.present?
+      flash[:alert] = 'You must be a company teammate to create goals'
+      flash.now[:alert] = flash[:alert]
+      @goal = Goal.new(company: @organization.root_company || @organization)
+      @form = GoalForm.new(@goal)
+      @form.current_person = current_person
+      @form.current_teammate = nil
+      @form.privacy_level = 'only_creator_owner_and_managers'
+      render :new, status: :unprocessable_entity
+      return
+    end
 
     company = @organization.root_company || @organization
     @goal = Goal.new(company: company)

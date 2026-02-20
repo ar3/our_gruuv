@@ -470,6 +470,20 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         expect(assigns(:current_check_in)).to be_nil
         expect(assigns(:last_check_in)).to be_nil
       end
+
+      it 'assigns progress_chart_data when goal has target dates and started_at' do
+        started_goal.update!(most_likely_target_date: 8.weeks.from_now.to_date)
+        get :show, params: { organization_id: company.id, id: started_goal.id }
+        chart = assigns(:progress_chart_data)
+        expect(chart).to be_a(Hash)
+        expect(chart[:series]).to be_an(Array)
+      end
+
+      it 'assigns progress_chart_data as nil when goal has no target dates' do
+        started_goal.update!(earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+        get :show, params: { organization_id: company.id, id: started_goal.id }
+        expect(assigns(:progress_chart_data)).to be_nil
+      end
     end
   end
   
