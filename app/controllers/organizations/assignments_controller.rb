@@ -17,7 +17,8 @@ class Organizations::AssignmentsController < ApplicationController
       policy_scope: policy_scope(Assignment)
     )
     
-    @assignments = query.call.includes(:department)
+    # Eager-load associations used by index view to avoid N+1 (abilities / assignment_abilities)
+    @assignments = query.call.includes(:department, assignment_abilities: :ability)
 
     # Group assignments by department for section headers (nil = "No Department")
     assignments_array = @assignments.to_a

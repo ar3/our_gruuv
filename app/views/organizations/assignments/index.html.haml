@@ -177,7 +177,7 @@
                             None
                       %td
                         - if assignment.abilities.any?
-                          - assignment.assignment_abilities.includes(:ability).each do |assignment_ability|
+                          - assignment.assignment_abilities.sort_by(&:milestone_level).each do |assignment_ability|
                             - ability = assignment_ability.ability
                             - milestone_level = assignment_ability.milestone_level
                             = link_to organization_ability_path(@organization, ability), class: "badge bg-light text-spice-4 me-1 mb-1 text-decoration-none" do
