@@ -112,6 +112,11 @@
     / Main Content Container with Structured Areas
     .main-content-container{class: "#{'nav-open' if nav_open}"}
       .container.mt-4
+        / Navigation Area - "Back to X" links (optional)
+        - if content_for?(:go_back_link)
+          .row.mb-3
+            .col-12
+              = yield :go_back_link
         / Header Area - Title (left) + Primary Action/View Switcher (right)
         - if content_for?(:header)
           .row.mb-1
@@ -125,11 +130,6 @@
                   = yield :header_action
 
         
-        / Navigation Area - "Back to X" links (optional)
-        - if content_for?(:go_back_link)
-          .row.mb-3
-            .col-12
-              = yield :go_back_link
         
         
         / Impersonation Warning Banner
