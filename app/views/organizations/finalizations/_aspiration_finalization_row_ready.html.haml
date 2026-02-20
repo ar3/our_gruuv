@@ -7,11 +7,13 @@
   %td
     %div
       = aspiration_rating_display(check_in.employee_rating)
-    %small.text-muted= simple_format(check_in.employee_private_notes.presence || '--no notes--')
+    .finalization-notes-cell
+      %small.text-muted= simple_format(check_in.employee_private_notes.presence || '--no notes--')
   %td
     %div
       = aspiration_rating_display(check_in.manager_rating)
-    %small.text-muted= simple_format(check_in.manager_private_notes.presence || '--no notes--')
+    .finalization-notes-cell
+      %small.text-muted= simple_format(check_in.manager_private_notes.presence || '--no notes--')
   %td
     - if view_mode == :employee
       %small.text-muted Waiting for manager to set

@@ -9,11 +9,13 @@
       = assignment_rating_display(check_in.employee_rating)
     - if check_in.actual_energy_percentage.present?
       %small.text-muted Energy: #{check_in.actual_energy_percentage}%
-    %small.text-muted= simple_format(check_in.employee_private_notes)
+    .finalization-notes-cell
+      %small.text-muted= simple_format(check_in.employee_private_notes)
   %td
     %div
       = assignment_rating_display(check_in.manager_rating)
-    %small.text-muted= simple_format(check_in.manager_private_notes)
+    .finalization-notes-cell
+      %small.text-muted= simple_format(check_in.manager_private_notes)
   %td
     - if view_mode == :employee
       %small.text-muted Waiting for manager to set

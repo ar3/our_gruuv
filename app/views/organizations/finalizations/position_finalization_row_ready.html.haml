@@ -5,11 +5,13 @@
   %td
     %div
       = position_rating_display(check_in.employee_rating)
-    %small.text-muted= simple_format(check_in.employee_private_notes)
+    .finalization-notes-cell
+      %small.text-muted= simple_format(check_in.employee_private_notes)
   %td
     %div
       = position_rating_display(check_in.manager_rating)
-    %small.text-muted= simple_format(check_in.manager_private_notes)
+    .finalization-notes-cell
+      %small.text-muted= simple_format(check_in.manager_private_notes)
   %td
     = form.text_area "position_check_in[shared_notes]", class: "form-control form-control-sm", rows: 2, placeholder: "Shared summary and action items..."
   %td
