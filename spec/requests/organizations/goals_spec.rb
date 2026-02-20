@@ -838,9 +838,37 @@ RSpec.describe 'Organizations::Goals', type: :request do
       }
       
       expect(response).to have_http_status(:success)
-      # Check for check-in form elements
-      expect(response.body).to include('Confidence')
+      # Check-in form uses sentence: "I'm [dropdown] confident this'll be hit by [date]."
+      expect(response.body).to include('confident this\'ll be hit by')
       expect(response.body).to include('Check In')
+    end
+
+    it 'does not show View button for vision goals (only view would be shown)' do
+      vision_goal = create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'My Vision',
+        goal_type: 'inspirational_objective',
+        most_likely_target_date: nil,
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-collapsible',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('My Vision')
+      # Vision goal card must not contain the View button (we hide it when vision would only show View)
+      # Find the card containing "My Vision" and ensure it has no View button (btn-outline-primary + View)
+      idx = response.body.index('My Vision')
+      expect(idx).to be_present
+      # Card content: from start of this tree-node back to previous tree-node or start, then forward to end of card
+      start_idx = response.body.rindex('tree-node', idx) || 0
+      end_idx = response.body.index('tree-node', idx + 1) || response.body.length
+      vision_card_html = response.body[start_idx...end_idx]
+      expect(vision_card_html).not_to include('btn-outline-primary')
     end
 
     it 'shows goal hierarchy with sub-goal counts' do

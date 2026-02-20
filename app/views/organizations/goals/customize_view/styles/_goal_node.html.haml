@@ -56,56 +56,55 @@
                 = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
                 = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
             
-            / Inline check-in form (only if can_check_in and goal is check-in eligible)
+            / Inline check-in form: line 1 = "I'm [confidence] confident this'll be hit by [date]." [buttons]; line 2 = reason below sentence start
             - if can_check_in && goal.check_in_eligible? && goal.completed_at.nil?
               - can_update_goal = policy(goal).update?
               .check-in-inline.mt-1.p-1.bg-light.rounded
-                .d-flex.align-items-end.gap-2.flex-wrap
-                  = form_with url: check_in_organization_goal_path(@organization, goal), method: :post, local: true, class: "d-flex align-items-end gap-2 flex-wrap" do |f|
-                    = hidden_field_tag :return_url, request.fullpath
-                    .flex-grow-1{style: "min-width: 95px; max-width: 115px;"}
-                      %label.form-label.small.mb-1 Confidence
-                      = select_tag :confidence_percentage, options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm' }
+                = form_with url: check_in_organization_goal_path(@organization, goal), method: :post, local: true do |f|
+                  = hidden_field_tag :return_url, request.fullpath
+                  .d-flex.flex-wrap.align-items-center.gap-2
+                    %span.small I'm
+                    = select_tag :confidence_percentage, options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm', style: 'width: auto; min-width: 80px; display: inline-block;' }
+                    %span.small confident this'll be hit by
                     - if can_update_goal
-                      .flex-grow-1{style: "min-width: 125px; max-width: 155px;"}
-                        %label.form-label.small.mb-1 Target Date
-                        = date_field_tag :most_likely_target_date, goal.most_likely_target_date, class: 'form-control form-control-sm'
-                    .flex-grow-1{style: "min-width: 200px;"}
-                      %label.form-label.small.mb-1 Reason (optional)
-                      = text_field_tag :confidence_reason, current_week_check_in&.confidence_reason, class: 'form-control form-control-sm', placeholder: 'Brief update...'
-                    .d-flex.align-items-center.gap-1.flex-shrink-0.flex-nowrap
-                      %button.btn.btn-primary.btn-sm{type: "submit"}
-                        %i.bi.bi-check-lg
-                        Check In
-                      - if can_update_goal
-                        .ps-2.pe-2.border-start.border-end
-                          %span.small.text-muted or
-                        = link_to done_organization_goal_path(@organization, goal), class: "btn btn-success btn-sm", "data-bs-toggle" => "tooltip", "data-bs-title" => "mark this goal as done and log if it was hit or not" do
-                          %i.bi.bi-check-circle
+                      = date_field_tag :most_likely_target_date, goal.most_likely_target_date, class: 'form-control form-control-sm', style: 'width: auto; min-width: 130px; display: inline-block;'
+                    - else
+                      %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
+                    %span.small .
+                    %button.btn.btn-primary.btn-sm{type: "submit"}
+                      %i.bi.bi-check-lg
+                      Check In
+                    - if can_update_goal
+                      %span.small.text-muted or
+                      = link_to done_organization_goal_path(@organization, goal), class: "btn btn-success btn-sm", "data-bs-toggle" => "tooltip", "data-bs-title" => "mark this goal as done and log if it was hit or not" do
+                        %i.bi.bi-check-circle
+                  .mt-1
+                    = text_field_tag :confidence_reason, current_week_check_in&.confidence_reason, class: 'form-control form-control-sm', style: 'max-width: 100%;', placeholder: 'Brief update (optional)...'
             - elsif !can_check_in && goal.check_in_eligible? && goal.completed_at.nil?
               .check-in-inline.mt-1.p-1.bg-light.rounded.opacity-75
-                .d-flex.align-items-end.gap-2.flex-wrap
-                  .flex-grow-1{style: "min-width: 120px; max-width: 150px;"}
-                    %label.form-label.small.mb-1 Confidence
-                    = select_tag "goal_check_in_disabled_#{goal.id}", options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm', disabled: true }
-                  .flex-grow-1{style: "min-width: 200px;"}
-                    %label.form-label.small.mb-1 Reason (optional)
-                    = text_field_tag "goal_check_in_reason_disabled_#{goal.id}", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm', placeholder: 'Brief update...', disabled: true
-                  .flex-shrink-0.d-flex.align-items-center
-                    %span.btn.btn-primary.btn-sm.disabled
-                      %i.bi.bi-check-lg.me-1
-                      Check In
-                    %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(goal)}
+                .d-flex.flex-wrap.align-items-center.gap-2
+                  %span.small I'm
+                  = select_tag "goal_check_in_disabled_#{goal.id}", options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm', style: 'width: auto; min-width: 80px;', disabled: true }
+                  %span.small confident this'll be hit by
+                  %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
+                  %span.small .
+                  %span.btn.btn-primary.btn-sm.disabled
+                    %i.bi.bi-check-lg.me-1
+                    Check In
+                  %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(goal)}
+                .mt-1
+                  = text_field_tag "goal_check_in_reason_disabled_#{goal.id}", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm', style: 'max-width: 100%;', placeholder: 'Brief update (optional)...', disabled: true
             - elsif goal.completed_at.nil?
-              / Action buttons for non-check-in-eligible goals
-              .d-flex.gap-2.mt-2
-                - if goal.started_at.nil? && policy(goal).update?
+              / Action buttons for non-check-in-eligible goals: only show View when Start is also shown (never show View alone)
+              - show_start = goal.started_at.nil? && policy(goal).update?
+              - if show_start
+                .d-flex.gap-2.mt-2
                   = button_to start_organization_goal_path(@organization, goal), method: :patch, class: "btn btn-primary btn-sm", form: { style: "display: inline-block;" } do
                     %i.bi.bi-play-circle.me-1
                     Start
-                = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
-                  %i.bi.bi-eye.me-1
-                  View
+                  = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
+                    %i.bi.bi-eye.me-1
+                    View
 
 - if has_children
   .collapse.show{id: children_id}
