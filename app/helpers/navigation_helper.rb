@@ -338,9 +338,9 @@ module NavigationHelper
         ]
       },
       {
-        label: "#{current_company.name} Essentials",
-        icon: 'bi-building',
-        section: 'org_essentials',
+        label: 'Admin',
+        icon: 'bi-gear',
+        section: 'admin',
         items: [
           {
             label: 'Aspirational Values',
@@ -369,14 +369,7 @@ module NavigationHelper
             path: edit_organization_company_preference_path(current_organization),
             policy_check: -> { policy(current_company).view_company_preferences? },
             coming_soon: false
-          }
-        ]
-      },
-      {
-        label: 'Admin',
-        icon: 'bi-gear',
-        section: 'admin',
-        items: [
+          },
           {
             label: 'Prompt Templates',
             icon: 'bi-file-text',

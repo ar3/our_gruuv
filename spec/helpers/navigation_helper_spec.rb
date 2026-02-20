@@ -309,7 +309,7 @@ RSpec.describe NavigationHelper, type: :helper do
       end
     end
 
-    describe 'Admin/Explore MAAP(s), Org Essentials, Beta, and Admin sections' do
+    describe 'Admin/Explore MAAP(s), Admin (org essentials + admin), and Beta sections' do
       it 'includes Admin/Explore MAAP(s) section with Milestones & Abilities, Assignments, Positions, Seats' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Admin/Explore MAAP(s)' }
@@ -319,11 +319,17 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to eq(['Milestones & Abilities', 'Assignments', 'Positions', 'Seats'])
       end
 
-      it 'includes Org Essentials section with Aspirational Values, Departments, Teams, and Preferences' do
+      it 'includes Admin section (org essentials + admin) with section id admin' do
         structure = helper.navigation_structure
-        section = structure.find { |item| item[:label]&.end_with?(' Essentials') }
+        section = structure.find { |item| item[:label] == 'Admin' && item[:section] == 'admin' }
         expect(section).to be_present
-        expect(section[:section]).to eq('org_essentials')
+        expect(section[:section]).to eq('admin')
+      end
+
+      it 'includes Admin section with org essentials: Aspirational Values, Departments, Teams, Preferences' do
+        structure = helper.navigation_structure
+        section = structure.find { |item| item[:label] == 'Admin' && item[:section] == 'admin' }
+        expect(section).to be_present
         labels = section[:items].map { |item| item[:label] }
         expect(labels).to include('Aspirational Values')
         expect(labels).to include('Departments')
@@ -331,16 +337,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels.any? { |l| l&.end_with?(' Preferences') }).to be true
       end
 
-      it 'includes Beta section with Eligibility Requirements' do
-        structure = helper.navigation_structure
-        section = structure.find { |item| item[:label] == 'Beta' }
-        expect(section).to be_present
-        expect(section[:section]).to eq('beta')
-        labels = section[:items].map { |item| item[:label] }
-        expect(labels).to include('Eligibility Requirements')
-      end
-
-      it 'includes Admin section with Prompt Templates, Bulk Events, Bulk Downloads, Slack Settings' do
+      it 'includes Admin section with admin items: Prompt Templates, Bulk Events, Bulk Downloads, Slack Settings' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Admin' && item[:section] == 'admin' }
         expect(section).to be_present
@@ -350,6 +347,15 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Bulk Downloads')
         expect(labels).to include('Slack Settings')
         expect(labels).not_to include('Check-ins Health')
+      end
+
+      it 'includes Beta section with Eligibility Requirements' do
+        structure = helper.navigation_structure
+        section = structure.find { |item| item[:label] == 'Beta' }
+        expect(section).to be_present
+        expect(section[:section]).to eq('beta')
+        labels = section[:items].map { |item| item[:label] }
+        expect(labels).to include('Eligibility Requirements')
       end
     end
 

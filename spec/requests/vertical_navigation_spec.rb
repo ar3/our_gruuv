@@ -135,7 +135,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
       end
     end
     
-    context 'when on a page within Admin section' do
+    context 'when on a page within Admin/Explore MAAP(s) section' do
       before do
         org_policy_double = double(
           show?: true,
