@@ -10,8 +10,6 @@
     %h1.mb-0.me-2
       %i.bi.bi-people.me-2
       = @my_teams_filter ? "My Teams" : "Teams"
-    - if @my_teams_filter
-      = link_to "All teams", organization_teams_path(@organization), class: "btn btn-outline-secondary ms-2"
     .d-flex.align-items-center
       - if policy(@organization).manage_departments_and_teams?
         = link_to new_organization_team_path(@organization), class: "btn btn-primary ml-2" do
@@ -23,6 +21,10 @@
 
 .row.justify-content-center
   .col-lg-12
+    .mb-3
+      .btn-group{role: "group"}
+        = link_to "Show all Teams", organization_teams_path(@organization), class: "btn #{@my_teams_filter ? 'btn-outline-secondary' : 'btn-primary'}"
+        = link_to "Show Just My Teams", organization_teams_path(@organization, member_of: "me"), class: "btn #{@my_teams_filter ? 'btn-primary' : 'btn-outline-secondary'}"
     - if @teams_by_department.any?
       - @teams_by_department.each do |department, teams|
         - stats = @department_stats[department] || { teams_count: 0 }

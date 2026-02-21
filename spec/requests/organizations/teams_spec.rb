@@ -270,10 +270,11 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
       expect(response.body).not_to include(other_team.name)
     end
 
-    it 'shows "All teams" link when filtered' do
+    it 'shows toggle for "Show all Teams" and "Show Just My Teams" when filtered' do
       get organization_teams_path(organization, member_of: 'me')
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('All teams')
+      expect(response.body).to include('Show all Teams')
+      expect(response.body).to include('Show Just My Teams')
     end
   end
 end
