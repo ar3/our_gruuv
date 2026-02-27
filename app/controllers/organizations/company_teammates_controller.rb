@@ -170,6 +170,22 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       goal.instance_variable_set(:@last_check_in, goal.goal_check_ins.recent.first)
     end
 
+    # URLs for "View all" links on observation sections (observation index with filter)
+    casual_name = @teammate.person.casual_name
+    internal_return = internal_organization_company_teammate_path(organization, @teammate)
+    @observations_about_url = organization_observations_path(
+      organization,
+      observee_ids: [@teammate.id],
+      return_url: internal_return,
+      return_text: "Back to #{@teammate.person.display_name}"
+    )
+    @observations_by_url = organization_observations_path(
+      organization,
+      observer_id: @teammate.person.id,
+      return_url: internal_return,
+      return_text: "Back to #{@teammate.person.display_name}"
+    )
+
     # Debug mode - gather comprehensive authorization data
     if params[:debug] == 'true'
       gather_debug_data

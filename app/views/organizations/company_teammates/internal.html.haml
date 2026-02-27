@@ -372,10 +372,12 @@
 .row.mb-4
   .col-12
     .card
-      .card-header
+      .card-header.d-flex.align-items-center.justify-content-between
         %h5.mb-0
           %i.bi.bi-chat-text.me-2
           Recent Observations About #{@teammate.person.display_name}
+        = link_to @observations_about_url, class: "btn btn-sm btn-outline-primary", title: "View all observations about #{@teammate.person.casual_name}" do
+          %i.bi.bi-link-45deg
       .card-body
         - if @observations_as_observee.any?
           .list-group
@@ -402,10 +404,12 @@
 .row.mb-4
   .col-12
     .card
-      .card-header
+      .card-header.d-flex.align-items-center.justify-content-between
         %h5.mb-0
           %i.bi.bi-pencil-square.me-2
           Recent Observations By #{@teammate.person.display_name}
+        = link_to @observations_by_url, class: "btn btn-sm btn-outline-primary", title: "View all observations by #{@teammate.person.casual_name}" do
+          %i.bi.bi-link-45deg
       .card-body
         - if @observations_as_observer.any?
           .list-group

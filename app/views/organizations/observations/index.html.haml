@@ -116,11 +116,19 @@
               - if @involving_teammate.present?
                 %span.badge.rounded-pill.bg-primary.ms-1.me-1
                   Observations involving #{@involving_teammate.person.casual_name}
-              - other_filters = @current_filters.except(:involving_teammate_id)
+              - if @observee_teammate.present?
+                %span.badge.rounded-pill.bg-primary.ms-1.me-1
+                  Observations about #{@observee_teammate.person.casual_name}
+              - if @observer_teammate.present?
+                %span.badge.rounded-pill.bg-primary.ms-1.me-1
+                  Observations by #{@observer_teammate.person.casual_name}
+              - special_filter_keys = [:involving_teammate_id, :observer_id, :observee_ids]
+              - other_filters = @current_filters.except(*special_filter_keys)
+              - any_special_pill = @involving_teammate.present? || @observee_teammate.present? || @observer_teammate.present?
               - if other_filters.any?
-                - separator = @involving_teammate.present? ? '; ' : ''
+                - separator = any_special_pill ? '; ' : ''
                 = separator + other_filters.map { |k, v| "#{k}: #{Array(v).join(', ')}" }.join('; ')
-              - elsif @involving_teammate.blank?
+              - elsif !any_special_pill
                 All observations
               %br
               %i.bi.bi-sort-down.me-1

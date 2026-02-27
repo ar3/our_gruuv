@@ -366,7 +366,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       expect(page).not_to have_css('#nonActiveAssignmentsSection.show', visible: :all)
       
       # Title should include teammate's casual name (view uses "Assignments" and "starting/started")
-      expect(page).to have_content(/Check-in on Assignments #{Regexp.escape(employee_person.casual_name)} is starting\/started/)
+      expect(page).to have_content(/Check-in on "Unique-to-You" Assignments #{Regexp.escape(employee_person.casual_name)} may be starting\/started/)
     end
 
     xit 'expands and collapses the non-active assignments section' do

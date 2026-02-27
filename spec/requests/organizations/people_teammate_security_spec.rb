@@ -27,6 +27,23 @@ RSpec.describe 'Teammate View Security', type: :request do
         get internal_organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:success)
       end
+
+      it 'includes link to observation index filtered by observations about the teammate' do
+        get internal_organization_company_teammate_path(organization, person_teammate)
+        expect(response).to have_http_status(:success)
+        observations_about_path = organization_observations_path(organization, observee_ids: [person_teammate.id])
+        expect(response.body).to include(observations_about_path)
+        expect(response.body).to include('Recent Observations About')
+        expect(response.body).to include('bi-link-45deg')
+      end
+
+      it 'includes link to observation index filtered by observations by the teammate' do
+        get internal_organization_company_teammate_path(organization, person_teammate)
+        expect(response).to have_http_status(:success)
+        observations_by_path = organization_observations_path(organization, observer_id: person.id)
+        expect(response.body).to include(observations_by_path)
+        expect(response.body).to include('Recent Observations By')
+      end
     end
 
     context 'when user is unauthenticated' do

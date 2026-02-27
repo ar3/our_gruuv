@@ -48,7 +48,16 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @involving_teammate = if params[:involving_teammate_id].present?
       CompanyTeammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
     end
-    
+
+    # Load teammate for "observations by" / "observations about" filter pills
+    @observer_teammate = if params[:observer_id].present?
+      CompanyTeammate.where(organization: organization).find_by(person_id: params[:observer_id])
+    end
+    observee_ids = Array(params[:observee_ids]).reject(&:blank?)
+    @observee_teammate = if observee_ids.one?
+      CompanyTeammate.where(organization: organization).find_by(id: observee_ids.first)
+    end
+
     # Calculate spotlight statistics from all observations (not filtered, not paginated)
     # Need to re-run query without sorting joins to avoid group issues
     all_observations_query = ObservationsQuery.new(organization, params.except(:sort), current_person: current_person)

@@ -30,6 +30,26 @@ RSpec.describe 'Organizations::Observations', type: :request do
         expect(response.body).to include('rounded-pill')
       end
     end
+
+    context 'with observer_id' do
+      it 'shows Observations by pill in Filters area when filter is active' do
+        get organization_observations_path(organization, observer_id: person.id)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Observations by')
+        expect(response.body).to include(person.casual_name)
+        expect(response.body).to include('rounded-pill')
+      end
+    end
+
+    context 'with observee_ids' do
+      it 'shows Observations about pill in Filters area when filter is active' do
+        get organization_observations_path(organization, observee_ids: [teammate.id])
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Observations about')
+        expect(response.body).to include(person.casual_name)
+        expect(response.body).to include('rounded-pill')
+      end
+    end
   end
 
   describe 'GET /organizations/:organization_id/observations/select_type' do
