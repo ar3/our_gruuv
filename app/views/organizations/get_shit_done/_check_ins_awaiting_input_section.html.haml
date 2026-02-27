@@ -41,12 +41,11 @@
                   %td
                     - case check_in
                     - when AssignmentCheckIn
-                      %span.badge.bg-info Assignment
+                      Assignment
                     - when AspirationCheckIn
-                      %span.badge.bg-purple
-                        Aspiration
+                      Aspirational Value
                     - when PositionCheckIn
-                      %span.badge.bg-secondary Position
+                      Position
                   %td
                     %strong= check_in.company_teammate.person.casual_name
                   %td
@@ -59,9 +58,13 @@
                       = check_in.employment_tenure.position.display_name
                   %td
                     - if is_employee_role
-                      %span.badge.bg-warning.text-dark Complete as Employee
+                      %span.badge.bg-warning.text-dark
+                        %i.bi-person.me-1
+                        Complete as Employee
                     - else
-                      %span.badge.bg-primary Complete as Manager
+                      %span.badge.bg-warning.text-dark
+                        %i.bi-person-badge.me-1
+                        Complete as Manager
                   %td
                     %small.text-muted= check_in.check_in_started_on.strftime('%b %d, %Y')
                   %td

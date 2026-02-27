@@ -231,6 +231,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include('GSD Test Aspiration')
+        expect(response.body).to include('Aspirational Value')
       end
 
       it 'shows position check-ins awaiting employee input' do
