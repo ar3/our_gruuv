@@ -28,7 +28,7 @@
               Public Observations
           .card-body
             %p.text-muted.mb-3
-              These are public observations where #{@person.first_name} was recognized.
+              These are public observations where #{@person.casual_name} was recognized.
             - @public_observations.each do |observation|
               .mb-3.pb-3.border-bottom
                 .d-flex.justify-content-between.align-items-start
@@ -37,7 +37,7 @@
                       = observation.decorate.story_html.html_safe
                     %small.text-muted
                       - if observation.observer
-                        Observed by #{observation.observer.preferred_name || observation.observer.first_name}
+                        Observed by #{observation.observer.casual_name}
                       - if observation.observed_at
                         %span.mx-1 •
                         = format_date_in_user_timezone(observation.observed_at)
@@ -64,7 +64,7 @@
               Milestones Attained
           .card-body
             %p.text-muted.mb-3
-              These are the ability milestones #{@person.first_name} has achieved across all organizations.
+              These are the ability milestones #{@person.casual_name} has achieved across all organizations.
             - @milestones.group_by(&:ability).each do |ability, ability_milestones|
               .mb-3.pb-3.border-bottom
                 %h6.mb-2

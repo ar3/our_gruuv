@@ -1,4 +1,4 @@
 -# Position Check-Ins Table View - Employee Show Other Participant Is Complete
 .badge.bg-success Ready for Finalization
 %br
-%small.text-muted #{check_in.manager_completed_by_teammate&.person&.first_name || 'Your manager'} has completed their assessment
+%small.text-muted #{check_in.manager_completed_by_teammate&.person&.casual_name || 'Your manager'} has completed their assessment

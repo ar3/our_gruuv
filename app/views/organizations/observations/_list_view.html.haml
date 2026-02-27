@@ -32,10 +32,10 @@
             nothing rated
       %p.mb-1
         %small.text-muted
-          Observer: #{observation.observer.preferred_name || observation.observer.first_name}
+          Observer: #{observation.observer.casual_name}
           - if observation.observed_teammates.any?
             |  • Observed:
-            - names = observation.observed_teammates.map { |teammate| teammate.person.preferred_name || teammate.person.first_name }
+            - names = observation.observed_teammates.map { |teammate| teammate.person.casual_name }
             = names.join(', ')
           - else
             |  • Observed: No one

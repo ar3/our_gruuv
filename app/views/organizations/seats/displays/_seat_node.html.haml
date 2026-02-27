@@ -18,7 +18,7 @@
           .flex-shrink-0.me-3
             - if active_employee
               = content_tag :div, class: "bg-primary rounded-circle d-flex align-items-center justify-content-center text-white", style: "width: 48px; height: 48px;" do
-                = content_tag :span, active_employee.first_name&.first&.upcase || active_employee.email.first.upcase, class: "fw-bold", style: "font-size: 19px;"
+                = content_tag :span, active_employee.casual_name&.first&.upcase || active_employee.email.first.upcase, class: "fw-bold", style: "font-size: 19px;"
             - else
               = content_tag :div, class: "bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white", style: "width: 48px; height: 48px;" do
                 = content_tag :span, "S", class: "fw-bold", style: "font-size: 19px;"

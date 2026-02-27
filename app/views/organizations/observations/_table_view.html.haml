@@ -42,10 +42,10 @@
                 %i.bi.bi-exclamation-triangle.me-1
                 nothing rated
           %td
-            = observation.observer.preferred_name || observation.observer.first_name
+            = observation.observer.casual_name
           %td
             - if observation.observed_teammates.any?
-              - names = observation.observed_teammates.map { |teammate| teammate.person.preferred_name || teammate.person.first_name }
+              - names = observation.observed_teammates.map { |teammate| teammate.person.casual_name }
               = names.join(', ')
             - else
               %span.text-muted No one

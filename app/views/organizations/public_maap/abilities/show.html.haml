@@ -66,10 +66,10 @@
                 %p.mb-2= observation.decorate.story_html.html_safe
                 .d-flex.justify-content-between.align-items-center
                   .small.text-muted
-                    From: #{observation.observer.preferred_name || observation.observer.first_name}
+                    From: #{observation.observer.casual_name}
                     - if observation.observed_teammates.any?
                       |  • Recognizing: 
-                      - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
+                      - names = observation.observed_teammates.map { |t| t.person.casual_name }
                       = names.join(', ')
                   = link_to "View Observation", organization_kudo_path(observation.company, date: format_date_in_user_timezone(observation.observed_at, format: '%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
 

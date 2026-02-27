@@ -43,7 +43,7 @@
           .col-md-6
             %p
               %strong Observer: 
-              = @form.model.observer.preferred_name || @form.model.observer.first_name
+              = @form.model.observer.casual_name
             %p
               %strong Observed: 
               = @form.observed_at ? format_time_in_user_timezone(@form.observed_at) : 'Not set'
@@ -60,7 +60,7 @@
               %strong Observed People: 
               - @observees_for_notifications.each do |teammate|
                 %span.badge.bg-primary.me-1
-                  = teammate.person.preferred_name || teammate.person.first_name
+                  = teammate.person.casual_name
         
         %hr
         
@@ -111,7 +111,7 @@
             - @observees_for_notifications.each do |teammate|
               .form-check.mb-2
                 = check_box_tag 'observation[notify_teammate_ids][]', teammate.id, true, class: 'form-check-input', id: "notify_#{teammate.id}"
-                = label_tag "notify_#{teammate.id}", teammate.person.preferred_name || teammate.person.first_name, class: 'form-check-label'
+                = label_tag "notify_#{teammate.id}", teammate.person.casual_name, class: 'form-check-label'
                 %small.text-muted.ms-2
                   = teammate.person.email
             

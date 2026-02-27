@@ -76,7 +76,7 @@
           .col-md-6
             %p
               %strong Observer: 
-              = @observation.observer.preferred_name || @observation.observer.first_name
+              = @observation.observer.casual_name
             %p
               %strong Observed: 
               = format_time_in_user_timezone(@observation.observed_at)
@@ -154,7 +154,7 @@
           - @observation.observed_teammates.each do |teammate|
             .d-flex.align-items-center.mb-2
               %i.bi.bi-person-circle.me-2
-              = teammate.person.preferred_name || teammate.person.first_name
+              = teammate.person.casual_name
               %small.text-muted.ms-2
                 = teammate.person.email
 
