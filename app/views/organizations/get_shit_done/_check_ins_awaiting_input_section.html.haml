@@ -1,0 +1,72 @@
+- check_ins_count = @check_ins_awaiting_input.size
+- check_ins_indicator = check_ins_count > 0 ? :warning : :success
+= render 'shared/section_header', 
+         title: 'Check-ins Awaiting Your Input', 
+         icon: 'bi-clipboard-check', 
+         description: 'Check-ins where the other participant has completed their side',
+         collapsible: true,
+         collapse_target: 'checkInsAwaitingInputSection',
+         status_indicator: check_ins_indicator
+
+-# Summary view (shown when collapsed)
+- summary_class = check_ins_count > 0 ? "alert mb-4 collapse-summary #{status_indicator_alert_class(check_ins_indicator)}" : "alert mb-4 collapse-summary alert-light border border-light"
+- summary_style = check_ins_count > 0 ? "cursor: pointer;" : "cursor: pointer; background-color: #f8f9fa; border-color: #dee2e6 !important;"
+%div{class: summary_class, "data-bs-toggle" => "collapse", "data-bs-target" => "#checkInsAwaitingInputSection", "aria-expanded" => "false", "aria-controls" => "checkInsAwaitingInputSection", style: summary_style}
+  %p.mb-0{class: check_ins_count > 0 ? "" : "text-muted"}
+    %i{class: "#{status_indicator_icon(check_ins_indicator)} #{check_ins_count > 0 ? status_indicator_badge_class(check_ins_indicator) : 'text-muted'} me-2"}
+    - if check_ins_count > 0
+      = pluralize(check_ins_count, 'check-in') + ' awaiting your input'
+    - else
+      No check-ins awaiting your input
+
+-# Collapsible content
+.collapse#checkInsAwaitingInputSection
+  .card.mb-4
+    .card-body
+      - if @check_ins_awaiting_input.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Type
+                %th Employee
+                %th Subject
+                %th Your Role
+                %th Started
+                %th Action
+            %tbody
+              - @check_ins_awaiting_input.each do |check_in|
+                - is_employee_role = (check_in.company_teammate == @teammate)
+                %tr
+                  %td
+                    - case check_in
+                    - when AssignmentCheckIn
+                      %span.badge.bg-info Assignment
+                    - when AspirationCheckIn
+                      %span.badge.bg-purple
+                        Aspiration
+                    - when PositionCheckIn
+                      %span.badge.bg-secondary Position
+                  %td
+                    %strong= check_in.company_teammate.person.casual_name
+                  %td
+                    - case check_in
+                    - when AssignmentCheckIn
+                      = check_in.assignment.title
+                    - when AspirationCheckIn
+                      = check_in.aspiration.name
+                    - when PositionCheckIn
+                      = check_in.employment_tenure.position.display_name
+                  %td
+                    - if is_employee_role
+                      %span.badge.bg-warning.text-dark Complete as Employee
+                    - else
+                      %span.badge.bg-primary Complete as Manager
+                  %td
+                    %small.text-muted= check_in.check_in_started_on.strftime('%b %d, %Y')
+                  %td
+                    = link_to "Review",
+                              organization_company_teammate_check_ins_path(current_organization, check_in.company_teammate),
+                              class: "btn btn-primary btn-sm"
+      - else
+        %p.text-muted.mb-0 No check-ins awaiting your input.

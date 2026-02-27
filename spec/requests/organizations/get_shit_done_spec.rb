@@ -145,6 +145,117 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       end
     end
 
+    describe 'check-ins awaiting input section' do
+      let(:manager_person) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.find_or_create_by!(person: manager_person, organization: company) }
+      let(:employee_teammate) { CompanyTeammate.find_or_create_by!(person: person, organization: company) }
+      let!(:employment_tenure) do
+        create(:employment_tenure,
+               company_teammate: employee_teammate,
+               company: company,
+               manager: manager_teammate)
+      end
+      let(:assignment) { create(:assignment, company: company, title: 'GSD Test Assignment') }
+      let(:aspiration) { create(:aspiration, company: company, name: 'GSD Test Aspiration') }
+
+      it 'renders the check-ins awaiting input section' do
+        get "/organizations/#{company.to_param}/get_shit_done"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Check-ins Awaiting Your Input")
+      end
+
+      it 'shows check-ins where manager completed but employee has not (as employee)' do
+        create(:assignment_check_in,
+               teammate: employee_teammate,
+               assignment: assignment,
+               manager_completed_at: Time.current,
+               manager_completed_by_teammate: manager_teammate,
+               employee_completed_at: nil)
+
+        get "/organizations/#{company.to_param}/get_shit_done"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('GSD Test Assignment')
+        expect(response.body).to include('Complete as Employee')
+      end
+
+      it 'shows check-ins for direct reports where employee completed but manager has not (as manager)' do
+        sign_in_as_teammate_for_request(manager_person, company)
+        create(:assignment_check_in,
+               teammate: employee_teammate,
+               assignment: assignment,
+               employee_completed_at: Time.current,
+               manager_completed_at: nil)
+
+        get "/organizations/#{company.to_param}/get_shit_done"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('GSD Test Assignment')
+        expect(response.body).to include('Complete as Manager')
+      end
+
+      it 'does not show check-ins where neither side is complete' do
+        create(:assignment_check_in,
+               teammate: employee_teammate,
+               assignment: assignment,
+               employee_completed_at: nil,
+               manager_completed_at: nil)
+
+        get "/organizations/#{company.to_param}/get_shit_done"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include('GSD Test Assignment')
+      end
+
+      it 'does not show finalized check-ins' do
+        create(:assignment_check_in, :finalized,
+               teammate: employee_teammate,
+               assignment: assignment)
+
+        get "/organizations/#{company.to_param}/get_shit_done"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include('GSD Test Assignment')
+      end
+
+      it 'shows aspiration check-ins awaiting employee input' do
+        create(:aspiration_check_in,
+               teammate: employee_teammate,
+               aspiration: aspiration,
+               manager_completed_at: Time.current,
+               manager_completed_by_teammate: manager_teammate,
+               employee_completed_at: nil)
+
+        get "/organizations/#{company.to_param}/get_shit_done"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('GSD Test Aspiration')
+      end
+
+      it 'shows position check-ins awaiting employee input' do
+        create(:position_check_in,
+               teammate: employee_teammate,
+               employment_tenure: employment_tenure,
+               manager_completed_at: Time.current,
+               manager_completed_by_teammate: manager_teammate,
+               employee_completed_at: nil)
+
+        get "/organizations/#{company.to_param}/get_shit_done"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Position')
+        expect(response.body).to include('Complete as Employee')
+      end
+
+      it 'shows empty state when no check-ins are awaiting input' do
+        get "/organizations/#{company.to_param}/get_shit_done"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('No check-ins awaiting your input')
+      end
+    end
+
     it 'requires authentication' do
       sign_out_teammate_for_request
       

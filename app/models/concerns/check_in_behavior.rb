@@ -24,6 +24,12 @@ module CheckInBehavior
            .where.not(manager_completed_at: nil)
            .where(official_check_in_completed_at: nil) 
     }
+    scope :awaiting_employee_input, -> {
+      open.manager_completed.where(employee_completed_at: nil)
+    }
+    scope :awaiting_manager_input, -> {
+      open.employee_completed.where(manager_completed_at: nil)
+    }
   end
   
   # Status methods

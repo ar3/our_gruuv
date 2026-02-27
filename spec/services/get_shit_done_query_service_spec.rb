@@ -101,6 +101,189 @@ RSpec.describe GetShitDoneQueryService do
     end
   end
 
+  describe '#check_ins_awaiting_input' do
+    let(:manager_person) { create(:person) }
+    let(:manager_teammate) do
+      CompanyTeammate.find_or_create_by!(person: manager_person, organization: company)
+    end
+    let(:employee_person) { create(:person) }
+    let(:employee_teammate) do
+      CompanyTeammate.find_or_create_by!(person: employee_person, organization: company)
+    end
+    let!(:employment_tenure) do
+      create(:employment_tenure,
+             company_teammate: employee_teammate,
+             company: company,
+             manager: manager_teammate)
+    end
+    let(:assignment) { create(:assignment, company: company) }
+    let(:aspiration) { create(:aspiration, company: company) }
+
+    context 'as employee' do
+      let(:service) { described_class.new(teammate: employee_teammate) }
+
+      it 'includes check-ins where manager is complete but employee is not' do
+        check_in = create(:assignment_check_in,
+                          teammate: employee_teammate,
+                          assignment: assignment,
+                          manager_completed_at: Time.current,
+                          manager_completed_by_teammate: manager_teammate,
+                          employee_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).to include(check_in)
+      end
+
+      it 'excludes check-ins where neither side is complete' do
+        check_in = create(:assignment_check_in,
+                          teammate: employee_teammate,
+                          assignment: assignment,
+                          manager_completed_at: nil,
+                          employee_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).not_to include(check_in)
+      end
+
+      it 'excludes finalized check-ins' do
+        check_in = create(:assignment_check_in, :finalized,
+                          teammate: employee_teammate,
+                          assignment: assignment)
+
+        result = service.check_ins_awaiting_input
+        expect(result).not_to include(check_in)
+      end
+
+      it 'excludes check-ins where employee is complete but manager is not' do
+        check_in = create(:assignment_check_in,
+                          teammate: employee_teammate,
+                          assignment: assignment,
+                          employee_completed_at: Time.current,
+                          manager_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).not_to include(check_in)
+      end
+
+      it 'includes aspiration check-ins awaiting employee input' do
+        check_in = create(:aspiration_check_in,
+                          teammate: employee_teammate,
+                          aspiration: aspiration,
+                          manager_completed_at: Time.current,
+                          manager_completed_by_teammate: manager_teammate,
+                          employee_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).to include(check_in)
+      end
+
+      it 'includes position check-ins awaiting employee input' do
+        check_in = create(:position_check_in,
+                          teammate: employee_teammate,
+                          employment_tenure: employment_tenure,
+                          manager_completed_at: Time.current,
+                          manager_completed_by_teammate: manager_teammate,
+                          employee_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).to include(check_in)
+      end
+    end
+
+    context 'as manager' do
+      let(:service) { described_class.new(teammate: manager_teammate) }
+
+      it 'includes check-ins for direct reports where employee is complete but manager is not' do
+        check_in = create(:assignment_check_in,
+                          teammate: employee_teammate,
+                          assignment: assignment,
+                          employee_completed_at: Time.current,
+                          manager_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).to include(check_in)
+      end
+
+      it 'excludes check-ins where neither side is complete' do
+        check_in = create(:assignment_check_in,
+                          teammate: employee_teammate,
+                          assignment: assignment,
+                          employee_completed_at: nil,
+                          manager_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).not_to include(check_in)
+      end
+
+      it 'excludes finalized check-ins for direct reports' do
+        check_in = create(:assignment_check_in, :finalized,
+                          teammate: employee_teammate,
+                          assignment: assignment)
+
+        result = service.check_ins_awaiting_input
+        expect(result).not_to include(check_in)
+      end
+
+      it 'excludes check-ins for non-direct-reports' do
+        non_report_person = create(:person)
+        non_report_teammate = CompanyTeammate.find_or_create_by!(person: non_report_person, organization: company)
+        check_in = create(:assignment_check_in,
+                          teammate: non_report_teammate,
+                          assignment: assignment,
+                          employee_completed_at: Time.current,
+                          manager_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).not_to include(check_in)
+      end
+
+      it 'includes aspiration check-ins for direct reports awaiting manager input' do
+        check_in = create(:aspiration_check_in,
+                          teammate: employee_teammate,
+                          aspiration: aspiration,
+                          employee_completed_at: Time.current,
+                          manager_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).to include(check_in)
+      end
+
+      it 'includes position check-ins for direct reports awaiting manager input' do
+        check_in = create(:position_check_in,
+                          teammate: employee_teammate,
+                          employment_tenure: employment_tenure,
+                          employee_completed_at: Time.current,
+                          manager_completed_at: nil)
+
+        result = service.check_ins_awaiting_input
+        expect(result).to include(check_in)
+      end
+    end
+
+    it 'returns empty array when teammate is nil' do
+      service = described_class.new(teammate: nil)
+      expect(service.check_ins_awaiting_input).to be_empty
+    end
+  end
+
+  describe '#total_pending_count' do
+    it 'includes check-ins awaiting input in the count' do
+      employee_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      manager_person = create(:person)
+      mgr_teammate = CompanyTeammate.find_or_create_by!(person: manager_person, organization: company)
+      assignment = create(:assignment, company: company)
+
+      create(:assignment_check_in,
+             teammate: employee_teammate,
+             assignment: assignment,
+             manager_completed_at: Time.current,
+             manager_completed_by_teammate: mgr_teammate,
+             employee_completed_at: nil)
+
+      expect(service.total_pending_count).to eq(1)
+    end
+  end
+
   describe '#all_pending_items' do
     it 'returns a hash with all pending items and total count' do
       result = service.all_pending_items
@@ -109,6 +292,7 @@ RSpec.describe GetShitDoneQueryService do
       expect(result).to have_key(:maap_snapshots)
       expect(result).to have_key(:observation_drafts)
       expect(result).to have_key(:goals_needing_check_in)
+      expect(result).to have_key(:check_ins_awaiting_input)
       expect(result).to have_key(:total_pending)
       expect(result[:total_pending]).to be_a(Integer)
     end
