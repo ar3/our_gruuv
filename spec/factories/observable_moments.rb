@@ -72,34 +72,7 @@ FactoryBot.define do
         end
       end
     end
-    
-    trait :check_in_completed do
-      moment_type { 'check_in_completed' }
-      transient do
-        check_in_type { :position_check_in }
-      end
-      
-      after(:build) do |moment, evaluator|
-        case evaluator.check_in_type
-        when :position_check_in
-          moment.momentable = create(:position_check_in, :closed)
-        when :assignment_check_in
-          moment.momentable = create(:assignment_check_in, :officially_completed)
-        when :aspiration_check_in
-          moment.momentable = create(:aspiration_check_in, :finalized)
-        end
-        
-        if moment.momentable
-          moment.company = moment.momentable.teammate.organization
-          moment.metadata = {
-            check_in_type: moment.momentable.class.name.underscore.humanize,
-            official_rating: moment.momentable.official_rating.to_s,
-            previous_rating: 'meeting'
-          }
-        end
-      end
-    end
-    
+
     trait :goal_check_in do
       moment_type { 'goal_check_in' }
       association :momentable, factory: :goal_check_in

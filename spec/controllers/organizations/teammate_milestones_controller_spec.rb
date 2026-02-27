@@ -284,15 +284,11 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
     end
 
     it 'loads observable moment if it exists' do
-      observable_moment = ObservableMoments::BaseObservableMomentService.call(
-        momentable: teammate_milestone,
-        company: organization,
-        created_by: teammate,
-        primary_potential_observer: teammate,
-        moment_type: 'ability_milestone',
-        occurred_at: Time.current
+      observable_moment = ObservableMoments::CreateAbilityMilestoneMomentService.call(
+        teammate_milestone: teammate_milestone,
+        created_by: teammate.person
       ).value
-      
+
       get :show, params: { organization_id: organization.id, id: teammate_milestone.id }
       expect(assigns(:observable_moment)).to eq(observable_moment)
     end

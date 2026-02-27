@@ -77,15 +77,10 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
                  finalized_by_teammate: manager_teammate)
         end
         
-        it 'creates observable moment when rating improved' do
+        it 'does not create observable moment (position check-ins no longer create moments)' do
           expect {
             finalizer.finalize
-          }.to change { ObservableMoment.count }.by(1)
-          
-          moment = ObservableMoment.last
-          expect(moment.moment_type).to eq('check_in_completed')
-          expect(moment.momentable).to eq(check_in)
-          expect(moment.primary_potential_observer).to eq(manager_teammate)
+          }.not_to change { ObservableMoment.count }
         end
       end
       
@@ -107,10 +102,10 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
       end
       
       context 'when this is the first check-in' do
-        it 'creates observable moment for first check-in' do
+        it 'does not create observable moment (position check-ins no longer create moments)' do
           expect {
             finalizer.finalize
-          }.to change { ObservableMoment.count }.by(1)
+          }.not_to change { ObservableMoment.count }
         end
       end
     end

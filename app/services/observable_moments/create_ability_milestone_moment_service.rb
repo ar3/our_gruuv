@@ -11,7 +11,7 @@ module ObservableMoments
       # Primary observer is the teammate who certified the milestone
       primary_observer = @teammate_milestone.certifying_teammate
       return Result.err("Could not find certifier's teammate in organization") unless primary_observer
-      
+
       # Build metadata
       metadata = {
         ability_id: @teammate_milestone.ability_id,
@@ -19,7 +19,7 @@ module ObservableMoments
         milestone_level: @teammate_milestone.milestone_level,
         person_name: @teammate_milestone.teammate.person.display_name
       }
-      
+
       ObservableMoments::BaseObservableMomentService.new(
         momentable: @teammate_milestone,
         company: @teammate_milestone.ability.company,

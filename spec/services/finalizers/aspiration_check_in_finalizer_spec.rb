@@ -68,17 +68,12 @@ RSpec.describe Finalizers::AspirationCheckInFinalizer do
                  finalized_by_teammate: finalized_by)
         end
         
-        it 'creates observable moment when rating improved' do
-          # Ensure finalizer has a teammate in the organization
-          finalizer_teammate # Create the teammate
-          
+        it 'does not create observable moment (aspiration check-ins no longer create moments)' do
+          finalizer_teammate # Ensure finalizer has a teammate in the organization
+
           expect {
             finalizer.finalize
-          }.to change { ObservableMoment.count }.by(1)
-          
-          moment = ObservableMoment.last
-          expect(moment.moment_type).to eq('check_in_completed')
-          expect(moment.momentable).to eq(check_in)
+          }.not_to change { ObservableMoment.count }
         end
       end
       

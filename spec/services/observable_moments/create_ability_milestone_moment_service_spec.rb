@@ -20,7 +20,7 @@ RSpec.describe ObservableMoments::CreateAbilityMilestoneMomentService do
         teammate_milestone: milestone,
         created_by: certified_by
       )
-      
+
       expect(result.ok?).to be true
       moment = result.value
       expect(moment.moment_type).to eq('ability_milestone')
@@ -31,16 +31,16 @@ RSpec.describe ObservableMoments::CreateAbilityMilestoneMomentService do
       expect(moment.metadata['ability_name']).to eq(ability.name)
       expect(moment.metadata['milestone_level']).to eq(3)
     end
-    
+
     it 'sets occurred_at to milestone attained_at date' do
       attained_date = 2.weeks.ago.to_date
       milestone.update!(attained_at: attained_date)
-      
+
       result = ObservableMoments::CreateAbilityMilestoneMomentService.call(
         teammate_milestone: milestone,
         created_by: certified_by
       )
-      
+
       expect(result.value.occurred_at.to_date).to eq(attained_date)
     end
   end

@@ -138,17 +138,12 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
                  finalized_by_teammate: manager_teammate)
         end
         
-        it 'creates observable moment when rating improved' do
-          # Ensure manager has a teammate in the organization
-          manager_teammate # Create the teammate
-          
+        it 'does not create observable moment (assignment check-ins no longer create moments)' do
+          manager_teammate # Ensure manager has a teammate in the organization
+
           expect {
             finalizer.finalize
-          }.to change { ObservableMoment.count }.by(1)
-          
-          moment = ObservableMoment.last
-          expect(moment.moment_type).to eq('check_in_completed')
-          expect(moment.momentable).to eq(assignment_check_in)
+          }.not_to change { ObservableMoment.count }
         end
       end
       

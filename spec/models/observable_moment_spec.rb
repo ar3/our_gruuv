@@ -145,7 +145,7 @@ RSpec.describe ObservableMoment, type: :model do
         moment = create(:observable_moment, :seat_change, company: company)
         expect(moment.display_name).to include('Seat Change')
       end
-      
+
       it 'returns appropriate display name for ability_milestone' do
         milestone = create(:teammate_milestone)
         moment = create(:observable_moment, :ability_milestone, momentable: milestone, company: milestone.ability.company)

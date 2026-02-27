@@ -104,17 +104,13 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       published_at: published_at,
       published_by_teammate_id: published_by_teammate_id
     )
-    
+
     # Create observable moment
-    ObservableMoments::BaseObservableMomentService.call(
-      momentable: teammate_milestone,
-      company: organization,
-      created_by: current_person,
-      primary_potential_observer: current_company_teammate,
-      moment_type: 'ability_milestone',
-      occurred_at: Time.current
+    ObservableMoments::CreateAbilityMilestoneMomentService.call(
+      teammate_milestone: teammate_milestone,
+      created_by: current_person
     )
-    
+
     redirect_to organization_teammate_milestone_path(organization, teammate_milestone),
                 notice: 'Milestone awarded successfully!'
   end

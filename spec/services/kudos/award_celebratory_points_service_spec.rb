@@ -99,7 +99,7 @@ RSpec.describe Kudos::AwardCelebratoryPointsService do
       end
     end
 
-    context 'with different moment types' do
+    context 'with ability_milestone moment' do
       let(:ability) { create(:ability, company: organization) }
       let(:teammate_milestone) do
         create(:teammate_milestone,

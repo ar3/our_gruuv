@@ -35,7 +35,7 @@ RSpec.describe ObservableMoments::ObservationStoryTemplateService do
       let(:ability) { create(:ability, company: company) }
       let(:milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3) }
       let(:moment) { create(:observable_moment, :ability_milestone, momentable: milestone, company: company) }
-      
+
       it 'returns milestone achievement message' do
         template = ObservableMoments::ObservationStoryTemplateService.template_for(moment)
         expect(template).to include('achieving')
@@ -43,37 +43,7 @@ RSpec.describe ObservableMoments::ObservationStoryTemplateService do
         expect(template).to include('milestone level 3')
       end
     end
-    
-    context 'for check_in_completed moment' do
-      let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: company) }
-      let(:check_in) do
-        # Create check_in without employment_tenure association to avoid factory creating new teammate
-        check_in = build(:position_check_in, :closed, teammate: teammate)
-        check_in.employment_tenure = employment_tenure
-        check_in.save!
-        check_in
-      end
-      let(:moment) do
-        create(:observable_moment, :check_in_completed,
-               momentable: check_in,
-               company: company,
-               metadata: { official_rating: '2', check_in_type: 'Position Check In' })
-      end
-      
-      it 'returns check-in completion message' do
-        template = ObservableMoments::ObservationStoryTemplateService.template_for(moment)
-        expect(template).to include('check-in')
-        # The template uses check_in.teammate.person from the momentable
-        # Get the actual person from the check_in (which may differ from the let person due to factory)
-        moment.reload
-        check_in = moment.momentable
-        check_in.reload
-        actual_person = check_in.teammate.person
-        expect(actual_person).to be_present
-        expect(template).to include(actual_person.display_name)
-      end
-    end
-    
+
     context 'for goal_check_in moment' do
       let(:goal) { create(:goal, owner: teammate, company: company, title: 'Launch Feature') }
       let(:goal_check_in) { create(:goal_check_in, goal: goal, confidence_percentage: 80) }
