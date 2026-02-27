@@ -7,8 +7,9 @@
   %td
     %div
       = assignment_rating_display(check_in.employee_rating)
-    - if check_in.actual_energy_percentage.present?
-      %small.text-muted Energy: #{check_in.actual_energy_percentage}%
+    - if assignment_energy_alignment_sentence(check_in).present?
+      .finalization-energy-alignment-cell.mt-1
+        %small.text-muted= assignment_energy_alignment_sentence(check_in)
     .finalization-notes-cell
       %small.text-muted= simple_format(check_in.employee_private_notes.presence || '--no notes--')
   %td

@@ -4,9 +4,9 @@
 %td
   = render 'organizations/company_teammates/check_ins/form_fields/assignment_employee_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
-  = render 'organizations/company_teammates/check_ins/form_fields/assignment_actual_energy_percentage_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
-%td
-  = render 'organizations/company_teammates/check_ins/form_fields/assignment_employee_personal_alignment_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+  .d-flex.flex-column.gap-1
+    = render 'organizations/company_teammates/check_ins/form_fields/assignment_actual_energy_percentage_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+    = render 'organizations/company_teammates/check_ins/form_fields/assignment_employee_personal_alignment_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
   = render 'organizations/company_teammates/check_ins/form_fields/assignment_employee_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td

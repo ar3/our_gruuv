@@ -4,9 +4,7 @@
 %td
   = assignment_rating_display(check_in.employee_rating)
 %td
-  = check_in.actual_energy_percentage
-%td
-  = check_in.employee_personal_alignment&.humanize
+  = assignment_energy_alignment_sentence(check_in)
 %td
   = simple_format(check_in.employee_private_notes)
 %td

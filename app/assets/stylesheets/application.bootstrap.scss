@@ -990,7 +990,7 @@ body:has(.vertical-nav.open) .floating-toggle {
 
 // ===== FINALIZATION TABLE NOTES =====
 // Cap width of notes in review/finalization table so long text doesn't stretch the layout
-.finalization-notes-cell {
+.finalization-notes-cell, .finalization-energy-alignment-cell {
   max-width: 20rem;
   word-wrap: break-word;
   overflow-wrap: break-word;

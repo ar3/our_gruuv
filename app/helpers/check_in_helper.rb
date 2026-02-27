@@ -61,6 +61,36 @@ module CheckInHelper
     else alignment.to_s.humanize.downcase
     end
   end
+
+  # Past-tense phrase for "they'd X again" in assignment energy/alignment sentence
+  def assignment_alignment_phrase_past(alignment)
+    return nil if alignment.blank?
+    case alignment.to_s
+    when 'love' then "they'd love to do it again"
+    when 'like' then "they'd like to do it again"
+    when 'neutral' then "they're indifferent about taking it on again"
+    when 'prefer_not' then "they'd prefer not to take it on again"
+    when 'only_if_necessary' then "they'd only take it on again if necessary"
+    else "they'd #{alignment.to_s.humanize.downcase} to do it again"
+    end
+  end
+
+  # Sentence combining energy and alignment for assignment check-in: "When **name** thinks about..."
+  def assignment_energy_alignment_sentence(check_in)
+    return '' unless check_in
+    casual_name = check_in.teammate.person.casual_name
+    assignment_title = check_in.assignment.title
+    energy = check_in.actual_energy_percentage
+    alignment_phrase = assignment_alignment_phrase_past(check_in.employee_personal_alignment)
+    return '' if energy.nil? && alignment_phrase.blank?
+    energy_part = energy.present? ? "they spent about <strong>#{h(energy)}</strong>% of their energy on this assignment" : nil
+    alignment_part = alignment_phrase.present? ? "<strong>#{h(alignment_phrase)}</strong>" : nil
+    parts = [energy_part, alignment_part].compact
+    return '' if parts.empty?
+    sentence = "When <strong>#{h(casual_name)}</strong> thinks about them recently taking on <strong>#{h(assignment_title)}</strong>, "
+    sentence << parts.join(' and ') + '.'
+    sentence.html_safe
+  end
   
   def energy_percentage_options
     (0..20).map { |i| ["#{i * 5}%", i * 5] }
