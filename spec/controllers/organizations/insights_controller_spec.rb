@@ -188,6 +188,10 @@ RSpec.describe Organizations::InsightsController, type: :controller do
   end
 
   describe 'GET #goals' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_goals?).and_return(true)
+    end
+
     it 'returns http success' do
       get :goals, params: { organization_id: company.id }
       expect(response).to have_http_status(:success)
@@ -201,6 +205,24 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       
       expect(assigns(:goals_chart_data)).to be_a(Hash)
       expect(assigns(:goals_chart_data)[:categories]).to be_an(Array)
+    end
+
+    it 'assigns goals_for_network_graph and goal_links_for_network_graph' do
+      get :goals, params: { organization_id: company.id }
+      expect(assigns(:goals_for_network_graph)).to be_an(Array)
+      expect(assigns(:goal_links_for_network_graph)).to be_an(Array)
+    end
+
+    it 'includes active company-visible goals in network graph' do
+      goal = create(:goal, :everyone_in_company, creator: person_teammate, owner: person_teammate, company: company, started_at: 1.week.ago, completed_at: nil)
+      get :goals, params: { organization_id: company.id }
+      expect(assigns(:goals_for_network_graph).map(&:id)).to include(goal.id)
+    end
+
+    it 'includes recently completed company-visible goals in network graph' do
+      goal = create(:goal, :everyone_in_company, creator: person_teammate, owner: person_teammate, company: company, started_at: 2.months.ago, completed_at: 30.days.ago)
+      get :goals, params: { organization_id: company.id }
+      expect(assigns(:goals_for_network_graph).map(&:id)).to include(goal.id)
     end
   end
 

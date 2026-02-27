@@ -112,6 +112,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     chart_range = range || (52.weeks.ago..Time.current)
     @goals_chart_data = goals_stacked_chart_series(chart_range)
     @goals_employees_chart_data = goals_employees_chart_series(chart_range)
+
+    # Goals network graph: active + completed in last 90 days, company-level visibility
+    @goals_for_network_graph, @goal_links_for_network_graph = goals_network_graph_data
   end
 
   def prompts
@@ -467,6 +470,25 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
   def goals_base_scope
     Goal.where(company: company).where(deleted_at: nil)
+  end
+
+  def goals_network_graph_data
+    base = Goal
+      .where(company: company, deleted_at: nil, privacy_level: 'everyone_in_company')
+    active_goals = base.active
+    recently_completed = base
+      .where(completed_at: 90.days.ago..Time.current)
+    goal_ids = (active_goals.pluck(:id) + recently_completed.pluck(:id)).uniq
+    return [[], []] if goal_ids.empty?
+
+    links = GoalLink
+      .where(parent_id: goal_ids, child_id: goal_ids)
+      .includes(:parent, :child)
+    goals = Goal
+      .where(id: goal_ids)
+      .includes(:owner, :creator)
+      .order(:title)
+    [goals, links]
   end
 
   def goals_stacked_chart_series(chart_range)

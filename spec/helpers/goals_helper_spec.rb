@@ -331,6 +331,38 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
 
+  describe '#goals_mermaid_flowchart_dsl' do
+    it 'returns empty string when goals are blank' do
+      expect(helper.goals_mermaid_flowchart_dsl([], [], organization: company)).to eq('')
+    end
+
+    it 'returns flowchart DSL with nodes for each goal' do
+      goal1 = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Goal One')
+      goal2 = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Goal Two')
+      dsl = helper.goals_mermaid_flowchart_dsl([goal1, goal2], [], organization: company)
+      expect(dsl).to include('flowchart TB')
+      expect(dsl).to include('Goal One')
+      expect(dsl).to include('Goal Two')
+      expect(dsl).to include("g_#{goal1.id}")
+      expect(dsl).to include("g_#{goal2.id}")
+    end
+
+    it 'includes edges for goal links' do
+      parent = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Parent')
+      child = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Child')
+      link = create(:goal_link, parent: parent, child: child)
+      dsl = helper.goals_mermaid_flowchart_dsl([parent, child], [link], organization: company)
+      expect(dsl).to include("g_#{parent.id} --> g_#{child.id}")
+    end
+
+    it 'escapes special characters in labels for Mermaid' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Goal with "quotes"')
+      dsl = helper.goals_mermaid_flowchart_dsl([goal], [], organization: nil)
+      expect(dsl).to include('flowchart TB')
+      expect(dsl).to include("g_#{goal.id}")
+    end
+  end
+
   describe '#on_track_pill_options' do
     it 'returns nil for :na or blank' do
       expect(helper.on_track_pill_options(:na)).to be_nil

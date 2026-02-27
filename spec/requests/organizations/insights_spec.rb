@@ -3,7 +3,11 @@ require 'rails_helper'
 RSpec.describe 'Organizations::Insights', type: :request do
   let(:person) { create(:person) }
   let(:organization) { create(:organization) }
-  let(:teammate) { create(:teammate, person: person, organization: organization, first_employed_at: 1.year.ago) }
+  let(:teammate) do
+    ct = person.company_teammates.find_by!(organization: organization)
+    ct.update!(first_employed_at: 1.year.ago) if ct.first_employed_at.nil?
+    ct
+  end
 
   before do
     sign_in_as_teammate_for_request(person, organization)
@@ -199,6 +203,39 @@ RSpec.describe 'Organizations::Insights', type: :request do
     it 'includes the goals employees chart container' do
       get organization_insights_goals_path(organization)
       expect(response.body).to include('goals-employees-chart')
+    end
+
+    it 'includes the goals network graph section above the timeframe selector' do
+      create(:goal, creator: teammate, owner: teammate, company: organization, privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      get organization_insights_goals_path(organization)
+      expect(response.body).to include('Goals Network')
+      expect(response.body).to include('goals-network-mermaid')
+      expect(response.body).to include('mermaid.min.js')
+    end
+
+    it 'includes an hr divider between the network graph and timeframe-dependent content' do
+      get organization_insights_goals_path(organization)
+      body = response.body
+      network_idx = body.index('Goals Network')
+      timeframe_idx = body.index('Last 90 days')
+      expect(network_idx).to be_present
+      expect(timeframe_idx).to be_present
+      expect(body).to include('my-5')
+    end
+
+    it 'shows goals network flowchart when company-visible goals exist' do
+      goal = create(:goal, creator: teammate, owner: teammate, company: organization, privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      get organization_insights_goals_path(organization)
+      expect(response.body).to include(goal.title)
+    end
+
+    it 'shows goal links in the network graph' do
+      parent = create(:goal, creator: teammate, owner: teammate, company: organization, privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      child = create(:goal, creator: teammate, owner: teammate, company: organization, privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+      create(:goal_link, parent: parent, child: child)
+      get organization_insights_goals_path(organization)
+      expect(response.body).to include(parent.title)
+      expect(response.body).to include(child.title)
     end
   end
 
