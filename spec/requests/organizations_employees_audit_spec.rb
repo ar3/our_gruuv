@@ -228,6 +228,14 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       expect(response.body).to include('Shared Notes')
       expect(response.body).to include(employee.casual_name)
     end
+
+    it 'shows collapsible toggle for snapshot of all official ratings when snapshot has audit data' do
+      get audit_organization_employee_path(organization, employee_teammate)
+
+      expect(response).to be_successful
+      expect(response.body).to include('Show snapshot of all official ratings')
+      expect(response.body).to include('Hide snapshot of all official ratings')
+    end
   end
 
   describe 'when there are no snapshots' do
