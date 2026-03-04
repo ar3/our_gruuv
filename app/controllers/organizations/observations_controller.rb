@@ -503,7 +503,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       # If coming from observable moment, return to dashboard
       if @observable_moment
         @return_url = params[:return_url] || organization_get_shit_done_path(organization)
-        @return_text = params[:return_text] || 'Back to Get Shit Done Dashboard'
+        gsd_label = (organization.root_company || organization).label_for('get_shit_done', 'Get Shit Done')
+        @return_text = params[:return_text] || "Back to #{gsd_label} Dashboard"
       else
         @return_url = params[:return_url] || organization_observations_path(organization)
         @return_text = params[:return_text] || 'Back'

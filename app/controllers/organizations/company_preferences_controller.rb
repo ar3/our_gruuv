@@ -38,6 +38,7 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
     {
       'prompt' => @company.company_label_preferences.find_by(label_key: 'prompt')&.label_value || '',
       'kudos_point' => @company.company_label_preferences.find_by(label_key: 'kudos_point')&.label_value || '',
+      'get_shit_done' => @company.company_label_preferences.find_by(label_key: 'get_shit_done')&.label_value || '',
       'encourage_goal_and_observation' => @company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')&.label_value || 'true'
     }
   end

@@ -1,7 +1,8 @@
-- content_for :title, "Get S*** Done - #{@teammate.person.casual_name}"
+- get_shit_done_label = company_label_for('get_shit_done', 'Get Shit Done')
+- content_for :title, "#{get_shit_done_label} - #{@teammate.person.casual_name}"
 
 - content_for :header do
-  %h1.mb-0 Get S*** Done
+  %h1.mb-0= get_shit_done_label
   %p.text-muted.mb-0 Items that need your attention
 
 -# Observable Moments Section

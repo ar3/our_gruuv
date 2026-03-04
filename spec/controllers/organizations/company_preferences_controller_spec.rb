@@ -46,6 +46,18 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
       expect(assigns(:preferences)['kudos_point']).to eq('Star')
     end
 
+    it 'loads get_shit_done preference with default empty value' do
+      get :edit, params: { organization_id: company.to_param }
+      expect(assigns(:preferences)).to have_key('get_shit_done')
+      expect(assigns(:preferences)['get_shit_done']).to eq('')
+    end
+
+    it 'loads existing get_shit_done preference' do
+      create(:company_label_preference, company: company, label_key: 'get_shit_done', label_value: 'Action Items')
+      get :edit, params: { organization_id: company.to_param }
+      expect(assigns(:preferences)['get_shit_done']).to eq('Action Items')
+    end
+
     it 'allows view when user is employed but does not have customize_company (view-only)' do
       teammate = CompanyTeammate.find_by(person: person, organization: company)
       teammate.update!(can_customize_company: false)
@@ -173,6 +185,37 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
           patch :update, params: {
             organization_id: company.to_param,
             preferences: { kudos_point: '' }
+          }
+        }.to change { company.reload.company_label_preferences.count }.by(-1)
+      end
+
+      it 'creates get_shit_done preference' do
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { get_shit_done: 'Action Items' }
+          }
+        }.to change { company.reload.company_label_preferences.count }.by(1)
+        preference = company.company_label_preferences.find_by(label_key: 'get_shit_done')
+        expect(preference.label_value).to eq('Action Items')
+      end
+
+      it 'updates existing get_shit_done preference' do
+        create(:company_label_preference, company: company, label_key: 'get_shit_done', label_value: 'Action Items')
+        patch :update, params: {
+          organization_id: company.to_param,
+          preferences: { get_shit_done: 'My Tasks' }
+        }
+        company.reload
+        expect(company.company_label_preferences.find_by(label_key: 'get_shit_done').label_value).to eq('My Tasks')
+      end
+
+      it 'removes get_shit_done preference when value is blank' do
+        create(:company_label_preference, company: company, label_key: 'get_shit_done', label_value: 'Action Items')
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { get_shit_done: '' }
           }
         }.to change { company.reload.company_label_preferences.count }.by(-1)
       end

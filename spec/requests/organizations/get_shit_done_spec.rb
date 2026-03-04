@@ -18,11 +18,19 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
   end
 
   describe 'GET /organizations/:organization_id/get_shit_done' do
-    it 'renders the dashboard page' do
+    it 'renders the dashboard page with default title' do
       get "/organizations/#{company.to_param}/get_shit_done"
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Get S*** Done')
+      expect(response.body).to include('Get Shit Done')
+    end
+
+    it 'renders the dashboard page with custom get_shit_done label when set' do
+      create(:company_label_preference, company: company, label_key: 'get_shit_done', label_value: 'Action Items')
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Action Items')
     end
 
     it 'loads pending observable moments for the current teammate' do

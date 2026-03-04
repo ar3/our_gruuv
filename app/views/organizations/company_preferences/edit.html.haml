@@ -49,6 +49,18 @@
 
   .row.mb-4
     .col-6
+      %h5.mb-3 Get Shit Done
+      %p.text-muted.small
+        The label for the "Get Shit Done" dashboard (page title, nav tooltips, and links like "Back to Get Shit Done Dashboard"). Leave blank to use the default "Get Shit Done". The URL path stays /get_shit_done.
+    .col-6
+      = f.text_field "preferences[get_shit_done]",
+                     value: @preferences['get_shit_done'],
+                     placeholder: 'Get Shit Done',
+                     class: 'form-control',
+                     disabled: !can_customize
+
+  .row.mb-4
+    .col-6
       %h5.mb-3 Encourage Everyone to have a goal and an observation
       %p.text-muted.small
         When enabled, teammates viewing their own "About Me" page will see an onboarding section encouraging them to create a goal and an observation if they haven't done so yet.
