@@ -120,6 +120,16 @@ RSpec.configure do |config|
     Capybara.use_default_driver
   end
 
+  # Use the test queue adapter for job specs so have_enqueued_job and similar matchers work
+  config.before(:each, type: :job) do
+    @_active_job_queue_adapter = ActiveJob::Base.queue_adapter
+    ActiveJob::Base.queue_adapter = :test
+  end
+
+  config.after(:each, type: :job) do
+    ActiveJob::Base.queue_adapter = @_active_job_queue_adapter if instance_variable_defined?(:@_active_job_queue_adapter)
+  end
+
   # Clear cache, PaperTrail state, and background jobs for all tests to prevent state leakage
   config.before(:each) do
     Rails.cache.clear

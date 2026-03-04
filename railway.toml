@@ -13,4 +13,8 @@ RAILS_ENV = "production"
 RACK_ENV = "production"
 
 [[services]]
-name = "web" 
+name = "web"
+
+[[services]]
+name = "worker"
+startCommand = "bin/railway-worker" 

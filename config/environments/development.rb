@@ -64,6 +64,11 @@ Rails.application.configure do
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
+  # Use Solid Queue in development to test async job behavior (run worker via Procfile.dev).
+  # Single-database: use primary connection so worker and web see the same jobs (no separate :queue role).
+  config.active_job.queue_adapter = :solid_queue
+  config.solid_queue.connects_to = nil
+
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true
 

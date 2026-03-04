@@ -58,6 +58,12 @@
       %div
         %div GIPHY Health
         %small.text-white-50 GIF search service
+  .col-md-6.mb-3
+    = link_to healthcheck_async_jobs_path, class: "btn btn-lg btn-danger w-100 d-flex align-items-center justify-content-center", style: "min-height: 80px;" do
+      %i.bi.bi-lightning.me-2{style: "font-size: 2rem;"}
+      %div
+        %div Async Jobs Health
+        %small.text-white-50 Solid Queue job processing
 
 %h2 Rails URL Configuration
 %p

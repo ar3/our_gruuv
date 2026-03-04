@@ -13,8 +13,12 @@ Rails.application.routes.draw do
   get "/healthcheck/giphy", to: "healthcheck#giphy", as: :healthcheck_giphy
   post "/healthcheck/test_notification_api", to: "healthcheck#test_notification_api"
   post "/healthcheck/test_giphy", to: "healthcheck#test_giphy"
-  
-  
+  get "/healthcheck/async_jobs", to: "healthcheck#async_jobs", as: :healthcheck_async_jobs
+  post "/healthcheck/test_async_job", to: "healthcheck#test_async_job", as: :healthcheck_test_async_job
+
+  # Solid Queue jobs dashboard (admin / impersonation only; see config/initializers/mission_control.rb)
+  mount MissionControl::Jobs::Engine, at: "/jobs"
+
   # OAuth debug route
   get "/auth/debug", to: "auth#oauth_debug"
   

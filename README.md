@@ -40,6 +40,12 @@ After you run a segment, if there are failures, fix them before moving to the ne
 Before you run this, review our coding standards and rules, which can be found linked in the readme
 
 
+
+====reset DB====
+railway run bash -c 'pg_dump -Fc --no-owner --no-acl "$DATABASE_URL"' > production_backup.dump && dropdb our_gruuv_development && createdb our_gruuv_development && pg_restore --no-owner --no-acl -d our_gruuv_development production_backup.dump
+
+
+
 ---
 
 ### 🎯 For AI Agents

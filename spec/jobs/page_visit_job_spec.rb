@@ -89,5 +89,19 @@ RSpec.describe PageVisitJob, type: :job do
       end
     end
   end
+
+  describe '.perform_later' do
+    let(:person) { create(:person) }
+    let(:url) { '/test/path' }
+    let(:page_title) { 'Test Page' }
+    let(:user_agent) { 'Test Agent' }
+
+    it 'can be enqueued with perform_later' do
+      # perform_later enqueues the job (no exception); full enqueue assertions require :test adapter
+      expect {
+        described_class.perform_later(person.id, url, page_title, user_agent)
+      }.not_to raise_error
+    end
+  end
 end
 

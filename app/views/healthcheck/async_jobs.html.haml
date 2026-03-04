@@ -1,0 +1,118 @@
+%h1 Async Jobs Health Check
+
+= link_to healthcheck_index_path, class: "btn btn-secondary mb-4" do
+  %i.bi.bi-arrow-left.me-2
+  Back to Healthcheck
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-gear.me-2
+      Solid Queue Configuration
+  .card-body
+    %table.table.table-sm
+      %tbody
+        %tr
+          %td.fw-bold Queue Adapter
+          %td= @config[:queue_adapter]
+        %tr
+          %td.fw-bold connects_to
+          %td= @config[:connects_to].inspect
+        %tr
+          %td.fw-bold SolidQueue::Record pool
+          %td= @config[:record_pool]
+        %tr
+          %td.fw-bold SolidQueue::Record database
+          %td= @config[:record_database]
+        %tr
+          %td.fw-bold enqueue_after_transaction_commit?
+          %td= @config[:enqueue_after_transaction_commit]
+        %tr
+          %td.fw-bold Worker PIDs (from SQ processes table)
+          %td= @config[:worker_pids].presence || "none"
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-database.me-2
+      Queue Table Counts
+  .card-body
+    .row
+      - @table_counts.each do |label, count|
+        .col-md-4.mb-2
+          .border.rounded.p-3.text-center
+            .fs-3.fw-bold= count
+            .text-muted.small= label
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-lightning.me-2
+      Test Async Job
+  .card-body
+    %p.text-muted
+      Click the button below to test the full async job pipeline: enqueue a job via
+      %code perform_later
+      , then check if it was persisted and whether the worker picks it up.
+
+    .mb-3
+      %button.btn.btn-primary#testAsyncJobBtn
+        %i.bi.bi-play-circle.me-2
+        Enqueue Test Job
+
+      %button.btn.btn-outline-info.ms-2#refreshBtn
+        %i.bi.bi-arrow-clockwise.me-2
+        Refresh Page
+
+    #asyncJobResult.mt-3
+
+- if @last_performed.present?
+  .card.mb-4.border-success
+    .card-header.bg-success.text-white
+      %h5.mb-0
+        %i.bi.bi-check-circle.me-2
+        Last Performed Job
+    .card-body
+      %table.table.table-sm.mb-0
+        %tbody
+          - @last_performed.each do |k, v|
+            %tr
+              %td.fw-bold= k
+              %td= v
+
+:javascript
+  document.getElementById('testAsyncJobBtn').addEventListener('click', function() {
+    var btn = this;
+    var result = document.getElementById('asyncJobResult');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
+    result.innerHTML = '';
+
+    fetch('#{healthcheck_test_async_job_path}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var cls = data.success ? 'alert-success' : 'alert-danger';
+      var html = '<div class="alert ' + cls + '">';
+      html += '<strong>' + (data.success ? 'Success' : 'Problem detected') + '</strong>';
+      html += '<pre class="mt-2 mb-0" style="white-space: pre-wrap;">' + JSON.stringify(data, null, 2) + '</pre>';
+      html += '</div>';
+      result.innerHTML = html;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-circle me-2"></i>Enqueue Test Job';
+    })
+    .catch(function(err) {
+      result.innerHTML = '<div class="alert alert-danger">Fetch error: ' + err.message + '</div>';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-circle me-2"></i>Enqueue Test Job';
+    });
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', function() {
+    window.location.reload();
+  });

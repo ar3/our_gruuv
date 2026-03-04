@@ -2,7 +2,6 @@ class PageVisitJob < ApplicationJob
   queue_as :default
 
   def perform(person_id, url, page_title, user_agent)
-    Rails.logger.info "🔍 PageVisitJob: perform method called - person_id: #{person_id}, url: #{url}"
     person = Person.find(person_id)
     
     # Find or initialize PageVisit by person_id + url

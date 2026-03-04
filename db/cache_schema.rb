@@ -1,14 +1,1547 @@
-# frozen_string_literal: true
+# This file is auto-generated from the current state of the database. Instead
+# of editing this file, please use the migrations feature of Active Record to
+# incrementally modify your database, and then regenerate this schema definition.
+#
+# This file is the source Rails uses to define your schema when running `bin/rails
+# db:schema:load`. When creating a new database, `bin/rails db:schema:load` tends to
+# be faster and is potentially less error prone than running all of your
+# migrations from scratch. Old migrations may fail to apply correctly if those
+# migrations use external dependencies or application code.
+#
+# It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 1) do
-  create_table "solid_cache_entries", force: :cascade do |t|
-    t.binary "key", limit: 1024, null: false
-    t.binary "value", limit: 536870912, null: false
+ActiveRecord::Schema[8.0].define(version: 2026_02_27_120000) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "pg_catalog.plpgsql"
+
+  create_table "abilities", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description", null: false
+    t.string "semantic_version", default: "1.0.0", null: false
+    t.bigint "company_id", null: false
+    t.bigint "created_by_id", null: false
+    t.bigint "updated_by_id", null: false
     t.datetime "created_at", null: false
-    t.integer "key_hash", limit: 8, null: false
-    t.integer "byte_size", limit: 4, null: false
-    t.index ["byte_size"], name: "index_solid_cache_entries_on_byte_size"
-    t.index ["key_hash", "byte_size"], name: "index_solid_cache_entries_on_key_hash_and_byte_size"
-    t.index ["key_hash"], name: "index_solid_cache_entries_on_key_hash", unique: true
+    t.datetime "updated_at", null: false
+    t.text "milestone_1_description"
+    t.text "milestone_2_description"
+    t.text "milestone_3_description"
+    t.text "milestone_4_description"
+    t.text "milestone_5_description"
+    t.bigint "department_id"
+    t.datetime "deleted_at"
+    t.index ["company_id"], name: "index_abilities_on_company_id"
+    t.index ["created_by_id"], name: "index_abilities_on_created_by_id"
+    t.index ["deleted_at"], name: "index_abilities_on_deleted_at"
+    t.index ["department_id"], name: "index_abilities_on_department_id"
+    t.index ["name", "company_id"], name: "index_abilities_on_name_and_company_id", unique: true
+    t.index ["updated_by_id"], name: "index_abilities_on_updated_by_id"
   end
+
+  create_table "addresses", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.string "address_type", default: "home", null: false
+    t.string "street_address"
+    t.string "city"
+    t.string "state_province"
+    t.string "postal_code"
+    t.string "country"
+    t.boolean "is_primary", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["person_id"], name: "index_addresses_on_person_id"
+  end
+
+  create_table "aspiration_check_ins", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "aspiration_id", null: false
+    t.date "check_in_started_on", null: false
+    t.string "employee_rating"
+    t.string "manager_rating"
+    t.string "official_rating"
+    t.text "employee_private_notes"
+    t.text "manager_private_notes"
+    t.text "shared_notes"
+    t.datetime "employee_completed_at"
+    t.datetime "manager_completed_at"
+    t.bigint "manager_completed_by_id"
+    t.bigint "finalized_by_id"
+    t.datetime "official_check_in_completed_at"
+    t.bigint "maap_snapshot_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "manager_completed_by_teammate_id"
+    t.bigint "finalized_by_teammate_id"
+    t.index ["aspiration_id"], name: "index_aspiration_check_ins_on_aspiration_id"
+    t.index ["check_in_started_on"], name: "index_aspiration_check_ins_on_check_in_started_on"
+    t.index ["finalized_by_id"], name: "index_aspiration_check_ins_on_finalized_by_id"
+    t.index ["finalized_by_teammate_id"], name: "index_aspiration_check_ins_on_finalized_by_teammate_id"
+    t.index ["maap_snapshot_id"], name: "index_aspiration_check_ins_on_maap_snapshot_id"
+    t.index ["manager_completed_by_id"], name: "index_aspiration_check_ins_on_manager_completed_by_id"
+    t.index ["manager_completed_by_teammate_id"], name: "index_aspiration_check_ins_on_manager_completed_by_teammate_id"
+    t.index ["teammate_id", "aspiration_id", "official_check_in_completed_at"], name: "index_aspiration_check_ins_on_teammate_aspiration_open"
+    t.index ["teammate_id"], name: "index_aspiration_check_ins_on_teammate_id"
+  end
+
+  create_table "aspirations", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.bigint "company_id", null: false
+    t.integer "sort_order", default: 999, null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "semantic_version", default: "0.0.1", null: false
+    t.bigint "department_id"
+    t.index ["company_id", "name"], name: "index_aspirations_on_company_id_and_name", unique: true
+    t.index ["company_id"], name: "index_aspirations_on_company_id"
+    t.index ["deleted_at"], name: "index_aspirations_on_deleted_at"
+    t.index ["department_id"], name: "index_aspirations_on_department_id"
+    t.index ["sort_order"], name: "index_aspirations_on_sort_order"
+  end
+
+  create_table "assignment_abilities", force: :cascade do |t|
+    t.bigint "assignment_id", null: false
+    t.bigint "ability_id", null: false
+    t.integer "milestone_level", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ability_id"], name: "index_assignment_abilities_on_ability_id"
+    t.index ["assignment_id", "ability_id"], name: "index_assignment_abilities_on_assignment_and_ability_unique", unique: true
+    t.index ["assignment_id"], name: "index_assignment_abilities_on_assignment_id"
+    t.index ["milestone_level"], name: "index_assignment_abilities_on_milestone_level"
+  end
+
+  create_table "assignment_check_ins", force: :cascade do |t|
+    t.date "check_in_started_on", null: false
+    t.integer "actual_energy_percentage"
+    t.string "employee_rating"
+    t.string "manager_rating"
+    t.string "official_rating"
+    t.text "employee_private_notes"
+    t.text "manager_private_notes"
+    t.text "shared_notes"
+    t.string "employee_personal_alignment"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "assignment_id", null: false
+    t.datetime "employee_completed_at"
+    t.datetime "manager_completed_at"
+    t.datetime "official_check_in_completed_at"
+    t.integer "manager_completed_by_id"
+    t.integer "finalized_by_id"
+    t.bigint "teammate_id"
+    t.bigint "maap_snapshot_id"
+    t.bigint "manager_completed_by_teammate_id"
+    t.bigint "finalized_by_teammate_id"
+    t.index ["assignment_id", "check_in_started_on"], name: "idx_on_assignment_id_check_in_started_on_9b32849637"
+    t.index ["assignment_id"], name: "index_assignment_check_ins_on_assignment_id"
+    t.index ["employee_completed_at"], name: "index_assignment_check_ins_on_employee_completed_at"
+    t.index ["finalized_by_id"], name: "index_assignment_check_ins_on_finalized_by_id"
+    t.index ["finalized_by_teammate_id"], name: "index_assignment_check_ins_on_finalized_by_teammate_id"
+    t.index ["maap_snapshot_id"], name: "index_assignment_check_ins_on_maap_snapshot_id"
+    t.index ["manager_completed_at"], name: "index_assignment_check_ins_on_manager_completed_at"
+    t.index ["manager_completed_by_id"], name: "index_assignment_check_ins_on_manager_completed_by_id"
+    t.index ["manager_completed_by_teammate_id"], name: "index_assignment_check_ins_on_manager_completed_by_teammate_id"
+    t.index ["official_check_in_completed_at"], name: "index_assignment_check_ins_on_official_check_in_completed_at"
+    t.index ["teammate_id"], name: "index_assignment_check_ins_on_teammate_id"
+    t.check_constraint "actual_energy_percentage IS NULL OR actual_energy_percentage >= 0 AND actual_energy_percentage <= 100", name: "check_actual_energy_percentage_range"
+  end
+
+  create_table "assignment_flow_memberships", force: :cascade do |t|
+    t.bigint "assignment_flow_id", null: false
+    t.bigint "assignment_id", null: false
+    t.integer "placement", null: false
+    t.bigint "added_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "group_name"
+    t.index ["added_by_id"], name: "index_assignment_flow_memberships_on_added_by_id"
+    t.index ["assignment_flow_id", "assignment_id"], name: "idx_afm_flow_assignment_unique", unique: true
+    t.index ["assignment_flow_id", "placement"], name: "idx_afm_flow_placement"
+    t.index ["assignment_flow_id"], name: "index_assignment_flow_memberships_on_assignment_flow_id"
+    t.index ["assignment_id"], name: "index_assignment_flow_memberships_on_assignment_id"
+  end
+
+  create_table "assignment_flows", force: :cascade do |t|
+    t.string "name", null: false
+    t.bigint "company_id", null: false
+    t.bigint "created_by_id", null: false
+    t.bigint "updated_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "name"], name: "index_assignment_flows_on_company_id_and_name", unique: true
+    t.index ["company_id"], name: "index_assignment_flows_on_company_id"
+    t.index ["created_by_id"], name: "index_assignment_flows_on_created_by_id"
+    t.index ["updated_by_id"], name: "index_assignment_flows_on_updated_by_id"
+  end
+
+  create_table "assignment_outcomes", force: :cascade do |t|
+    t.text "description"
+    t.bigint "assignment_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "outcome_type"
+    t.string "progress_report_url"
+    t.string "management_relationship_filter"
+    t.string "team_relationship_filter"
+    t.string "consumer_assignment_filter"
+    t.index ["assignment_id"], name: "index_assignment_outcomes_on_assignment_id"
+  end
+
+  create_table "assignment_supply_relationships", force: :cascade do |t|
+    t.bigint "supplier_assignment_id", null: false
+    t.bigint "consumer_assignment_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["consumer_assignment_id"], name: "idx_on_consumer_assignment_id_792c1cb225"
+    t.index ["supplier_assignment_id", "consumer_assignment_id"], name: "index_assignment_supply_relationships_on_supplier_and_consumer", unique: true
+    t.index ["supplier_assignment_id"], name: "idx_on_supplier_assignment_id_815beca5be"
+    t.check_constraint "supplier_assignment_id <> consumer_assignment_id", name: "check_no_self_referential_supply_relationships"
+  end
+
+  create_table "assignment_tenures", force: :cascade do |t|
+    t.bigint "assignment_id", null: false
+    t.date "started_at", null: false
+    t.date "ended_at"
+    t.integer "anticipated_energy_percentage"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "teammate_id", null: false
+    t.string "official_rating"
+    t.index ["assignment_id"], name: "index_assignment_tenures_on_assignment_id"
+    t.index ["teammate_id"], name: "index_assignment_tenures_on_teammate_id"
+    t.check_constraint "anticipated_energy_percentage IS NULL OR anticipated_energy_percentage >= 0 AND anticipated_energy_percentage <= 100", name: "check_anticipated_energy_percentage_range"
+  end
+
+  create_table "assignments", force: :cascade do |t|
+    t.string "title"
+    t.text "tagline"
+    t.text "required_activities"
+    t.text "handbook"
+    t.bigint "company_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "department_id"
+    t.string "semantic_version", default: "0.0.1", null: false
+    t.datetime "deleted_at"
+    t.index ["company_id"], name: "index_assignments_on_company_id"
+    t.index ["deleted_at"], name: "index_assignments_on_deleted_at"
+    t.index ["department_id"], name: "index_assignments_on_department_id"
+  end
+
+  create_table "bulk_downloads", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "downloaded_by_id", null: false
+    t.string "download_type", null: false
+    t.string "s3_key", null: false
+    t.string "s3_url", null: false
+    t.string "filename", null: false
+    t.bigint "file_size"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_bulk_downloads_on_company_id"
+    t.index ["created_at"], name: "index_bulk_downloads_on_created_at"
+    t.index ["download_type"], name: "index_bulk_downloads_on_download_type"
+    t.index ["downloaded_by_id"], name: "index_bulk_downloads_on_downloaded_by_id"
+  end
+
+  create_table "bulk_sync_events", force: :cascade do |t|
+    t.text "source_contents"
+    t.jsonb "preview_actions", default: {}
+    t.bigint "creator_id", null: false
+    t.bigint "initiator_id", null: false
+    t.datetime "attempted_at"
+    t.string "status", default: "preview", null: false
+    t.jsonb "results", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "organization_id", null: false
+    t.string "filename"
+    t.string "type"
+    t.jsonb "source_data", default: {}
+    t.index ["created_at"], name: "index_bulk_sync_events_on_created_at"
+    t.index ["creator_id"], name: "index_bulk_sync_events_on_creator_id"
+    t.index ["initiator_id"], name: "index_bulk_sync_events_on_initiator_id"
+    t.index ["organization_id"], name: "index_bulk_sync_events_on_organization_id"
+    t.index ["status"], name: "index_bulk_sync_events_on_status"
+  end
+
+  create_table "change_logs", force: :cascade do |t|
+    t.date "launched_on"
+    t.string "image_url"
+    t.text "description"
+    t.string "change_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "comments", force: :cascade do |t|
+    t.string "commentable_type", null: false
+    t.bigint "commentable_id", null: false
+    t.bigint "organization_id", null: false
+    t.text "body", null: false
+    t.bigint "creator_id", null: false
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "slack_message_id"
+    t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
+    t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable_type_and_commentable_id"
+    t.index ["creator_id"], name: "index_comments_on_creator_id"
+    t.index ["organization_id"], name: "index_comments_on_organization_id"
+    t.index ["resolved_at"], name: "index_comments_on_resolved_at"
+  end
+
+  create_table "company_label_preferences", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "label_key", null: false
+    t.string "label_value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "label_key"], name: "index_company_label_preferences_on_company_id_and_label_key", unique: true
+    t.index ["company_id"], name: "index_company_label_preferences_on_company_id"
+  end
+
+  create_table "debug_responses", force: :cascade do |t|
+    t.jsonb "request"
+    t.jsonb "response"
+    t.string "responseable_type", null: false
+    t.bigint "responseable_id", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["responseable_type", "responseable_id"], name: "index_debug_responses_on_responseable"
+  end
+
+  create_table "departments", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "parent_department_id"
+    t.string "name", null: false
+    t.bigint "migrate_from_organization_id"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_departments_on_company_id"
+    t.index ["deleted_at"], name: "index_departments_on_deleted_at"
+    t.index ["migrate_from_organization_id"], name: "index_departments_on_migrate_from_organization_id", unique: true
+    t.index ["parent_department_id"], name: "index_departments_on_parent_department_id"
+  end
+
+  create_table "employment_tenures", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "position_id", null: false
+    t.datetime "started_at", null: false
+    t.datetime "ended_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "employment_change_notes"
+    t.bigint "seat_id"
+    t.bigint "teammate_id"
+    t.string "employment_type", default: "full_time"
+    t.integer "official_position_rating"
+    t.bigint "manager_teammate_id"
+    t.index ["company_id"], name: "index_employment_tenures_on_company_id"
+    t.index ["manager_teammate_id"], name: "index_employment_tenures_on_manager_teammate_id"
+    t.index ["position_id"], name: "index_employment_tenures_on_position_id"
+    t.index ["seat_id"], name: "index_employment_tenures_on_seat_id"
+    t.index ["teammate_id"], name: "index_employment_tenures_on_teammate_id"
+    t.check_constraint "official_position_rating IS NULL OR official_position_rating >= '-3'::integer AND official_position_rating <= 3", name: "valid_position_rating_range"
+  end
+
+  create_table "enm_assessments", force: :cascade do |t|
+    t.string "code", limit: 8, null: false
+    t.jsonb "phase_1_data", default: {}
+    t.jsonb "phase_2_data", default: {}
+    t.jsonb "phase_3_data", default: {}
+    t.string "macro_category", limit: 1
+    t.string "readiness", limit: 1
+    t.string "style", limit: 1
+    t.string "full_code", limit: 5
+    t.integer "completed_phase", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code"], name: "index_enm_assessments_on_code", unique: true
+    t.index ["completed_phase"], name: "index_enm_assessments_on_completed_phase"
+    t.index ["full_code"], name: "index_enm_assessments_on_full_code"
+    t.index ["macro_category"], name: "index_enm_assessments_on_macro_category"
+  end
+
+  create_table "enm_partnerships", force: :cascade do |t|
+    t.string "code", limit: 8, null: false
+    t.jsonb "assessment_codes", default: []
+    t.jsonb "compatibility_analysis", default: {}
+    t.string "relationship_type", limit: 1
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assessment_codes"], name: "index_enm_partnerships_on_assessment_codes", using: :gin
+    t.index ["code"], name: "index_enm_partnerships_on_code", unique: true
+    t.index ["relationship_type"], name: "index_enm_partnerships_on_relationship_type"
+  end
+
+  create_table "external_project_caches", force: :cascade do |t|
+    t.string "cacheable_type", null: false
+    t.bigint "cacheable_id", null: false
+    t.string "source", null: false
+    t.string "external_project_id", null: false
+    t.string "external_project_url"
+    t.jsonb "sections_data", default: {}
+    t.jsonb "items_data", default: {}
+    t.boolean "has_more_items", default: false
+    t.datetime "last_synced_at"
+    t.bigint "last_synced_by_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cacheable_type", "cacheable_id", "source"], name: "index_external_project_caches_on_cacheable_and_source", unique: true
+    t.index ["cacheable_type", "cacheable_id"], name: "index_external_project_caches_on_cacheable"
+    t.index ["external_project_id"], name: "index_external_project_caches_on_external_project_id"
+    t.index ["last_synced_by_teammate_id"], name: "index_external_project_caches_on_last_synced_by_teammate_id"
+    t.index ["source", "last_synced_at"], name: "index_external_project_caches_on_source_and_synced_at"
+    t.index ["source"], name: "index_external_project_caches_on_source"
+  end
+
+  create_table "external_references", force: :cascade do |t|
+    t.string "referable_type", null: false
+    t.bigint "referable_id", null: false
+    t.string "url"
+    t.jsonb "source_data"
+    t.datetime "last_synced_at"
+    t.string "reference_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["referable_type", "referable_id", "reference_type"], name: "index_external_references_on_referable_and_type"
+    t.index ["referable_type", "referable_id"], name: "index_external_references_on_referable"
+  end
+
+  create_table "feedback_request_questions", force: :cascade do |t|
+    t.bigint "feedback_request_id", null: false
+    t.text "question_text", null: false
+    t.integer "position", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "rateable_type"
+    t.bigint "rateable_id"
+    t.index ["feedback_request_id", "position"], name: "index_feedback_request_questions_on_request_and_position", unique: true
+    t.index ["feedback_request_id"], name: "index_feedback_request_questions_on_feedback_request_id"
+    t.index ["position"], name: "index_feedback_request_questions_on_position"
+    t.index ["rateable_type", "rateable_id"], name: "index_feedback_request_questions_on_rateable"
+  end
+
+  create_table "feedback_request_responders", force: :cascade do |t|
+    t.bigint "feedback_request_id", null: false
+    t.bigint "teammate_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "completed_at"
+    t.index ["feedback_request_id", "teammate_id"], name: "index_feedback_request_responders_on_request_and_teammate", unique: true
+    t.index ["feedback_request_id"], name: "index_feedback_request_responders_on_feedback_request_id"
+    t.index ["teammate_id"], name: "index_feedback_request_responders_on_teammate_id"
+  end
+
+  create_table "feedback_requests", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "requestor_teammate_id", null: false
+    t.bigint "subject_of_feedback_teammate_id", null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "subject_line"
+    t.index ["company_id"], name: "index_feedback_requests_on_company_id"
+    t.index ["deleted_at"], name: "index_feedback_requests_on_deleted_at"
+    t.index ["requestor_teammate_id"], name: "index_feedback_requests_on_requestor_teammate_id"
+    t.index ["subject_of_feedback_teammate_id"], name: "index_feedback_requests_on_subject_of_feedback_teammate_id"
+  end
+
+  create_table "goal_check_ins", force: :cascade do |t|
+    t.bigint "goal_id", null: false
+    t.date "check_in_week_start", null: false
+    t.integer "confidence_percentage", null: false
+    t.text "confidence_reason"
+    t.bigint "confidence_reporter_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["check_in_week_start"], name: "index_goal_check_ins_on_check_in_week_start"
+    t.index ["confidence_reporter_id"], name: "index_goal_check_ins_on_confidence_reporter_id"
+    t.index ["goal_id", "check_in_week_start"], name: "index_goal_check_ins_on_goal_and_week", unique: true
+    t.index ["goal_id"], name: "index_goal_check_ins_on_goal_id"
+  end
+
+  create_table "goal_links", force: :cascade do |t|
+    t.bigint "parent_id", null: false
+    t.bigint "child_id", null: false
+    t.jsonb "metadata"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["child_id"], name: "index_goal_links_on_child_id"
+    t.index ["parent_id", "child_id"], name: "index_goal_links_unique", unique: true
+    t.index ["parent_id"], name: "index_goal_links_on_parent_id"
+  end
+
+  create_table "goals", force: :cascade do |t|
+    t.string "owner_type", null: false
+    t.bigint "owner_id", null: false
+    t.bigint "creator_id", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.string "goal_type", null: false
+    t.date "earliest_target_date"
+    t.date "latest_target_date"
+    t.date "most_likely_target_date"
+    t.string "privacy_level", null: false
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "became_top_priority"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "company_id", null: false
+    t.string "initial_confidence", default: "stretch"
+    t.index ["company_id"], name: "index_goals_on_company_id"
+    t.index ["completed_at"], name: "index_goals_on_completed_at"
+    t.index ["creator_id"], name: "index_goals_on_creator_id"
+    t.index ["deleted_at"], name: "index_goals_on_deleted_at"
+    t.index ["earliest_target_date"], name: "index_goals_on_earliest_target_date"
+    t.index ["goal_type"], name: "index_goals_on_goal_type"
+    t.index ["initial_confidence"], name: "index_goals_on_initial_confidence"
+    t.index ["latest_target_date"], name: "index_goals_on_latest_target_date"
+    t.index ["most_likely_target_date"], name: "index_goals_on_most_likely_target_date"
+    t.index ["owner_type", "owner_id"], name: "index_goals_on_owner_type_and_owner_id"
+    t.index ["privacy_level"], name: "index_goals_on_privacy_level"
+    t.index ["started_at"], name: "index_goals_on_started_at"
+  end
+
+  create_table "huddle_feedbacks", force: :cascade do |t|
+    t.bigint "huddle_id", null: false
+    t.integer "informed_rating"
+    t.integer "connected_rating"
+    t.integer "goals_rating"
+    t.integer "valuable_rating"
+    t.string "personal_conflict_style"
+    t.string "team_conflict_style"
+    t.text "appreciation"
+    t.text "change_suggestion"
+    t.text "private_department_head"
+    t.text "private_facilitator"
+    t.boolean "anonymous"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "teammate_id"
+    t.index ["huddle_id"], name: "index_huddle_feedbacks_on_huddle_id"
+    t.index ["teammate_id"], name: "index_huddle_feedbacks_on_teammate_id"
+  end
+
+  create_table "huddle_participants", force: :cascade do |t|
+    t.bigint "huddle_id", null: false
+    t.string "role"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "teammate_id"
+    t.index ["huddle_id"], name: "index_huddle_participants_on_huddle_id"
+    t.index ["teammate_id"], name: "index_huddle_participants_on_teammate_id"
+  end
+
+  create_table "huddles", force: :cascade do |t|
+    t.datetime "started_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "expires_at", default: -> { "(CURRENT_TIMESTAMP + 'PT24H'::interval)" }, null: false
+    t.bigint "team_id"
+    t.index ["expires_at"], name: "index_huddles_on_expires_at"
+    t.index ["team_id"], name: "index_huddles_on_team_id"
+  end
+
+  create_table "incoming_webhooks", force: :cascade do |t|
+    t.string "provider"
+    t.string "event_type"
+    t.string "status"
+    t.jsonb "payload"
+    t.jsonb "headers"
+    t.bigint "organization_id"
+    t.text "error_message"
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "resultable_type"
+    t.bigint "resultable_id"
+    t.index ["resultable_type", "resultable_id"], name: "index_incoming_webhooks_on_resultable"
+  end
+
+  create_table "interest_submissions", force: :cascade do |t|
+    t.text "thing_interested_in"
+    t.text "why_interested"
+    t.text "current_solution"
+    t.string "source_page"
+    t.bigint "person_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["person_id"], name: "index_interest_submissions_on_person_id"
+  end
+
+  create_table "kudos_points_ledgers", force: :cascade do |t|
+    t.bigint "company_teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.integer "points_to_give", default: 0, null: false
+    t.integer "points_to_spend", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id", "organization_id"], name: "index_kudos_ledgers_on_teammate_and_organization", unique: true
+    t.index ["organization_id"], name: "index_kudos_points_ledgers_on_organization_id"
+  end
+
+  create_table "kudos_redemptions", force: :cascade do |t|
+    t.bigint "company_teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.bigint "kudos_reward_id", null: false
+    t.integer "points_spent", null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "fulfilled_at"
+    t.string "external_reference"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id", "status"], name: "index_kudos_redemptions_on_company_teammate_id_and_status"
+    t.index ["company_teammate_id"], name: "index_kudos_redemptions_on_company_teammate_id"
+    t.index ["external_reference"], name: "index_kudos_redemptions_on_external_reference"
+    t.index ["kudos_reward_id"], name: "index_kudos_redemptions_on_kudos_reward_id"
+    t.index ["organization_id", "status"], name: "index_kudos_redemptions_on_organization_id_and_status"
+    t.index ["organization_id"], name: "index_kudos_redemptions_on_organization_id"
+    t.index ["status"], name: "index_kudos_redemptions_on_status"
+  end
+
+  create_table "kudos_rewards", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.integer "cost_in_points", null: false
+    t.string "reward_type", default: "gift_card", null: false
+    t.boolean "active", default: true, null: false
+    t.string "image_url"
+    t.jsonb "metadata", default: {}
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_kudos_rewards_on_deleted_at"
+    t.index ["organization_id", "active"], name: "index_kudos_rewards_on_organization_id_and_active"
+    t.index ["organization_id"], name: "index_kudos_rewards_on_organization_id"
+    t.index ["reward_type"], name: "index_kudos_rewards_on_reward_type"
+  end
+
+  create_table "kudos_transactions", force: :cascade do |t|
+    t.string "type", null: false
+    t.bigint "company_teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.integer "points_to_give_delta", default: 0
+    t.integer "points_to_spend_delta", default: 0
+    t.bigint "observation_id"
+    t.bigint "triggering_transaction_id"
+    t.bigint "company_teammate_banker_id"
+    t.text "reason"
+    t.bigint "kudos_redemption_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "observable_moment_id"
+    t.index ["company_teammate_banker_id"], name: "index_kudos_transactions_on_company_teammate_banker_id"
+    t.index ["company_teammate_id", "created_at"], name: "index_kudos_transactions_on_teammate_and_date"
+    t.index ["company_teammate_id"], name: "index_kudos_transactions_on_company_teammate_id"
+    t.index ["kudos_redemption_id"], name: "index_kudos_transactions_on_kudos_redemption_id"
+    t.index ["observable_moment_id"], name: "index_kudos_transactions_on_observable_moment_id"
+    t.index ["observation_id"], name: "index_kudos_transactions_on_observation_id"
+    t.index ["organization_id"], name: "index_kudos_transactions_on_organization_id"
+    t.index ["triggering_transaction_id"], name: "index_kudos_transactions_on_triggering_transaction_id"
+    t.index ["type"], name: "index_kudos_transactions_on_type"
+  end
+
+  create_table "maap_snapshots", force: :cascade do |t|
+    t.bigint "employee_id"
+    t.bigint "created_by_id"
+    t.bigint "company_id"
+    t.string "change_type", null: false
+    t.text "reason", null: false
+    t.jsonb "maap_data", default: {}
+    t.jsonb "manager_request_info", default: {}, null: false
+    t.date "effective_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "form_params"
+    t.datetime "employee_acknowledged_at"
+    t.jsonb "employee_acknowledgement_request_info", default: {}
+    t.bigint "employee_company_teammate_id"
+    t.bigint "creator_company_teammate_id"
+    t.index ["change_type"], name: "index_maap_snapshots_on_change_type"
+    t.index ["company_id"], name: "index_maap_snapshots_on_company_id"
+    t.index ["created_by_id"], name: "index_maap_snapshots_on_created_by_id"
+    t.index ["creator_company_teammate_id"], name: "index_maap_snapshots_on_creator_company_teammate_id"
+    t.index ["effective_date"], name: "index_maap_snapshots_on_effective_date"
+    t.index ["employee_acknowledged_at"], name: "index_maap_snapshots_on_employee_acknowledged_at"
+    t.index ["employee_company_teammate_id"], name: "index_maap_snapshots_on_employee_company_teammate_id"
+    t.index ["employee_id"], name: "index_maap_snapshots_on_employee_id"
+    t.index ["maap_data"], name: "index_maap_snapshots_on_maap_data", using: :gin
+    t.index ["manager_request_info"], name: "index_maap_snapshots_on_manager_request_info", using: :gin
+  end
+
+  create_table "missing_resource_requests", force: :cascade do |t|
+    t.bigint "missing_resource_id", null: false
+    t.bigint "person_id"
+    t.string "ip_address", null: false
+    t.integer "request_count", default: 1, null: false
+    t.text "user_agent"
+    t.text "referrer"
+    t.string "request_method"
+    t.text "query_string"
+    t.datetime "first_seen_at"
+    t.datetime "last_seen_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ip_address"], name: "index_missing_resource_requests_on_ip_address"
+    t.index ["last_seen_at"], name: "index_missing_resource_requests_on_last_seen_at"
+    t.index ["missing_resource_id", "person_id", "ip_address"], name: "index_missing_resource_requests_unique", unique: true
+    t.index ["missing_resource_id"], name: "index_missing_resource_requests_on_missing_resource_id"
+    t.index ["person_id"], name: "index_missing_resource_requests_on_person_id"
+  end
+
+  create_table "missing_resources", force: :cascade do |t|
+    t.string "path", null: false
+    t.integer "request_count", default: 0, null: false
+    t.datetime "first_seen_at"
+    t.datetime "last_seen_at"
+    t.string "suggested_redirect_path"
+    t.integer "suggestion_confidence"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["last_seen_at"], name: "index_missing_resources_on_last_seen_at"
+    t.index ["path"], name: "index_missing_resources_on_path", unique: true
+    t.index ["request_count"], name: "index_missing_resources_on_request_count"
+  end
+
+  create_table "notifications", force: :cascade do |t|
+    t.string "notifiable_type", null: false
+    t.bigint "notifiable_id", null: false
+    t.bigint "main_thread_id"
+    t.bigint "original_message_id"
+    t.string "notification_type"
+    t.string "message_id"
+    t.string "status"
+    t.jsonb "metadata"
+    t.jsonb "rich_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "fallback_text"
+    t.index ["main_thread_id"], name: "index_notifications_on_main_thread_id"
+    t.index ["notifiable_type", "notifiable_id"], name: "index_notifications_on_notifiable"
+    t.index ["original_message_id"], name: "index_notifications_on_original_message_id"
+  end
+
+  create_table "observable_moments", force: :cascade do |t|
+    t.string "momentable_type", null: false
+    t.bigint "momentable_id", null: false
+    t.string "moment_type", null: false
+    t.bigint "company_id", null: false
+    t.bigint "created_by_id", null: false
+    t.bigint "primary_potential_observer_id", null: false
+    t.bigint "processed_by_teammate_id"
+    t.datetime "occurred_at", null: false
+    t.datetime "processed_at"
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_observable_moments_on_company_id"
+    t.index ["created_by_id"], name: "index_observable_moments_on_created_by_id"
+    t.index ["metadata"], name: "index_observable_moments_on_metadata", using: :gin
+    t.index ["moment_type"], name: "index_observable_moments_on_moment_type"
+    t.index ["momentable_type", "momentable_id"], name: "index_observable_moments_on_momentable_type_and_momentable_id"
+    t.index ["occurred_at"], name: "index_observable_moments_on_occurred_at"
+    t.index ["primary_potential_observer_id", "processed_at"], name: "index_observable_moments_on_observer_and_processed"
+    t.index ["primary_potential_observer_id"], name: "index_observable_moments_on_primary_potential_observer_id"
+    t.index ["processed_at"], name: "index_observable_moments_on_processed_at"
+  end
+
+  create_table "observation_ratings", force: :cascade do |t|
+    t.bigint "observation_id", null: false
+    t.string "rateable_type", null: false
+    t.bigint "rateable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "rating", default: "na", null: false
+    t.index ["observation_id", "rateable_type", "rateable_id"], name: "index_observation_ratings_unique", unique: true
+    t.index ["observation_id"], name: "index_observation_ratings_on_observation_id"
+    t.index ["rateable_type", "rateable_id"], name: "index_observation_ratings_on_rateable"
+    t.index ["rateable_type", "rateable_id"], name: "index_observation_ratings_on_rateable_type_and_rateable_id"
+  end
+
+  create_table "observation_triggers", force: :cascade do |t|
+    t.string "trigger_source", null: false
+    t.string "trigger_type", null: false
+    t.jsonb "trigger_data", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["trigger_data"], name: "index_observation_triggers_on_trigger_data", using: :gin
+    t.index ["trigger_source", "trigger_type"], name: "index_observation_triggers_on_trigger_source_and_trigger_type"
+  end
+
+  create_table "observations", force: :cascade do |t|
+    t.bigint "observer_id", null: false
+    t.bigint "company_id", null: false
+    t.text "story"
+    t.string "primary_feeling"
+    t.string "secondary_feeling"
+    t.datetime "observed_at"
+    t.string "custom_slug"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "privacy_level", default: "observer_only", null: false
+    t.datetime "published_at"
+    t.jsonb "story_extras", default: {}
+    t.string "observation_type", default: "generic", null: false
+    t.string "created_as_type"
+    t.bigint "observation_trigger_id"
+    t.bigint "observable_moment_id"
+    t.bigint "feedback_request_question_id"
+    t.index ["company_id"], name: "index_observations_on_company_id"
+    t.index ["created_as_type"], name: "index_observations_on_created_as_type"
+    t.index ["custom_slug"], name: "index_observations_on_custom_slug", unique: true
+    t.index ["deleted_at"], name: "index_observations_on_deleted_at"
+    t.index ["feedback_request_question_id"], name: "index_observations_on_feedback_request_question_id"
+    t.index ["observable_moment_id"], name: "index_observations_on_observable_moment_id"
+    t.index ["observation_trigger_id"], name: "index_observations_on_observation_trigger_id"
+    t.index ["observation_type"], name: "index_observations_on_observation_type"
+    t.index ["observed_at", "id"], name: "index_observations_on_observed_at_and_id"
+    t.index ["observed_at"], name: "index_observations_on_observed_at"
+    t.index ["observer_id"], name: "index_observations_on_observer_id"
+    t.index ["published_at"], name: "index_observations_on_published_at"
+    t.index ["story_extras"], name: "index_observations_on_story_extras", using: :gin
+  end
+
+  create_table "observees", force: :cascade do |t|
+    t.bigint "observation_id", null: false
+    t.bigint "teammate_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["observation_id", "teammate_id"], name: "index_observees_on_observation_id_and_teammate_id", unique: true
+    t.index ["observation_id"], name: "index_observees_on_observation_id"
+    t.index ["teammate_id"], name: "index_observees_on_teammate_id"
+  end
+
+  create_table "one_on_one_links", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.string "url"
+    t.jsonb "deep_integration_config", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["teammate_id"], name: "index_one_on_one_links_on_teammate_id"
+  end
+
+  create_table "organizations", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
+    t.jsonb "kudos_points_economy_config", default: {}
+    t.bigint "observable_moment_notifier_teammate_id"
+    t.index ["deleted_at"], name: "index_organizations_on_deleted_at"
+    t.index ["kudos_points_economy_config"], name: "index_organizations_on_kudos_points_economy_config", using: :gin
+    t.index ["observable_moment_notifier_teammate_id"], name: "index_organizations_on_observable_moment_notifier_teammate_id"
+  end
+
+  create_table "page_visits", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.text "url"
+    t.string "page_title"
+    t.text "user_agent"
+    t.datetime "visited_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "visit_count", default: 1, null: false
+    t.index ["person_id", "url"], name: "index_page_visits_on_person_id_and_url_unique", unique: true
+    t.index ["person_id"], name: "index_page_visits_on_person_id"
+    t.index ["visited_at"], name: "index_page_visits_on_visited_at"
+  end
+
+  create_table "people", force: :cascade do |t|
+    t.string "first_name"
+    t.string "middle_name"
+    t.string "last_name"
+    t.string "suffix"
+    t.string "unique_textable_phone_number"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "email"
+    t.string "timezone"
+    t.boolean "og_admin", default: false, null: false
+    t.string "preferred_name"
+    t.string "gender_identity"
+    t.string "pronouns"
+    t.string "slack_user_id"
+    t.datetime "born_at"
+    t.index ["og_admin"], name: "index_people_on_og_admin"
+    t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
+  end
+
+  create_table "person_identities", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.string "email", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "name"
+    t.string "profile_image_url"
+    t.jsonb "raw_data"
+    t.index ["email"], name: "index_person_identities_on_email"
+    t.index ["person_id", "provider"], name: "index_person_identities_on_person_id_and_provider"
+    t.index ["person_id"], name: "index_person_identities_on_person_id"
+    t.index ["provider", "uid"], name: "index_person_identities_on_provider_and_uid", unique: true
+  end
+
+  create_table "pg_search_documents", force: :cascade do |t|
+    t.text "content"
+    t.string "searchable_type"
+    t.bigint "searchable_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["searchable_type", "searchable_id"], name: "index_pg_search_documents_on_searchable"
+  end
+
+  create_table "position_abilities", force: :cascade do |t|
+    t.bigint "position_id", null: false
+    t.bigint "ability_id", null: false
+    t.integer "milestone_level", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ability_id"], name: "index_position_abilities_on_ability_id"
+    t.index ["milestone_level"], name: "index_position_abilities_on_milestone_level"
+    t.index ["position_id", "ability_id"], name: "index_position_abilities_on_position_and_ability_unique", unique: true
+    t.index ["position_id"], name: "index_position_abilities_on_position_id"
+  end
+
+  create_table "position_assignments", force: :cascade do |t|
+    t.bigint "position_id", null: false
+    t.bigint "assignment_id", null: false
+    t.string "assignment_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "min_estimated_energy"
+    t.integer "max_estimated_energy"
+    t.index ["assignment_id"], name: "index_position_assignments_on_assignment_id"
+    t.index ["assignment_type"], name: "index_position_assignments_on_assignment_type"
+    t.index ["position_id", "assignment_id"], name: "index_position_assignments_on_position_and_assignment_unique", unique: true
+    t.index ["position_id"], name: "index_position_assignments_on_position_id"
+  end
+
+  create_table "position_check_ins", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "employment_tenure_id", null: false
+    t.date "check_in_started_on", null: false
+    t.integer "employee_rating"
+    t.text "employee_private_notes"
+    t.datetime "employee_completed_at"
+    t.integer "manager_rating"
+    t.text "manager_private_notes"
+    t.datetime "manager_completed_at"
+    t.bigint "manager_completed_by_id"
+    t.integer "official_rating"
+    t.text "shared_notes"
+    t.datetime "official_check_in_completed_at"
+    t.bigint "finalized_by_id"
+    t.bigint "maap_snapshot_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "manager_completed_by_teammate_id"
+    t.bigint "finalized_by_teammate_id"
+    t.index ["employee_completed_at"], name: "index_position_check_ins_on_employee_completed_at"
+    t.index ["employment_tenure_id"], name: "index_position_check_ins_on_employment_tenure_id"
+    t.index ["finalized_by_id"], name: "index_position_check_ins_on_finalized_by_id"
+    t.index ["finalized_by_teammate_id"], name: "index_position_check_ins_on_finalized_by_teammate_id"
+    t.index ["maap_snapshot_id"], name: "index_position_check_ins_on_maap_snapshot_id"
+    t.index ["manager_completed_at"], name: "index_position_check_ins_on_manager_completed_at"
+    t.index ["manager_completed_by_id"], name: "index_position_check_ins_on_manager_completed_by_id"
+    t.index ["manager_completed_by_teammate_id"], name: "index_position_check_ins_on_manager_completed_by_teammate_id"
+    t.index ["official_check_in_completed_at"], name: "index_position_check_ins_on_official_check_in_completed_at"
+    t.index ["teammate_id", "check_in_started_on"], name: "idx_on_teammate_id_check_in_started_on_52d3f0832c"
+    t.index ["teammate_id"], name: "index_position_check_ins_on_teammate_id"
+    t.check_constraint "employee_rating IS NULL OR employee_rating >= '-3'::integer AND employee_rating <= 3", name: "valid_employee_rating_range"
+    t.check_constraint "manager_rating IS NULL OR manager_rating >= '-3'::integer AND manager_rating <= 3", name: "valid_manager_rating_range"
+    t.check_constraint "official_rating IS NULL OR official_rating >= '-3'::integer AND official_rating <= 3", name: "valid_official_rating_range"
+  end
+
+  create_table "position_levels", force: :cascade do |t|
+    t.bigint "position_major_level_id", null: false
+    t.string "level", null: false
+    t.text "ideal_assignment_goal_types"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position_major_level_id", "level"], name: "index_position_levels_on_position_major_level_id_and_level", unique: true
+    t.index ["position_major_level_id"], name: "index_position_levels_on_position_major_level_id"
+  end
+
+  create_table "position_major_levels", force: :cascade do |t|
+    t.string "description"
+    t.integer "major_level", null: false
+    t.string "set_name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["set_name", "major_level"], name: "index_position_major_levels_on_set_name_and_major_level", unique: true
+  end
+
+  create_table "positions", force: :cascade do |t|
+    t.bigint "title_id", null: false
+    t.bigint "position_level_id", null: false
+    t.text "position_summary"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "eligibility_requirements_summary"
+    t.string "semantic_version", default: "0.0.1", null: false
+    t.jsonb "eligibility_requirements_explicit", default: {}, null: false
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_positions_on_deleted_at"
+    t.index ["eligibility_requirements_explicit"], name: "index_positions_on_eligibility_requirements_explicit", using: :gin
+    t.index ["position_level_id"], name: "index_positions_on_position_level_id"
+    t.index ["title_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true
+    t.index ["title_id"], name: "index_positions_on_title_id"
+  end
+
+  create_table "prompt_answers", force: :cascade do |t|
+    t.bigint "prompt_id", null: false
+    t.bigint "prompt_question_id", null: false
+    t.text "text"
+    t.bigint "updated_by_company_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["prompt_id", "prompt_question_id"], name: "index_prompt_answers_on_prompt_id_and_prompt_question_id", unique: true
+    t.index ["prompt_id"], name: "index_prompt_answers_on_prompt_id"
+    t.index ["prompt_question_id"], name: "index_prompt_answers_on_prompt_question_id"
+    t.index ["updated_by_company_teammate_id"], name: "index_prompt_answers_on_updated_by_company_teammate_id"
+  end
+
+  create_table "prompt_goals", force: :cascade do |t|
+    t.bigint "prompt_id", null: false
+    t.bigint "goal_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["goal_id"], name: "index_prompt_goals_on_goal_id"
+    t.index ["prompt_id", "goal_id"], name: "index_prompt_goals_on_prompt_id_and_goal_id", unique: true
+    t.index ["prompt_id"], name: "index_prompt_goals_on_prompt_id"
+  end
+
+  create_table "prompt_questions", force: :cascade do |t|
+    t.bigint "prompt_template_id", null: false
+    t.string "label", null: false
+    t.text "placeholder_text"
+    t.text "helper_text"
+    t.integer "position", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "archived_at"
+    t.index ["archived_at"], name: "index_prompt_questions_on_archived_at"
+    t.index ["prompt_template_id", "position"], name: "index_prompt_questions_on_prompt_template_id_and_position", unique: true
+    t.index ["prompt_template_id"], name: "index_prompt_questions_on_prompt_template_id"
+  end
+
+  create_table "prompt_templates", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.date "available_at"
+    t.boolean "is_primary", default: false, null: false
+    t.boolean "is_secondary", default: false, null: false
+    t.boolean "is_tertiary", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["available_at"], name: "index_prompt_templates_on_available_at"
+    t.index ["company_id", "is_primary"], name: "index_prompt_templates_on_company_id_and_is_primary", where: "(is_primary = true)"
+    t.index ["company_id", "is_secondary"], name: "index_prompt_templates_on_company_id_and_is_secondary", where: "(is_secondary = true)"
+    t.index ["company_id", "is_tertiary"], name: "index_prompt_templates_on_company_id_and_is_tertiary", where: "(is_tertiary = true)"
+    t.index ["company_id"], name: "index_prompt_templates_on_company_id"
+  end
+
+  create_table "prompts", force: :cascade do |t|
+    t.bigint "company_teammate_id", null: false
+    t.bigint "prompt_template_id", null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id", "prompt_template_id"], name: "index_prompts_on_company_teammate_id_and_prompt_template_id"
+    t.index ["company_teammate_id", "prompt_template_id"], name: "index_prompts_on_teammate_and_template_when_open", unique: true, where: "(closed_at IS NULL)"
+    t.index ["company_teammate_id"], name: "index_prompts_on_company_teammate_id"
+    t.index ["prompt_template_id"], name: "index_prompts_on_prompt_template_id"
+  end
+
+  create_table "seats", force: :cascade do |t|
+    t.bigint "title_id", null: false
+    t.date "seat_needed_by", null: false
+    t.string "job_classification", default: "Salaried Exempt"
+    t.string "team"
+    t.text "reports"
+    t.text "measurable_outcomes"
+    t.text "work_environment", default: "Prolonged periods of sitting at a desk and working on a computer."
+    t.text "physical_requirements", default: "While performing the duties of this job, the employee may be regularly required to stand, sit, talk, hear, and use hands and fingers to operate a computer and keyboard. Specific vision abilities required by this job include close vision requirements due to computer work."
+    t.text "travel", default: "Travel is on a voluntary basis."
+    t.text "why_needed"
+    t.text "why_now"
+    t.text "costs_risks"
+    t.string "state", default: "draft", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "seat_disclaimer", default: "This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time."
+    t.bigint "reports_to_seat_id"
+    t.bigint "team_id"
+    t.index ["reports_to_seat_id"], name: "index_seats_on_reports_to_seat_id"
+    t.index ["team_id"], name: "index_seats_on_team_id"
+    t.index ["title_id", "seat_needed_by"], name: "index_seats_on_position_type_and_needed_by", unique: true
+    t.index ["title_id"], name: "index_seats_on_title_id"
+  end
+
+  create_table "slack_configurations", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "workspace_id", null: false
+    t.string "workspace_name", null: false
+    t.string "bot_token", null: false
+    t.string "default_channel", default: "#bot-test"
+    t.string "bot_username", default: "OG"
+    t.string "bot_emoji", default: ":sparkles:"
+    t.datetime "installed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "bot_user_id"
+    t.string "workspace_url"
+    t.string "workspace_subdomain"
+    t.bigint "created_by_id"
+    t.index ["bot_token"], name: "index_slack_configurations_on_bot_token", unique: true
+    t.index ["created_by_id"], name: "index_slack_configurations_on_created_by_id"
+    t.index ["organization_id"], name: "index_slack_configurations_on_organization_id"
+    t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
+  end
+
+  create_table "solid_queue_blocked_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "queue_name", null: false
+    t.integer "priority", default: 0, null: false
+    t.string "concurrency_key", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["concurrency_key", "priority", "job_id"], name: "index_solid_queue_blocked_executions_for_release"
+    t.index ["expires_at", "concurrency_key"], name: "index_solid_queue_blocked_executions_for_maintenance"
+    t.index ["job_id"], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
+  end
+
+  create_table "solid_queue_claimed_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.bigint "process_id"
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
+    t.index ["process_id", "job_id"], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
+  end
+
+  create_table "solid_queue_failed_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.text "error"
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
+  end
+
+  create_table "solid_queue_jobs", force: :cascade do |t|
+    t.string "queue_name", null: false
+    t.string "class_name", null: false
+    t.text "arguments"
+    t.integer "priority", default: 0, null: false
+    t.string "active_job_id"
+    t.datetime "scheduled_at"
+    t.datetime "finished_at"
+    t.string "concurrency_key"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
+    t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
+    t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
+    t.index ["queue_name", "finished_at"], name: "index_solid_queue_jobs_for_filtering"
+    t.index ["scheduled_at", "finished_at"], name: "index_solid_queue_jobs_for_alerting"
+  end
+
+  create_table "solid_queue_pauses", force: :cascade do |t|
+    t.string "queue_name", null: false
+    t.datetime "created_at", null: false
+    t.index ["queue_name"], name: "index_solid_queue_pauses_on_queue_name", unique: true
+  end
+
+  create_table "solid_queue_processes", force: :cascade do |t|
+    t.string "kind", null: false
+    t.datetime "last_heartbeat_at", null: false
+    t.bigint "supervisor_id"
+    t.integer "pid", null: false
+    t.string "hostname"
+    t.text "metadata"
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.index ["last_heartbeat_at"], name: "index_solid_queue_processes_on_last_heartbeat_at"
+    t.index ["name", "supervisor_id"], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
+    t.index ["supervisor_id"], name: "index_solid_queue_processes_on_supervisor_id"
+  end
+
+  create_table "solid_queue_ready_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "queue_name", null: false
+    t.integer "priority", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_ready_executions_on_job_id", unique: true
+    t.index ["priority", "job_id"], name: "index_solid_queue_poll_all"
+    t.index ["queue_name", "priority", "job_id"], name: "index_solid_queue_poll_by_queue"
+  end
+
+  create_table "solid_queue_recurring_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "task_key", null: false
+    t.datetime "run_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
+    t.index ["task_key", "run_at"], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
+  end
+
+  create_table "solid_queue_recurring_tasks", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "schedule", null: false
+    t.string "command", limit: 2048
+    t.string "class_name"
+    t.text "arguments"
+    t.string "queue_name"
+    t.integer "priority", default: 0
+    t.boolean "static", default: true, null: false
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_solid_queue_recurring_tasks_on_key", unique: true
+    t.index ["static"], name: "index_solid_queue_recurring_tasks_on_static"
+  end
+
+  create_table "solid_queue_scheduled_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "queue_name", null: false
+    t.integer "priority", default: 0, null: false
+    t.datetime "scheduled_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
+    t.index ["scheduled_at", "priority", "job_id"], name: "index_solid_queue_dispatch_all"
+  end
+
+  create_table "solid_queue_semaphores", force: :cascade do |t|
+    t.string "key", null: false
+    t.integer "value", default: 1, null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["expires_at"], name: "index_solid_queue_semaphores_on_expires_at"
+    t.index ["key", "value"], name: "index_solid_queue_semaphores_on_key_and_value"
+    t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
+  end
+
+  create_table "team_asana_links", force: :cascade do |t|
+    t.bigint "team_id", null: false
+    t.string "url"
+    t.jsonb "deep_integration_config", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["team_id"], name: "index_team_asana_links_on_team_id", unique: true
+  end
+
+  create_table "team_members", force: :cascade do |t|
+    t.bigint "team_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.bigint "migrate_from_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id"], name: "index_team_members_on_company_teammate_id"
+    t.index ["migrate_from_teammate_id"], name: "index_team_members_on_migrate_from_teammate_id", unique: true
+    t.index ["team_id", "company_teammate_id"], name: "index_team_members_on_team_id_and_company_teammate_id", unique: true
+    t.index ["team_id"], name: "index_team_members_on_team_id"
+  end
+
+  create_table "teammate_identities", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.string "email"
+    t.string "name"
+    t.string "profile_image_url"
+    t.jsonb "raw_data", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "uid"], name: "index_teammate_identities_on_provider_and_uid", unique: true
+    t.index ["teammate_id", "provider"], name: "index_teammate_identities_on_teammate_and_provider"
+    t.index ["teammate_id"], name: "index_teammate_identities_on_teammate_id"
+  end
+
+  create_table "teammate_milestones", force: :cascade do |t|
+    t.bigint "ability_id", null: false
+    t.integer "milestone_level", null: false
+    t.date "attained_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "teammate_id"
+    t.bigint "certifying_teammate_id", default: -1
+    t.text "certification_note"
+    t.datetime "published_at"
+    t.bigint "published_by_teammate_id"
+    t.datetime "public_profile_published_at"
+    t.index ["ability_id"], name: "index_teammate_milestones_on_ability_id"
+    t.index ["attained_at"], name: "index_teammate_milestones_on_attained_at"
+    t.index ["certifying_teammate_id"], name: "index_teammate_milestones_on_certifying_teammate_id"
+    t.index ["milestone_level"], name: "index_teammate_milestones_on_milestone_level"
+    t.index ["public_profile_published_at"], name: "index_teammate_milestones_on_public_profile_published_at"
+    t.index ["published_at"], name: "index_teammate_milestones_on_published_at"
+    t.index ["published_by_teammate_id"], name: "index_teammate_milestones_on_published_by_teammate_id"
+    t.index ["teammate_id"], name: "index_teammate_milestones_on_teammate_id"
+  end
+
+  create_table "teammates", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.bigint "organization_id", null: false
+    t.boolean "can_manage_employment"
+    t.boolean "can_manage_maap"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "can_create_employment"
+    t.datetime "first_employed_at"
+    t.datetime "last_terminated_at"
+    t.boolean "can_manage_prompts"
+    t.boolean "can_manage_departments_and_teams"
+    t.boolean "can_customize_company", default: false
+    t.boolean "can_manage_kudos_rewards", default: false, null: false
+    t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
+    t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
+    t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
+    t.index ["can_manage_kudos_rewards"], name: "index_teammates_on_can_manage_kudos_rewards"
+    t.index ["can_manage_maap"], name: "index_teammates_on_can_manage_maap"
+    t.index ["can_manage_prompts"], name: "index_teammates_on_can_manage_prompts"
+    t.index ["first_employed_at", "last_terminated_at"], name: "index_teammates_on_first_employed_at_and_last_terminated_at"
+    t.index ["first_employed_at"], name: "index_teammates_on_first_employed_at"
+    t.index ["last_terminated_at"], name: "index_teammates_on_last_terminated_at"
+    t.index ["organization_id"], name: "index_teammates_on_organization_id"
+    t.index ["person_id", "organization_id"], name: "index_person_org_access_on_person_and_org", unique: true
+    t.index ["person_id"], name: "index_teammates_on_person_id"
+  end
+
+  create_table "teams", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "name", null: false
+    t.bigint "migrate_from_organization_id"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "department_id"
+    t.index ["company_id"], name: "index_teams_on_company_id"
+    t.index ["deleted_at"], name: "index_teams_on_deleted_at"
+    t.index ["department_id"], name: "index_teams_on_department_id"
+    t.index ["migrate_from_organization_id"], name: "index_teams_on_migrate_from_organization_id", unique: true
+  end
+
+  create_table "third_party_object_associations", force: :cascade do |t|
+    t.bigint "third_party_object_id", null: false
+    t.string "associatable_type", null: false
+    t.bigint "associatable_id", null: false
+    t.string "association_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["associatable_type", "associatable_id", "association_type"], name: "index_third_party_associations_on_associatable_and_type", unique: true
+    t.index ["associatable_type", "associatable_id"], name: "index_third_party_object_associations_on_associatable"
+    t.index ["third_party_object_id", "association_type"], name: "index_third_party_associations_on_object_and_type"
+    t.index ["third_party_object_id"], name: "index_third_party_object_associations_on_third_party_object_id"
+  end
+
+  create_table "third_party_objects", force: :cascade do |t|
+    t.string "display_name", null: false
+    t.string "third_party_name", null: false
+    t.string "third_party_id", null: false
+    t.string "third_party_object_type", null: false
+    t.string "third_party_source", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "third_party_id", "third_party_source"], name: "index_third_party_objects_on_org_third_party_id_source", unique: true
+    t.index ["organization_id", "third_party_source", "deleted_at"], name: "index_third_party_objects_on_org_source_deleted"
+    t.index ["organization_id"], name: "index_third_party_objects_on_organization_id"
+  end
+
+  create_table "titles", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "position_major_level_id", null: false
+    t.string "external_title", null: false
+    t.text "alternative_titles"
+    t.text "position_summary"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "department_id"
+    t.index ["company_id", "position_major_level_id", "external_title"], name: "index_titles_on_company_level_title_unique", unique: true
+    t.index ["company_id"], name: "index_titles_on_company_id"
+    t.index ["department_id"], name: "index_titles_on_department_id"
+    t.index ["position_major_level_id"], name: "index_titles_on_position_major_level_id"
+  end
+
+  create_table "user_preferences", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.jsonb "preferences", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["person_id"], name: "index_user_preferences_on_person_id", unique: true
+  end
+
+  create_table "versions", force: :cascade do |t|
+    t.string "whodunnit"
+    t.datetime "created_at"
+    t.bigint "item_id", null: false
+    t.string "item_type", null: false
+    t.string "event", null: false
+    t.text "object"
+    t.jsonb "meta"
+    t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
+  end
+
+  add_foreign_key "abilities", "departments"
+  add_foreign_key "abilities", "organizations", column: "company_id"
+  add_foreign_key "abilities", "organizations", column: "company_id"
+  add_foreign_key "abilities", "people", column: "created_by_id"
+  add_foreign_key "abilities", "people", column: "updated_by_id"
+  add_foreign_key "addresses", "people"
+  add_foreign_key "aspiration_check_ins", "aspirations"
+  add_foreign_key "aspiration_check_ins", "maap_snapshots"
+  add_foreign_key "aspiration_check_ins", "teammates"
+  add_foreign_key "aspirations", "departments"
+  add_foreign_key "aspirations", "organizations", column: "company_id"
+  add_foreign_key "aspirations", "organizations", column: "company_id"
+  add_foreign_key "assignment_abilities", "abilities"
+  add_foreign_key "assignment_abilities", "assignments"
+  add_foreign_key "assignment_check_ins", "assignments"
+  add_foreign_key "assignment_check_ins", "maap_snapshots"
+  add_foreign_key "assignment_check_ins", "teammates"
+  add_foreign_key "assignment_flow_memberships", "assignment_flows"
+  add_foreign_key "assignment_flow_memberships", "assignments"
+  add_foreign_key "assignment_flow_memberships", "teammates", column: "added_by_id"
+  add_foreign_key "assignment_flows", "organizations", column: "company_id"
+  add_foreign_key "assignment_flows", "teammates", column: "created_by_id"
+  add_foreign_key "assignment_flows", "teammates", column: "updated_by_id"
+  add_foreign_key "assignment_outcomes", "assignments"
+  add_foreign_key "assignment_supply_relationships", "assignments", column: "consumer_assignment_id"
+  add_foreign_key "assignment_supply_relationships", "assignments", column: "supplier_assignment_id"
+  add_foreign_key "assignment_tenures", "assignments"
+  add_foreign_key "assignment_tenures", "teammates"
+  add_foreign_key "assignments", "departments"
+  add_foreign_key "assignments", "organizations", column: "company_id"
+  add_foreign_key "bulk_downloads", "organizations", column: "company_id"
+  add_foreign_key "bulk_downloads", "teammates", column: "downloaded_by_id"
+  add_foreign_key "bulk_sync_events", "organizations"
+  add_foreign_key "bulk_sync_events", "people", column: "creator_id"
+  add_foreign_key "bulk_sync_events", "people", column: "initiator_id"
+  add_foreign_key "comments", "organizations"
+  add_foreign_key "comments", "people", column: "creator_id"
+  add_foreign_key "company_label_preferences", "organizations", column: "company_id"
+  add_foreign_key "departments", "departments", column: "parent_department_id"
+  add_foreign_key "departments", "organizations", column: "company_id"
+  add_foreign_key "employment_tenures", "organizations", column: "company_id"
+  add_foreign_key "employment_tenures", "positions"
+  add_foreign_key "employment_tenures", "seats"
+  add_foreign_key "employment_tenures", "teammates"
+  add_foreign_key "employment_tenures", "teammates", column: "manager_teammate_id"
+  add_foreign_key "external_project_caches", "teammates", column: "last_synced_by_teammate_id"
+  add_foreign_key "feedback_request_questions", "feedback_requests"
+  add_foreign_key "feedback_request_responders", "feedback_requests"
+  add_foreign_key "feedback_request_responders", "teammates"
+  add_foreign_key "feedback_requests", "organizations", column: "company_id"
+  add_foreign_key "feedback_requests", "teammates", column: "requestor_teammate_id"
+  add_foreign_key "feedback_requests", "teammates", column: "subject_of_feedback_teammate_id"
+  add_foreign_key "goal_check_ins", "goals"
+  add_foreign_key "goal_check_ins", "people", column: "confidence_reporter_id"
+  add_foreign_key "goal_links", "goals", column: "child_id"
+  add_foreign_key "goal_links", "goals", column: "parent_id"
+  add_foreign_key "goals", "organizations", column: "company_id"
+  add_foreign_key "goals", "teammates", column: "creator_id"
+  add_foreign_key "huddle_feedbacks", "huddles"
+  add_foreign_key "huddle_feedbacks", "teammates"
+  add_foreign_key "huddle_participants", "huddles"
+  add_foreign_key "huddle_participants", "teammates"
+  add_foreign_key "huddles", "teams"
+  add_foreign_key "interest_submissions", "people"
+  add_foreign_key "kudos_points_ledgers", "organizations"
+  add_foreign_key "kudos_points_ledgers", "teammates", column: "company_teammate_id"
+  add_foreign_key "kudos_redemptions", "kudos_rewards"
+  add_foreign_key "kudos_redemptions", "organizations"
+  add_foreign_key "kudos_redemptions", "teammates", column: "company_teammate_id"
+  add_foreign_key "kudos_rewards", "organizations"
+  add_foreign_key "kudos_transactions", "kudos_redemptions"
+  add_foreign_key "kudos_transactions", "kudos_transactions", column: "triggering_transaction_id"
+  add_foreign_key "kudos_transactions", "observable_moments"
+  add_foreign_key "kudos_transactions", "observations"
+  add_foreign_key "kudos_transactions", "organizations"
+  add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_banker_id"
+  add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_id"
+  add_foreign_key "maap_snapshots", "organizations", column: "company_id"
+  add_foreign_key "maap_snapshots", "teammates", column: "creator_company_teammate_id"
+  add_foreign_key "maap_snapshots", "teammates", column: "employee_company_teammate_id"
+  add_foreign_key "missing_resource_requests", "missing_resources"
+  add_foreign_key "missing_resource_requests", "people"
+  add_foreign_key "notifications", "notifications", column: "main_thread_id"
+  add_foreign_key "notifications", "notifications", column: "original_message_id"
+  add_foreign_key "observable_moments", "organizations", column: "company_id"
+  add_foreign_key "observable_moments", "people", column: "created_by_id"
+  add_foreign_key "observable_moments", "teammates", column: "primary_potential_observer_id"
+  add_foreign_key "observable_moments", "teammates", column: "processed_by_teammate_id"
+  add_foreign_key "observation_ratings", "observations"
+  add_foreign_key "observations", "feedback_request_questions"
+  add_foreign_key "observations", "observable_moments"
+  add_foreign_key "observations", "observation_triggers"
+  add_foreign_key "observations", "organizations", column: "company_id"
+  add_foreign_key "observations", "people", column: "observer_id"
+  add_foreign_key "observees", "observations"
+  add_foreign_key "observees", "teammates"
+  add_foreign_key "one_on_one_links", "teammates"
+  add_foreign_key "organizations", "teammates", column: "observable_moment_notifier_teammate_id"
+  add_foreign_key "page_visits", "people"
+  add_foreign_key "person_identities", "people"
+  add_foreign_key "position_abilities", "abilities"
+  add_foreign_key "position_abilities", "positions"
+  add_foreign_key "position_assignments", "assignments"
+  add_foreign_key "position_assignments", "positions"
+  add_foreign_key "position_check_ins", "employment_tenures"
+  add_foreign_key "position_check_ins", "maap_snapshots"
+  add_foreign_key "position_check_ins", "teammates"
+  add_foreign_key "position_levels", "position_major_levels"
+  add_foreign_key "positions", "position_levels"
+  add_foreign_key "positions", "titles"
+  add_foreign_key "prompt_answers", "prompt_questions"
+  add_foreign_key "prompt_answers", "prompts"
+  add_foreign_key "prompt_answers", "teammates", column: "updated_by_company_teammate_id"
+  add_foreign_key "prompt_goals", "goals"
+  add_foreign_key "prompt_goals", "prompts"
+  add_foreign_key "prompt_questions", "prompt_templates"
+  add_foreign_key "prompt_templates", "organizations", column: "company_id"
+  add_foreign_key "prompts", "prompt_templates"
+  add_foreign_key "prompts", "teammates", column: "company_teammate_id"
+  add_foreign_key "seats", "seats", column: "reports_to_seat_id"
+  add_foreign_key "seats", "teams"
+  add_foreign_key "seats", "titles"
+  add_foreign_key "slack_configurations", "organizations"
+  add_foreign_key "slack_configurations", "people", column: "created_by_id"
+  add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "team_asana_links", "teams"
+  add_foreign_key "team_members", "teammates", column: "company_teammate_id"
+  add_foreign_key "team_members", "teams"
+  add_foreign_key "teammate_identities", "teammates"
+  add_foreign_key "teammate_milestones", "abilities"
+  add_foreign_key "teammate_milestones", "teammates"
+  add_foreign_key "teammate_milestones", "teammates", column: "certifying_teammate_id"
+  add_foreign_key "teammate_milestones", "teammates", column: "published_by_teammate_id"
+  add_foreign_key "teammates", "organizations"
+  add_foreign_key "teammates", "people"
+  add_foreign_key "teams", "departments"
+  add_foreign_key "teams", "organizations", column: "company_id"
+  add_foreign_key "third_party_object_associations", "third_party_objects"
+  add_foreign_key "third_party_objects", "organizations"
+  add_foreign_key "titles", "departments"
+  add_foreign_key "titles", "organizations", column: "company_id"
+  add_foreign_key "titles", "organizations", column: "company_id"
+  add_foreign_key "titles", "position_major_levels"
+  add_foreign_key "user_preferences", "people"
 end

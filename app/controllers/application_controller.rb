@@ -467,9 +467,7 @@ class ApplicationController < ActionController::Base
     
     # Get user agent
     user_agent = request.user_agent
-    Rails.logger.info "🔍 PageVisit: About to call PageVisitJob.perform_now - url: #{url}, title: #{page_title}"
-    # Call perform directly on an instance to bypass ActiveJob queue adapter issues
-    PageVisitJob.new.perform(current_person.id, url, page_title, user_agent)
+    PageVisitJob.perform_later(current_person.id, url, page_title, user_agent)
   rescue => e
     # Don't let tracking errors break the request
     Rails.logger.error "PageVisit tracking error: #{e.class} - #{e.message}"

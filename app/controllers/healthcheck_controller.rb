@@ -142,6 +142,45 @@ class HealthcheckController < ApplicationController
     end
   end
 
+  def async_jobs
+    @config = {
+      queue_adapter: ActiveJob::Base.queue_adapter.class.name,
+      connects_to: SolidQueue.connects_to.inspect,
+      record_pool: (SolidQueue::Record.connection_pool.db_config.name rescue "error"),
+      record_database: (SolidQueue::Record.connection_db_config.configuration_hash[:database] rescue "error"),
+      enqueue_after_transaction_commit: (ActiveJob::QueueAdapters::SolidQueueAdapter.new.enqueue_after_transaction_commit? rescue "error"),
+      worker_pids: (SolidQueue::Process.where(kind: "Worker").pluck(:pid).join(", ") rescue "error")
+    }
+
+    @table_counts = {
+      "solid_queue_jobs" => (SolidQueue::Job.count rescue "error"),
+      "ready_executions" => (SolidQueue::ReadyExecution.count rescue "error"),
+      "scheduled_executions" => (SolidQueue::ScheduledExecution.count rescue "error"),
+      "claimed_executions" => (SolidQueue::ClaimedExecution.count rescue "error"),
+      "failed_executions" => (SolidQueue::FailedExecution.count rescue "error"),
+      "finished (recent)" => (SolidQueue::Job.where.not(finished_at: nil).where("finished_at > ?", 1.hour.ago).count rescue "error")
+    }
+
+    @last_performed = Rails.cache.read("async_job_health_check_last_performed")
+  end
+
+  def test_async_job
+    enqueued_at_ms = (Time.now.to_f * 1000).to_i
+    before_count = SolidQueue::Job.count
+
+    result = AsyncJobHealthCheckJob.perform_later(enqueued_at_ms)
+
+    after_count = SolidQueue::Job.count
+
+    render json: {
+      success: result != false,
+      provider_job_id: result.respond_to?(:provider_job_id) ? result.provider_job_id : nil,
+      jobs_delta: after_count - before_count
+    }
+  rescue => e
+    render json: { success: false, error: "#{e.class}: #{e.message}" }, status: :internal_server_error
+  end
+
   def test_giphy
     unless giphy_configured?
       render json: { 

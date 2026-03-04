@@ -20,12 +20,32 @@ default: &default
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
 development:
-  <<: *default
-  database: our_gruuv_development
+  primary: &primary_development
+    <<: *default
+    database: our_gruuv_development
+  cache:
+    <<: *primary_development
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_development
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *primary_development
+    migrations_paths: db/cable_migrate
 
 test:
-  <<: *default
-  database: our_gruuv_test
+  primary: &primary_test
+    <<: *default
+    database: our_gruuv_test
+  cache:
+    <<: *primary_test
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_test
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *primary_test
+    migrations_paths: db/cable_migrate
 
 production:
   primary: &primary_production
