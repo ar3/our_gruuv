@@ -68,7 +68,7 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
         earliest_target_date: nil,
         latest_target_date: nil,
         creator: current_teammate,
-        privacy_level: 'only_creator_and_owner'
+        privacy_level: 'only_creator_owner_and_managers'
       )
       
       goal.owner_type = owner_teammate.is_a?(CompanyTeammate) ? 'CompanyTeammate' : owner_teammate.class.name

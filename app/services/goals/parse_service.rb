@@ -20,8 +20,11 @@ module Goals
 
     def parse_lines
       textarea_content.split("\n")
-                     .map(&:strip)
-                     .reject(&:blank?)
+                     .reject { |line| line.strip.blank? }
+    end
+
+    def leading_spaces(line)
+      line.length - line.lstrip.length
     end
 
     def is_sub?(line)
@@ -29,6 +32,9 @@ module Goals
 
       trimmed = line.strip
       return false if trimmed.empty?
+
+      # Two or more leading spaces
+      return true if leading_spaces(line) >= 2
 
       # Check if line starts with a number
       return true if trimmed.match?(/^\d/)
@@ -38,6 +44,14 @@ module Goals
 
       # Check if line starts with 2 or more dots
       return true if trimmed.match?(/^\.{2,}/)
+
+      # Single letter + period or closing paren (before roman so "I." / "i." are letter)
+      return true if trimmed.match?(/^[A-Za-z]\./)
+      return true if trimmed.match?(/^[A-Za-z]\)/)
+
+      # Roman numeral + period or closing paren
+      return true if trimmed.match?(/^[ivxlcdm]+\./i)
+      return true if trimmed.match?(/^[ivxlcdm]+\)/i)
 
       false
     end
@@ -55,64 +69,53 @@ module Goals
 
         if is_sub
           # Edge case: sub at the start (no dom to attach to)
-          # Treat it as a dom with default goal type
           if most_recent_dom_index.nil?
             goals << {
-              title: line,
+              title: line.strip,
               goal_type: default_goal_type,
-              parent_index: nil
+              parent_index: nil,
+              leading_spaces: -1
             }
             most_recent_dom_index = goals.length - 1
           else
-            # Attach to the most recent dom
+            current_spaces = leading_spaces(line)
+            # Parent is the most recent goal (dom or sub) with strictly fewer leading spaces
+            parent_index = find_parent_index(goals, current_spaces)
             goals << {
-              title: line,
+              title: line.strip,
               goal_type: default_goal_type,
-              parent_index: most_recent_dom_index
+              parent_index: parent_index,
+              leading_spaces: current_spaces
             }
           end
           i += 1
         else
           # It's a dom
-          # Check if next line is a sub
           next_line = i + 1 < lines.length ? lines[i + 1] : nil
           next_is_sub = next_line && is_sub?(next_line)
-
-          if next_is_sub
-            # Dom followed by subs - dom becomes objective
-            goals << {
-              title: line,
-              goal_type: 'inspirational_objective',
-              parent_index: nil
-            }
-            dom_index = goals.length - 1
-            most_recent_dom_index = dom_index
-
-            # Process all following subs until we hit another dom
-            i += 1
-            while i < lines.length && is_sub?(lines[i])
-              goals << {
-                title: lines[i],
-                goal_type: default_goal_type,
-                parent_index: dom_index
-              }
-              i += 1
-            end
-          else
-            # Dom followed by another dom (or end of input)
-            # First dom gets default goal type
-            goals << {
-              title: line,
-              goal_type: default_goal_type,
-              parent_index: nil
-            }
-            most_recent_dom_index = goals.length - 1
-            i += 1
-          end
+          goals << {
+            title: line.strip,
+            goal_type: next_is_sub ? 'inspirational_objective' : default_goal_type,
+            parent_index: nil,
+            leading_spaces: -1
+          }
+          most_recent_dom_index = goals.length - 1
+          i += 1
         end
       end
 
+      # Remove internal leading_spaces from output (callers expect only title, goal_type, parent_index)
+      goals.each { |g| g.delete(:leading_spaces) }
       goals
+    end
+
+    # Find index of the most recent goal whose leading_spaces is strictly less than current_spaces.
+    # Doms have leading_spaces -1 so they are valid parents for any sub.
+    def find_parent_index(goals, current_spaces)
+      (goals.length - 1).downto(0) do |idx|
+        return idx if goals[idx][:leading_spaces] < current_spaces
+      end
+      nil
     end
   end
 end

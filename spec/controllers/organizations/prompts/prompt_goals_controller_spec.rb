@@ -105,7 +105,7 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
         expect(created_goal.latest_target_date).to be_nil
         expect(created_goal.owner).to eq(teammate)
         expect(created_goal.creator).to eq(teammate)
-        expect(created_goal.privacy_level).to eq('only_creator_and_owner')
+        expect(created_goal.privacy_level).to eq('only_creator_owner_and_managers')
       end
 
       it 'associates created goals with the prompt' do

@@ -118,18 +118,166 @@ RSpec.describe Goals::ParseService, type: :service do
 
     context 'with different sub indicators' do
       it 'recognizes all sub indicators' do
-        content = "Objective\n1. Numbered\n* Starred\n• Bulleted\n- Hyphen\n– En dash\n.. Dotted"
+        content = "Objective\n1. Numbered\n* Starred\n• Bulleted\n- Hyphen\n– En dash\n.. Dotted\nA. Letter\nb) Letter paren\nii. Roman\nIII) Roman paren\n  Two spaces"
         service = described_class.new(content, default_goal_type)
         
         result = service.call
         
         expect(result[:errors]).to be_empty
-        expect(result[:goals].length).to eq(7)
+        expect(result[:goals].length).to eq(12)
         expect(result[:goals][0][:goal_type]).to eq('inspirational_objective')
-        (1..6).each do |i|
+        (1..10).each do |i|
           expect(result[:goals][i][:goal_type]).to eq(default_goal_type)
           expect(result[:goals][i][:parent_index]).to eq(0)
         end
+        # "  Two spaces" has 2+ more leading spaces than previous sub → sub-sub of goal 10
+        expect(result[:goals][11][:goal_type]).to eq(default_goal_type)
+        expect(result[:goals][11][:parent_index]).to eq(10)
+      end
+    end
+
+    context 'with letter, roman numeral, and space sub indicators' do
+      it 'recognizes A., b), ii., III), and 2+ leading spaces; indented line is sub-sub of previous' do
+        content = "Objective\nA. First\nb) Second\nii. Third\nIII) Fourth\n  Indented sub"
+        service = described_class.new(content, default_goal_type)
+        
+        result = service.call
+        
+        expect(result[:errors]).to be_empty
+        expect(result[:goals].length).to eq(6)
+        expect(result[:goals][0]).to include(
+          title: 'Objective',
+          goal_type: 'inspirational_objective',
+          parent_index: nil
+        )
+        (1..4).each do |i|
+          expect(result[:goals][i][:goal_type]).to eq(default_goal_type)
+          expect(result[:goals][i][:parent_index]).to eq(0)
+        end
+        expect(result[:goals][1][:title]).to eq('A. First')
+        expect(result[:goals][2][:title]).to eq('b) Second')
+        expect(result[:goals][3][:title]).to eq('ii. Third')
+        expect(result[:goals][4][:title]).to eq('III) Fourth')
+        expect(result[:goals][5][:title]).to eq('Indented sub')
+        expect(result[:goals][5][:parent_index]).to eq(4)
+      end
+    end
+
+    context 'with sub-sub goals by indentation' do
+      it 'makes a sub a child of the previous sub when it has 2+ more leading spaces' do
+        content = "Objective\n  Sub one\n    Sub-sub of one\n  Sub two"
+        service = described_class.new(content, default_goal_type)
+        
+        result = service.call
+        
+        expect(result[:errors]).to be_empty
+        expect(result[:goals].length).to eq(4)
+        expect(result[:goals][0]).to include(
+          title: 'Objective',
+          goal_type: 'inspirational_objective',
+          parent_index: nil
+        )
+        expect(result[:goals][1]).to include(
+          title: 'Sub one',
+          goal_type: default_goal_type,
+          parent_index: 0
+        )
+        expect(result[:goals][2]).to include(
+          title: 'Sub-sub of one',
+          goal_type: default_goal_type,
+          parent_index: 1
+        )
+        expect(result[:goals][3]).to include(
+          title: 'Sub two',
+          goal_type: default_goal_type,
+          parent_index: 0
+        )
+      end
+    end
+
+    context 'with complex real-world hierarchy (siblings and nested subs)' do
+      it 'makes same-indentation subs siblings under the same parent; deeper indent under previous sub' do
+        content = <<~TEXT.strip
+          Become an Avenger
+          1. Find a spider to be bitten by
+          2. Learn the "thwip" the spider web
+          3. Find partner
+            - decide if I want Mary Jane or Gwen
+            - evaluate them on their ability to help me deal with the devastation of my cannon event
+          4. Yeah, there is the Uncle Ben or equivalent thing
+            i) They have to tell me "with great power comes great responsibility"
+            ii) Then they have to... ummm... well it is sad
+            iii) Then I have to grieve
+              * Grieving without turning into a villain is vital
+          5. Then I have to be the friendly neighborhood spidey
+          6. Them meet Tony
+          7. Then Save the freakin universe baby!
+          Improve my time management
+          * Try pomodoro
+          * Evaluate all meetings on my calendar
+        TEXT
+        service = described_class.new(content, default_goal_type)
+        result = service.call
+
+        expect(result[:errors]).to be_empty
+        goals = result[:goals]
+
+        # First dom: Become an Avenger (0)
+        expect(goals[0][:title]).to eq('Become an Avenger')
+        expect(goals[0][:parent_index]).to be_nil
+
+        # 1. 2. 3. are direct subs of objective (indices 1, 2, 3)
+        expect(goals[1][:parent_index]).to eq(0)
+        expect(goals[2][:parent_index]).to eq(0)
+        expect(goals[3][:parent_index]).to eq(0)
+        expect(goals[3][:title]).to include('Find partner')
+
+        # Two 2-space bullets under "3. Find partner": siblings, both parent 3
+        expect(goals[4][:title]).to include('decide if I want Mary Jane or Gwen')
+        expect(goals[4][:parent_index]).to eq(3)
+        expect(goals[5][:title]).to include('evaluate them on their ability')
+        expect(goals[5][:parent_index]).to eq(3)
+
+        # "4. Yeah..." is back under objective (0)
+        expect(goals[6][:title]).to include('Uncle Ben or equivalent')
+        expect(goals[6][:parent_index]).to eq(0)
+
+        # i) ii) iii) under "4. Yeah" (siblings, parent 6)
+        expect(goals[7][:parent_index]).to eq(6)
+        expect(goals[8][:parent_index]).to eq(6)
+        expect(goals[9][:parent_index]).to eq(6)
+
+        # "* Grieving without..." is 4 spaces, under iii) (goal 9)
+        expect(goals[10][:title]).to include('Grieving without turning')
+        expect(goals[10][:parent_index]).to eq(9)
+
+        # 5. 6. 7. under objective
+        expect(goals[11][:parent_index]).to eq(0)
+        expect(goals[12][:parent_index]).to eq(0)
+        expect(goals[13][:parent_index]).to eq(0)
+
+        # Second dom: Improve my time management (14)
+        expect(goals[14][:title]).to eq('Improve my time management')
+        expect(goals[14][:parent_index]).to be_nil
+
+        # Two bullets under second dom
+        expect(goals[15][:parent_index]).to eq(14)
+        expect(goals[16][:parent_index]).to eq(14)
+      end
+    end
+
+    context 'with leading spaces in input' do
+      it 'strips leading spaces from stored titles' do
+        content = "Objective\n  A. Indented letter\n    Four space sub"
+        service = described_class.new(content, default_goal_type)
+        
+        result = service.call
+        
+        expect(result[:errors]).to be_empty
+        expect(result[:goals].length).to eq(3)
+        expect(result[:goals][0][:title]).to eq('Objective')
+        expect(result[:goals][1][:title]).to eq('A. Indented letter')
+        expect(result[:goals][2][:title]).to eq('Four space sub')
       end
     end
 

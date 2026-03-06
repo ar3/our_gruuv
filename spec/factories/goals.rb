@@ -6,7 +6,7 @@ FactoryBot.define do
     earliest_target_date { Date.today + 1.month }
     latest_target_date { Date.today + 3.months }
     most_likely_target_date { Date.today + 2.months }
-    privacy_level { 'only_creator' }
+    privacy_level { 'only_creator_owner_and_managers' }
     
     association :creator, factory: :company_teammate
     association :owner, factory: :company_teammate
