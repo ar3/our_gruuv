@@ -1,23 +1,17 @@
 - drafts_count = @observation_drafts.count
-- drafts_indicator = drafts_count > 0 ? :warning : :success
 = render 'shared/section_header', 
          title: 'Observation Drafts', 
          icon: 'bi-file-earmark-text', 
          description: 'Draft observations needing action',
          collapsible: true,
          collapse_target: 'observationDraftsSection',
-         status_indicator: drafts_indicator
+         status_indicator: :warning
 
--# Summary view (shown when collapsed)
-- summary_class = drafts_count > 0 ? "alert mb-4 collapse-summary #{status_indicator_alert_class(drafts_indicator)}" : "alert mb-4 collapse-summary alert-light border border-light"
-- summary_style = drafts_count > 0 ? "cursor: pointer;" : "cursor: pointer; background-color: #f8f9fa; border-color: #dee2e6 !important;"
-%div{class: summary_class, "data-bs-toggle" => "collapse", "data-bs-target" => "#observationDraftsSection", "aria-expanded" => "false", "aria-controls" => "observationDraftsSection", style: summary_style}
-  %p.mb-0{class: drafts_count > 0 ? "" : "text-muted"}
-    %i{class: "#{status_indicator_icon(drafts_indicator)} #{drafts_count > 0 ? status_indicator_badge_class(drafts_indicator) : 'text-muted'} me-2"}
-    - if drafts_count > 0
-      = pluralize(drafts_count, 'draft observation') + ' needing action'
-    - else
-      No draft observations
+-# Summary view (shown when collapsed) — warning alert style
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#observationDraftsSection", "aria-expanded" => "false", "aria-controls" => "observationDraftsSection", style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
+    = pluralize(drafts_count, 'draft observation') + ' needing action'
 
 -# Collapsible content
 .collapse#observationDraftsSection

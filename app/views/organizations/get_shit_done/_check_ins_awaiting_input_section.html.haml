@@ -1,23 +1,17 @@
 - check_ins_count = @check_ins_awaiting_input.size
-- check_ins_indicator = check_ins_count > 0 ? :warning : :success
 = render 'shared/section_header', 
          title: 'Check-ins Awaiting Your Input', 
          icon: 'bi-clipboard-check', 
          description: 'Check-ins where the other participant has completed their side',
          collapsible: true,
          collapse_target: 'checkInsAwaitingInputSection',
-         status_indicator: check_ins_indicator
+         status_indicator: :warning
 
--# Summary view (shown when collapsed)
-- summary_class = check_ins_count > 0 ? "alert mb-4 collapse-summary #{status_indicator_alert_class(check_ins_indicator)}" : "alert mb-4 collapse-summary alert-light border border-light"
-- summary_style = check_ins_count > 0 ? "cursor: pointer;" : "cursor: pointer; background-color: #f8f9fa; border-color: #dee2e6 !important;"
-%div{class: summary_class, "data-bs-toggle" => "collapse", "data-bs-target" => "#checkInsAwaitingInputSection", "aria-expanded" => "false", "aria-controls" => "checkInsAwaitingInputSection", style: summary_style}
-  %p.mb-0{class: check_ins_count > 0 ? "" : "text-muted"}
-    %i{class: "#{status_indicator_icon(check_ins_indicator)} #{check_ins_count > 0 ? status_indicator_badge_class(check_ins_indicator) : 'text-muted'} me-2"}
-    - if check_ins_count > 0
-      = pluralize(check_ins_count, 'check-in') + ' awaiting your input'
-    - else
-      No check-ins awaiting your input
+-# Summary view (shown when collapsed) — warning alert style
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#checkInsAwaitingInputSection", "aria-expanded" => "false", "aria-controls" => "checkInsAwaitingInputSection", style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
+    = pluralize(check_ins_count, 'check-in') + ' awaiting your input'
 
 -# Collapsible content
 .collapse#checkInsAwaitingInputSection

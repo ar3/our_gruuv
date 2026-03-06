@@ -278,9 +278,9 @@ module AboutMeHelper
     case status
     when :red
       'text-danger'
-    when :yellow
+    when :yellow, :warning
       'text-warning'
-    when :green
+    when :green, :success
       'text-success'
     else
       'text-muted'
@@ -291,9 +291,9 @@ module AboutMeHelper
     case status
     when :red
       'bi-x-circle-fill'
-    when :yellow
+    when :yellow, :warning
       'bi-exclamation-circle-fill'
-    when :green
+    when :green, :success
       'bi-check-circle-fill'
     else
       'bi-circle'
@@ -304,9 +304,9 @@ module AboutMeHelper
     case status
     when :red
       'alert-danger'
-    when :yellow
+    when :yellow, :warning
       'alert-warning'
-    when :green
+    when :green, :success
       'alert-success'
     else
       'alert-secondary'
