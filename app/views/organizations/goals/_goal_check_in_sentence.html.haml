@@ -5,7 +5,7 @@
 - calculated_date = goal&.calculated_target_date
 
 - if check_in.present? && goal.present?
-  - date_str = check_in.check_in_week_start.strftime('%B %d, %Y')
+  - date_str = check_in.created_at.to_date.strftime('%B %d, %Y')
   - person_name = use_casual_name ? check_in.confidence_reporter.casual_name : check_in.confidence_reporter.display_name
   - confidence = check_in.confidence_percentage
   - goal_title = goal.title
