@@ -71,6 +71,41 @@ class ObservableMoment < ApplicationRecord
     end
   end
   
+  # For digest/summary: "<casual_name of the user the observation is about> <thing that was observable>"
+  def digest_sentence
+    name = associated_person&.casual_name.presence || 'Someone'
+    phrase = digest_observable_phrase
+    "#{name} #{phrase}"
+  end
+
+  def digest_observable_phrase
+    case moment_type
+    when 'new_hire'
+      'joined the team'
+    when 'seat_change'
+      'changed positions'
+    when 'ability_milestone'
+      milestone = momentable
+      ability = milestone&.ability&.name
+      level = milestone&.milestone_level
+      if ability && level
+        "achieved #{ability} level #{level}"
+      else
+        'achieved an ability milestone'
+      end
+    when 'check_in_completed'
+      'completed a check-in'
+    when 'goal_check_in'
+      'updated a goal'
+    when 'birthday'
+      'has a birthday to celebrate'
+    when 'work_anniversary'
+      'has a work anniversary to celebrate'
+    else
+      "#{moment_type.humanize.downcase} occurred"
+    end
+  end
+
   def description
     case moment_type
     when 'new_hire'

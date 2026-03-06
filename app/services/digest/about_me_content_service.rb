@@ -73,7 +73,7 @@ module Digest
         next nil if status.nil? # section hidden (e.g. prompts when no prompts)
 
         explanation = (status != :green && EXPLANATIONS[key]&.dig(status)) ? EXPLANATIONS[key][status] : nil
-        { section_name: section_name, status: status, explanation_sentence: explanation }
+        { key: key, section_name: section_name, status: status, explanation_sentence: explanation }
       end
     end
 

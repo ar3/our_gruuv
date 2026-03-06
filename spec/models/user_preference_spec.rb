@@ -78,10 +78,10 @@ RSpec.describe UserPreference, type: :model do
   describe 'digest preferences' do
     let(:preference) { UserPreference.for_person(person) }
 
-    it 'includes digest keys in defaults' do
-      expect(preference.preference(:digest_slack)).to be_nil
+    it 'includes digest keys in defaults (off for all three mediums)' do
+      expect(preference.preference(:digest_slack)).to eq('off')
       expect(preference.preference(:digest_email)).to eq('off')
-      expect(preference.preference(:digest_sms)).to be_nil
+      expect(preference.preference(:digest_sms)).to eq('off')
     end
 
     it 'updates digest preferences' do

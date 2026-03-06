@@ -23,7 +23,6 @@
 - effective_slack = @user_preference.effective_digest_slack(@teammate)
 - effective_email = @user_preference.effective_digest_email
 - effective_sms = @user_preference.effective_digest_sms(@teammate.person)
-- display_slack = (effective_slack == 'off' && has_slack) ? 'weekly' : effective_slack
 - display_sms = (effective_sms == 'off' && has_phone) ? 'weekly' : effective_sms
 
 .card.mb-4
@@ -39,8 +38,8 @@
           %h5.mb-2 Slack
           - if has_slack
             %p.text-muted.small.mb-2
-              Receive the digest in Slack (no "off" when connected).
-            = select_tag :digest_slack, options_for_select([['Daily', 'daily'], ['Weekly', 'weekly']], display_slack), { class: 'form-select', include_blank: false }
+              Receive the digest in Slack.
+            = select_tag :digest_slack, options_for_select([['Off', 'off'], ['Daily', 'daily'], ['Weekly', 'weekly']], effective_slack), { class: 'form-select', include_blank: false }
           - else
             %p.text-muted.small.mb-2
               Connect your Slack account in Slack Settings to get digest reminders.
@@ -70,7 +69,7 @@
 
       - weekly_day_options = [['Monday', '1'], ['Tuesday', '2'], ['Wednesday', '3'], ['Thursday', '4'], ['Friday', '5'], ['Saturday', '6'], ['Sunday', '0']]
       - effective_weekly = @user_preference.preference(:digest_weekly_day).presence || '1'
-      - any_weekly = display_slack == 'weekly' || effective_email == 'weekly' || display_sms == 'weekly'
+      - any_weekly = effective_slack == 'weekly' || effective_email == 'weekly' || display_sms == 'weekly'
       - if any_weekly
         .row.mb-4
           .col-12.col-md-6

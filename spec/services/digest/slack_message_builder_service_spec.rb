@@ -41,25 +41,112 @@ RSpec.describe Digest::SlackMessageBuilderService do
     end
   end
 
-  describe '#thread1_gsd_list' do
-    it 'returns hash with :blocks and :text' do
+  describe '#gsd_thread_payloads' do
+    it 'returns array of payloads, each with :blocks and :text' do
       builder = described_class.new(teammate: teammate, organization: organization)
-      result = builder.thread1_gsd_list
+      result = builder.gsd_thread_payloads
 
-      expect(result).to have_key(:blocks)
-      expect(result).to have_key(:text)
-      expect(result[:text]).to include('All clear:').or be_present
+      expect(result).to be_an(Array)
+      expect(result).not_to be_empty
+      result.each do |payload|
+        expect(payload).to have_key(:blocks)
+        expect(payload).to have_key(:text)
+      end
+      # With no items, single "All categories are clear." thread
+      expect(result.first[:text]).to include('All categories are clear')
+    end
+
+    it 'returns one thread per GSD category that has items' do
+      company = organization.root_company || organization
+      goal = create(:goal, owner: teammate, creator: teammate, title: 'My Goal')
+      manager_teammate = CompanyTeammate.find_or_create_by!(person: create(:person), organization: organization)
+      assignment = create(:assignment, company: company)
+      check_in = create(:assignment_check_in,
+                        teammate: teammate,
+                        assignment: assignment,
+                        manager_completed_at: 1.day.ago,
+                        manager_completed_by_teammate: manager_teammate,
+                        employee_completed_at: nil)
+      gsd_items = {
+        total_pending: 2,
+        observable_moments: [],
+        maap_snapshots: [],
+        observation_drafts: [],
+        goals_needing_check_in: [goal],
+        check_ins_awaiting_input: [check_in]
+      }
+      allow(GetShitDoneQueryService).to receive(:new).and_return(instance_double(GetShitDoneQueryService, all_pending_items: gsd_items))
+      allow(Digest::AboutMeContentService).to receive(:new).and_return(instance_double(Digest::AboutMeContentService, sections: []))
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      result = builder.gsd_thread_payloads
+
+      expect(result.length).to eq(2) # Goal Check-ins + Check-ins Awaiting Your Input
+      expect(result.map { |p| p[:text] }.join).to include('Goal Check-ins')
+      expect(result.map { |p| p[:text] }.join).to include('Check-ins Awaiting Your Input')
+    end
+
+    it 'escapes user content so Slack mrkdwn does not get invalid_blocks (e.g. < and > in goal titles)' do
+      goal = create(:goal, owner: teammate, creator: teammate, title: 'Goal with <angle> brackets & ampersand')
+      gsd_items = {
+        total_pending: 1,
+        observable_moments: [], maap_snapshots: [], observation_drafts: [],
+        goals_needing_check_in: [goal],
+        check_ins_awaiting_input: []
+      }
+      allow(GetShitDoneQueryService).to receive(:new).and_return(instance_double(GetShitDoneQueryService, all_pending_items: gsd_items))
+      allow(Digest::AboutMeContentService).to receive(:new).and_return(instance_double(Digest::AboutMeContentService, sections: []))
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      result = builder.gsd_thread_payloads
+
+      goal_payload = result.find { |p| p[:text].include?('Goal') }
+      expect(goal_payload).to be_present
+      expect(goal_payload[:text]).not_to include('<angle>')
+      expect(goal_payload[:text]).to include('&lt;angle&gt;').or include('&amp;')
+    end
+
+    it 'formats check-ins awaiting input as subject (other person checked-in time ago)' do
+      company = organization.root_company || organization
+      manager_person = create(:person, first_name: 'Manager', last_name: 'User')
+      manager_teammate = CompanyTeammate.find_or_create_by!(person: manager_person, organization: organization)
+      assignment = create(:assignment, company: company, title: 'Q1 Revenue Target')
+      check_in = create(:assignment_check_in,
+                        teammate: teammate,
+                        assignment: assignment,
+                        manager_completed_at: 2.days.ago,
+                        manager_completed_by_teammate: manager_teammate,
+                        employee_completed_at: nil)
+      gsd_items = {
+        total_pending: 1,
+        observable_moments: [],
+        maap_snapshots: [],
+        observation_drafts: [],
+        goals_needing_check_in: [],
+        check_ins_awaiting_input: [check_in]
+      }
+      allow(GetShitDoneQueryService).to receive(:new).and_return(instance_double(GetShitDoneQueryService, all_pending_items: gsd_items))
+      allow(Digest::AboutMeContentService).to receive(:new).and_return(instance_double(Digest::AboutMeContentService, sections: []))
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      result = builder.gsd_thread_payloads
+
+      check_in_payload = result.find { |p| p[:text].include?('Q1 Revenue Target') }
+      expect(check_in_payload).to be_present
+      expect(check_in_payload[:text]).to include('Manager')
+      expect(check_in_payload[:text]).to match(/checked-in \d+ (day|days) ago/)
     end
   end
 
   describe '#thread2_about_me' do
-    it 'returns hash with :blocks and :text including About Me title' do
+    it 'returns hash with :blocks and :text with healthy/attention summary and section links' do
       builder = described_class.new(teammate: teammate, organization: organization)
       result = builder.thread2_about_me
 
       expect(result).to have_key(:blocks)
       expect(result).to have_key(:text)
-      expect(result[:text]).to include("Let's look at your About Me page")
+      # New format: "<x> sections are healthy, <y> need some attention, <z> need the most attention."
+      expect(result[:text]).to match(/section.*healthy|attention|most attention/i)
     end
   end
 

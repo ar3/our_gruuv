@@ -170,6 +170,55 @@ RSpec.describe ObservableMoment, type: :model do
         expect(moment.description).to include('Welcome')
       end
     end
+
+    describe '#digest_sentence' do
+      it 'returns "<casual_name> <observable phrase>" for new_hire' do
+        moment = create(:observable_moment, :new_hire, company: company)
+        expect(moment.digest_sentence).to end_with(' joined the team')
+        expect(moment.digest_sentence).to eq("#{moment.associated_person.casual_name} joined the team")
+      end
+
+      it 'returns correct format for seat_change' do
+        moment = create(:observable_moment, :seat_change, company: company)
+        expect(moment.digest_sentence).to end_with(' changed positions')
+        expect(moment.digest_sentence).to eq("#{moment.associated_person.casual_name} changed positions")
+      end
+
+      it 'returns correct format for ability_milestone' do
+        milestone = create(:teammate_milestone)
+        moment = create(:observable_moment, :ability_milestone, momentable: milestone, company: milestone.ability.company)
+        expect(moment.digest_sentence).to start_with(moment.associated_person.casual_name)
+        expect(moment.digest_sentence).to include('achieved')
+      end
+
+      it 'returns correct format for birthday' do
+        moment = create(:observable_moment, :birthday, company: company)
+        expect(moment.digest_sentence).to end_with(' has a birthday to celebrate')
+        expect(moment.digest_sentence).to eq("#{moment.associated_person.casual_name} has a birthday to celebrate")
+      end
+
+      it 'returns correct format for work_anniversary' do
+        moment = create(:observable_moment, :work_anniversary, company: company)
+        expect(moment.digest_sentence).to end_with(' has a work anniversary to celebrate')
+        expect(moment.digest_sentence).to eq("#{moment.associated_person.casual_name} has a work anniversary to celebrate")
+      end
+
+      it 'falls back to "Someone" when associated_person is nil' do
+        moment = build(:observable_moment, :new_hire, company: company, momentable: nil)
+        allow(moment).to receive(:associated_person).and_return(nil)
+        allow(moment).to receive(:digest_observable_phrase).and_return('did something')
+        expect(moment.digest_sentence).to eq('Someone did something')
+      end
+    end
+
+    describe '#digest_observable_phrase' do
+      it 'returns type-specific phrase for each moment_type' do
+        expect(create(:observable_moment, :new_hire, company: company).digest_observable_phrase).to eq('joined the team')
+        expect(create(:observable_moment, :seat_change, company: company).digest_observable_phrase).to eq('changed positions')
+        expect(create(:observable_moment, :birthday, company: company).digest_observable_phrase).to eq('has a birthday to celebrate')
+        expect(create(:observable_moment, :work_anniversary, company: company).digest_observable_phrase).to eq('has a work anniversary to celebrate')
+      end
+    end
     
     describe '#associated_person' do
       it 'returns the person associated with the moment' do

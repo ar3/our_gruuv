@@ -6,9 +6,9 @@ class UserPreference < ApplicationRecord
     layout: 'vertical',
     vertical_nav_open: false,
     vertical_nav_locked: false,
-    digest_slack: nil,
+    digest_slack: 'off',
     digest_email: 'off',
-    digest_sms: nil,
+    digest_sms: 'off',
     digest_weekly_day: nil
   }.freeze
   

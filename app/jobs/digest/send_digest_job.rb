@@ -45,8 +45,8 @@ module Digest
 
       builder = SlackMessageBuilderService.new(teammate: teammate, organization: organization)
       main_payload = builder.main_message
-      thread1_payload = builder.thread1_gsd_list
-      thread2_payload = builder.thread2_about_me
+      gsd_thread_payloads = builder.gsd_thread_payloads
+      about_me_payload = builder.thread2_about_me
 
       main_notification = Notification.create!(
         notifiable: teammate,
@@ -63,7 +63,8 @@ module Digest
         return
       end
 
-      [thread1_payload, thread2_payload].each do |payload|
+      thread_payloads = gsd_thread_payloads + [about_me_payload]
+      thread_payloads.each do |payload|
         thread_notification = Notification.create!(
           notifiable: teammate,
           notification_type: 'gsd_digest',

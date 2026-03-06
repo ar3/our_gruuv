@@ -13,12 +13,13 @@ RSpec.describe Digest::AboutMeContentService do
   end
 
   describe '#sections' do
-    it 'returns an array of section hashes with section_name, status, and explanation_sentence' do
+    it 'returns an array of section hashes with key, section_name, status, and explanation_sentence' do
       service = described_class.new(teammate: teammate, organization: organization)
       result = service.sections
 
       expect(result).to be_an(Array)
       result.each do |section|
+        expect(section).to have_key(:key)
         expect(section).to have_key(:section_name)
         expect(section).to have_key(:status)
         expect(section).to have_key(:explanation_sentence)
