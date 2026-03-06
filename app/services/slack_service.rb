@@ -960,6 +960,35 @@ class SlackService
     end
   end
 
+  # Update an existing message in a group DM (or any channel) by channel id and message ts
+  def update_group_dm_message(channel_id:, message_ts:, text:)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+
+    begin
+      response = @client.chat_update(
+        channel: channel_id,
+        ts: message_ts,
+        text: text
+      )
+
+      store_slack_response('chat_update_group_dm', { channel_id: channel_id, ts: message_ts, text: text }, response)
+
+      if response['ok']
+        { success: true, message_id: response['ts'] }
+      else
+        error = response['error'] || 'Unknown error'
+        { success: false, error: error }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error updating group DM message - #{e.message}"
+      store_slack_response('chat_update_group_dm', { channel_id: channel_id, ts: message_ts }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error updating group DM message - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
   def store_slack_response(method, request_params, response_data)
     return unless @organization&.slack_configuration.present?
     

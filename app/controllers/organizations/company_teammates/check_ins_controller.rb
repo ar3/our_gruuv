@@ -253,7 +253,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
           end
 
           if completion_service.completion_detected?
-            CheckIns::NotifyCompletionJob.perform_and_get_result(
+            CheckIns::NotifyCompletionJob.perform_later(
               check_in_id: check_in.id,
               check_in_type: 'AssignmentCheckIn',
               completion_state: completion_service.completion_state,
@@ -322,7 +322,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
           end
 
           if completion_service.completion_detected?
-            CheckIns::NotifyCompletionJob.perform_and_get_result(
+            CheckIns::NotifyCompletionJob.perform_later(
               check_in_id: check_in.id,
               check_in_type: 'AspirationCheckIn',
               completion_state: completion_service.completion_state,
@@ -372,7 +372,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         end
 
         if completion_service.completion_detected?
-          CheckIns::NotifyCompletionJob.perform_and_get_result(
+          CheckIns::NotifyCompletionJob.perform_later(
             check_in_id: check_in.id,
             check_in_type: 'PositionCheckIn',
             completion_state: completion_service.completion_state,

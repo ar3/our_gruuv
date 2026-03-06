@@ -181,6 +181,67 @@ RSpec.describe SlackService do
     end
   end
 
+  describe '#update_group_dm_message' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when Slack is configured' do
+      before do
+        allow(mock_client).to receive(:chat_update).and_return({ 'ok' => true, 'ts' => '123456.789' })
+      end
+
+      it 'calls chat_update with channel_id, message_ts, and text' do
+        result = slack_service.update_group_dm_message(
+          channel_id: 'D123456',
+          message_ts: '123456.789',
+          text: 'Updated main message with latest update time.'
+        )
+
+        expect(mock_client).to have_received(:chat_update).with(
+          channel: 'D123456',
+          ts: '123456.789',
+          text: 'Updated main message with latest update time.'
+        )
+        expect(result).to eq({ success: true, message_id: '123456.789' })
+      end
+    end
+
+    context 'when chat_update raises SlackError' do
+      before do
+        allow(mock_client).to receive(:chat_update).and_raise(Slack::Web::Api::Errors::SlackError.new('API Error'))
+      end
+
+      it 'returns failure hash with error' do
+        result = slack_service.update_group_dm_message(
+          channel_id: 'D123456',
+          message_ts: '123456.789',
+          text: 'Updated text'
+        )
+
+        expect(result).to eq({ success: false, error: 'API Error' })
+      end
+    end
+
+    context 'when Slack is not configured' do
+      before do
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
+      end
+
+      it 'returns failure hash' do
+        result = slack_service.update_group_dm_message(
+          channel_id: 'D123456',
+          message_ts: '123456.789',
+          text: 'Updated text'
+        )
+
+        expect(result).to eq({ success: false, error: 'Slack not configured' })
+      end
+    end
+  end
+
   describe '#test_connection' do
     let(:mock_client) { instance_double(Slack::Web::Client) }
 
