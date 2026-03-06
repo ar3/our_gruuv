@@ -73,25 +73,28 @@
       .collapse{id: "snapshot_#{snapshot.id}_details"}
         .card.border-light.m-2
           .card-body
-            - check_in_sentences = format_snapshot_check_in_sentences(snapshot, person, organization)
-            - has_check_in_sentences = check_in_sentences[:position_sentence].present? || check_in_sentences[:assignment_sentences].any? || check_in_sentences[:aspiration_sentences].any?
+            - has_check_in_sentences = snapshot.linked_position_check_in.present? || snapshot.linked_assignment_check_ins.any? || snapshot.linked_aspiration_check_ins.any?
             - if has_check_in_sentences
+              - employee_name = person&.casual_name.presence || 'Employee'
               .mb-3.pb-3.border-bottom
                 %h6.text-muted.mb-2
                   %i.bi.bi-chat-quote.me-2
                   Check-in
-                - if check_in_sentences[:position_sentence].present?
+                - if snapshot.linked_position_check_in.present?
                   .mb-3
                     %strong.small.text-muted Position
-                    .mt-1.small{style: "white-space: pre-line;"}= check_in_sentences[:position_sentence]
-                - check_in_sentences[:assignment_sentences].each do |item|
+                    .mt-1
+                      = render 'shared/check_in_finalized_sentences', check_in: snapshot.linked_position_check_in, employee_name: employee_name, sentence_type: :position
+                - snapshot.linked_assignment_check_ins.includes(:assignment).each do |check_in|
                   .mb-3
-                    %strong.small.text-muted Assignment: #{item[:assignment_name]}
-                    .mt-1.small{style: "white-space: pre-line;"}= item[:sentences]
-                - check_in_sentences[:aspiration_sentences].each do |item|
+                    %strong.small.text-muted Assignment: #{check_in.assignment&.title.presence || "Assignment #{check_in.assignment_id}"}
+                    .mt-1
+                      = render 'shared/check_in_finalized_sentences', check_in: check_in, employee_name: employee_name, sentence_type: :assignment
+                - snapshot.linked_aspiration_check_ins.includes(:aspiration).each do |check_in|
                   .mb-3
-                    %strong.small.text-muted Aspiration: #{item[:aspiration_name]}
-                    .mt-1.small{style: "white-space: pre-line;"}= item[:sentences]
+                    %strong.small.text-muted Aspiration: #{check_in.aspiration&.name.presence || "Aspiration #{check_in.aspiration_id}"}
+                    .mt-1
+                      = render 'shared/check_in_finalized_sentences', check_in: check_in, employee_name: employee_name, sentence_type: :aspiration
             - if has_official_changes
               .mt-3.pt-2.border-top
                 %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#snapshot_#{snapshot.id}_official_ratings", "aria-expanded" => "false", "aria-controls" => "snapshot_#{snapshot.id}_official_ratings", style: "cursor: pointer;"}

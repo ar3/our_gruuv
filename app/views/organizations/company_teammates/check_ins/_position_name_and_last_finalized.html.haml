@@ -1,0 +1,12 @@
+-# Shared first-column content: hidden return fields, position name submit, and Last Finalized pill with popover.
+-# Locals: check_in, form
+- return_text = "Return to #{check_in.teammate.person.casual_name}'s check-in"
+- return_url = organization_company_teammate_check_ins_path(organization, @teammate)
+= hidden_field_tag "return_text", return_text
+= hidden_field_tag "return_url", return_url
+= form.submit check_in.employment_tenure.position.display_name,
+              class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
+              name: "save_and_view_position"
+- latest_finalized = PositionCheckIn.latest_finalized_for(check_in.teammate)
+%div.mt-1
+  %span.badge{class: last_finalized_pill_class(latest_finalized), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => last_finalized_check_in_popover_content(latest_finalized, check_in.teammate.person.casual_name, :position), style: "cursor: pointer;"}= last_finalized_label(latest_finalized)

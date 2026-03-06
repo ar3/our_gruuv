@@ -13,19 +13,7 @@
     %tbody
       %tr
         %td
-          - return_text = "Return to #{check_in.teammate.person.casual_name}'s check-in"
-          - return_url = organization_company_teammate_check_ins_path(organization, @teammate)
-          = hidden_field_tag "return_text", return_text
-          = hidden_field_tag "return_url", return_url
-          = form.submit check_in.employment_tenure.position.display_name,
-                        class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
-                        name: "save_and_view_position",
-                        "data-bs-toggle" => "popover",
-                        "data-bs-trigger" => "hover",
-                        "data-bs-placement" => "right",
-                        "data-bs-html" => "true",
-                        "data-bs-content" => latest_position_check_in_popover_content(check_in.teammate)
-          %i.bi.bi-clock-history.ms-1.text-muted
+          = render 'organizations/company_teammates/check_ins/position_name_and_last_finalized', check_in: check_in, form: form
         %td
           = position_rating_display(check_in.employee_rating)
         %td

@@ -116,7 +116,32 @@ module CheckInHelper
     lookup_context.exists?(partial_name, [], true)
   end
 
-  # Popover content for latest finalized check-ins
+  # Label for "Last Finalized" pill: "Last Finalized X ago" or "Never Finalized"
+  def last_finalized_label(latest_check_in)
+    return 'Never Finalized' if latest_check_in.blank?
+    "Last Finalized #{time_ago_in_words(latest_check_in.official_check_in_completed_at)} ago"
+  end
+
+  # Bootstrap badge class for pill by recency: green <=60d, warning 61-90d, danger >90d, grey never
+  def last_finalized_pill_class(latest_check_in)
+    return 'bg-secondary' if latest_check_in.blank?
+    days = (Time.current - latest_check_in.official_check_in_completed_at) / 1.day
+    if days <= 60
+      'bg-success'
+    elsif days <= 90
+      'bg-warning text-dark'
+    else
+      'bg-danger'
+    end
+  end
+
+  # Popover content: same sentence structure as audit page (shared partial)
+  def last_finalized_check_in_popover_content(check_in, employee_name, sentence_type)
+    return '' if check_in.blank?
+    render(partial: 'shared/check_in_finalized_sentences', locals: { check_in: check_in, employee_name: employee_name, sentence_type: sentence_type })
+  end
+
+  # Popover content for latest finalized check-ins (legacy: used only when we need HTML for popover from latest)
   def latest_position_check_in_popover_content(teammate)
     latest = PositionCheckIn.latest_finalized_for(teammate)
     return "No completed check-ins yet" unless latest

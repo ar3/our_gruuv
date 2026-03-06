@@ -3,6 +3,49 @@
 require 'rails_helper'
 
 RSpec.describe CheckInHelper, type: :helper do
+  describe '#last_finalized_label' do
+    it 'returns "Never Finalized" when latest_check_in is nil' do
+      expect(helper.last_finalized_label(nil)).to eq('Never Finalized')
+    end
+
+    it 'returns "Last Finalized X ago" when latest_check_in is present' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 2.days.ago)
+      allow(helper).to receive(:time_ago_in_words).and_return('2 days')
+      expect(helper.last_finalized_label(check_in)).to eq('Last Finalized 2 days ago')
+    end
+  end
+
+  describe '#last_finalized_pill_class' do
+    it 'returns bg-secondary when latest_check_in is nil' do
+      expect(helper.last_finalized_pill_class(nil)).to eq('bg-secondary')
+    end
+
+    it 'returns bg-success when less than 60 days ago' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 30.days.ago)
+      expect(helper.last_finalized_pill_class(check_in)).to eq('bg-success')
+    end
+
+    it 'returns bg-warning text-dark when 61-90 days ago' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 75.days.ago)
+      expect(helper.last_finalized_pill_class(check_in)).to eq('bg-warning text-dark')
+    end
+
+    it 'returns bg-danger when more than 90 days ago' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 100.days.ago)
+      expect(helper.last_finalized_pill_class(check_in)).to eq('bg-danger')
+    end
+
+    it 'returns bg-success at 59 days' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 59.days.ago)
+      expect(helper.last_finalized_pill_class(check_in)).to eq('bg-success')
+    end
+
+    it 'returns bg-warning at 91 days' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 91.days.ago)
+      expect(helper.last_finalized_pill_class(check_in)).to eq('bg-danger')
+    end
+  end
+
   describe '#assignment_alignment_phrase_past' do
     it 'returns past-tense phrase for each alignment' do
       expect(helper.assignment_alignment_phrase_past('love')).to eq("they'd love to do it again")

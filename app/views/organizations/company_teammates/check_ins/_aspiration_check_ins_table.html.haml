@@ -31,15 +31,12 @@
           = form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
             %tr{data: {check_in_id: check_in.id}}
               %td
+                - latest_finalized = AspirationCheckIn.latest_finalized_for(check_in.teammate, check_in.aspiration)
                 = form.submit check_in.aspiration.name,
                               class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
-                              name: "save_and_view_aspiration_#{check_in.aspiration.id}",
-                              "data-bs-toggle" => "popover",
-                              "data-bs-trigger" => "hover",
-                              "data-bs-placement" => "right",
-                              "data-bs-html" => "true",
-                              "data-bs-content" => latest_aspiration_check_in_popover_content(check_in.teammate, check_in.aspiration)
-                %i.bi.bi-clock-history.ms-1.text-muted
+                              name: "save_and_view_aspiration_#{check_in.aspiration.id}"
+                %div.mt-1
+                  %span.badge{class: last_finalized_pill_class(latest_finalized), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => last_finalized_check_in_popover_content(latest_finalized, check_in.teammate.person.casual_name, :aspiration), style: "cursor: pointer;"}= last_finalized_label(latest_finalized)
               = render partial_name, check_in: check_in, form: af, main_form: form, view_mode: view_mode
 - else
   .alert.alert-info
