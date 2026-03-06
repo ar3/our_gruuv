@@ -196,6 +196,11 @@ RSpec.describe 'Horizontal Navigation', type: :request do
       expect(response.body).to include('Check-ins Health')
       expect(response.body).to include(organization_check_ins_health_path(organization))
     end
+
+    it 'includes Check-ins Progress link' do
+      expect(response.body).to include('Check-ins Progress')
+      expect(response.body).to include(organization_insights_check_ins_progress_path(organization))
+    end
     
     it 'includes Help Improve OG link' do
       expect(response.body).to include('Help Improve OG')

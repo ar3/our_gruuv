@@ -64,12 +64,15 @@
               %i.bi.bi-clipboard-check.me-1
               Spotlight: Check-ins Health Overview
 
-/ Download all check-ins
+/ Download all check-ins and link to Check-ins Progress
 .row.justify-content-center.mb-3
-  .col-lg-12
+  .col-lg-12.d-flex.gap-2.flex-wrap
     = link_to organization_check_ins_health_export_path(@organization), class: 'btn btn-outline-primary' do
       %i.bi.bi-download.me-2
       Download all check-ins for #{@spotlight_stats[:total_employees]} teammate#{'s' if @spotlight_stats[:total_employees] != 1}
+    = link_to organization_insights_check_ins_progress_path(@organization), class: 'btn btn-outline-secondary' do
+      %i.bi.bi-bar-chart-steps.me-2
+      Check-ins Progress
 
 / Pagination Info
 .row.justify-content-center.mb-2

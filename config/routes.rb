@@ -467,6 +467,7 @@ Rails.application.routes.draw do
       get 'abilities', to: 'insights#abilities'
       get 'goals', to: 'insights#goals'
       get 'who_is_doing_what', to: 'insights#who_is_doing_what'
+      get 'check_ins_progress', to: 'insights#check_ins_progress'
     end
     
     # Seats management

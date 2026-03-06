@@ -257,6 +257,13 @@ module NavigationHelper
             path: organization_check_ins_health_path(current_organization),
             policy_check: -> { policy(current_organization).check_ins_health? },
             coming_soon: false
+          },
+          {
+            label: 'Check-ins Progress',
+            icon: 'bi-bar-chart-steps',
+            path: organization_insights_check_ins_progress_path(current_organization),
+            policy_check: -> { policy(current_organization).check_ins_health? },
+            coming_soon: false
           }
         ]
       },

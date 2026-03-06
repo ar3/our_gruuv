@@ -1,0 +1,86 @@
+- content_for :title, "Insights: Check-ins Progress"
+
+- chart_title_period = @chart_title_period || "Last 90 Days"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-clipboard-check.me-2
+      Insights: Check-ins Progress
+
+/ Timeframe selector
+.mb-4
+  .btn-group{role: "group"}
+    = link_to "Last 90 days", organization_insights_check_ins_progress_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Last Year", organization_insights_check_ins_progress_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "All-Time", organization_insights_check_ins_progress_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+
+.container-fluid
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-bar-chart-steps.me-2
+            Check-ins interacted with by week (#{chart_title_period})
+        .card-body
+          %p.small.text-muted.mb-3
+            Each check-in is counted once per week in the rightmost category that occurred that week: Finalized &gt; Both completed &gt; Manager only &gt; Employee only.
+          #check-ins-progress-chart{style: "height: 400px;"}
+
+:javascript
+  (function() {
+    var chartData = #{@check_ins_progress_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+
+    function initializeChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('check-ins-progress-chart');
+      if (!el) return;
+      Highcharts.chart('check-ins-progress-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Check-ins by progress stage (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: chartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of check-ins' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: chartData.series
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeChart();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeChart();
+    });
+  })();

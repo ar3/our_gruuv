@@ -254,6 +254,22 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     end
   end
 
+  def check_ins_progress
+    authorize company, :check_ins_health?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range = date_range_for(@timeframe)
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = case @timeframe
+      when :'90_days' then 'Last 90 Days'
+      when :year then 'Last Year'
+      when :all_time then 'Last 52 Weeks'
+      else 'Last 90 Days'
+    end
+    @check_ins_progress_chart_data = check_ins_progress_chart_data(company, chart_range)
+  end
+
   private
   
   def build_department_breakdown(seats_scope)
@@ -414,6 +430,100 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
     data = week_dates.map { |wd| raw_normalized[wd.to_s] || 0 }
     series = [{ name: 'Feedback-related observations published', data: data }]
+    { categories: categories, series: series }
+  end
+
+  def check_ins_progress_chart_data(company, chart_range)
+    return { categories: [], series: [] } if chart_range.nil?
+
+    range_start = chart_range.begin
+    range_end = chart_range.end
+
+    # Load all check-ins (position, assignment, aspiration) with any completion timestamp in range.
+    # Each row: [employee_completed_at, manager_completed_at, official_check_in_completed_at]
+    rows = []
+
+    position_scope = PositionCheckIn
+      .joins(:company_teammate)
+      .where(teammates: { organization_id: company.id })
+      .where(
+        'position_check_ins.employee_completed_at BETWEEN ? AND ? OR ' \
+        'position_check_ins.manager_completed_at BETWEEN ? AND ? OR ' \
+        'position_check_ins.official_check_in_completed_at BETWEEN ? AND ?',
+        range_start, range_end, range_start, range_end, range_start, range_end
+      )
+    rows.concat position_scope.pluck(:employee_completed_at, :manager_completed_at, :official_check_in_completed_at)
+
+    assignment_scope = AssignmentCheckIn
+      .joins(:assignment)
+      .where(assignments: { company_id: company.id })
+      .where(
+        'assignment_check_ins.employee_completed_at BETWEEN ? AND ? OR ' \
+        'assignment_check_ins.manager_completed_at BETWEEN ? AND ? OR ' \
+        'assignment_check_ins.official_check_in_completed_at BETWEEN ? AND ?',
+        range_start, range_end, range_start, range_end, range_start, range_end
+      )
+    rows.concat assignment_scope.pluck(:employee_completed_at, :manager_completed_at, :official_check_in_completed_at)
+
+    aspiration_scope = AspirationCheckIn
+      .joins(:aspiration)
+      .where(aspirations: { company_id: company.id })
+      .where(
+        'aspiration_check_ins.employee_completed_at BETWEEN ? AND ? OR ' \
+        'aspiration_check_ins.manager_completed_at BETWEEN ? AND ? OR ' \
+        'aspiration_check_ins.official_check_in_completed_at BETWEEN ? AND ?',
+        range_start, range_end, range_start, range_end, range_start, range_end
+      )
+    rows.concat aspiration_scope.pluck(:employee_completed_at, :manager_completed_at, :official_check_in_completed_at)
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    finalized_data = []
+    both_data = []
+    manager_only_data = []
+    employee_only_data = []
+
+    week_dates.each do |week_start|
+      week_end_time = (week_start + 6.days).to_time.end_of_day
+      week_start_time = week_start.to_time.beginning_of_day
+
+      finalized = 0
+      both = 0
+      manager_only = 0
+      employee_only = 0
+
+      rows.each do |e_at, m_at, o_at|
+        e_in = e_at && e_at >= week_start_time && e_at <= week_end_time
+        m_in = m_at && m_at >= week_start_time && m_at <= week_end_time
+        o_in = o_at && o_at >= week_start_time && o_at <= week_end_time
+        next unless e_in || m_in || o_in
+
+        if o_in
+          finalized += 1
+        elsif e_in && m_in
+          both += 1
+        elsif m_in
+          manager_only += 1
+        elsif e_in
+          employee_only += 1
+        end
+      end
+
+      finalized_data << finalized
+      both_data << both
+      manager_only_data << manager_only
+      employee_only_data << employee_only
+    end
+
+    series = [
+      { name: 'Employee only', data: employee_only_data },
+      { name: 'Manager only', data: manager_only_data },
+      { name: 'Both completed', data: both_data },
+      { name: 'Finalized', data: finalized_data }
+    ]
     { categories: categories, series: series }
   end
 

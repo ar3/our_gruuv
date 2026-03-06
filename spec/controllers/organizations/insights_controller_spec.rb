@@ -300,6 +300,42 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     end
   end
 
+  describe 'GET #check_ins_progress' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:check_ins_health?).and_return(true)
+    end
+
+    it 'returns http success' do
+      get :check_ins_progress, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'assigns organization and timeframe' do
+      get :check_ins_progress, params: { organization_id: company.id }
+      expect(assigns(:organization)).to eq(company)
+      expect(assigns(:timeframe)).to eq(:'90_days')
+    end
+
+    it 'accepts timeframe year' do
+      get :check_ins_progress, params: { organization_id: company.id, timeframe: 'year' }
+      expect(assigns(:timeframe)).to eq(:year)
+    end
+
+    it 'accepts timeframe all_time' do
+      get :check_ins_progress, params: { organization_id: company.id, timeframe: 'all_time' }
+      expect(assigns(:timeframe)).to eq(:all_time)
+    end
+
+    it 'assigns chart data with categories and series (Employee only, Manager only, Both completed, Finalized)' do
+      get :check_ins_progress, params: { organization_id: company.id }
+      chart = assigns(:check_ins_progress_chart_data)
+      expect(chart).to be_a(Hash)
+      expect(chart[:categories]).to be_an(Array)
+      expect(chart[:series]).to be_an(Array)
+      expect(chart[:series].map { |s| s[:name] }).to eq(['Employee only', 'Manager only', 'Both completed', 'Finalized'])
+    end
+  end
+
   describe 'GET #who_is_doing_what' do
     it 'returns http success' do
       get :who_is_doing_what, params: { organization_id: company.id }

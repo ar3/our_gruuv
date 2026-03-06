@@ -278,7 +278,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(insights_section[:icon]).to eq('bi-bar-chart-line')
       end
 
-      it 'has the expected Insights sub-items with Observations first and Check-ins Health last' do
+      it 'has the expected Insights sub-items with Observations first and Check-ins Progress last' do
         structure = helper.navigation_structure
         insights_section = structure.find { |item| item[:label] == 'Insights' }
         items = insights_section[:items]
@@ -292,7 +292,8 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Goals')
         expect(labels).to include('Feedback Requests')
         expect(labels).to include('Huddles')
-        expect(labels.last).to eq('Check-ins Health')
+        expect(labels).to include('Check-ins Health')
+        expect(labels.last).to eq('Check-ins Progress')
       end
 
       it 'places Insights section between Huddles and Admin/Explore MAAP(s)' do

@@ -61,6 +61,36 @@ RSpec.describe 'Organizations::Insights', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/insights/check_ins_progress' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:check_ins_health?).and_return(true)
+    end
+
+    it 'returns http success' do
+      get organization_insights_check_ins_progress_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders Check-ins Progress insights page with timeframe links and chart' do
+      get organization_insights_check_ins_progress_path(organization)
+      expect(response.body).to include('Insights: Check-ins Progress')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+      expect(response.body).to include('check-ins-progress-chart')
+    end
+
+    it 'returns success with timeframe=year' do
+      get organization_insights_check_ins_progress_path(organization, timeframe: 'year')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns success with timeframe=all_time' do
+      get organization_insights_check_ins_progress_path(organization, timeframe: 'all_time')
+      expect(response).to have_http_status(:success)
+    end
+  end
+
   describe 'GET /organizations/:organization_id/insights/feedback_requests' do
     before do
       allow_any_instance_of(OrganizationPolicy).to receive(:view_feedback_requests?).and_return(true)
