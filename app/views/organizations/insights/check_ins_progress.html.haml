@@ -28,6 +28,18 @@
             Each check-in is counted once per week in the rightmost category that occurred that week: Finalized &gt; Both completed &gt; Manager only &gt; Employee only.
           #check-ins-progress-chart{style: "height: 400px;"}
 
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-secondary.text-white
+          %h4.mb-0
+            %i.bi.bi-building.me-2
+            Check-ins by department (#{chart_title_period})
+        .card-body
+          %p.small.text-muted.mb-3
+            Same check-ins as above (employee completed, manager completed, both, or finalized), grouped by the department of the person the check-in is about.
+          #check-ins-by-department-chart{style: "height: 400px;"}
+
 :javascript
   (function() {
     var chartData = #{@check_ins_progress_chart_data.to_json};
@@ -82,5 +94,61 @@
     }
     window.addEventListener('load', function() {
       if (typeof Highcharts !== 'undefined') initializeChart();
+    });
+  })();
+
+  (function() {
+    var chartData = #{@check_ins_progress_by_department_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+
+    function initializeDeptChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('check-ins-by-department-chart');
+      if (!el) return;
+      Highcharts.chart('check-ins-by-department-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Check-ins by department (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: chartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of check-ins' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: chartData.series
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighchartsDept() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeDeptChart();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighchartsDept, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeDeptChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsDept);
+    } else {
+      waitForHighchartsDept();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeDeptChart();
     });
   })();

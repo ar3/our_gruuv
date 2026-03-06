@@ -167,6 +167,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     chart_range = range || (52.weeks.ago..Time.current)
     @observations_chart_data = observations_chart_series_by_privacy(base_scope, chart_range)
+    @observations_by_observer_department_chart_data = observations_by_observer_department_chart_series(base_scope, chart_range)
+    @observations_by_department_chart_data = observations_by_department_chart_series(base_scope, chart_range)
 
     # Observers (person_ids) who have given at least one observation
     observer_ids = base_scope.distinct.pluck(:observer_id).compact
@@ -268,6 +270,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       else 'Last 90 Days'
     end
     @check_ins_progress_chart_data = check_ins_progress_chart_data(company, chart_range)
+    @check_ins_progress_by_department_chart_data = check_ins_progress_by_department_chart_data(company, chart_range)
   end
 
   private
@@ -400,6 +403,114 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     { categories: categories, series: series }
   end
 
+  def observations_by_observer_department_chart_series(base_scope, chart_range)
+    # Same scope and date (observed_at) as the privacy chart; group by observer's department
+    scope = base_scope.where(observed_at: chart_range)
+    observation_rows = scope.pluck(:id, :observed_at, :observer_id)
+
+    observer_person_ids = observation_rows.map { |_id, _at, oid| oid }.uniq.compact
+    department_by_observer = {}
+    if observer_person_ids.any?
+      CompanyTeammate
+        .where(organization: company, person_id: observer_person_ids)
+        .includes(employment_tenures: { position: { title: :department } })
+        .find_each do |tm|
+          dept = tm.active_employment_tenure&.position&.title&.department&.name.presence || 'No Department'
+          department_by_observer[tm.person_id] = dept
+        end
+    end
+
+    observation_department = {}
+    observation_rows.each do |obs_id, _, observer_id|
+      observation_department[obs_id] = observer_id ? (department_by_observer[observer_id] || 'No Department') : 'No Department'
+    end
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map { |d| d.beginning_of_week }.uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    week_counts = week_dates.map do |week_start|
+      week_end_time = (week_start + 6.days).to_time.end_of_day
+      week_start_time = week_start.to_time.beginning_of_day
+      counts_by_dept = Hash.new(0)
+      observation_rows.each do |obs_id, observed_at, _|
+        next unless observed_at && observed_at >= week_start_time && observed_at <= week_end_time
+
+        counts_by_dept[observation_department[obs_id]] += 1
+      end
+      counts_by_dept
+    end
+
+    department_names = week_counts.flat_map(&:keys).uniq.sort
+    series = department_names.map do |dept|
+      data = week_counts.map { |counts| counts[dept] || 0 }
+      { name: dept, data: data }
+    end
+    { categories: categories, series: series }
+  end
+
+  def observations_by_department_chart_series(base_scope, chart_range)
+    # Same scope as the privacy chart: published, not soft-deleted, observed_at in chart_range
+    scope = base_scope.where(observed_at: chart_range)
+    # One row per observation: [observation_id, observed_at] — same date (observed_at) as the chart above
+    observation_rows = scope.pluck(:id, :observed_at)
+
+    # Assign each observation to one department (first observee's department) so totals match the top chart
+    observation_ids = observation_rows.map(&:first).uniq
+    first_teammate_by_observation = {}
+    if observation_ids.any?
+      Observee
+        .where(observation_id: observation_ids)
+        .order(:id)
+        .pluck(:observation_id, :teammate_id)
+        .each { |obs_id, tm_id| first_teammate_by_observation[obs_id] ||= tm_id }
+    end
+
+    teammate_ids = first_teammate_by_observation.values.uniq.compact
+    department_by_teammate = {}
+    if teammate_ids.any?
+      CompanyTeammate
+        .where(id: teammate_ids)
+        .includes(employment_tenures: { position: { title: :department } })
+        .find_each do |tm|
+          dept = tm.active_employment_tenure&.position&.title&.department&.name.presence || 'No Department'
+          department_by_teammate[tm.id] = dept
+        end
+    end
+
+    observation_department = {}
+    observation_rows.each do |obs_id, _|
+      tm_id = first_teammate_by_observation[obs_id]
+      observation_department[obs_id] = tm_id ? (department_by_teammate[tm_id] || 'No Department') : 'No Department'
+    end
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map { |d| d.beginning_of_week }.uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    week_counts = week_dates.map do |week_start|
+      week_end_time = (week_start + 6.days).to_time.end_of_day
+      week_start_time = week_start.to_time.beginning_of_day
+      counts_by_dept = Hash.new(0)
+      observation_rows.each do |obs_id, observed_at|
+        next unless observed_at && observed_at >= week_start_time && observed_at <= week_end_time
+
+        dept = observation_department[obs_id]
+        counts_by_dept[dept] += 1
+      end
+      counts_by_dept
+    end
+
+    department_names = week_counts.flat_map(&:keys).uniq.sort
+    series = department_names.map do |dept|
+      data = week_counts.map { |counts| counts[dept] || 0 }
+      { name: dept, data: data }
+    end
+    { categories: categories, series: series }
+  end
+
   def feedback_requests_created_chart_series(chart_range)
     scope = FeedbackRequest.where(company: company).where(created_at: chart_range)
     raw = scope.group(Arel.sql("date_trunc('week', created_at)::date")).count
@@ -524,6 +635,90 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       { name: 'Both completed', data: both_data },
       { name: 'Finalized', data: finalized_data }
     ]
+    { categories: categories, series: series }
+  end
+
+  def check_ins_progress_by_department_chart_data(company, chart_range)
+    return { categories: [], series: [] } if chart_range.nil?
+
+    range_start = chart_range.begin
+    range_end = chart_range.end
+
+    # Rows: [teammate_id, employee_completed_at, manager_completed_at, official_check_in_completed_at]
+    rows = []
+
+    position_scope = PositionCheckIn
+      .joins(:company_teammate)
+      .where(teammates: { organization_id: company.id })
+      .where(
+        'position_check_ins.employee_completed_at BETWEEN ? AND ? OR ' \
+        'position_check_ins.manager_completed_at BETWEEN ? AND ? OR ' \
+        'position_check_ins.official_check_in_completed_at BETWEEN ? AND ?',
+        range_start, range_end, range_start, range_end, range_start, range_end
+      )
+    rows.concat position_scope.pluck(:teammate_id, :employee_completed_at, :manager_completed_at, :official_check_in_completed_at)
+
+    assignment_scope = AssignmentCheckIn
+      .joins(:assignment)
+      .where(assignments: { company_id: company.id })
+      .where(
+        'assignment_check_ins.employee_completed_at BETWEEN ? AND ? OR ' \
+        'assignment_check_ins.manager_completed_at BETWEEN ? AND ? OR ' \
+        'assignment_check_ins.official_check_in_completed_at BETWEEN ? AND ?',
+        range_start, range_end, range_start, range_end, range_start, range_end
+      )
+    rows.concat assignment_scope.pluck(:teammate_id, :employee_completed_at, :manager_completed_at, :official_check_in_completed_at)
+
+    aspiration_scope = AspirationCheckIn
+      .joins(:aspiration)
+      .where(aspirations: { company_id: company.id })
+      .where(
+        'aspiration_check_ins.employee_completed_at BETWEEN ? AND ? OR ' \
+        'aspiration_check_ins.manager_completed_at BETWEEN ? AND ? OR ' \
+        'aspiration_check_ins.official_check_in_completed_at BETWEEN ? AND ?',
+        range_start, range_end, range_start, range_end, range_start, range_end
+      )
+    rows.concat aspiration_scope.pluck(:teammate_id, :employee_completed_at, :manager_completed_at, :official_check_in_completed_at)
+
+    teammate_ids = rows.map(&:first).uniq.compact
+    department_by_teammate = {}
+    if teammate_ids.any?
+      CompanyTeammate
+        .where(id: teammate_ids)
+        .includes(employment_tenures: { position: { title: :department } })
+        .find_each do |tm|
+          dept = tm.active_employment_tenure&.position&.title&.department&.name.presence || 'No Department'
+          department_by_teammate[tm.id] = dept
+        end
+    end
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    # For each week, count check-ins with activity that week by department
+    week_counts = week_dates.map do |week_start|
+      week_end_time = (week_start + 6.days).to_time.end_of_day
+      week_start_time = week_start.to_time.beginning_of_day
+      counts_by_dept = Hash.new(0)
+      rows.each do |teammate_id, e_at, m_at, o_at|
+        e_in = e_at && e_at >= week_start_time && e_at <= week_end_time
+        m_in = m_at && m_at >= week_start_time && m_at <= week_end_time
+        o_in = o_at && o_at >= week_start_time && o_at <= week_end_time
+        next unless e_in || m_in || o_in
+
+        dept = department_by_teammate[teammate_id] || 'No Department'
+        counts_by_dept[dept] += 1
+      end
+      counts_by_dept
+    end
+
+    department_names = week_counts.flat_map(&:keys).uniq.sort
+    series = department_names.map do |dept|
+      data = week_counts.map { |counts| counts[dept] || 0 }
+      { name: dept, data: data }
+    end
     { categories: categories, series: series }
   end
 

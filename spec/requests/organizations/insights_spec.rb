@@ -40,12 +40,16 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it 'renders observations insights page with chart and tables' do
+    it 'renders observations insights page with charts and tables' do
       get organization_insights_observations_path(organization)
       expect(response.body).to include('Insights: Observations')
       expect(response.body).to include('Observations Kudos vs Feedback')
       expect(response.body).to include('Observations Sharing')
       expect(response.body).to include('observations-by-privacy-chart')
+      expect(response.body).to include('observations-by-observer-department-chart')
+      expect(response.body).to include("Observations by observer's department")
+      expect(response.body).to include('observations-by-department-chart')
+      expect(response.body).to include("Observations by observee's department")
     end
 
     it 'includes timeframe filter links (Last 90 days, Last Year, All-Time)' do
@@ -71,13 +75,15 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it 'renders Check-ins Progress insights page with timeframe links and chart' do
+    it 'renders Check-ins Progress insights page with timeframe links and charts' do
       get organization_insights_check_ins_progress_path(organization)
       expect(response.body).to include('Insights: Check-ins Progress')
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
       expect(response.body).to include('check-ins-progress-chart')
+      expect(response.body).to include('check-ins-by-department-chart')
+      expect(response.body).to include('Check-ins by department')
     end
 
     it 'returns success with timeframe=year' do

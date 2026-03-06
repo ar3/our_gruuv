@@ -298,6 +298,17 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       teammates = assigns(:observer_teammates)
       expect(teammates.map(&:person_id)).not_to include(person.id)
     end
+
+    it 'assigns observations_by_observer_department_chart_data and observations_by_department_chart_data with same categories as privacy chart' do
+      get :observations, params: { organization_id: company.id }
+      observer_dept = assigns(:observations_by_observer_department_chart_data)
+      observee_dept = assigns(:observations_by_department_chart_data)
+      expect(observer_dept).to be_a(Hash)
+      expect(observer_dept[:categories]).to eq(assigns(:observations_chart_data)[:categories])
+      expect(observer_dept[:series]).to be_an(Array)
+      expect(observee_dept[:categories]).to eq(assigns(:observations_chart_data)[:categories])
+      expect(observee_dept[:series]).to be_an(Array)
+    end
   end
 
   describe 'GET #check_ins_progress' do
@@ -333,6 +344,19 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(chart[:categories]).to be_an(Array)
       expect(chart[:series]).to be_an(Array)
       expect(chart[:series].map { |s| s[:name] }).to eq(['Employee only', 'Manager only', 'Both completed', 'Finalized'])
+    end
+
+    it 'assigns by-department chart data with same categories and series per department' do
+      get :check_ins_progress, params: { organization_id: company.id }
+      chart = assigns(:check_ins_progress_by_department_chart_data)
+      expect(chart).to be_a(Hash)
+      expect(chart[:categories]).to eq(assigns(:check_ins_progress_chart_data)[:categories])
+      expect(chart[:series]).to be_an(Array)
+      chart[:series].each do |s|
+        expect(s).to have_key(:name)
+        expect(s).to have_key(:data)
+        expect(s[:data].size).to eq(chart[:categories].size)
+      end
     end
   end
 
