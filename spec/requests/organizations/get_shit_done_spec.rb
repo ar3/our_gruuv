@@ -141,15 +141,15 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       get "/organizations/#{company.to_param}/get_shit_done"
       
       expect(response).to have_http_status(:success)
-      # Check that the goals section is rendered (even if empty, the section should exist)
-      expect(response.body).to include('Goal Check-ins')
-      # If goals are found, they should appear
+      # If goals are found, the section is visible and shows them
       if response.body.include?('Unique Goal Title')
+        expect(response.body).to include('Goal Check-ins')
         expect(response.body).to include('Unique Goal Title 1')
         expect(response.body).to include('Unique Goal Title 2')
       else
-        # If no goals appear, verify the section shows "All goals are up to date"
-        expect(response.body).to include('All goals are up to date')
+        # When no goals, the section is hidden and listed in the caption
+        expect(response.body).to include('Categories with no tasks (hidden)')
+        expect(response.body).to include('Goal Check-ins')
       end
     end
 
@@ -166,11 +166,12 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       let(:assignment) { create(:assignment, company: company, title: 'GSD Test Assignment') }
       let(:aspiration) { create(:aspiration, company: company, name: 'GSD Test Aspiration') }
 
-      it 'renders the check-ins awaiting input section' do
+      it 'renders the check-ins awaiting input section or lists it as hidden when empty' do
         get "/organizations/#{company.to_param}/get_shit_done"
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("Check-ins Awaiting Your Input")
+        # When empty, section is hidden and listed in the caption
+        expect(response.body).to include('Check-ins Awaiting Your Input')
       end
 
       it 'shows check-ins where manager completed but employee has not (as employee)' do
@@ -257,12 +258,26 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         expect(response.body).to include('Complete as Employee')
       end
 
-      it 'shows empty state when no check-ins are awaiting input' do
+      it 'lists check-ins awaiting input as a hidden category when empty' do
         get "/organizations/#{company.to_param}/get_shit_done"
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('No check-ins awaiting your input')
+        expect(response.body).to include('Categories with no tasks (hidden)')
+        expect(response.body).to include('Check-ins Awaiting Your Input')
       end
+    end
+
+    it 'shows caption listing hidden categories when sections have no tasks' do
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Categories with no tasks (hidden)')
+      # All five categories are hidden when the user has no pending items
+      expect(response.body).to include('Observable Moments')
+      expect(response.body).to include('Check-ins Awaiting Acknowledgement')
+      expect(response.body).to include('Check-ins Awaiting Your Input')
+      expect(response.body).to include('Goal Check-ins')
+      expect(response.body).to include('Observation Drafts')
     end
 
     it 'includes a link to configure digest' do

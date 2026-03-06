@@ -9,18 +9,34 @@
       Configure digest
   %p.text-muted.mb-0 Items that need your attention
 
--# Observable Moments Section
-= render partial: 'organizations/get_shit_done/observable_moments_section'
+- hidden_categories = []
+- if @observable_moments.any?
+  = render partial: 'organizations/get_shit_done/observable_moments_section'
+- else
+  - hidden_categories << 'Observable Moments'
 
--# MAAP Snapshots Section
-= render partial: 'organizations/get_shit_done/maap_snapshots_section'
+- if @maap_snapshots.any?
+  = render partial: 'organizations/get_shit_done/maap_snapshots_section'
+- else
+  - hidden_categories << 'Check-ins Awaiting Acknowledgement'
 
--# Check-ins Awaiting Input Section
-= render partial: 'organizations/get_shit_done/check_ins_awaiting_input_section'
+- if @check_ins_awaiting_input.any?
+  = render partial: 'organizations/get_shit_done/check_ins_awaiting_input_section'
+- else
+  - hidden_categories << 'Check-ins Awaiting Your Input'
 
--# Goal Check-ins Section
-= render partial: 'organizations/get_shit_done/goal_check_ins_section'
+- if @goals_needing_check_in.any?
+  = render partial: 'organizations/get_shit_done/goal_check_ins_section'
+- else
+  - hidden_categories << 'Goal Check-ins'
 
--# Observation Drafts Section
-= render partial: 'organizations/get_shit_done/observation_drafts_section'
+- if @observation_drafts.any?
+  = render partial: 'organizations/get_shit_done/observation_drafts_section'
+- else
+  - hidden_categories << 'Observation Drafts'
+
+- if hidden_categories.any?
+  %p.text-muted.small.mt-4.mb-0
+    Categories with no tasks (hidden):
+    = hidden_categories.to_sentence
 
