@@ -5,7 +5,11 @@ class UserPreference < ApplicationRecord
   DEFAULT_PREFERENCES = {
     layout: 'vertical',
     vertical_nav_open: false,
-    vertical_nav_locked: false
+    vertical_nav_locked: false,
+    digest_slack: nil,
+    digest_email: 'off',
+    digest_sms: nil,
+    digest_weekly_day: nil
   }.freeze
   
   # Ensure preferences is always a hash with defaults
@@ -35,7 +39,21 @@ class UserPreference < ApplicationRecord
   def vertical_nav_locked?
     preference(:vertical_nav_locked)
   end
-  
+
+  # Digest preferences: stored value or 'off'. No automatic weekly default so scheduled digests
+  # only go to people who have explicitly chosen daily/weekly (opt-in until we launch).
+  def effective_digest_slack(teammate)
+    preferences['digest_slack'].presence || 'off'
+  end
+
+  def effective_digest_email
+    preferences['digest_email'].presence || 'off'
+  end
+
+  def effective_digest_sms(person_or_nil = nil)
+    preferences['digest_sms'].presence || 'off'
+  end
+
   # Find or create preferences for a person
   def self.for_person(person)
     find_or_create_by(person: person) do |pref|

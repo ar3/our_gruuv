@@ -89,6 +89,9 @@ Rails.application.routes.draw do
     
     # Get Shit Done Dashboard
     resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done'
+
+    # Digest (user digest preferences; per-organization URL, edits current user's preferences)
+    resource :digest, only: [:edit, :update], controller: 'organizations/digest'
     
     # Observable Moments
     resources :observable_moments, only: [], module: :organizations do

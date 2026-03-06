@@ -74,5 +74,74 @@ RSpec.describe UserPreference, type: :model do
       expect(preference.preferences).to include('layout', 'vertical_nav_open', 'vertical_nav_locked')
     end
   end
+
+  describe 'digest preferences' do
+    let(:preference) { UserPreference.for_person(person) }
+
+    it 'includes digest keys in defaults' do
+      expect(preference.preference(:digest_slack)).to be_nil
+      expect(preference.preference(:digest_email)).to eq('off')
+      expect(preference.preference(:digest_sms)).to be_nil
+    end
+
+    it 'updates digest preferences' do
+      preference.update_preference('digest_slack', 'weekly')
+      preference.update_preference('digest_email', 'daily')
+      preference.update_preference('digest_sms', 'off')
+
+      expect(preference.reload.preference(:digest_slack)).to eq('weekly')
+      expect(preference.preference(:digest_email)).to eq('daily')
+      expect(preference.preference(:digest_sms)).to eq('off')
+    end
+
+    describe '#effective_digest_slack' do
+      let(:organization) { create(:organization) }
+      let(:teammate) { create(:company_teammate, person: person, organization: organization) }
+
+      it 'returns off when no preference set (opt-in; scheduled digests only for explicit daily/weekly)' do
+        create(:teammate_identity, :slack, teammate: teammate)
+        expect(preference.effective_digest_slack(teammate)).to eq('off')
+      end
+
+      it 'returns off when teammate has no Slack identity and no preference set' do
+        expect(preference.effective_digest_slack(teammate)).to eq('off')
+      end
+
+      it 'returns stored value when set' do
+        preference.update_preference('digest_slack', 'daily')
+        create(:teammate_identity, :slack, teammate: teammate)
+        expect(preference.effective_digest_slack(teammate)).to eq('daily')
+      end
+    end
+
+    describe '#effective_digest_email' do
+      it 'returns off when not set' do
+        expect(preference.effective_digest_email).to eq('off')
+      end
+
+      it 'returns stored value when set' do
+        preference.update_preference('digest_email', 'weekly')
+        expect(preference.effective_digest_email).to eq('weekly')
+      end
+    end
+
+    describe '#effective_digest_sms' do
+      it 'returns off when no preference set (opt-in; scheduled digests only for explicit daily/weekly)' do
+        person.update!(unique_textable_phone_number: '+15551234567')
+        expect(preference.effective_digest_sms(person)).to eq('off')
+      end
+
+      it 'returns off when person has no phone and no preference set' do
+        person.update!(unique_textable_phone_number: nil)
+        expect(preference.effective_digest_sms(person)).to eq('off')
+      end
+
+      it 'returns stored value when set' do
+        preference.update_preference('digest_sms', 'daily')
+        person.update!(unique_textable_phone_number: '+15551234567')
+        expect(preference.effective_digest_sms(person)).to eq('daily')
+      end
+    end
+  end
 end
 

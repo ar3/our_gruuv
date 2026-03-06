@@ -20,6 +20,22 @@
   .col-12
     = render 'people/show/about_me'
 
+/ Digest Section (only when viewing own profile)
+- if @teammate.person == current_person
+  .row
+    .col-12
+      .card.mb-4{role: "region", "aria-labelledby": "digest-section"}
+        .card-header
+          %h5.mb-0{id: "digest-section"}
+            %i.bi.bi-bell.me-2
+            Digest
+        .card-body
+          %p.text-muted.mb-2
+            Get a daily or weekly reminder of your #{company_label_for('get_shit_done', 'Get Shit Done')} list and About Me health via Slack, email, or SMS.
+          = link_to edit_organization_digest_path(organization, return_url: organization_company_teammate_path(organization, @teammate), return_text: "Back to Profile"), class: "btn btn-outline-primary" do
+            %i.bi.bi-sliders.me-2
+            Configure digest
+
 / Security & Permissions Section
 .row
   .col-12  

@@ -1,0 +1,85 @@
+- content_for :title, "Digest settings"
+
+- content_for :go_back_link do
+  - if @return_url.present? && @return_text.present?
+    = link_to @return_url, class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      = @return_text
+  - else
+    = link_to about_me_organization_company_teammate_path(@organization, @teammate), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to About Me
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bell.me-2
+      Digest settings
+    %p.text-muted.mb-0.ms-2
+      Choose how often you receive a reminder of your #{company_label_for('get_shit_done', 'Get Shit Done')} list and About Me health.
+
+- has_slack = @teammate.has_slack_identity?
+- has_phone = @teammate.person.unique_textable_phone_number.present?
+- effective_slack = @user_preference.effective_digest_slack(@teammate)
+- effective_email = @user_preference.effective_digest_email
+- effective_sms = @user_preference.effective_digest_sms(@teammate.person)
+- display_slack = (effective_slack == 'off' && has_slack) ? 'weekly' : effective_slack
+- display_sms = (effective_sms == 'off' && has_phone) ? 'weekly' : effective_sms
+
+.card.mb-4
+  .card-body
+    = form_with url: organization_digest_path(@organization), method: :patch, local: true do |f|
+      - if @return_url.present?
+        = hidden_field_tag :return_url, @return_url
+      - if @return_text.present?
+        = hidden_field_tag :return_text, @return_text
+
+      .row.mb-4
+        .col-12.col-md-6
+          %h5.mb-2 Slack
+          - if has_slack
+            %p.text-muted.small.mb-2
+              Receive the digest in Slack (no "off" when connected).
+            = select_tag :digest_slack, options_for_select([['Daily', 'daily'], ['Weekly', 'weekly']], display_slack), { class: 'form-select', include_blank: false }
+          - else
+            %p.text-muted.small.mb-2
+              Connect your Slack account in Slack Settings to get digest reminders.
+            = select_tag :digest_slack, options_for_select([['Off', 'off']], effective_slack), { class: 'form-select', disabled: true }
+
+      .row.mb-4
+        .col-12.col-md-6
+          %h5.mb-2 Email
+          %p.text-muted.small.mb-2
+            Email delivery is not set up yet; you can choose a schedule for when we do.
+          = select_tag :digest_email, options_for_select([['Off', 'off'], ['Daily', 'daily'], ['Weekly', 'weekly']], effective_email), { class: 'form-select' }
+
+      .row.mb-4
+        .col-12.col-md-6
+          %h5.mb-2 SMS
+          - if has_phone
+            %p.text-muted.small.mb-2
+              Receive the digest by SMS at your configured number.
+            = select_tag :digest_sms, options_for_select([['Off', 'off'], ['Daily', 'daily'], ['Weekly', 'weekly']], display_sms), { class: 'form-select' }
+          - else
+            %p.text-muted.small.mb-2
+              Add a phone number in your profile to enable SMS digest.
+            = link_to about_me_organization_company_teammate_path(@organization, @teammate), class: 'small' do
+              Add phone number in profile
+            %br
+            = select_tag :digest_sms, options_for_select([['Off', 'off']], effective_sms), { class: 'form-select', disabled: true }
+
+      - weekly_day_options = [['Monday', '1'], ['Tuesday', '2'], ['Wednesday', '3'], ['Thursday', '4'], ['Friday', '5'], ['Saturday', '6'], ['Sunday', '0']]
+      - effective_weekly = @user_preference.preference(:digest_weekly_day).presence || '1'
+      - any_weekly = display_slack == 'weekly' || effective_email == 'weekly' || display_sms == 'weekly'
+      - if any_weekly
+        .row.mb-4
+          .col-12.col-md-6
+            %h5.mb-2 Weekly digest day
+            %p.text-muted.small.mb-2
+              For weekly digests, which day to send (8:00 AM your time).
+            = select_tag :digest_weekly_day, options_for_select(weekly_day_options, effective_weekly), { class: 'form-select' }
+
+      .d-flex.flex-wrap.gap-2.align-items-center.mt-4
+        = f.submit "Save preferences", class: "btn btn-primary"
+        = f.submit "Save and Test By Sending Now", class: "btn btn-outline-primary ms-2"
+        = link_to "Cancel", (@return_url.presence || about_me_organization_company_teammate_path(@organization, @teammate)), class: "btn btn-secondary"

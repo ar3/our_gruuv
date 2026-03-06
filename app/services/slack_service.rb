@@ -849,6 +849,34 @@ class SlackService
     end
   end
 
+  # Open or get the DM channel with a user (so messages appear in DM between user and bot).
+  # Returns { success: true, channel_id: "D0G9X..." } or { success: false, error: "..." }.
+  def open_dm(user_id:)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+    return { success: false, error: "user_id required" } if user_id.blank?
+
+    begin
+      response = @client.conversations_open(users: user_id)
+
+      store_slack_response('conversations_open_im', { user_id: user_id }, response)
+
+      if response['ok'] && response['channel']
+        channel_id = response.dig('channel', 'id')
+        { success: true, channel_id: channel_id }
+      else
+        error = response['error'] || 'Unknown error'
+        { success: false, error: error }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error opening DM - #{e.message}"
+      store_slack_response('conversations_open_im', { user_id: user_id }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error opening DM - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
   # Post a DM to a user
   def post_dm(user_id:, text:)
     return { success: false, error: "Slack not configured" } unless slack_configured?

@@ -2,7 +2,11 @@
 - content_for :title, "#{get_shit_done_label} - #{@teammate.person.casual_name}"
 
 - content_for :header do
-  %h1.mb-0= get_shit_done_label
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0= get_shit_done_label
+    = link_to edit_organization_digest_path(organization, return_url: organization_get_shit_done_path(organization), return_text: "Back to #{get_shit_done_label}"), class: "btn btn-outline-secondary btn-sm" do
+      %i.bi.bi-bell.me-1
+      Configure digest
   %p.text-muted.mb-0 Items that need your attention
 
 -# Observable Moments Section

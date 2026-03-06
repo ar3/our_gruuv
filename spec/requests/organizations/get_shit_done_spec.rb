@@ -265,6 +265,12 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       end
     end
 
+    it 'includes a link to configure digest' do
+      get "/organizations/#{company.to_param}/get_shit_done"
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Configure digest')
+    end
+
     it 'requires authentication' do
       sign_out_teammate_for_request
       

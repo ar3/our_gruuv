@@ -3,3 +3,8 @@ production:
     class: DailyOperationalCleanupJob
     queue: default
     schedule: at 5am every day
+
+  schedule_gsd_digests:
+    class: Digest::ScheduleDigestsJob
+    queue: default
+    schedule: every hour
