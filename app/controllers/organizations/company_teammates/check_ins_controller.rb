@@ -1,4 +1,7 @@
 class Organizations::CompanyTeammates::CheckInsController < Organizations::OrganizationNamespaceBaseController
+  # Non-active, non-required assignments added within this many days show outside "Unique-to-You"
+  RECENTLY_ADDED_DAYS = 7
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :determine_view_mode
@@ -23,9 +26,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @position_check_in = load_or_build_position_check_in
     assignment_check_ins_data = load_or_build_assignment_check_ins
     @active_assignment_check_ins = assignment_check_ins_data[:active_tenure_check_ins]
+    @recently_added_assignment_check_ins = assignment_check_ins_data[:recently_added_tenure_check_ins]
     @non_active_assignment_check_ins = assignment_check_ins_data[:non_active_tenure_check_ins]
     # Keep @assignment_check_ins for backward compatibility (combined list)
-    @assignment_check_ins = @active_assignment_check_ins + @non_active_assignment_check_ins
+    @assignment_check_ins = @active_assignment_check_ins + @recently_added_assignment_check_ins + @non_active_assignment_check_ins
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     @relevant_abilities = load_relevant_abilities || []
   end
@@ -196,6 +200,24 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       end
     end
     
+    # Partition non-active: recently added (outside Unique-to-You) vs older (inside Unique-to-You)
+    required_assignment_ids = required_assignment_ids_for_teammate
+    recently_added_cutoff = RECENTLY_ADDED_DAYS.days.ago.to_date
+    recently_added_tenure_check_ins = []
+    unique_to_you_tenure_check_ins = []
+
+    non_active_tenure_check_ins.each do |check_in|
+      added_on = check_in.assignment_added_on
+      is_required = required_assignment_ids.include?(check_in.assignment_id)
+      is_recently_added = added_on && added_on >= recently_added_cutoff && !is_required
+
+      if is_recently_added
+        recently_added_tenure_check_ins << check_in
+      else
+        unique_to_you_tenure_check_ins << check_in
+      end
+    end
+
     # Sort active tenure check-ins by anticipated_energy_percentage (descending, largest first)
     # Place nil values at the end
     active_tenure_check_ins.sort_by! do |check_in|
@@ -204,12 +226,20 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       # so nil values sort to the end
       energy.nil? ? [1, 0] : [0, -energy]
     end
-    
-    # Return both arrays separately instead of combining
+
+    # Return active, recently added (outside Unique-to-You), and Unique-to-You only
     {
       active_tenure_check_ins: active_tenure_check_ins,
-      non_active_tenure_check_ins: non_active_tenure_check_ins
+      recently_added_tenure_check_ins: recently_added_tenure_check_ins,
+      non_active_tenure_check_ins: unique_to_you_tenure_check_ins
     }
+  end
+
+  def required_assignment_ids_for_teammate
+    active_employment = @teammate.employment_tenures.active.where(company: organization).first
+    return [] unless active_employment&.position
+
+    active_employment.position.required_assignments.pluck(:assignment_id)
   end
 
   def load_or_build_aspiration_check_ins

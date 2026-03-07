@@ -91,6 +91,20 @@ RSpec.describe AssignmentCheckIn, type: :model do
     end
   end
 
+  describe '#assignment_added_on' do
+    it 'returns tenure started_at when tenure exists' do
+      tenure = create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 5.days.ago, ended_at: nil)
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current)
+      expect(check_in.assignment_added_on).to eq(5.days.ago.to_date)
+    end
+
+    it 'returns check_in_started_on when no tenure exists' do
+      AssignmentTenure.where(company_teammate: teammate, assignment: assignment).destroy_all
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 3.days.ago)
+      expect(check_in.assignment_added_on).to eq(3.days.ago.to_date)
+    end
+  end
+
   describe 'find_or_create_open_for' do
     before { assignment_tenure }
 

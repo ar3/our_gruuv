@@ -76,6 +76,15 @@ class AssignmentCheckIn < ApplicationRecord
     (check_in_started_on - assignment_tenure.started_at.to_date).to_i
   end
 
+  # Date when this assignment was effectively "added" for check-in purposes.
+  # Used to split non-active check-ins into "recently added" (outside Unique-to-You) vs older (inside).
+  # Prefers tenure started_at, then check_in_started_on, then created_at.
+  def assignment_added_on
+    return assignment_tenure.started_at.to_date if assignment_tenure&.started_at
+    return check_in_started_on if check_in_started_on.present?
+    created_at&.to_date
+  end
+
   def previous_finalized_check_in
     @previous_finalized_check_in ||= AssignmentCheckIn
       .where(company_teammate: teammate, assignment: assignment)
