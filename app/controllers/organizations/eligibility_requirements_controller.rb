@@ -72,6 +72,10 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     @aspirational_values_monthly_status = aspirational_values_monthly_status(@teammate, @company_aspirations.to_a + @title_department_aspirations.to_a)
     @aspirational_values_table_rows = build_aspirational_values_table_rows
     @aspirational_values_summary = build_aspirational_values_summary
+
+    # Required assignments table: one row per assignment with 12-month teammate status
+    @required_assignments_monthly_status = assignment_monthly_status(@teammate, @required_assignments)
+    @required_assignments_summary = build_required_assignments_summary
   end
 
   # Returns hash: aspiration_id => [ { month: Date, status: :exceeding|:meeting|:working_to_meet|:none, actual: Boolean }, ... ]
@@ -138,6 +142,56 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     rows
   end
 
+  # Returns hash: assignment_id => [ { month:, status:, actual:, source_check_in_date: }, ... ] (12 months, same structure as aspirations).
+  def assignment_monthly_status(teammate, assignments)
+    return {} if assignments.blank?
+
+    assignment_ids = assignments.map(&:id)
+    start_month = 12.months.ago.beginning_of_month.to_date
+    end_month = 1.month.ago.end_of_month.to_date
+
+    check_ins = AssignmentCheckIn.closed
+      .where(teammate_id: teammate.id, assignment_id: assignment_ids)
+      .where(check_in_started_on: start_month..end_month)
+      .pluck(:assignment_id, :check_in_started_on, :official_rating)
+
+    rating_order = { 'exceeding' => 3, 'meeting' => 2, 'working_to_meet' => 1 }
+    by_assignment_and_month = check_ins.each_with_object(Hash.new { |h, k| h[k] = nil }) do |(aid, started_on, rating), h|
+      month = started_on.beginning_of_month.to_date
+      key = [aid, month]
+      next if rating.blank?
+      level = rating_order[rating.to_s]
+      current = h[key]
+      if level && (current.nil? || (rating_order[current[:rating]] || 0) < level)
+        h[key] = { rating: rating.to_s, check_in_date: started_on }
+      end
+    end
+
+    check_in_months_by_assignment = assignment_ids.each_with_object({}) do |aid, out|
+      out[aid] = by_assignment_and_month.select { |(a, _), v| a == aid && v.present? }
+        .map { |(_, m), v| [m, v[:rating], v[:check_in_date]] }
+        .sort_by(&:first)
+    end
+
+    months = 12.times.map { |i| (start_month + i.months).beginning_of_month.to_date }
+
+    assignment_ids.each_with_object({}) do |aid, out|
+      pairs = check_in_months_by_assignment[aid] || []
+      out[aid] = months.map do |month|
+        effective_pair = pairs.select { |m, _, _| m <= month }.last
+        status = effective_pair ? effective_pair[1].to_sym : :none
+        actual = effective_pair && effective_pair[0] == month
+        source_check_in_date = effective_pair ? effective_pair[2] : nil
+        {
+          month: month,
+          status: status,
+          actual: actual,
+          source_check_in_date: source_check_in_date
+        }
+      end
+    end
+  end
+
   # Summary for aspirational values: totals and eligibility status.
   # Returns { total_pass:, total_maybe:, total_miss:, pass_pct:, pass_maybe_pct:, threshold:, status: :eligible|:potentially_eligible|:working_to_meet }
   def build_aspirational_values_summary
@@ -156,6 +210,52 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       section_check = (section == 'company') ? company_check : title_check
       details = section_check&.dig(:details) || {}
       monthly = @aspirational_values_monthly_status[aspiration.id] || []
+      result = helpers.aspirational_value_row_result(monthly, details[:minimum_rating], details[:minimum_months_at_or_above_rating_criteria])
+      case result
+      when :pass then total_pass += 1
+      when :maybe then total_maybe += 1
+      when :miss then total_miss += 1
+      end
+    end
+
+    total = total_pass + total_maybe + total_miss
+    pass_pct = total.positive? ? (total_pass.to_f / total * 100).round(1) : 0
+    pass_maybe_pct = total.positive? ? ((total_pass + total_maybe).to_f / total * 100).round(1) : 0
+
+    status = if threshold.blank? || threshold <= 0
+                nil
+              elsif pass_pct >= threshold
+                :eligible
+              elsif pass_maybe_pct >= threshold
+                :potentially_eligible
+              else
+                :working_to_meet
+              end
+
+    {
+      total_pass: total_pass,
+      total_maybe: total_maybe,
+      total_miss: total_miss,
+      pass_pct: pass_pct,
+      pass_maybe_pct: pass_maybe_pct,
+      threshold: threshold,
+      status: status
+    }
+  end
+
+  # Summary for required assignments: totals and eligibility status (same shape as aspirational values summary).
+  def build_required_assignments_summary
+    required_check = @eligibility_report[:checks].find { |c| c[:key] == :required_assignment_check_in_requirements }
+    threshold_raw = required_check&.dig(:details, :minimum_percentage).presence
+    threshold = threshold_raw.present? ? threshold_raw.to_f : nil
+
+    total_pass = 0
+    total_maybe = 0
+    total_miss = 0
+    details = required_check&.dig(:details) || {}
+
+    @required_assignments.each do |assignment|
+      monthly = @required_assignments_monthly_status[assignment.id] || []
       result = helpers.aspirational_value_row_result(monthly, details[:minimum_rating], details[:minimum_months_at_or_above_rating_criteria])
       case result
       when :pass then total_pass += 1

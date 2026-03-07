@@ -134,6 +134,20 @@ module ApplicationHelper
     "At least #{pct.to_i}% must be at or above #{rating_text} for #{months} months."
   end
 
+  # Formats eligibility requirement details for required assignments into a sentence.
+  # details: { minimum_rating:, minimum_months_at_or_above_rating_criteria:, minimum_percentage: }
+  def format_assignments_requirement(details)
+    return nil if details.blank?
+
+    rating = details[:minimum_rating] || details['minimum_rating']
+    months = details[:minimum_months_at_or_above_rating_criteria] || details['minimum_months_at_or_above_rating_criteria']
+    pct = details[:minimum_percentage] || details['minimum_percentage']
+    return nil if rating.blank? || months.blank? || pct.blank?
+
+    rating_text = rating.to_s.humanize
+    "At least #{pct.to_i}% of required assignments must be at or above #{rating_text} for #{months} months."
+  end
+
   # Returns :pass, :maybe, or :miss for one aspirational value row given monthly statuses and requirement.
   # monthly_statuses: [ { status: :exceeding|:meeting|:working_to_meet|:none }, ... ]
   # Pass: at least minimum_months with rating at or above minimum_rating.
