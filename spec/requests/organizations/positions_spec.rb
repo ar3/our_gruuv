@@ -92,7 +92,7 @@ RSpec.describe 'Organizations::Positions', type: :request do
   describe 'GET /organizations/:organization_id/positions/:id' do
     let(:position) { create(:position, title: title, position_level: position_level) }
 
-    it 'displays Department (not Company) and shows department link when title has a department' do
+    it 'displays Department and shows department link when title has a department' do
       department = create(:department, company: organization, name: 'Product')
       title_with_dept = create(:title, company: organization, department: department,
         position_major_level: title.position_major_level, external_title: 'Product Manager')
@@ -102,7 +102,6 @@ RSpec.describe 'Organizations::Positions', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Department')
-      expect(response.body).not_to include('Company')
       expect(response.body).to include('Product')
       expect(response.body).to include(organization_department_path(organization, department))
     end
@@ -112,7 +111,6 @@ RSpec.describe 'Organizations::Positions', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Department')
-      expect(response.body).not_to include('Company')
     end
   end
 

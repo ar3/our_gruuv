@@ -88,6 +88,8 @@
               %p.text-muted.mb-0 No direct milestone requirements set for this position.
               - if policy(@position).update?
                 = link_to "Set Direct Milestone Requirements", organization_position_ability_milestones_path(@organization, @position), class: "btn btn-outline-primary btn-sm mt-1"
+
+            = render "shared/eligibility_requirements_summary", eligibility_requirements_sentences: @eligibility_requirements_sentences, ability_milestone_requirements: @ability_milestone_requirements
             
             - if @position.published_url.present? || @position.draft_url.present?
               %h5.mb-2.mt-3

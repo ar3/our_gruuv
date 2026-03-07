@@ -10,7 +10,8 @@
   .col-md-4
     - details = check[:details] || {}
     - if details[:minimum_rating].present?
-      %div= "Rating: #{details[:minimum_rating]}"
+      - rating_label = (check[:key] == :position_check_in_requirements && EmploymentTenure::POSITION_RATINGS[details[:minimum_rating].to_i]) ? position_rating_display(details[:minimum_rating].to_i) : details[:minimum_rating]
+      %div= "Rating: #{rating_label}"
     - if details[:minimum_months_at_or_above_rating_criteria].present?
       %div= "#{details[:minimum_months_at_or_above_rating_criteria]} months"
     - if details[:minimum_percentage].present?

@@ -121,31 +121,132 @@ module ApplicationHelper
   end
 
   # Formats eligibility requirement details for aspirational values into a sentence.
-  # details: { minimum_rating:, minimum_months_at_or_above_rating_criteria:, minimum_percentage: }
+  # details: { minimum_months_at_or_above_rating_criteria:, minimum_percentage_meeting:, minimum_percentage_exceeding: }
   def format_aspirational_values_requirement(details)
     return nil if details.blank?
 
-    rating = details[:minimum_rating] || details['minimum_rating']
     months = details[:minimum_months_at_or_above_rating_criteria] || details['minimum_months_at_or_above_rating_criteria']
-    pct = details[:minimum_percentage] || details['minimum_percentage']
-    return nil if rating.blank? || months.blank? || pct.blank?
+    pct_meeting = details[:minimum_percentage_meeting] || details['minimum_percentage_meeting'] || details['minimum_percentage_of_aspirational_values_meeting']
+    pct_exceeding = details[:minimum_percentage_exceeding] || details['minimum_percentage_exceeding'] || details['minimum_percentage_of_aspirational_values_exceeding']
+    return nil if months.blank? || (pct_meeting.blank? && pct_exceeding.blank?)
 
-    rating_text = rating.to_s.humanize
-    "At least #{pct.to_i}% must be at or above #{rating_text} for #{months} months."
+    parts = []
+    parts << "At least #{pct_meeting.to_i}% must be meeting expectations for #{months} months." if pct_meeting.present?
+    parts << "At least #{pct_exceeding.to_i}% must be exceeding expectations for #{months} months." if pct_exceeding.present?
+    parts.join(' ')
   end
 
-  # Formats eligibility requirement details for required assignments into a sentence.
-  # details: { minimum_rating:, minimum_months_at_or_above_rating_criteria:, minimum_percentage: }
-  def format_assignments_requirement(details)
+  # Formats eligibility requirement details for assignments into a sentence.
+  # assignment_label: "required assignments" or "unique-to-you assignments" (default: "required assignments")
+  def format_assignments_requirement(details, assignment_label: "required assignments")
     return nil if details.blank?
 
-    rating = details[:minimum_rating] || details['minimum_rating']
     months = details[:minimum_months_at_or_above_rating_criteria] || details['minimum_months_at_or_above_rating_criteria']
-    pct = details[:minimum_percentage] || details['minimum_percentage']
-    return nil if rating.blank? || months.blank? || pct.blank?
+    pct_meeting = details[:minimum_percentage_meeting] || details['minimum_percentage_meeting'] || details['minimum_percentage_of_assignments_meeting']
+    pct_exceeding = details[:minimum_percentage_exceeding] || details['minimum_percentage_exceeding'] || details['minimum_percentage_of_assignments_exceeding']
+    return nil if months.blank? || (pct_meeting.blank? && pct_exceeding.blank?)
 
-    rating_text = rating.to_s.humanize
-    "At least #{pct.to_i}% of required assignments must be at or above #{rating_text} for #{months} months."
+    parts = []
+    parts << "At least #{pct_meeting.to_i}% of #{assignment_label} must be meeting expectations for #{months} months." if pct_meeting.present?
+    parts << "At least #{pct_exceeding.to_i}% of #{assignment_label} must be exceeding expectations for #{months} months." if pct_exceeding.present?
+    parts.join(' ')
+  end
+
+  # Returns a single sentence describing the eligibility check (for use in the collapsible summary).
+  # check: { key:, label:, status:, details: }
+  def format_eligibility_check_sentence(check)
+    return nil if check.blank? || check[:status] == :not_configured
+
+    details = check[:details] || {}
+    label = check[:label] || check[:key].to_s.humanize
+
+    case check[:key]
+    when :milestone_requirements
+      eligibility_ability_milestones_intro_sentence
+    when :mileage_requirements
+      pts = details[:minimum_mileage_points] || details['minimum_mileage_points']
+      pts.present? ? "At least #{pts} mileage points." : nil
+    when :position_check_in_requirements
+      months = details[:minimum_months_at_or_above_rating_criteria] || details['minimum_months_at_or_above_rating_criteria']
+      rating = details[:minimum_rating] || details['minimum_rating']
+      if months.present? && rating.present?
+        rating_val = rating.to_i
+        rating_label = EmploymentTenure::POSITION_RATINGS[rating_val] ? position_rating_display(rating_val) : "rating #{rating}"
+        "Position check-ins: at least #{months} months at or above #{rating_label}."
+      else
+        nil
+      end
+    when :required_assignment_check_in_requirements
+      sentence = format_assignments_requirement(details)
+      sentence.present? ? "Required assignments: #{sentence}" : nil
+    when :unique_to_you_assignment_check_in_requirements
+      sentence = format_assignments_requirement(details, assignment_label: "unique-to-you assignments")
+      sentence.present? ? "Unique-to-you assignments: #{sentence}" : nil
+    when :company_aspirational_values_check_in_requirements
+      sentence = format_aspirational_values_requirement(details)
+      sentence.present? ? "Company aspirational values: #{sentence}" : nil
+    when :title_department_aspirational_values_check_in_requirements
+      sentence = format_aspirational_values_requirement(details)
+      sentence.present? ? "Title/department aspirational values: #{sentence}" : nil
+    else
+      label.present? ? "#{label} (see details above)." : nil
+    end
+  end
+
+  # Builds requirement sentences from a position's stored eligibility config (for position show page).
+  def eligibility_requirements_sentences_from_config(position)
+    return [] unless position&.eligibility_requirements_explicit.present?
+
+    config = position.eligibility_requirements_explicit.to_h
+    keys = %w[
+      milestone_requirements mileage_requirements position_check_in_requirements
+      required_assignment_check_in_requirements unique_to_you_assignment_check_in_requirements
+      company_aspirational_values_check_in_requirements title_department_aspirational_values_check_in_requirements
+    ]
+    sentences = keys.filter_map do |key|
+      details = config[key] || config[key.to_sym]
+      details = details.to_h if details.respond_to?(:to_h)
+      configured = details.present? && details.respond_to?(:values) && details.values.any?(&:present?)
+      check = { key: key.to_sym, details: details || {}, status: configured ? :passed : :not_configured }
+      format_eligibility_check_sentence(check)
+    end
+    # Add milestone sentence if position has ability requirements but no explicit milestone config
+    if sentences.none? { |s| s.to_s.include?("ability milestones") } && ability_milestone_requirements_for_position(position).any?
+      sentences << eligibility_ability_milestones_intro_sentence
+    end
+    sentences
+  end
+
+  # Reusable intro sentence for the ability milestones requirement (used in summary and elsewhere).
+  def eligibility_ability_milestones_intro_sentence
+    "Required ability milestones: meet the required Milestone for each ability listed below."
+  end
+
+  # Reusable sentence for one ability milestone requirement. Uses "Milestone" and the alternative wording (e.g. Advanced, Expert).
+  # Example: "Communication: Milestone 2 (Advanced)"
+  def eligibility_ability_milestone_requirement_sentence(ability, minimum_milestone_level)
+    return nil if ability.blank? || minimum_milestone_level.blank?
+    word = milestone_level_display(minimum_milestone_level.to_i)
+    "#{ability.name}: Milestone #{minimum_milestone_level} (#{word})"
+  end
+
+  # Array of { ability:, minimum_milestone_level: } from position direct + required assignments (max per ability).
+  def ability_milestone_requirements_for_position(position)
+    return [] unless position
+
+    levels_by_ability_id = {}
+    position.position_abilities.each do |pa|
+      levels_by_ability_id[pa.ability_id] = [levels_by_ability_id[pa.ability_id], pa.milestone_level].compact.max
+    end
+    position.position_assignments.select { |pa| pa.assignment_type == 'required' }.each do |pa|
+      pa.assignment.assignment_abilities.each do |aa|
+        levels_by_ability_id[aa.ability_id] = [levels_by_ability_id[aa.ability_id], aa.milestone_level].compact.max
+      end
+    end
+    return [] if levels_by_ability_id.empty?
+
+    abilities = Ability.where(id: levels_by_ability_id.keys).index_by(&:id)
+    levels_by_ability_id.keys.filter_map { |id| abilities[id] ? { ability: abilities[id], minimum_milestone_level: levels_by_ability_id[id] } : nil }.sort_by { |h| h[:ability].name }
   end
 
   # Returns :pass, :maybe, or :miss for one aspirational value row given monthly statuses and requirement.
@@ -168,6 +269,55 @@ module ApplicationHelper
     return :miss if below >= 1
     return :pass if qualifying >= months_required
     :maybe
+  end
+
+  # Returns :pass, :maybe, or :miss using two bars (meeting and/or exceeding) from details.
+  # details: { minimum_months_at_or_above_rating_criteria:, minimum_percentage_meeting:, minimum_percentage_exceeding: }
+  # When both meeting and exceeding are required, row must pass both bars.
+  def aspirational_value_row_result_for_details(monthly_statuses, details)
+    return nil if monthly_statuses.blank? || details.blank?
+
+    months = (details[:minimum_months_at_or_above_rating_criteria] || details['minimum_months_at_or_above_rating_criteria']).to_i
+    return nil if months <= 0
+
+    meeting_required = (details[:minimum_percentage_meeting] || details['minimum_percentage_meeting']).present?
+    exceeding_required = (details[:minimum_percentage_exceeding] || details['minimum_percentage_exceeding']).present?
+
+    if meeting_required && exceeding_required
+      aspirational_value_row_result_dual(monthly_statuses, months, meeting_required: true, exceeding_required: true)
+    elsif exceeding_required
+      aspirational_value_row_result(monthly_statuses, 'exceeding', months)
+    elsif meeting_required
+      aspirational_value_row_result(monthly_statuses, 'meeting', months)
+    else
+      nil
+    end
+  end
+
+  # Dual bar: row passes when (meeting bar not required or row passes meeting) and (exceeding bar not required or row passes exceeding).
+  def aspirational_value_row_result_dual(monthly_statuses, minimum_months, meeting_required:, exceeding_required:)
+    return nil if monthly_statuses.blank? || minimum_months <= 0
+
+    result_meeting = meeting_required ? aspirational_value_row_result(monthly_statuses, 'meeting', minimum_months) : :pass
+    result_exceeding = exceeding_required ? aspirational_value_row_result(monthly_statuses, 'exceeding', minimum_months) : :pass
+
+    return :miss if result_meeting == :miss || result_exceeding == :miss
+    return :pass if result_meeting == :pass && result_exceeding == :pass
+    :maybe
+  end
+
+  # True when exceeding is required and the row has at least one month rated "working_to_meet" (disqualifier).
+  def row_has_disqualifier?(monthly_statuses, details_or_minimum_rating)
+    return false if monthly_statuses.blank?
+
+    exceeding_required = if details_or_minimum_rating.is_a?(Hash)
+      (details_or_minimum_rating[:minimum_percentage_exceeding] || details_or_minimum_rating['minimum_percentage_exceeding']).present?
+    else
+      details_or_minimum_rating.to_s == 'exceeding'
+    end
+    return false unless exceeding_required
+
+    monthly_statuses.any? { |c| c[:status] == :working_to_meet }
   end
 
   def available_timezones

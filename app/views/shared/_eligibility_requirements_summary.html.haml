@@ -1,0 +1,22 @@
+-# Optional locals: eligibility_requirements_sentences (array of strings), ability_milestone_requirements (array of { ability:, minimum_milestone_level: })
+- sentences = local_assigns[:eligibility_requirements_sentences] || []
+- ability_milestone_requirements = local_assigns[:ability_milestone_requirements] || []
+
+.card.mb-4.mt-3
+  .card-body
+    %a.d-flex.align-items-center.gap-2.text-secondary.text-decoration-none{ "data-bs-toggle" => "collapse", "data-bs-target" => "#eligibilityRequirementsSummary", "aria-expanded" => "false", "aria-controls" => "eligibilityRequirementsSummary", href: "#", style: "cursor: pointer;" }
+      %i.bi.bi-chevron-down
+      %span Eligibility requirements summary
+    .collapse.mt-3#eligibilityRequirementsSummary
+      - if sentences.present?
+        %p.fw-semibold.mb-2 All eligibility requirements
+        %ul.mb-4
+          - sentences.each do |sentence|
+            %li.mb-1= sentence
+      - if ability_milestone_requirements.present?
+        %p.fw-semibold.mb-2 Abilities and required milestones
+        %ul.mb-0
+          - ability_milestone_requirements.each do |item|
+            %li= eligibility_ability_milestone_requirement_sentence(item[:ability], item[:minimum_milestone_level])
+      - if sentences.blank? && ability_milestone_requirements.blank?
+        %p.text-muted.mb-0 No eligibility requirements configured for this position.

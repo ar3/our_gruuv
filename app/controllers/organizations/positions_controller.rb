@@ -126,6 +126,8 @@ class Organizations::PositionsController < ApplicationController
         .includes(company_teammate: :person)
         .order('people.last_name, people.first_name')
     end
+    @eligibility_requirements_sentences = helpers.eligibility_requirements_sentences_from_config(@position)
+    @ability_milestone_requirements = helpers.ability_milestone_requirements_for_position(@position)
     render layout: determine_layout
   end
 
@@ -428,46 +430,26 @@ class Organizations::PositionsController < ApplicationController
     
     if eligibility_params[:required_assignment_check_in_requirements].present?
       req_ass = eligibility_params[:required_assignment_check_in_requirements]
-      if req_ass[:minimum_rating].present? || req_ass[:minimum_months_at_or_above_rating_criteria].present? || req_ass[:minimum_percentage_of_assignments].present?
-        req_data = {}
-        req_data['minimum_rating'] = req_ass[:minimum_rating] if req_ass[:minimum_rating].present?
-        req_data['minimum_months_at_or_above_rating_criteria'] = req_ass[:minimum_months_at_or_above_rating_criteria].to_i if req_ass[:minimum_months_at_or_above_rating_criteria].present?
-        req_data['minimum_percentage_of_assignments'] = req_ass[:minimum_percentage_of_assignments].to_f if req_ass[:minimum_percentage_of_assignments].present?
-        new_eligibility_data['required_assignment_check_in_requirements'] = req_data if req_data.any?
-      end
+      req_data = build_check_in_requirement_data(req_ass, :assignments)
+      new_eligibility_data['required_assignment_check_in_requirements'] = req_data if req_data.any?
     end
-    
+
     if eligibility_params[:unique_to_you_assignment_check_in_requirements].present?
       unique_ass = eligibility_params[:unique_to_you_assignment_check_in_requirements]
-      if unique_ass[:minimum_rating].present? || unique_ass[:minimum_months_at_or_above_rating_criteria].present? || unique_ass[:minimum_percentage_of_assignments].present?
-        unique_data = {}
-        unique_data['minimum_rating'] = unique_ass[:minimum_rating] if unique_ass[:minimum_rating].present?
-        unique_data['minimum_months_at_or_above_rating_criteria'] = unique_ass[:minimum_months_at_or_above_rating_criteria].to_i if unique_ass[:minimum_months_at_or_above_rating_criteria].present?
-        unique_data['minimum_percentage_of_assignments'] = unique_ass[:minimum_percentage_of_assignments].to_f if unique_ass[:minimum_percentage_of_assignments].present?
-        new_eligibility_data['unique_to_you_assignment_check_in_requirements'] = unique_data if unique_data.any?
-      end
+      unique_data = build_check_in_requirement_data(unique_ass, :assignments)
+      new_eligibility_data['unique_to_you_assignment_check_in_requirements'] = unique_data if unique_data.any?
     end
-    
+
     if eligibility_params[:company_aspirational_values_check_in_requirements].present?
       company_asp = eligibility_params[:company_aspirational_values_check_in_requirements]
-      if company_asp[:minimum_rating].present? || company_asp[:minimum_months_at_or_above_rating_criteria].present? || company_asp[:minimum_percentage_of_aspirational_values].present?
-        company_data = {}
-        company_data['minimum_rating'] = company_asp[:minimum_rating] if company_asp[:minimum_rating].present?
-        company_data['minimum_months_at_or_above_rating_criteria'] = company_asp[:minimum_months_at_or_above_rating_criteria].to_i if company_asp[:minimum_months_at_or_above_rating_criteria].present?
-        company_data['minimum_percentage_of_aspirational_values'] = company_asp[:minimum_percentage_of_aspirational_values].to_f if company_asp[:minimum_percentage_of_aspirational_values].present?
-        new_eligibility_data['company_aspirational_values_check_in_requirements'] = company_data if company_data.any?
-      end
+      company_data = build_check_in_requirement_data(company_asp, :aspirational_values)
+      new_eligibility_data['company_aspirational_values_check_in_requirements'] = company_data if company_data.any?
     end
-    
+
     if eligibility_params[:title_department_aspirational_values_check_in_requirements].present?
       title_asp = eligibility_params[:title_department_aspirational_values_check_in_requirements]
-      if title_asp[:minimum_rating].present? || title_asp[:minimum_months_at_or_above_rating_criteria].present? || title_asp[:minimum_percentage_of_aspirational_values].present?
-        title_data = {}
-        title_data['minimum_rating'] = title_asp[:minimum_rating] if title_asp[:minimum_rating].present?
-        title_data['minimum_months_at_or_above_rating_criteria'] = title_asp[:minimum_months_at_or_above_rating_criteria].to_i if title_asp[:minimum_months_at_or_above_rating_criteria].present?
-        title_data['minimum_percentage_of_aspirational_values'] = title_asp[:minimum_percentage_of_aspirational_values].to_f if title_asp[:minimum_percentage_of_aspirational_values].present?
-        new_eligibility_data['title_department_aspirational_values_check_in_requirements'] = title_data if title_data.any?
-      end
+      title_data = build_check_in_requirement_data(title_asp, :aspirational_values)
+      new_eligibility_data['title_department_aspirational_values_check_in_requirements'] = title_data if title_data.any?
     end
     
     # Validate numeric ranges
@@ -477,11 +459,15 @@ class Organizations::PositionsController < ApplicationController
         if value['minimum_months_at_or_above_rating_criteria'].present? && value['minimum_months_at_or_above_rating_criteria'] < 0
           errors << "#{key.humanize}: Minimum months must be >= 0"
         end
-        if value['minimum_percentage_of_assignments'].present? && (value['minimum_percentage_of_assignments'] < 0 || value['minimum_percentage_of_assignments'] > 100)
-          errors << "#{key.humanize}: Minimum percentage must be between 0 and 100"
+        %w[minimum_percentage_of_assignments minimum_percentage_of_assignments_meeting minimum_percentage_of_assignments_exceeding].each do |pct_key|
+          if value[pct_key].present? && (value[pct_key].to_f < 0 || value[pct_key].to_f > 100)
+            errors << "#{key.humanize}: #{pct_key.humanize} must be between 0 and 100"
+          end
         end
-        if value['minimum_percentage_of_aspirational_values'].present? && (value['minimum_percentage_of_aspirational_values'] < 0 || value['minimum_percentage_of_aspirational_values'] > 100)
-          errors << "#{key.humanize}: Minimum percentage must be between 0 and 100"
+        %w[minimum_percentage_of_aspirational_values minimum_percentage_of_aspirational_values_meeting minimum_percentage_of_aspirational_values_exceeding].each do |pct_key|
+          if value[pct_key].present? && (value[pct_key].to_f < 0 || value[pct_key].to_f > 100)
+            errors << "#{key.humanize}: #{pct_key.humanize} must be between 0 and 100"
+          end
         end
         if value['minimum_rating'].present? && key == 'position_check_in_requirements'
           rating = value['minimum_rating'].to_i
@@ -523,7 +509,10 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def set_position
-    @position = @organization.positions.includes(position_abilities: :ability).find(params[:id])
+    @position = @organization.positions.includes(
+      position_abilities: :ability,
+      position_assignments: { assignment: :assignment_abilities }
+    ).find(params[:id])
   end
 
   def set_related_data
@@ -564,5 +553,30 @@ class Organizations::PositionsController < ApplicationController
     end
 
     total_points
+  end
+
+  # Build stored hash for assignment or aspirational check-in requirements (two percentages: meeting and exceeding).
+  def build_check_in_requirement_data(params_hash, type)
+    params_hash = params_hash.to_h.with_indifferent_access
+    months = params_hash[:minimum_months_at_or_above_rating_criteria].presence
+    if type == :assignments
+      pct_meeting = params_hash[:minimum_percentage_of_assignments_meeting].presence
+      pct_exceeding = params_hash[:minimum_percentage_of_assignments_exceeding].presence
+    else
+      pct_meeting = params_hash[:minimum_percentage_of_aspirational_values_meeting].presence
+      pct_exceeding = params_hash[:minimum_percentage_of_aspirational_values_exceeding].presence
+    end
+    return {} if months.blank? || (pct_meeting.blank? && pct_exceeding.blank?)
+
+    data = {}
+    data['minimum_months_at_or_above_rating_criteria'] = months.to_i
+    if type == :assignments
+      data['minimum_percentage_of_assignments_meeting'] = pct_meeting.to_f if pct_meeting.present?
+      data['minimum_percentage_of_assignments_exceeding'] = pct_exceeding.to_f if pct_exceeding.present?
+    else
+      data['minimum_percentage_of_aspirational_values_meeting'] = pct_meeting.to_f if pct_meeting.present?
+      data['minimum_percentage_of_aspirational_values_exceeding'] = pct_exceeding.to_f if pct_exceeding.present?
+    end
+    data
   end
 end

@@ -12,9 +12,8 @@ RSpec.describe PositionEligibilityService do
 
     let(:requirements) do
       {
-        "minimum_rating" => "meeting",
         "minimum_months_at_or_above_rating_criteria" => 1,
-        "minimum_percentage_of_assignments" => 100
+        "minimum_percentage_of_assignments_meeting" => 100
       }
     end
 
@@ -44,7 +43,7 @@ RSpec.describe PositionEligibilityService do
 
       expect(unique_check[:status]).to eq(:passed)
       expect(unique_check[:details][:total_assignments]).to eq(1)
-      expect(unique_check[:details][:qualifying_assignments]).to eq(1)
+      expect(unique_check[:details][:qualifying_meeting]).to eq(1)
     end
 
     it 'fails when no unique-to-you assignments are active' do

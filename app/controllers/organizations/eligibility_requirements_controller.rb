@@ -76,6 +76,40 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     # Required assignments table: one row per assignment with 12-month teammate status
     @required_assignments_monthly_status = assignment_monthly_status(@teammate, @required_assignments)
     @required_assignments_summary = build_required_assignments_summary
+
+    # Collapsible summary: sentences per check and abilities with max milestone required
+    @eligibility_requirements_sentences = build_eligibility_requirements_sentences
+    @ability_milestone_requirements = build_ability_milestone_requirements
+  end
+
+  # Array of sentence strings for each configured eligibility check (for collapsible summary).
+  def build_eligibility_requirements_sentences
+    return [] unless @eligibility_report && @eligibility_report[:checks]
+
+    @eligibility_report[:checks].filter_map do |check|
+      helpers.format_eligibility_check_sentence(check)
+    end
+  end
+
+  # Array of { ability:, minimum_milestone_level: } for abilities that have a milestone requirement
+  # (from position direct + required assignments), with max level per ability.
+  def build_ability_milestone_requirements
+    return [] unless @position
+
+    levels_by_ability_id = {}
+    @position.position_abilities.each do |pa|
+      levels_by_ability_id[pa.ability_id] = [levels_by_ability_id[pa.ability_id], pa.milestone_level].compact.max
+    end
+    @required_assignments.each do |assignment|
+      assignment.assignment_abilities.each do |aa|
+        levels_by_ability_id[aa.ability_id] = [levels_by_ability_id[aa.ability_id], aa.milestone_level].compact.max
+      end
+    end
+
+    return [] if levels_by_ability_id.empty?
+
+    abilities = Ability.where(id: levels_by_ability_id.keys).index_by(&:id)
+    levels_by_ability_id.keys.filter_map { |id| abilities[id] ? { ability: abilities[id], minimum_milestone_level: levels_by_ability_id[id] } : nil }.sort_by { |h| h[:ability].name }
   end
 
   # Returns hash: aspiration_id => [ { month: Date, status: :exceeding|:meeting|:working_to_meet|:none, actual: Boolean }, ... ]
@@ -197,12 +231,18 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
   def build_aspirational_values_summary
     company_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
     title_check = @eligibility_report[:checks].find { |c| c[:key] == :title_department_aspirational_values_check_in_requirements }
-    threshold_raw = company_check&.dig(:details, :minimum_percentage).presence || title_check&.dig(:details, :minimum_percentage).presence
-    threshold = threshold_raw.present? ? threshold_raw.to_f : nil
+    threshold = [
+      company_check&.dig(:details, :minimum_percentage_meeting),
+      company_check&.dig(:details, :minimum_percentage_exceeding),
+      title_check&.dig(:details, :minimum_percentage_meeting),
+      title_check&.dig(:details, :minimum_percentage_exceeding)
+    ].compact.map(&:to_f).max
+    threshold = nil if threshold.blank? || threshold <= 0
 
     total_pass = 0
     total_maybe = 0
     total_miss = 0
+    total_disqualifiers = 0
 
     @aspirational_values_table_rows.each do |row_data|
       aspiration = row_data[:aspiration]
@@ -210,12 +250,13 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       section_check = (section == 'company') ? company_check : title_check
       details = section_check&.dig(:details) || {}
       monthly = @aspirational_values_monthly_status[aspiration.id] || []
-      result = helpers.aspirational_value_row_result(monthly, details[:minimum_rating], details[:minimum_months_at_or_above_rating_criteria])
+      result = helpers.aspirational_value_row_result_for_details(monthly, details)
       case result
       when :pass then total_pass += 1
       when :maybe then total_maybe += 1
       when :miss then total_miss += 1
       end
+      total_disqualifiers += 1 if helpers.row_has_disqualifier?(monthly, details)
     end
 
     total = total_pass + total_maybe + total_miss
@@ -224,6 +265,8 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     status = if threshold.blank? || threshold <= 0
                 nil
+              elsif total_disqualifiers.positive?
+                :working_to_meet
               elsif pass_pct >= threshold
                 :eligible
               elsif pass_maybe_pct >= threshold
@@ -236,6 +279,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       total_pass: total_pass,
       total_maybe: total_maybe,
       total_miss: total_miss,
+      total_disqualifiers: total_disqualifiers,
       pass_pct: pass_pct,
       pass_maybe_pct: pass_maybe_pct,
       threshold: threshold,
@@ -246,22 +290,27 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
   # Summary for required assignments: totals and eligibility status (same shape as aspirational values summary).
   def build_required_assignments_summary
     required_check = @eligibility_report[:checks].find { |c| c[:key] == :required_assignment_check_in_requirements }
-    threshold_raw = required_check&.dig(:details, :minimum_percentage).presence
-    threshold = threshold_raw.present? ? threshold_raw.to_f : nil
+    details = required_check&.dig(:details) || {}
+    threshold = [
+      details[:minimum_percentage_meeting],
+      details[:minimum_percentage_exceeding]
+    ].compact.map(&:to_f).max
+    threshold = nil if threshold.blank? || threshold <= 0
 
     total_pass = 0
     total_maybe = 0
     total_miss = 0
-    details = required_check&.dig(:details) || {}
+    total_disqualifiers = 0
 
     @required_assignments.each do |assignment|
       monthly = @required_assignments_monthly_status[assignment.id] || []
-      result = helpers.aspirational_value_row_result(monthly, details[:minimum_rating], details[:minimum_months_at_or_above_rating_criteria])
+      result = helpers.aspirational_value_row_result_for_details(monthly, details)
       case result
       when :pass then total_pass += 1
       when :maybe then total_maybe += 1
       when :miss then total_miss += 1
       end
+      total_disqualifiers += 1 if helpers.row_has_disqualifier?(monthly, details)
     end
 
     total = total_pass + total_maybe + total_miss
@@ -270,6 +319,8 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     status = if threshold.blank? || threshold <= 0
                 nil
+              elsif total_disqualifiers.positive?
+                :working_to_meet
               elsif pass_pct >= threshold
                 :eligible
               elsif pass_maybe_pct >= threshold
@@ -282,6 +333,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       total_pass: total_pass,
       total_maybe: total_maybe,
       total_miss: total_miss,
+      total_disqualifiers: total_disqualifiers,
       pass_pct: pass_pct,
       pass_maybe_pct: pass_maybe_pct,
       threshold: threshold,

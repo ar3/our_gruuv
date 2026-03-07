@@ -124,8 +124,7 @@ class PositionEligibilityService
       label: 'Required Assignment Check-Ins',
       assignments: position.required_assignments.map(&:assignment),
       teammate: teammate,
-      requirements: requirements,
-      percentage_key: :minimum_percentage_of_assignments
+      requirements: requirements
     )
   end
 
@@ -135,8 +134,7 @@ class PositionEligibilityService
       label: 'Unique-to-You Assignment Check-Ins',
       assignments: unique_to_you_assignments(teammate, position),
       teammate: teammate,
-      requirements: requirements,
-      percentage_key: :minimum_percentage_of_assignments
+      requirements: requirements
     )
   end
 
@@ -227,91 +225,128 @@ class PositionEligibilityService
       .count
   end
 
-  def check_assignment_group(key:, label:, assignments:, teammate:, requirements:, percentage_key:)
-    minimum_rating = requirements['minimum_rating'] || requirements[:minimum_rating]
+  def check_assignment_group(key:, label:, assignments:, teammate:, requirements:)
     minimum_months = requirements['minimum_months_at_or_above_rating_criteria'] || requirements[:minimum_months_at_or_above_rating_criteria]
-    minimum_percentage = requirements[percentage_key.to_s] || requirements[percentage_key]
-    return not_configured_check(key) if minimum_rating.blank? || minimum_months.blank? || minimum_percentage.blank?
+    min_pct_meeting = requirements['minimum_percentage_of_assignments_meeting'] || requirements[:minimum_percentage_of_assignments_meeting]
+    min_pct_exceeding = requirements['minimum_percentage_of_assignments_exceeding'] || requirements[:minimum_percentage_of_assignments_exceeding]
+    min_pct_meeting = min_pct_meeting.to_f if min_pct_meeting.present?
+    min_pct_exceeding = min_pct_exceeding.to_f if min_pct_exceeding.present?
+    return not_configured_check(key) if minimum_months.blank? || (min_pct_meeting.blank? && min_pct_exceeding.blank?)
 
     total_assignments = assignments.length
-    return {
-      key: key,
-      label: label,
-      status: :failed,
-      details: {
-        minimum_rating: minimum_rating,
+    if total_assignments.zero?
+      # Requirements are configured but there are no assignments to evaluate -> failed
+      details = {
         minimum_months_at_or_above_rating_criteria: minimum_months.to_i,
-        minimum_percentage: minimum_percentage.to_f,
-        total_assignments: total_assignments,
-        qualifying_assignments: 0
+        minimum_percentage_meeting: min_pct_meeting,
+        minimum_percentage_exceeding: min_pct_exceeding,
+        total_assignments: 0,
+        qualifying_meeting: 0,
+        qualifying_exceeding: 0,
+        qualifying_percentage_meeting: 0.0,
+        qualifying_percentage_exceeding: 0.0
       }
-    } if total_assignments.zero?
-
-    qualifying_assignments = assignments.count do |assignment|
-      assignment_meets_check_in_requirement?(teammate, assignment, minimum_rating, minimum_months.to_i)
+      details[:minimum_percentage] = min_pct_exceeding.presence || min_pct_meeting
+      details[:minimum_rating] = min_pct_exceeding.present? ? 'exceeding' : 'meeting'
+      return {
+        key: key,
+        label: label,
+        status: :failed,
+        details: details.merge(next_steps: "Needs more assignments meeting criteria")
+      }
     end
 
-    percentage = (qualifying_assignments.to_f / total_assignments) * 100.0
-    passed = percentage >= minimum_percentage.to_f
-    missing_assignments = [((minimum_percentage.to_f / 100.0) * total_assignments).ceil - qualifying_assignments, 0].max
+    qualifying_meeting = assignments.count { |a| assignment_meets_check_in_requirement?(teammate, a, 'meeting', minimum_months.to_i) }
+    qualifying_exceeding = assignments.count { |a| assignment_meets_check_in_requirement?(teammate, a, 'exceeding', minimum_months.to_i) }
+    pct_meeting = (qualifying_meeting.to_f / total_assignments) * 100.0
+    pct_exceeding = (qualifying_exceeding.to_f / total_assignments) * 100.0
+
+    passed_meeting = min_pct_meeting.blank? || pct_meeting >= min_pct_meeting
+    passed_exceeding = min_pct_exceeding.blank? || pct_exceeding >= min_pct_exceeding
+    passed = passed_meeting && passed_exceeding
+
+    details = {
+      minimum_months_at_or_above_rating_criteria: minimum_months.to_i,
+      minimum_percentage_meeting: min_pct_meeting,
+      minimum_percentage_exceeding: min_pct_exceeding,
+      total_assignments: total_assignments,
+      qualifying_meeting: qualifying_meeting,
+      qualifying_exceeding: qualifying_exceeding,
+      qualifying_percentage_meeting: pct_meeting,
+      qualifying_percentage_exceeding: pct_exceeding
+    }
+    details[:minimum_percentage] = min_pct_exceeding.presence || min_pct_meeting
+    details[:minimum_rating] = min_pct_exceeding.present? ? 'exceeding' : 'meeting'
 
     {
       key: key,
       label: label,
       status: passed ? :passed : :failed,
-      details: {
-        minimum_rating: minimum_rating,
-        minimum_months_at_or_above_rating_criteria: minimum_months.to_i,
-        minimum_percentage: minimum_percentage.to_f,
-        total_assignments: total_assignments,
-        qualifying_assignments: qualifying_assignments,
-        qualifying_percentage: percentage,
-        next_steps: passed ? nil : "Needs #{missing_assignments} more assignments meeting criteria"
-      }
+      details: details.merge(
+        next_steps: passed ? nil : "Needs more assignments meeting criteria"
+      )
     }
   end
 
   def check_aspiration_group(key:, label:, aspirations:, teammate:, requirements:)
-    minimum_rating = requirements['minimum_rating'] || requirements[:minimum_rating]
     minimum_months = requirements['minimum_months_at_or_above_rating_criteria'] || requirements[:minimum_months_at_or_above_rating_criteria]
-    minimum_percentage = requirements['minimum_percentage_of_aspirational_values'] || requirements[:minimum_percentage_of_aspirational_values]
-    return not_configured_check(key) if minimum_rating.blank? || minimum_months.blank? || minimum_percentage.blank?
+    min_pct_meeting = requirements['minimum_percentage_of_aspirational_values_meeting'] || requirements[:minimum_percentage_of_aspirational_values_meeting]
+    min_pct_exceeding = requirements['minimum_percentage_of_aspirational_values_exceeding'] || requirements[:minimum_percentage_of_aspirational_values_exceeding]
+    min_pct_meeting = min_pct_meeting.to_f if min_pct_meeting.present?
+    min_pct_exceeding = min_pct_exceeding.to_f if min_pct_exceeding.present?
+    return not_configured_check(key) if minimum_months.blank? || (min_pct_meeting.blank? && min_pct_exceeding.blank?)
 
     total_aspirations = aspirations.length
-    return {
-      key: key,
-      label: label,
-      status: :failed,
-      details: {
-        minimum_rating: minimum_rating,
+    if total_aspirations.zero?
+      details = {
         minimum_months_at_or_above_rating_criteria: minimum_months.to_i,
-        minimum_percentage: minimum_percentage.to_f,
-        total_aspirations: total_aspirations,
-        qualifying_aspirations: 0
+        minimum_percentage_meeting: min_pct_meeting,
+        minimum_percentage_exceeding: min_pct_exceeding,
+        total_aspirations: 0,
+        qualifying_meeting: 0,
+        qualifying_exceeding: 0,
+        qualifying_percentage_meeting: 0.0,
+        qualifying_percentage_exceeding: 0.0
       }
-    } if total_aspirations.zero?
-
-    qualifying_aspirations = aspirations.count do |aspiration|
-      aspiration_meets_check_in_requirement?(teammate, aspiration, minimum_rating, minimum_months.to_i)
+      details[:minimum_percentage] = min_pct_exceeding.presence || min_pct_meeting
+      details[:minimum_rating] = min_pct_exceeding.present? ? 'exceeding' : 'meeting'
+      return {
+        key: key,
+        label: label,
+        status: :failed,
+        details: details.merge(next_steps: "Needs more values meeting criteria")
+      }
     end
 
-    percentage = (qualifying_aspirations.to_f / total_aspirations) * 100.0
-    passed = percentage >= minimum_percentage.to_f
-    missing_values = [((minimum_percentage.to_f / 100.0) * total_aspirations).ceil - qualifying_aspirations, 0].max
+    qualifying_meeting = aspirations.count { |a| aspiration_meets_check_in_requirement?(teammate, a, 'meeting', minimum_months.to_i) }
+    qualifying_exceeding = aspirations.count { |a| aspiration_meets_check_in_requirement?(teammate, a, 'exceeding', minimum_months.to_i) }
+    pct_meeting = (qualifying_meeting.to_f / total_aspirations) * 100.0
+    pct_exceeding = (qualifying_exceeding.to_f / total_aspirations) * 100.0
+
+    passed_meeting = min_pct_meeting.blank? || pct_meeting >= min_pct_meeting
+    passed_exceeding = min_pct_exceeding.blank? || pct_exceeding >= min_pct_exceeding
+    passed = passed_meeting && passed_exceeding
+
+    details = {
+      minimum_months_at_or_above_rating_criteria: minimum_months.to_i,
+      minimum_percentage_meeting: min_pct_meeting,
+      minimum_percentage_exceeding: min_pct_exceeding,
+      total_aspirations: total_aspirations,
+      qualifying_meeting: qualifying_meeting,
+      qualifying_exceeding: qualifying_exceeding,
+      qualifying_percentage_meeting: pct_meeting,
+      qualifying_percentage_exceeding: pct_exceeding
+    }
+    details[:minimum_percentage] = min_pct_exceeding.presence || min_pct_meeting
+    details[:minimum_rating] = min_pct_exceeding.present? ? 'exceeding' : 'meeting'
 
     {
       key: key,
       label: label,
       status: passed ? :passed : :failed,
-      details: {
-        minimum_rating: minimum_rating,
-        minimum_months_at_or_above_rating_criteria: minimum_months.to_i,
-        minimum_percentage: minimum_percentage.to_f,
-        total_aspirations: total_aspirations,
-        qualifying_aspirations: qualifying_aspirations,
-        qualifying_percentage: percentage,
-        next_steps: passed ? nil : "Needs #{missing_values} more values meeting criteria"
-      }
+      details: details.merge(
+        next_steps: passed ? nil : "Needs more values meeting criteria"
+      )
     }
   end
 

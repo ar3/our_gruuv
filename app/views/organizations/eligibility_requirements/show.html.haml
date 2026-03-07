@@ -72,10 +72,11 @@
                 %td
                   - section_check = (section == 'company') ? company_check : title_check
                   - details = section_check&.dig(:details)
-                  - row_result = details.present? ? aspirational_value_row_result(monthly, details[:minimum_rating], details[:minimum_months_at_or_above_rating_criteria]) : nil
+                  - row_result = details.present? ? aspirational_value_row_result_for_details(monthly, details) : nil
+                  - is_disqualifier = details.present? && row_result == :miss && row_has_disqualifier?(monthly, details)
                   - if row_result.present?
                     - pill_class = (row_result == :pass && "btn btn-outline-success btn-sm") || (row_result == :maybe && "btn btn-outline-primary btn-sm") || "btn btn-outline-warning btn-sm"
-                    - pill_text = (row_result == :pass && "Pass 🎉") || (row_result == :maybe && "Maybe 🤔") || "Miss ❌"
+                    - pill_text = (row_result == :pass && "Pass 🎉") || (row_result == :maybe && "Maybe 🤔") || (is_disqualifier && "Disqualifier") || "Miss ❌"
                     %span{class: pill_class, style: "pointer-events: none;"}= pill_text
                   - else
                     —
@@ -85,6 +86,8 @@
               %tr.table-secondary.fw-semibold
                 %td{ colspan: 2 }
                   Total: #{summary[:total_pass]} Pass, #{summary[:total_maybe]} Maybe, #{summary[:total_miss]} Miss
+                  - if summary[:total_disqualifiers].to_i > 0
+                    = ", #{summary[:total_disqualifiers]} Disqualifiers"
                   = " = "
                   %hr/
                   #{summary[:pass_pct]}% Pass
@@ -100,7 +103,7 @@
                       %span.ms-1 Potentially Eligible
                     - elsif summary[:status] == :working_to_meet
                       %i.bi.bi-tools.display-1.fs-1.align-middle.ms-2
-                      %span.ms-1 Working to Meet Eligibility
+                      %span.ms-1= summary[:total_disqualifiers].to_i > 0 ? "Working towards eligibility" : "Working to Meet Eligibility"
 
     .card.mb-4
       .card-body
@@ -142,10 +145,11 @@
                           %i.bi.bi-check.text-white{ style: "font-size: 8px; line-height: 1;" }
                 %td
                   - details = required_check&.dig(:details)
-                  - row_result = details.present? ? aspirational_value_row_result(monthly, details[:minimum_rating], details[:minimum_months_at_or_above_rating_criteria]) : nil
+                  - row_result = details.present? ? aspirational_value_row_result_for_details(monthly, details) : nil
+                  - is_disqualifier = details.present? && row_result == :miss && row_has_disqualifier?(monthly, details)
                   - if row_result.present?
                     - pill_class = (row_result == :pass && "btn btn-outline-success btn-sm") || (row_result == :maybe && "btn btn-outline-primary btn-sm") || "btn btn-outline-warning btn-sm"
-                    - pill_text = (row_result == :pass && "Pass 🎉") || (row_result == :maybe && "Maybe 🤔") || "Miss ❌"
+                    - pill_text = (row_result == :pass && "Pass 🎉") || (row_result == :maybe && "Maybe 🤔") || (is_disqualifier && "Disqualifier") || "Miss ❌"
                     %span{class: pill_class, style: "pointer-events: none;"}= pill_text
                   - else
                     —
@@ -155,6 +159,8 @@
               %tr.table-secondary.fw-semibold
                 %td{ colspan: 2 }
                   Total: #{req_summary[:total_pass]} Pass, #{req_summary[:total_maybe]} Maybe, #{req_summary[:total_miss]} Miss
+                  - if req_summary[:total_disqualifiers].to_i > 0
+                    = ", #{req_summary[:total_disqualifiers]} Disqualifiers"
                   = " = "
                   %hr/
                   #{req_summary[:pass_pct]}% Pass
@@ -170,7 +176,7 @@
                       %span.ms-1 Potentially Eligible
                     - elsif req_summary[:status] == :working_to_meet
                       %i.bi.bi-tools.display-1.fs-1.align-middle.ms-2
-                      %span.ms-1 Working to Meet Eligibility
+                      %span.ms-1= req_summary[:total_disqualifiers].to_i > 0 ? "Working towards eligibility" : "Working to Meet Eligibility"
 
         %h6.mt-3 Unique-to-You Assignments
         %ul.mb-2
@@ -204,3 +210,5 @@
         - mileage_check = @eligibility_report[:checks].find { |check| check[:key] == :mileage_requirements }
         = render partial: "organizations/eligibility_requirements/requirement_row",
           locals: { check: mileage_check, title: "Milestone Mileage" }
+
+    = render "shared/eligibility_requirements_summary", eligibility_requirements_sentences: @eligibility_requirements_sentences, ability_milestone_requirements: @ability_milestone_requirements

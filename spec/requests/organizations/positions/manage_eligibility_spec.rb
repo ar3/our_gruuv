@@ -146,9 +146,9 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       patch update_eligibility_organization_position_path(company, position), params: {
         eligibility_requirements: {
           required_assignment_check_in_requirements: {
-            minimum_rating: 'meeting',
             minimum_months_at_or_above_rating_criteria: '6',
-            minimum_percentage_of_assignments: '100'
+            minimum_percentage_of_assignments_meeting: '100',
+            minimum_percentage_of_assignments_exceeding: '50'
           }
         }
       }
@@ -157,9 +157,9 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       
       position.reload
       req_data = position.eligibility_requirements_explicit['required_assignment_check_in_requirements']
-      expect(req_data['minimum_rating']).to eq('meeting')
       expect(req_data['minimum_months_at_or_above_rating_criteria']).to eq(6)
-      expect(req_data['minimum_percentage_of_assignments']).to eq(100.0)
+      expect(req_data['minimum_percentage_of_assignments_meeting']).to eq(100.0)
+      expect(req_data['minimum_percentage_of_assignments_exceeding']).to eq(50.0)
     end
 
     it 'updates all requirement types in single request' do
@@ -173,24 +173,24 @@ RSpec.describe 'Position Eligibility Management', type: :request do
             minimum_months_at_or_above_rating_criteria: '6'
           },
           required_assignment_check_in_requirements: {
-            minimum_rating: 'meeting',
             minimum_months_at_or_above_rating_criteria: '6',
-            minimum_percentage_of_assignments: '100'
+            minimum_percentage_of_assignments_meeting: '100',
+            minimum_percentage_of_assignments_exceeding: '50'
           },
           unique_to_you_assignment_check_in_requirements: {
-            minimum_rating: 'exceeding',
             minimum_months_at_or_above_rating_criteria: '3',
-            minimum_percentage_of_assignments: '50'
+            minimum_percentage_of_assignments_meeting: '50',
+            minimum_percentage_of_assignments_exceeding: '25'
           },
           company_aspirational_values_check_in_requirements: {
-            minimum_rating: 'meeting',
             minimum_months_at_or_above_rating_criteria: '6',
-            minimum_percentage_of_aspirational_values: '100'
+            minimum_percentage_of_aspirational_values_meeting: '100',
+            minimum_percentage_of_aspirational_values_exceeding: '50'
           },
           title_department_aspirational_values_check_in_requirements: {
-            minimum_rating: 'meeting',
             minimum_months_at_or_above_rating_criteria: '6',
-            minimum_percentage_of_aspirational_values: '100'
+            minimum_percentage_of_aspirational_values_meeting: '100',
+            minimum_percentage_of_aspirational_values_exceeding: '50'
           }
         }
       }
@@ -251,15 +251,15 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       patch update_eligibility_organization_position_path(company, position), params: {
         eligibility_requirements: {
           required_assignment_check_in_requirements: {
-            minimum_rating: 'meeting',
             minimum_months_at_or_above_rating_criteria: '6',
-            minimum_percentage_of_assignments: '150'
+            minimum_percentage_of_assignments_meeting: '150'
           }
         }
       }
       
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(flash[:alert]).to include('Minimum percentage must be between 0 and 100')
+      expect(flash[:alert]).to include('Minimum percentage')
+      expect(flash[:alert]).to include('between 0 and 100')
     end
 
     it 'validates position check-in rating range' do
