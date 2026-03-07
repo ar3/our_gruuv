@@ -14,7 +14,7 @@
     .card
       .card-body
         %h5.card-title Position
-        %p.mb-0= @position.display_name
+        %p.mb-0= link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
 
 .row.mb-4
   .col-12
@@ -28,26 +28,79 @@
     .card.mb-4
       .card-body
         %h5.card-title Aspirational Values
-        .row
-          .col-md-4.fw-semibold Requirement
-          .col-md-4.fw-semibold Position Requirement
-          .col-md-4.fw-semibold Teammate Status
-        %hr
-        %h6 Company Aspirational Values
-        %ul.mb-2
-          - @company_aspirations.each do |aspiration|
-            %li= aspiration.name
-        - company_check = @eligibility_report[:checks].find { |check| check[:key] == :company_aspirational_values_check_in_requirements }
-        = render partial: "organizations/eligibility_requirements/requirement_row",
-          locals: { check: company_check, title: "Company Aspirational Values" }
-
-        %h6.mt-3 Title/Department Aspirational Values
-        %ul.mb-2
-          - @title_department_aspirations.each do |aspiration|
-            %li= aspiration.name
-        - title_check = @eligibility_report[:checks].find { |check| check[:key] == :title_department_aspirational_values_check_in_requirements }
-        = render partial: "organizations/eligibility_requirements/requirement_row",
-          locals: { check: title_check, title: "Title/Department Aspirational Values" }
+        %table.table.table-sm
+          %thead
+            %tr
+              %th Requirement
+              %th
+                = "Teammate Status"
+                %span.ms-1.badge.bg-light.text-dark{ title: "One block per month (last 12 months). Green = exceeding, blue = meeting, orange = working to meet, light grey = no rating. Checkmark = rating finalized that month; otherwise rating carries from prior month.", data: { bs_toggle: "tooltip" } }
+                  %i.bi.bi-info-circle
+              %th Position Requirement
+          %tbody
+            - current_section = nil
+            - company_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
+            - title_check = @eligibility_report[:checks].find { |c| c[:key] == :title_department_aspirational_values_check_in_requirements }
+            - company_requirement_sentence = company_check && company_check[:details].present? ? format_aspirational_values_requirement(company_check[:details]) : nil
+            - @aspirational_values_table_rows.each do |row_data|
+              - aspiration = row_data[:aspiration]
+              - section = row_data[:section]
+              - if section != current_section
+                - current_section = section
+                %tr.table-light
+                  %td= section == 'company' ? "Company Aspirational Values" : "Title/Department Aspirational Values"
+                  %td
+                  %td.text-muted= (section == 'company' && company_requirement_sentence.present?) ? company_requirement_sentence : ""
+              %tr
+                %td= aspiration.name
+                %td
+                  - monthly = @aspirational_values_monthly_status[aspiration.id] || []
+                  %span.d-inline-flex.gap-1.align-items-center{ role: "img", "aria-label": "12 months: green = exceeding, blue = meeting, orange = working to meet, light grey = no check-in. Checkmark = rating finalized that month." }
+                    - monthly.each do |cell|
+                      - block_class = (cell[:status] == :exceeding && "bg-success") || (cell[:status] == :meeting && "bg-primary") || (cell[:status] == :working_to_meet && "bg-warning") || ""
+                      - block_style = (cell[:status] == :none) ? "width: 12px; height: 12px; min-width: 12px; background-color: #e9ecef;" : "width: 12px; height: 12px; min-width: 12px;"
+                      - tooltip_parts = [cell[:month].strftime('%b %Y')]
+                      - if cell[:status] == :none
+                        - tooltip_parts << "No finalized check-in"
+                      - else
+                        - tooltip_parts << "Check-in: #{cell[:source_check_in_date].strftime('%b %-d, %Y')}" if cell[:source_check_in_date]
+                        - tooltip_parts << cell[:status].to_s.humanize
+                      - tooltip_text = tooltip_parts.join(' · ')
+                      %span.rounded.d-inline-flex.align-items-center.justify-content-center{ class: block_class, style: block_style, data: { bs_toggle: "tooltip", bs_title: tooltip_text } }
+                        - if cell[:actual] && cell[:status] != :none
+                          %i.bi.bi-check.text-white{ style: "font-size: 8px; line-height: 1;" }
+                %td
+                  - section_check = (section == 'company') ? company_check : title_check
+                  - details = section_check&.dig(:details)
+                  - row_result = details.present? ? aspirational_value_row_result(monthly, details[:minimum_rating], details[:minimum_months_at_or_above_rating_criteria]) : nil
+                  - if row_result.present?
+                    - pill_class = (row_result == :pass && "btn btn-outline-success btn-sm") || (row_result == :maybe && "btn btn-outline-primary btn-sm") || "btn btn-outline-warning btn-sm"
+                    - pill_text = (row_result == :pass && "Pass 🎉") || (row_result == :maybe && "Maybe 🤔") || "Miss ❌"
+                    %span{class: pill_class, style: "pointer-events: none;"}= pill_text
+                  - else
+                    —
+            - summary = @aspirational_values_summary || {}
+            - total = (summary[:total_pass].to_i + summary[:total_maybe].to_i + summary[:total_miss].to_i)
+            - if total > 0
+              %tr.table-secondary.fw-semibold
+                %td{ colspan: 3 }
+                  Total: #{summary[:total_pass]} Pass, #{summary[:total_maybe]} Maybe, #{summary[:total_miss]} Miss
+                  = " = "
+                  %hr/
+                  #{summary[:pass_pct]}% Pass
+                  %br/
+                  #{summary[:pass_maybe_pct]}% Pass+Maybe"
+                  %hr/
+                  - if summary[:status] == :eligible
+                    %i.bi.bi-star-fill.text-success.display-1.fs-1.align-middle.ms-2
+                    %span.ms-1 Eligible
+                  - else
+                    - if summary[:status] == :potentially_eligible
+                      %i.bi.bi-question-circle-fill.text-primary.display-1.fs-1.align-middle.ms-2
+                      %span.ms-1 Potentially Eligible
+                    - elsif summary[:status] == :working_to_meet
+                      %i.bi.bi-tools.display-1.fs-1.align-middle.ms-2
+                      %span.ms-1 Working to Meet Eligibility
 
     .card.mb-4
       .card-body

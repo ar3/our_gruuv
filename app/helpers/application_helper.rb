@@ -119,7 +119,43 @@ module ApplicationHelper
   def format_date_in_user_timezone(time, user = nil, format: '%B %d, %Y')
     format_time_in_user_timezone(time, user, format: format)
   end
-  
+
+  # Formats eligibility requirement details for aspirational values into a sentence.
+  # details: { minimum_rating:, minimum_months_at_or_above_rating_criteria:, minimum_percentage: }
+  def format_aspirational_values_requirement(details)
+    return nil if details.blank?
+
+    rating = details[:minimum_rating] || details['minimum_rating']
+    months = details[:minimum_months_at_or_above_rating_criteria] || details['minimum_months_at_or_above_rating_criteria']
+    pct = details[:minimum_percentage] || details['minimum_percentage']
+    return nil if rating.blank? || months.blank? || pct.blank?
+
+    rating_text = rating.to_s.humanize
+    "At least #{pct.to_i}% must be at or above #{rating_text} for #{months} months."
+  end
+
+  # Returns :pass, :maybe, or :miss for one aspirational value row given monthly statuses and requirement.
+  # monthly_statuses: [ { status: :exceeding|:meeting|:working_to_meet|:none }, ... ]
+  # Pass: at least minimum_months with rating at or above minimum_rating.
+  # Miss: at least one month with rating below minimum_rating.
+  # Maybe: no month below, but not enough qualifying months yet.
+  def aspirational_value_row_result(monthly_statuses, minimum_rating, minimum_months)
+    return nil if monthly_statuses.blank?
+    rating = minimum_rating.to_s.presence
+    months_required = minimum_months.to_i
+    return nil if rating.blank? || months_required <= 0
+
+    rating_order = { 'exceeding' => 3, 'meeting' => 2, 'working_to_meet' => 1 }
+    min_level = rating_order[rating] || 0
+
+    qualifying = monthly_statuses.count { |c| c[:status] != :none && (rating_order[c[:status].to_s] || 0) >= min_level }
+    below = monthly_statuses.count { |c| c[:status] != :none && (rating_order[c[:status].to_s] || 0) < min_level }
+
+    return :miss if below >= 1
+    return :pass if qualifying >= months_required
+    :maybe
+  end
+
   def available_timezones
     ActiveSupport::TimeZone.all.map { |tz| [tz.name, tz.name] }
   end
