@@ -100,15 +100,13 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         expect(results).to include(observation4)
       end
 
-      it 'does not return observations about people they indirectly manage (only direct managers via employment_tenures)' do
+      it 'returns observations about people they indirectly manage (full managerial hierarchy)' do
         # Set up indirect report: observee -> manager -> grand_manager
-        # New rules only check direct manager relationships via employment_tenures
         grand_manager = create(:person)
         grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
         manager_teammate = CompanyTeammate.find_by(person: manager_person, organization: company)
         
         create(:employment_tenure, company_teammate: grand_manager_teammate, company: company)
-        # Update existing manager tenure to have grand_manager as manager
         manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: company)
         manager_tenure.update!(manager_teammate: grand_manager_teammate)
         
@@ -124,8 +122,24 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         
         grand_manager_query = described_class.new(grand_manager, company)
         results = grand_manager_query.visible_observations
-        # Grand manager is NOT a direct manager of indirect_observee, so they cannot see it
-        expect(results).not_to include(indirect_observation)
+        expect(results).to include(indirect_observation)
+      end
+
+      it 'does not return managers_only observations about another manager\'s report (different branch)' do
+        manager_b = create(:person)
+        manager_b_teammate = CompanyTeammate.create!(person: manager_b, organization: company)
+        report_b = create(:person)
+        report_b_teammate = create(:company_teammate, person: report_b, organization: company)
+        create(:employment_tenure, company_teammate: manager_b_teammate, company: company)
+        create(:employment_tenure, company_teammate: report_b_teammate, company: company, manager_teammate: manager_b_teammate)
+        obs_about_b_report = build(:observation, observer: observer, company: company, privacy_level: :managers_only).tap do |obs|
+          obs.observees.build(teammate: report_b_teammate)
+          obs.save!
+          obs.publish!
+        end
+        manager_a_query = described_class.new(manager_person, company)
+        results = manager_a_query.visible_observations
+        expect(results).not_to include(obs_about_b_report)
       end
 
       it 'returns public observations' do
@@ -437,24 +451,45 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         expect(manager_query.visible_to?(observation3)).to be true
       end
 
-      it 'does not allow indirect managers (only direct managers via employment_tenures)' do
+      it 'allows any manager in the hierarchy (direct or indirect)' do
         grand_manager = create(:person)
         grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
         manager_teammate = CompanyTeammate.find_by(person: manager_person, organization: company)
         
         create(:employment_tenure, company_teammate: grand_manager_teammate, company: company)
-        # Update existing manager tenure to have grand_manager as manager
         manager_tenure = EmploymentTenure.find_by(company_teammate: manager_teammate, company: company)
         manager_tenure.update!(manager_teammate: grand_manager_teammate)
         
         grand_manager_query = described_class.new(grand_manager, company)
-        # Grand manager is NOT a direct manager of observee_teammate, so they cannot see it
-        expect(grand_manager_query.visible_to?(observation3)).to be false
+        expect(grand_manager_query.visible_to?(observation3)).to be true
       end
 
       it 'denies observee' do
         observee_query = described_class.new(observee_person, company)
         expect(observee_query.visible_to?(observation3)).to be false
+      end
+
+      it 'denies random person (not in hierarchy)' do
+        random_query = described_class.new(random_person, company)
+        expect(random_query.visible_to?(observation3)).to be false
+      end
+
+      it 'denies manager in a different branch (observation about another manager\'s report)' do
+        # Manager B has their own report; observation is about B's report with managers_only.
+        # Manager A (same company, different branch) must NOT see it.
+        manager_b = create(:person)
+        manager_b_teammate = CompanyTeammate.create!(person: manager_b, organization: company)
+        report_b = create(:person)
+        report_b_teammate = create(:company_teammate, person: report_b, organization: company)
+        create(:employment_tenure, company_teammate: manager_b_teammate, company: company)
+        create(:employment_tenure, company_teammate: report_b_teammate, company: company, manager_teammate: manager_b_teammate)
+        obs_about_b_report = build(:observation, observer: observer, company: company, privacy_level: :managers_only).tap do |obs|
+          obs.observees.build(teammate: report_b_teammate)
+          obs.save!
+          obs.publish!
+        end
+        manager_a_query = described_class.new(manager_person, company)
+        expect(manager_a_query.visible_to?(obs_about_b_report)).to be false
       end
     end
 
@@ -646,6 +681,22 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         query = described_class.new(manager_person, company)
         expect(query.can_view_negative_ratings?(observation1)).to be false  # observer_only
         expect(query.can_view_negative_ratings?(observation4)).to be true  # observed_and_managers
+      end
+
+      it 'allows grand manager to view negative ratings for managers_only observation about indirect report' do
+        grand_manager = create(:person)
+        grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
+        manager_teammate = CompanyTeammate.find_by(person: manager_person, organization: company)
+        create(:employment_tenure, company_teammate: grand_manager_teammate, company: company)
+        EmploymentTenure.find_by(company_teammate: manager_teammate, company: company).update!(manager_teammate: grand_manager_teammate)
+        managers_only_obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+        create(:observation_rating, observation: managers_only_obs, rating: :disagree)
+        grand_manager_query = described_class.new(grand_manager, company)
+        expect(grand_manager_query.can_view_negative_ratings?(managers_only_obs)).to be true
       end
 
       it 'does not allow those with can_manage_employment to view negative ratings (no override in new rules)' do

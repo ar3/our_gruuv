@@ -48,22 +48,25 @@ class ObservationVisibilityQuery
     params << 'observed_only'
     params << 'observed_and_managers'
 
-    # Rule 4: Current teammate is manager of observed (published)
-    # Current teammate is the manager of ANY observee
-    # AND published_at IS NOT NULL
-    # AND privacy_level IN ('observed_and_managers', 'managers_only')
-    #
-    # To check if current teammate is manager of an observee:
-    # - Get all observee teammate_ids for the observation
-    # - Check if any of those teammates have an active employment_tenure where manager_teammate_id = current_teammate.id
+    # Rule 4: Current teammate is in the managerial hierarchy of observed (published)
+    # Current teammate is a manager (direct or indirect) of ANY observee.
+    # Use a downward recursive CTE from current_teammate to get all report teammate_ids,
+    # then include observations that have an observee in that set.
     manager_condition = <<-SQL.squish
       observations.id IN (
-        SELECT DISTINCT observees.observation_id
+        SELECT observees.observation_id
         FROM observees
-        INNER JOIN employment_tenures ON employment_tenures.teammate_id = observees.teammate_id
-        WHERE employment_tenures.manager_teammate_id = ?
-          AND employment_tenures.company_id = ?
-          AND employment_tenures.ended_at IS NULL
+        INNER JOIN (
+          WITH RECURSIVE manager_reports(teammate_id, depth) AS (
+            SELECT CAST(? AS bigint) AS teammate_id, 0 AS depth
+            UNION ALL
+            SELECT et.teammate_id, mr.depth + 1
+            FROM manager_reports mr
+            INNER JOIN employment_tenures et ON et.manager_teammate_id = mr.teammate_id AND et.company_id = CAST(? AS bigint) AND et.ended_at IS NULL
+            WHERE mr.depth < 20
+          )
+          SELECT teammate_id FROM manager_reports WHERE depth > 0
+        ) reports ON reports.teammate_id = observees.teammate_id
       )
       AND published_at IS NOT NULL
       AND privacy_level IN (?, ?)
@@ -122,18 +125,9 @@ class ObservationVisibilityQuery
       end
     end
 
-    # Rule 4: Current teammate is manager of observed
+    # Rule 4: Current teammate is in the managerial hierarchy of any observee
     if ['observed_and_managers', 'managers_only'].include?(observation.privacy_level)
-      # Check if current teammate is manager of any observee
-      observee_teammate_ids = observation.observed_teammates.pluck(:id)
-      if observee_teammate_ids.any?
-        # Check if any observee has an active employment_tenure where current_teammate is the manager
-        has_manager_relationship = EmploymentTenure.active
-          .where(teammate_id: observee_teammate_ids, company_id: @company.id, manager_teammate_id: current_teammate.id)
-          .exists?
-        
-        return true if has_manager_relationship
-      end
+      return true if observation.observed_teammates.any? { |observee_tm| current_teammate.in_managerial_hierarchy_of?(observee_tm) }
     end
 
     false
@@ -154,15 +148,8 @@ class ObservationVisibilityQuery
       return true
     end
 
-    # Managers can see negative ratings
-    observee_teammate_ids = observation.observed_teammates.pluck(:id)
-    if observee_teammate_ids.any?
-      has_manager_relationship = EmploymentTenure.active
-        .where(teammate_id: observee_teammate_ids, company_id: @company.id, manager_teammate_id: current_teammate.id)
-        .exists?
-      
-      return true if has_manager_relationship
-    end
+    # Managers (in hierarchy) can see negative ratings
+    return true if observation.observed_teammates.any? { |observee_tm| current_teammate.in_managerial_hierarchy_of?(observee_tm) }
 
     false
   end

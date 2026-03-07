@@ -749,6 +749,18 @@ end
           random_scope = ObservationPolicy::Scope.new(pundit_user_random, Observation.all).resolve
           expect(random_scope).not_to include(managers_only_obs)
         end
+
+        it 'does not allow manager in a different branch to see (not in hierarchy of observee)' do
+          manager_b = create(:person)
+          manager_b_teammate = CompanyTeammate.create!(person: manager_b, organization: company)
+          report_b = create(:person)
+          report_b_teammate = CompanyTeammate.create!(person: report_b, organization: company)
+          create(:employment_tenure, teammate: manager_b_teammate, company: company)
+          create(:employment_tenure, teammate: report_b_teammate, company: company, manager_teammate: manager_b_teammate)
+          pundit_user_manager_b = OpenStruct.new(user: manager_b_teammate, impersonating_teammate: nil)
+          manager_b_scope = ObservationPolicy::Scope.new(pundit_user_manager_b, Observation.all).resolve
+          expect(manager_b_scope).not_to include(managers_only_obs)
+        end
       end
 
       context 'observed_and_managers privacy' do
