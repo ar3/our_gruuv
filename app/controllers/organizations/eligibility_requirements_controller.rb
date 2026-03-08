@@ -100,6 +100,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     # Collapsible summary: sentences per check and abilities with max milestone required
     @eligibility_requirements_sentences = build_eligibility_requirements_sentences
     @ability_milestone_requirements = build_ability_milestone_requirements
+    @milestone_table_rows = build_milestone_table_rows
   end
 
   # Array of sentence strings for each configured eligibility check (for collapsible summary).
@@ -130,6 +131,53 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     abilities = Ability.where(id: levels_by_ability_id.keys).index_by(&:id)
     levels_by_ability_id.keys.filter_map { |id| abilities[id] ? { ability: abilities[id], minimum_milestone_level: levels_by_ability_id[id] } : nil }.sort_by { |h| h[:ability].name }
+  end
+
+  # Rows for the Milestones table: one per ability with requirement lines, teammate milestone, and pass/fail.
+  # Each row: { ability:, requirement_lines: [ { source_name:, milestone_level: }, ... ], teammate_milestone: (TeammateMilestone or nil), passed: Boolean }
+  def build_milestone_table_rows
+    return [] unless @position && @teammate
+
+    milestones_check = @eligibility_report[:checks]&.find { |c| c[:key] == :milestone_requirements }
+    requirements_by_ability = (milestones_check&.dig(:details, :requirements) || []).group_by { |r| r[:ability_id] }
+
+    ability_ids = requirements_by_ability.keys.uniq
+    return [] if ability_ids.empty?
+
+    abilities = Ability.where(id: ability_ids).index_by(&:id)
+    all_teammate_milestones = TeammateMilestone
+      .where(company_teammate: @teammate, ability_id: ability_ids)
+      .order(milestone_level: :desc, attained_at: :desc)
+    teammate_highest_by_ability = all_teammate_milestones.index_by(&:ability_id)
+    attained_levels_by_ability = all_teammate_milestones.group_by(&:ability_id).transform_values { |ms| ms.map(&:milestone_level).uniq }
+
+    ability_ids.filter_map do |ability_id|
+      ability = abilities[ability_id]
+      next unless ability
+
+      requirement_lines = []
+      @position.position_abilities.where(ability_id: ability_id).each do |pa|
+        requirement_lines << { source_name: "Position", milestone_level: pa.milestone_level }
+      end
+      @required_assignments.each do |assignment|
+        assignment.assignment_abilities.where(ability_id: ability_id).each do |aa|
+          requirement_lines << { source_name: assignment.title, milestone_level: aa.milestone_level }
+        end
+      end
+
+      reqs = requirements_by_ability[ability_id] || []
+      passed = reqs.any? && reqs.all? { |r| r[:passed] }
+      teammate_milestone = teammate_highest_by_ability[ability_id]
+      attained_levels = attained_levels_by_ability[ability_id] || []
+
+      {
+        ability: ability,
+        requirement_lines: requirement_lines,
+        teammate_milestone: teammate_milestone,
+        attained_levels: attained_levels,
+        passed: passed
+      }
+    end.sort_by { |row| row[:ability].name }
   end
 
   # Returns hash: aspiration_id => [ { month: Date, status: :exceeding|:meeting|:working_to_meet|:none, actual: Boolean }, ... ]

@@ -66,24 +66,49 @@
     .card
       .card-body
         %h5.card-title Milestones
-        .row
-          .col-md-4.fw-semibold Requirement
-          .col-md-4.fw-semibold Position Requirement
-          .col-md-4.fw-semibold Teammate Status
-        %hr
-        %h6 Required Abilities
-        %ul.mb-2
-          - @required_abilities.each do |ability|
-            %li= ability.name
-        - milestones_check = @eligibility_report[:checks].find { |check| check[:key] == :milestone_requirements }
-        = render partial: "organizations/eligibility_requirements/requirement_row",
-          locals: { check: milestones_check, title: "Required Ability Milestones" }
-
-        %h6.mt-3 Unique-to-You Abilities
-        %ul.mb-2
-          - @unique_abilities.each do |ability|
-            %li= ability.name
-
+        - if @milestone_table_rows.present?
+          - casual_name = @teammate.person.casual_name.presence || "Teammate"
+          %table.table.table-sm
+            %thead
+              %tr
+                %th Requirement
+                %th= "#{casual_name}'s earned Milestones"
+                %th
+            %tbody
+              - @milestone_table_rows.each do |row|
+                %tr
+                  %td
+                    = link_to row[:ability].name, organization_ability_path(organization, row[:ability]), class: "text-decoration-none fw-semibold"
+                    - row[:requirement_lines].each do |line|
+                      %div.small.text-muted.mt-1
+                        = "#{line[:source_name]} requires #{milestone_level_display(line[:milestone_level])} #{row[:ability].name} (Milestone #{line[:milestone_level]})."
+                  %td
+                    %span.d-inline-flex.gap-1.align-items-center{ role: "img", "aria-label": "Milestone levels 1–5: filled = earned" }
+                      - (1..5).each do |level|
+                        - filled = row[:attained_levels].include?(level)
+                        - circle_class = filled ? "bg-success" : ""
+                        - circle_style = filled ? "width: 20px; height: 20px; min-width: 20px;" : "width: 20px; height: 20px; min-width: 20px; background-color: #e9ecef;"
+                        %span.rounded-circle.d-inline-flex.align-items-center.justify-content-center{ class: circle_class, style: circle_style, data: { bs_toggle: "tooltip", bs_title: "Milestone #{level}#{filled ? ' (earned)' : ''}" } }
+                          - if filled
+                            %i.bi.bi-check.text-white{ style: "font-size: 10px; line-height: 1;" }
+                    - if row[:teammate_milestone]
+                      %div.small.text-muted.mt-1
+                        = milestone_level_display(row[:teammate_milestone].milestone_level)
+                        = " · "
+                        = row[:teammate_milestone].attained_at.strftime("%B %d, %Y")
+                    - elsif row[:attained_levels].empty?
+                      %div.small.text-muted.mt-1 —
+                  %td.align-middle
+                    - if row[:passed]
+                      %i.bi.bi-check-circle-fill.text-success
+                      %span.ms-1 Pass 🎉
+                    - else
+                      %span.badge.bg-warning.text-dark
+                        %i.bi.bi-tools.me-1
+                        Working to meet
+        - else
+          %p.text-muted.mb-0 No milestone requirements configured for this position.
+        %hr.mt-3.mb-3
         - mileage_check = @eligibility_report[:checks].find { |check| check[:key] == :mileage_requirements }
         = render partial: "organizations/eligibility_requirements/requirement_row",
           locals: { check: mileage_check, title: "Milestone Mileage" }
