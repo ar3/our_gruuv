@@ -22,7 +22,7 @@ class PositionEligibilityService
     checks << check_title_department_aspirational_values_check_ins(teammate, position, requirements[:title_department_aspirational_values_check_in_requirements])
 
     configured_checks = checks.select { |check| check[:status] != :not_configured }
-    overall_eligible = configured_checks.any? && configured_checks.all? { |check| check[:status] == :passed }
+    overall_eligible = configured_checks.any? && configured_checks.all? { |check| check[:status] == :passed || check[:status] == :not_applicable }
 
     {
       teammate: teammate,
@@ -129,10 +129,22 @@ class PositionEligibilityService
   end
 
   def check_unique_to_you_assignment_check_ins(teammate, position, requirements)
+    assignments = unique_to_you_assignments(teammate, position)
+    min_pct_meeting = requirements['minimum_percentage_of_assignments_meeting'] || requirements[:minimum_percentage_of_assignments_meeting]
+    min_pct_meeting = min_pct_meeting.to_f if min_pct_meeting.present?
+    # When minimum meeting expectation is 0%, nil, or empty and there are no assignments -> not applicable (card still shown)
+    if assignments.length.zero? && (min_pct_meeting.blank? || min_pct_meeting == 0.0)
+      return {
+        key: :unique_to_you_assignment_check_in_requirements,
+        label: 'Unique-to-You Assignment Check-Ins',
+        status: :not_applicable,
+        details: { minimum_percentage_meeting: min_pct_meeting, total_assignments: 0 }
+      }
+    end
     check_assignment_group(
       key: :unique_to_you_assignment_check_in_requirements,
       label: 'Unique-to-You Assignment Check-Ins',
-      assignments: unique_to_you_assignments(teammate, position),
+      assignments: assignments,
       teammate: teammate,
       requirements: requirements
     )

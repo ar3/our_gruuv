@@ -183,21 +183,24 @@
       = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
         eligibility_result: @required_assignments_eligibility_result
 
-- if @unique_assignments.present?
-  .row.mb-4
-    .col-12
-      - unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
-      .card
-        .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section5Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-          %h3.mb-0 (5) You must pass criteria for Unique-to-You Assignments (if there are any)…
-          .d-flex.align-items-center.small.text-muted
-            %span.expand-detail-label.d-inline-flex.align-items-center
-              Expand for details
-              %i.bi.bi-chevron-down.ms-1
-            %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
-              Show less detail
-              %i.bi.bi-chevron-up.ms-1
-        .card-body.collapse.py-2{ id: "section5Body" }
+.row.mb-4
+  .col-12
+    - unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
+    .card
+      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section5Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+        %h3.mb-0 (5) You must pass criteria for Unique-to-You Assignments (if applicable)…
+        .d-flex.align-items-center.small.text-muted
+          %span.expand-detail-label.d-inline-flex.align-items-center
+            Expand for details
+            %i.bi.bi-chevron-down.ms-1
+          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+            Show less detail
+            %i.bi.bi-chevron-up.ms-1
+      .card-body.collapse.py-2{ id: "section5Body" }
+        - if unique_check && (unique_check[:status] == :not_applicable || unique_check[:status] == :not_configured)
+          .alert.alert-info.mb-0
+            Not applicable — there is no minimum meeting expectation for unique-to-you assignments for this position.
+        - elsif @unique_assignments.present?
           = render "organizations/eligibility_requirements/check_in_requirements_section",
             section_title: "Unique-to-You Assignment Check-In Requirements",
             requirement_sentence: (unique_check && unique_check[:details].present?) ? format_assignments_requirement(unique_check[:details], assignment_label: "unique-to-you assignments") : nil,
@@ -205,8 +208,23 @@
             monthly_status_by_id: @unique_assignments_monthly_status || {},
             eligibility_result: @unique_assignments_eligibility_result,
             show_totals_in_body: false
+        - else
+          - min_meeting_pct = unique_check&.dig(:details, :minimum_percentage_meeting) || unique_check&.dig(:details, "minimum_percentage_meeting")
+          - casual_name = @teammate.person.casual_name.presence || "this teammate"
+          .alert.alert-warning.mb-0
+            This position expects #{casual_name} to take on at least one unique-to-you assignment and be meeting expectations of at least #{min_meeting_pct.present? ? "#{min_meeting_pct.to_i}%" : "the required percentage"} of them. #{casual_name.capitalize} currently has no unique-to-you assignments.
+      - if unique_check && (unique_check[:status] == :not_applicable || unique_check[:status] == :not_configured)
+        .card-footer.fw-semibold.small.py-2.bg-info.bg-opacity-25
+          .d-flex.align-items-center.justify-content-end
+            %span Not applicable
+      - elsif @unique_assignments.present?
         = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
           eligibility_result: @unique_assignments_eligibility_result
+      - else
+        .card-footer.fw-semibold.small.py-2.bg-warning.bg-opacity-25
+          .d-flex.align-items-center.justify-content-end.h2
+            %i.bi.bi-tools.fs-2.align-middle
+            %span.ms-1 Working to meet requirements
 
 .row.mb-4
   .col-12

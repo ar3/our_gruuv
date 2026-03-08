@@ -108,7 +108,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Not eligible / no business need defined')
+      expect(response.body).to include('No Current Business Need')
       expect(controller.instance_variable_get(:@business_need_eligible)).to eq(false)
     end
 
@@ -127,7 +127,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('Teammate Status')
     end
 
-    it 'renders sections (3), (4) as cards with collapsed body and (5) only when unique assignments exist' do
+    it 'renders sections (3), (4), and (5) as cards with collapsed body' do
       get organization_eligibility_requirement_path(
         organization,
         position,
@@ -137,11 +137,13 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('(3) You must exemplify our Aspirational Values')
       expect(response.body).to include('(4) You must pass criteria for Required Assignments')
+      expect(response.body).to include('(5) You must pass criteria for Unique-to-You Assignments')
       expect(response.body).to include('section3Body')
       expect(response.body).to include('section4Body')
+      expect(response.body).to include('section5Body')
     end
 
-    it 'hides section (5) when there are no unique-to-you assignments' do
+    it 'always shows section (5) Unique-to-You Assignments; shows Not applicable when no minimum meeting expectation' do
       get organization_eligibility_requirement_path(
         organization,
         position,
@@ -149,7 +151,10 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).not_to include('(5) You must pass criteria for Unique-to-You Assignments')
+      expect(response.body).to include('(5) You must pass criteria for Unique-to-You Assignments')
+      # With no unique-to-you requirements configured (or 0% expectation) and no assignments, show Not applicable
+      expect(response.body).to include('Not applicable')
+      expect(response.body).to include('bg-info')
     end
 
     it 'renders 12 status blocks per aspirational value row when aspirations exist' do

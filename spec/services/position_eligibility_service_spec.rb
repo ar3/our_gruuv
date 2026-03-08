@@ -50,7 +50,7 @@ RSpec.describe PositionEligibilityService do
       expect(unique_check[:details][:qualifying_exceeding]).to be_present
     end
 
-    it 'fails when no unique-to-you assignments are active' do
+    it 'fails when no unique-to-you assignments are active and minimum meeting expectation is above 0%' do
       create(:assignment_tenure, teammate: teammate, assignment: required_assignment, ended_at: nil)
 
       report = described_class.new.check_eligibility(teammate, position)
@@ -58,6 +58,26 @@ RSpec.describe PositionEligibilityService do
 
       expect(unique_check[:status]).to eq(:failed)
       expect(unique_check[:details][:total_assignments]).to eq(0)
+    end
+
+    it 'returns not_applicable when no unique-to-you assignments and minimum meeting expectation is 0% or empty' do
+      create(:assignment_tenure, teammate: teammate, assignment: required_assignment, ended_at: nil)
+      position.update!(
+        eligibility_requirements_explicit: {
+          "unique_to_you_assignment_check_in_requirements" => {
+            "minimum_months_at_or_above_rating_criteria" => 12,
+            "minimum_percentage_of_assignments_meeting" => 0,
+            "minimum_percentage_of_assignments_exceeding" => 0
+          }
+        }
+      )
+
+      report = described_class.new.check_eligibility(teammate, position)
+      unique_check = report[:checks].find { |check| check[:key] == :unique_to_you_assignment_check_in_requirements }
+
+      expect(unique_check[:status]).to eq(:not_applicable)
+      expect(unique_check[:details][:total_assignments]).to eq(0)
+      expect(report[:overall_eligible]).to be true
     end
   end
 
