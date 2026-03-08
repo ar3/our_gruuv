@@ -14,12 +14,11 @@ class PositionEligibilityService
     checks = []
 
     checks << check_milestone_requirements(teammate, position, requirements[:milestone_requirements])
-    checks << check_mileage_requirements(teammate, requirements[:mileage_requirements])
+    checks << check_mileage_requirements(teammate, position, requirements[:mileage_requirements])
     checks << check_position_check_in_requirements(teammate, requirements[:position_check_in_requirements])
     checks << check_required_assignment_check_ins(teammate, position, requirements[:required_assignment_check_in_requirements])
     checks << check_unique_to_you_assignment_check_ins(teammate, position, requirements[:unique_to_you_assignment_check_in_requirements])
     checks << check_company_aspirational_values_check_ins(teammate, position, requirements[:company_aspirational_values_check_in_requirements])
-    checks << check_title_department_aspirational_values_check_ins(teammate, position, requirements[:title_department_aspirational_values_check_in_requirements])
 
     configured_checks = checks.select { |check| check[:status] != :not_configured }
     overall_eligible = configured_checks.any? && configured_checks.all? { |check| check[:status] == :passed || check[:status] == :not_applicable }
@@ -42,8 +41,7 @@ class PositionEligibilityService
       position_check_in_requirements: raw['position_check_in_requirements'] || {},
       required_assignment_check_in_requirements: raw['required_assignment_check_in_requirements'] || {},
       unique_to_you_assignment_check_in_requirements: raw['unique_to_you_assignment_check_in_requirements'] || {},
-      company_aspirational_values_check_in_requirements: raw['company_aspirational_values_check_in_requirements'] || {},
-      title_department_aspirational_values_check_in_requirements: raw['title_department_aspirational_values_check_in_requirements'] || {}
+      company_aspirational_values_check_in_requirements: raw['company_aspirational_values_check_in_requirements'] || {}
     }
   end
 
@@ -76,24 +74,52 @@ class PositionEligibilityService
     }
   end
 
-  def check_mileage_requirements(teammate, requirements)
-    minimum_points = requirements['minimum_mileage_points'] || requirements[:minimum_mileage_points]
-    return not_configured_check(:mileage_requirements) if minimum_points.blank?
+  def check_mileage_requirements(teammate, position, requirements)
+    effective_min, base_from_milestones, threshold_type, threshold_value = resolve_mileage_threshold(position, requirements)
+    return not_configured_check(:mileage_requirements) if effective_min.nil?
 
     total_points = @mileage_service.total_mileage_for(teammate)
-    passed = total_points >= minimum_points.to_i
-    missing_points = [minimum_points.to_i - total_points, 0].max
+    passed = total_points >= effective_min
+    missing_points = [effective_min - total_points, 0].max
+
+    details = {
+      minimum_mileage_points: effective_min,
+      total_mileage_points: total_points,
+      next_steps: passed ? nil : "Needs #{missing_points} more mileage points"
+    }
+    if threshold_type == 'percentage'
+      details[:threshold_type] = 'percentage'
+      details[:threshold_value] = threshold_value
+      details[:minimum_required_from_milestones] = base_from_milestones
+    end
 
     {
       key: :mileage_requirements,
       label: 'Milestone Mileage',
       status: passed ? :passed : :failed,
-      details: {
-        minimum_mileage_points: minimum_points.to_i,
-        total_mileage_points: total_points,
-        next_steps: passed ? nil : "Needs #{missing_points} more mileage points"
-      }
+      details: details
     }
+  end
+
+  # Returns [effective_minimum, base_from_milestones, threshold_type, threshold_value].
+  # effective_minimum is nil when not configured. For percentage, base_from_milestones is the required-milestone sum.
+  def resolve_mileage_threshold(position, requirements)
+    threshold_type = requirements['threshold_type'] || requirements[:threshold_type]
+    threshold_value = requirements['threshold_value'] || requirements[:threshold_value]
+    legacy_points = requirements['minimum_mileage_points'] || requirements[:minimum_mileage_points]
+
+    if threshold_type == 'percentage'
+      return [nil, nil, nil, nil] if threshold_value.blank?
+      base = @mileage_service.minimum_required_for_position(position)
+      effective = (base * (100 + threshold_value.to_i) / 100).round
+      [effective, base, 'percentage', threshold_value.to_i]
+    elsif threshold_type == 'absolute' || legacy_points.present?
+      points = (threshold_type == 'absolute' ? threshold_value : legacy_points)
+      return [nil, nil, nil, nil] if points.blank?
+      [points.to_i, nil, threshold_type || (legacy_points.present? ? nil : 'absolute'), points.to_i]
+    else
+      [nil, nil, nil, nil]
+    end
   end
 
   def check_position_check_in_requirements(teammate, requirements)
@@ -157,21 +183,6 @@ class PositionEligibilityService
     check_aspiration_group(
       key: :company_aspirational_values_check_in_requirements,
       label: 'Company Aspirational Values Check-Ins',
-      aspirations: aspirations,
-      teammate: teammate,
-      requirements: requirements
-    )
-  end
-
-  def check_title_department_aspirational_values_check_ins(teammate, position, requirements)
-    # Get aspirations for the title's department (if any)
-    aspirations = position.title.department ? 
-      Aspiration.for_department(position.title.department).ordered : 
-      Aspiration.none
-
-    check_aspiration_group(
-      key: :title_department_aspirational_values_check_in_requirements,
-      label: 'Title/Department Aspirational Values Check-Ins',
       aspirations: aspirations,
       teammate: teammate,
       requirements: requirements

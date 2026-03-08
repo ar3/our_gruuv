@@ -33,7 +33,7 @@ RSpec.describe 'Position Eligibility Management', type: :request do
     it 'pre-populates form with existing eligibility requirements' do
       position.update!(
         eligibility_requirements_explicit: {
-          'mileage_requirements' => { 'minimum_mileage_points' => 20 },
+          'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 20 },
           'position_check_in_requirements' => { 'minimum_rating' => 2, 'minimum_months_at_or_above_rating_criteria' => 6 }
         }
       )
@@ -42,7 +42,8 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       
       expect(response).to have_http_status(:success)
       eligibility_data = assigns(:eligibility_data)
-      expect(eligibility_data['mileage_requirements']['minimum_mileage_points']).to eq(20)
+      expect(eligibility_data['mileage_requirements']['threshold_type']).to eq('absolute')
+      expect(eligibility_data['mileage_requirements']['threshold_value']).to eq(20)
       expect(eligibility_data['position_check_in_requirements']['minimum_rating']).to eq(2)
     end
 
@@ -56,10 +57,11 @@ RSpec.describe 'Position Eligibility Management', type: :request do
   end
 
   describe 'PATCH /organizations/:organization_id/positions/:id/update_eligibility' do
-    it 'updates mileage requirements' do
+    it 'updates mileage requirements (absolute)' do
       patch update_eligibility_organization_position_path(company, position), params: {
         eligibility_requirements: {
           mileage_requirements: {
+            threshold_type: 'absolute',
             minimum_mileage_points: '25'
           }
         }
@@ -69,7 +71,26 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       expect(flash[:notice]).to be_present
       
       position.reload
-      expect(position.eligibility_requirements_explicit['mileage_requirements']['minimum_mileage_points']).to eq(25)
+      expect(position.eligibility_requirements_explicit['mileage_requirements']['threshold_type']).to eq('absolute')
+      expect(position.eligibility_requirements_explicit['mileage_requirements']['threshold_value']).to eq(25)
+    end
+
+    it 'updates mileage requirements (percentage more than required)' do
+      patch update_eligibility_organization_position_path(company, position), params: {
+        eligibility_requirements: {
+          mileage_requirements: {
+            threshold_type: 'percentage',
+            threshold_value: '20'
+          }
+        }
+      }
+      
+      expect(response).to redirect_to(organization_position_path(company, position))
+      expect(flash[:notice]).to be_present
+      
+      position.reload
+      expect(position.eligibility_requirements_explicit['mileage_requirements']['threshold_type']).to eq('percentage')
+      expect(position.eligibility_requirements_explicit['mileage_requirements']['threshold_value']).to eq(20)
     end
 
     it 'validates minimum mileage is not lower than required assignments total' do
@@ -92,6 +113,7 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       patch update_eligibility_organization_position_path(company, position), params: {
         eligibility_requirements: {
           mileage_requirements: {
+            threshold_type: 'absolute',
             minimum_mileage_points: '3'
           }
         }
@@ -116,6 +138,7 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       patch update_eligibility_organization_position_path(company, position), params: {
         eligibility_requirements: {
           mileage_requirements: {
+            threshold_type: 'absolute',
             minimum_mileage_points: '2'
           }
         }
@@ -186,11 +209,6 @@ RSpec.describe 'Position Eligibility Management', type: :request do
             minimum_months_at_or_above_rating_criteria: '6',
             minimum_percentage_of_aspirational_values_meeting: '100',
             minimum_percentage_of_aspirational_values_exceeding: '50'
-          },
-          title_department_aspirational_values_check_in_requirements: {
-            minimum_months_at_or_above_rating_criteria: '6',
-            minimum_percentage_of_aspirational_values_meeting: '100',
-            minimum_percentage_of_aspirational_values_exceeding: '50'
           }
         }
       }
@@ -204,7 +222,6 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       expect(data['required_assignment_check_in_requirements']).to be_present
       expect(data['unique_to_you_assignment_check_in_requirements']).to be_present
       expect(data['company_aspirational_values_check_in_requirements']).to be_present
-      expect(data['title_department_aspirational_values_check_in_requirements']).to be_present
     end
 
     it 'removes requirement sections when all fields are blank' do
@@ -290,7 +307,7 @@ RSpec.describe 'Position Eligibility Management', type: :request do
     it 'handles partial updates - only updates provided sections' do
       position.update!(
         eligibility_requirements_explicit: {
-          'mileage_requirements' => { 'minimum_mileage_points' => 20 },
+          'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 20 },
           'position_check_in_requirements' => { 'minimum_rating' => 2, 'minimum_months_at_or_above_rating_criteria' => 6 }
         }
       )
@@ -298,6 +315,7 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       patch update_eligibility_organization_position_path(company, position), params: {
         eligibility_requirements: {
           mileage_requirements: {
+            threshold_type: 'absolute',
             minimum_mileage_points: '30'
           }
         }
@@ -306,7 +324,7 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       expect(response).to redirect_to(organization_position_path(company, position))
       
       position.reload
-      expect(position.eligibility_requirements_explicit['mileage_requirements']['minimum_mileage_points']).to eq(30)
+      expect(position.eligibility_requirements_explicit['mileage_requirements']['threshold_value']).to eq(30)
       # Position check-in requirements should be removed since not provided
       expect(position.eligibility_requirements_explicit['position_check_in_requirements']).to be_nil
     end

@@ -164,8 +164,14 @@ module ApplicationHelper
     when :milestone_requirements
       eligibility_ability_milestones_intro_sentence
     when :mileage_requirements
-      pts = details[:minimum_mileage_points] || details['minimum_mileage_points']
-      pts.present? ? "At least #{pts} mileage points." : nil
+      if details[:threshold_type] == 'percentage' || details['threshold_type'] == 'percentage'
+        pct = details[:threshold_value] || details['threshold_value']
+        base = details[:minimum_required_from_milestones] || details['minimum_required_from_milestones']
+        pct.present? ? "At least #{pct}% more than required milestone mileage (#{base} points)." : nil
+      else
+        pts = details[:minimum_mileage_points] || details['minimum_mileage_points']
+        pts.present? ? "At least #{pts} mileage points." : nil
+      end
     when :position_check_in_requirements
       months = details[:minimum_months_at_or_above_rating_criteria] || details['minimum_months_at_or_above_rating_criteria']
       rating = details[:minimum_rating] || details['minimum_rating']
@@ -185,9 +191,6 @@ module ApplicationHelper
     when :company_aspirational_values_check_in_requirements
       sentence = format_aspirational_values_requirement(details)
       sentence.present? ? "Company aspirational values: #{sentence}" : nil
-    when :title_department_aspirational_values_check_in_requirements
-      sentence = format_aspirational_values_requirement(details)
-      sentence.present? ? "Title/department aspirational values: #{sentence}" : nil
     else
       label.present? ? "#{label} (see details above)." : nil
     end
@@ -201,7 +204,7 @@ module ApplicationHelper
     keys = %w[
       milestone_requirements mileage_requirements position_check_in_requirements
       required_assignment_check_in_requirements unique_to_you_assignment_check_in_requirements
-      company_aspirational_values_check_in_requirements title_department_aspirational_values_check_in_requirements
+      company_aspirational_values_check_in_requirements
     ]
     sentences = keys.filter_map do |key|
       details = config[key] || config[key.to_sym]

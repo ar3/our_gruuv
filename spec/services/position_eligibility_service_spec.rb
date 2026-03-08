@@ -112,4 +112,87 @@ RSpec.describe PositionEligibilityService do
       expect(milestone_check[:status]).to eq(:failed)
     end
   end
+
+  describe 'mileage requirements' do
+    let(:organization) { create(:organization, :company) }
+    let(:title) { create(:title, company: organization) }
+    let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+    let(:position) { create(:position, title: title, position_level: position_level) }
+    let(:teammate) { create(:company_teammate, organization: organization) }
+    let(:ability) { create(:ability, company: organization) }
+
+    it 'passes when teammate meets absolute minimum mileage' do
+      create(:position_ability, position: position, ability: ability, milestone_level: 2)
+      create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 2)
+      position.update!(
+        eligibility_requirements_explicit: {
+          'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 2 }
+        }
+      )
+
+      report = described_class.new.check_eligibility(teammate, position)
+      mileage_check = report[:checks].find { |c| c[:key] == :mileage_requirements }
+
+      expect(mileage_check[:status]).to eq(:passed)
+      expect(mileage_check[:details][:minimum_mileage_points]).to eq(2)
+      expect(mileage_check[:details][:total_mileage_points]).to eq(2)
+    end
+
+    it 'fails when teammate is below absolute minimum mileage' do
+      create(:position_ability, position: position, ability: ability, milestone_level: 2)
+      create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 1)
+      position.update!(
+        eligibility_requirements_explicit: {
+          'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 5 }
+        }
+      )
+
+      report = described_class.new.check_eligibility(teammate, position)
+      mileage_check = report[:checks].find { |c| c[:key] == :mileage_requirements }
+
+      expect(mileage_check[:status]).to eq(:failed)
+      expect(mileage_check[:details][:minimum_mileage_points]).to eq(5)
+      expect(mileage_check[:details][:total_mileage_points]).to eq(1)
+    end
+
+    it 'uses percentage more than required: base 20, 20% more = 24; teammate 23 fails, 24 passes' do
+      # Position requires 20 points total from milestones (e.g. two level-4 abilities = 6+6, one level-2 = 2 -> 14; or use level 5s: 8+8+...).
+      # MILESTONE_POINTS: 1=>1, 2=>2, 3=>3, 4=>6, 5=>8. So 20 = e.g. two level-5 (16) + one level-2 (2) = 18, need 20 so two level-5 + one level-4 (8+8+6=22) or level-3+level-4+level-5 (3+6+8=17)...  level 4+4+4+2 = 6+6+6+2 = 20.
+      create(:position_ability, position: position, ability: ability, milestone_level: 4)
+      a2 = create(:ability, company: organization)
+      create(:position_ability, position: position, ability: a2, milestone_level: 4)
+      a3 = create(:ability, company: organization)
+      create(:position_ability, position: position, ability: a3, milestone_level: 4)
+      a4 = create(:ability, company: organization)
+      create(:position_ability, position: position, ability: a4, milestone_level: 2)
+      # 6+6+6+2 = 20 base
+      position.update!(
+        eligibility_requirements_explicit: {
+          'mileage_requirements' => { 'threshold_type' => 'percentage', 'threshold_value' => 20 }
+        }
+      )
+
+      # 20 * (100+20)/100 = 24 required
+      create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 4)
+      create(:teammate_milestone, company_teammate: teammate, ability: a2, milestone_level: 4)
+      create(:teammate_milestone, company_teammate: teammate, ability: a3, milestone_level: 4)
+      create(:teammate_milestone, company_teammate: teammate, ability: a4, milestone_level: 2)
+      # teammate total = 20, needs 24 -> fail
+      report = described_class.new.check_eligibility(teammate, position)
+      mileage_check = report[:checks].find { |c| c[:key] == :mileage_requirements }
+      expect(mileage_check[:status]).to eq(:failed)
+      expect(mileage_check[:details][:minimum_mileage_points]).to eq(24)
+      expect(mileage_check[:details][:minimum_required_from_milestones]).to eq(20)
+      expect(mileage_check[:details][:threshold_value]).to eq(20)
+
+      # teammate with 26 (20 + one more level-4) passes
+      a5 = create(:ability, company: organization)
+      create(:teammate_milestone, company_teammate: teammate, ability: a5, milestone_level: 4)
+      teammate.reload
+      report2 = described_class.new.check_eligibility(teammate, position)
+      mileage_check2 = report2[:checks].find { |c| c[:key] == :mileage_requirements }
+      expect(mileage_check2[:details][:total_mileage_points]).to eq(26)
+      expect(mileage_check2[:status]).to eq(:passed)
+    end
+  end
 end

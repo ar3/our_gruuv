@@ -63,13 +63,9 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     position_company = @position.company
     @company_aspirations = Aspiration.for_company(position_company).ordered
-    # Get aspirations for the title's department (if any)
-    @title_department_aspirations = @position.title.department ? 
-      Aspiration.for_department(@position.title.department).ordered : 
-      Aspiration.none
 
     # Aspirational values table: one row per value with 12-month teammate status
-    @aspirational_values_monthly_status = aspirational_values_monthly_status(@teammate, @company_aspirations.to_a + @title_department_aspirations.to_a)
+    @aspirational_values_monthly_status = aspirational_values_monthly_status(@teammate, @company_aspirations.to_a)
     @aspirational_values_table_rows = build_aspirational_values_table_rows
     @aspirational_values_summary = build_aspirational_values_summary
 
@@ -83,17 +79,13 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
     @unique_assignments_summary = build_check_in_requirements_summary(unique_check, @unique_assignments.map(&:id), @unique_assignments_monthly_status)
 
-    # Per-section aspirational summaries (company and title/department separately)
+    # Per-section aspirational summary (company only)
     company_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
-    title_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :title_department_aspirational_values_check_in_requirements }
     company_aspiration_ids = @aspirational_values_table_rows.select { |r| r[:section] == 'company' }.map { |r| r[:aspiration].id }
-    title_aspiration_ids = @aspirational_values_table_rows.select { |r| r[:section] == 'title_department' }.map { |r| r[:aspiration].id }
     @company_aspirational_values_summary = build_check_in_requirements_summary(company_asp_check, company_aspiration_ids, @aspirational_values_monthly_status)
-    @title_department_aspirational_values_summary = build_check_in_requirements_summary(title_asp_check, title_aspiration_ids, @aspirational_values_monthly_status)
 
     # 3-level eligibility result (row categories + summary) for each section
     @company_aspirational_values_eligibility_result = build_check_in_eligibility_result(company_asp_check, company_aspiration_ids, @aspirational_values_monthly_status)
-    @title_department_aspirational_values_eligibility_result = build_check_in_eligibility_result(title_asp_check, title_aspiration_ids, @aspirational_values_monthly_status)
     @required_assignments_eligibility_result = build_check_in_eligibility_result(required_check, @required_assignments.map(&:id), @required_assignments_monthly_status)
     @unique_assignments_eligibility_result = build_check_in_eligibility_result(unique_check, @unique_assignments.map(&:id), @unique_assignments_monthly_status)
 
@@ -311,12 +303,9 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     end
   end
 
-  # Rows for aspirational values table: [ { aspiration:, section: 'company'|'title_department' }, ... ]
+  # Rows for aspirational values table: [ { aspiration:, section: 'company' }, ... ]
   def build_aspirational_values_table_rows
-    rows = []
-    @company_aspirations.each { |a| rows << { aspiration: a, section: 'company' } }
-    @title_department_aspirations.each { |a| rows << { aspiration: a, section: 'title_department' } }
-    rows
+    @company_aspirations.map { |a| { aspiration: a, section: 'company' } }
   end
 
   # Returns hash: assignment_id => [ { month:, status:, actual:, source_check_in_date: }, ... ] (12 months, same structure as aspirations).
@@ -373,12 +362,9 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
   # Returns { total_pass:, total_maybe:, total_miss:, pass_pct:, pass_maybe_pct:, threshold:, status: :eligible|:potentially_eligible|:working_to_meet }
   def build_aspirational_values_summary
     company_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
-    title_check = @eligibility_report[:checks].find { |c| c[:key] == :title_department_aspirational_values_check_in_requirements }
     threshold = [
       company_check&.dig(:details, :minimum_percentage_meeting),
-      company_check&.dig(:details, :minimum_percentage_exceeding),
-      title_check&.dig(:details, :minimum_percentage_meeting),
-      title_check&.dig(:details, :minimum_percentage_exceeding)
+      company_check&.dig(:details, :minimum_percentage_exceeding)
     ].compact.map(&:to_f).max
     threshold = nil if threshold.blank? || threshold <= 0
 
@@ -389,9 +375,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     @aspirational_values_table_rows.each do |row_data|
       aspiration = row_data[:aspiration]
-      section = row_data[:section]
-      section_check = (section == 'company') ? company_check : title_check
-      details = section_check&.dig(:details) || {}
+      details = company_check&.dig(:details) || {}
       monthly = @aspirational_values_monthly_status[aspiration.id] || []
       result = helpers.aspirational_value_row_result_for_details(monthly, details)
       case result

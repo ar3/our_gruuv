@@ -123,11 +123,9 @@
 .row.mb-4
   .col-12
     - company_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
-    - title_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :title_department_aspirational_values_check_in_requirements }
     - company_asp_result = @company_aspirational_values_eligibility_result
-    - title_asp_result = @title_department_aspirational_values_eligibility_result
-    - asp_combined_eligible = company_asp_result&.summary&.overall_eligible && title_asp_result&.summary&.overall_eligible
-    - asp_combined_maybe = [company_asp_result, title_asp_result].compact.any? { |r| r.summary&.meet_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK || r.summary&.exceed_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK }
+    - asp_combined_eligible = company_asp_result&.summary&.overall_eligible
+    - asp_combined_maybe = company_asp_result&.summary&.meet_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK || company_asp_result&.summary&.exceed_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK
     - asp_footer_bg = asp_combined_eligible ? "bg-success bg-opacity-25" : (asp_combined_maybe ? "bg-info bg-opacity-25" : "bg-warning bg-opacity-25")
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section3Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
@@ -147,14 +145,6 @@
           monthly_status_by_id: @aspirational_values_monthly_status,
           eligibility_result: company_asp_result,
           show_totals_in_body: false
-        %div.mt-4
-          = render "organizations/eligibility_requirements/check_in_requirements_section",
-            section_title: "Title/Department Aspirational Values Check-In Requirements",
-            requirement_sentence: (title_asp_check && title_asp_check[:details].present?) ? format_aspirational_values_requirement(title_asp_check[:details]) : nil,
-            rows: @aspirational_values_table_rows.select { |r| r[:section] == 'title_department' }.map { |r| { name: r[:aspiration].name, id: r[:aspiration].id } },
-            monthly_status_by_id: @aspirational_values_monthly_status,
-            eligibility_result: title_asp_result,
-            show_totals_in_body: false
       = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
         eligibility_result: company_asp_result,
         footer_bg_class: asp_footer_bg
@@ -311,6 +301,8 @@
       - required_total = required[:total]
       - remainder_miles = [minimum_miles - required_total, 0].max
       - mileage_passed = mileage_check[:status] == :passed
+      - mileage_details = mileage_check[:details] || {}
+      - mileage_percentage = mileage_details[:threshold_type] == 'percentage'
       .card
         .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section7Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
           %h3.mb-0 (7) You must meet the required Milestone Mileage…
@@ -359,6 +351,9 @@
                       
           
         .card-footer.fw-semibold.small.py-2{class: mileage_passed ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
+          - if mileage_percentage
+            .small.text-muted.mb-1
+              Required: #{mileage_details[:threshold_value]}% more than required milestone total (#{mileage_details[:minimum_required_from_milestones]} points) = #{minimum_miles} points
           .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
             .me-2
               Total: #{earned[:total]} Milestone Miles earned vs #{minimum_miles} required

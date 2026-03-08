@@ -410,11 +410,16 @@ class Organizations::PositionsController < ApplicationController
     
     # Build JSONB hash, only including sections with at least one field filled
     if eligibility_params[:mileage_requirements].present?
-      mileage = eligibility_params[:mileage_requirements]
-      if mileage[:minimum_mileage_points].present?
-        new_eligibility_data['mileage_requirements'] = {
-          'minimum_mileage_points' => mileage[:minimum_mileage_points].to_i
-        }
+      mileage = eligibility_params[:mileage_requirements].to_h.with_indifferent_access
+      threshold_type = mileage[:threshold_type].presence
+      threshold_value = mileage[:threshold_value]
+      legacy_points = mileage[:minimum_mileage_points]
+      if threshold_type == 'percentage'
+        new_eligibility_data['mileage_requirements'] = { 'threshold_type' => 'percentage', 'threshold_value' => threshold_value.to_i } if threshold_value.present? || threshold_value == 0
+      elsif legacy_points.present?
+        new_eligibility_data['mileage_requirements'] = { 'threshold_type' => 'absolute', 'threshold_value' => legacy_points.to_i }
+      elsif threshold_type == 'absolute' && threshold_value.present?
+        new_eligibility_data['mileage_requirements'] = { 'threshold_type' => 'absolute', 'threshold_value' => threshold_value.to_i }
       end
     end
     
@@ -446,12 +451,6 @@ class Organizations::PositionsController < ApplicationController
       new_eligibility_data['company_aspirational_values_check_in_requirements'] = company_data if company_data.any?
     end
 
-    if eligibility_params[:title_department_aspirational_values_check_in_requirements].present?
-      title_asp = eligibility_params[:title_department_aspirational_values_check_in_requirements]
-      title_data = build_check_in_requirement_data(title_asp, :aspirational_values)
-      new_eligibility_data['title_department_aspirational_values_check_in_requirements'] = title_data if title_data.any?
-    end
-    
     # Validate numeric ranges
     errors = []
     new_eligibility_data.each do |key, value|
@@ -475,18 +474,22 @@ class Organizations::PositionsController < ApplicationController
             errors << "Position check-in minimum rating must be between -3 and 3"
           end
         end
-        if value['minimum_mileage_points'].present? && value['minimum_mileage_points'] < 0
-          errors << "Minimum mileage points must be >= 0"
-        end
       end
     end
-    
-    # Validate minimum mileage against required assignments
-    if new_eligibility_data['mileage_requirements'].present? && new_eligibility_data['mileage_requirements']['minimum_mileage_points'].present?
-      minimum_mileage_from_assignments = calculate_minimum_mileage_from_assignments
-      entered_mileage = new_eligibility_data['mileage_requirements']['minimum_mileage_points'].to_i
-      if entered_mileage < minimum_mileage_from_assignments
-        errors << "Minimum mileage points (#{entered_mileage}) cannot be lower than the total from required assignments (#{minimum_mileage_from_assignments})"
+
+    # Validate mileage requirements: absolute >= minimum from assignments; percentage >= 0
+    if new_eligibility_data['mileage_requirements'].present?
+      mileage = new_eligibility_data['mileage_requirements']
+      min_from_assignments = calculate_minimum_mileage_from_assignments
+      if mileage['threshold_type'] == 'percentage'
+        val = mileage['threshold_value']
+        errors << "Percentage more than required must be >= 0" if val.present? && val.to_i < 0
+      else
+        val = mileage['threshold_value'].to_i
+        errors << "Minimum mileage points must be >= 0" if val < 0
+        if val < min_from_assignments
+          errors << "Minimum mileage points (#{val}) cannot be lower than the total from required assignments (#{min_from_assignments})"
+        end
       end
     end
     

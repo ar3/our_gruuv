@@ -26,4 +26,20 @@ class MilestoneMileageService
   def milestone_points(milestone_level)
     MILESTONE_POINTS[milestone_level.to_i] || 0
   end
+
+  # Sum of milestone points for position abilities + required assignment abilities (minimum "base" for this position).
+  def minimum_required_for_position(position)
+    return 0 unless position
+
+    total_points = 0
+    position.position_abilities.each do |pa|
+      total_points += milestone_points(pa.milestone_level)
+    end
+    position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+      position_assignment.assignment.assignment_abilities.each do |aa|
+        total_points += milestone_points(aa.milestone_level)
+      end
+    end
+    total_points
+  end
 end
