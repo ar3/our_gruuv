@@ -1,0 +1,10 @@
+-# Single row in the mileage equation: left = display label, right = "+ X Milestone Miles" (or "X Milestone Miles" for total row when is_total).
+-# locals: display_label (string), points (number), is_total (boolean, optional) – when true, no "+" and same gray as total rows above (bg-light)
+.mileage-card.d-flex.align-items-center.justify-content-between.px-2.py-1{ style: "min-height: 4rem; border: 1px solid #e9ecef; border-radius: 2px; transition: box-shadow 0.15s ease;", class: ("bg-light" if is_total) }
+  .mileage-card-label.small.text-muted.me-2{ style: "flex: 1; min-width: 0;" }
+    = display_label
+  .mileage-card-points.fw-medium.small{ style: "flex-shrink: 0; font-variant-numeric: tabular-nums;" }
+    - if is_total
+      = "#{points} Milestone Miles"
+    - else
+      = "+ #{points} Milestone Miles"

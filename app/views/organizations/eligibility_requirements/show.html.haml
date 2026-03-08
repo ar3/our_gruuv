@@ -114,5 +114,58 @@
         - mileage_check = @eligibility_report[:checks].find { |check| check[:key] == :mileage_requirements }
         = render partial: "organizations/eligibility_requirements/requirement_row",
           locals: { check: mileage_check, title: "Milestone Mileage" }
+        - if mileage_check.present? && mileage_check[:status] != :not_configured
+          - earned = @mileage_earned_addends
+          - required = @mileage_required_addends
+          - minimum_miles = mileage_check.dig(:details, :minimum_mileage_points).to_i
+          - required_total = required[:total]
+          - remainder_miles = [minimum_miles - required_total, 0].max
+          %style
+            .mileage-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+          .row.mt-3.gy-2
+            .col-6.mileage-column
+              %p.small.text-muted.mb-2.fw-semibold= "What #{@teammate.person.casual_name.presence || 'teammate'} has earned"
+              .d-flex.flex-column.gap-1.w-100
+                - if earned[:addends].any?
+                  - earned[:addends].each do |a|
+                    = render partial: "organizations/eligibility_requirements/mileage_card",
+                      locals: { display_label: "#{milestone_level_display(a[:level])} #{a[:ability_name]} – Milestone #{a[:level]}", points: a[:points], is_total: false }
+                - else
+                  .mileage-card.d-flex.align-items-center.px-2.py-1{ style: "min-height: 4rem; border: 1px solid #e9ecef; border-radius: 2px;" }
+                    .small.text-muted No milestones earned yet
+            .col-6.mileage-column.border-start.border-4{ style: "border-color: #dee2e6 !important;" }
+              %p.small.text-muted.mb-2.fw-semibold What you need for this position
+              .d-flex.flex-column.gap-1.w-100
+                - if required[:addends].any?
+                  - required[:addends].each do |a|
+                    = render partial: "organizations/eligibility_requirements/mileage_card",
+                      locals: { display_label: "#{milestone_level_display(a[:level])} #{a[:ability_name]} – Milestone #{a[:level]}", points: a[:points], is_total: false }
+                - if remainder_miles.positive?
+                  = render partial: "organizations/eligibility_requirements/mileage_card",
+                    locals: { display_label: "Unique to you Abilities that you will specialize in", points: remainder_miles, is_total: false }
+          %hr.my-2{ style: "border-width: 1px;" }
+          .row.mt-3.gy-2 
+            .col-6.mileage-column
+              .d-flex.flex-column.gap-1.w-100
+                = render partial: "organizations/eligibility_requirements/mileage_card",
+                  locals: { display_label: "Total", points: earned[:total], is_total: true }
+
+            .col-6.mileage-column.border-start.border-4{ style: "border-color: #dee2e6 !important;" }
+              .d-flex.flex-column.gap-1.w-100
+                = render partial: "organizations/eligibility_requirements/mileage_card",
+                  locals: { display_label: "Total", points: minimum_miles, is_total: true }
+            
+
+          .row.mt-2
+            .col-12
+              - mileage_passed = mileage_check[:status] == :passed
+              - if mileage_passed
+                %span.btn.btn-outline-success.btn-sm{ style: "pointer-events: none;" }
+                  %i.bi.bi-check-circle-fill.me-1
+                  Meeting requirements
+              - else
+                %span.btn.btn-outline-warning.btn-sm{ style: "pointer-events: none;" }
+                  %i.bi.bi-tools.me-1
+                  Working to meet requirements
 
     = render "shared/eligibility_requirements_summary", eligibility_requirements_sentences: @eligibility_requirements_sentences, ability_milestone_requirements: @ability_milestone_requirements

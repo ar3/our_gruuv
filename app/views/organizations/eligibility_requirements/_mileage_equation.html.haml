@@ -1,0 +1,19 @@
+-# Renders a vertical addition-style equation for milestone mileage.
+-# addends: array of hashes with :points and optional :label (e.g. "Milestone 1" or "Position – Milestone 2")
+-# total: number
+.mileage-equation{ style: "font-variant-numeric: tabular-nums; max-width: 12rem;" }
+  - addends.each_with_index do |addend, idx|
+    .d-flex.align-items-baseline.gap-2.mb-0{ style: "min-height: 1.5em;" }
+      - if addend[:label].present?
+        .text-muted.small.text-end{ style: "min-width: 8rem;" }
+          = addend[:label]
+      .text-end.fw-medium{ style: "min-width: 3rem;" }
+        - if idx == 0
+          = addend[:points]
+        - else
+          = "+ #{addend[:points]}"
+  .d-flex.align-items-baseline.gap-2.mb-0.mt-1
+    - if addends.any? && addends.first[:label].present?
+      .text-muted.small.text-end{ style: "min-width: 8rem;" }
+    .text-end.fw-medium.border-top.pt-1{ style: "min-width: 3rem;" }
+      = total

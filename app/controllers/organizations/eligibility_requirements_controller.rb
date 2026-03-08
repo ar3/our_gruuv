@@ -101,6 +101,10 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     @eligibility_requirements_sentences = build_eligibility_requirements_sentences
     @ability_milestone_requirements = build_ability_milestone_requirements
     @milestone_table_rows = build_milestone_table_rows
+
+    # Milestone Mileage: earned addends (teammate's milestones) and required addends (position + required assignments)
+    @mileage_earned_addends = build_mileage_earned_addends
+    @mileage_required_addends = build_mileage_required_addends
   end
 
   # Array of sentence strings for each configured eligibility check (for collapsible summary).
@@ -179,6 +183,55 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
         passed: passed
       }
     end.sort_by { |row| row[:ability].name }
+  end
+
+  # For Milestone Mileage: list of { level:, ability_name:, points: } for each teammate milestone (earned), plus total.
+  # Display format in view: "<milestone display> <ability name> – Milestone X". Ordered by milestone level then attained_at.
+  def build_mileage_earned_addends
+    return { addends: [], total: 0 } unless @teammate
+
+    mileage_service = MilestoneMileageService.new
+    milestones = @teammate.teammate_milestones.includes(:ability).order(:milestone_level, :attained_at)
+    addends = milestones.map do |m|
+      {
+        level: m.milestone_level,
+        ability_name: m.ability.name,
+        points: mileage_service.milestone_points(m.milestone_level)
+      }
+    end
+    { addends: addends, total: mileage_service.total_mileage_for(@teammate) }
+  end
+
+  # For Milestone Mileage: list of { level:, ability_name:, points:, source_name: } for each required milestone
+  # (position abilities + required assignment abilities), plus total. Display: "<milestone display> <ability name> – Milestone X".
+  def build_mileage_required_addends
+    return { addends: [], total: 0 } unless @position
+
+    mileage_service = MilestoneMileageService.new
+    addends = []
+
+    @position.position_abilities.includes(:ability).each do |pa|
+      addends << {
+        level: pa.milestone_level,
+        ability_name: pa.ability.name,
+        points: mileage_service.milestone_points(pa.milestone_level),
+        source_name: "Position"
+      }
+    end
+    @position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+      assignment = position_assignment.assignment
+      assignment.assignment_abilities.includes(:ability).each do |aa|
+        addends << {
+          level: aa.milestone_level,
+          ability_name: aa.ability.name,
+          points: mileage_service.milestone_points(aa.milestone_level),
+          source_name: assignment.title
+        }
+      end
+    end
+
+    total = addends.sum { |a| a[:points] }
+    { addends: addends, total: total }
   end
 
   # Returns hash: aspiration_id => [ { month: Date, status: :exceeding|:meeting|:working_to_meet|:none, actual: Boolean }, ... ]
