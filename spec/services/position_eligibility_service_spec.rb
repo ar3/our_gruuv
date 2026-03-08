@@ -1,5 +1,7 @@
 require 'rails_helper'
 
+# Report check details use qualifying_meeting/qualifying_exceeding for pass/fail.
+# The eligibility show page uses CheckInRequirementsEligibility::Calculator (3-level: Exceeding, Meeting, Miss, etc.).
 RSpec.describe PositionEligibilityService do
   describe '#check_unique_to_you_assignment_check_ins' do
     let(:organization) { create(:organization, :company) }
@@ -13,7 +15,8 @@ RSpec.describe PositionEligibilityService do
     let(:requirements) do
       {
         "minimum_months_at_or_above_rating_criteria" => 1,
-        "minimum_percentage_of_assignments_meeting" => 100
+        "minimum_percentage_of_assignments_meeting" => 100,
+        "minimum_percentage_of_assignments_exceeding" => 0
       }
     end
 
@@ -26,7 +29,7 @@ RSpec.describe PositionEligibilityService do
       )
     end
 
-    it 'counts only active assignments not required by the position' do
+    it 'counts only active assignments not required by the position and reports meeting/exceeding counts' do
       create(:assignment_tenure, teammate: teammate, assignment: required_assignment, ended_at: nil)
       create(:assignment_tenure, teammate: teammate, assignment: unique_assignment, ended_at: nil)
 
@@ -44,6 +47,7 @@ RSpec.describe PositionEligibilityService do
       expect(unique_check[:status]).to eq(:passed)
       expect(unique_check[:details][:total_assignments]).to eq(1)
       expect(unique_check[:details][:qualifying_meeting]).to eq(1)
+      expect(unique_check[:details][:qualifying_exceeding]).to be_present
     end
 
     it 'fails when no unique-to-you assignments are active' do

@@ -99,5 +99,57 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       # That month's block should be green (bg-success)
       expect(response.body).to include('bg-success')
     end
+
+    it 'uses 3-level eligibility summary: Exceed (maybe), Meet (maybe), and Eligible or Working to Meet' do
+      position.update!(
+        eligibility_requirements_explicit: position.eligibility_requirements_explicit.merge(
+          'company_aspirational_values_check_in_requirements' => {
+            'minimum_months_at_or_above_rating_criteria' => 12,
+            'minimum_percentage_of_aspirational_values_meeting' => 80,
+            'minimum_percentage_of_aspirational_values_exceeding' => 20
+          }
+        )
+      )
+      create(:aspiration, company: organization, name: 'Integrity', sort_order: 0)
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Exceed (maybe)')
+      expect(response.body).to include('Meet (maybe)')
+      expect(response.body).to match(/Eligible|Working to Meet Eligibility/)
+    end
+
+    it 'shows row status using new category labels (Exceeding, Meeting, Miss, Unknown, etc.)' do
+      position.update!(
+        eligibility_requirements_explicit: position.eligibility_requirements_explicit.merge(
+          'company_aspirational_values_check_in_requirements' => {
+            'minimum_months_at_or_above_rating_criteria' => 12,
+            'minimum_percentage_of_aspirational_values_meeting' => 80,
+            'minimum_percentage_of_aspirational_values_exceeding' => 20
+          }
+        )
+      )
+      create(:aspiration, company: organization, name: 'Integrity', sort_order: 0)
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      # Total row uses new category names
+      expect(response.body).to include('Exceeding')
+      expect(response.body).to include('Maybe Exceeding')
+      expect(response.body).to include('Meeting')
+      expect(response.body).to include('Maybe Meeting')
+      expect(response.body).to include('Miss')
+      expect(response.body).to include('Unknown')
+    end
   end
 end

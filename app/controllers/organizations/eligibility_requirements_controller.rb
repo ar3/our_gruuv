@@ -75,7 +75,27 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     # Required assignments table: one row per assignment with 12-month teammate status
     @required_assignments_monthly_status = assignment_monthly_status(@teammate, @required_assignments)
+    required_check = @eligibility_report[:checks].find { |c| c[:key] == :required_assignment_check_in_requirements }
     @required_assignments_summary = build_required_assignments_summary
+
+    # Unique-to-you assignments: same table structure as required
+    @unique_assignments_monthly_status = assignment_monthly_status(@teammate, @unique_assignments)
+    unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
+    @unique_assignments_summary = build_check_in_requirements_summary(unique_check, @unique_assignments.map(&:id), @unique_assignments_monthly_status)
+
+    # Per-section aspirational summaries (company and title/department separately)
+    company_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
+    title_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :title_department_aspirational_values_check_in_requirements }
+    company_aspiration_ids = @aspirational_values_table_rows.select { |r| r[:section] == 'company' }.map { |r| r[:aspiration].id }
+    title_aspiration_ids = @aspirational_values_table_rows.select { |r| r[:section] == 'title_department' }.map { |r| r[:aspiration].id }
+    @company_aspirational_values_summary = build_check_in_requirements_summary(company_asp_check, company_aspiration_ids, @aspirational_values_monthly_status)
+    @title_department_aspirational_values_summary = build_check_in_requirements_summary(title_asp_check, title_aspiration_ids, @aspirational_values_monthly_status)
+
+    # 3-level eligibility result (row categories + summary) for each section
+    @company_aspirational_values_eligibility_result = build_check_in_eligibility_result(company_asp_check, company_aspiration_ids, @aspirational_values_monthly_status)
+    @title_department_aspirational_values_eligibility_result = build_check_in_eligibility_result(title_asp_check, title_aspiration_ids, @aspirational_values_monthly_status)
+    @required_assignments_eligibility_result = build_check_in_eligibility_result(required_check, @required_assignments.map(&:id), @required_assignments_monthly_status)
+    @unique_assignments_eligibility_result = build_check_in_eligibility_result(unique_check, @unique_assignments.map(&:id), @unique_assignments_monthly_status)
 
     # Collapsible summary: sentences per check and abilities with max milestone required
     @eligibility_requirements_sentences = build_eligibility_requirements_sentences
@@ -274,6 +294,78 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
               else
                 :working_to_meet
               end
+
+    {
+      total_pass: total_pass,
+      total_maybe: total_maybe,
+      total_miss: total_miss,
+      total_disqualifiers: total_disqualifiers,
+      pass_pct: pass_pct,
+      pass_maybe_pct: pass_maybe_pct,
+      threshold: threshold,
+      status: status
+    }
+  end
+
+  # 3-level eligibility: row categories and summary via CheckInRequirementsEligibility::Calculator.
+  def build_check_in_eligibility_result(check, row_ids, monthly_status_by_id)
+    details = check&.dig(:details) || {}
+    minimum_months = (details[:minimum_months_at_or_above_rating_criteria] || details["minimum_months_at_or_above_rating_criteria"]).to_i
+    minimum_months = 12 if minimum_months <= 0
+    meeting_pct = details[:minimum_percentage_meeting] || details["minimum_percentage_meeting"] || details["minimum_percentage_of_aspirational_values_meeting"] || details["minimum_percentage_of_assignments_meeting"]
+    exceeding_pct = details[:minimum_percentage_exceeding] || details["minimum_percentage_exceeding"] || details["minimum_percentage_of_aspirational_values_exceeding"] || details["minimum_percentage_of_assignments_exceeding"]
+    CheckInRequirementsEligibility::Calculator.new(
+      row_ids: row_ids,
+      monthly_statuses_by_row_id: monthly_status_by_id,
+      minimum_months: minimum_months,
+      meeting_threshold_pct: meeting_pct,
+      exceeding_threshold_pct: exceeding_pct
+    ).call
+  end
+
+  # Generic summary for a check-in requirements section (aspirational or assignments).
+  # check: report check hash; item_ids: aspiration or assignment ids; monthly_status_by_id: id => [monthly cells].
+  def build_check_in_requirements_summary(check, item_ids, monthly_status_by_id)
+    details = check&.dig(:details) || {}
+    threshold = [
+      details[:minimum_percentage_meeting],
+      details[:minimum_percentage_exceeding],
+      details['minimum_percentage_meeting'],
+      details['minimum_percentage_exceeding']
+    ].compact.map(&:to_f).max
+    threshold = nil if threshold.blank? || threshold <= 0
+
+    total_pass = 0
+    total_maybe = 0
+    total_miss = 0
+    total_disqualifiers = 0
+
+    Array(item_ids).each do |id|
+      monthly = monthly_status_by_id[id] || []
+      result = helpers.aspirational_value_row_result_for_details(monthly, details)
+      case result
+      when :pass then total_pass += 1
+      when :maybe then total_maybe += 1
+      when :miss then total_miss += 1
+      end
+      total_disqualifiers += 1 if helpers.row_has_disqualifier?(monthly, details)
+    end
+
+    total = total_pass + total_maybe + total_miss
+    pass_pct = total.positive? ? (total_pass.to_f / total * 100).round(1) : 0
+    pass_maybe_pct = total.positive? ? ((total_pass + total_maybe).to_f / total * 100).round(1) : 0
+
+    status = if threshold.blank? || threshold <= 0
+               nil
+             elsif total_disqualifiers.positive?
+               :working_to_meet
+             elsif pass_pct >= threshold
+               :eligible
+             elsif pass_maybe_pct >= threshold
+               :potentially_eligible
+             else
+               :working_to_meet
+             end
 
     {
       total_pass: total_pass,

@@ -1,0 +1,61 @@
+-# Renders one check-in requirements section (same look for aspirational values and assignments).
+-# Locals: section_title, requirement_sentence, rows ([{ name:, id: }]), monthly_status_by_id, eligibility_result (CheckInRequirementsEligibility::CalculatorResult)
+- return if section_title.blank?
+- summary = eligibility_result&.summary
+- row_results = eligibility_result&.row_results || []
+
+%h6.mb-2= section_title
+- if requirement_sentence.present?
+  %p.text-muted.small.mb-3= requirement_sentence
+%table.table.table-sm
+  %thead
+    %tr
+      %th Requirement
+      %th
+        = "Teammate Status"
+        %span.ms-1.badge.bg-light.text-dark{ title: "One block per month (last 12 months). Green = exceeding, blue = meeting, orange = working to meet, light grey = no rating. Checkmark = rating finalized that month; otherwise rating carries from prior month.", data: { bs_toggle: "tooltip" } }
+          %i.bi.bi-info-circle
+      %th Position Requirement
+  %tbody
+    - Array(rows).each do |row|
+      - monthly = monthly_status_by_id.present? ? (monthly_status_by_id[row[:id]] || []) : []
+      - row_result = eligibility_result&.row_result_by_id(row[:id])
+      %tr
+        %td= row[:name]
+        %td
+          %span.d-inline-flex.gap-1.align-items-center{ role: "img", "aria-label": "12 months: green = exceeding, blue = meeting, orange = working to meet, light grey = no check-in. Checkmark = rating finalized that month." }
+            - monthly.each do |cell|
+              - block_class = (cell[:status] == :exceeding && "bg-success") || (cell[:status] == :meeting && "bg-primary") || (cell[:status] == :working_to_meet && "bg-warning") || ""
+              - block_style = (cell[:status] == :none) ? "width: 12px; height: 12px; min-width: 12px; background-color: #e9ecef;" : "width: 12px; height: 12px; min-width: 12px;"
+              - tooltip_parts = [cell[:month].strftime('%b %Y')]
+              - if cell[:status] == :none
+                - tooltip_parts << "No finalized check-in"
+              - else
+                - tooltip_parts << "Check-in: #{cell[:source_check_in_date].strftime('%b %-d, %Y')}" if cell[:source_check_in_date]
+                - tooltip_parts << cell[:status].to_s.humanize
+              - tooltip_text = tooltip_parts.join(' · ')
+              %span.rounded.d-inline-flex.align-items-center.justify-content-center{ class: block_class, style: block_style, data: { bs_toggle: "tooltip", bs_title: tooltip_text } }
+                - if cell[:actual] && cell[:status] != :none
+                  %i.bi.bi-check.text-white{ style: "font-size: 8px; line-height: 1;" }
+        %td
+          - if row_result
+            - pill_class = (row_result.exceeding? || row_result.meeting?) ? "btn btn-outline-success btn-sm" : (row_result.maybe_exceeding? || row_result.maybe_meeting?) ? "btn btn-outline-primary btn-sm" : row_result.miss? ? "btn btn-outline-warning btn-sm" : "btn btn-outline-secondary btn-sm"
+            %span{class: pill_class, style: "pointer-events: none;"}= row_result.label
+          - else
+            —
+    - if summary.present? && summary.total.positive?
+      %tr.table-secondary.fw-semibold
+        %td{ colspan: 2 }
+          Total: #{summary.count_exceeding} Exceeding, #{summary.count_maybe_exceeding} Maybe Exceeding, #{summary.count_meeting} Meeting, #{summary.count_maybe_meeting} Maybe Meeting, #{summary.count_miss} Miss, #{summary.count_unknown} Unknown
+          = " = "
+          %hr/
+          [#{summary.full_exceed_pct}% | #{summary.exceed_plus_maybe_exceed_pct}%] Exceed (maybe) #{summary.exceed_status_icon}
+          %br/
+          [#{summary.full_meet_pct}% | #{summary.meet_plus_maybe_meet_pct}%] Meet (maybe) #{summary.meet_status_icon}
+        %td.align-middle
+          - if summary.overall_eligible
+            %i.bi.bi-star-fill.text-success.display-1.fs-1.align-middle.ms-2
+            %span.ms-1 Eligible
+          - else
+            %i.bi.bi-tools.display-1.fs-1.align-middle.ms-2
+            %span.ms-1 Working to Meet Eligibility
