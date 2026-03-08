@@ -1,8 +1,9 @@
 -# Renders one check-in requirements section (same look for aspirational values and assignments).
--# Locals: section_title, requirement_sentence, rows ([{ name:, id: }]), monthly_status_by_id, eligibility_result (CheckInRequirementsEligibility::CalculatorResult)
+-# Locals: section_title, requirement_sentence, rows ([{ name:, id: }]), monthly_status_by_id, eligibility_result (CheckInRequirementsEligibility::CalculatorResult), show_totals_in_body (optional, default true)
 - return if section_title.blank?
 - summary = eligibility_result&.summary
 - row_results = eligibility_result&.row_results || []
+- show_totals_in_body = local_assigns.fetch(:show_totals_in_body, true)
 
 %h6.mb-2= section_title
 - if requirement_sentence.present?
@@ -43,7 +44,7 @@
             %span{class: pill_class, style: "pointer-events: none;"}= row_result.label
           - else
             —
-    - if summary.present? && summary.total.positive?
+    - if show_totals_in_body && summary.present? && summary.total.positive?
       %tr.table-secondary.fw-semibold
         %td{ colspan: 2 }
           Total: #{summary.count_exceeding} Exceeding, #{summary.count_maybe_exceeding} Maybe Exceeding, #{summary.count_meeting} Meeting, #{summary.count_maybe_meeting} Maybe Meeting, #{summary.count_miss} Miss, #{summary.count_unknown} Unknown

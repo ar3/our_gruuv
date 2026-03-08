@@ -113,6 +113,16 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     @seats_for_position = @position.title.seats.active.ordered
     @teammate_in_seat_for_position = @teammate.employment_tenures.active.joins(:seat).where(seats: { title_id: @position.title_id }).first&.seat
     @business_need_eligible = @teammate_in_seat_for_position.present? || @seats_for_position.any?(&:open?)
+
+    # Section (8): Position check-in requirements — monthly status (one row) and eligibility result
+    pos_check = @eligibility_report[:checks].find { |c| c[:key] == :position_check_in_requirements }
+    if pos_check.present? && pos_check[:status] != :not_configured
+      @position_check_in_monthly_status_by_row_id = build_position_check_in_monthly_status(pos_check)
+      @position_check_in_eligibility_result = build_position_check_in_eligibility_result(pos_check)
+    else
+      @position_check_in_monthly_status_by_row_id = nil
+      @position_check_in_eligibility_result = nil
+    end
   end
 
   # Array of sentence strings for each configured eligibility check (for collapsible summary).
@@ -596,5 +606,73 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       chain << { company_teammate: ct } if ct
     end
     chain
+  end
+
+  # Section (8): One row of 12-month status for position check-ins (any position). Returns { position: [ { month:, status:, actual:, source_check_in_date: }, ... ] }.
+  # Maps official_rating (1-3) to :meeting/:exceeding and lower to :working_to_meet.
+  def build_position_check_in_monthly_status(pos_check)
+    start_month = 12.months.ago.beginning_of_month.to_date
+    end_month = 1.month.ago.end_of_month.to_date
+
+    check_ins = PositionCheckIn.closed
+      .where(company_teammate: @teammate)
+      .where(check_in_started_on: start_month..end_month)
+      .order(:check_in_started_on)
+      .pluck(:check_in_started_on, :official_rating)
+
+    # Best rating per month (later check-in in same month overwrites)
+    by_month = check_ins.each_with_object(Hash.new { |h, k| h[k] = nil }) do |(started_on, rating), h|
+      month = started_on.beginning_of_month.to_date
+      next if rating.blank?
+      current = h[month]
+      # Keep higher rating (3 > 2 > 1)
+      h[month] = { rating: rating.to_i, check_in_date: started_on } if current.nil? || rating.to_i > current[:rating]
+    end
+
+    months = 12.times.map { |i| (start_month + i.months).beginning_of_month.to_date }
+    # Carry forward: for each month, use most recent check-in on or before that month
+    pairs = months.map do |month|
+      key = by_month.keys.select { |m| m <= month }.max
+      key ? by_month[key] : nil
+    end
+
+    status_array = months.each_with_index.map do |month, i|
+      pair = pairs[i]
+      status = if pair.nil?
+        :none
+      elsif pair[:rating] >= 3
+        :exceeding
+      elsif pair[:rating] >= 2
+        :meeting
+      else
+        :working_to_meet
+      end
+      actual = by_month[month].present?
+      {
+        month: month,
+        status: status,
+        actual: actual,
+        source_check_in_date: pair&.dig(:check_in_date)
+      }
+    end
+
+    { position: status_array }
+  end
+
+  # Section (8): Eligibility result for the single position check-in row (100% must meet).
+  def build_position_check_in_eligibility_result(pos_check)
+    return nil unless @position_check_in_monthly_status_by_row_id.present?
+
+    details = pos_check[:details] || {}
+    minimum_months = (details[:minimum_months_at_or_above_rating_criteria] || details["minimum_months_at_or_above_rating_criteria"]).to_i
+    minimum_months = 12 if minimum_months <= 0
+
+    CheckInRequirementsEligibility::Calculator.new(
+      row_ids: [:position],
+      monthly_statuses_by_row_id: @position_check_in_monthly_status_by_row_id,
+      minimum_months: minimum_months,
+      meeting_threshold_pct: 100,
+      exceeding_threshold_pct: 0
+    ).call
   end
 end

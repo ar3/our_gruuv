@@ -4,6 +4,13 @@
 - content_for :go_back_link do
   = link_to "Back to Eligibility Selection", organization_eligibility_requirements_path(@organization), class: "btn btn-outline-secondary btn-sm"
 
+%style
+  :plain
+    .eligibility-section-header .collapse-detail-label { display: none !important; }
+    .eligibility-section-header .expand-detail-label { display: inline-flex !important; }
+    .eligibility-section-header[aria-expanded="true"] .expand-detail-label { display: none !important; }
+    .eligibility-section-header[aria-expanded="true"] .collapse-detail-label { display: inline-flex !important; }
+
 .row.mb-4
   .col-12
     %h2.mb-0
@@ -23,11 +30,15 @@
 .row.mb-4
   .col-12
     .card
-      .card-header.d-flex.align-items-center.justify-content-between.py-2
+      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section1Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         %h3.mb-0 (1) Your managerial hierarchy must be advocates…
-        %a.small.text-muted.text-decoration-none{ href: "#section1Body", "data-bs-toggle": "collapse", "aria-expanded": "false", "aria-controls": "section1Body" }
-          Expand for details
-          %i.bi.bi-chevron-down.ms-1
+        .d-flex.align-items-center.small.text-muted
+          %span.expand-detail-label.d-inline-flex.align-items-center
+            Expand for details
+            %i.bi.bi-chevron-down.ms-1
+          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+            Show less detail
+            %i.bi.bi-chevron-up.ms-1
       .card-body.collapse.py-2{ id: "section1Body" }
         .alert.alert-info.mb-0
           OurGruuv tries to make eligibility as clear as possible. However, we can never remove the human and subjective aspect of navigating seat changes within an organization. If your managerial hierarchy is not an advocate of yours, there should be a conversation and a clear understanding of why that is.
@@ -44,11 +55,15 @@
 .row.mb-4
   .col-12
     .card
-      .card-header.d-flex.align-items-center.justify-content-between.py-2
+      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section2Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         %h3.mb-0 (2) There has to be a business need…
-        %a.small.text-muted.text-decoration-none{ href: "#section2Body", "data-bs-toggle": "collapse", "aria-expanded": "false", "aria-controls": "section2Body" }
-          Expand for details
-          %i.bi.bi-chevron-down.ms-1
+        .d-flex.align-items-center.small.text-muted
+          %span.expand-detail-label.d-inline-flex.align-items-center
+            Expand for details
+            %i.bi.bi-chevron-down.ms-1
+          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+            Show less detail
+            %i.bi.bi-chevron-up.ms-1
       .card-body.collapse.py-2{ id: "section2Body" }
         .alert.alert-info.mb-0
           We check whether the position has a seat that is either open or filled by you. If not, there is no business need for someone to take on that position, and you should talk to your manager about other title-growth paths. There are other ways to grow: Experience (taking on Assignments that help with your professional goals) and Acknowledgement of Skills/Knowledge (by demonstrating and then getting certified in Milestones).
@@ -65,49 +80,109 @@
         - else
           Not eligible / no business need defined
 
-.row
+.row.mb-4
   .col-12
-    .card.mb-4
-      .card-body
-        %h5.card-title Aspirational Values
-        - company_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
-        - title_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :title_department_aspirational_values_check_in_requirements }
+    - company_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
+    - title_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :title_department_aspirational_values_check_in_requirements }
+    - company_asp_result = @company_aspirational_values_eligibility_result
+    - title_asp_result = @title_department_aspirational_values_eligibility_result
+    - asp_combined_eligible = company_asp_result&.summary&.overall_eligible && title_asp_result&.summary&.overall_eligible
+    - asp_combined_maybe = [company_asp_result, title_asp_result].compact.any? { |r| r.summary&.meet_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK || r.summary&.exceed_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK }
+    - asp_footer_bg = asp_combined_eligible ? "bg-success bg-opacity-25" : (asp_combined_maybe ? "bg-info bg-opacity-25" : "bg-warning bg-opacity-25")
+    .card
+      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section3Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+        %h3.mb-0 (3) You must exemplify our Aspirational Values…
+        .d-flex.align-items-center.small.text-muted
+          %span.expand-detail-label.d-inline-flex.align-items-center
+            Expand for details
+            %i.bi.bi-chevron-down.ms-1
+          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+            Show less detail
+            %i.bi.bi-chevron-up.ms-1
+      .card-body.collapse.py-2{ id: "section3Body" }
         = render "organizations/eligibility_requirements/check_in_requirements_section",
           section_title: "Company Aspirational Values Check-In Requirements",
           requirement_sentence: (company_asp_check && company_asp_check[:details].present?) ? format_aspirational_values_requirement(company_asp_check[:details]) : nil,
           rows: @aspirational_values_table_rows.select { |r| r[:section] == 'company' }.map { |r| { name: r[:aspiration].name, id: r[:aspiration].id } },
           monthly_status_by_id: @aspirational_values_monthly_status,
-          eligibility_result: @company_aspirational_values_eligibility_result
+          eligibility_result: company_asp_result,
+          show_totals_in_body: false
         %div.mt-4
           = render "organizations/eligibility_requirements/check_in_requirements_section",
             section_title: "Title/Department Aspirational Values Check-In Requirements",
             requirement_sentence: (title_asp_check && title_asp_check[:details].present?) ? format_aspirational_values_requirement(title_asp_check[:details]) : nil,
             rows: @aspirational_values_table_rows.select { |r| r[:section] == 'title_department' }.map { |r| { name: r[:aspiration].name, id: r[:aspiration].id } },
             monthly_status_by_id: @aspirational_values_monthly_status,
-            eligibility_result: @title_department_aspirational_values_eligibility_result
+            eligibility_result: title_asp_result,
+            show_totals_in_body: false
+      = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
+        eligibility_result: company_asp_result,
+        footer_bg_class: asp_footer_bg
 
-    .card.mb-4
-      .card-body
-        %h5.card-title Assignments
-        - required_check = @eligibility_report[:checks].find { |c| c[:key] == :required_assignment_check_in_requirements }
-        - unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
+.row.mb-4
+  .col-12
+    - required_check = @eligibility_report[:checks].find { |c| c[:key] == :required_assignment_check_in_requirements }
+    .card
+      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section4Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+        %h3.mb-0 (4) You must pass criteria for Required Assignments…
+        .d-flex.align-items-center.small.text-muted
+          %span.expand-detail-label.d-inline-flex.align-items-center
+            Expand for details
+            %i.bi.bi-chevron-down.ms-1
+          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+            Show less detail
+            %i.bi.bi-chevron-up.ms-1
+      .card-body.collapse.py-2{ id: "section4Body" }
         = render "organizations/eligibility_requirements/check_in_requirements_section",
           section_title: "Required Assignment Check-In Requirements",
           requirement_sentence: (required_check && required_check[:details].present?) ? format_assignments_requirement(required_check[:details]) : nil,
           rows: @required_assignments.map { |a| { name: a.title, id: a.id } },
           monthly_status_by_id: @required_assignments_monthly_status,
-          eligibility_result: @required_assignments_eligibility_result
-        %div.mt-4
+          eligibility_result: @required_assignments_eligibility_result,
+          show_totals_in_body: false
+      = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
+        eligibility_result: @required_assignments_eligibility_result
+
+- if @unique_assignments.present?
+  .row.mb-4
+    .col-12
+      - unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
+      .card
+        .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section5Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+          %h3.mb-0 (5) You must pass criteria for Unique-to-You Assignments (if there are any)…
+          .d-flex.align-items-center.small.text-muted
+            %span.expand-detail-label.d-inline-flex.align-items-center
+              Expand for details
+              %i.bi.bi-chevron-down.ms-1
+            %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+              Show less detail
+              %i.bi.bi-chevron-up.ms-1
+        .card-body.collapse.py-2{ id: "section5Body" }
           = render "organizations/eligibility_requirements/check_in_requirements_section",
             section_title: "Unique-to-You Assignment Check-In Requirements",
             requirement_sentence: (unique_check && unique_check[:details].present?) ? format_assignments_requirement(unique_check[:details], assignment_label: "unique-to-you assignments") : nil,
             rows: @unique_assignments.map { |a| { name: a.title, id: a.id } },
             monthly_status_by_id: @unique_assignments_monthly_status || {},
-            eligibility_result: @unique_assignments_eligibility_result
+            eligibility_result: @unique_assignments_eligibility_result,
+            show_totals_in_body: false
+        = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
+          eligibility_result: @unique_assignments_eligibility_result
 
+.row.mb-4
+  .col-12
+    - milestones_check = @eligibility_report[:checks].find { |c| c[:key] == :milestone_requirements }
+    - milestone_passed = milestones_check.present? && milestones_check[:status] == :passed
     .card
-      .card-body
-        %h5.card-title Milestones
+      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section6Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+        %h3.mb-0 (6) You must pass criteria for Required Milestones…
+        .d-flex.align-items-center.small.text-muted
+          %span.expand-detail-label.d-inline-flex.align-items-center
+            Expand for details
+            %i.bi.bi-chevron-down.ms-1
+          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+            Show less detail
+            %i.bi.bi-chevron-up.ms-1
+      .card-body.collapse.py-2{ id: "section6Body" }
         - if @milestone_table_rows.present?
           - casual_name = @teammate.person.casual_name.presence || "Teammate"
           %table.table.table-sm{ style: "table-layout: fixed; width: 100%;" }
@@ -152,19 +227,46 @@
                         Working to meet
         - else
           %p.text-muted.mb-0 No milestone requirements configured for this position.
-        %hr.mt-3.mb-3
-        - mileage_check = @eligibility_report[:checks].find { |check| check[:key] == :mileage_requirements }
-        = render partial: "organizations/eligibility_requirements/requirement_row",
-          locals: { check: mileage_check, title: "Milestone Mileage" }
-        - if mileage_check.present? && mileage_check[:status] != :not_configured
-          - earned = @mileage_earned_addends
-          - required = @mileage_required_addends
-          - minimum_miles = mileage_check.dig(:details, :minimum_mileage_points).to_i
-          - required_total = required[:total]
-          - remainder_miles = [minimum_miles - required_total, 0].max
+      .card-footer.fw-semibold.small.py-2{class: milestone_passed ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
+        .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+          - if @milestone_table_rows.present?
+            - total_abilities = @milestone_table_rows.size
+            - earned_count = @milestone_table_rows.count { |r| r[:passed] }
+            - casual_name = @teammate.person.casual_name.presence || "Teammate"
+            .me-2
+              #{total_abilities} total Milestones needed across #{total_abilities} Abilities… and #{casual_name} has earned #{earned_count} of the requisite Milestones
+          .align-middle
+            - if milestone_passed
+              %i.bi.bi-star-fill.text-success.fs-4.align-middle
+              %span.ms-1 Meeting eligibility
+            - else
+              %i.bi.bi-tools.fs-4.align-middle
+              %span.ms-1 Working to meet eligibility
+
+- mileage_check = @eligibility_report[:checks].find { |check| check[:key] == :mileage_requirements }
+- if mileage_check.present? && mileage_check[:status] != :not_configured
+  .row.mb-4
+    .col-12
+      - earned = @mileage_earned_addends
+      - required = @mileage_required_addends
+      - minimum_miles = mileage_check.dig(:details, :minimum_mileage_points).to_i
+      - required_total = required[:total]
+      - remainder_miles = [minimum_miles - required_total, 0].max
+      - mileage_passed = mileage_check[:status] == :passed
+      .card
+        .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section7Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+          %h3.mb-0 (7) You must meet the required Milestone Mileage…
+          .d-flex.align-items-center.small.text-muted
+            %span.expand-detail-label.d-inline-flex.align-items-center
+              Expand for details
+              %i.bi.bi-chevron-down.ms-1
+            %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+              Show less detail
+              %i.bi.bi-chevron-up.ms-1
+        .card-body.collapse.py-2{ id: "section7Body" }
           %style
             .mileage-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-          .row.mt-3.gy-2
+          .row.gy-2
             .col-6.mileage-column
               %p.small.text-muted.mb-2.fw-semibold= "What #{@teammate.person.casual_name.presence || 'teammate'} has earned"
               .d-flex.flex-column.gap-1.w-100
@@ -185,7 +287,7 @@
                 - if remainder_miles.positive?
                   = render partial: "organizations/eligibility_requirements/mileage_card",
                     locals: { display_label: "Unique to you Abilities that you will specialize in", points: remainder_miles, is_total: false }
-          %hr.my-2{ style: "border-width: 1px;" }
+          %hr.my-2{ style: "border-width: 5px;" }
           .row.mt-3.gy-2 
             .col-6.mileage-column
               .d-flex.flex-column.gap-1.w-100
@@ -196,18 +298,61 @@
               .d-flex.flex-column.gap-1.w-100
                 = render partial: "organizations/eligibility_requirements/mileage_card",
                   locals: { display_label: "Total", points: minimum_miles, is_total: true }
-            
-
-          .row.mt-2
-            .col-12
-              - mileage_passed = mileage_check[:status] == :passed
+                      
+          
+        .card-footer.fw-semibold.small.py-2{class: mileage_passed ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
+          .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+            .me-2
+              Total: #{earned[:total]} Milestone Miles earned vs #{minimum_miles} required
+            .align-middle
               - if mileage_passed
-                %span.btn.btn-outline-success.btn-sm{ style: "pointer-events: none;" }
-                  %i.bi.bi-check-circle-fill.me-1
-                  Meeting requirements
+                %i.bi.bi-check-circle-fill.text-success.fs-4.align-middle
+                %span.ms-1 Meeting requirements
               - else
-                %span.btn.btn-outline-warning.btn-sm{ style: "pointer-events: none;" }
-                  %i.bi.bi-tools.me-1
-                  Working to meet requirements
+                %i.bi.bi-tools.fs-4.align-middle
+                %span.ms-1 Working to meet requirements
+- else
+  .row.mb-4
+    .col-12
+      .card
+        .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section7Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+          %h3.mb-0 (7) You must meet the required Milestone Mileage…
+          .d-flex.align-items-center.small.text-muted
+            %span.expand-detail-label.d-inline-flex.align-items-center
+              Expand for details
+              %i.bi.bi-chevron-down.ms-1
+            %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+              Show less detail
+              %i.bi.bi-chevron-up.ms-1
+        .card-body.collapse.py-2{ id: "section7Body" }
+          %p.text-muted.mb-0 Milestone mileage is not configured for this position.
+        .card-footer.py-2.bg-secondary.bg-opacity-10
+          Not configured
 
+- if @position_check_in_eligibility_result
+  .row.mb-4
+    .col-12
+      .card
+        .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section8Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+          %h3.mb-0 (8) You must meet the Required Overall position ratings…
+          .d-flex.align-items-center.small.text-muted
+            %span.expand-detail-label.d-inline-flex.align-items-center
+              Expand for details
+              %i.bi.bi-chevron-down.ms-1
+            %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+              Show less detail
+              %i.bi.bi-chevron-up.ms-1
+        .card-body.collapse.py-2{ id: "section8Body" }
+          = render "organizations/eligibility_requirements/check_in_requirements_section",
+            section_title: "Position check-ins (past 12 months)",
+            requirement_sentence: nil,
+            rows: [{ name: "Overall position rating", id: :position }],
+            monthly_status_by_id: @position_check_in_monthly_status_by_row_id || {},
+            eligibility_result: @position_check_in_eligibility_result,
+            show_totals_in_body: false
+        = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
+          eligibility_result: @position_check_in_eligibility_result
+
+.row
+  .col-12
     = render "shared/eligibility_requirements_summary", eligibility_requirements_sentences: @eligibility_requirements_sentences, ability_milestone_requirements: @ability_milestone_requirements

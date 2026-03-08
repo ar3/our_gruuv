@@ -1,0 +1,30 @@
+-# Renders the "totals row" content for a check-in requirements section, for use in a card footer.
+-# Locals: eligibility_result (CheckInRequirementsEligibility::CalculatorResult), optional footer_bg_class override
+- summary = local_assigns[:eligibility_result]&.summary
+- return if summary.blank?
+- footer_bg_class = local_assigns[:footer_bg_class]
+- unless footer_bg_class.present?
+  - if summary.overall_eligible
+    - footer_bg_class = "bg-success bg-opacity-25"
+  - elsif summary.meet_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK || summary.exceed_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK
+    - footer_bg_class = "bg-info bg-opacity-25"
+  - else
+    - footer_bg_class = "bg-warning bg-opacity-25"
+
+.card-footer.fw-semibold.small.py-2{class: footer_bg_class}
+  .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+    - if summary.total.positive?
+      .me-2
+        Total: #{summary.count_exceeding} Exceeding, #{summary.count_maybe_exceeding} Maybe Exceeding, #{summary.count_meeting} Meeting, #{summary.count_maybe_meeting} Maybe Meeting, #{summary.count_miss} Miss, #{summary.count_unknown} Unknown
+        = " = "
+        %br.d-none.d-md-block/
+        [#{summary.full_exceed_pct}% | #{summary.exceed_plus_maybe_exceed_pct}%] Exceed (maybe) #{summary.exceed_status_icon}
+        %br/
+        [#{summary.full_meet_pct}% | #{summary.meet_plus_maybe_meet_pct}%] Meet (maybe) #{summary.meet_status_icon}
+    .align-middle
+      - if summary.overall_eligible
+        %i.bi.bi-star-fill.text-success.fs-4.align-middle
+        %span.ms-1 Eligible
+      - else
+        %i.bi.bi-tools.fs-4.align-middle
+        %span.ms-1 Working to Meet Eligibility

@@ -127,6 +127,31 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('Teammate Status')
     end
 
+    it 'renders sections (3), (4) as cards with collapsed body and (5) only when unique assignments exist' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('(3) You must exemplify our Aspirational Values')
+      expect(response.body).to include('(4) You must pass criteria for Required Assignments')
+      expect(response.body).to include('section3Body')
+      expect(response.body).to include('section4Body')
+    end
+
+    it 'hides section (5) when there are no unique-to-you assignments' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('(5) You must pass criteria for Unique-to-You Assignments')
+    end
+
     it 'renders 12 status blocks per aspirational value row when aspirations exist' do
       create(:aspiration, company: organization, name: 'Integrity', sort_order: 0)
 
@@ -215,6 +240,61 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('Maybe Meeting')
       expect(response.body).to include('Miss')
       expect(response.body).to include('Unknown')
+    end
+
+    it 'renders sections (6) Required Milestones and (7) Milestone Mileage as cards' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('(6) You must pass criteria for Required Milestones')
+      expect(response.body).to include('(7) You must meet the required Milestone Mileage')
+      expect(response.body).to include('section6Body')
+      expect(response.body).to include('section7Body')
+    end
+
+    it 'renders section (8) position ratings when position check-in requirements are configured' do
+      position.update!(
+        eligibility_requirements_explicit: position.eligibility_requirements_explicit.merge(
+          'position_check_in_requirements' => {
+            'minimum_rating' => 2,
+            'minimum_months_at_or_above_rating_criteria' => 6
+          }
+        )
+      )
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('(8) You must meet the Required Overall position ratings')
+      expect(response.body).to include('section8Body')
+      expect(response.body).to include('Position check-ins (past 12 months)')
+      expect(controller.instance_variable_get(:@position_check_in_eligibility_result)).to be_present
+    end
+
+    it 'does not render section (8) when position check-in requirements are not configured' do
+      position.update!(
+        eligibility_requirements_explicit: {
+          'mileage_requirements' => { 'minimum_mileage_points' => 0 }
+        }
+      )
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('(8) You must meet the Required Overall position ratings')
+      expect(controller.instance_variable_get(:@position_check_in_eligibility_result)).to be_nil
     end
   end
 end
