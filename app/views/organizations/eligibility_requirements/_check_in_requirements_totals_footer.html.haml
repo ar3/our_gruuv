@@ -15,12 +15,18 @@
   .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
     - if summary.total.positive?
       .me-2
-        Total: #{summary.count_exceeding} Exceeding, #{summary.count_maybe_exceeding} Maybe Exceeding, #{summary.count_meeting} Meeting, #{summary.count_maybe_meeting} Maybe Meeting, #{summary.count_miss} Miss, #{summary.count_unknown} Unknown
+        Total: #{summary.count_exceeding} Exceeding, #{summary.count_maybe_exceeding} On-Track to be Exceeding, #{summary.count_meeting} Meeting, #{summary.count_maybe_meeting} On-Track to be Meeting, #{summary.count_miss} Miss, #{summary.count_unknown} Unknown
         = " = "
         %br.d-none.d-md-block/
-        [#{summary.full_exceed_pct}% | #{summary.exceed_plus_maybe_exceed_pct}%] Exceed (maybe) #{summary.exceed_status_icon}
+        - if summary.full_exceed_pct == summary.exceed_plus_maybe_exceed_pct
+          #{summary.full_exceed_pct}% Exceeding #{summary.exceed_status_icon}
+        - else
+          #{summary.full_exceed_pct}% Exceeding | #{summary.exceed_plus_maybe_exceed_pct}% On-Track to be Exceeding #{summary.exceed_status_icon}
         %br/
-        [#{summary.full_meet_pct}% | #{summary.meet_plus_maybe_meet_pct}%] Meet (maybe) #{summary.meet_status_icon}
+        - if summary.full_meet_pct == summary.meet_plus_maybe_meet_pct
+          #{summary.full_meet_pct}% Meeting #{summary.meet_status_icon}
+        - else
+          #{summary.full_meet_pct}% Meeting | #{summary.meet_plus_maybe_meet_pct}% On-Track to be Meeting #{summary.meet_status_icon}
     .align-middle.h2
       - if summary.overall_eligible
         %i.bi.bi-star-fill.text-success.fs-2.align-middle

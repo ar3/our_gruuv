@@ -195,7 +195,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('bg-success')
     end
 
-    it 'uses 3-level eligibility summary: Exceed (maybe), Meet (maybe), and Eligible or Working to Meet' do
+    it 'uses 3-level eligibility summary: Exceeding, On-Track to be Exceeding, Meeting, On-Track to be Meeting, and Eligible or Working to Meet' do
       position.update!(
         eligibility_requirements_explicit: position.eligibility_requirements_explicit.merge(
           'company_aspirational_values_check_in_requirements' => {
@@ -214,8 +214,8 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Exceed (maybe)')
-      expect(response.body).to include('Meet (maybe)')
+      expect(response.body).to include('On-Track to be Exceeding')
+      expect(response.body).to include('On-Track to be Meeting')
       expect(response.body).to match(/Eligible|Working to meet requirements/)
     end
 
@@ -240,9 +240,9 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       # Total row uses new category names
       expect(response.body).to include('Exceeding')
-      expect(response.body).to include('Maybe Exceeding')
+      expect(response.body).to include('On-Track to be Exceeding')
       expect(response.body).to include('Meeting')
-      expect(response.body).to include('Maybe Meeting')
+      expect(response.body).to include('On-Track to be Meeting')
       expect(response.body).to include('Miss')
       expect(response.body).to include('Unknown')
     end

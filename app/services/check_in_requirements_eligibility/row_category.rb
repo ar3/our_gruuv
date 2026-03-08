@@ -15,9 +15,9 @@ module CheckInRequirementsEligibility
     LABELS = {
       UNKNOWN => "Unknown ⁉️",
       MISS => "Miss ❌",
-      MAYBE_MEETING => "Maybe Meeting ❔👍",
+      MAYBE_MEETING => "On-Track to be Meeting ❔👍",
       MEETING => "Meeting 👍",
-      MAYBE_EXCEEDING => "Maybe Exceeding ❔🎉",
+      MAYBE_EXCEEDING => "On-Track to be Exceeding ❔🎉",
       EXCEEDING => "Exceeding 🎉"
     }.freeze
 
