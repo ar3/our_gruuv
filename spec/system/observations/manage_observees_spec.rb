@@ -31,6 +31,13 @@ RSpec.describe 'Manage Observees', type: :system do
       expect(page).to have_content('Select Observees')
     end
 
+    it 'shows search/filter input when teammates exist' do
+      visit manage_observees_organization_observation_path(company, draft)
+
+      expect(page).to have_selector('input[type="search"][placeholder="Search teammates..."]')
+      expect(page).to have_selector('input[aria-label="Filter teammates"]')
+    end
+
     it 'shows all teammates with correct checked/unchecked state' do
       visit manage_observees_organization_observation_path(company, draft)
       

@@ -121,6 +121,36 @@
               %p.mb-0
                 %i.bi.bi-info-circle.me-2
                 = @observable_moment.description
+
+        / What the certifier agreed to
+        .row.mt-4.mb-3
+          .col-12
+            .card.card-body.bg-light
+              %h6.mb-3 What the certifier agreed to
+              %p.mb-2
+                I,
+                %strong= @teammate_milestone.certifying_teammate.person.casual_name
+                hereby certify that
+                %strong= @teammate_milestone.teammate.person.casual_name
+                has demonstrated the criteria associated with
+                %strong= "#{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name.downcase}."
+                And they have done so...
+              %ul.mb-0
+                %li
+                  %strong Consciously:
+                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has devoted intentional effort to (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name}"
+                %li
+                  %strong Comfortably:
+                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has demonstrated (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name} without being overly stretched"
+                %li
+                  %strong Continuously:
+                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has demonstrated (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name} for a reasonable period of time"
+                %li
+                  %strong Consistently:
+                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has reliably and evenly demonstrated (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name}"
+                %li
+                  %strong Competently:
+                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has met the criteria that is deserving of (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name}"
         
         .row.mt-4
           .col-12

@@ -219,6 +219,77 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/observations/:id/manage_observees' do
+    let(:draft) do
+      build(:observation, observer: person, company: organization, published_at: nil).tap do |obs|
+        obs.save!
+      end
+    end
+
+    # Manager (has position) – used as manager_teammate for others
+    let(:manager_person) { create(:person) }
+    let!(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
+    let!(:manager_tenure) do
+      create(:employment_tenure, company_teammate: manager_teammate, company: organization)
+    end
+
+    # Teammate with position and manager
+    let(:with_position_and_manager_person) { create(:person) }
+    let!(:teammate_with_position_and_manager) do
+      create(:teammate, person: with_position_and_manager_person, organization: organization)
+    end
+    let!(:tenure_with_position_and_manager) do
+      create(:employment_tenure, company_teammate: teammate_with_position_and_manager, company: organization, manager: manager_teammate)
+    end
+
+    # Teammate with position, no manager
+    let(:with_position_no_manager_person) { create(:person) }
+    let!(:teammate_with_position_no_manager) do
+      create(:teammate, person: with_position_no_manager_person, organization: organization)
+    end
+    let!(:tenure_with_position_no_manager) do
+      create(:employment_tenure, company_teammate: teammate_with_position_no_manager, company: organization)
+    end
+
+    # Teammate without position (no active employment tenure)
+    let(:no_position_person) { create(:person) }
+    let!(:teammate_without_position) do
+      create(:teammate, person: no_position_person, organization: organization)
+    end
+
+    it 'renders the manage observees page with success' do
+      get manage_observees_organization_observation_path(organization, draft)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Manage Observees')
+      expect(response.body).to include('Select Observees')
+      expect(response.body).to include('Search teammates...')
+    end
+
+    it 'shows all teammates including those with and without positions and managers' do
+      get manage_observees_organization_observation_path(organization, draft)
+
+      expect(response).to have_http_status(:success)
+      # Teammate with position and manager – name and Manager: line
+      expect(response.body).to include(with_position_and_manager_person.preferred_first_then_last_display_name)
+      expect(response.body).to include('Manager:')
+      expect(response.body).to include(manager_person.preferred_first_then_last_display_name)
+      # Teammate with position, no manager – name only (no Manager: for them)
+      expect(response.body).to include(with_position_no_manager_person.preferred_first_then_last_display_name)
+      # Teammate without position
+      expect(response.body).to include(no_position_person.preferred_first_then_last_display_name)
+    end
+
+    it 'includes observer in teammate list and shows checkboxes for multi-select' do
+      get manage_observees_organization_observation_path(organization, draft)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(person.preferred_first_then_last_display_name)
+      expect(response.body).to include('teammate_ids[]')
+      expect(response.body).to include('Save Changes')
+    end
+  end
+
   describe 'PATCH /organizations/:organization_id/observations/:id/manage_observees' do
     let(:observee_person) { create(:person) }
     let(:observee_teammate) { create(:teammate, person: observee_person, organization: organization) }

@@ -75,6 +75,7 @@ Then add the class (or selector) you set to each option element instead of `filt
 ## Where it’s used
 
 - **Select Teammate:** `/organizations/:org/teammate_milestones/select_teammate` — filters teammate cards by name, manager, position.
+- **Manage Observees:** `/organizations/:org/observations/:id/manage_observees` — filters observee cards (multi-select checkboxes) by name, manager, position.
 
 When you add the filter to another page, add that page to this “Where it’s used” section so we can keep the list current.
 

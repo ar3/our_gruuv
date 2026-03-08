@@ -10,6 +10,30 @@
 - content_for :return_text do
   = params[:return_text] || 'Draft'
 
+:css
+  .teammate-columns {
+    column-count: 1;
+    column-gap: 1rem;
+  }
+  
+  @media (min-width: 576px) {
+    .teammate-columns {
+      column-count: 2;
+    }
+  }
+  
+  @media (min-width: 992px) {
+    .teammate-columns {
+      column-count: 3;
+    }
+  }
+  
+  .teammate-columns > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+
 .card.mb-3
   .card-header
     %h5.mb-0
@@ -24,28 +48,36 @@
       .d-flex.gap-2.mb-3
         = form.submit 'Save Changes', class: 'btn btn-primary'
 
-      .mb-3
-        %label.form-label Select Teammates
-        - if @teammates.any?
-          - items_per_column = (@teammates.size / 3.0).ceil
-          - teammate_columns = @teammates.each_slice(items_per_column).to_a
-          .row
-            - teammate_columns.each do |column_teammates|
-              .col-12.col-md-6.col-lg-4.mb-3
-                .list-group
-                  - column_teammates.each do |teammate|
-                    - checked = @observation&.observees&.exists?(teammate_id: teammate.id) || false
-                    - person = teammate.person
-                    - tooltip_text = "#{person.full_name.presence || 'No name'} - #{person.email}"
-                    .list-group-item
-                      .form-check
-                        = check_box_tag 'teammate_ids[]', teammate.id, checked,
-                                      class: 'form-check-input',
-                                      id: "teammate_#{teammate.id}",
-                                      data: { bs_toggle: 'tooltip', bs_title: tooltip_text }
-                        = label_tag "teammate_#{teammate.id}", class: 'form-check-label',
-                                    data: { bs_toggle: 'tooltip', bs_title: tooltip_text } do
-                          %strong= person.preferred_first_then_last_display_name
+      - if @teammates.any?
+        .mb-3{ data: { controller: "options-filter" } }
+          %input.form-control.form-control-lg.mb-3{ type: "search", placeholder: "Search teammates...", "data-options-filter-target": "input", "aria-label": "Filter teammates" }
+          .teammate-columns{ "data-options-filter-target": "list" }
+            - @teammates.each do |teammate|
+              - checked = @observation&.observees&.exists?(teammate_id: teammate.id) || false
+              %label.card.filterable-option.text-decoration-none{ for: "teammate_#{teammate.id}", style: "cursor: pointer;" }
+                .card-body
+                  .d-flex.align-items-start
+                    .form-check.me-2.mt-1
+                      = check_box_tag 'teammate_ids[]', teammate.id, checked,
+                                    class: 'form-check-input',
+                                    id: "teammate_#{teammate.id}"
+                    .flex-grow-1
+                      .d-flex.align-items-center.mb-2
+                        .me-3
+                          = teammate_profile_image(teammate, size: 48)
+                        .flex-grow-1
+                          %h6.mb-1= teammate.person.preferred_first_then_last_display_name
+                      - manager = teammate.current_manager
+                      - if manager
+                        %p.text-muted.mb-1
+                          %small Manager: #{manager.preferred_first_then_last_display_name}
+                      - active_tenure = teammate.active_employment_tenure
+                      - if active_tenure&.position&.title
+                        %p.text-muted.mb-0
+                          %small Position: #{active_tenure.position.title.external_title}
+      - else
+        .alert.alert-warning
+          No teammates available to select as observees.
 
       .d-flex.gap-2.mt-3
         = form.submit 'Save Changes', class: 'btn btn-primary'
