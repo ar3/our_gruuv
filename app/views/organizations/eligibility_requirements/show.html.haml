@@ -5,16 +5,13 @@
   = link_to "Back to Eligibility Selection", organization_eligibility_requirements_path(@organization), class: "btn btn-outline-secondary btn-sm"
 
 .row.mb-4
-  .col-md-6
-    .card
-      .card-body
-        %h5.card-title Teammate
-        %p.mb-0= @teammate.person.display_name
-  .col-md-6
-    .card
-      .card-body
-        %h5.card-title Position
-        %p.mb-0= link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
+  .col-12
+    %h2.mb-0
+      In order for
+      = link_to (@teammate.person.casual_name.presence || "this teammate"), internal_organization_company_teammate_path(@organization, @teammate), class: "text-decoration-none"
+      to be eligible for consideration of
+      = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
+      …
 
 .row.mb-4
   .col-12
@@ -22,6 +19,51 @@
     .alert.text-dark{class: overall_class}
       %strong Overall Eligibility:
       = @eligibility_report[:overall_eligible] ? "Meeting requirements" : "Working to meet requirements"
+
+.row.mb-4
+  .col-12
+    .card
+      .card-header.d-flex.align-items-center.justify-content-between.py-2
+        %h3.mb-0 (1) Your managerial hierarchy must be advocates…
+        %a.small.text-muted.text-decoration-none{ href: "#section1Body", "data-bs-toggle": "collapse", "aria-expanded": "false", "aria-controls": "section1Body" }
+          Expand for details
+          %i.bi.bi-chevron-down.ms-1
+      .card-body.collapse.py-2{ id: "section1Body" }
+        .alert.alert-info.mb-0
+          OurGruuv tries to make eligibility as clear as possible. However, we can never remove the human and subjective aspect of navigating seat changes within an organization. If your managerial hierarchy is not an advocate of yours, there should be a conversation and a clear understanding of why that is.
+      .card-footer.bg-info.bg-opacity-10.py-2
+        Clarity between
+        - @managerial_hierarchy_for_display.each_with_index do |entry, idx|
+          - ct = entry[:company_teammate]
+          - next unless ct
+          - name = ct.person.casual_name.presence || ct.person.display_name
+          = link_to name, internal_organization_company_teammate_path(@organization, ct), class: "text-decoration-none"
+          - if idx < @managerial_hierarchy_for_display.size - 1
+            %span.me-1 ,
+
+.row.mb-4
+  .col-12
+    .card
+      .card-header.d-flex.align-items-center.justify-content-between.py-2
+        %h3.mb-0 (2) There has to be a business need…
+        %a.small.text-muted.text-decoration-none{ href: "#section2Body", "data-bs-toggle": "collapse", "aria-expanded": "false", "aria-controls": "section2Body" }
+          Expand for details
+          %i.bi.bi-chevron-down.ms-1
+      .card-body.collapse.py-2{ id: "section2Body" }
+        .alert.alert-info.mb-0
+          We check whether the position has a seat that is either open or filled by you. If not, there is no business need for someone to take on that position, and you should talk to your manager about other title-growth paths. There are other ways to grow: Experience (taking on Assignments that help with your professional goals) and Acknowledgement of Skills/Knowledge (by demonstrating and then getting certified in Milestones).
+        - if @seats_for_position.any?
+          %p.small.fw-semibold.mt-3.mb-1 Open or filled seats associated with this position
+          %ul.small.mb-0
+            - @seats_for_position.each do |seat|
+              %li= "#{seat.display_name} — #{seat.state}"
+        - else
+          %p.small.text-muted.mb-0 No open or filled seats are currently associated with this position's title.
+      .card-footer.py-2{class: @business_need_eligible ? "bg-info bg-opacity-10" : "bg-warning bg-opacity-25"}
+        - if @business_need_eligible
+          Eligible
+        - else
+          Not eligible / no business need defined
 
 .row
   .col-12

@@ -105,6 +105,14 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     # Milestone Mileage: earned addends (teammate's milestones) and required addends (position + required assignments)
     @mileage_earned_addends = build_mileage_earned_addends
     @mileage_required_addends = build_mileage_required_addends
+
+    # Section (1): Managerial hierarchy for footer (teammate + managers with company_teammate for links)
+    @managerial_hierarchy_for_display = build_managerial_hierarchy_for_display
+
+    # Section (2): Business need — seats for this position's title, and whether teammate is in one or open exists
+    @seats_for_position = @position.title.seats.active.ordered
+    @teammate_in_seat_for_position = @teammate.employment_tenures.active.joins(:seat).where(seats: { title_id: @position.title_id }).first&.seat
+    @business_need_eligible = @teammate_in_seat_for_position.present? || @seats_for_position.any?(&:open?)
   end
 
   # Array of sentence strings for each configured eligibility check (for collapsible summary).
@@ -577,5 +585,16 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
             .includes(:assignment)
             .map(&:assignment)
             .uniq
+  end
+
+  # For section (1) footer: array of { company_teammate: } (teammate first, then managers in order) for casual_name + link.
+  def build_managerial_hierarchy_for_display
+    chain = [{ company_teammate: @teammate }]
+    managers = ManagerialHierarchyQuery.new(person: @teammate.person, organization: organization).call
+    managers.each do |m|
+      ct = CompanyTeammate.find_by(person_id: m[:person_id], organization_id: organization.id)
+      chain << { company_teammate: ct } if ct
+    end
+    chain
   end
 end

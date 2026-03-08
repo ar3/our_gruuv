@@ -47,6 +47,71 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(report[:teammate]).to eq(teammate)
     end
 
+    it 'renders conversation-style intro with teammate and position links' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('In order for')
+      expect(response.body).to include('to be eligible for consideration of')
+      expect(response.body).to include(organization_position_path(organization, position))
+      expect(response.body).to include(internal_organization_company_teammate_path(organization, teammate))
+    end
+
+    it 'renders section (1) managerial hierarchy and section (2) business need cards' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('(1) Your managerial hierarchy must be advocates')
+      expect(response.body).to include('Expand for details')
+      expect(response.body).to include('OurGruuv tries to make eligibility as clear as possible')
+      expect(response.body).to include('(2) There has to be a business need')
+      expect(response.body).to include('We check whether the position has a seat')
+    end
+
+    it 'shows business need eligible when teammate is in a seat for the position title' do
+      title_for_position = position.title
+      seat = create(:seat, title: title_for_position, seat_needed_by: 1.month.from_now, state: :filled)
+      EmploymentTenure.create!(
+        company_teammate: teammate,
+        company: organization,
+        position: position,
+        seat: seat,
+        started_at: 1.month.ago,
+        ended_at: nil
+      )
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Eligible')
+      expect(controller.instance_variable_get(:@business_need_eligible)).to eq(true)
+    end
+
+    it 'shows business need not eligible when no open seat and teammate not in seat for position title' do
+      # No seats for this position's title, and teammate has no tenure in that seat
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Not eligible / no business need defined')
+      expect(controller.instance_variable_get(:@business_need_eligible)).to eq(false)
+    end
+
     it 'renders aspirational values section with a table' do
       get organization_eligibility_requirement_path(
         organization,
