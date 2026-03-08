@@ -7,15 +7,15 @@
 %h6.mb-2= section_title
 - if requirement_sentence.present?
   %p.text-muted.small.mb-3= requirement_sentence
-%table.table.table-sm
+%table.table.table-sm{ style: "table-layout: fixed; width: 100%;" }
   %thead
     %tr
-      %th Requirement
-      %th
+      %th{ style: "width: 40%;" } Requirement
+      %th{ style: "width: 30%;" }
         = "Teammate Status"
         %span.ms-1.badge.bg-light.text-dark{ title: "One block per month (last 12 months). Green = exceeding, blue = meeting, orange = working to meet, light grey = no rating. Checkmark = rating finalized that month; otherwise rating carries from prior month.", data: { bs_toggle: "tooltip" } }
           %i.bi.bi-info-circle
-      %th Position Requirement
+      %th{ style: "width: 30%;" } Position Requirement
   %tbody
     - Array(rows).each do |row|
       - monthly = monthly_status_by_id.present? ? (monthly_status_by_id[row[:id]] || []) : []

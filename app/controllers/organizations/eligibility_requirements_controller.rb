@@ -148,7 +148,8 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     all_teammate_milestones = TeammateMilestone
       .where(company_teammate: @teammate, ability_id: ability_ids)
       .order(milestone_level: :desc, attained_at: :desc)
-    teammate_highest_by_ability = all_teammate_milestones.index_by(&:ability_id)
+    # First per ability = highest level (index_by would keep last, which is lowest after ordering desc)
+    teammate_highest_by_ability = all_teammate_milestones.group_by(&:ability_id).transform_values(&:first)
     attained_levels_by_ability = all_teammate_milestones.group_by(&:ability_id).transform_values { |ms| ms.map(&:milestone_level).uniq }
 
     ability_ids.filter_map do |ability_id|

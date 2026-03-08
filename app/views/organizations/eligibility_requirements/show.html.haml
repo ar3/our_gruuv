@@ -68,12 +68,12 @@
         %h5.card-title Milestones
         - if @milestone_table_rows.present?
           - casual_name = @teammate.person.casual_name.presence || "Teammate"
-          %table.table.table-sm
+          %table.table.table-sm{ style: "table-layout: fixed; width: 100%;" }
             %thead
               %tr
-                %th Requirement
-                %th= "#{casual_name}'s earned Milestones"
-                %th
+                %th{ style: "width: 40%;" } Requirement
+                %th{ style: "width: 30%;" }= "#{casual_name}'s earned Milestones"
+                %th{ style: "width: 30%;" }
             %tbody
               - @milestone_table_rows.each do |row|
                 %tr
@@ -88,22 +88,24 @@
                         - filled = row[:attained_levels].include?(level)
                         - circle_class = filled ? "bg-success" : ""
                         - circle_style = filled ? "width: 20px; height: 20px; min-width: 20px;" : "width: 20px; height: 20px; min-width: 20px; background-color: #e9ecef;"
-                        %span.rounded-circle.d-inline-flex.align-items-center.justify-content-center{ class: circle_class, style: circle_style, data: { bs_toggle: "tooltip", bs_title: "Milestone #{level}#{filled ? ' (earned)' : ''}" } }
+                        - tooltip_text = "#{milestone_level_display(level)} #{row[:ability].name} (Milestone #{level})#{filled ? ' · earned' : ''}"
+                        %span.rounded-circle.d-inline-flex.align-items-center.justify-content-center{ class: circle_class, style: circle_style, data: { bs_toggle: "tooltip", bs_title: tooltip_text } }
                           - if filled
                             %i.bi.bi-check.text-white{ style: "font-size: 10px; line-height: 1;" }
                     - if row[:teammate_milestone]
                       %div.small.text-muted.mt-1
-                        = milestone_level_display(row[:teammate_milestone].milestone_level)
+                        = "#{milestone_level_display(row[:teammate_milestone].milestone_level)} (Milestone #{row[:teammate_milestone].milestone_level})"
                         = " · "
                         = row[:teammate_milestone].attained_at.strftime("%B %d, %Y")
                     - elsif row[:attained_levels].empty?
                       %div.small.text-muted.mt-1 —
                   %td.align-middle
                     - if row[:passed]
-                      %i.bi.bi-check-circle-fill.text-success
-                      %span.ms-1 Pass 🎉
+                      %span.btn.btn-outline-success.btn-sm{ style: "pointer-events: none;" }
+                        %i.bi.bi-check-circle-fill.me-1
+                        Pass 🎉
                     - else
-                      %span.badge.bg-warning.text-dark
+                      %span.btn.btn-outline-warning.btn-sm{ style: "pointer-events: none;" }
                         %i.bi.bi-tools.me-1
                         Working to meet
         - else
