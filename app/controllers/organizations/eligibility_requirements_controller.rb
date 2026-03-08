@@ -244,7 +244,8 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     end
 
     total = addends.sum { |a| a[:points] }
-    { addends: addends, total: total }
+    deduped_sorted = addends.uniq { |a| [a[:ability_name], a[:level]] }.sort_by { |a| a[:ability_name] }
+    { addends: deduped_sorted, total: total }
   end
 
   # Returns hash: aspiration_id => [ { month: Date, status: :exceeding|:meeting|:working_to_meet|:none, actual: Boolean }, ... ]

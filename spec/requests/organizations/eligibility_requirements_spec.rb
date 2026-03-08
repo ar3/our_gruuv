@@ -261,6 +261,29 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('section7Body')
     end
 
+    it 'sorts required milestone mileage addends by ability name and deduplicates by ability and level' do
+      ability_leadership = create(:ability, company: organization, name: 'Leadership')
+      ability_communication = create(:ability, company: organization, name: 'Communication')
+      create(:position_ability, position: position, ability: ability_leadership, milestone_level: 2)
+      create(:position_ability, position: position, ability: ability_communication, milestone_level: 1)
+      required_assignment = create(:assignment, company: organization, title: 'Required Role')
+      create(:position_assignment, position: position, assignment: required_assignment, assignment_type: 'required')
+      create(:assignment_ability, assignment: required_assignment, ability: ability_leadership, milestone_level: 2)
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      required = controller.instance_variable_get(:@mileage_required_addends)
+      addends = required[:addends]
+      expect(addends.map { |a| [a[:ability_name], a[:level]] }).to eq([['Communication', 1], ['Leadership', 2]])
+      expect(addends).to eq(addends.uniq { |a| [a[:ability_name], a[:level]] })
+      expect(addends).to eq(addends.sort_by { |a| a[:ability_name] })
+    end
+
     it 'renders section (8) position ratings when position check-in requirements are configured' do
       position.update!(
         eligibility_requirements_explicit: position.eligibility_requirements_explicit.merge(
