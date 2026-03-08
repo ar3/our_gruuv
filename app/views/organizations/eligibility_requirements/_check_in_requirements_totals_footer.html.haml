@@ -21,10 +21,10 @@
         [#{summary.full_exceed_pct}% | #{summary.exceed_plus_maybe_exceed_pct}%] Exceed (maybe) #{summary.exceed_status_icon}
         %br/
         [#{summary.full_meet_pct}% | #{summary.meet_plus_maybe_meet_pct}%] Meet (maybe) #{summary.meet_status_icon}
-    .align-middle
+    .align-middle.h2
       - if summary.overall_eligible
-        %i.bi.bi-star-fill.text-success.fs-4.align-middle
+        %i.bi.bi-star-fill.text-success.fs-2.align-middle
         %span.ms-1 Eligible
       - else
-        %i.bi.bi-tools.fs-4.align-middle
-        %span.ms-1 Working to Meet Eligibility
+        %i.bi.bi-tools.fs-2.align-middle
+        %span.ms-1 Working to meet requirements

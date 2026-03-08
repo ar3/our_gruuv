@@ -69,11 +69,11 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('(1) Your managerial hierarchy must be advocates')
+      expect(response.body).to include('(1) Non-OurGruuv-related eligibility requirements')
       expect(response.body).to include('Expand for details')
       expect(response.body).to include('OurGruuv tries to make eligibility as clear as possible')
       expect(response.body).to include('(2) There has to be a business need')
-      expect(response.body).to include('We check whether the position has a seat')
+      expect(response.body).to include('business need')
     end
 
     it 'shows business need eligible when teammate is in a seat for the position title' do
@@ -211,7 +211,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Exceed (maybe)')
       expect(response.body).to include('Meet (maybe)')
-      expect(response.body).to match(/Eligible|Working to Meet Eligibility/)
+      expect(response.body).to match(/Eligible|Working to meet requirements/)
     end
 
     it 'shows row status using new category labels (Exceeding, Meeting, Miss, Unknown, etc.)' do

@@ -109,10 +109,13 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     # Section (1): Managerial hierarchy for footer (teammate + managers with company_teammate for links)
     @managerial_hierarchy_for_display = build_managerial_hierarchy_for_display
 
-    # Section (2): Business need — seats for this position's title, and whether teammate is in one or open exists
+    # Section (2): Business need — seats for this position's title, occupants, and whether teammate is in one or open exists
     @seats_for_position = @position.title.seats.active.ordered
+    @open_seats_for_position = @seats_for_position.select(&:open?)
     @teammate_in_seat_for_position = @teammate.employment_tenures.active.joins(:seat).where(seats: { title_id: @position.title_id }).first&.seat
-    @business_need_eligible = @teammate_in_seat_for_position.present? || @seats_for_position.any?(&:open?)
+    filled_seat_ids = @seats_for_position.select(&:filled?).map(&:id)
+    @seat_occupant_by_seat_id = filled_seat_ids.any? ? EmploymentTenure.active.where(seat_id: filled_seat_ids).includes(:company_teammate).index_by(&:seat_id) : {}
+    @business_need_eligible = @teammate_in_seat_for_position.present? || @open_seats_for_position.any?
 
     # Section (8): Position check-in requirements — monthly status (one row) and eligibility result
     pos_check = @eligibility_report[:checks].find { |c| c[:key] == :position_check_in_requirements }

@@ -31,7 +31,7 @@
   .col-12
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section1Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        %h3.mb-0 (1) Your managerial hierarchy must be advocates…
+        %h3.mb-0 (1) Non-OurGruuv-related eligibility requirements…
         .d-flex.align-items-center.small.text-muted
           %span.expand-detail-label.d-inline-flex.align-items-center
             Expand for details
@@ -41,16 +41,24 @@
             %i.bi.bi-chevron-up.ms-1
       .card-body.collapse.py-2{ id: "section1Body" }
         .alert.alert-info.mb-0
-          OurGruuv tries to make eligibility as clear as possible. However, we can never remove the human and subjective aspect of navigating seat changes within an organization. If your managerial hierarchy is not an advocate of yours, there should be a conversation and a clear understanding of why that is.
-      .card-footer.bg-info.bg-opacity-10.py-2
-        Clarity between
-        - @managerial_hierarchy_for_display.each_with_index do |entry, idx|
-          - ct = entry[:company_teammate]
-          - next unless ct
-          - name = ct.person.casual_name.presence || ct.person.display_name
-          = link_to name, internal_organization_company_teammate_path(@organization, ct), class: "text-decoration-none"
-          - if idx < @managerial_hierarchy_for_display.size - 1
-            %span.me-1 ,
+          OurGruuv tries to make eligibility as clear as possible. However, we can never remove the human and subjective aspect of navigating seat changes within an organization. Nor can we guess at what other elements are in play (such as team success/achievements, personal goals, etc.). 
+          %br/
+          %br/
+          More than anything, there should be a conversation and a clear understanding of what's needed for teammates to be eligible.
+          %br/
+          Clarity between
+          - @managerial_hierarchy_for_display.each_with_index do |entry, idx|
+            - ct = entry[:company_teammate]
+            - next unless ct
+            - name = ct.person.casual_name.presence || ct.person.display_name
+            = link_to name, internal_organization_company_teammate_path(@organization, ct), class: "text-decoration-none"
+            - if idx < @managerial_hierarchy_for_display.size - 1
+              %span.me-1 ,
+          is essential.
+
+.row.mb-5.mt-5
+  .col-12
+    %hr.mb-5.mt-5{ style: "border-width: 5px;" }
 
 .row.mb-4
   .col-12
@@ -65,20 +73,52 @@
             Show less detail
             %i.bi.bi-chevron-up.ms-1
       .card-body.collapse.py-2{ id: "section2Body" }
-        .alert.alert-info.mb-0
-          We check whether the position has a seat that is either open or filled by you. If not, there is no business need for someone to take on that position, and you should talk to your manager about other title-growth paths. There are other ways to grow: Experience (taking on Assignments that help with your professional goals) and Acknowledgement of Skills/Knowledge (by demonstrating and then getting certified in Milestones).
-        - if @seats_for_position.any?
-          %p.small.fw-semibold.mt-3.mb-1 Open or filled seats associated with this position
-          %ul.small.mb-0
-            - @seats_for_position.each do |seat|
-              %li= "#{seat.display_name} — #{seat.state}"
+        - casual_name = @teammate.person.casual_name.presence || "This teammate"
+        - if @open_seats_for_position.any?
+          - open_seat = @open_seats_for_position.first
+          %p.mb-0
+            = link_to open_seat.display_name, organization_seat_path(@organization, open_seat), class: "text-decoration-none"
+            is an open seat.
+            %strong= "✅ #{casual_name} is eligible for this seat."
+        - elsif @teammate_in_seat_for_position.present?
+          - seat = @teammate_in_seat_for_position
+          %p.mb-0
+            %strong= "✅ #{casual_name} is already sitting in the seat "
+            = link_to seat.display_name, organization_seat_path(@organization, seat), class: "text-decoration-none"
+            that is associated with 
+            = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
+            = "."
+        - elsif @seats_for_position.any?
+          - filled_with_occupants = @seats_for_position.select(&:filled?).map { |s| { seat: s, occupant: @seat_occupant_by_seat_id[s.id]&.company_teammate } }.reject { |h| h[:occupant].nil? }
+          - occupant_links = filled_with_occupants.map { |h| link_to(h[:occupant].person.casual_name.presence || h[:occupant].person.display_name, internal_organization_company_teammate_path(@organization, h[:occupant]), class: "text-decoration-none") }
+          - seat_links = filled_with_occupants.map { |h| link_to(h[:seat].display_name, organization_seat_path(@organization, h[:seat]), class: "text-decoration-none") }
+          %p.mb-0
+            %strong= "🚧 #{casual_name} will have to wait for a seat to open up. "
+            = safe_join(occupant_links, ", ")
+            are currently sitting in the available seats
+            = safe_join(seat_links, ", ")
+            = "."
         - else
-          %p.small.text-muted.mb-0 No open or filled seats are currently associated with this position's title.
-      .card-footer.py-2{class: @business_need_eligible ? "bg-info bg-opacity-10" : "bg-warning bg-opacity-25"}
-        - if @business_need_eligible
-          Eligible
-        - else
-          Not eligible / no business need defined
+          %p.text-muted.mb-0
+            🚧 
+            = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
+            = " has no available seats at "
+            = @organization.name
+            = ". We must wait until there is a business need for this position."
+        .alert.alert-info.mb-0.mt-4.small
+          Title-growth is not the only way to grow. 
+          %strong Experience
+          (taking on Assignments that help with your professional goals) and 
+          %strong Acknowledgement
+          of Skills/Knowledge (by demonstrating and then getting certified in Milestones).
+      .card-footer.fw-semibold.small.py-2{class: @business_need_eligible ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
+        .d-flex.justify-content-end.align-items-center.h2.mb-3.mt-3
+          - if @business_need_eligible
+            %i.bi.bi-star-fill.text-success.fs-2.align-middle
+            %span.ms-1 Eligible
+          - else
+            %i.bi.bi-x-circle.fs-2.align-middle
+            %span.ms-1 No Current Business Need
 
 .row.mb-4
   .col-12
@@ -235,13 +275,13 @@
             - casual_name = @teammate.person.casual_name.presence || "Teammate"
             .me-2
               #{total_abilities} total Milestones needed across #{total_abilities} Abilities… and #{casual_name} has earned #{earned_count} of the requisite Milestones
-          .align-middle
+          .align-middle.h2.fs-2
             - if milestone_passed
-              %i.bi.bi-star-fill.text-success.fs-4.align-middle
+              %i.bi.bi-star-fill.text-success.fs-2.align-middle
               %span.ms-1 Meeting eligibility
             - else
-              %i.bi.bi-tools.fs-4.align-middle
-              %span.ms-1 Working to meet eligibility
+              %i.bi.bi-tools.fs-2.align-middle
+              %span.ms-1 Working to meet requirements
 
 - mileage_check = @eligibility_report[:checks].find { |check| check[:key] == :mileage_requirements }
 - if mileage_check.present? && mileage_check[:status] != :not_configured
@@ -304,12 +344,12 @@
           .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
             .me-2
               Total: #{earned[:total]} Milestone Miles earned vs #{minimum_miles} required
-            .align-middle
+            .align-middle.h2.fs-2
               - if mileage_passed
-                %i.bi.bi-check-circle-fill.text-success.fs-4.align-middle
+                %i.bi.bi-check-circle-fill.text-success.fs-2.align-middle
                 %span.ms-1 Meeting requirements
               - else
-                %i.bi.bi-tools.fs-4.align-middle
+                %i.bi.bi-tools.fs-2.align-middle
                 %span.ms-1 Working to meet requirements
 - else
   .row.mb-4
