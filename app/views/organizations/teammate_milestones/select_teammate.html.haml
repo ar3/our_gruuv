@@ -27,24 +27,26 @@
   }
 
 - if @eligible_teammates.any?
-  .teammate-columns
-    - @eligible_teammates.each do |teammate|
-      = link_to new_organization_teammate_milestone_path(organization, teammate_id: teammate.id),
-               class: "card text-decoration-none h-100" do
-        .card-body
-          .d-flex.align-items-center.mb-2
-            .me-3
-              = teammate_profile_image(teammate, size: 48)
-            .flex-grow-1
-              %h6.mb-1= teammate.person.preferred_first_then_last_display_name
-          - manager = teammate.current_manager
-          - if manager
-            %p.text-muted.mb-1
-              %small Manager: #{manager.preferred_first_then_last_display_name}
-          - active_tenure = teammate.active_employment_tenure
-          - if active_tenure&.position&.title
-            %p.text-muted.mb-0
-              %small Position: #{active_tenure.position.title.external_title}
+  .mb-3{ data: { controller: "options-filter" } }
+    %input.form-control.form-control-lg.mb-3{ type: "search", placeholder: "Search teammates...", "data-options-filter-target": "input", "aria-label": "Filter teammates" }
+    .teammate-columns{ "data-options-filter-target": "list" }
+      - @eligible_teammates.each do |teammate|
+        = link_to new_organization_teammate_milestone_path(organization, teammate_id: teammate.id),
+                 class: "card text-decoration-none h-100 filterable-option" do
+          .card-body
+            .d-flex.align-items-center.mb-2
+              .me-3
+                = teammate_profile_image(teammate, size: 48)
+              .flex-grow-1
+                %h6.mb-1= teammate.person.preferred_first_then_last_display_name
+            - manager = teammate.current_manager
+            - if manager
+              %p.text-muted.mb-1
+                %small Manager: #{manager.preferred_first_then_last_display_name}
+            - active_tenure = teammate.active_employment_tenure
+            - if active_tenure&.position&.title
+              %p.text-muted.mb-0
+                %small Position: #{active_tenure.position.title.external_title}
 - else
   .alert.alert-warning
     %h6.mb-2

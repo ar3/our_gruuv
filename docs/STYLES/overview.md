@@ -15,6 +15,7 @@ This document provides a comprehensive overview of all styling patterns used in 
 | **Forms** | [forms.md](./forms.md) | Form layout and HAML best practices |
 | **Responsive** | [responsive.md](./responsive.md) | Responsive design patterns |
 | **Accessibility** | [accessibility.md](./accessibility.md) | Accessibility standards and responsive design |
+| **Options Filter** | [options-filter.md](./options-filter.md) | Search bar to filter long option lists (single/multi-select) |
 
 ## Page Type Quick Start
 
