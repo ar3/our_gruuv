@@ -1,0 +1,82 @@
+- observation = local_assigns[:observation]
+- org = local_assigns[:organization] || @organization
+.list-group-item.py-3
+  .row
+    / First column: From/To
+    .col-md-3.mb-3.mb-md-0
+      .mb-2
+        %strong From:
+        %br
+        = observation.observer.casual_name
+      - if observation.observed_teammates.any?
+        .mb-2
+          %strong To:
+          %br
+          - observation.observed_teammates.each do |teammate|
+            = teammate.person.casual_name
+            - unless teammate == observation.observed_teammates.last
+              %br
+      - else
+        .mb-2
+          %strong To:
+          %br
+          %span.text-muted No one
+
+      .mb-2
+        %small.text-muted
+          - if observation.draft?
+            %i.bi.bi-exclamation-triangle.text-danger.me-1
+            %strong.text-danger draft
+            %i.bi.bi-exclamation-triangle.text-danger.ms-1
+            created on #{format_date_in_user_timezone(observation.created_at, format: '%m/%d/%y')}
+          - else
+            = observation_date_text(observation)
+
+
+    / Second column: Type, Privacy, Dates
+    .col-md-3.mb-3.mb-md-0
+      .mb-2
+        %strong Type:
+        %br
+        %i.bi{class: observation_type_icon(observation.observation_type), style: "font-size: 1.5rem; color: var(--bs-primary);"}
+        = observation_type_name(observation.observation_type)
+
+      .mb-2
+        %strong Who can see this:
+        %br
+        = privacy_level_display_text(observation)
+
+    / Third column: Story, Ratings, Actions
+    .col-md-6
+      / Story summary with left border
+      .mb-3.border-start.border-3.border-primary.ps-3
+        %p.mb-0{style: "display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.5;"}
+          = observation.story
+
+      / Ratings with links
+      - rating_sentences = observation.format_ratings_by_type_and_level(format: :html)
+      - if rating_sentences.any?
+        .mb-3
+          - rating_sentences.each do |sentence|
+            %p.mb-1.small
+              != sentence.html_safe
+      - else
+        .mb-3
+          .alert.alert-warning.small.py-1.px-2.d-inline-block.mb-0
+            %i.bi.bi-exclamation-triangle.me-1
+            nothing rated
+
+      / Action buttons
+      .btn-group.btn-group-sm
+        = link_to organization_observation_path(org, observation), class: "btn btn-outline-primary", title: "View observation" do
+          %i.bi.bi-link-45deg.me-1
+          View
+        - latest_notification = observation.last_successful_notification
+        - if latest_notification&.slack_url.present?
+          = link_to latest_notification.slack_url, target: "_blank", class: "btn btn-outline-primary", title: "View in Slack" do
+            %i.bi.bi-slack.me-1
+            Slack
+        - else
+          %button.btn.btn-outline-secondary.disabled{disabled: true, title: "No notification sent"}
+            %i.bi.bi-slack.me-1
+            Slack

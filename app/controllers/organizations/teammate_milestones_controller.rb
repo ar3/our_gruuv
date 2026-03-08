@@ -152,6 +152,34 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
         milestone_level: position_ability.milestone_level
       }
     end
+
+    # Timeline: observations (where certified teammate is observee, visible to current user, with a rating for this ability) + milestone awards, chronological
+    certified_teammate = @teammate_milestone.teammate
+    page_ability = @teammate_milestone.ability
+    visibility_query = ObservationVisibilityQuery.new(current_person, organization)
+    visible_observations = visibility_query.visible_observations
+    observations_about_teammate = visible_observations
+      .joins(:observees)
+      .where(observees: { teammate_id: certified_teammate.id })
+      .joins(:observation_ratings)
+      .where(observation_ratings: { rateable_type: 'Ability', rateable_id: page_ability.id })
+      .distinct
+      .includes(:observer, { observed_teammates: :person }, :observation_ratings, :notifications)
+      .order(observed_at: :asc)
+    milestone_awards = certified_teammate.teammate_milestones
+      .includes(:ability, :certifying_teammate)
+      .order(attained_at: :asc)
+
+    timeline_entries = []
+    observations_about_teammate.each do |o|
+      timeline_entries << { type: :observation, date: o.observed_at, record: o }
+    end
+    milestone_awards.each do |m|
+      timeline_entries << { type: :milestone, date: m.attained_at, record: m }
+    end
+    @timeline_entries = timeline_entries.sort_by { |e| e[:date] }
+
+    preload_rateables_for_observations(observations_about_teammate)
   end
 
   def publish
@@ -489,6 +517,23 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     end
     
     viewers.uniq { |v| v[:person].id }
+  end
+
+  def preload_rateables_for_observations(observations)
+    rating_ids_by_type = observations.flat_map(&:observation_ratings).group_by(&:rateable_type)
+    rating_ids_by_type.each do |rateable_type, ratings|
+      ids = ratings.map(&:rateable_id).uniq
+      next if ids.empty?
+
+      case rateable_type
+      when 'Assignment'
+        Assignment.where(id: ids).load
+      when 'Ability'
+        Ability.where(id: ids).load
+      when 'Aspiration'
+        Aspiration.where(id: ids).load
+      end
+    end
   end
 end
 

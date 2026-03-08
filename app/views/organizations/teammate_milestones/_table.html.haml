@@ -12,7 +12,7 @@
       - milestones.each do |milestone|
         %tr
           %td
-            = link_to complete_picture_organization_company_teammate_path(milestone.teammate.organization, milestone.teammate.person), class: "text-decoration-none" do
+            = link_to complete_picture_organization_company_teammate_path(milestone.teammate.organization, milestone.teammate), class: "text-decoration-none" do
               %strong= milestone.teammate.person.display_name
           %td
             = milestone.ability.name

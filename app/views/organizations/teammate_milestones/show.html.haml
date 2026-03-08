@@ -56,7 +56,7 @@
           .col-md-4
             %strong Teammate:
           .col-md-8
-            = link_to complete_picture_organization_company_teammate_path(@teammate_milestone.teammate.organization, @teammate_milestone.teammate.person),
+            = link_to internal_organization_company_teammate_path(@teammate_milestone.teammate.organization, @teammate_milestone.teammate),
                      class: "text-decoration-none" do
               = @teammate_milestone.teammate.person.display_name
         
@@ -147,4 +147,57 @@
                               class: "btn btn-info" do
                     %i.bi.bi-globe.me-2
                     Publish to my public profile
+
+    / Collapsible: observations (where this person is observed) + milestone awards, chronological
+    - if @timeline_entries&.any?
+      .card.mb-4
+        .card-body
+          .d-flex.align-items-center
+            %button.btn.btn-sm.text-muted.p-0.border-0.bg-transparent{"data-bs-toggle" => "collapse", "data-bs-target" => "#observationsAndMilestonesTimeline", "aria-expanded" => "false", "aria-controls" => "observationsAndMilestonesTimeline", type: "button", style: "font-size: 0.875rem;"}
+              %i.bi.bi-chevron-down.me-2
+              Observations & milestone history
+        .collapse#observationsAndMilestonesTimeline
+          .card-body.pt-0
+            .list-group
+              - @timeline_entries.each do |entry|
+                - if entry[:type] == :observation
+                  = render 'organizations/observations/observation_large_list_item', observation: entry[:record], organization: organization
+                - else
+                  - milestone = entry[:record]
+                  - is_current_certification = (milestone.id == @teammate_milestone.id)
+                  .list-group-item.py-3{class: ("list-group-item-success" if is_current_certification)}
+                    .row
+                      .col-md-3.mb-3.mb-md-0
+                        .mb-2
+                          %strong Certified by:
+                          %br
+                          = milestone.certifying_teammate.person.casual_name
+                        .mb-2
+                          %strong Teammate:
+                          %br
+                          = milestone.teammate.person.casual_name
+                        .mb-2
+                          %small.text-muted
+                            = milestone.attained_at.strftime('%b %d, %Y')
+                      .col-md-3.mb-3.mb-md-0
+                        .mb-2
+                          %strong Type:
+                          %br
+                          %i.bi.bi-trophy{style: "font-size: 1.5rem; color: var(--bs-primary);"}
+                          Milestone
+                        .mb-2
+                          %strong Level:
+                          %br
+                          %span.badge.bg-primary= milestone.milestone_level_display
+                          = milestone.ability.name
+                      .col-md-6
+                        .mb-3.border-start.border-3.border-primary.ps-3
+                          %p.mb-0
+                            %span.badge.bg-primary.me-1= milestone.milestone_level_display
+                            awarded for
+                            = milestone.ability.name
+                        .btn-group.btn-group-sm
+                          = link_to organization_teammate_milestone_path(organization, milestone), class: "btn btn-outline-primary", title: "View milestone" do
+                            %i.bi.bi-link-45deg.me-1
+                            View
 
