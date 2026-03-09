@@ -262,7 +262,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('section7Body')
     end
 
-    it 'sorts required milestone mileage addends by ability name and deduplicates by ability and level' do
+    it 'groups required milestone mileage by ability (cumulative points through highest required level), sorted by ability name' do
       ability_leadership = create(:ability, company: organization, name: 'Leadership')
       ability_communication = create(:ability, company: organization, name: 'Communication')
       create(:position_ability, position: position, ability: ability_leadership, milestone_level: 2)
@@ -280,8 +280,11 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       required = controller.instance_variable_get(:@mileage_required_addends)
       addends = required[:addends]
-      expect(addends.map { |a| [a[:ability_name], a[:level]] }).to eq([['Communication', 1], ['Leadership', 2]])
-      expect(addends).to eq(addends.uniq { |a| [a[:ability_name], a[:level]] })
+      # One row per ability: Communication M1 => 1 pt; Leadership M2 => 1+2 = 3 pts
+      expect(addends.map { |a| [a[:ability_name], a[:levels], a[:points]] }).to eq([
+        ['Communication', [1], 1],
+        ['Leadership', [1, 2], 3]
+      ])
       expect(addends).to eq(addends.sort_by { |a| a[:ability_name] })
     end
 

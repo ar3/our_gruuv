@@ -198,54 +198,52 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     end.sort_by { |row| row[:ability].name }
   end
 
-  # For Milestone Mileage: list of { level:, ability_name:, points: } for each teammate milestone (earned), plus total.
-  # Display format in view: "<milestone display> <ability name> – Milestone X". Ordered by milestone level then attained_at.
+  # For Milestone Mileage: one row per ability with grouped milestones. Each addend: ability_name, levels (e.g. [1,2,3]), points (cumulative).
+  # Display in view: "<highest level display> <ability name> – Milestone 1, 2, & 3".
   def build_mileage_earned_addends
     return { addends: [], total: 0 } unless @teammate
 
     mileage_service = MilestoneMileageService.new
     milestones = @teammate.teammate_milestones.includes(:ability).order(:milestone_level, :attained_at)
-    addends = milestones.map do |m|
-      {
-        level: m.milestone_level,
-        ability_name: m.ability.name,
-        points: mileage_service.milestone_points(m.milestone_level)
-      }
-    end
+    by_ability = milestones.group_by { |m| [m.ability_id, m.ability.name] }
+    addends = by_ability.map do |(_ability_id, ability_name), group|
+      levels = group.map(&:milestone_level).sort.uniq
+      points = group.sum { |m| mileage_service.milestone_points(m.milestone_level) }
+      { ability_name: ability_name, levels: levels, points: points }
+    end.sort_by { |a| a[:ability_name] }
     { addends: addends, total: mileage_service.total_mileage_for(@teammate) }
   end
 
-  # For Milestone Mileage: list of { level:, ability_name:, points:, source_name: } for each required milestone
-  # (position abilities + required assignment abilities), plus total. Display: "<milestone display> <ability name> – Milestone X".
+  # For Milestone Mileage: one row per ability with highest required level; points = cumulative (1 through that level).
+  # Display: "<highest level display> <ability name> – Milestone 1, 2, & 3" (out to highest required).
   def build_mileage_required_addends
     return { addends: [], total: 0 } unless @position
 
     mileage_service = MilestoneMileageService.new
-    addends = []
+    max_level_by_ability = {} # ability_id => { name:, level: }
 
     @position.position_abilities.includes(:ability).each do |pa|
-      addends << {
-        level: pa.milestone_level,
-        ability_name: pa.ability.name,
-        points: mileage_service.milestone_points(pa.milestone_level),
-        source_name: "Position"
-      }
+      id = pa.ability_id
+      if max_level_by_ability[id].nil? || pa.milestone_level > max_level_by_ability[id][:level]
+        max_level_by_ability[id] = { name: pa.ability.name, level: pa.milestone_level }
+      end
     end
     @position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
-      assignment = position_assignment.assignment
-      assignment.assignment_abilities.includes(:ability).each do |aa|
-        addends << {
-          level: aa.milestone_level,
-          ability_name: aa.ability.name,
-          points: mileage_service.milestone_points(aa.milestone_level),
-          source_name: assignment.title
-        }
+      position_assignment.assignment.assignment_abilities.includes(:ability).each do |aa|
+        id = aa.ability_id
+        if max_level_by_ability[id].nil? || aa.milestone_level > max_level_by_ability[id][:level]
+          max_level_by_ability[id] = { name: aa.ability.name, level: aa.milestone_level }
+        end
       end
     end
 
+    addends = max_level_by_ability.values.map do |info|
+      level = info[:level]
+      levels = (1..level).to_a
+      { ability_name: info[:name], levels: levels, points: mileage_service.points_through_milestone(level) }
+    end.sort_by { |a| a[:ability_name] }
     total = addends.sum { |a| a[:points] }
-    deduped_sorted = addends.uniq { |a| [a[:ability_name], a[:level]] }.sort_by { |a| a[:ability_name] }
-    { addends: deduped_sorted, total: total }
+    { addends: addends, total: total }
   end
 
   # Returns hash: aspiration_id => [ { month: Date, status: :exceeding|:meeting|:working_to_meet|:none, actual: Boolean }, ... ]

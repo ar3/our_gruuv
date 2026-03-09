@@ -344,8 +344,9 @@
               .d-flex.flex-column.gap-1.w-100
                 - if earned[:addends].any?
                   - earned[:addends].each do |a|
+                    - earned_label = "#{milestone_level_display(a[:levels].max)} #{a[:ability_name]} – Milestone #{milestone_levels_sentence(a[:levels])}"
                     = render partial: "organizations/eligibility_requirements/mileage_card",
-                      locals: { display_label: "#{milestone_level_display(a[:level])} #{a[:ability_name]} – Milestone #{a[:level]}", points: a[:points], is_total: false }
+                      locals: { display_label: earned_label, points: a[:points], is_total: false }
                 - else
                   .mileage-card.d-flex.align-items-center.px-2.py-1{ style: "min-height: 4rem; border: 1px solid #e9ecef; border-radius: 2px;" }
                     .small.text-muted No milestones earned yet
@@ -354,8 +355,9 @@
               .d-flex.flex-column.gap-1.w-100
                 - if required[:addends].any?
                   - required[:addends].each do |a|
+                    - required_label = "#{milestone_level_display(a[:levels].max)} #{a[:ability_name]} – Milestone #{milestone_levels_sentence(a[:levels])}"
                     = render partial: "organizations/eligibility_requirements/mileage_card",
-                      locals: { display_label: "#{milestone_level_display(a[:level])} #{a[:ability_name]} – Milestone #{a[:level]}", points: a[:points], is_total: false }
+                      locals: { display_label: required_label, points: a[:points], is_total: false }
                 - if remainder_miles.positive?
                   = render partial: "organizations/eligibility_requirements/mileage_card",
                     locals: { display_label: "Unique to you Abilities that you will specialize in", points: remainder_miles, is_total: false }

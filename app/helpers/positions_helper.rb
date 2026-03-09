@@ -16,6 +16,15 @@ module PositionsHelper
     end
   end
 
+  # Format a list of milestone levels for display, e.g. [1, 2, 3] => "1, 2, & 3"
+  def milestone_levels_sentence(levels)
+    return '' if levels.blank?
+    levels = levels.map(&:to_i).sort.uniq
+    return levels.first.to_s if levels.size == 1
+    return levels.join(' & ') if levels.size == 2
+    "#{levels[0..-2].join(', ')}, & #{levels.last}"
+  end
+
   def current_view_name
     case action_name
     when 'show'

@@ -27,19 +27,29 @@ class MilestoneMileageService
     MILESTONE_POINTS[milestone_level.to_i] || 0
   end
 
+  # Points for requiring a given milestone level = sum of points for milestones 1 through level
+  # (requiring Milestone 3 implies Milestones 1 and 2, so 1 + 2 + 3 = 6 points).
+  def points_through_milestone(level)
+    return 0 if level.to_i < 1
+    (1..level.to_i).sum { |l| milestone_points(l) }
+  end
+
   # Sum of milestone points for position abilities + required assignment abilities (minimum "base" for this position).
+  # Per ability we take the highest required level, then add cumulative points for that level.
   def minimum_required_for_position(position)
     return 0 unless position
 
-    total_points = 0
+    max_level_by_ability = {}
     position.position_abilities.each do |pa|
-      total_points += milestone_points(pa.milestone_level)
+      key = pa.ability_id
+      max_level_by_ability[key] = [max_level_by_ability[key].to_i, pa.milestone_level].max
     end
     position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
       position_assignment.assignment.assignment_abilities.each do |aa|
-        total_points += milestone_points(aa.milestone_level)
+        key = aa.ability_id
+        max_level_by_ability[key] = [max_level_by_ability[key].to_i, aa.milestone_level].max
       end
     end
-    total_points
+    max_level_by_ability.values.sum { |level| points_through_milestone(level) }
   end
 end
