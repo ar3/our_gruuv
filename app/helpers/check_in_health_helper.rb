@@ -239,6 +239,94 @@ module CheckInHealthHelper
     end
   end
 
+  # Cache-based stacked bar helpers (7 categories). No borders on segments.
+  CHECK_IN_HEALTH_CATEGORY_CSS = {
+    'red' => 'bg-danger',
+    'orange' => 'bg-warning',
+    'light_blue' => 'bg-info bg-opacity-75',
+    'light_purple' => 'bg-primary bg-opacity-50',
+    'light_green' => 'bg-success bg-opacity-50',
+    'green' => 'bg-success',
+    'neon_green' => 'check-in-health-neon-green'
+  }.freeze
+
+  # Human meaning of each category (for legend and tooltips)
+  CHECK_IN_HEALTH_CATEGORY_MEANINGS = {
+    'red' => 'No check-in by the manager in the past 90 days',
+    'orange' => 'Older or in-progress check-in (not completed by manager in past 90 days)',
+    'light_blue' => 'Employee completed; awaiting manager check-in in past 90 days',
+    'light_purple' => 'Manager completed; awaiting employee in past 90 days',
+    'light_green' => 'Both sides completed in past 90 days (not yet finalized)',
+    'green' => 'Finalized check-in in past 90 days (awaiting employee acknowledgment)',
+    'neon_green' => 'Finalized and acknowledged check-in in past 90 days'
+  }.freeze
+
+  def check_in_health_category_css(category)
+    CHECK_IN_HEALTH_CATEGORY_CSS[category.to_s] || 'bg-light'
+  end
+
+  def check_in_health_category_meaning(category)
+    CHECK_IN_HEALTH_CATEGORY_MEANINGS[category.to_s] || category.to_s.humanize
+  end
+
+  # Tooltip text for a bar segment: "X of Y <objects> <meaning>"
+  def check_in_health_segment_tooltip(segment, total, object_name)
+    count = segment[:count]
+    category = segment[:category].to_s
+    meaning = check_in_health_category_meaning(category)
+    return meaning if total == 1 && object_name == 'position'
+    "#{count} of #{total} #{object_name} #{meaning.downcase}"
+  end
+
+  # For milestones: green = earned, red = not earned
+  def check_in_health_milestone_segment_tooltip(segment, total)
+    count = segment[:count]
+    if segment[:category].to_s == 'green'
+      "#{count} of #{total} required milestones attained"
+    else
+      "#{total - count} of #{total} required milestones not yet attained"
+    end
+  end
+
+  # Items array (assignments or aspirations) -> hash of category counts for stacked bar
+  def check_in_health_category_counts(items)
+    items = Array(items)
+    return { 'red' => 1 } if items.empty?
+    counts = items.group_by { |i| i['category'].to_s }.transform_values(&:count)
+    %w[red orange light_blue light_purple light_green green neon_green].index_with { |c| counts[c].to_i }
+  end
+
+  # Single position item -> same shape for one segment
+  def check_in_health_position_segment(position_item)
+    return { 'red' => 1 } if position_item.blank?
+    cat = position_item['category'].to_s.presence || 'red'
+    { cat => 1 }
+  end
+
+  # Milestones: earned vs not earned (for stacked bar: earned = green, not_earned = red)
+  def check_in_health_milestone_segments(milestones_payload)
+    total = milestones_payload['total_required'].to_i
+    earned = milestones_payload['earned_count'].to_i
+    return {} if total.zero?
+    { 'green' => earned, 'red' => total - earned }
+  end
+
+  # Left-to-right order for stacked bars: red → neon green
+  CHECK_IN_HEALTH_BAR_ORDER = %w[red orange light_blue light_purple light_green green neon_green].freeze
+
+  # Render horizontal stacked bar from segment hash (category => count). Total = sum of counts.
+  # Segments are always ordered red (left) → neon green (right).
+  def check_in_health_stacked_bar_segments(segment_counts)
+    total = segment_counts.values.sum.to_f
+    return [] if total.zero?
+    CHECK_IN_HEALTH_BAR_ORDER.filter_map do |category|
+      count = segment_counts[category].to_i
+      next if count.zero?
+      pct = (count / total * 100).round(1)
+      { category: category, pct: pct, count: count, css: check_in_health_category_css(category) }
+    end
+  end
+
   # General helpers
   def health_status_badge_class(status)
     case status

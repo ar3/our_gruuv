@@ -8,7 +8,7 @@
     .d-flex.align-items-center
       %small.text-muted.ms-3
         %i.bi.bi-info-circle.me-1
-        Track feedback status for all active employees
+        Track feedback status for all active employees (last 90 days)
 
 .mb-4
   = content_for :go_back_link
@@ -25,7 +25,6 @@
       .card-body
         .row
           .col-md-8
-            / Main statistics/metrics area
             .row.text-center
               .col-3
                 .h3.text-primary= @spotlight_stats[:total_employees]
@@ -39,37 +38,44 @@
               .col-3
                 .h3.text-info= "#{@spotlight_stats[:completion_rate]}%"
                 %small.text-muted Completion Rate
-          
           .col-md-4
-            / Action alerts or status messages
             - if @spotlight_stats[:needing_attention] > 0
               .alert.alert-warning.small
                 %i.bi.bi-exclamation-triangle.me-2
                 %strong #{@spotlight_stats[:needing_attention]} employee#{'s' if @spotlight_stats[:needing_attention] != 1} need#{'s' if @spotlight_stats[:needing_attention] == 1} attention
-      
       .card-footer.bg-light
         .row.align-items-center
           .col-md-6
             %small.text-muted
               %i.bi.bi-building.me-1
               Organization: #{@organization.display_name}
-              %br
-              %i.bi.bi-people.me-1
-              - if @show_only_self_and_reports
-                Showing only you and your reports
-              - else
-                Showing active employees from company and descendants
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-clipboard-check.me-1
-              Spotlight: Check-ins Health Overview
+              Bar colors: Red (none) → Orange → Light Blue/Purple → Light Green → Green → Neon Green (finalized & acknowledged)
 
-/ Download all check-ins and link to Check-ins Progress
+/ Filter (below spotlight, above table)
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        = form_with url: organization_check_ins_health_path(@organization), method: :get, local: true, id: "check-ins-health-filter-form" do |f|
+          .row.align-items-end
+            .col-md-10
+              %label.form-label.fw-bold.fs-5.mb-2 Who to show
+              = select_tag :manager_id, options_for_select(@available_manager_filter_options, @current_manager_filter), class: "form-select form-select-lg", id: "check-ins-health-manager-select", required: true
+              %small.form-text.text-muted Choose scope: everyone, your reports, or a specific manager's direct reports
+            .col-md-2
+              = f.submit "Go", class: "btn btn-primary btn-lg w-100"
+          - if params[:page].present?
+            = hidden_field_tag :page, params[:page]
+
+/ Download and link
 .row.justify-content-center.mb-3
   .col-lg-12.d-flex.gap-2.flex-wrap
-    = link_to organization_check_ins_health_export_path(@organization), class: 'btn btn-outline-primary' do
+    = link_to organization_check_ins_health_export_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
       %i.bi.bi-download.me-2
-      Download all check-ins for #{@spotlight_stats[:total_employees]} teammate#{'s' if @spotlight_stats[:total_employees] != 1}
+      Download check-ins (CSV)
     = link_to organization_insights_check_ins_progress_path(@organization), class: 'btn btn-outline-secondary' do
       %i.bi.bi-bar-chart-steps.me-2
       Check-ins Progress
@@ -80,85 +86,94 @@
     .d-flex.justify-content-between.align-items-center
       %small.text-muted= raw pagy_info(@pagy)
 
-/ Main Content Area
+/ Main table: Employee (20%) | Aspirations (20%) | Assignments (30%) | Position (15%) | Milestones (15%)
 .row.justify-content-center
   .col-lg-12
     - if @employee_health_data.any?
       .table-responsive
-        %table.table.table-hover
+        %table.table.table-hover.table-layout-fixed
+          %colgroup
+            %col{style: "width: 20%"}
+            %col{style: "width: 20%"}
+            %col{style: "width: 30%"}
+            %col{style: "width: 15%"}
+            %col{style: "width: 15%"}
           %thead
             %tr
               %th Employee
-              %th Position
-              %th Assignments
               %th Aspirations
+              %th Assignments
+              %th Position
               %th Milestones
-              %th Actions
           %tbody
             - @employee_health_data.each do |data|
               - person = data[:person]
               - teammate = data[:teammate]
-              - health = data[:health]
+              - cache = data[:cache]
+              - manager_teammate = teammate.employment_tenures.active.where(company: @organization).first&.manager_teammate
               %tr
-                %td
-                  = link_to person.display_name, organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                %td{style: "width: 20%"}
+                  = link_to person.display_name, organization_company_teammate_check_ins_path(@organization, teammate), class: "text-decoration-none fw-bold"
                   %br
-                  %small.text-muted= person.email
+                  - if manager_teammate
+                    %small.text-muted
+                      = link_to manager_teammate.person&.display_name, organization_check_ins_health_path(@organization, manager_id: "CompanyTeammate_#{manager_teammate.id}"), class: "text-muted"
+                  - else
+                    %small.text-muted —
                 
-                / Position cell
-                %td
-                  - position_health = health[:position]
-                  - cell_class = position_health_cell_class(position_health[:status])
-                  - icon_class = position_health_icon(position_health[:status])
-                  - tooltip_text = position_health_tooltip(position_health)
-                  .p-2.rounded{class: cell_class, "data-bs-toggle" => "tooltip", "data-bs-title" => tooltip_text}
-                    .d-flex.align-items-center
-                      %i{class: "bi #{icon_class} me-2"}
-                      %div
-                        %div.fw-bold= position_health_status_text(position_health)
-                        - if position_health[:open_check_in]
-                          %small
-                            - if position_health[:open_unacknowledged]
-                              %span.text-muted (Unacknowledged)
-                            - if position_health[:open_check_in_started_on]
-                              Started: #{position_health[:open_check_in_started_on].strftime('%b %d, %Y')}
-                        - if position_health[:last_rating_date] && position_health[:status] == :warning
-                          %small
-                            Last rated: #{position_health[:last_rating_date].strftime('%b %d, %Y')}
+                %td{style: "width: 20%"}
+                  - if cache
+                    - segments = check_in_health_stacked_bar_segments(check_in_health_category_counts(cache.payload_aspirations))
+                    - if segments.any?
+                      - total = segments.sum { |s| s[:count] }
+                      .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
+                        - segments.each do |seg|
+                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "aspirations")}
+                    - else
+                      %span.text-muted No aspirations
+                  - else
+                    %span.text-muted Pending
                 
-                / Assignments cell
-                %td
-                  - assignment_health = health[:assignments]
-                  - cell_class = assignment_health_cell_class(assignment_health[:status])
-                  - tooltip_text = assignment_health_tooltip(assignment_health)
-                  .p-2.rounded{class: cell_class, "data-bs-toggle" => "tooltip", "data-bs-title" => tooltip_text}
-                    .fw-bold= assignment_health_display(assignment_health)
+                %td{style: "width: 30%"}
+                  - if cache
+                    - segments = check_in_health_stacked_bar_segments(check_in_health_category_counts(cache.payload_assignments))
+                    - if segments.any?
+                      - total = segments.sum { |s| s[:count] }
+                      .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
+                        - segments.each do |seg|
+                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "assignments")}
+                    - else
+                      %span.text-muted No assignments
+                  - else
+                    %span.text-muted Pending
                 
-                / Aspirations cell
-                %td
-                  - aspiration_health = health[:aspirations]
-                  - cell_class = aspiration_health_cell_class(aspiration_health[:status])
-                  - tooltip_text = aspiration_health_tooltip(aspiration_health)
-                  .p-2.rounded{class: cell_class, "data-bs-toggle" => "tooltip", "data-bs-title" => tooltip_text}
-                    .fw-bold= aspiration_health_display(aspiration_health)
+                %td{style: "width: 15%"}
+                  - if cache
+                    - segments = check_in_health_stacked_bar_segments(check_in_health_position_segment(cache.payload_position))
+                    - if segments.any?
+                      - total = segments.sum { |s| s[:count] }
+                      .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
+                        - segments.each do |seg|
+                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "position")}
+                    - else
+                      %span.text-muted —
+                  - else
+                    %span.text-muted Pending
                 
-                / Milestones cell
-                %td
-                  - milestone_health = health[:milestones]
-                  - cell_class = milestone_health_cell_class(milestone_health[:status])
-                  - tooltip_text = milestone_health_tooltip(milestone_health)
-                  .p-2.rounded{class: cell_class, "data-bs-toggle" => "tooltip", "data-bs-title" => tooltip_text}
-                    .fw-bold= milestone_health_display(milestone_health)
-                
-                / Actions cell
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary" do
-                      %i.bi.bi-eye
-                    = link_to organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary" do
-                      %i.bi.bi-clipboard-check
+                %td{style: "width: 15%"}
+                  - if cache
+                    - ms = cache.payload_milestones
+                    - total_req = ms['total_required'].to_i
+                    - if total_req.positive?
+                      - segments = check_in_health_stacked_bar_segments(check_in_health_milestone_segments(ms))
+                      .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
+                        - segments.each do |seg|
+                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_milestone_segment_tooltip(seg, total_req)}
+                    - else
+                      %span.text-muted No milestones
+                  - else
+                    %span.text-muted Pending
       
-      / Pagination
       .d-flex.justify-content-center.mt-4
         - if @pagy.pages > 1
           = raw pagy_nav(@pagy)
@@ -166,16 +181,6 @@
       .alert.alert-info
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
-          No Active Employees Found
+          No one in this view
         %p.mb-2
-          This organization doesn't have any active employees yet.
-
-
-
-
-
-
-
-
-
-
+          Change the filter above or there are no active employees in the selected scope.

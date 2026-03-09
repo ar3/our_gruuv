@@ -46,6 +46,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     if @check_in_errors.any?
       redirect_to redirect_url, alert: check_in_errors_flash_message
     else
+      CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
       redirect_to redirect_url, notice: 'Check-ins saved successfully.'
     end
   end
@@ -62,6 +63,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     if @check_in_errors.any?
       redirect_to redirect_url, alert: check_in_errors_flash_message
     else
+      CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
       redirect_to redirect_url, notice: 'Check-ins saved successfully.'
     end
   end

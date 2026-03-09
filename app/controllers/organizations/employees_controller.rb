@@ -409,6 +409,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         acknowledged_count += 1
       end
     end
+
+    CheckInHealthCacheRefreshSchedule.schedule_refresh_for(teammate.id) if teammate && acknowledged_count.positive?
     
     redirect_to audit_organization_employee_path(@organization, teammate), 
                 notice: "Successfully acknowledged #{acknowledged_count} check-in#{'s' if acknowledged_count != 1}."

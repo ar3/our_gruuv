@@ -7,19 +7,9 @@ RSpec.describe Organizations::CheckInsHealthController, type: :controller do
     create(:teammate, person: person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil, can_manage_employment: true)
   end
 
-  let(:minimal_health) do
-    {
-      position: { status: :success },
-      assignments: { status: :success, total_count: 0 },
-      aspirations: { status: :success, total_count: 0 },
-      milestones: { status: :success, required_count: 0 }
-    }
-  end
-
   before do
     teammate
     sign_in_as_teammate(person, company)
-    allow(CheckInHealthService).to receive(:call).and_return(minimal_health)
   end
 
   describe 'GET #index' do
@@ -29,11 +19,17 @@ RSpec.describe Organizations::CheckInsHealthController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      it 'assigns employee_health_data and sets show_only_self_and_reports to false' do
+      it 'assigns employee_health_data, spotlight_stats, and filter options' do
         get :index, params: { organization_id: company.id }
-        expect(assigns(:show_only_self_and_reports)).to eq(false)
         expect(assigns(:employee_health_data)).to be_an(Array)
         expect(assigns(:spotlight_stats)).to be_a(Hash)
+        expect(assigns(:current_manager_filter)).to be_present
+        expect(assigns(:available_manager_filter_options)).to be_an(Array)
+      end
+
+      it 'defaults manager filter to everyone' do
+        get :index, params: { organization_id: company.id }
+        expect(assigns(:current_manager_filter)).to eq('everyone')
       end
     end
 
@@ -47,9 +43,17 @@ RSpec.describe Organizations::CheckInsHealthController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      it 'assigns show_only_self_and_reports true and restricts list to self and reports' do
+      it 'defaults to just_me and restricts list to self' do
         get :index, params: { organization_id: company.id }
-        expect(assigns(:show_only_self_and_reports)).to eq(true)
+        expect(assigns(:current_manager_filter)).to eq('just_me')
+        expect(assigns(:employee_health_data).map { |d| d[:teammate].id }).to contain_exactly(teammate.id)
+      end
+    end
+
+    context 'with manager_id filter just_me' do
+      it 'returns only current teammate' do
+        get :index, params: { organization_id: company.id, manager_id: 'just_me' }
+        expect(response).to have_http_status(:success)
         expect(assigns(:employee_health_data).map { |d| d[:teammate].id }).to contain_exactly(teammate.id)
       end
     end

@@ -995,3 +995,15 @@ body:has(.vertical-nav.open) .floating-toggle {
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
+
+// ===== CHECK-INS HEALTH STACKED BARS =====
+// No outline on bar segments; distinct neon green
+.check-in-health-bar {
+  .flex-grow-0 {
+    border: none !important;
+    outline: none !important;
+  }
+}
+.check-in-health-neon-green {
+  background-color: #00e676 !important; // Bright neon/lime green (Material green A400)
+}

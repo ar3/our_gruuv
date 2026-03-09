@@ -65,6 +65,7 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
     ).call
     
     if result.ok?
+      CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
       # TODO: Send notification to employee
       redirect_to audit_organization_employee_path(organization, @teammate),
                   notice: 'Check-ins finalized successfully. Employee will be notified.'

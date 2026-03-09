@@ -8,3 +8,8 @@ production:
     class: Digest::ScheduleDigestsJob
     queue: default
     schedule: every hour
+
+  check_in_health_cache_process_schedules:
+    class: CheckInHealthCacheProcessSchedulesJob
+    queue: default
+    schedule: every 1 minute
