@@ -74,10 +74,11 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('Public View')
       end
 
-      it 'shows disabled edit and delete options for non-admin users' do
+      it 'shows disabled edit and archive options for non-admin users' do
         get organization_assignment_path(organization, assignment)
         expect(response.body).to include('Edit Assignment')
-        expect(response.body).to include('Delete Assignment')
+        # Assignments are archived, not deleted; view switcher shows disabled "Archive assignment" when no permission
+        expect(response.body).to include('Archive assignment')
       end
 
       it 'shows current holders section when there are active tenures' do
@@ -378,7 +379,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('Public View')
         expect(response.body).to include('Manage Ability Milestones')
         expect(response.body).to include('Edit Assignment')
-        expect(response.body).to include('Delete Assignment')
+        expect(response.body).to include('Archive assignment')
       end
 
       context 'when assignment has outcomes' do

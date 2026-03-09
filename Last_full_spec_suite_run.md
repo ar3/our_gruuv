@@ -1,83 +1,83 @@
 # Last Full Spec Suite Run
 
 ## Run Information
-- **Run Date**: 2026-02-16
-- **Started**: 2026-02-16 11:55:06
-- **Last Update**: (updated after each segment)
+- **Run Date**: 2026-03-09
+- **Started**: 2026-03-09 07:42:57
+- **Last Update**: 2026-03-09 (updated after each segment)
 - **Total Duration**: Segments run separately; doc updated after each segment.
 
 ## Segment Results
 
-### ✅ Phase 1: Model Specs (1794/1794 passing, 1 pending)
+### ✅ Phase 1: Model Specs (1844/1844 passing, 1 pending)
 **Command**: `bundle exec rspec spec/models/`
-- **Examples**: 1794
+- **Examples**: 1844
 - **Failures**: 0 ✅
 - **Pending**: 1
 - **Status**: ALL PASSING
-- **Duration**: ~50 seconds (50.15s)
-- **Completed**: 2026-02-16 11:56:00
+- **Duration**: ~1m 12s (72.56s)
+- **Completed**: 2026-03-09 07:44:10
 
-### ❌ Phase 2: Controller Specs (1474/1477 passing, 6 pending, 3 failures)
+### ✅ Phase 2: Controller Specs (1526/1526 passing, 6 pending)
 **Command**: `bundle exec rspec spec/controllers/`
-- **Examples**: 1477
-- **Failures**: 3 ❌
+- **Examples**: 1526
+- **Failures**: 0 ✅
 - **Pending**: 6
-- **Status**: 3 FAILURES
-- **Duration**: ~2 minutes 9 seconds (2m 8.8s)
-- **Completed**: 2026-02-16 11:58:10
-- **Failures**: insights_controller_spec.rb:237 (observations chart 52–53 categories, got 54); :319 (prompts chart same); :196 (goals total_goals expected 2 got nil)
+- **Status**: ALL PASSING
+- **Duration**: ~4m 3s (4m 3.1s)
+- **Completed**: 2026-03-09 07:49:00
 
-### ❌ Phase 3: Request Specs (1486/1488 passing, 3 pending, 2 failures)
+### ❌ Phase 3: Request Specs (1597/1601 passing, 3 pending, 4 failures)
 **Command**: `bundle exec rspec spec/requests/`
-- **Examples**: 1488
-- **Failures**: 2 ❌
+- **Examples**: 1601
+- **Failures**: 4 ❌
 - **Pending**: 3
-- **Status**: 2 FAILURES
-- **Duration**: ~3 minutes 9 seconds (3m 8.7s)
-- **Completed**: 2026-02-16 12:01:20
-- **Failures**: prompt_templates_spec.rb:17 and :22 — GET prompt_templates returns 302 redirect instead of success, does not render index
+- **Status**: 4 FAILURES
+- **Duration**: ~5m 43s
+- **Completed**: 2026-03-09
+- **Failures**: eligibility_requirements_spec.rb:64; manage_eligibility_spec.rb:50; assignments_spec.rb:77, :375
 
-### ❌ Phase 4: Policy Specs (593/595 passing, 2 failures)
+### ✅ Phase 4: Policy Specs (604/604 passing)
 **Command**: `bundle exec rspec spec/policies/`
-- **Examples**: 595
-- **Failures**: 2 ❌
-- **Status**: 2 FAILURES
-- **Duration**: ~49 seconds (48.87s)
-- **Completed**: 2026-02-16 12:02:10
-- **Failures**: assignment_flow_policy_spec.rb:83 (deadlock creating organization); prompt_goal_policy_spec.rb:47 (create? expected true got false)
+- **Examples**: 604
+- **Failures**: 0 ✅
+- **Status**: ALL PASSING
+- **Duration**: ~52s (52.23s)
+- **Completed**: 2026-03-09
 
-### ✅ Phase 5: Service Specs (1067/1067 passing, 4 pending)
+### ❌ Phase 5: Service Specs (1123/1125 passing, 4 pending, 2 failures)
 **Command**: `bundle exec rspec spec/services/`
-- **Examples**: 1067
-- **Failures**: 0 ✅
+- **Examples**: 1125
+- **Failures**: 2 ❌
 - **Pending**: 4
-- **Status**: ALL PASSING
-- **Duration**: ~1 minute (60.29s)
-- **Completed**: 2026-02-16 12:03:10
+- **Status**: 2 FAILURES
+- **Duration**: ~1m 50s
+- **Completed**: 2026-03-09
+- **Failures**: check_in_finalization_service_spec.rb:281, :443 (observable moment when rating improved)
 
-### ✅ Phase 6: Job Specs (156/156 passing)
+### ❌ Phase 6: Job Specs (166/167 passing, 1 failure)
 **Command**: `bundle exec rspec spec/jobs/`
-- **Examples**: 156
-- **Failures**: 0 ✅
-- **Status**: ALL PASSING
-- **Duration**: ~15 seconds (15.29s)
-- **Completed**: 2026-02-16 12:03:26
+- **Examples**: 167
+- **Failures**: 1 ❌
+- **Status**: 1 FAILURE
+- **Duration**: ~26s
+- **Completed**: 2026-03-09
+- **Failure**: application_job_spec.rb:12 (perform_now vs perform_and_get_result)
 
-### ✅ Phase 7: Helper Specs (367/367 passing)
+### ✅ Phase 7: Helper Specs (405/405 passing)
 **Command**: `bundle exec rspec spec/helpers/`
-- **Examples**: 367
+- **Examples**: 405
 - **Failures**: 0 ✅
 - **Status**: ALL PASSING
-- **Duration**: ~22 seconds (22.14s)
-- **Completed**: 2026-02-16 12:03:48
+- **Duration**: ~39s
+- **Completed**: 2026-03-09
 
-### ✅ Phase 8: Form Specs (172/172 passing)
+### ✅ Phase 8: Form Specs (173/173 passing)
 **Command**: `bundle exec rspec spec/forms/`
-- **Examples**: 172
+- **Examples**: 173
 - **Failures**: 0 ✅
 - **Status**: ALL PASSING
-- **Duration**: ~17 seconds (17.1s)
-- **Completed**: 2026-02-16 12:04:15
+- **Duration**: ~15s
+- **Completed**: 2026-03-09
 
 ### ✅ Phase 9: Decorator Specs (99/99 passing)
 **Command**: `bundle exec rspec spec/decorators/`
@@ -87,206 +87,132 @@
 - **Duration**: ~12 seconds (11.56s)
 - **Completed**: 2026-02-16 12:04:27
 
-### ✅ Phase 10: Query Specs (338/338 passing)
+### ✅ Phase 10: Query Specs (359/359 passing)
 **Command**: `bundle exec rspec spec/queries/`
-- **Examples**: 338
+- **Examples**: 359
 - **Failures**: 0 ✅
 - **Status**: ALL PASSING
-- **Duration**: ~1m 13s (72.79s)
-- **Completed**: 2026-02-16 12:05:40
+- **Duration**: ~1m 5s
+- **Completed**: 2026-03-09
 
 ### ✅ Phase 11: Integration Specs (9/9 passing)
 **Command**: `bundle exec rspec spec/integrations/`
 - **Examples**: 9
 - **Failures**: 0 ✅
 - **Status**: ALL PASSING
-- **Duration**: ~4.6 seconds
-- **Completed**: 2026-02-16 12:06:24
+- **Duration**: ~5s
+- **Completed**: 2026-03-09
 
 ### ✅ Phase 12: Route Specs (46/46 passing)
 **Command**: `bundle exec rspec spec/routes/`
 - **Examples**: 46
 - **Failures**: 0 ✅
 - **Status**: ALL PASSING
-- **Duration**: ~4.5 seconds
-- **Completed**: 2026-02-16 12:06:09
+- **Duration**: ~6s
+- **Completed**: 2026-03-09
 
-### ❌ Phase 13: View Specs (139/142 passing, 3 failures)
+### ❌ Phase 13: View Specs (142/143 passing, 1 failure)
 **Command**: `bundle exec rspec spec/views/`
-- **Examples**: 142
-- **Failures**: 3 ❌
-- **Status**: 3 FAILURES (deadlocks)
-- **Duration**: ~38 seconds (37.76s)
-- **Completed**: 2026-02-16 12:06:58
-- **Failures**: organizations/kudos/index.html.haml_spec.rb — 3 deadlocks (link display, truncates long stories, does not include GIFs)
+- **Examples**: 143
+- **Failures**: 1 ❌
+- **Status**: 1 FAILURE
+- **Duration**: ~26s
+- **Completed**: 2026-03-09
+- **Failure**: organizations/observations/share_privately.html.haml_spec.rb:124 (includes JavaScript for Bootstrap tooltips; deadlock in setup)
 
 ---
 
-## System Specs (each folder/file run separately)
+## System Specs (each folder/file run separately) — 2026-03-09
 
 ### ✅ System: Abilities (2/2 passing)
 **Command**: `bundle exec rspec spec/system/abilities/`
-- **Examples**: 2
-- **Failures**: 0 ✅
-- **Duration**: ~14 seconds (13.83s)
-- **Completed**: 2026-02-16 12:08:15
+- **Examples**: 2, **Failures**: 0 ✅, **Duration**: ~42s — **Completed**: 2026-03-09
 
-### ✅ System: Aspirations (7/7 passing, 5 pending)
+### ❌ System: Aspirations (6/7 passing, 1 failure, 5 pending)
 **Command**: `bundle exec rspec spec/system/aspirations/`
-- **Examples**: 7
-- **Failures**: 0 ✅
-- **Pending**: 5
-- **Duration**: ~13 seconds (13.47s)
-- **Completed**: 2026-02-16 12:08:38
+- **Examples**: 7, **Failures**: 1 ❌ — **Completed**: 2026-03-09
+- **Failure**: aspiration_crud_flow_spec.rb:65 — unique constraint index_people_on_unique_textable_phone_number
 
 ### ❌ System: Assignments (1/2 passing, 1 failure)
 **Command**: `bundle exec rspec spec/system/assignments/`
-- **Examples**: 2
-- **Failures**: 1 ❌
-- **Duration**: ~12 seconds (11.54s)
-- **Completed**: 2026-02-16 12:08:59
-- **Failure**: assignments_core_flow_spec.rb:17 — duplicate key organizations_pkey (department factory)
+- **Examples**: 2, **Failures**: 1 ❌ — **Completed**: 2026-03-09
+- **Failure**: assignments_core_flow_spec.rb:70 — deadlock
 
 ### ✅ System: Audit (3/3 passing, 3 pending)
 **Command**: `bundle exec rspec spec/system/audit/`
-- **Examples**: 3
-- **Failures**: 0 ✅
-- **Pending**: 3
-- **Duration**: ~1.9 seconds
-- **Completed**: 2026-02-16 12:09:10
+- **Examples**: 3, **Failures**: 0 ✅ — **Completed**: 2026-03-09
+
+### System: Bugs (0 examples)
+**Command**: `bundle exec rspec spec/system/bugs/` — 0 examples — **Completed**: 2026-03-09
 
 ### ❌ System: Check-in Observations (0/1 passing, 1 failure)
 **Command**: `bundle exec rspec spec/system/check_in_observations/`
-- **Examples**: 1
-- **Failures**: 1 ❌
-- **Duration**: ~10 seconds (9.6s)
-- **Completed**: 2026-02-16 12:09:30
-- **Failure**: check_in_observations_flow_spec.rb:23 — deadlock (create organization)
+- **Failure**: check_in_observations_flow_spec.rb:23 — index_people_on_unique_textable_phone_number — **Completed**: 2026-03-09
 
 ### ❌ System: Check-ins (13/14 passing, 1 failure, 13 pending)
 **Command**: `bundle exec rspec spec/system/check_ins/`
-- **Examples**: 14
-- **Failures**: 1 ❌
-- **Pending**: 13
-- **Duration**: ~14 seconds (13.82s)
-- **Completed**: 2026-02-16 12:09:54
-- **Failure**: check_ins_complete_flow_spec.rb:43 — duplicate key organizations_pkey
+- **Failure**: check_ins_complete_flow_spec.rb:43 — Key (id)=(1) already exists — **Completed**: 2026-03-09
 
-### ❌ System: check_ins_save_and_redirect_spec.rb (0/2 passing, 1 failure)
+### ❌ System: check_ins_save_and_redirect_spec.rb (0/2 passing, 2 failures)
 **Command**: `bundle exec rspec spec/system/check_ins_save_and_redirect_spec.rb`
-- **Examples**: 2
-- **Failures**: 1 ❌
-- **Duration**: ~35s
-- **Completed**: 2026-02-16 12:19:55
-- **Failure**: deadlock (position_check_ins insert)
+- **Failures**: 2 ❌ (displays check-ins page / form fields) — **Completed**: 2026-03-09
 
-### ❌ System: Finalization (2/3 passing, 1 failure)
-**Command**: `bundle exec rspec spec/system/finalization/`
-- **Examples**: 3
-- **Failures**: 1 ❌
-- **Duration**: ~21 seconds (20.59s)
-- **Completed**: 2026-02-16 12:10:24
-- **Failure**: finalization_complete_flow_spec.rb:145 — deadlock (create organization)
+### ❌ System: Finalization (suite error — deadlock)
+**Command**: `bundle exec rspec spec/system/finalization/` — 0 examples, before(:suite) deadlock — **Completed**: 2026-03-09
 
-### ✅ System: Get Shit Done (1/1 passing)
+### ❌ System: Get Shit Done (1/2 passing, 1 failure)
 **Command**: `bundle exec rspec spec/system/get_shit_done/`
-- **Examples**: 1
-- **Failures**: 0 ✅
-- **Duration**: ~14 seconds (14.28s)
-- **Completed**: 2026-02-16 12:10:48
+- **Failure**: dashboard_spec.rb:15 — deadlock (user_preferences) — **Completed**: 2026-03-09
 
-### ✅ System: Goals (58/58 passing, 7 pending)
-**Command**: `bundle exec rspec spec/system/goals/`
-- **Examples**: 58
-- **Failures**: 0 ✅
-- **Pending**: 7
-- **Duration**: ~2m 2s (2m 1.7s)
-- **Completed**: 2026-02-16 12:12:56
+### ❌ System: Goals (suite error — deadlock)
+**Command**: `bundle exec rspec spec/system/goals/` — 0 examples, before(:suite) deadlock — **Completed**: 2026-03-09
 
-### ✅ System: Huddles (6/6 passing, 1 pending)
+### ❌ System: Huddles (3/6 passing, 3 failures, 1 pending)
 **Command**: `bundle exec rspec spec/system/huddles/`
-- **Examples**: 6
-- **Failures**: 0 ✅
-- **Pending**: 1
-- **Duration**: ~29 seconds (28.53s)
-- **Completed**: 2026-02-16 12:13:26
+- **Failures**: huddles_core_flow_spec.rb:18, :87, :165 (create from company/team, feedback form) — **Completed**: 2026-03-09
 
-### ❌ System: Misc (12/21 passing, 9 failures)
+### ❌ System: Misc (22/24 passing, 2 failures)
 **Command**: `bundle exec rspec spec/system/misc/`
-- **Examples**: 21
-- **Failures**: 9 ❌
-- **Duration**: ~2m 40s
-- **Completed**: 2026-02-16 12:14:38
-- **Failures**: deadlocks (Dashboard redirect, Timezone); Slack — "Manage Channel & Group Associations" not shown (permission), field not found, tr[data-organization-id] not found
+- **Failures**: organization_dashboard_spec.rb:13 (redirect to about_me); slack_integration_spec.rb:255 (navigates to Slack dashboard) — **Completed**: 2026-03-09
 
-### ❌ System: Observable Moments (5/7 passing, 2 failures, 4 pending)
+### ❌ System: Observable Moments (5/7 passing, 2 failures, 3 pending)
 **Command**: `bundle exec rspec spec/system/observable_moments/`
-- **Examples**: 7
-- **Failures**: 2 ❌
-- **Pending**: 4
-- **Duration**: ~27 seconds (26.72s)
-- **Completed**: 2026-02-16 12:15:05
-- **Failures**: goal_check_in_moment_flow (deadlock); check_in_moment_flow (pg_search_documents_pkey)
+- **Failures**: check_in_moment_flow_spec.rb:33; goal_check_in_moment_flow_spec.rb:46 (pg_search_documents_pkey) — **Completed**: 2026-03-09
 
-### ❌ System: Observations (42/48 passing, 6 failures)
+### ❌ System: Observations (45/49 passing, 4 failures)
 **Command**: `bundle exec rspec spec/system/observations/`
-- **Examples**: 48
-- **Failures**: 6 ❌
-- **Duration**: ~2m 22s (2m 22.4s)
-- **Completed**: 2026-02-16 12:17:20
-- **Failures**: archive_restore (deadlocks, teammates_pkey); show_page (ambiguous "Publish" button)
+- **Failures**: archive_restore_spec.rb:24, :36, :59, :74 (pg_search_documents_pkey / archive-restore) — **Completed**: 2026-03-09
 
-### ❌ System: Organizations (29/30 passing, 1 failure)
-**Command**: `bundle exec rspec spec/system/organizations/`
-- **Examples**: 30
-- **Failures**: 1 ❌
-- **Duration**: ~1m 22s (1m 21.88s)
-- **Completed**: 2026-02-16 12:18:43
-- **Failure**: position_update_spec.rb:268 — people_pkey duplicate
+### ❌ System: Organizations (suite error — deadlock)
+**Command**: `bundle exec rspec spec/system/organizations/` — 0 examples, before(:suite) deadlock — **Completed**: 2026-03-09
 
-### ❌ System: People (0/2 passing, 2 failures)
-**Command**: `bundle exec rspec spec/system/people/`
-- **Examples**: 2
-- **Failures**: 2 ❌
-- **Duration**: ~17 seconds (17.45s)
-- **Completed**: 2026-02-16 12:19:01
-- **Failures**: people_pkey; deadlocks (employment_tenure/position_major_level)
+### ✅ System: People (2/2 passing)
+**Command**: `bundle exec rspec spec/system/people/` — **Completed**: 2026-03-09
 
 ### ✅ System: Positions and Seats (3/3 passing, 3 pending)
-**Command**: `bundle exec rspec spec/system/positions_and_seats/`
-- **Examples**: 3
-- **Failures**: 0 ✅
-- **Pending**: 3
-- **Duration**: ~3.4 seconds
-- **Completed**: 2026-02-16 12:19:15
+**Command**: `bundle exec rspec spec/system/positions_and_seats/` — **Completed**: 2026-03-09
 
 ### ✅ System: Teammates (3/3 passing, 3 pending)
-**Command**: `bundle exec rspec spec/system/teammates/`
-- **Examples**: 3
-- **Failures**: 0 ✅
-- **Pending**: 3
-- **Duration**: ~3.4 seconds
-- **Completed**: 2026-02-16 12:19:28
+**Command**: `bundle exec rspec spec/system/teammates/` — **Completed**: 2026-03-09
 
-### ❌ System: teammate_profile_links_spec.rb (1/5 passing, 4 failures)
-**Command**: `bundle exec rspec spec/system/teammate_profile_links_spec.rb`
-- **Examples**: 5
-- **Failures**: 4 ❌
-- **Duration**: ~41 seconds (41.35s)
-- **Completed**: 2026-02-16 12:20:50
-- **Failures**: deadlocks, pg_search_documents_pkey, organizations_pkey
+### ❌ System: teammate_profile_links_spec.rb (suite error — deadlock)
+**Command**: `bundle exec rspec spec/system/teammate_profile_links_spec.rb` — 0 examples — **Completed**: 2026-03-09
 
-### ❌ System: vertical_navigation_spec.rb (3/8 passing, 5 failures)
+### ❌ System: vertical_navigation_spec.rb (7/8 passing, 1 failure)
 **Command**: `bundle exec rspec spec/system/vertical_navigation_spec.rb`
-- **Examples**: 8
-- **Failures**: 5 ❌
-- **Duration**: ~41 seconds (40.94s)
-- **Completed**: 2026-02-16 12:21:31
-- **Failures**: deadlocks; InFailedSqlTransaction (lock button); pg_search_documents
+- **Failure**: vertical_navigation_spec.rb:115 — switches to vertical layout from user menu — **Completed**: 2026-03-09
 
 ---
 
-## Phase 14: ENM Specs
+## Phase 14: ENM Specs — 2026-03-09
+
+### ✅ Phase 14: ENM Specs (106/106 passing)
+**Command**: `bundle exec rspec spec/enm/`
+- **Examples**: 106, **Failures**: 0 ✅, **Duration**: ~52s — **Completed**: 2026-03-09
+
+---
+
+## Phase 14: ENM Specs (legacy 2026-02-16)
 
 ### ❌ Phase 14: ENM Specs (103/106 passing, 3 failures)
 **Command**: `bundle exec rspec spec/enm/`
@@ -392,10 +318,86 @@
 
 ## Overall Summary
 
+### Run Summary (2026-03-09)
+- **Unit/Integration**: Model ✅, Controller ✅, Request ❌ (4), Policy ✅, Service ❌ (2), Job ❌ (1), Helper ✅, Form ✅, Decorator ✅, Query ✅, Integration ✅, Route ✅, View ❌ (1), ENM ✅
+- **System**: Abilities ✅, Aspirations ❌ (1), Assignments ❌ (1), Audit ✅, Check-in Observations ❌ (1), Check-ins ❌ (1), check_ins_save_and_redirect ❌ (2), Finalization (suite deadlock), Get Shit Done ❌ (1), Goals (suite deadlock), Huddles ❌ (3), Misc ❌ (2), Observable Moments ❌ (2), Observations ❌ (4), Organizations (suite deadlock), People ✅, Positions and Seats ✅, Teammates ✅, teammate_profile_links (suite deadlock), vertical_navigation ❌ (1)
+- **Total failures this run**: **Unit 8** (Request 4, Service 2, Job 1, View 1) + **System ~20+** (varies with deadlocks)
+
 ### Run Summary (2026-02-16 11:55–12:21)
 - **Unit/Integration**: Model ✅, Controller ❌ (3), Request ❌ (2), Policy ❌ (2), Service ✅, Job ✅, Helper ✅, Form ✅, Decorator ✅, Query ✅, Integration ✅, Route ✅, View ❌ (3), ENM ❌ (3)
 - **System**: Abilities ✅, Aspirations ✅, Assignments ❌ (1), Audit ✅, Check-in Observations ❌ (1), Check-ins ❌ (1), check_ins_save_and_redirect ❌ (1), Finalization ❌ (1), Get Shit Done ✅, Goals ✅, Huddles ✅, Misc ❌ (9), Observable Moments ❌ (2), Observations ❌ (6), Organizations ❌ (1), People ❌ (2), Positions and Seats ✅, Teammates ✅, teammate_profile_links ❌ (4), vertical_navigation ❌ (5)
 - **Total failures this run**: **55** (unit: 13; system: 42)
+
+---
+
+## All Failures (2026-03-09) and Plan of Action
+
+### Unit/Integration Failures (8)
+
+| Segment | File / Location | Failure |
+|--------|------------------|--------|
+| **Requests** | eligibility_requirements_spec.rb:64 | Renders section (1) managerial hierarchy and section (2) business need cards |
+| **Requests** | manage_eligibility_spec.rb:50 | Handles position with no eligibility requirements |
+| **Requests** | assignments_spec.rb:77 | Shows disabled edit and delete options for non-admin users |
+| **Requests** | assignments_spec.rb:375 | Renders view switcher with all options enabled (admin) |
+| **Services** | check_in_finalization_service_spec.rb:281, :443 | Creates observable moment when position check-in rating improved |
+| **Jobs** | application_job_spec.rb:12 | perform_now vs perform_and_get_result expectation (value comparison) |
+| **Views** | share_privately.html.haml_spec.rb:124 | Includes JavaScript for Bootstrap tooltips (deadlock in setup) |
+
+### System Spec Failures (2026-03-09)
+
+| Folder / File | Failure cause |
+|---------------|----------------|
+| **aspirations** | aspiration_crud_flow_spec.rb:65 — index_people_on_unique_textable_phone_number |
+| **assignments** | assignments_core_flow_spec.rb:70 — deadlock |
+| **check_in_observations** | check_in_observations_flow_spec.rb:23 — index_people_on_unique_textable_phone_number |
+| **check_ins** | check_ins_complete_flow_spec.rb:43 — Key (id)=(1) already exists |
+| **check_ins_save_and_redirect_spec** | 2 failures — displays check-ins page / form fields |
+| **finalization** | Suite deadlock (before :suite) |
+| **get_shit_done** | dashboard_spec.rb:15 — deadlock (user_preferences) |
+| **goals** | Suite deadlock (before :suite) |
+| **huddles** | huddles_core_flow_spec.rb:18, :87, :165 — create from company/team, feedback form |
+| **misc** | organization_dashboard_spec.rb:13 (redirect to about_me); slack_integration_spec.rb:255 (Slack dashboard nav) |
+| **observable_moments** | check_in_moment_flow_spec:33; goal_check_in_moment_flow_spec:46 — pg_search_documents_pkey |
+| **observations** | archive_restore_spec:24, :36, :59, :74 — pg_search_documents_pkey / archive-restore |
+| **organizations** | Suite deadlock |
+| **teammate_profile_links_spec** | Suite deadlock |
+| **vertical_navigation_spec** | vertical_navigation_spec.rb:115 — switches to vertical layout from user menu |
+
+### Plan of Action to Fix Failures (2026-03-09)
+
+1. **Duplicate key / sequence collisions (high impact)**  
+   - **pg_search_documents_pkey**, **Key (id)=(1) already exists** (organizations/check_ins), **index_people_on_unique_textable_phone_number**: Shared DB between RSpec and Capybara server causes ID/unique-index collisions when cleanup or ordering is inconsistent.  
+   - **Fix**: Ensure DatabaseCleaner runs with truncation in a deterministic order; run system specs one folder at a time with no parallel workers; or use `config.shared_connection_for_tests` so app and test share one DB connection (see testing-strategy.md). Consider resetting sequences after truncation for tables that use serial IDs and are created in both app and test processes.
+
+2. **Deadlocks (before :suite or mid-test)**  
+   - **Finalization, Goals, Organizations, teammate_profile_links**: Suite-level deadlock (DatabaseCleaner.clean_with :truncation) when another process (e.g. previous Capybara server) still holds locks.  
+   - **Get Shit Done, Assignments, Misc**: Mid-test deadlocks (user_preferences, Slack nav).  
+   - **Fix**: Run each system segment in a fresh terminal with no other rspec/capybara running; ensure only one DB connection for system tests (shared_connection_for_tests); avoid running system specs in parallel.
+
+3. **Requests — eligibility_requirements and manage_eligibility**  
+   - **Fix**: Inspect response body/status and view changes; adjust expectations for section (1)/(2) and “position with no eligibility requirements” to match current controller/view behavior.
+
+4. **Requests — assignments_spec (77, 375)**  
+   - **Fix**: Update expectations for “disabled edit/delete for non-admin” and “view switcher with all options enabled” to match current assignment show view and authorization (e.g. correct buttons/links and visibility).
+
+5. **Services — CheckInFinalizationService**  
+   - **Fix**: Align “creates observable moment when rating improved” with current logic (e.g. how “improved” is determined and when ObservableMoment is created); fix spec setup (previous check-in rating) or service logic.
+
+6. **Jobs — ApplicationJob**  
+   - **Fix**: Spec expects “value != result”; adjust expectation (e.g. compare relevant keys or use a matcher that allows for return value structure) so perform_now vs perform_and_get_result is correctly asserted.
+
+7. **Views — share_privately**  
+   - **Fix**: Isolate spec from deadlock (e.g. avoid creating searchable records in let blocks that conflict with truncation); or run view specs with single-threaded DB access.
+
+8. **System — Huddles**  
+   - **Fix**: “Creates huddle from existing company/team” and “feedback form” — resolve ambiguous `.card` or selector; ensure company/team/department factories and sign-in context match current routes/UI.
+
+9. **System — vertical_navigation**  
+   - **Fix**: “Switches to vertical layout from user menu” — update selector or flow (e.g. user menu item text or DOM) to match current layout switching implementation.
+
+10. **System — Misc (dashboard redirect, Slack nav)**  
+    - **Fix**: Dashboard redirect spec — ensure expected path/redirect for “about_me”; Slack nav — ensure test user has permission and page loads without deadlock; stabilize setup so no cross-process lock contention.
 
 ---
 

@@ -52,7 +52,10 @@ RSpec.describe 'Position Eligibility Management', type: :request do
       
       expect(response).to have_http_status(:success)
       eligibility_data = assigns(:eligibility_data)
-      expect(eligibility_data).to eq({})
+      # Service applies default sections when raw is empty (see PositionEligibilityService.eligibility_data_with_defaults)
+      expect(eligibility_data).to be_a(Hash)
+      expect(eligibility_data).to include('mileage_requirements', 'position_check_in_requirements')
+      expect(eligibility_data['mileage_requirements']).to include('threshold_type' => 'percentage', 'threshold_value' => 20)
     end
   end
 

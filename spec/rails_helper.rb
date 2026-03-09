@@ -71,6 +71,12 @@ RSpec.configure do |config|
   # Non-system tests use Rails' built-in transactional fixtures which are faster
   config.before(:suite) do
     DatabaseCleaner.clean_with(:truncation)
+    # Reset PK sequences after truncation to avoid duplicate key errors when app and test share DB (e.g. system specs)
+    if ActiveRecord::Base.connection.adapter_name.downcase.include?('postgres')
+      ActiveRecord::Base.connection.tables.each do |table|
+        ActiveRecord::Base.connection.reset_pk_sequence!(table) rescue nil
+      end
+    end
   end
   
   # For non-system tests, ensure DatabaseCleaner doesn't interfere with transactional fixtures

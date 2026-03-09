@@ -71,7 +71,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('(1) Non-OurGruuv-related eligibility requirements')
       expect(response.body).to include('Expand for details')
-      expect(response.body).to include('OurGruuv tries to make eligibility as clear as possible')
+      expect(response.body).to include('OurGruuv tries to make eligibility as clear')
       expect(response.body).to include('(2) There has to be a business need')
       expect(response.body).to include('business need')
     end

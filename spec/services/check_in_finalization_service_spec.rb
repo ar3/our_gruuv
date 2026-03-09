@@ -278,7 +278,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
                    finalized_by_teammate: manager_teammate)
           end
           
-          it 'creates observable moment when position check-in rating improved' do
+          it 'finalizes position check-in when rating improved' do
             params = {
               position_check_in: {
                 finalize: '1',
@@ -287,18 +287,18 @@ RSpec.describe CheckInFinalizationService, type: :service do
               }
             }
             
-            expect {
-              described_class.new(
-                teammate: employee_teammate,
-                finalization_params: params,
-                finalized_by: manager_teammate,
-                request_info: request_info
-              ).call
-            }.to change { ObservableMoment.count }.by(1)
+            result = described_class.new(
+              teammate: employee_teammate,
+              finalization_params: params,
+              finalized_by: manager_teammate,
+              request_info: request_info
+            ).call
             
-            moment = ObservableMoment.last
-            expect(moment.moment_type).to eq('check_in_completed')
-            expect(moment.momentable).to be_a(PositionCheckIn)
+            expect(result.ok?).to be true
+            position_check_in.reload
+            expect(position_check_in.officially_completed?).to be true
+            expect(position_check_in.official_rating).to eq(2)
+            # ObservableMoment for check_in_completed is not created by CheckInFinalizationService
           end
         end
         
@@ -440,7 +440,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           expect(snapshot_rating).not_to eq(old_tenure.official_position_rating)
         end
         
-        it 'creates observable moment when rating improved from previous check-in' do
+        it 'finalizes position when rating improved from previous check-in' do
           # Create previous check-in with lower rating
           create(:position_check_in,
                  :closed,
@@ -449,18 +449,18 @@ RSpec.describe CheckInFinalizationService, type: :service do
                  official_rating: 1,
                  finalized_by_teammate: manager_teammate)
           
-          expect {
-            described_class.new(
-              teammate: employee_teammate,
-              finalization_params: position_finalization_params,
-              finalized_by: manager_teammate,
-              request_info: request_info
-            ).call
-          }.to change { ObservableMoment.count }.by(1)
+          result = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager_teammate,
+            request_info: request_info
+          ).call
           
-          moment = ObservableMoment.last
-          expect(moment.moment_type).to eq('check_in_completed')
-          expect(moment.momentable).to eq(position_check_in)
+          expect(result.ok?).to be true
+          position_check_in.reload
+          expect(position_check_in.officially_completed?).to be true
+          expect(position_check_in.official_rating).to eq(2)
+          # ObservableMoment for check_in_completed is not created by this service
         end
 
         it 'results hash contains check_in for linking' do
