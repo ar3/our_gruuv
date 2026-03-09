@@ -33,6 +33,18 @@ RSpec.describe PromptAnswer, type: :model do
     end
   end
 
+  describe 'touching prompt on save' do
+    it 'updates the prompt updated_at when an answer is saved' do
+      answer = create(:prompt_answer, prompt: prompt, prompt_question: question, text: 'Initial')
+      prompt.update_columns(updated_at: 1.hour.ago)
+      original_updated_at = prompt.reload.updated_at
+
+      answer.update!(text: 'Updated text')
+
+      expect(prompt.reload.updated_at).to be > original_updated_at
+    end
+  end
+
   describe 'updated_by_company_teammate tracking' do
     let(:updater_person) { create(:person) }
     let(:updater_teammate) { CompanyTeammate.create!(person: updater_person, organization: company) }

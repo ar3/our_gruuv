@@ -14,6 +14,15 @@ class PromptAnswer < ApplicationRecord
   validates :prompt_question, presence: true
   validates :prompt_question_id, uniqueness: { scope: :prompt_id }
 
+  # Keep prompt's updated_at in sync when answers are created or changed
+  after_save :touch_prompt
+
   # Note: updated_by_company_teammate_id should be set by the controller when updating
+
+  private
+
+  def touch_prompt
+    prompt.touch
+  end
 end
 
