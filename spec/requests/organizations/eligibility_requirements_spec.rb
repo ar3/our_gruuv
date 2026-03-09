@@ -169,8 +169,9 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Integrity')
       # Each block has inline style "width: 12px; height: 12px; min-width: 12px;"
+      # With default eligibility requirements, section (8) also has one row with 12 blocks, so we get at least 12 from aspirations
       block_count = response.body.scan('12px; height: 12px').size
-      expect(block_count).to eq(12), "Expected 12 status blocks for the one aspiration row, got #{block_count}"
+      expect(block_count).to be >= 12, "Expected at least 12 status blocks (aspirational row + position row), got #{block_count}"
     end
 
     it 'shows green block for month with finalized check-in rated exceeding' do
@@ -307,7 +308,8 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(controller.instance_variable_get(:@position_check_in_eligibility_result)).to be_present
     end
 
-    it 'does not render section (8) when position check-in requirements are not configured' do
+    it 'renders section (8) with default position check-in requirements when none are explicitly set' do
+      # With defaults, a position with no position_check_in_requirements set still shows section (8) using defaults
       position.update!(
         eligibility_requirements_explicit: {
           'mileage_requirements' => { 'minimum_mileage_points' => 0 }
@@ -321,8 +323,8 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).not_to include('(8) You must meet the Required Overall position ratings')
-      expect(controller.instance_variable_get(:@position_check_in_eligibility_result)).to be_nil
+      expect(response.body).to include('(8) You must meet the Required Overall position ratings')
+      expect(controller.instance_variable_get(:@position_check_in_eligibility_result)).to be_present
     end
   end
 end

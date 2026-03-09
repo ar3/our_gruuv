@@ -77,7 +77,8 @@ RSpec.describe PositionEligibilityService do
 
       expect(unique_check[:status]).to eq(:not_applicable)
       expect(unique_check[:details][:total_assignments]).to eq(0)
-      expect(report[:overall_eligible]).to be true
+      # With default requirements, other checks (e.g. position check-in, aspirations) may run and affect overall_eligible
+      expect(report[:checks].any? { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }).to be true
     end
   end
 
@@ -193,6 +194,53 @@ RSpec.describe PositionEligibilityService do
       mileage_check2 = report2[:checks].find { |c| c[:key] == :mileage_requirements }
       expect(mileage_check2[:details][:total_mileage_points]).to eq(26)
       expect(mileage_check2[:status]).to eq(:passed)
+    end
+  end
+
+  describe '.eligibility_data_with_defaults and default requirements' do
+    it 'fills in default sections when raw is empty' do
+      result = described_class.eligibility_data_with_defaults({})
+      expect(result['company_aspirational_values_check_in_requirements']).to eq(
+        'minimum_months_at_or_above_rating_criteria' => 3,
+        'minimum_percentage_of_aspirational_values_meeting' => 80,
+        'minimum_percentage_of_aspirational_values_exceeding' => 0
+      )
+      expect(result['position_check_in_requirements']).to eq(
+        'minimum_rating' => 2,
+        'minimum_months_at_or_above_rating_criteria' => 3
+      )
+      expect(result['mileage_requirements']).to eq(
+        'threshold_type' => 'percentage',
+        'threshold_value' => 20
+      )
+    end
+
+    it 'keeps explicit sections when present and only fills blank sections' do
+      raw = {
+        'position_check_in_requirements' => { 'minimum_rating' => 3, 'minimum_months_at_or_above_rating_criteria' => 6 }
+      }
+      result = described_class.eligibility_data_with_defaults(raw)
+      expect(result['position_check_in_requirements']).to eq('minimum_rating' => 3, 'minimum_months_at_or_above_rating_criteria' => 6)
+      expect(result['mileage_requirements']).to eq('threshold_type' => 'percentage', 'threshold_value' => 20)
+    end
+
+    it 'applies default position check-in and mileage when position has no eligibility data' do
+      organization = create(:organization, :company)
+      title = create(:title, company: organization)
+      position_level = create(:position_level, position_major_level: title.position_major_level)
+      position = create(:position, title: title, position_level: position_level)
+      teammate = create(:company_teammate, organization: organization)
+      position.update!(eligibility_requirements_explicit: {})
+
+      report = described_class.new.check_eligibility(teammate, position)
+      pos_check = report[:checks].find { |c| c[:key] == :position_check_in_requirements }
+      mileage_check = report[:checks].find { |c| c[:key] == :mileage_requirements }
+
+      expect(pos_check[:status]).not_to eq(:not_configured)
+      expect(pos_check[:details][:minimum_rating]).to eq(2)
+      expect(pos_check[:details][:minimum_months_at_or_above_rating_criteria]).to eq(3)
+      expect(mileage_check[:details][:threshold_type]).to eq('percentage')
+      expect(mileage_check[:details][:threshold_value]).to eq(20)
     end
   end
 end

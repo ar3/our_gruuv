@@ -393,8 +393,9 @@ class Organizations::PositionsController < ApplicationController
   def manage_eligibility
     authorize @position, :manage_eligibility?
     
-    # Parse existing JSONB for form pre-population
-    @eligibility_data = @position.eligibility_requirements_explicit || {}
+    # Parse existing JSONB for form pre-population; use defaults when no values are set
+    raw = @position.eligibility_requirements_explicit || {}
+    @eligibility_data = PositionEligibilityService.eligibility_data_with_defaults(raw)
     
     # Calculate minimum mileage from required assignments
     @minimum_mileage_from_assignments = calculate_minimum_mileage_from_assignments
