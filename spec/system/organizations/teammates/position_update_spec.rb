@@ -265,21 +265,20 @@ RSpec.describe 'Position Update', type: :system, js: true do
       expect(snapshot.reason).to eq('Promotion and schedule change')
     end
 
-    it 'handles termination date update' do
+    it 'handles end employment flow via End Employment button' do
       termination_date = Date.current + 2.weeks
       date_string = termination_date.strftime('%Y-%m-%d')
       
-      # Use JavaScript to set the date field value directly to avoid Capybara date conversion issues
-      page.execute_script("document.querySelector('input[name=\"employment_tenure_update[termination_date]\"]').value = '#{date_string}';")
+      click_link 'End Employment'
       
-      click_button 'Update Position'
-      
-      # Should redirect to confirmation page
+      # Should be on confirmation page with Employment Ended On and Reason
       expect(page).to have_content('Confirm Employment Termination')
-      expect(page).to have_content(termination_date.strftime('%B %d, %Y'))
+      expect(page).to have_content('Employment Ended On')
+      expect(page).to have_content('Reason')
       
-      # Fill in reason and confirm termination
-      fill_in 'reason', with: 'End of contract'
+      # Set date via JavaScript to avoid Capybara/browser date conversion issues
+      page.execute_script("document.querySelector('input[name=\"termination_date\"]').value = '#{date_string}';")
+      fill_in 'Reason', with: 'End of contract'
       click_button 'Confirm Termination'
       
       # Should redirect back to position page with success message
@@ -288,7 +287,6 @@ RSpec.describe 'Position Update', type: :system, js: true do
       # Reload and check the date - it should match what we submitted
       current_tenure.reload
       expect(current_tenure.ended_at).to be_present
-      # Compare dates (ignore time component)
       expect(current_tenure.ended_at.to_date).to eq(termination_date)
       
       snapshot = MaapSnapshot.last
@@ -402,9 +400,9 @@ RSpec.describe 'Position Update', type: :system, js: true do
         expect(page).to have_select('employment_tenure_update[position_id]', disabled: false)
         expect(page).to have_select('employment_tenure_update[employment_type]', disabled: false)
         expect(page).to have_select('employment_tenure_update[seat_id]', disabled: false)
-        expect(page).to have_field('employment_tenure_update[termination_date]', disabled: false)
         expect(page).to have_field('employment_tenure_update[reason]', disabled: false)
         expect(page).to have_button('Update Position', disabled: false)
+        expect(page).to have_link('End Employment')
       end
     end
 

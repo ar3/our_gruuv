@@ -46,7 +46,7 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
         form.reason = 'Some reason'
         
         expect(form).not_to be_valid
-        expect(form.errors[:reason]).to include('The reason field is only saved when a major change is made (manager, position, employment type, or termination date)')
+        expect(form.errors[:reason]).to include('The reason field is only saved when a major change is made (manager, position, or employment type)')
       end
 
       it 'allows reason when manager changes' do
@@ -81,17 +81,6 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
         form.employment_type = 'part_time'
         form.seat_id = seat.id
         form.reason = 'Employment type change'
-        
-        expect(form).to be_valid
-      end
-
-      it 'allows reason when termination_date is provided' do
-        form.manager_teammate_id = current_manager_teammate.id
-        form.position_id = position.id
-        form.employment_type = 'full_time'
-        form.seat_id = seat.id
-        form.termination_date = Date.current + 1.week
-        form.reason = 'Termination'
         
         expect(form).to be_valid
       end
@@ -159,23 +148,6 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
         form.position_id = position.id
         form.seat_id = ''
         form.employment_type = 'full_time'
-        
-        expect(form).to be_valid
-      end
-    end
-
-    describe 'termination_date validation' do
-      it 'validates termination_date is a valid date if provided' do
-        form.termination_date = 'invalid-date'
-        
-        expect(form).not_to be_valid
-        expect(form.errors[:termination_date]).to be_present
-      end
-
-      it 'allows nil termination_date' do
-        form.position_id = position.id
-        form.employment_type = 'full_time'
-        form.termination_date = nil
         
         expect(form).to be_valid
       end

@@ -191,20 +191,16 @@
                 = render 'shared/forms/seat_field', form: form, seats: @seats, disabled: !can_manage
             
             .row
-              .col-md-6
-                .mb-3
-                  = form.label :termination_date, "Termination Date (Optional)", class: "form-label"
-                  = form.date_field :termination_date, class: "form-control", disabled: !can_manage
-              
-              .col-md-6
+              .col-md-12
                 .mb-3
                   = form.label :reason, "Reason (Optional)", class: "form-label"
                   = form.text_area :reason, class: "form-control", rows: 2, disabled: !can_manage
-                  %small.form-text.text-muted Only saved when a major change is made (manager, position, employment type, or termination date)
+                  %small.form-text.text-muted Only saved when a major change is made (manager, position, or employment type)
             
             .d-flex.justify-content-end.gap-2.mt-4
               - if can_manage
                 = form.submit "Update Position", class: "btn btn-primary"
+                = link_to "End Employment", confirm_termination_organization_teammate_position_path(organization, @teammate), class: "btn btn-danger"
               - else
                 .d-flex.align-items-center.gap-2
                   .flex-grow-1

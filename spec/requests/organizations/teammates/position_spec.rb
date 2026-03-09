@@ -267,22 +267,6 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         expect(new_tenure.position).to eq(new_position)
       end
 
-      it 'redirects to confirmation page when termination date is provided' do
-        termination_date = Date.current + 1.week
-        
-        patch organization_teammate_position_path(organization, employee_teammate), params: {
-          employment_tenure: {
-            manager_teammate_id: manager_teammate.id,
-            position_id: position.id,
-            employment_type: 'full_time',
-            seat_id: current_tenure.seat_id,
-            termination_date: termination_date
-          }
-        }
-        
-        expect(response).to redirect_to(confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date.to_s))
-      end
-
       it 'creates maap_snapshot when manager changes' do
         new_manager_teammate
         expect {
@@ -316,24 +300,6 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
             }
           }
         }.to change { MaapSnapshot.count }.by(1)
-      end
-
-      it 'redirects to confirmation when termination_date is provided (does not create snapshot yet)' do
-        termination_date = Date.current + 1.week
-        
-        expect {
-          patch organization_teammate_position_path(organization, employee_teammate), params: {
-            employment_tenure: {
-              manager_teammate_id: manager_teammate.id,
-              position_id: position.id,
-              employment_type: 'full_time',
-              seat_id: current_tenure.seat_id,
-              termination_date: termination_date
-            }
-          }
-        }.not_to change { MaapSnapshot.count }
-        
-        expect(response).to redirect_to(confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date.to_s))
       end
 
       it 'does not create maap_snapshot when only seat changes' do
@@ -588,32 +554,36 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     context 'when user has can_manage_employment permission' do
       let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: true) }
 
-      it 'returns http success' do
+      it 'returns http success without termination_date (End Employment flow)' do
+        get confirm_termination_organization_teammate_position_path(organization, employee_teammate)
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'displays termination confirmation page with Employment Ended On and Reason' do
+        get confirm_termination_organization_teammate_position_path(organization, employee_teammate)
+        
+        expect(response.body).to include('Confirm Employment Termination')
+        expect(response.body).to include(employee_person.display_name)
+        expect(response.body).to include('Employment Ended On')
+        expect(response.body).to include('Reason')
+      end
+
+      it 'returns http success with optional termination_date param (pre-fill)' do
         termination_date = Date.current + 1.week
         get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date)
         expect(response).to have_http_status(:success)
       end
 
-      it 'displays termination confirmation page' do
-        termination_date = Date.current + 1.week
-        get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date)
-        
-        expect(response.body).to include('Confirm Employment Termination')
-        expect(response.body).to include(employee_person.display_name)
-        expect(response.body).to include(termination_date.strftime('%B %d, %Y'))
-      end
-
       it 'redirects if no active employment tenure' do
         current_tenure.update!(ended_at: 1.day.ago)
-        termination_date = Date.current + 1.week
         
-        get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date)
+        get confirm_termination_organization_teammate_position_path(organization, employee_teammate)
         
         expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
         expect(flash[:alert]).to eq('No active employment tenure found.')
       end
 
-      it 'redirects if invalid termination date' do
+      it 'redirects if invalid termination date in query' do
         get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: 'invalid-date')
         
         expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
@@ -655,18 +625,43 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     context 'when user has can_manage_employment permission' do
       let(:teammate) { create(:company_teammate, person: person, organization: organization, can_manage_employment: true) }
 
-      it 'terminates employment and updates last_terminated_at' do
+      it 'terminates employment and updates last_terminated_at when date and reason provided' do
         termination_date = Date.current + 1.week
         expect(employee_teammate.last_terminated_at).to be_nil
         
         post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
-          termination_date: termination_date
+          termination_date: termination_date,
+          reason: 'Voluntary resignation'
         }
         
         expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
         expect(flash[:notice]).to eq('Employment was successfully terminated.')
         expect(current_tenure.reload.ended_at.to_date).to eq(termination_date)
         expect(employee_teammate.reload.last_terminated_at).to eq(termination_date)
+      end
+
+      it 're-renders confirm_termination with error when reason is blank' do
+        termination_date = Date.current + 1.week
+        
+        post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
+          termination_date: termination_date,
+          reason: ''
+        }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:confirm_termination)
+        expect(flash[:alert]).to eq('Reason is required.')
+      end
+
+      it 're-renders confirm_termination when termination_date is blank' do
+        post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
+          termination_date: '',
+          reason: 'Some reason'
+        }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:confirm_termination)
+        expect(flash[:alert]).to eq('Employment ended on date is required.')
       end
 
       it 'creates MAAP snapshot on termination' do
@@ -686,23 +681,13 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         expect(snapshot.reason).to eq('Voluntary resignation')
       end
 
-      it 'uses default reason if none provided' do
-        termination_date = Date.current + 1.week
-        
-        post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
-          termination_date: termination_date
-        }
-        
-        snapshot = MaapSnapshot.last
-        expect(snapshot.reason).to eq('Employment termination')
-      end
-
       it 'handles errors gracefully' do
         termination_date = Date.current + 1.week
         allow_any_instance_of(TerminateEmploymentService).to receive(:call).and_return(Result.err('Test error'))
         
         post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
-          termination_date: termination_date
+          termination_date: termination_date,
+          reason: 'Resignation'
         }
         
         expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
@@ -714,7 +699,8 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         termination_date = Date.current + 1.week
         
         post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
-          termination_date: termination_date
+          termination_date: termination_date,
+          reason: 'Resignation'
         }
         
         expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
@@ -739,7 +725,8 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       it 'returns 403 without permission' do
         termination_date = Date.current + 1.week
         post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
-          termination_date: termination_date
+          termination_date: termination_date,
+          reason: 'Resignation'
         }
         
         expect(response).to have_http_status(:redirect)

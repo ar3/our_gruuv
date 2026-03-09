@@ -4,7 +4,6 @@ class EmploymentTenureUpdateForm < Reform::Form
   property :position_id
   property :employment_type
   property :seat_id
-  property :termination_date, virtual: true  # Form-only field, not on the model
   property :reason, virtual: true  # Form-only field, not on the model
 
   # Use ActiveModel validations
@@ -12,7 +11,6 @@ class EmploymentTenureUpdateForm < Reform::Form
   validate :position_exists
   validate :manager_teammate_exists, if: -> { manager_teammate_id.present? }
   validate :seat_matches_title, if: -> { seat_id.present? && seat_id.to_s.strip != '' }
-  validate :termination_date_format, if: -> { termination_date.present? }
   validate :employment_type_inclusion, if: -> { employment_type.present? }
   validate :reason_only_with_major_changes
 
@@ -27,19 +25,7 @@ class EmploymentTenureUpdateForm < Reform::Form
     # Ensure we have a plain hash
     @original_params = @original_params.to_h if @original_params.respond_to?(:to_h) && !@original_params.is_a?(Hash)
     
-    # Debug: Log termination_date before Reform processes it
-    if @original_params['termination_date'].present?
-      Rails.logger.debug "DEBUG EmploymentTenureUpdateForm: termination_date BEFORE super: #{@original_params['termination_date'].inspect}, class: #{@original_params['termination_date'].class}"
-    end
-    
-    result = super
-    
-    # Debug: Log termination_date after Reform processes it
-    if respond_to?(:termination_date) && termination_date.present?
-      Rails.logger.debug "DEBUG EmploymentTenureUpdateForm: termination_date AFTER super: #{termination_date.inspect}, class: #{termination_date.class}"
-    end
-    
-    result
+    super
   end
 
   # Reform automatically handles save - we customize the logic
@@ -65,14 +51,6 @@ class EmploymentTenureUpdateForm < Reform::Form
           else
             service_params[key_sym] = value
           end
-        elsif key_sym == :termination_date
-          # Keep termination_date as string - don't convert it to integer
-          # Ensure it's a proper date string format
-          if value.present?
-            service_params[key_sym] = value.to_s.strip
-          else
-            service_params[key_sym] = nil
-          end
         else
           service_params[key_sym] = value
         end
@@ -87,13 +65,6 @@ class EmploymentTenureUpdateForm < Reform::Form
     # Handle seat_id fallback - convert empty strings to nil
     if respond_to?(:seat_id) && service_params[:seat_id].nil?
       service_params[:seat_id] = (seat_id.to_s == '' ? nil : seat_id)
-    end
-    # For termination_date, always use @original_params value if available, otherwise use form property
-    # But ensure it's a string, not converted to integer
-    if @original_params && @original_params['termination_date'].present?
-      service_params[:termination_date] = @original_params['termination_date'].to_s.strip
-    elsif respond_to?(:termination_date) && termination_date.present?
-      service_params[:termination_date] = termination_date.to_s.strip
     end
     service_params[:reason] ||= reason if respond_to?(:reason) && reason.present?
     
@@ -183,17 +154,6 @@ class EmploymentTenureUpdateForm < Reform::Form
     end
   end
 
-  def termination_date_format
-    return if termination_date.blank?
-    
-    # Try to parse as date
-    begin
-      Date.parse(termination_date.to_s)
-    rescue ArgumentError
-      errors.add(:termination_date, 'must be a valid date')
-    end
-  end
-
   def employment_type_inclusion
     return if employment_type.blank?
     
@@ -210,16 +170,15 @@ class EmploymentTenureUpdateForm < Reform::Form
     manager_changed = manager_teammate_id.present? && model.manager_teammate_id.to_s != manager_teammate_id.to_s
     position_changed = position_id.present? && model.position_id.to_s != position_id.to_s
     employment_type_changed = employment_type.present? && model.employment_type.to_s != employment_type.to_s
-    termination_date_provided = termination_date.present?
     seat_changed = seat_id.present? && model.seat_id.to_s != seat_id.to_s
     
-    major_changes = manager_changed || position_changed || employment_type_changed || termination_date_provided
+    major_changes = manager_changed || position_changed || employment_type_changed
     any_changes = major_changes || seat_changed
     
     # Only error if reason is provided with NO changes at all
     # If there are changes (even non-major like seat), form is valid but reason won't be saved
     unless any_changes
-      errors.add(:reason, 'The reason field is only saved when a major change is made (manager, position, employment type, or termination date)')
+      errors.add(:reason, 'The reason field is only saved when a major change is made (manager, position, or employment type)')
     end
   end
 end

@@ -55,12 +55,6 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     
     employment_params = params[:employment_tenure_update] || params[:employment_tenure] || {}
     
-    # Check if termination_date is provided - if so, redirect to confirmation page
-    if employment_params[:termination_date].present?
-      redirect_to confirm_termination_organization_teammate_position_path(organization, @teammate, termination_date: employment_params[:termination_date])
-      return
-    end
-    
     # Load check-ins for the view (in case validation fails and we render :show)
     @check_ins = PositionCheckIn
                    .where(company_teammate: @teammate)
@@ -105,27 +99,32 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       return
     end
     
-    @termination_date = params[:termination_date]
     @person = @teammate.person
     
-    # Validate termination_date
-    begin
-      @parsed_termination_date = if @termination_date.is_a?(String)
-        if @termination_date.match?(/\A\d{4}-\d{2}-\d{2}\z/)
-          Date.strptime(@termination_date, '%Y-%m-%d')
+    # Optional: if termination_date in params (e.g. old bookmark), validate and pre-fill form
+    if params[:termination_date].present?
+      begin
+        @parsed_termination_date = if params[:termination_date].is_a?(String)
+          if params[:termination_date].match?(/\A\d{4}-\d{2}-\d{2}\z/)
+            Date.strptime(params[:termination_date], '%Y-%m-%d')
+          else
+            Date.parse(params[:termination_date])
+          end
+        elsif params[:termination_date].is_a?(Date)
+          params[:termination_date]
         else
-          Date.parse(@termination_date)
+          Date.parse(params[:termination_date].to_s)
         end
-      elsif @termination_date.is_a?(Date)
-        @termination_date
-      else
-        Date.parse(@termination_date.to_s)
+        @termination_date_for_form = @parsed_termination_date.strftime('%Y-%m-%d')
+      rescue ArgumentError
+        redirect_to organization_teammate_position_path(organization, @teammate),
+                    alert: 'Invalid termination date.'
+        return
       end
-    rescue ArgumentError
-      redirect_to organization_teammate_position_path(organization, @teammate),
-                  alert: 'Invalid termination date.'
-      return
+    else
+      @termination_date_for_form = Date.current.strftime('%Y-%m-%d')
     end
+    @reason_for_form = nil
   end
 
   def process_termination
@@ -140,7 +139,24 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     end
     
     termination_date = params[:termination_date]
-    reason = params[:reason]
+    reason = params[:reason].to_s.strip.presence
+
+    if termination_date.blank?
+      render_confirm_termination_with_error('Employment ended on date is required.', termination_date, reason)
+      return
+    end
+
+    begin
+      Date.parse(termination_date.to_s)
+    rescue ArgumentError
+      render_confirm_termination_with_error('Employment ended on date must be a valid date.', termination_date, reason)
+      return
+    end
+
+    if reason.blank?
+      render_confirm_termination_with_error('Reason is required.', termination_date, reason)
+      return
+    end
     
     result = TerminateEmploymentService.call(
       teammate: @teammate,
@@ -251,6 +267,14 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   end
 
   private
+
+  def render_confirm_termination_with_error(alert_message, termination_date, reason)
+    @person = @teammate.person
+    @termination_date_for_form = termination_date.presence || Date.current.strftime('%Y-%m-%d')
+    @reason_for_form = reason
+    flash.now[:alert] = alert_message
+    render :confirm_termination, status: :unprocessable_entity
+  end
 
   def set_teammate
     @teammate = organization.teammates.find(params[:teammate_id])

@@ -17,10 +17,12 @@
           %i.bi.bi-exclamation-triangle.text-warning.me-2
           Termination Confirmation
       .card-body
+        - if flash[:alert]
+          .alert.alert-danger.mb-3= flash[:alert]
         .alert.alert-warning
           %strong This action will:
           %ul.mb-0
-            %li End the employment tenure on #{@parsed_termination_date.strftime('%B %d, %Y')}
+            %li End the employment tenure
             %li Mark #{@teammate.person.display_name} as terminated
             %li Create a MAAP snapshot for audit purposes
 
@@ -33,18 +35,16 @@
             %p.mb-0= @current_employment.position.title.external_title
         .row.mb-3
           .col-md-6
-            %strong Termination Date:
-            %p.mb-0= @parsed_termination_date.strftime('%B %d, %Y')
-          .col-md-6
             %strong Employment Started:
             %p.mb-0= format_date_in_user_timezone(@current_employment.started_at)
 
         = form_with url: process_termination_organization_teammate_position_path(organization, @teammate), method: :post, local: true do |f|
-          = hidden_field_tag :termination_date, @termination_date
-          
           .mb-3
-            = f.label :reason, "Reason (optional)", class: "form-label"
-            = f.text_area :reason, class: "form-control", rows: 3, placeholder: "e.g., Voluntary resignation, Position eliminated, Performance issues, etc."
+            = f.label :termination_date, "Employment Ended On", class: "form-label"
+            = f.date_field :termination_date, class: "form-control", required: true, value: @termination_date_for_form
+          .mb-3
+            = f.label :reason, "Reason", class: "form-label"
+            = f.text_area :reason, class: "form-control", rows: 3, required: true, placeholder: "e.g., Voluntary resignation, Position eliminated, Performance issues, etc.", value: @reason_for_form
           
           .d-flex.gap-2
             = f.submit "Confirm Termination", class: "btn btn-danger", data: { confirm: "Are you sure you want to terminate this employment? This action cannot be undone." }
