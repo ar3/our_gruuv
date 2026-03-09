@@ -41,7 +41,7 @@
             %i.bi.bi-chevron-up.ms-1
       .card-body.collapse.py-2{ id: "section1Body" }
         .alert.alert-info.mb-0
-          OurGruuv tries to make eligibility as clear as possible. However, we can never remove the human and subjective aspect of navigating seat changes within an organization. Nor can we guess at what other elements are in play (such as team success/achievements, personal goals, etc.). 
+          OurGruuv tries to make eligibility as clear, and therefore as consistent/fair, as possible. However, we should never try to remove the human and subjective aspect of navigating seat changes within an organization. Nor can we guess at what other elements are in play (such as team success/achievements, personal goals, etc.). 
           %br/
           %br/
           More than anything, there should be a conversation and a clear understanding of what's needed for teammates to be eligible.
@@ -64,7 +64,9 @@
   .col-12
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section2Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        %h3.mb-0 (2) There has to be a business need…
+        .d-flex.flex-column
+          %h3.mb-0 (2) There has to be a business need…
+          .small.text-muted.mt-1= eligibility_criterion_business_need_sentence
         .d-flex.align-items-center.small.text-muted
           %span.expand-detail-label.d-inline-flex.align-items-center
             Expand for details
@@ -78,8 +80,9 @@
           - open_seat = @open_seats_for_position.first
           %p.mb-0
             = link_to open_seat.display_name, organization_seat_path(@organization, open_seat), class: "text-decoration-none"
-            is an open seat.
-            %strong= "✅ #{casual_name} is eligible for this seat."
+            is an open seat that could be filled by 
+            %strong= "✅ #{casual_name}"
+            = " if they meet the other eligibility requirements"
         - elsif @teammate_in_seat_for_position.present?
           - seat = @teammate_in_seat_for_position
           %p.mb-0
@@ -124,12 +127,15 @@
   .col-12
     - company_asp_check = @eligibility_report[:checks].find { |c| c[:key] == :company_aspirational_values_check_in_requirements }
     - company_asp_result = @company_aspirational_values_eligibility_result
-    - asp_combined_eligible = company_asp_result&.summary&.overall_eligible
-    - asp_combined_maybe = company_asp_result&.summary&.meet_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK || company_asp_result&.summary&.exceed_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK
-    - asp_footer_bg = asp_combined_eligible ? "bg-success bg-opacity-25" : (asp_combined_maybe ? "bg-info bg-opacity-25" : "bg-warning bg-opacity-25")
+    - asp_status = company_asp_result&.summary&.overall_eligibility_status
+    - asp_footer_bg = (asp_status == :eligible) ? "bg-success bg-opacity-25" : (asp_status == :on_track_to_eligible ? "bg-info bg-opacity-25" : "bg-warning bg-opacity-25")
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section3Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        %h3.mb-0 (3) You must exemplify our Aspirational Values…
+        .d-flex.flex-column
+          %h3.mb-0 (3) You must exemplify our Aspirational Values…
+          - section3_caption = format_eligibility_check_sentence(company_asp_check)
+          - if section3_caption.present?
+            .small.text-muted.mt-1= section3_caption
         .d-flex.align-items-center.small.text-muted
           %span.expand-detail-label.d-inline-flex.align-items-center
             Expand for details
@@ -154,7 +160,11 @@
     - required_check = @eligibility_report[:checks].find { |c| c[:key] == :required_assignment_check_in_requirements }
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section4Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        %h3.mb-0 (4) You must pass criteria for Required Assignments…
+        .d-flex.flex-column
+          %h3.mb-0 (4) You must pass criteria for Required Assignments…
+          - section4_caption = format_eligibility_check_sentence(required_check)
+          - if section4_caption.present?
+            .small.text-muted.mt-1= section4_caption
         .d-flex.align-items-center.small.text-muted
           %span.expand-detail-label.d-inline-flex.align-items-center
             Expand for details
@@ -178,7 +188,11 @@
     - unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section5Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        %h3.mb-0 (5) You must pass criteria for Unique-to-You Assignments (if applicable)…
+        .d-flex.flex-column
+          %h3.mb-0 (5) You must pass criteria for Unique-to-You Assignments (if applicable)…
+          - section5_caption = format_eligibility_check_sentence(unique_check)
+          - if section5_caption.present?
+            .small.text-muted.mt-1= section5_caption
         .d-flex.align-items-center.small.text-muted
           %span.expand-detail-label.d-inline-flex.align-items-center
             Expand for details
@@ -222,7 +236,11 @@
     - milestone_passed = milestones_check.present? && milestones_check[:status] == :passed
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section6Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        %h3.mb-0 (6) You must pass criteria for Required Milestones…
+        .d-flex.flex-column
+          %h3.mb-0 (6) You must pass criteria for Required Milestones…
+          - section6_caption = format_eligibility_check_sentence(milestones_check)
+          - if section6_caption.present?
+            .small.text-muted.mt-1= section6_caption
         .d-flex.align-items-center.small.text-muted
           %span.expand-detail-label.d-inline-flex.align-items-center
             Expand for details
@@ -305,7 +323,11 @@
       - mileage_percentage = mileage_details[:threshold_type] == 'percentage'
       .card
         .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section7Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-          %h3.mb-0 (7) You must meet the required Milestone Mileage…
+          .d-flex.flex-column
+            %h3.mb-0 (7) You must meet the required Milestone Mileage…
+            - section7_caption = format_eligibility_check_sentence(mileage_check)
+            - if section7_caption.present?
+              .small.text-muted.mt-1= section7_caption
           .d-flex.align-items-center.small.text-muted
             %span.expand-detail-label.d-inline-flex.align-items-center
               Expand for details
@@ -369,7 +391,12 @@
     .col-12
       .card
         .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section7Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-          %h3.mb-0 (7) You must meet the required Milestone Mileage…
+          .d-flex.flex-column
+            %h3.mb-0 (7) You must meet the required Milestone Mileage…
+            - mileage_check_else = @eligibility_report[:checks]&.find { |c| c[:key] == :mileage_requirements }
+            - section7_caption_else = mileage_check_else && format_eligibility_check_sentence(mileage_check_else)
+            - if section7_caption_else.present?
+              .small.text-muted.mt-1= section7_caption_else
           .d-flex.align-items-center.small.text-muted
             %span.expand-detail-label.d-inline-flex.align-items-center
               Expand for details
@@ -387,7 +414,12 @@
     .col-12
       .card
         .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section8Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-          %h3.mb-0 (8) You must meet the Required Overall position ratings…
+          .d-flex.flex-column
+            %h3.mb-0 (8) You must meet the Required Overall position ratings…
+            - position_check_in_check = @eligibility_report[:checks]&.find { |c| c[:key] == :position_check_in_requirements }
+            - section8_caption = position_check_in_check && format_eligibility_check_sentence(position_check_in_check)
+            - if section8_caption.present?
+              .small.text-muted.mt-1= section8_caption
           .d-flex.align-items-center.small.text-muted
             %span.expand-detail-label.d-inline-flex.align-items-center
               Expand for details

@@ -120,7 +120,7 @@ module ApplicationHelper
     format_time_in_user_timezone(time, user, format: format)
   end
 
-  # Formats eligibility requirement details for aspirational values into a sentence.
+  # Formats eligibility requirement details for aspirational values into a sentence (no object/title prefix).
   # details: { minimum_months_at_or_above_rating_criteria:, minimum_percentage_meeting:, minimum_percentage_exceeding: }
   def format_aspirational_values_requirement(details)
     return nil if details.blank?
@@ -130,14 +130,11 @@ module ApplicationHelper
     pct_exceeding = details[:minimum_percentage_exceeding] || details['minimum_percentage_exceeding'] || details['minimum_percentage_of_aspirational_values_exceeding']
     return nil if months.blank? || (pct_meeting.blank? && pct_exceeding.blank?)
 
-    parts = []
-    parts << "At least #{pct_meeting.to_i}% must be meeting expectations for #{months} months." if pct_meeting.present?
-    parts << "At least #{pct_exceeding.to_i}% must be exceeding expectations for #{months} months." if pct_exceeding.present?
-    parts.join(' ')
+    build_meeting_exceeding_sentence(pct_meeting, pct_exceeding, months)
   end
 
-  # Formats eligibility requirement details for assignments into a sentence.
-  # assignment_label: "required assignments" or "unique-to-you assignments" (default: "required assignments")
+  # Formats eligibility requirement details for assignments into a sentence (no object/title prefix).
+  # assignment_label is unused in the sentence; kept for API compatibility. Caller adds title when needed (e.g. position show).
   def format_assignments_requirement(details, assignment_label: "required assignments")
     return nil if details.blank?
 
@@ -146,10 +143,21 @@ module ApplicationHelper
     pct_exceeding = details[:minimum_percentage_exceeding] || details['minimum_percentage_exceeding'] || details['minimum_percentage_of_assignments_exceeding']
     return nil if months.blank? || (pct_meeting.blank? && pct_exceeding.blank?)
 
-    parts = []
-    parts << "At least #{pct_meeting.to_i}% of #{assignment_label} must be meeting expectations for #{months} months." if pct_meeting.present?
-    parts << "At least #{pct_exceeding.to_i}% of #{assignment_label} must be exceeding expectations for #{months} months." if pct_exceeding.present?
-    parts.join(' ')
+    build_meeting_exceeding_sentence(pct_meeting, pct_exceeding, months)
+  end
+
+  # Shared sentence when both meeting and exceeding use the same timeframe: "At least X% meeting and Y% exceeding expectations for Z months."
+  def build_meeting_exceeding_sentence(pct_meeting, pct_exceeding, months)
+    m = months.to_i
+    if pct_meeting.present? && pct_exceeding.present?
+      "At least #{pct_meeting.to_i}% meeting and #{pct_exceeding.to_i}% exceeding expectations for #{m} months."
+    elsif pct_meeting.present?
+      "At least #{pct_meeting.to_i}% meeting expectations for #{m} months."
+    elsif pct_exceeding.present?
+      "At least #{pct_exceeding.to_i}% exceeding expectations for #{m} months."
+    else
+      nil
+    end
   end
 
   # Returns a single sentence describing the eligibility check (for use in the collapsible summary).
@@ -178,25 +186,36 @@ module ApplicationHelper
       if months.present? && rating.present?
         rating_val = rating.to_i
         rating_label = EmploymentTenure::POSITION_RATINGS[rating_val] ? position_rating_display(rating_val) : "rating #{rating}"
-        "Position check-ins: at least #{months} months at or above #{rating_label}."
+        "At least #{months} months at or above #{rating_label}."
       else
         nil
       end
     when :required_assignment_check_in_requirements
-      sentence = format_assignments_requirement(details)
-      sentence.present? ? "Required assignments: #{sentence}" : nil
+      format_assignments_requirement(details)
     when :unique_to_you_assignment_check_in_requirements
-      sentence = format_assignments_requirement(details, assignment_label: "unique-to-you assignments")
-      sentence.present? ? "Unique-to-you assignments: #{sentence}" : nil
+      format_assignments_requirement(details, assignment_label: "unique-to-you assignments")
     when :company_aspirational_values_check_in_requirements
-      sentence = format_aspirational_values_requirement(details)
-      sentence.present? ? "Company aspirational values: #{sentence}" : nil
+      format_aspirational_values_requirement(details)
     else
       label.present? ? "#{label} (see details above)." : nil
     end
   end
 
+  # Display label for each eligibility check (used on position show page where there is no section title).
+  def eligibility_check_label(key)
+    case key.to_sym
+    when :milestone_requirements then "Required ability milestones"
+    when :mileage_requirements then "Milestone mileage"
+    when :position_check_in_requirements then "Position check-ins"
+    when :required_assignment_check_in_requirements then "Required assignments"
+    when :unique_to_you_assignment_check_in_requirements then "Unique-to-you assignments"
+    when :company_aspirational_values_check_in_requirements then "Company aspirational values"
+    else key.to_s.humanize
+    end
+  end
+
   # Builds requirement sentences from a position's stored eligibility config (for position show page).
+  # Each sentence is prefixed with the check label so the list is self-explanatory without section titles.
   def eligibility_requirements_sentences_from_config(position)
     return [] unless position&.eligibility_requirements_explicit.present?
 
@@ -211,18 +230,26 @@ module ApplicationHelper
       details = details.to_h if details.respond_to?(:to_h)
       configured = details.present? && details.respond_to?(:values) && details.values.any?(&:present?)
       check = { key: key.to_sym, details: details || {}, status: configured ? :passed : :not_configured }
-      format_eligibility_check_sentence(check)
+      sentence = format_eligibility_check_sentence(check)
+      next unless sentence.present?
+      "#{eligibility_check_label(key)}: #{sentence}"
     end
     # Add milestone sentence if position has ability requirements but no explicit milestone config
-    if sentences.none? { |s| s.to_s.include?("ability milestones") } && ability_milestone_requirements_for_position(position).any?
-      sentences << eligibility_ability_milestones_intro_sentence
+    if sentences.none? { |s| s.include?("Required ability milestones") } && ability_milestone_requirements_for_position(position).any?
+      sentences << "Required ability milestones: #{eligibility_ability_milestones_intro_sentence}"
     end
     sentences
   end
 
-  # Reusable intro sentence for the ability milestones requirement (used in summary and elsewhere).
+  # Reusable sentence for the business need criterion (criterion 2). Used in eligibility requirements
+  # page header and can be used in position show summary if that list is extended.
+  def eligibility_criterion_business_need_sentence
+    "There must be an open seat for this position, or you must already be in the seat associated with this position."
+  end
+
+  # Reusable intro sentence for the ability milestones requirement (no object prefix; caller adds title on position show).
   def eligibility_ability_milestones_intro_sentence
-    "Required ability milestones: meet the required Milestone for each ability listed below."
+    "Meet the required Milestone for each ability listed below."
   end
 
   # Reusable sentence for one ability milestone requirement. Uses "Milestone" and the alternative wording (e.g. Advanced, Expert).

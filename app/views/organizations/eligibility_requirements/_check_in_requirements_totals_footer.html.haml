@@ -4,9 +4,10 @@
 - return if summary.blank?
 - footer_bg_class = local_assigns[:footer_bg_class]
 - unless footer_bg_class.present?
-  - if summary.overall_eligible
+  - case summary.overall_eligibility_status
+  - when :eligible
     - footer_bg_class = "bg-success bg-opacity-25"
-  - elsif summary.meet_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK || summary.exceed_display_status == CheckInRequirementsEligibility::DisplayStatus::MAYBE_OK
+  - when :on_track_to_eligible
     - footer_bg_class = "bg-info bg-opacity-25"
   - else
     - footer_bg_class = "bg-warning bg-opacity-25"
@@ -28,9 +29,13 @@
         - else
           #{summary.full_meet_pct}% Meeting | #{summary.meet_plus_maybe_meet_pct}% On-Track to be Meeting #{summary.meet_status_icon}
     .align-middle.h2
-      - if summary.overall_eligible
+      - case summary.overall_eligibility_status
+      - when :eligible
         %i.bi.bi-star-fill.text-success.fs-2.align-middle
         %span.ms-1 Eligible
+      - when :on_track_to_eligible
+        %i.bi.bi-graph-up-arrow.text-info.fs-2.align-middle
+        %span.ms-1 On track to being eligible
       - else
         %i.bi.bi-tools.fs-2.align-middle
         %span.ms-1 Working to meet requirements

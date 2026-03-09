@@ -60,9 +60,13 @@
           - else
             #{summary.full_meet_pct}% Meeting | #{summary.meet_plus_maybe_meet_pct}% On-Track to be Meeting #{summary.meet_status_icon}
         %td.align-middle
-          - if summary.overall_eligible
+          - case summary.overall_eligibility_status
+          - when :eligible
             %i.bi.bi-star-fill.text-success.display-1.fs-1.align-middle.ms-2
             %span.ms-1 Eligible
+          - when :on_track_to_eligible
+            %i.bi.bi-graph-up-arrow.text-info.display-1.fs-1.align-middle.ms-2
+            %span.ms-1 On track to being eligible
           - else
             %i.bi.bi-tools.display-1.fs-1.align-middle.ms-2
             %span.ms-1 Working to meet requirements

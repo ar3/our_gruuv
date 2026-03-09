@@ -17,6 +17,7 @@ module CheckInRequirementsEligibility
                 :full_meet_pct, :meet_plus_maybe_meet_pct,
                 :meeting_threshold_pct, :exceeding_threshold_pct,
                 :exceed_display_status, :meet_display_status,
+                :overall_eligibility_status,
                 :overall_eligible
 
     def initialize(
@@ -52,7 +53,8 @@ module CheckInRequirementsEligibility
       @exceed_display_status = compute_display_status(@full_exceed_pct, @exceed_plus_maybe_exceed_pct, exceeding_threshold_pct)
       @meet_display_status = compute_display_status(@full_meet_pct, @meet_plus_maybe_meet_pct, meeting_threshold_pct)
 
-      @overall_eligible = compute_overall_eligible
+      @overall_eligibility_status = compute_overall_eligibility_status
+      @overall_eligible = (@overall_eligibility_status == :eligible)
     end
 
     def exceed_status_icon
@@ -74,18 +76,23 @@ module CheckInRequirementsEligibility
     private
 
     def compute_display_status(first_pct, second_pct, threshold)
-      return DisplayStatus::NOT_MET if threshold.blank? || threshold <= 0
+      # 0% (or blank) threshold means no requirement → always show as passing
+      return DisplayStatus::OK if threshold.blank? || threshold <= 0
       return DisplayStatus::OK if first_pct >= threshold
       return DisplayStatus::MAYBE_OK if second_pct >= threshold
       DisplayStatus::NOT_MET
     end
 
-    def compute_overall_eligible
-      meet_ok = meeting_threshold_pct.blank? || meeting_threshold_pct <= 0 ||
-                meet_plus_maybe_meet_pct >= meeting_threshold_pct
-      exceed_ok = exceeding_threshold_pct.blank? || exceeding_threshold_pct <= 0 ||
-                  exceed_plus_maybe_exceed_pct >= exceeding_threshold_pct
-      meet_ok && exceed_ok
+    # Returns :eligible, :on_track_to_eligible, or :working_to_meet_requirements.
+    # Eligible only when both meeting and exceeding are passing; on-track when either is on-track; else working to meet.
+    def compute_overall_eligibility_status
+      if exceed_display_status == DisplayStatus::NOT_MET || meet_display_status == DisplayStatus::NOT_MET
+        :working_to_meet_requirements
+      elsif exceed_display_status == DisplayStatus::MAYBE_OK || meet_display_status == DisplayStatus::MAYBE_OK
+        :on_track_to_eligible
+      else
+        :eligible
+      end
     end
   end
 end
