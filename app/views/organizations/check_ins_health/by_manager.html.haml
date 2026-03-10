@@ -1,0 +1,94 @@
+- content_for :title, "Check-ins Health by Manager"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-clipboard-check.me-2
+      Check-ins Health by Manager
+    .d-flex.align-items-center
+      %small.text-muted.ms-3
+        %i.bi.bi-info-circle.me-1
+        Aggregated status for each manager's direct reports (last 90 days)
+
+.mb-4
+  = content_for :go_back_link
+
+- content_for :go_back_link do
+  = link_to organization_check_ins_health_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Check-ins Health Dashboard
+
+/ Table: Manager | Aspirations | Assignments | Position | Milestones
+.row.justify-content-center
+  .col-lg-12
+    - if @manager_health_rows.any?
+      .table-responsive
+        %table.table.table-hover.table-layout-fixed
+          %colgroup
+            %col{style: "width: 20%"}
+            %col{style: "width: 20%"}
+            %col{style: "width: 30%"}
+            %col{style: "width: 15%"}
+            %col{style: "width: 15%"}
+          %thead
+            %tr
+              %th Manager
+              %th Aspirations
+              %th Assignments
+              %th Position
+              %th Milestones
+          %tbody
+            - @manager_health_rows.each do |row|
+              - mt = row[:manager_teammate]
+              - segments_asp = check_in_health_stacked_bar_segments(row[:aspiration_counts])
+              - segments_assign = check_in_health_stacked_bar_segments(row[:assignment_counts])
+              - segments_pos = check_in_health_stacked_bar_segments(row[:position_counts])
+              - total_asp = row[:aspiration_counts].values.sum
+              - total_assign = row[:assignment_counts].values.sum
+              - total_pos = row[:position_counts].values.sum
+              - total_mil = row[:milestone_total_required].to_i
+              %tr
+                %td{style: "width: 20%"}
+                  = link_to mt.person&.display_name, organization_check_ins_health_path(@organization, manager_id: "CompanyTeammate_#{mt.id}"), class: "text-decoration-none fw-bold"
+                  %br
+                  %small.text-muted
+                    #{row[:direct_report_count]} direct report#{'s' if row[:direct_report_count] != 1}
+                %td{style: "width: 20%"}
+                  - if segments_asp.any?
+                    - total = segments_asp.sum { |s| s[:count] }
+                    .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
+                      - segments_asp.each do |seg|
+                        .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "aspirations")}
+                  - else
+                    %span.text-muted No aspirations
+                %td{style: "width: 30%"}
+                  - if segments_assign.any?
+                    - total = segments_assign.sum { |s| s[:count] }
+                    .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
+                      - segments_assign.each do |seg|
+                        .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "assignments")}
+                  - else
+                    %span.text-muted No assignments
+                %td{style: "width: 15%"}
+                  - if segments_pos.any?
+                    - total = segments_pos.sum { |s| s[:count] }
+                    .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
+                      - segments_pos.each do |seg|
+                        .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, total == 1 ? "position" : "positions")}
+                  - else
+                    %span.text-muted —
+                %td{style: "width: 15%"}
+                  - if total_mil.positive?
+                    - ms_segments = check_in_health_stacked_bar_segments(check_in_health_milestone_segments('total_required' => total_mil, 'earned_count' => row[:milestone_earned_count].to_i))
+                    .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
+                      - ms_segments.each do |seg|
+                        .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_milestone_segment_tooltip(seg, total_mil)}
+                  - else
+                    %span.text-muted No milestones
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No managers with direct reports
+        %p.mb-0
+          There are no managers with direct reports in the current scope, or you do not have access to view them.

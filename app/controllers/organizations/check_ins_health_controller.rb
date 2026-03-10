@@ -1,6 +1,7 @@
 class Organizations::CheckInsHealthController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
   after_action :verify_authorized
+  helper_method :can_view_check_ins_health_by_manager?
 
   def index
     authorize @organization, :check_ins_health?
@@ -45,7 +46,80 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
               disposition: 'attachment'
   end
 
+  def by_manager
+    authorize @organization, :check_ins_health?
+    unless can_view_check_ins_health_by_manager?
+      redirect_to organization_check_ins_health_path(@organization),
+                  alert: 'You must be a manager with direct reports to view the By Manager page.'
+      return
+    end
+    company = @organization.root_company || @organization
+    manager_teammate_ids = managers_with_direct_reports_for_by_manager(company)
+    managers = CompanyTeammate.where(id: manager_teammate_ids).includes(:person).order('people.last_name ASC', 'people.first_name ASC').references(:person)
+    @manager_health_rows = managers.map { |manager_teammate| build_by_manager_row(manager_teammate, company) }
+  end
+
   private
+
+  def can_view_check_ins_health_by_manager?
+    policy(@organization).manage_employment? || current_company_teammate&.has_direct_reports?
+  end
+
+  def managers_with_direct_reports_for_by_manager(company)
+    if policy(@organization).manage_employment?
+      EmploymentTenure
+        .where(company: company, ended_at: nil)
+        .where.not(manager_teammate_id: nil)
+        .distinct
+        .pluck(:manager_teammate_id)
+    else
+      return [] unless current_company_teammate
+      hierarchy_ids = CompanyTeammate.self_and_reporting_hierarchy(current_company_teammate, @organization).pluck(:id)
+      EmploymentTenure
+        .where(company: company, ended_at: nil, manager_teammate_id: hierarchy_ids)
+        .where.not(manager_teammate_id: nil)
+        .distinct
+        .pluck(:manager_teammate_id)
+    end
+  end
+
+  def build_by_manager_row(manager_teammate, company)
+    direct_report_ids = EmploymentTenure
+      .where(company: company, manager_teammate: manager_teammate, ended_at: nil)
+      .pluck(:teammate_id)
+    caches = CheckInHealthCache.where(
+      teammate_id: direct_report_ids,
+      organization_id: @organization.id
+    ).to_a
+    aspiration_counts = aggregate_category_counts(caches.flat_map(&:payload_aspirations))
+    assignment_counts = aggregate_category_counts(caches.flat_map(&:payload_assignments))
+    position_counts = aggregate_position_counts(caches.map { |c| c.payload_position.presence || {} })
+    milestone_total = caches.sum { |c| c.payload_milestones['total_required'].to_i }
+    milestone_earned = caches.sum { |c| c.payload_milestones['earned_count'].to_i }
+    {
+      manager_teammate: manager_teammate,
+      aspiration_counts: aspiration_counts,
+      assignment_counts: assignment_counts,
+      position_counts: position_counts,
+      milestone_total_required: milestone_total,
+      milestone_earned_count: milestone_earned,
+      direct_report_count: direct_report_ids.size
+    }
+  end
+
+  BAR_CATEGORIES = %w[red orange light_blue light_purple light_green green neon_green].freeze
+
+  def aggregate_category_counts(items)
+    return BAR_CATEGORIES.index_with { 0 } if items.empty?
+    counts = items.group_by { |i| i['category'].to_s }.transform_values(&:count)
+    BAR_CATEGORIES.index_with { |c| counts[c].to_i }
+  end
+
+  def aggregate_position_counts(positions)
+    return BAR_CATEGORIES.index_with { 0 } if positions.empty?
+    counts = positions.group_by { |p| p['category'].to_s.presence || 'red' }.transform_values(&:count)
+    BAR_CATEGORIES.index_with { |c| counts[c].to_i }
+  end
 
   def apply_filter_default_if_needed
     return if params[:manager_id].present?

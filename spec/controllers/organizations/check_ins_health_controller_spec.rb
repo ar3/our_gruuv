@@ -117,4 +117,53 @@ RSpec.describe Organizations::CheckInsHealthController, type: :controller do
       end
     end
   end
+
+  describe 'GET #by_manager' do
+    context 'when user has manage_employment' do
+      it 'returns success' do
+        get :by_manager, params: { organization_id: company.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'assigns manager_health_rows' do
+        get :by_manager, params: { organization_id: company.id }
+        expect(assigns(:manager_health_rows)).to be_an(Array)
+      end
+    end
+
+    context 'when user is a manager (has direct reports) but not manage_employment' do
+      let(:report_person) { create(:person) }
+      let(:report_teammate) do
+        create(:teammate, person: report_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+      end
+
+      before do
+        teammate.update!(can_manage_employment: false)
+        create(:employment_tenure, company: company, teammate: report_teammate, manager_teammate: teammate, ended_at: nil)
+      end
+
+      it 'returns success' do
+        get :by_manager, params: { organization_id: company.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'includes current user as a manager in rows' do
+        get :by_manager, params: { organization_id: company.id }
+        rows = assigns(:manager_health_rows)
+        expect(rows.map { |r| r[:manager_teammate].id }).to include(teammate.id)
+      end
+    end
+
+    context 'when user is not a manager and does not have manage_employment' do
+      before do
+        teammate.update!(can_manage_employment: false)
+      end
+
+      it 'redirects to check_ins_health with alert' do
+        get :by_manager, params: { organization_id: company.id }
+        expect(response).to redirect_to(organization_check_ins_health_path(company))
+        expect(flash[:alert]).to eq('You must be a manager with direct reports to view the By Manager page.')
+      end
+    end
+  end
 end
