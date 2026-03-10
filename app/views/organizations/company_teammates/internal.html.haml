@@ -1,9 +1,9 @@
-- content_for :title, "#{@teammate.person.full_name} - Teammate View"
+- content_for :title, "#{@teammate.person.casual_name} - Teammate View"
 
 - content_for :header do
   %h1.mb-0
     %i.bi.bi-people.me-2
-    = @teammate.person.full_name
+    = @teammate.person.casual_name
     %small.text-muted.ms-2 (Teammate View)
 
 - content_for :header_action do

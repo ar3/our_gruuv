@@ -22,8 +22,10 @@
               - cache = @check_in_health_caches_by_teammate && @check_in_health_caches_by_teammate[teammate.id]
               - rate_data = check_in_health_completion_rate_and_breakdown(cache)
               - if rate_data
-                %span.fw-bold.fs-3{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-title" => "Position: #{rate_data[:position_pct]}%<br/>Assignments: #{rate_data[:assignments_pct]}%<br/>Aspirations: #{rate_data[:aspirations_pct]}%"}
-                  #{rate_data[:completion_rate]}%
+                .d-flex.flex-column
+                  %span.fw-bold.fs-3{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-title" => "Position: #{rate_data[:position_pct]}%<br/>Assignments: #{rate_data[:assignments_pct]}%<br/>Values: #{rate_data[:aspirations_pct]}%"}
+                    #{rate_data[:completion_rate]}%
+                  %span.text-muted.small.caption='... clear on where they stand'
               - else
                 %span.text-muted.fs-3.fw-bold{"data-bs-toggle" => "tooltip", "data-bs-title" => "No check-in health data yet"}
                   —

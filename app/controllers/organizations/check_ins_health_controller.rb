@@ -57,9 +57,19 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     manager_teammate_ids = managers_with_direct_reports_for_by_manager(company)
     managers = CompanyTeammate.where(id: manager_teammate_ids).includes(:person).order('people.last_name ASC', 'people.first_name ASC').references(:person)
     @manager_health_rows = managers.map { |manager_teammate| build_by_manager_row(manager_teammate, company) }
+    @sort_by = apply_by_manager_sort
   end
 
   private
+
+  def apply_by_manager_sort
+    sort = params[:sort].to_s
+    sort = 'name' unless %w[name completion_rate].include?(sort)
+    if sort == 'completion_rate'
+      @manager_health_rows.sort_by! { |row| -row[:completion_rate].to_f }
+    end
+    sort
+  end
 
   def can_view_check_ins_health_by_manager?
     policy(@organization).manage_employment? || current_company_teammate&.has_direct_reports?

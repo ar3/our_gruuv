@@ -18,10 +18,15 @@
     %i.bi.bi-arrow-left.me-2
     Back to Check-ins Health Dashboard
 
-/ Table: Manager | Aspirations | Assignments | Position | Milestones
+/ Sort toggle and table
 .row.justify-content-center
   .col-lg-12
     - if @manager_health_rows.any?
+      .d-flex.align-items-center.mb-3
+        %span.me-2.fw-medium Sort by
+        .btn-group{role: "group"}
+          = link_to "Name", organization_check_ins_health_by_manager_path(@organization, sort: "name"), class: "btn btn-sm #{@sort_by == 'name' ? 'btn-primary' : 'btn-outline-primary'}"
+          = link_to "% employees are clear", organization_check_ins_health_by_manager_path(@organization, sort: "completion_rate"), class: "btn btn-sm #{@sort_by == 'completion_rate' ? 'btn-primary' : 'btn-outline-primary'}"
       .table-responsive
         %table.table.table-hover.table-layout-fixed
           %colgroup
@@ -53,7 +58,7 @@
                   %br
                   %small.text-muted
                     #{row[:direct_report_count]} direct report#{'s' if row[:direct_report_count] != 1}
-                    · #{row[:completion_rate]}% health
+                    · #{row[:completion_rate]}% clarity
                 %td{style: "width: 20%"}
                   - if segments_asp.any?
                     - total = segments_asp.sum { |s| s[:count] }
