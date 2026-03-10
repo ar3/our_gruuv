@@ -11,13 +11,22 @@
             = link_to about_me_organization_company_teammate_path(@organization, teammate), class: "btn btn-lg btn-primary" do
               About #{teammate.person.casual_name}
             -# .d-flex.flex-column
-            = link_to organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start" do
-              #{teammate.person.casual_name}'s Check-in
-              - latest_finalized = PositionCheckIn.latest_finalized_for(teammate)
-              - if latest_finalized&.official_check_in_completed_at
-                %br
-                %small.text-muted.mt-0
-                  Latest: #{format_date_in_user_timezone(latest_finalized.official_check_in_completed_at, current_person)}
+            .d-flex.align-items-center.gap-2
+              = link_to organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start" do
+                #{teammate.person.casual_name}'s Check-in
+                - latest_finalized = PositionCheckIn.latest_finalized_for(teammate)
+                - if latest_finalized&.official_check_in_completed_at
+                  %br
+                  %small.text-muted.mt-0
+                    Latest: #{format_date_in_user_timezone(latest_finalized.official_check_in_completed_at, current_person)}
+              - cache = @check_in_health_caches_by_teammate && @check_in_health_caches_by_teammate[teammate.id]
+              - rate_data = check_in_health_completion_rate_and_breakdown(cache)
+              - if rate_data
+                %span.fw-bold.fs-3{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-title" => "Position: #{rate_data[:position_pct]}%<br/>Assignments: #{rate_data[:assignments_pct]}%<br/>Aspirations: #{rate_data[:aspirations_pct]}%"}
+                  #{rate_data[:completion_rate]}%
+              - else
+                %span.text-muted.fs-3.fw-bold{"data-bs-toggle" => "tooltip", "data-bs-title" => "No check-in health data yet"}
+                  —
       
       .row.mt-2
         .col-auto.mb-2

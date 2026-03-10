@@ -327,6 +327,42 @@ module CheckInHealthHelper
     end
   end
 
+  # Check-ins-only completion rate and per-area percentages (position, assignments, aspirations). Excludes milestones.
+  # Returns nil if cache is nil; otherwise { completion_rate:, position_pct:, assignments_pct:, aspirations_pct: }.
+  def check_in_health_completion_rate_and_breakdown(cache)
+    return nil unless cache
+    pts = cache.completion_points
+    pos_pts = pts[:position].to_f
+    assign_pts = pts[:assignments].to_f
+    aspir_pts = pts[:aspirations].to_f
+    pos_max = 4.0
+    assign_max = (cache.payload_assignments.size * 4).to_f
+    assign_max = 4.0 if cache.payload_assignments.empty?
+    aspir_max = (cache.payload_aspirations.size * 4).to_f
+    aspir_max = 4.0 if cache.payload_aspirations.empty?
+    total_pts = pos_pts + assign_pts + aspir_pts
+    total_max = pos_max + assign_max + aspir_max
+    rate = total_max.positive? ? (total_pts / total_max * 100).round(1) : 0
+    {
+      completion_rate: rate,
+      position_pct: pos_max.positive? ? (pos_pts / pos_max * 100).round(0) : 0,
+      assignments_pct: assign_max.positive? ? (assign_pts / assign_max * 100).round(0) : 0,
+      aspirations_pct: aspir_max.positive? ? (aspir_pts / aspir_max * 100).round(0) : 0
+    }
+  end
+
+  # Bootstrap text class for completion rate: success (≥80%), info (50–80%), warning (<50%).
+  def check_in_health_rate_text_class(rate)
+    return 'text-secondary' if rate.nil?
+    if rate >= 80
+      'text-success'
+    elsif rate >= 50
+      'text-info'
+    else
+      'text-warning'
+    end
+  end
+
   # General helpers
   def health_status_badge_class(status)
     case status

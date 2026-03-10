@@ -165,6 +165,15 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Paginate the status-filtered teammates (for display)
       @pagy = Pagy.new(count: status_filtered_teammates.count, page: params[:page] || 1, items: 25)
       @filtered_and_paginated_teammates = status_filtered_teammates[@pagy.offset, @pagy.items]
+      # Preload check-in health caches for manager lite (90-day completion % next to check-in button)
+      if @filtered_and_paginated_teammates.any?
+        teammate_ids = @filtered_and_paginated_teammates.map(&:id)
+        @check_in_health_caches_by_teammate = CheckInHealthCache
+          .where(teammate_id: teammate_ids, organization_id: @organization.id)
+          .index_by(&:teammate_id)
+      else
+        @check_in_health_caches_by_teammate = {}
+      end
       
       # For spotlight calculations, we need the original relation (before status filtering) for joins
       # but use filtered_teammates for counts. Pass both to calculate_spotlight_stats.
