@@ -260,6 +260,7 @@ Rails.application.routes.draw do
         post :update_assignments
         get :assignment_tenure_check_in_bypass
         patch :update_assignment_tenure_check_in_bypass
+        post :set_default_assignments
         get :kudos_points
       end
       

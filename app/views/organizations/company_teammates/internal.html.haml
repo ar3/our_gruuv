@@ -343,6 +343,20 @@
         - else
           %p.text-muted No active assignment tenures.
         
+        - if @required_assignments_without_active_tenure&.any?
+          .mt-3.d-flex.align-items-center.gap-2
+            - n = @required_assignments_without_active_tenure.size
+            - if @can_set_default_assignments
+              = button_to set_default_assignments_organization_company_teammate_path(@current_organization, @teammate), method: :post, class: "btn btn-sm btn-outline-secondary" do
+                %i.bi.bi-plus-circle.me-1
+                Set #{n} default assignment#{'s' if n != 1}
+            - else
+              %span.d-inline-flex.align-items-center
+                = button_tag type: "button", disabled: true, class: "btn btn-sm btn-outline-secondary" do
+                  %i.bi.bi-plus-circle.me-1
+                  Set #{n} default assignment#{'s' if n != 1}
+                %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be in this teammate's managerial hierarchy or have the manage employment permission to set default assignments.", "data-bs-placement" => "top"}
+        
         - if policy(@teammate).manager? || policy(@current_organization).manage_employment?
           .mt-3
             = link_to assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, @teammate), class: "btn btn-sm btn-outline-secondary" do

@@ -186,6 +186,26 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       return_text: "Back to #{@teammate.person.display_name}"
     )
 
+    # Required assignments (from position) that don't have an active assignment tenure
+    # Used for "Set N default assignments" button on internal view
+    if @active_employment_tenure&.position
+      required_assignments = @active_employment_tenure.position.required_assignments.includes(:assignment).map(&:assignment)
+      active_tenure_assignment_ids = @teammate.assignment_tenures
+        .active
+        .joins(:assignment)
+        .where(assignments: { company: organization })
+        .pluck(:assignment_id)
+      @required_assignments_without_active_tenure = required_assignments.reject { |a| active_tenure_assignment_ids.include?(a.id) }
+    else
+      @required_assignments_without_active_tenure = []
+    end
+
+    # Viewer can set default assignments if in teammate's managerial hierarchy or has manage_employment
+    @can_set_default_assignments = (
+      current_company_teammate&.in_managerial_hierarchy_of?(@teammate) ||
+      policy(organization).manage_employment?
+    )
+
     # Debug mode - gather comprehensive authorization data
     if params[:debug] == 'true'
       gather_debug_data
@@ -525,6 +545,88 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     Rails.logger.error(e.backtrace.join("\n"))
     redirect_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate),
                 alert: "Error updating assignment tenures: #{e.message}"
+  end
+
+  def set_default_assignments
+    # Same authorization as assignment_tenure_check_in_bypass: manager or manage_employment
+    is_manager = current_company_teammate&.in_managerial_hierarchy_of?(@teammate) || false
+    has_manage_employment = policy(organization).manage_employment?
+    viewing_self = current_company_teammate == @teammate
+
+    if viewing_self
+      unless has_manage_employment
+        skip_authorization
+        raise Pundit::NotAuthorizedError
+      end
+    else
+      unless is_manager || has_manage_employment
+        skip_authorization
+        raise Pundit::NotAuthorizedError
+      end
+    end
+
+    if has_manage_employment
+      skip_authorization
+    else
+      authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
+    end
+
+    active_tenure = @teammate.active_employment_tenure
+    position = active_tenure&.position
+    unless position
+      redirect_to internal_organization_company_teammate_path(organization, @teammate),
+                  alert: 'No active position for this teammate.'
+      return
+    end
+
+    required_assignments = position.required_assignments.includes(:assignment).map(&:assignment)
+    active_tenure_assignment_ids = @teammate.assignment_tenures
+      .active
+      .joins(:assignment)
+      .where(assignments: { company: organization })
+      .pluck(:assignment_id)
+    missing = required_assignments.reject { |a| active_tenure_assignment_ids.include?(a.id) }
+
+    if missing.empty?
+      redirect_to internal_organization_company_teammate_path(organization, @teammate),
+                  notice: 'All required assignments already have active tenures.'
+      return
+    end
+
+    ActiveRecord::Base.transaction do
+      missing.each do |assignment|
+        @teammate.assignment_tenures.create!(
+          assignment: assignment,
+          started_at: Date.current,
+          anticipated_energy_percentage: 5
+        )
+      end
+
+      unless current_company_teammate
+        raise "current_company_teammate is required to create MAAP snapshot"
+      end
+
+      request_info = build_request_info
+      snapshot = MaapSnapshot.build_for_employee(
+        employee_teammate: @teammate,
+        creator_teammate: current_company_teammate,
+        change_type: 'assignment_management',
+        reason: 'Check-in Bypass',
+        request_info: request_info
+      )
+      snapshot.effective_date = Date.current
+      snapshot.save!
+    end
+
+    redirect_to internal_organization_company_teammate_path(organization, @teammate),
+                notice: "Created #{missing.size} assignment tenure(s). Recorded as Assignment tenure check-in bypass."
+  rescue Pundit::NotAuthorizedError
+    raise
+  rescue => e
+    Rails.logger.error("Error setting default assignments: #{e.message}")
+    Rails.logger.error(e.backtrace.join("\n"))
+    redirect_to internal_organization_company_teammate_path(organization, @teammate),
+                alert: "Error setting default assignments: #{e.message}"
   end
 
   def update

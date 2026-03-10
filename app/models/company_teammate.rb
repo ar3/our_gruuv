@@ -37,11 +37,14 @@ class CompanyTeammate < ApplicationRecord
 
   # Scopes
   scope :for_organization_hierarchy, ->(org) {
-    if org.company?
-      where(organization: org.self_and_descendants)
-    else
-      where(organization: [org, org.parent].compact)
-    end
+    base_scope =
+      if org.company?
+        where(organization: org.self_and_descendants)
+      else
+        where(organization: [org, org.parent].compact)
+      end
+
+    base_scope.includes(:organization)
   }
   scope :with_employment_management, -> { where(can_manage_employment: true) }
   scope :with_employment_creation, -> { where(can_create_employment: true) }
