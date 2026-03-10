@@ -96,6 +96,7 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     position_counts = aggregate_position_counts(caches.map { |c| c.payload_position.presence || {} })
     milestone_total = caches.sum { |c| c.payload_milestones['total_required'].to_i }
     milestone_earned = caches.sum { |c| c.payload_milestones['earned_count'].to_i }
+    completion_rate = completion_rate_for_caches(caches)
     {
       manager_teammate: manager_teammate,
       aspiration_counts: aspiration_counts,
@@ -103,8 +104,30 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
       position_counts: position_counts,
       milestone_total_required: milestone_total,
       milestone_earned_count: milestone_earned,
-      direct_report_count: direct_report_ids.size
+      direct_report_count: direct_report_ids.size,
+      completion_rate: completion_rate
     }
+  end
+
+  # Completion rate from check-ins only (position, assignments, aspirations). Excludes milestones.
+  def completion_rate_for_caches(caches)
+    total_points = 0.0
+    max_points = 0.0
+    caches.each do |cache|
+      points = cache.completion_points
+      pos_pts = points[:position].to_f
+      assign_pts = points[:assignments].to_f
+      aspir_pts = points[:aspirations].to_f
+      pos_max = 4.0
+      assign_max = (cache.payload_assignments.size * 4).to_f
+      assign_max = 4.0 if cache.payload_assignments.empty?
+      aspir_max = (cache.payload_aspirations.size * 4).to_f
+      aspir_max = 4.0 if cache.payload_aspirations.empty?
+      total_max = pos_max + assign_max + aspir_max
+      total_points += pos_pts + assign_pts + aspir_pts
+      max_points += total_max
+    end
+    max_points.positive? ? (total_points / max_points * 100).round(1) : 0
   end
 
   BAR_CATEGORIES = %w[red orange light_blue light_purple light_green green neon_green].freeze
@@ -237,6 +260,7 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     end
   end
 
+  # Spotlight stats from check-ins only (position, assignments, aspirations). Excludes milestones.
   def calculate_spotlight_stats_from_cache(employee_health_data)
     total_employees = employee_health_data.count
     all_healthy = 0
@@ -254,19 +278,17 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
       pos_pts = points[:position].to_f
       assign_pts = points[:assignments].to_f
       aspir_pts = points[:aspirations].to_f
-      mile_pts = points[:milestones].to_f
       pos_max = 4.0
       assign_max = (cache.payload_assignments.size * 4).to_f
       assign_max = 4.0 if cache.payload_assignments.empty?
       aspir_max = (cache.payload_aspirations.size * 4).to_f
       aspir_max = 4.0 if cache.payload_aspirations.empty?
-      mile_max = 4.0
-      total_max = pos_max + assign_max + aspir_max + mile_max
-      total_points += pos_pts + assign_pts + aspir_pts + mile_pts
+      total_max = pos_max + assign_max + aspir_max
+      total_points += pos_pts + assign_pts + aspir_pts
       max_points += total_max
-      if pos_pts >= 4 && assign_pts >= assign_max && aspir_pts >= aspir_max && mile_pts >= 4
+      if pos_pts >= 4 && assign_pts >= assign_max && aspir_pts >= aspir_max
         all_healthy += 1
-      elsif pos_pts < 2 || assign_pts < assign_max * 0.5 || aspir_pts < aspir_max * 0.5 || mile_pts < 2
+      elsif pos_pts < 2 || assign_pts < assign_max * 0.5 || aspir_pts < aspir_max * 0.5
         needing_attention += 1
       end
     end

@@ -245,7 +245,7 @@ module CheckInHealthHelper
     'orange' => 'bg-warning',
     'light_blue' => 'bg-info bg-opacity-75',
     'light_purple' => 'bg-primary bg-opacity-50',
-    'light_green' => 'bg-success bg-opacity-50',
+    'light_green' => 'bg-success bg-opacity-75',
     'green' => 'bg-success',
     'neon_green' => 'check-in-health-neon-green'
   }.freeze
