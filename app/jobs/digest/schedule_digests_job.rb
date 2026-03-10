@@ -2,7 +2,9 @@
 
 module Digest
   # Runs every hour; finds teammates for whom it is 8:00 AM in their timezone and
-  # enqueues SendDigestJob for daily or weekly digest (weekly only on their digest_weekly_day, default Monday).
+  # enqueues SendDigestJob for daily or weekly digest.
+  # - Daily: only on weekdays (Mon–Fri in recipient's timezone).
+  # - Weekly: only on their digest_weekly_day (default Monday).
   class ScheduleDigestsJob < ApplicationJob
     queue_as :default
 
@@ -26,7 +28,9 @@ module Digest
         local_time = now_utc.in_time_zone(tz)
         next unless local_time.hour == DIGEST_HOUR
 
-        if freq == 'weekly'
+        if freq == 'daily'
+          next unless weekday?(local_time)
+        elsif freq == 'weekly'
           weekly_day = (prefs.preference('digest_weekly_day').presence || DEFAULT_WEEKLY_DAY).to_i
           next unless local_time.wday == weekly_day
         end
@@ -36,6 +40,11 @@ module Digest
     end
 
     private
+
+    def weekday?(time)
+      # 0 = Sunday, 6 = Saturday; weekdays are 1-5
+      time.wday.between?(1, 5)
+    end
 
     def digest_frequency(prefs, teammate)
       slack_freq = prefs.effective_digest_slack(teammate)

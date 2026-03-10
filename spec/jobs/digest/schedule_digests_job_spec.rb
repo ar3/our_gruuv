@@ -25,11 +25,27 @@ RSpec.describe Digest::ScheduleDigestsJob, type: :job do
       end
     end
 
-    it 'enqueues SendDigestJob for teammate with digest_slack daily when it is 8am in their timezone' do
+    it 'enqueues SendDigestJob for teammate with digest_slack daily when it is 8am on a weekday in their timezone' do
       UserPreference.for_person(person).update_preference('digest_slack', 'daily')
-      # 8am Pacific = 16:00 UTC (DST varies; use a time that is 8am in LA)
+      # Tuesday 8am Pacific = 2025-03-04 16:00 UTC
       travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
         expect { described_class.perform_now }.to have_enqueued_job(Digest::SendDigestJob).with(teammate.id)
+      end
+    end
+
+    it 'does not enqueue daily digest on Saturday 8am in their timezone' do
+      UserPreference.for_person(person).update_preference('digest_slack', 'daily')
+      # Saturday 8am Pacific: 2025-03-08 16:00 UTC
+      travel_to Time.zone.parse('2025-03-08 16:00:00 UTC') do
+        expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
+      end
+    end
+
+    it 'does not enqueue daily digest on Sunday 8am in their timezone' do
+      UserPreference.for_person(person).update_preference('digest_slack', 'daily')
+      # Sunday 8am Pacific: 2025-03-09 16:00 UTC
+      travel_to Time.zone.parse('2025-03-09 16:00:00 UTC') do
+        expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
       end
     end
 
