@@ -24,12 +24,14 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     
     # Load or build all check-in types (spreadsheet-style)
     @position_check_in = load_or_build_position_check_in
+    preload_position_check_in_associations! if @position_check_in
     assignment_check_ins_data = load_or_build_assignment_check_ins
     @active_assignment_check_ins = assignment_check_ins_data[:active_tenure_check_ins]
     @recently_added_assignment_check_ins = assignment_check_ins_data[:recently_added_tenure_check_ins]
     @non_active_assignment_check_ins = assignment_check_ins_data[:non_active_tenure_check_ins]
     # Keep @assignment_check_ins for backward compatibility (combined list)
     @assignment_check_ins = @active_assignment_check_ins + @recently_added_assignment_check_ins + @non_active_assignment_check_ins
+    preload_assignment_check_in_associations!
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     @relevant_abilities = load_relevant_abilities || []
   end
@@ -256,6 +258,37 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
   def load_relevant_abilities
     RelevantAbilitiesQuery.new(teammate: @teammate, organization: organization).call
+  end
+
+  def preload_position_check_in_associations!
+    return unless @position_check_in
+    ActiveRecord::Associations::Preloader.new(
+      records: [ @position_check_in ],
+      associations: [ { company_teammate: :person }, { employment_tenure: [ :position, { company_teammate: :person } ] } ]
+    ).call
+  end
+
+  # Preload teammate, assignment, and assignment_tenure to avoid N+1 in check_ins#show views.
+  def preload_assignment_check_in_associations!
+    check_ins = @assignment_check_ins
+    return if check_ins.blank?
+
+    ActiveRecord::Associations::Preloader.new(
+      records: check_ins,
+      associations: [ { company_teammate: :person }, :assignment ]
+    ).call
+
+    assignment_ids = check_ins.map(&:assignment_id).uniq.compact
+    return if assignment_ids.blank?
+
+    # Batch load assignment tenures (active first, else most recent per assignment) and attach to each check_in.
+    tenures = AssignmentTenure
+      .where(company_teammate: @teammate, assignment_id: assignment_ids)
+      .order(Arel.sql("CASE WHEN ended_at IS NULL THEN 0 ELSE 1 END"), started_at: :desc)
+    tenures_by_assignment = tenures.group_by(&:assignment_id).transform_values(&:first)
+    check_ins.each do |ci|
+      ci.instance_variable_set(:@assignment_tenure, tenures_by_assignment[ci.assignment_id])
+    end
   end
 
   def update_assignment_check_ins(check_ins_params = params)
