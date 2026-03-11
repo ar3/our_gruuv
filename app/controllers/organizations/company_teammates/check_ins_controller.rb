@@ -33,6 +33,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @assignment_check_ins = @active_assignment_check_ins + @recently_added_assignment_check_ins + @non_active_assignment_check_ins
     preload_assignment_check_in_associations!
     @aspiration_check_ins = load_or_build_aspiration_check_ins
+    preload_aspiration_check_in_associations!
     @relevant_abilities = load_relevant_abilities || []
   end
   
@@ -73,7 +74,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   private
   
   def set_teammate
-    @teammate = organization.teammates.find(params[:company_teammate_id])
+    @teammate = organization.teammates.includes(:person).find(params[:company_teammate_id])
   end
   
   def determine_view_mode
@@ -126,22 +127,31 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       suggested_assignments = position.suggested_assignments.map(&:assignment)
       position_assignments = required_assignments + suggested_assignments
       
+      # Batch load open check-ins for position assignments we don't have yet (avoid N+1)
+      position_assignment_ids = position_assignments.map(&:id).uniq
+      existing_from_tenures = check_ins.map(&:assignment_id).to_set
+      position_ids_needing_check_in = position_assignment_ids.reject { |aid| existing_from_tenures.include?(aid) }
+      open_for_position = if position_ids_needing_check_in.any?
+        AssignmentCheckIn
+          .where(company_teammate: @teammate, assignment_id: position_ids_needing_check_in)
+          .open
+          .index_by(&:assignment_id)
+      else
+        {}
+      end
+
       # For each position assignment (required or suggested), ensure we have a check-in
       position_assignments.each do |assignment|
-        # Check if we already have a check-in for this assignment (from active tenure above)
         existing_check_in = check_ins.find { |ci| ci.assignment_id == assignment.id }
         next if existing_check_in
-        
-        # Check if there's an active tenure for this assignment
+
         active_tenure = active_tenures.find { |t| t.assignment_id == assignment.id }
-        
+
         if active_tenure
-          # Use existing method if tenure exists
           check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
           check_ins << check_in if check_in
         else
-          # No active tenure - create blank check-in if one doesn't exist
-          open_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
+          open_check_in = open_for_position[assignment.id]
           if open_check_in.nil?
             check_in = AssignmentCheckIn.create!(
               teammate: @teammate,
@@ -168,15 +178,23 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       .select(:assignment_id)
       .distinct
       .pluck(:assignment_id)
-    
-    assignments_with_check_in_history.each do |assignment_id|
-      # Skip if we already have a check-in for this assignment
-      next if check_ins.any? { |ci| ci.assignment_id == assignment_id }
-      
-      # Find or create an open check-in for this assignment
-      assignment = Assignment.find(assignment_id)
-      open_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: assignment).open.first
+
+    # Batch load open check-ins for missing assignments to avoid N+1
+    existing_assignment_ids = check_ins.map(&:assignment_id).to_set
+    missing_history_ids = assignments_with_check_in_history.reject { |id| existing_assignment_ids.include?(id) }
+    open_check_ins_by_assignment = if missing_history_ids.any?
+      AssignmentCheckIn
+        .where(company_teammate: @teammate, assignment_id: missing_history_ids)
+        .open
+        .index_by(&:assignment_id)
+    else
+      {}
+    end
+
+    missing_history_ids.each do |assignment_id|
+      open_check_in = open_check_ins_by_assignment[assignment_id]
       if open_check_in.nil?
+        assignment = Assignment.find(assignment_id)
         check_in = AssignmentCheckIn.create!(
           teammate: @teammate,
           assignment: assignment,
@@ -188,22 +206,32 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         check_ins << open_check_in
       end
     end
-    
+
     check_ins = check_ins.compact
-    
-    # Separate check-ins into active tenure and non-active tenure groups
+
+    # Separate check-ins into active tenure and non-active tenure groups (use active_tenures to avoid N+1 assignment_tenure calls)
+    active_tenure_assignment_ids = active_tenures.map(&:assignment_id).to_set
     active_tenure_check_ins = []
     non_active_tenure_check_ins = []
-    
+
     check_ins.each do |check_in|
-      tenure = check_in.assignment_tenure
-      if tenure&.active?
+      if active_tenure_assignment_ids.include?(check_in.assignment_id)
         active_tenure_check_ins << check_in
       else
         non_active_tenure_check_ins << check_in
       end
     end
-    
+
+    # Set @assignment_tenure on each check_in so partition (assignment_added_on) and sort don't N+1
+    all_assignment_ids = check_ins.map(&:assignment_id).uniq.compact
+    if all_assignment_ids.any?
+      tenures = AssignmentTenure
+        .where(company_teammate: @teammate, assignment_id: all_assignment_ids)
+        .order(Arel.sql("CASE WHEN ended_at IS NULL THEN 0 ELSE 1 END"), started_at: :desc)
+      tenures_by_assignment = tenures.group_by(&:assignment_id).transform_values(&:first)
+      check_ins.each { |ci| ci.instance_variable_set(:@assignment_tenure, tenures_by_assignment[ci.assignment_id]) }
+    end
+
     # Partition non-active: recently added (outside Unique-to-You) vs older (inside Unique-to-You)
     required_assignment_ids = required_assignment_ids_for_teammate
     recently_added_cutoff = RECENTLY_ADDED_DAYS.days.ago.to_date
@@ -247,13 +275,28 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   end
 
   def load_or_build_aspiration_check_ins
-    # Get all aspirations for this organization hierarchy
     aspirations = Aspiration.within_hierarchy(organization).ordered
-    
-    # For each aspiration, find or create an open check-in
-    aspirations.map do |aspiration|
-      AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
-    end.compact
+    return [] if aspirations.blank?
+
+    # Batch load open aspiration check-ins for this teammate to avoid N+1
+    aspiration_ids = aspirations.map(&:id)
+    open_by_aspiration = AspirationCheckIn
+      .where(company_teammate: @teammate, aspiration_id: aspiration_ids)
+      .open
+      .index_by(&:aspiration_id)
+
+    aspirations.filter_map do |aspiration|
+      open_check_in = open_by_aspiration[aspiration.id]
+      if open_check_in
+        open_check_in
+      else
+        AspirationCheckIn.create!(
+          company_teammate: @teammate,
+          aspiration: aspiration,
+          check_in_started_on: Date.current
+        )
+      end
+    end
   end
 
   def load_relevant_abilities
@@ -265,6 +308,18 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     ActiveRecord::Associations::Preloader.new(
       records: [ @position_check_in ],
       associations: [ { company_teammate: :person }, { employment_tenure: [ :position, { company_teammate: :person } ] } ]
+    ).call
+  end
+
+  def preload_aspiration_check_in_associations!
+    return if @aspiration_check_ins.blank?
+    ActiveRecord::Associations::Preloader.new(
+      records: @aspiration_check_ins,
+      associations: [
+        { company_teammate: :person },
+        :aspiration,
+        { manager_completed_by_teammate: :person }
+      ]
     ).call
   end
 
