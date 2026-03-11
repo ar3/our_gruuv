@@ -40,6 +40,93 @@
             Same check-ins as above (employee completed, manager completed, both, or finalized), grouped by the department of the person the check-in is about.
           #check-ins-by-department-chart{style: "height: 400px;"}
 
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-success.text-white
+          %h4.mb-0
+            %i.bi.bi-trophy.me-2
+            Department leaderboard
+        .card-body
+          %p.small.text-muted.mb-3
+            Aggregated check-in health by department (same "% clarity" as the By Manager view). Based on current cache data.
+          - if @department_health_rows.any?
+            .d-flex.align-items-center.mb-3
+              %span.me-2.fw-medium Sort by
+              .btn-group{role: "group"}
+                = link_to "Name", organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "name"), class: "btn btn-sm #{@sort_by == 'name' ? 'btn-primary' : 'btn-outline-primary'}"
+                = link_to "% clarity", organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "completion_rate"), class: "btn btn-sm #{@sort_by == 'completion_rate' ? 'btn-primary' : 'btn-outline-primary'}"
+            .table-responsive
+              %table.table.table-hover.table-layout-fixed
+                %colgroup
+                  %col{style: "width: 20%"}
+                  %col{style: "width: 20%"}
+                  %col{style: "width: 30%"}
+                  %col{style: "width: 15%"}
+                  %col{style: "width: 15%"}
+                %thead
+                  %tr
+                    %th Department
+                    %th Aspirations
+                    %th Assignments
+                    %th Position
+                    %th Milestones
+                %tbody
+                  - @department_health_rows.each do |row|
+                    - segments_asp = check_in_health_stacked_bar_segments(row[:aspiration_counts])
+                    - segments_assign = check_in_health_stacked_bar_segments(row[:assignment_counts])
+                    - segments_pos = check_in_health_stacked_bar_segments(row[:position_counts])
+                    - total_asp = row[:aspiration_counts].values.sum
+                    - total_assign = row[:assignment_counts].values.sum
+                    - total_pos = row[:position_counts].values.sum
+                    - total_mil = row[:milestone_total_required].to_i
+                    %tr
+                      %td{style: "width: 20%"}
+                        %span.fw-bold= row[:department_name]
+                        %br
+                        %small.text-muted
+                          #{row[:employee_count]} employee#{'s' if row[:employee_count] != 1}
+                          · #{row[:completion_rate]}% clarity
+                      %td{style: "width: 20%"}
+                        - if segments_asp.any?
+                          - total = segments_asp.sum { |s| s[:count] }
+                          .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
+                            - segments_asp.each do |seg|
+                              .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "aspirations")}
+                        - else
+                          %span.text-muted No aspirations
+                      %td{style: "width: 30%"}
+                        - if segments_assign.any?
+                          - total = segments_assign.sum { |s| s[:count] }
+                          .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
+                            - segments_assign.each do |seg|
+                              .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "assignments")}
+                        - else
+                          %span.text-muted No assignments
+                      %td{style: "width: 15%"}
+                        - if segments_pos.any?
+                          - total = segments_pos.sum { |s| s[:count] }
+                          .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
+                            - segments_pos.each do |seg|
+                              .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, total == 1 ? "position" : "positions")}
+                        - else
+                          %span.text-muted —
+                      %td{style: "width: 15%"}
+                        - if total_mil.positive?
+                          - ms_segments = check_in_health_stacked_bar_segments(check_in_health_milestone_segments('total_required' => total_mil, 'earned_count' => row[:milestone_earned_count].to_i))
+                          .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
+                            - ms_segments.each do |seg|
+                              .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_milestone_segment_tooltip(seg, total_mil)}
+                        - else
+                          %span.text-muted No milestones
+          - else
+            .alert.alert-info
+              %h6.mb-2
+                %i.bi.bi-info-circle.me-2
+                No department data
+              %p.mb-0
+                There are no active employees in scope, or no check-in health data is available yet.
+
 :javascript
   (function() {
     var chartData = #{@check_ins_progress_chart_data.to_json};

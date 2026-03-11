@@ -1,4 +1,6 @@
 class Organizations::InsightsController < Organizations::OrganizationNamespaceBaseController
+  include CheckInHealthCompletionRate
+
   def seats_titles_positions
     authorize company, :view_seats?
     
@@ -271,9 +273,72 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     end
     @check_ins_progress_chart_data = check_ins_progress_chart_data(company, chart_range)
     @check_ins_progress_by_department_chart_data = check_ins_progress_by_department_chart_data(company, chart_range)
+    @department_health_rows = build_department_health_rows(company)
+    @sort_by = apply_department_leaderboard_sort
   end
 
   private
+
+  def build_department_health_rows(company)
+    active_teammates = CompanyTeammate
+      .for_organization_hierarchy(company)
+      .where.not(first_employed_at: nil)
+      .where(last_terminated_at: nil)
+      .includes(employment_tenures: { position: { title: :department } })
+      .to_a
+
+    teammate_ids = active_teammates.map(&:id)
+    return [] if teammate_ids.empty?
+
+    department_by_teammate = active_teammates.each_with_object({}) do |tm, h|
+      dept_name = tm.active_employment_tenure&.position&.title&.department&.name.presence || 'No Department'
+      h[tm.id] = dept_name
+    end
+
+    caches = CheckInHealthCache.where(
+      teammate_id: teammate_ids,
+      organization_id: company.id
+    ).to_a
+    caches_by_teammate = caches.index_by(&:teammate_id)
+
+    teammate_ids_by_department = teammate_ids.group_by { |id| department_by_teammate[id] }
+
+    teammate_ids_by_department.map do |department_name, ids|
+      dept_caches = ids.filter_map { |id| caches_by_teammate[id] }
+      build_department_health_row(department_name, dept_caches, ids.size)
+    end
+  end
+
+  def build_department_health_row(department_name, caches, employee_count)
+    aspiration_counts = aggregate_category_counts(caches.flat_map(&:payload_aspirations))
+    assignment_counts = aggregate_category_counts(caches.flat_map(&:payload_assignments))
+    position_counts = aggregate_position_counts(caches.map { |c| c.payload_position.presence || {} })
+    milestone_total = caches.sum { |c| c.payload_milestones['total_required'].to_i }
+    milestone_earned = caches.sum { |c| c.payload_milestones['earned_count'].to_i }
+    completion_rate = completion_rate_for_caches(caches)
+    {
+      department_name: department_name,
+      aspiration_counts: aspiration_counts,
+      assignment_counts: assignment_counts,
+      position_counts: position_counts,
+      milestone_total_required: milestone_total,
+      milestone_earned_count: milestone_earned,
+      employee_count: employee_count,
+      completion_rate: completion_rate
+    }
+  end
+
+  def apply_department_leaderboard_sort
+    sort = params[:sort].to_s
+    sort = 'completion_rate' unless %w[name completion_rate].include?(sort)
+    if sort == 'completion_rate'
+      @department_health_rows.sort_by! { |row| -row[:completion_rate].to_f }
+    else
+      # Name: A-Z, "No Department" last
+      @department_health_rows.sort_by! { |row| [row[:department_name] == 'No Department' ? 1 : 0, row[:department_name]] }
+    end
+    sort
+  end
   
   def build_department_breakdown(seats_scope)
     result = seats_scope

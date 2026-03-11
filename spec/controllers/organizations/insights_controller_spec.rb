@@ -358,6 +358,28 @@ RSpec.describe Organizations::InsightsController, type: :controller do
         expect(s[:data].size).to eq(chart[:categories].size)
       end
     end
+
+    it 'assigns department_health_rows as array and sort_by (default completion_rate)' do
+      get :check_ins_progress, params: { organization_id: company.id }
+      rows = assigns(:department_health_rows)
+      expect(rows).to be_an(Array)
+      expect(assigns(:sort_by)).to eq('completion_rate')
+      rows.each do |row|
+        expect(row).to have_key(:department_name)
+        expect(row).to have_key(:aspiration_counts)
+        expect(row).to have_key(:assignment_counts)
+        expect(row).to have_key(:position_counts)
+        expect(row).to have_key(:milestone_total_required)
+        expect(row).to have_key(:milestone_earned_count)
+        expect(row).to have_key(:employee_count)
+        expect(row).to have_key(:completion_rate)
+      end
+    end
+
+    it 'assigns sort_by name when sort=name' do
+      get :check_ins_progress, params: { organization_id: company.id, sort: 'name' }
+      expect(assigns(:sort_by)).to eq('name')
+    end
   end
 
   describe 'GET #who_is_doing_what' do
