@@ -87,6 +87,9 @@ Rails.application.routes.draw do
       get :new_refresh_slack
     end
     
+    # Start Here (quick guide / landing)
+    get 'start_here', to: 'organizations/start_here#show', as: :start_here
+
     # Get Shit Done Dashboard
     resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done'
 
@@ -460,6 +463,7 @@ Rails.application.routes.draw do
 
     # Insights analytics
     namespace :insights, module: :organizations do
+      get '/', to: 'insights#index'
       get 'observations', to: 'insights#observations'
       get 'feedback_requests', to: 'insights#feedback_requests'
       get 'prompts/download', to: 'insights#prompts_download'

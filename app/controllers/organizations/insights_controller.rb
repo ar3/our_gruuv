@@ -1,6 +1,11 @@
 class Organizations::InsightsController < Organizations::OrganizationNamespaceBaseController
   include CheckInHealthCompletionRate
 
+  def index
+    authorize company, :show?
+    @insight_links = build_insight_links
+  end
+
   def seats_titles_positions
     authorize company, :view_seats?
     
@@ -278,6 +283,22 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   end
 
   private
+
+  def build_insight_links
+    links = []
+    links << { label: 'Observations', path: organization_insights_observations_path(organization) } if policy(company).view_observations?
+    links << { label: 'Who is doing what', path: organization_insights_who_is_doing_what_path(organization) } if policy(company).view_observations?
+    links << { label: 'Feedback Requests', path: organization_insights_feedback_requests_path(organization) } if policy(company).view_feedback_requests?
+    links << { label: 'Seats, Titles, Positions', path: organization_insights_seats_titles_positions_path(organization) } if policy(company).view_seats?
+    links << { label: 'Assignments', path: organization_insights_assignments_path(organization) } if policy(company).view_assignments?
+    links << { label: 'Abilities', path: organization_insights_abilities_path(organization) } if policy(company).view_abilities?
+    links << { label: 'Goals', path: organization_insights_goals_path(organization) } if policy(company).view_goals?
+    links << { label: 'Prompts', path: organization_insights_prompts_path(organization) } if policy(company).view_prompts?
+    links << { label: 'Huddles', path: huddles_review_organization_path(organization) } if policy(organization).show?
+    links << { label: 'Check-ins Health', path: organization_check_ins_health_path(organization) } if policy(organization).check_ins_health?
+    links << { label: 'Check-ins Progress', path: organization_insights_check_ins_progress_path(organization) } if policy(organization).check_ins_health?
+    links
+  end
 
   def build_department_health_rows(company)
     active_teammates = CompanyTeammate

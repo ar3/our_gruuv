@@ -1,0 +1,18 @@
+- content_for :title, "Insights"
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0
+      %i.bi.bi-bar-chart-line.me-2
+      Insights
+  %p.lead.text-muted.mb-0
+    Charts and reports for observations, goals, check-ins, and more.
+
+.row.g-4
+  - @insight_links.each do |link|
+    .col-12.col-sm-6.col-lg-3
+      .card.h-100.border-0.shadow-sm
+        .card-body.d-flex.flex-column
+          %p.card-text.text-muted.flex-grow-1.mb-3
+            View insights for #{link[:label].downcase}.
+          = link_to link[:path], class: "btn btn-outline-primary w-100 mt-auto" do
+            = link[:label]

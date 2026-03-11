@@ -1,0 +1,75 @@
+- content_for :title, "Start Here"
+- casual_name = current_company_teammate&.person&.casual_name || "Me"
+- gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
+- pending_count = pending_get_shit_done_count(current_company_teammate)
+- org_name = current_organization&.name || "Organization"
+- kudos_path = organization_observations_path(current_organization, privacy: %w[public_to_company public_to_world], spotlight: 'most_observed', view: 'wall')
+- show_my_employees = current_company_teammate&.has_direct_reports? && policy(current_organization).show?
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0 Start Here
+  %p.lead.text-muted.mb-0
+    A quick guide to #{org_name}'s Gruuv. Pick a place to go.
+
+.row.g-4
+  .col-12.col-md-6.col-lg-4
+    .card.h-100.border-0.shadow-sm
+      .card-body.d-flex.flex-column
+        %h5.card-title
+          About #{casual_name}
+        %p.card-text.text-muted.flex-grow-1
+          Your profile, check-ins, observations, and growth in one place.
+        = link_to about_me_organization_company_teammate_path(current_organization, current_company_teammate), class: "btn btn-primary btn-lg w-100 mt-auto" do
+          %i.bi.bi-person.me-2
+          Go to About #{casual_name}
+
+  .col-12.col-md-6.col-lg-4
+    .card.h-100.border-0.shadow-sm
+      .card-body.d-flex.flex-column
+        %h5.card-title
+          #{casual_name}'s #{gsd_label} list
+        %p.card-text.text-muted.flex-grow-1
+          - if pending_count == 0
+            Nothing needs your attention right now.
+          - elsif pending_count == 1
+            1 item needs your attention.
+          - else
+            #{pending_count} items need your attention.
+        = link_to organization_get_shit_done_path(current_organization), class: "btn btn-primary btn-lg w-100 mt-auto" do
+          %i.bi.bi-clipboard-check.me-2
+          Open #{gsd_label}
+
+  .col-12.col-md-6.col-lg-4
+    .card.h-100.border-0.shadow-sm
+      .card-body.d-flex.flex-column
+        %h5.card-title
+          #{org_name} Kudos
+        %p.card-text.text-muted.flex-grow-1
+          See recognition and kudos shared across the organization.
+        = link_to kudos_path, class: "btn btn-primary btn-lg w-100 mt-auto" do
+          %i.bi.bi-gift.me-2
+          View #{org_name} Kudos
+
+  - if show_my_employees
+    .col-12.col-md-6.col-lg-4
+      .card.h-100.border-0.shadow-sm
+        .card-body.d-flex.flex-column
+          %h5.card-title
+            My Employees
+          %p.card-text.text-muted.flex-grow-1
+            View and support the people who report to you.
+          = link_to organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'manager_lite'), class: "btn btn-primary btn-lg w-100 mt-auto" do
+            %i.bi.bi-person-badge.me-2
+            My Employees
+
+  .col-12.col-md-6.col-lg-4
+    .card.h-100.border-0.shadow-sm
+      .card-body.d-flex.flex-column
+        %h5.card-title
+          Insights
+        %p.card-text.text-muted.flex-grow-1
+          Charts and reports on observations, goals, check-ins, and more.
+        = link_to organization_insights_path(current_organization), class: "btn btn-primary btn-lg w-100 mt-auto" do
+          %i.bi.bi-bar-chart-line.me-2
+          Go to Insights

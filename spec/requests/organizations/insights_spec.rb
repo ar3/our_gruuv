@@ -14,6 +14,19 @@ RSpec.describe 'Organizations::Insights', type: :request do
     allow_any_instance_of(OrganizationPolicy).to receive(:view_observations?).and_return(true)
   end
 
+  describe 'GET /organizations/:organization_id/insights (index)' do
+    it 'returns http success' do
+      get organization_insights_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders Insights hub with title and link cards' do
+      get organization_insights_path(organization)
+      expect(response.body).to include('Insights')
+      expect(response.body).to include('Charts and reports')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/insights/who_is_doing_what' do
     it 'returns http success' do
       get organization_insights_who_is_doing_what_path(organization)

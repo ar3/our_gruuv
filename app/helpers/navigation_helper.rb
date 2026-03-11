@@ -413,6 +413,27 @@ module NavigationHelper
         section: 'beta',
         items: [
           {
+            label: 'Start Here',
+            icon: 'bi-house-door',
+            path: organization_start_here_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
+            label: 'Insights',
+            icon: 'bi-bar-chart-line',
+            path: organization_insights_path(current_organization),
+            policy_check: -> { policy(current_company).show? },
+            coming_soon: false
+          },
+          {
+            label: 'Daily / Weekly Digest',
+            icon: 'bi-bell',
+            path: edit_organization_digest_path(current_organization),
+            policy_check: -> { current_company_teammate.present? },
+            coming_soon: false
+          },
+          {
             label: 'Eligibility Requirements',
             icon: 'bi-check2-circle',
             path: organization_eligibility_requirements_path(current_organization),
