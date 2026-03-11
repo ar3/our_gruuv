@@ -122,17 +122,22 @@ module CheckInHelper
     "Last Finalized #{time_ago_in_words(latest_check_in.official_check_in_completed_at)} ago"
   end
 
-  # Bootstrap badge class for pill by recency: green <=60d, warning 61-90d, danger >90d, grey never
+  # Bootstrap badge class for pill by recency: green <=45d, warning 46-90d, danger >90d, grey never
   def last_finalized_pill_class(latest_check_in)
     return 'bg-secondary' if latest_check_in.blank?
     days = (Time.current - latest_check_in.official_check_in_completed_at) / 1.day
-    if days <= 60
+    if days <= 45
       'bg-success'
     elsif days <= 90
       'bg-warning text-dark'
     else
       'bg-danger'
     end
+  end
+
+  # True when the "Last Finalized" pill is green (recently finalized, no action needed).
+  def last_finalized_recent?(latest_check_in)
+    last_finalized_pill_class(latest_check_in) == 'bg-success'
   end
 
   # Popover content: same sentence structure as audit page (shared partial)

@@ -291,8 +291,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     return [] if teammate_ids.empty?
 
     department_by_teammate = active_teammates.each_with_object({}) do |tm, h|
-      dept_name = tm.active_employment_tenure&.position&.title&.department&.name.presence || 'No Department'
-      h[tm.id] = dept_name
+      h[tm.id] = tm.active_employment_tenure&.position&.title&.department
     end
 
     caches = CheckInHealthCache.where(
@@ -303,13 +302,14 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     teammate_ids_by_department = teammate_ids.group_by { |id| department_by_teammate[id] }
 
-    teammate_ids_by_department.map do |department_name, ids|
+    teammate_ids_by_department.map do |department, ids|
       dept_caches = ids.filter_map { |id| caches_by_teammate[id] }
-      build_department_health_row(department_name, dept_caches, ids.size)
+      build_department_health_row(department, dept_caches, ids.size)
     end
   end
 
-  def build_department_health_row(department_name, caches, employee_count)
+  def build_department_health_row(department, caches, employee_count)
+    department_name = department&.name.presence || 'No Department'
     aspiration_counts = aggregate_category_counts(caches.flat_map(&:payload_aspirations))
     assignment_counts = aggregate_category_counts(caches.flat_map(&:payload_assignments))
     position_counts = aggregate_position_counts(caches.map { |c| c.payload_position.presence || {} })
@@ -317,6 +317,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     milestone_earned = caches.sum { |c| c.payload_milestones['earned_count'].to_i }
     completion_rate = completion_rate_for_caches(caches)
     {
+      department: department,
       department_name: department_name,
       aspiration_counts: aspiration_counts,
       assignment_counts: assignment_counts,

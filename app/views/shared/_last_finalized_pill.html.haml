@@ -1,0 +1,20 @@
+-# Last Finalized pill with optional checkmark when green (recent).
+-# Locals: latest_finalized, popover_content (HTML string for data-bs-content)
+- pill_class = last_finalized_pill_class(latest_finalized)
+- recent = last_finalized_recent?(latest_finalized)
+%span.badge{class: [pill_class, ('rounded-pill' if recent)].compact.join(' '), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => popover_content, style: "cursor: pointer;"}
+  %span.d-inline-flex.align-items-center.gap-2
+    - if recent
+      %i.bi.bi-check-circle-fill.flex-shrink-0{style: "font-size: 2.5em; line-height: 1;"}
+    %span.d-flex.flex-column.text-start
+      - if latest_finalized.present?
+        - completed_at = latest_finalized.official_check_in_completed_at
+        - time_ago = time_ago_in_words(completed_at)
+        %span.d-block
+          Last Finalized
+          %span.mt-1= " #{time_ago} ago"
+        - next_check_in_date = completed_at + 60.days
+        - caption = next_check_in_date < Time.current ? "Consider checking-in SOON / NOW" : "Consider checking-in again in #{time_ago_in_words(next_check_in_date)}"
+        %small.d-block= caption
+      - else
+        %span.d-block= "Never Finalized"

@@ -82,7 +82,10 @@
                     - total_mil = row[:milestone_total_required].to_i
                     %tr
                       %td{style: "width: 20%"}
-                        %span.fw-bold= row[:department_name]
+                        - if row[:department].present?
+                          = link_to row[:department_name], organization_department_path(@organization, row[:department]), class: "text-decoration-none fw-bold"
+                        - else
+                          %span.fw-bold= row[:department_name]
                         %br
                         %small.text-muted
                           #{row[:employee_count]} employee#{'s' if row[:employee_count] != 1}
