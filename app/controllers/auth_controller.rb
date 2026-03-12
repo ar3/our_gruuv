@@ -4,7 +4,7 @@ class AuthController < ApplicationController
   def login
     # Redirect if already logged in
     if current_company_teammate
-      redirect_to dashboard_organization_path(current_company_teammate.organization)
+      redirect_to helpers.preferred_start_page_path(current_company_teammate.organization, current_company_teammate)
     end
   end
   
@@ -49,7 +49,7 @@ class AuthController < ApplicationController
           session[:return_to] = nil
           redirect_to return_path, notice: 'Successfully signed in with Google!'
         else
-          redirect_to dashboard_organization_path(teammate.organization), notice: 'Successfully signed in with Google!'
+          redirect_to helpers.preferred_start_page_path(teammate.organization, teammate), notice: 'Successfully signed in with Google!'
         end
       end
       

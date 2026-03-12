@@ -68,6 +68,13 @@
                   = form.label :pronouns, "Pronouns", class: "form-label"
                   = form.select :pronouns, [['', ''], ['He/him', 'he/him'], ['She/her', 'she/her'], ['They/them', 'they/them'], ['He/they', 'he/they'], ['She/they', 'she/they'], ['Other', 'other'], ['Prefer not to say', 'prefer_not_to_say']], { selected: @person.pronouns }, { class: "form-select" }
                   %small.form-text.text-muted Optional
+
+              - if @organization && @teammate && @teammate.person == current_person
+                .col-12.mt-3
+                  .mb-3
+                    = label_tag :start_page, "Start on this page when I log in or click #{@organization.display_name}'s Gruuv", class: "form-label"
+                    = select_tag :start_page, options_for_select(start_page_options_for_select(@organization, @teammate), start_page_preference(@organization, @person)), { class: "form-select", include_blank: false }
+                    %small.form-text.text-muted Choose where you land when you sign in or click the org name in the header.
             
             .d-grid.gap-2.d-md-flex.justify-content-md-end.mt-3
               = form.submit "Update Profile", class: "btn btn-primary"

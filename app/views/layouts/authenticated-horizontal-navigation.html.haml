@@ -12,7 +12,7 @@
       .container
         - if current_person && current_organization
           - if current_company_teammate
-            = link_to about_me_organization_company_teammate_path(current_organization, current_company_teammate), class: "navbar-brand fw-bold" do
+            = link_to preferred_start_page_path(current_organization, current_company_teammate), class: "navbar-brand fw-bold" do
               = "#{current_organization.display_name}'s Gruuv"
           - else
             = link_to dashboard_organization_path(current_organization), class: "navbar-brand fw-bold" do

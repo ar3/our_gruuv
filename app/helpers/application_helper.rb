@@ -473,6 +473,68 @@ module ApplicationHelper
     end
   end
 
+  # --- Start page preference (where to land when logging in or clicking org's Gruuv in header) ---
+  START_PAGE_VALUES = %w[start_here about_me get_shit_done goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
+
+  def start_page_preference_key(organization)
+    "start_page_#{organization.id}"
+  end
+
+  def start_page_preference(organization, person)
+    return 'about_me' unless person
+    pref = UserPreference.for_person(person).preference(start_page_preference_key(organization))
+    pref.presence || 'about_me'
+  end
+
+  def preferred_start_page_path(organization, company_teammate)
+    return dashboard_organization_path(organization) unless company_teammate
+    value = start_page_preference(organization, company_teammate.person)
+    start_page_value_to_path(value, organization, company_teammate)
+  end
+
+  def start_page_value_to_path(value, organization, company_teammate)
+    case value.to_s
+    when 'start_here'
+      organization_start_here_path(organization)
+    when 'about_me'
+      about_me_organization_company_teammate_path(organization, company_teammate)
+    when 'get_shit_done'
+      organization_get_shit_done_path(organization)
+    when 'goals'
+      organization_goals_path(organization, owner_id: "CompanyTeammate_#{company_teammate.id}")
+    when 'observations_involving_me'
+      organization_observations_path(organization, involving_teammate_id: company_teammate.id)
+    when 'my_teams'
+      organization_teams_path(organization, member_of: 'me')
+    when 'kudos'
+      organization_observations_path(organization, privacy: %w[public_to_company public_to_world], spotlight: 'most_observed', view: 'wall')
+    when 'celebrate_milestones'
+      celebrate_milestones_organization_path(organization)
+    when 'insights'
+      organization_insights_path(organization)
+    else
+      about_me_organization_company_teammate_path(organization, company_teammate)
+    end
+  end
+
+  def start_page_options_for_select(organization, company_teammate)
+    return [] unless organization && company_teammate
+    casual = company_teammate.person.casual_name.presence || 'Me'
+    gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
+    org_name = organization.name.presence || 'Organization'
+    [
+      ['Start Here page', 'start_here'],
+      ["About #{casual}", 'about_me'],
+      ["#{casual}'s #{gsd_label} list", 'get_shit_done'],
+      ["#{casual}'s Goals", 'goals'],
+      ["Observations involving #{casual}", 'observations_involving_me'],
+      ["#{casual}'s teams", 'my_teams'],
+      ["#{org_name} Kudos", 'kudos'],
+      ['Celebrate Milestones', 'celebrate_milestones'],
+      ['Insights', 'insights']
+    ]
+  end
+
   # Returns "a" or "an" based on whether the word starts with a vowel sound
   def indefinite_article(word)
     return 'a' if word.blank?

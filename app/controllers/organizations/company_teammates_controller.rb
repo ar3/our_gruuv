@@ -632,6 +632,10 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   def update
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
     if @teammate.person.update(person_params)
+      if params[:start_page].present?
+        key = "start_page_#{organization.id}"
+        UserPreference.for_person(@teammate.person).update_preference(key, params[:start_page])
+      end
       redirect_to organization_company_teammate_path(organization, @teammate), notice: 'Profile updated successfully!'
     else
       capture_error_in_sentry(ActiveRecord::RecordInvalid.new(@teammate.person), {
