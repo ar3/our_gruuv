@@ -147,8 +147,8 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         expect(response.body).to include('Unique Goal Title 1')
         expect(response.body).to include('Unique Goal Title 2')
       else
-        # When no goals, the section is hidden and listed in the caption
-        expect(response.body).to include('Categories with no tasks (hidden)')
+        # When no goals, the section is hidden and listed in the completed section
+        expect(response.body).to include("you've completed everything")
         expect(response.body).to include('Goal Check-ins')
       end
     end
@@ -262,7 +262,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         get "/organizations/#{company.to_param}/get_shit_done"
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Categories with no tasks (hidden)')
+        expect(response.body).to include("you've completed everything")
         expect(response.body).to include('Check-ins Awaiting Your Input')
       end
     end
@@ -271,8 +271,8 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       get "/organizations/#{company.to_param}/get_shit_done"
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Categories with no tasks (hidden)')
-      # All five categories are hidden when the user has no pending items
+      expect(response.body).to include("you've completed everything")
+      # All five categories appear in the completed section when the user has no pending items
       expect(response.body).to include('Observable Moments')
       expect(response.body).to include('Check-ins Awaiting Acknowledgement')
       expect(response.body).to include('Check-ins Awaiting Your Input')

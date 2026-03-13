@@ -9,34 +9,45 @@
       Configure digest
   %p.text-muted.mb-0 Items that need your attention
 
-- hidden_categories = []
+- completed_categories = []
 - if @observable_moments.any?
   = render partial: 'organizations/get_shit_done/observable_moments_section'
 - else
-  - hidden_categories << 'Observable Moments'
+  - completed_categories << { title: 'Observable Moments', icon: 'bi-star', description: 'Celebratory moments ready to observe' }
 
 - if @maap_snapshots.any?
   = render partial: 'organizations/get_shit_done/maap_snapshots_section'
 - else
-  - hidden_categories << 'Check-ins Awaiting Acknowledgement'
+  - completed_categories << { title: 'Check-ins Awaiting Acknowledgement', icon: 'bi-clipboard-check', description: 'Changes in your job that you need to review and acknowledge' }
 
 - if @check_ins_awaiting_input.any?
   = render partial: 'organizations/get_shit_done/check_ins_awaiting_input_section'
 - else
-  - hidden_categories << 'Check-ins Awaiting Your Input'
+  - completed_categories << { title: 'Check-ins Awaiting Your Input', icon: 'bi-clipboard-check', description: 'Check-ins where the other participant has completed their side' }
 
 - if @goals_needing_check_in.any?
   = render partial: 'organizations/get_shit_done/goal_check_ins_section'
 - else
-  - hidden_categories << 'Goal Check-ins'
+  - completed_categories << { title: 'Goal Check-ins', icon: 'bi-bullseye', description: 'Goals needing check-in updates' }
 
 - if @observation_drafts.any?
   = render partial: 'organizations/get_shit_done/observation_drafts_section'
 - else
-  - hidden_categories << 'Observation Drafts'
+  - completed_categories << { title: 'Observation Drafts', icon: 'bi-file-earmark-text', description: 'Draft observations needing action' }
 
-- if hidden_categories.any?
-  %p.text-muted.small.mt-4.mb-0
-    Categories with no tasks (hidden):
-    = hidden_categories.to_sentence
+- if completed_categories.any?
+  .row.mt-5.pt-4
+    .col-12
+      %hr.border-secondary.mb-4
+      %p.text-center.text-muted.mb-4
+        Below are categories with no tasks
+        %i.bi.bi-check-circle-fill.text-success
+  - completed_categories.each_with_index do |category, index|
+    = render 'shared/section_header',
+            title: category[:title],
+            icon: category[:icon],
+            description: category[:description],
+            collapsible: false,
+            status_indicator: :success,
+            include_top_header_margin: index.zero?
 
