@@ -1,0 +1,67 @@
+-# Locals: object_type (:aspiration | :assignment | :position), object (Aspiration, Assignment, or Position), more_details_url (optional)
+-# For position we may pass employment/position; object can be the position or employment
+- return unless object_type && object
+
+- collapse_id = "single_item_details_#{object_type}_#{object.try(:id) || 'position'}"
+- raw_text = case object_type.to_sym
+  - when :aspiration then object.description.to_s
+  - when :assignment then object.tagline.to_s
+  - when :position then [object.try(:title)&.external_title.to_s, object.try(:position_summary).to_s].reject(&:blank?).join(" ")
+  - else ""
+- preview = raw_text.to_s.strip[0, 400]
+- preview = "#{preview}…" if raw_text.to_s.strip.length > 400
+
+.card.mb-4
+  .card-header.d-flex.align-items-center.justify-content-between
+    %h5.mb-0
+      - case object_type.to_sym
+      - when :aspiration
+        Aspiration Details
+      - when :assignment
+        Assignment Details
+      - when :position
+        Position Details
+    %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", style: "cursor: pointer;"}
+      %span.not-collapsed
+        %i.bi.bi-chevron-up.me-1
+        %small.text-muted (Hide details)
+      %span.collapsed
+        %i.bi.bi-chevron-down.me-1
+        %small.text-muted (Show details)
+  .card-body
+    - if preview.present?
+      %p.mb-0.collapsed-preview= preview
+    .collapse{id: collapse_id}
+      .mt-2
+        - case object_type.to_sym
+        - when :aspiration
+          - if object.description.present?
+            .markdown-content.mb-0= render_markdown(object.description)
+        - when :assignment
+          - if object.tagline.present?
+            %p.mb-2= object.tagline
+          - if object.required_activities.present?
+            .mb-2
+              %strong Required Activities
+              %p.mb-0= object.required_activities
+          - if object.handbook.present?
+            .mb-2
+              %strong Handbook
+              %p.mb-0= object.handbook
+          - if object.assignment_outcomes.any?
+            .mb-2
+              %strong Expected Outcomes
+              %ul.mb-0
+                - object.assignment_outcomes.ordered.each do |outcome|
+                  %li= outcome.description
+        - when :position
+          - pos = object.is_a?(Position) ? object : object.try(:position)
+          - if pos
+            - if pos.title&.external_title.present?
+              %p.mb-1
+                %strong= pos.title.external_title
+            - if pos.position_summary.present?
+              %p.mb-0= pos.position_summary
+    - if more_details_url.present?
+      .mt-2
+        = link_to "For even more details", more_details_url, class: "btn btn-sm btn-outline-secondary"

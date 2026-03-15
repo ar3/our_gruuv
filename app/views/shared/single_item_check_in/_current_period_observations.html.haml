@@ -1,0 +1,27 @@
+-# Expects: @observations_since_finalized (array), @observations_involving_url, @teammate, @observations_since_date, @observations_has_finalized_check_in (for empty-state timeframe text)
+.card.mb-4
+  .card-header.d-flex.align-items-center.justify-content-between
+    %h5.mb-0 Research: Current Period Observations
+    - if @observations_involving_url.present?
+      = link_to "Show all observations involving #{@teammate.person.casual_name}", @observations_involving_url, class: "btn btn-sm btn-outline-secondary", target: "_blank", rel: "noopener"
+  .card-body
+    - if @observations_since_finalized.present?
+      .list-group
+        - @observations_since_finalized.each do |observation|
+          .list-group-item
+            .d-flex
+              .flex-grow-1
+                .mb-1
+                  %span From: #{observation.observer.casual_name}
+                  - if observation.observed_teammates.any?
+                    %span.ms-2 To: #{observation.observed_teammates.map { |t| t.person.casual_name }.join(", ")}
+                  - else
+                    %span.ms-2 To: No one
+                %small.text-muted= format_date_in_user_timezone(observation.observed_at)
+                %p.mb-0.mt-1= truncate(observation.story, length: 200)
+              .ms-3
+                = link_to organization_observation_path(@organization, observation), class: "btn btn-sm btn-outline-primary", target: "_blank" do
+                  View
+    - else
+      - timeframe_text = observations_timeframe_description(@observations_since_date, @observations_has_finalized_check_in)
+      .alert.alert-info.mb-0 No observations found #{timeframe_text}.

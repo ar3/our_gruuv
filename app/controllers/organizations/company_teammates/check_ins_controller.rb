@@ -630,10 +630,12 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   end
 
   def find_button_name_in_params
-    # Look for button names that start with "save_and_"
-    params.each_key do |key|
-      if key.to_s.start_with?('save_and_')
-        return key.to_s
+    # Look for button names that start with "save_and_" (top-level or under :check_ins)
+    [params, params[:check_ins].presence].compact.each do |hash|
+      hash.each_key do |key|
+        if key.to_s.start_with?('save_and_')
+          return key.to_s
+        end
       end
     end
     nil
@@ -641,20 +643,28 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
   def extract_service_params_for_button(button_name)
     service_params = {}
-    
+    # Params may be at top level or under :check_ins when form uses scope: :check_ins
+    req = params[:check_ins].presence || params
+
     # Extract return_text and return_url if present
-    service_params[:return_text] = params[:return_text] if params[:return_text].present?
-    service_params[:return_url] = params[:return_url] if params[:return_url].present?
+    service_params[:return_text] = req[:return_text] if req[:return_text].present?
+    service_params[:return_url] = req[:return_url] if req[:return_url].present?
     
     # Extract since_date if present (can be a date string or Date object)
-    if params[:since_date].present?
-      service_params[:since_date] = params[:since_date]
+    if req[:since_date].present?
+      service_params[:since_date] = req[:since_date]
     end
     
     # Extract teammate if present (for observations)
-    if params[:teammate_id].present?
-      service_params[:teammate] = organization.teammates.find_by(id: params[:teammate_id])
+    if req[:teammate_id].present?
+      service_params[:teammate] = organization.teammates.find_by(id: req[:teammate_id])
     end
+
+    # Single-item check-in redirect (stay, go_to_next) — check both top-level and nested
+    service_params[:current_url] = (req[:current_url] || params[:current_url]).presence
+    service_params[:current_type] = (req[:current_type] || params[:current_type]).presence
+    service_params[:current_id] = (req[:current_id] || params[:current_id]).presence
+    service_params[:current_person] = current_person
     
     service_params
   end

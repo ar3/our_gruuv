@@ -1,0 +1,66 @@
+-# Expects: @teammate, @organization, @single_item_name, @single_item_ordered_items, @latest_finalized_for_pill, @check_in_health_cache
+-# Optional: @single_item_type, @single_item_id for current item
+- return unless @teammate && @organization
+
+.d-flex.flex-column.gap-2
+  .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+    .d-flex.align-items-center.gap-3
+      .flex-shrink-0
+        = teammate_profile_image(@teammate, size: 48)
+      .d-flex.flex-column
+        %span.fw-bold= @teammate.person.casual_name
+        %span.text-muted.small 1-by-1 check-in on #{@single_item_name}
+    .d-flex.align-items-center.gap-2
+      - if current_person == @teammate.person
+        %span.badge.bg-secondary Employee View
+      - else
+        %span.badge.bg-secondary Manager View
+      .dropdown
+        %button.btn.btn-outline-secondary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
+          Checking-in on #{@single_item_name.presence || '…'}
+        %ul.dropdown-menu.dropdown-menu-end
+          - aspirations = @single_item_ordered_items.to_a.select { |i| i[:type] == :aspiration }
+          - if aspirations.any?
+            %li.dropdown-header Aspirational Values
+            - aspirations.each do |item|
+              %li
+                = link_to single_item_check_in_item_url(@organization, @teammate, item), class: "dropdown-item d-flex align-items-center gap-2" do
+                  %span= single_item_check_in_bucket_emoji(item[:bucket])
+                  = item[:name]
+          - assignments = @single_item_ordered_items.to_a.select { |i| i[:type] == :assignment }
+          - if assignments.any?
+            %li
+              %hr.dropdown-divider
+            %li.dropdown-header Assignments
+            - assignments.each do |item|
+              %li
+                = link_to single_item_check_in_item_url(@organization, @teammate, item), class: "dropdown-item d-flex align-items-center gap-2" do
+                  %span= single_item_check_in_bucket_emoji(item[:bucket])
+                  = item[:name]
+          - position_item = @single_item_ordered_items.to_a.find { |i| i[:type] == :position }
+          - if position_item
+            %li
+              %hr.dropdown-divider
+            %li.dropdown-header Position
+            %li
+              = link_to single_item_check_in_item_url(@organization, @teammate, position_item), class: "dropdown-item d-flex align-items-center gap-2" do
+                %span= single_item_check_in_bucket_emoji(position_item[:bucket])
+                = position_item[:name]
+
+  %hr.my-1.py-0.opacity-25
+
+  .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+    .d-flex.align-items-center
+      - popover_content = last_finalized_check_in_popover_content(@latest_finalized_for_pill, @teammate.person.casual_name, @single_item_type || :position)
+      = render "shared/last_finalized_pill", latest_finalized: @latest_finalized_for_pill, popover_content: popover_content
+    - rate_data = check_in_health_completion_rate_and_breakdown(@check_in_health_cache)
+    - health_table_data = single_item_health_popover_table(@check_in_health_cache)
+    - health_popover_html = health_table_data ? render(partial: "shared/single_item_check_in/health_popover_table", locals: { table_data: health_table_data }) : "No check-in health data yet."
+    - if rate_data
+      .d-flex.flex-column.align-items-end
+        %span.fw-bold.fs-5{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "left", "data-bs-html" => "true", "data-bs-content" => health_popover_html.html_safe, style: "cursor: pointer;"}
+          #{rate_data[:completion_rate]}%
+        %span.text-muted.small ... clear on where they stand
+    - else
+      %span.text-muted.fs-5{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "left", "data-bs-content" => health_popover_html, style: "cursor: pointer;"}
+        —

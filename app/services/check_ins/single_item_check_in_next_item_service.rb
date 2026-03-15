@@ -1,0 +1,161 @@
+# frozen_string_literal: true
+
+module CheckIns
+  # Returns the next single-item check-in target (aspiration, assignment, or position)
+  # and whether the "Save and move to next" button should be enabled.
+  # When all items are in the green bucket (≤45d), next_requires_check_in is false
+  # and the button should show "You are done for now! No more check-ins are required at the moment."
+  class SingleItemCheckInNextItemService
+    BUCKET_RED = :red    # >90d or never
+    BUCKET_YELLOW = :yellow # 45-90d
+    BUCKET_GREEN = :green   # ≤45d
+
+    def self.call(teammate:, organization:, current_person:, current_type:, current_id: nil)
+      new(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: current_type,
+        current_id: current_id
+      ).call
+    end
+
+    def initialize(teammate:, organization:, current_person:, current_type:, current_id: nil)
+      @teammate = teammate
+      @organization = organization
+      @current_person = current_person
+      @current_type = current_type.to_sym
+      @current_id = current_id
+    end
+
+    def call
+      items = build_ordered_items
+      current_index = items.index { |i| i[:type] == current_type && i[:id] == current_id }
+      next_item = current_index ? items[(current_index + 1) % items.size] : items.first
+      next_requires_check_in = items.any? { |i| i[:bucket] != BUCKET_GREEN }
+
+      next_url = next_item ? url_for_item(next_item) : nil
+
+      {
+        next_url: next_url,
+        next_requires_check_in: next_requires_check_in,
+        next_item: next_item,
+        ordered_items: items
+      }
+    end
+
+    private
+
+    attr_reader :teammate, :organization, :current_person, :current_type, :current_id
+
+    def employee?
+      current_person&.id == teammate.person_id
+    end
+
+    def last_activity_time(check_in)
+      return nil unless check_in
+      times = [check_in.official_check_in_completed_at]
+      times << check_in.employee_completed_at if employee?
+      times << check_in.manager_completed_at unless employee?
+      times.compact.max
+    end
+
+    def bucket_for(last_activity)
+      return BUCKET_RED unless last_activity
+      days = (Time.current - last_activity) / 1.day
+      if days <= 45
+        BUCKET_GREEN
+      elsif days <= 90
+        BUCKET_YELLOW
+      else
+        BUCKET_RED
+      end
+    end
+
+    def build_ordered_items
+      aspirations = build_aspiration_items
+      assignments = build_assignment_items
+      position_item = build_position_item
+
+      all = aspirations + assignments + (position_item ? [position_item] : [])
+      sort_by_bucket_and_type(all)
+    end
+
+    def build_aspiration_items
+      Aspiration.within_hierarchy(organization).ordered.map do |aspiration|
+        closed = AspirationCheckIn.where(company_teammate: teammate, aspiration: aspiration).closed
+          .order(official_check_in_completed_at: :desc).first
+        open_ci = AspirationCheckIn.where(company_teammate: teammate, aspiration: aspiration).open.first
+        check_in = closed || open_ci
+        last_activity = last_activity_time(check_in)
+        {
+          type: :aspiration,
+          id: aspiration.id,
+          name: aspiration.name,
+          bucket: bucket_for(last_activity)
+        }
+      end
+    end
+
+    def build_assignment_items
+      tenures = teammate.assignment_tenures
+        .active
+        .joins(:assignment)
+        .where(assignments: { company: organization.self_and_descendants })
+        .includes(:assignment)
+        .distinct
+
+      tenures.map do |tenure|
+        assignment = tenure.assignment
+        closed = AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).closed
+          .order(official_check_in_completed_at: :desc).first
+        open_ci = AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).open.first
+        check_in = closed || open_ci
+        last_activity = last_activity_time(check_in)
+        {
+          type: :assignment,
+          id: assignment.id,
+          name: assignment.title,
+          bucket: bucket_for(last_activity)
+        }
+      end
+    end
+
+    def build_position_item
+      employment = teammate.employment_tenures.active.first
+      return nil unless employment&.position
+
+      closed = PositionCheckIn.where(company_teammate: teammate).closed
+        .order(official_check_in_completed_at: :desc).first
+      open_ci = PositionCheckIn.where(company_teammate: teammate).open.first
+      check_in = closed || open_ci
+      last_activity = last_activity_time(check_in)
+      name = employment.position.title&.external_title.presence || "Position"
+      {
+        type: :position,
+        id: nil,
+        name: name,
+        bucket: bucket_for(last_activity)
+      }
+    end
+
+    def sort_by_bucket_and_type(items)
+      order = { BUCKET_RED => 0, BUCKET_YELLOW => 1, BUCKET_GREEN => 2 }
+      type_order = { aspiration: 0, assignment: 1, position: 2 }
+      items.sort_by { |i| [order[i[:bucket]], type_order[i[:type]] || 99, i[:id].to_i] }
+    end
+
+    def url_for_item(item)
+      case item[:type]
+      when :aspiration
+        Rails.application.routes.url_helpers.organization_teammate_aspiration_path(organization, teammate, item[:id])
+      when :assignment
+        Rails.application.routes.url_helpers.organization_teammate_assignment_path(organization, teammate, item[:id])
+      when :position
+        Rails.application.routes.url_helpers.position_check_in_organization_teammate_path(organization, teammate)
+      else
+        nil
+      end
+    end
+  end
+end

@@ -120,6 +120,16 @@ module ApplicationHelper
     format_time_in_user_timezone(time, user, format: format)
   end
 
+  # Human-readable timeframe for "observations since last finalized check-in" empty state.
+  # since_date: start of range (last finalized date or long ago), has_finalized: true if there was a finalized check-in.
+  def observations_timeframe_description(since_date, has_finalized)
+    if has_finalized && since_date.present?
+      "from #{format_date_in_user_timezone(since_date, format: '%B %d, %Y')} to now"
+    else
+      "all-time (since this is your first check-in)"
+    end
+  end
+
   # Formats eligibility requirement details for aspirational values into a sentence (no object/title prefix).
   # details: { minimum_months_at_or_above_rating_criteria:, minimum_percentage_meeting:, minimum_percentage_exceeding: }
   def format_aspirational_values_requirement(details)

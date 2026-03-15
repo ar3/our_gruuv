@@ -382,6 +382,51 @@ module CheckInHealthHelper
   def health_status_text(status)
     status.to_s.humanize.titleize
   end
+
+  # Table data for single-item header popover: rows = position, assignments, aspirations;
+  # columns = employee, manager, together. Each cell = % "healthy" (completed within 45 days).
+  # Returns nil if cache is nil; otherwise { position: { employee:, manager:, together: }, assignments: {...}, aspirations: {...} } with 0–100 values.
+  def single_item_health_popover_table(cache)
+    return nil unless cache
+
+    cutoff = 45.days.ago
+    healthy = lambda { |date_str|
+      return false unless date_str.present?
+      t = Time.zone.parse(date_str.to_s) rescue nil
+      t && t >= cutoff
+    }
+
+    pos = cache.payload_position
+    pos_emp = pos['employee_completed_at'].present? ? (healthy.call(pos['employee_completed_at']) ? 100 : 0) : 0
+    pos_mgr = pos['manager_completed_at'].present? ? (healthy.call(pos['manager_completed_at']) ? 100 : 0) : 0
+    pos_together = pos['official_check_in_completed_at'].present? ? (healthy.call(pos['official_check_in_completed_at']) ? 100 : 0) : 0
+
+    assignments = cache.payload_assignments
+    n_assign = assignments.size
+    if n_assign.zero?
+      assign_emp = assign_mgr = assign_together = 0
+    else
+      assign_emp = (assignments.count { |i| healthy.call(i['employee_completed_at']) }.to_f / n_assign * 100).round(0)
+      assign_mgr = (assignments.count { |i| healthy.call(i['manager_completed_at']) }.to_f / n_assign * 100).round(0)
+      assign_together = (assignments.count { |i| healthy.call(i['official_check_in_completed_at']) }.to_f / n_assign * 100).round(0)
+    end
+
+    aspirations = cache.payload_aspirations
+    n_aspir = aspirations.size
+    if n_aspir.zero?
+      aspir_emp = aspir_mgr = aspir_together = 0
+    else
+      aspir_emp = (aspirations.count { |i| healthy.call(i['employee_completed_at']) }.to_f / n_aspir * 100).round(0)
+      aspir_mgr = (aspirations.count { |i| healthy.call(i['manager_completed_at']) }.to_f / n_aspir * 100).round(0)
+      aspir_together = (aspirations.count { |i| healthy.call(i['official_check_in_completed_at']) }.to_f / n_aspir * 100).round(0)
+    end
+
+    {
+      position: { employee: pos_emp, manager: pos_mgr, together: pos_together },
+      assignments: { employee: assign_emp, manager: assign_mgr, together: assign_together },
+      aspirations: { employee: aspir_emp, manager: aspir_mgr, together: aspir_together }
+    }
+  end
 end
 
 

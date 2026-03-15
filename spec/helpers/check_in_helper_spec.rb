@@ -139,4 +139,88 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(sentence).not_to include('spent about')
     end
   end
+
+  describe '#aspiration_check_in_status_label' do
+    let(:organization) { create(:organization) }
+    let(:person) { create(:person, first_name: 'Jane', last_name: 'Doe') }
+    let(:manager_person) { create(:person, first_name: 'Bob', last_name: 'Manager') }
+    let(:teammate) { create(:company_teammate, person: person, organization: organization) }
+    let(:aspiration) { create(:aspiration, company: organization) }
+
+    context 'when check-in is officially completed' do
+      let(:check_in) do
+        build(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, maap_snapshot: nil)
+      end
+
+      it 'returns "Acknowledged" when maap_snapshot is acknowledged' do
+        snapshot = instance_double('MaapSnapshot', acknowledged?: true)
+        allow(check_in).to receive(:maap_snapshot).and_return(snapshot)
+        expect(helper.aspiration_check_in_status_label(check_in, 1.day.ago, teammate)).to eq('Acknowledged')
+      end
+
+      it 'returns "Waiting to be acknowledged" when maap_snapshot is not acknowledged' do
+        snapshot = instance_double('MaapSnapshot', acknowledged?: false)
+        allow(check_in).to receive(:maap_snapshot).and_return(snapshot)
+        expect(helper.aspiration_check_in_status_label(check_in, 1.day.ago, teammate)).to eq('Waiting to be acknowledged')
+      end
+    end
+
+    context 'when check-in is ready for finalization' do
+      let(:check_in) do
+        build(:aspiration_check_in, :ready_for_finalization, teammate: teammate, aspiration: aspiration)
+      end
+
+      it 'returns "Waiting to be reviewed"' do
+        expect(helper.aspiration_check_in_status_label(check_in, 90.days.ago, teammate)).to eq('Waiting to be reviewed')
+      end
+    end
+
+    context 'when check-in is open and last finalization was under 60 days ago' do
+      let(:check_in) do
+        build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+          employee_completed_at: nil, manager_completed_at: nil)
+      end
+
+      it 'returns "Nothing to do yet"' do
+        expect(helper.aspiration_check_in_status_label(check_in, 30.days.ago, teammate)).to eq('Nothing to do yet')
+      end
+    end
+
+    context 'when check-in is open and last finalization was over 60 days ago' do
+      let(:check_in) do
+        build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+          employee_completed_at: nil, manager_completed_at: nil)
+      end
+
+      it 'returns "Waiting for both" when neither side completed' do
+        expect(helper.aspiration_check_in_status_label(check_in, 90.days.ago, teammate)).to eq('Waiting for both')
+      end
+    end
+  end
+
+  describe '#aspiration_check_in_waiting_for_name' do
+    let(:organization) { create(:organization) }
+    let(:person) { create(:person, first_name: 'Jane', last_name: 'Doe') }
+    let(:teammate) { create(:company_teammate, person: person, organization: organization) }
+    let(:aspiration) { create(:aspiration, company: organization) }
+
+    it 'returns nil when both sides completed' do
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago)
+      expect(helper.aspiration_check_in_waiting_for_name(check_in, teammate)).to be_nil
+    end
+
+    it 'returns employee casual name when employee has not completed' do
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: nil, manager_completed_at: 1.day.ago)
+      expect(helper.aspiration_check_in_waiting_for_name(check_in, teammate)).to eq(person.casual_name)
+    end
+
+    it 'returns "Manager" when manager has not completed and no current_manager' do
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: 1.day.ago, manager_completed_at: nil)
+      allow(teammate).to receive(:current_manager).and_return(nil)
+      expect(helper.aspiration_check_in_waiting_for_name(check_in, teammate)).to eq('Manager')
+    end
+  end
 end

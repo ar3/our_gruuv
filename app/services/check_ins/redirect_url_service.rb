@@ -129,6 +129,23 @@ module CheckIns
       when /^continue_editing$/
         # Redirect back to check-ins page to continue editing
         organization_company_teammate_check_ins_path(@organization, @teammate)
+      when /^stay$/
+        # Single-item check-in: stay on current page
+        @params[:current_url].presence || organization_company_teammate_finalization_path(@organization, @teammate)
+      when /^go_to_next$/
+        # Single-item check-in: next most important item (only used when button enabled)
+        result = SingleItemCheckInNextItemService.call(
+          teammate: @teammate,
+          organization: @organization,
+          current_person: @params[:current_person],
+          current_type: @params[:current_type],
+          current_id: @params[:current_id]
+        )
+        result[:next_url] || organization_company_teammate_finalization_path(@organization, @teammate)
+      when /^go_to_bulk_check_in$/
+        organization_company_teammate_check_ins_path(@organization, @teammate)
+      when /^go_to_review_check_ins$/
+        organization_company_teammate_finalization_path(@organization, @teammate)
       else
         # Default to finalization page
         organization_company_teammate_finalization_path(@organization, @teammate)
