@@ -22,7 +22,7 @@ RSpec.describe PositionAssignmentDecorator, type: :decorator do
       end
 
       it 'returns title with energy range' do
-        expect(position_assignment.display_title).to eq('Code Review (25%+ of effort)')
+        expect(position_assignment.display_title).to eq('Code Review (25%+ of energy)')
       end
     end
 
@@ -32,7 +32,7 @@ RSpec.describe PositionAssignmentDecorator, type: :decorator do
       end
 
       it 'returns title with energy range' do
-        expect(position_assignment.display_title).to eq('Code Review (Up to 75% of effort)')
+        expect(position_assignment.display_title).to eq('Code Review (Up to 75% of energy)')
       end
     end
 
@@ -43,7 +43,7 @@ RSpec.describe PositionAssignmentDecorator, type: :decorator do
       end
 
       it 'returns title with energy range' do
-        expect(position_assignment.display_title).to eq('Code Review (25%-75% of effort)')
+        expect(position_assignment.display_title).to eq('Code Review (25%-75% of energy)')
       end
     end
   end
@@ -76,7 +76,7 @@ RSpec.describe PositionAssignmentDecorator, type: :decorator do
       end
 
       it 'returns title with energy information' do
-        expect(position_assignment.display_title_with_energy).to eq('Code Review - 25%-75% of effort')
+        expect(position_assignment.display_title_with_energy).to eq('Code Review - 25%-75% of energy')
       end
     end
   end

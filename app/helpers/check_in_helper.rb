@@ -183,9 +183,9 @@ module CheckInHelper
     content.join('<br>')
   end
 
-  # Returns status label for an aspiration check-in row (open vs closed, 60-day rule, acknowledgement).
-  # latest_finalized_at: time of most recent finalized check-in for this aspiration (nil if never).
-  def aspiration_check_in_status_label(check_in, latest_finalized_at, teammate)
+  # Generic status label for single-item check-in rows (position/assignment/aspiration).
+  # latest_finalized_at: time of most recent finalized check-in for this item (nil if never).
+  def single_item_check_in_status_label(check_in, latest_finalized_at, teammate)
     if check_in.officially_completed?
       return 'Acknowledged' if check_in.maap_snapshot&.acknowledged?
       return 'Waiting to be acknowledged'
@@ -193,7 +193,6 @@ module CheckInHelper
     if check_in.ready_for_finalization?
       return 'Waiting to be reviewed'
     end
-    # Open row
     last_finalized_days_ago = latest_finalized_at ? ((Time.current - latest_finalized_at) / 1.day).to_i : 9999
     if last_finalized_days_ago < 60
       return 'Nothing to do yet'
@@ -212,10 +211,18 @@ module CheckInHelper
   end
 
   # Person we are "waiting for" when only one side has completed (for display under Complete pill).
-  def aspiration_check_in_waiting_for_name(check_in, teammate)
+  def single_item_check_in_waiting_for_name(check_in, teammate)
     return nil if check_in.employee_completed? && check_in.manager_completed?
     return teammate.person.casual_name.presence || 'Employee' if !check_in.employee_completed?
     teammate.current_manager&.casual_name.presence || 'Manager'
+  end
+
+  def aspiration_check_in_status_label(check_in, latest_finalized_at, teammate)
+    single_item_check_in_status_label(check_in, latest_finalized_at, teammate)
+  end
+
+  def aspiration_check_in_waiting_for_name(check_in, teammate)
+    single_item_check_in_waiting_for_name(check_in, teammate)
   end
 end
 

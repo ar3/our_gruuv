@@ -23,11 +23,11 @@ class PositionAssignment < ApplicationRecord
 
   def energy_range_display
     if min_estimated_energy.present? && max_estimated_energy.present?
-      "#{min_estimated_energy}%-#{max_estimated_energy}% of effort"
+      "#{min_estimated_energy}%-#{max_estimated_energy}% of energy"
     elsif min_estimated_energy.present?
-      "#{min_estimated_energy}%+ of effort"
+      "#{min_estimated_energy}%+ of energy"
     elsif max_estimated_energy.present?
-      "Up to #{max_estimated_energy}% of effort"
+      "Up to #{max_estimated_energy}% of energy"
     else
       "No effort estimate"
     end

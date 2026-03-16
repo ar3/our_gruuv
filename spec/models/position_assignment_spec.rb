@@ -175,19 +175,19 @@ RSpec.describe PositionAssignment, type: :model do
       it 'displays range when both min and max are present' do
         position_assignment.min_estimated_energy = 25
         position_assignment.max_estimated_energy = 75
-        expect(position_assignment.energy_range_display).to eq('25%-75% of effort')
+        expect(position_assignment.energy_range_display).to eq('25%-75% of energy')
       end
 
       it 'displays min only when only min is present' do
         position_assignment.min_estimated_energy = 30
         position_assignment.max_estimated_energy = nil
-        expect(position_assignment.energy_range_display).to eq('30%+ of effort')
+        expect(position_assignment.energy_range_display).to eq('30%+ of energy')
       end
 
       it 'displays max only when only max is present' do
         position_assignment.min_estimated_energy = nil
         position_assignment.max_estimated_energy = 60
-        expect(position_assignment.energy_range_display).to eq('Up to 60% of effort')
+        expect(position_assignment.energy_range_display).to eq('Up to 60% of energy')
       end
 
       it 'displays no estimate when neither is present' do

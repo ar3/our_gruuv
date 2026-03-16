@@ -1,24 +1,26 @@
 - content_for :title, "Assignments - #{@teammate.person.display_name}"
 
+- content_for :head do
+  :css
+    .assignment-check-in-toggle .details-expanded { display: none; }
+    .assignment-check-in-toggle[aria-expanded="true"] .details-expanded { display: inline; }
+    .assignment-check-in-toggle[aria-expanded="true"] .details-collapsed { display: none; }
+
 - content_for :go_back_link do
   = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to Check-ins
 
-- content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 #{@teammate.person.display_name} - #{@assignment.title}
-
-- content_for :header_action do
-  = render 'assignments/view_switcher'
+.row.mb-3
+  .col-12
+    = render "shared/single_item_check_in/header_switcher"
 
 .row.justify-content-center
   .col-lg-12
     / Assignment Details Section
     .card.mb-4
       .card-header
-        %h5.mb-0 Assignment Details
-        %small.text-muted #{@assignment.company.display_name}'s #{@assignment.title}
+        %h2.mb-0 #{@assignment.title}
       .card-body
         .row
           .col-12
@@ -40,16 +42,6 @@
               .card.card-body.bg-light.mt-3
                 .row
                   .col-md-6
-                    - if @assignment.required_activities.present?
-                      .mb-3
-                        %label.form-label.fw-bold Required Activities
-                        .form-control-plaintext= @assignment.required_activities
-                    
-                    - if @assignment.handbook.present?
-                      .mb-3
-                        %label.form-label.fw-bold Handbook
-                        .form-control-plaintext= @assignment.handbook
-                    
                     / Position Connection Status
                     - if @current_employment
                       .mb-3
@@ -65,8 +57,6 @@
                           .form-control-plaintext
                             %span.badge.bg-secondary.me-2 Unconnected
                             Not connected to #{@current_employment.position.title.external_title}
-                  
-                  .col-md-6
                     / Assignment Outcomes
                     - if @assignment_outcomes.any?
                       .mb-3
@@ -80,6 +70,26 @@
                         %label.form-label.fw-bold Expected Outcomes
                         .form-control-plaintext.text-muted No outcomes defined
                     
+                    
+                    
+
+
+
+
+                  .col-md-6
+
+
+                    - if @assignment.required_activities.present?
+                      .mb-3
+                        %label.form-label.fw-bold Required Activities
+                        .form-control-plaintext= @assignment.required_activities
+                    
+                    - if @assignment.handbook.present?
+                      .mb-3
+                        %label.form-label.fw-bold Handbook
+                        .form-control-plaintext= @assignment.handbook
+                    
+
                     / Required Abilities
                     - if @assignment_abilities.any?
                       .mb-3
@@ -110,65 +120,39 @@
                           %strong Draft:
                           = link_to @assignment.draft_external_reference.url, @assignment.draft_external_reference.url, target: "_blank", class: "text-decoration-none"
 
-    / Tenure History and Check-in History Section
-    .row.mb-4
-      .col-md-6
-        .card
-          .card-header
-            %h6.mb-0 Assignment Tenure History
-          .card-body
-            - if @tenure_history.any?
-              .table-responsive
-                %table.table.table-sm
-                  %thead
-                    %tr
-                      %th Started
-                      %th Ended
-                      %th Energy %
-                      %th Duration
-                  %tbody
-                    - @tenure_history.each do |tenure|
-                      %tr
-                        %td= format_date_in_user_timezone(tenure.started_at, format: '%m/%d/%Y')
-                        %td
-                          - if tenure.ended_at
-                            = format_date_in_user_timezone(tenure.ended_at, format: '%m/%d/%Y')
-                          - else
-                            %span.badge.bg-success Active
-                        %td= "#{tenure.anticipated_energy_percentage}%"
-                        %td
-                          - if tenure.ended_at
-                            = distance_of_time_in_words(tenure.started_at, tenure.ended_at)
-                          - else
-                            = distance_of_time_in_words(tenure.started_at, Date.current)
-            - else
-              .alert.alert-info No tenure history found.
-      
-      .col-md-6
-        .card
-          .card-header
-            %h6.mb-0 Check-in History Summary
-          .card-body
-            - if @check_ins.any?
-              %p.mb-2
-                %strong= @check_ins.count
-                = "check-in".pluralize(@check_ins.count)
-              %p.mb-2
-                %strong Finalized:
-                = @check_ins.select(&:officially_completed?).count
-              %p.mb-0
-                %strong Latest:
-                - latest = @check_ins.first
-                - if latest.officially_completed?
-                  Finalized #{format_date_in_user_timezone(latest.official_check_in_completed_at, format: '%m/%d/%Y')}
-                - elsif latest.ready_for_finalization?
-                  Ready for finalization
-                - else
-                  In progress
-            - else
-              .alert.alert-info No check-ins yet.
+    / Tenure History
+    .card.mb-4
+      .card-header
+        %h6.mb-0 #{@teammate.person.casual_name}'s history taking on #{@assignment.title}
+      .card-body
+        - if @tenure_history.any?
+          .table-responsive
+            %table.table.table-sm
+              %thead
+                %tr
+                  %th Started
+                  %th Ended
+                  %th Energy %
+                  %th Duration
+              %tbody
+                - @tenure_history.each do |tenure|
+                  %tr
+                    %td= format_date_in_user_timezone(tenure.started_at, format: '%m/%d/%Y')
+                    %td
+                      - if tenure.ended_at
+                        = format_date_in_user_timezone(tenure.ended_at, format: '%m/%d/%Y')
+                      - else
+                        %span.badge.bg-success Active
+                    %td= "#{tenure.anticipated_energy_percentage}%"
+                    %td
+                      - if tenure.ended_at
+                        = distance_of_time_in_words(tenure.started_at, tenure.ended_at)
+                      - else
+                        = distance_of_time_in_words(tenure.started_at, Date.current)
+        - else
+          .alert.alert-info No tenure history found.
 
-    / Check-in History Table
+    / Check-in History Table (same UX as aspirational values page)
     .card.mb-4
       .card-header
         %h5.mb-0 All Check-ins
@@ -186,24 +170,38 @@
                   %th Status
                   %th Actions
               %tbody
+                - latest_finalized_at = @latest_finalized&.official_check_in_completed_at
                 - @check_ins.each do |check_in|
+                  - both_complete = check_in.employee_completed? && check_in.manager_completed?
+                  - open_both_incomplete = check_in.open? && !both_complete
                   %tr{class: check_in.officially_completed? ? 'table-success' : check_in.ready_for_finalization? ? 'table-warning' : ''}
                     %td
-                      %strong= check_in.check_in_started_on.strftime('%B %d, %Y')
+                      Started: #{check_in.check_in_started_on.strftime('%B %d, %Y')}
                       %br
-                      %small.text-muted= check_in.check_in_started_on.strftime('%I:%M %p')
-                    
+                      - if check_in.officially_completed?
+                        Reviewed: #{format_time_in_user_timezone(check_in.official_check_in_completed_at, format: '%B %d, %Y')}
                     %td
                       - if check_in.employee_completed?
-                        %span.badge.bg-success.me-1 ✓ Complete
+                        - if !both_complete
+                          %span.badge.bg-success.me-1 ✓ Complete
+                          %br
+                        - if both_complete
+                          %small.text-muted= assignment_rating_display(check_in.employee_rating)
+                        - else
+                          %small.text-muted Waiting for #{single_item_check_in_waiting_for_name(check_in, @teammate)}
                         %br
                         %small.text-muted= format_time_in_user_timezone(check_in.employee_completed_at, format: '%m/%d/%Y %I:%M %p')
                       - else
                         %span.badge.bg-warning Pending
-                    
                     %td
                       - if check_in.manager_completed?
-                        %span.badge.bg-success.me-1 ✓ Complete
+                        - if !both_complete
+                          %span.badge.bg-success.me-1 ✓ Complete
+                          %br
+                        - if both_complete
+                          %small.text-muted= assignment_rating_display(check_in.manager_rating)
+                        - else
+                          %small.text-muted Waiting for #{single_item_check_in_waiting_for_name(check_in, @teammate)}
                         %br
                         %small.text-muted= format_time_in_user_timezone(check_in.manager_completed_at, format: '%m/%d/%Y %I:%M %p')
                         - if check_in.manager_completed_by_teammate
@@ -211,84 +209,42 @@
                           %small.text-muted by #{check_in.manager_completed_by_teammate.person.display_name}
                       - else
                         %span.badge.bg-warning Pending
-                    
                     %td
                       - if check_in.officially_completed?
                         %span.badge.bg-primary.me-1 ✓ Finalized
+                        %br
+                        %small.text-muted= assignment_rating_display(check_in.official_rating)
                         %br
                         %small.text-muted= format_time_in_user_timezone(check_in.official_check_in_completed_at, format: '%m/%d/%Y %I:%M %p')
                         - if check_in.finalized_by_teammate
                           %br
                           %small.text-muted by #{check_in.finalized_by_teammate.person.display_name}
-                        %br
-                        %small.text-muted Rating: #{check_in.official_rating&.humanize}
                       - elsif check_in.ready_for_finalization?
                         %span.badge.bg-warning Ready for Finalization
                       - else
                         %span.badge.bg-secondary In Progress
-                    
-                    %td
-                      - if check_in.officially_completed?
-                        %span.badge.bg-success Closed
-                      - elsif check_in.ready_for_finalization?
-                        %span.badge.bg-warning Ready to Finalize
-                      - else
-                        %span.badge.bg-info Open
-                    
-                    %td
-                      - if check_in.officially_completed?
-                        = link_to "View Details", "#", class: "btn btn-sm btn-outline-primary", "data-bs-toggle" => "modal", "data-bs-target" => "#checkInModal#{check_in.id}"
-                      - elsif check_in.ready_for_finalization?
-                        = link_to "Finalize", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-warning"
-                      - else
-                        = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-primary"
-
-          - @check_ins.each do |check_in|
-            / Modal for each check-in
-            .modal.fade{id: "checkInModal#{check_in.id}", "aria-hidden" => "true", "aria-labelledby" => "checkInModalLabel#{check_in.id}", tabindex: "-1"}
-              .modal-dialog.modal-lg
-                .modal-content
-                  .modal-header
-                    %h5.modal-title{id: "checkInModalLabel#{check_in.id}"}
-                      Check-in Details - #{check_in.check_in_started_on.strftime('%B %d, %Y')}
-                    %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-                  .modal-body
-                    .row
-                      .col-md-6
-                        %h6 Employee Responses
-                        .mb-3
-                          %label.form-label Actual Energy %
-                          .form-control-plaintext= "#{check_in.actual_energy_percentage}%" if check_in.actual_energy_percentage
-                        .mb-3
-                          %label.form-label Personal Alignment
-                          .form-control-plaintext= check_in.employee_personal_alignment&.humanize || 'Not provided'
-                        .mb-3
-                          %label.form-label Employee Rating
-                          .form-control-plaintext= check_in.employee_rating&.humanize || 'Not provided'
-                        .mb-3
-                          %label.form-label Private Notes
-                          .form-control-plaintext= check_in.employee_private_notes || 'No notes'
-                      
-                      .col-md-6
-                        %h6 Manager Responses
-                        .mb-3
-                          %label.form-label Manager Rating
-                          .form-control-plaintext= check_in.manager_rating&.humanize || 'Not provided'
-                        .mb-3
-                          %label.form-label Manager Private Notes
-                          .form-control-plaintext= check_in.manager_private_notes || 'No notes'
-                        
-                        - if check_in.officially_completed?
-                          %hr
-                          %h6 Finalization
-                          .mb-3
-                            %label.form-label Final Rating
-                            .form-control-plaintext= check_in.official_rating&.humanize
-                          .mb-3
-                            %label.form-label Shared Notes
-                            .form-control-plaintext= check_in.shared_notes || 'No shared notes'
-                  .modal-footer
-                    %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Close
+                    - if open_both_incomplete
+                      %td{colspan: 2}= single_item_check_in_status_label(check_in, latest_finalized_at, @teammate)
+                    - else
+                      %td
+                        = single_item_check_in_status_label(check_in, latest_finalized_at, @teammate)
+                      %td
+                        - if both_complete && check_in.officially_completed?
+                          %a.btn.btn-sm.btn-outline-primary.assignment-check-in-toggle{"aria-expanded" => "false", "aria-controls" => "check_in_details_#{check_in.id}", "data-bs-toggle" => "collapse", "data-bs-target" => "#check_in_details_#{check_in.id}", href: "#check_in_details_#{check_in.id}", role: "button"}
+                            %span.details-collapsed
+                              %i.bi.bi-chevron-down.me-1
+                              Show details
+                            %span.details-expanded
+                              %i.bi.bi-chevron-up.me-1
+                              Hide details
+                        - elsif check_in.ready_for_finalization?
+                          = link_to "Review", organization_company_teammate_finalization_path(@organization, @teammate), class: "btn btn-sm btn-warning"
+                        - else
+                          = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-primary"
+                  - if both_complete && check_in.officially_completed?
+                    %tr.collapse{id: "check_in_details_#{check_in.id}"}
+                      %td.text-muted.small{colspan: 6, style: "background: var(--bs-table-bg);"}
+                        = render "shared/check_in_finalized_sentences", check_in: check_in, employee_name: @teammate.person.casual_name, sentence_type: :assignment
         - else
           .alert.alert-info.text-center
             %h6.mb-2
@@ -303,6 +259,9 @@
           %h5.mb-0 Current Check-in
         .card-body
           = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
+            = form.hidden_field :current_url, value: organization_teammate_assignment_path(@organization, @teammate, @assignment), id: nil
+            = form.hidden_field :current_type, value: "assignment", id: nil
+            = form.hidden_field :current_id, value: @assignment.id, id: nil
             = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
               .row
                 .col-12
@@ -311,17 +270,17 @@
                 - if current_person == @teammate.person
                   .col-md-6
                     .mb-3
-                      %label.form-label Actual Energy
+                      %label.form-label When I think about how much of my energy I spent on #{@assignment.title} since the last check-in, I spent about...
                       = af.select :actual_energy_percentage, energy_percentage_options, { include_blank: 'Select percentage...', selected: @open_check_in.actual_energy_percentage }, { class: "form-select" }
                   
                   .col-md-6
                     .mb-3
-                      %label.form-label Personal Alignment
+                      %label.form-label When I think about taking on #{@assignment.title} in the future, the pharse that best describes how I feel is...
                       = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
                   
                   .col-md-6
                     .mb-3
-                      %label.form-label My Rating
+                      %label.form-label When I think about the outcomes of #{@assignment.title}, since the last check-in I would rate my performance against the expectations as...
                       = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
                   
                   .col-md-6
@@ -350,9 +309,18 @@
                       = af.label :status_draft, 'Draft', class: 'form-check-label'
                     .form-check
                       = af.radio_button :status, 'complete', checked: is_complete, class: 'form-check-input'
-                      = af.label :status_complete, 'Complete', class: 'form-check-label'
-                
-                .col-12.text-end
-                  = form.submit "Update Check-in", class: "btn btn-primary me-2"
-                  = link_to "Back to All Check-ins", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
+                      = af.label :status_complete, 'Ready for review', class: 'form-check-label'
+                .col-12.mt-3
+                  .d-flex.flex-wrap.gap-2
+                    = form.submit "Save and stay here", name: "save_and_stay", class: "btn btn-primary"
+                    - if @single_item_next_requires_check_in && @single_item_next_url.present?
+                      = form.submit "Save and move to next", name: "save_and_go_to_next", class: "btn btn-outline-primary"
+                    = link_to "Cancel", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
+                  .d-flex.flex-wrap.gap-2.mt-2
+                    - if @single_item_next_requires_check_in && @single_item_next_url.present?
+                      = form.submit "Save and go to Bulk Check-in", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+                    = form.submit "Save and go to Review Check-ins", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+
+    / Research: Current period observations
+    = render "shared/single_item_check_in/current_period_observations"
 

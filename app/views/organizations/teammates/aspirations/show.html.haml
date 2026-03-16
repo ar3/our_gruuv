@@ -163,7 +163,7 @@
                               %i.bi.bi-chevron-up.me-1
                               Hide details
                         - elsif check_in.ready_for_finalization?
-                          = link_to "Finalize", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-warning"
+                          = link_to "Review", organization_company_teammate_finalization_path(@organization, @teammate), class: "btn btn-sm btn-warning"
                         - else
                           = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-primary"
                   - if both_complete && check_in.officially_completed?
@@ -178,9 +178,6 @@
             %p.mb-0 No check-ins have been created for this aspiration yet.
             = link_to "Start First Check-in", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-primary btn-sm mt-2"
 
-    / Single-item prior check-ins (finalized only, new format)
-    - if @check_ins_finalized.present?
-      = render "shared/single_item_check_in/prior_check_ins_table", check_ins: @check_ins_finalized, sentence_type: :aspiration, employee_name: @teammate.person.casual_name
 
     = render "shared/single_item_check_in/current_period_observations"
 
