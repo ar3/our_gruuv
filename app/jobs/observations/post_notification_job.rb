@@ -329,8 +329,9 @@ class Observations::PostNotificationJob < ApplicationJob
       end
     end
     
-    # Build intro text: "New awesome story about <slack mentions of observed> as told by <slack mention of observer>"
-    intro_text = "New awesome story about #{observed_mentions.join(', ')} as told by #{observer_mention}"
+    # Build intro text: "New <story_url|story> about <slack mentions of observed> as told by <slack mention of observer>"
+    story_url = observation.decorate.permalink_url
+    intro_text = "New <#{story_url}|story> about #{observed_mentions.join(', ')} as told by #{observer_mention}"
     intro_text = truncate_slack_text(intro_text)
     
     blocks = [
@@ -423,7 +424,7 @@ class Observations::PostNotificationJob < ApplicationJob
     company_name = observer_company.name
     new_observation_url = Rails.application.routes.url_helpers.new_organization_observation_url(observer_company)
     
-    ending_text = "Adding stories like this to the *#{company_name}* novel will help shape us, because they are specific about the best examples of us executing assignments, demonstrating abilities, and exemplifying the aspirational values we focus on.\n\nThis one was great, who's next to add to <#{new_observation_url}|OUR Story>?"
+    ending_text = "Adding stories like this to the *#{company_name}* novel will help shape us, because they are specific about the most clear examples of us executing assignments, demonstrating abilities, and exemplifying the aspirational values we focus on.\n\nThis story helped clarify who we are, who's next to add to <#{new_observation_url}|OUR Story>?"
     ending_text = truncate_slack_text(ending_text)
     
     blocks << {

@@ -299,7 +299,10 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         intro_block = rich_message.find { |block| block['type'] == 'context' }
         expect(intro_block).to be_present
         intro_text = intro_block.dig('elements', 0, 'text')
-        expect(intro_text).to include('New awesome story')
+        expect(intro_text).to include('New')
+        expect(intro_text).to include('story')
+        expect(intro_text).to match(/<[^|]+\|story>/)
+        expect(intro_text).not_to include('awesome')
         story_text = rich_message.find { |block| block['type'] == 'section' && block.dig('text', 'text')&.include?(observation.story) }&.dig('text', 'text')
         expect(story_text).to include(observation.story)
       end
@@ -323,7 +326,10 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         intro_block = rich_message.find { |block| block['type'] == 'context' }
         expect(intro_block).to be_present
         intro_text = intro_block.dig('elements', 0, 'text')
-        expect(intro_text).to include('New awesome story')
+        expect(intro_text).to include('New')
+        expect(intro_text).to include('story')
+        expect(intro_text).to match(/<[^|]+\|story>/)
+        expect(intro_text).not_to include('awesome')
         story_text = rich_message.find { |block| block['type'] == 'section' && block.dig('text', 'text')&.include?(observation.story) }&.dig('text', 'text')
         expect(story_text).to include(observation.story)
       end
