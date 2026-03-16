@@ -22,6 +22,8 @@ class PositionCheckIn < ApplicationRecord
   
   # Find or create open check-in for a teammate
   def self.find_or_create_open_for(teammate)
+    CheckIns::ReconcileOpenPositionCheckInsService.call(teammate: teammate)
+
     # Only CompanyTeammate has active_employment_tenure method
     tenure = if teammate.is_a?(CompanyTeammate)
       teammate.active_employment_tenure

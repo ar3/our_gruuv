@@ -100,6 +100,11 @@ class UpdateEmploymentTenureService
       elsif needs_snapshot
         Rails.logger.debug "DEBUG: Skipping snapshot creation, teammate class: #{teammate.class.name}"
       end
+
+      # Repoint open position check-in to current tenure when employment changed
+      if (termination_date_provided || needs_new_tenure) && teammate.is_a?(CompanyTeammate)
+        CheckIns::ReconcileOpenPositionCheckInsService.call(teammate: teammate)
+      end
       
       Result.ok(updated_tenure)
     end
