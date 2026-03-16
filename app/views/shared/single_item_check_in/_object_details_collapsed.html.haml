@@ -1,15 +1,14 @@
--# Locals: object_type (:aspiration | :assignment | :position), object (Aspiration, Assignment, or Position), more_details_url (optional)
--# For position we may pass employment/position; object can be the position or employment
+-# Locals: object_type (:aspiration | :assignment), object (Aspiration or Assignment), more_details_url (optional), more_details_link_text (optional)
 - return unless object_type && object
 
-- collapse_id = "single_item_details_#{object_type}_#{object.try(:id) || 'position'}"
+- collapse_id = "single_item_details_#{object_type}_#{object.try(:id)}"
 - raw_text = case object_type.to_sym
   - when :aspiration then object.description.to_s
   - when :assignment then object.tagline.to_s
-  - when :position then [object.try(:title)&.external_title.to_s, object.try(:position_summary).to_s].reject(&:blank?).join(" ")
   - else ""
 - preview = raw_text.to_s.strip[0, 400]
 - preview = "#{preview}…" if raw_text.to_s.strip.length > 400
+- more_details_link_text = local_assigns[:more_details_link_text].presence || "For even more details"
 
 .card.mb-4
   .card-header.d-flex.align-items-center.justify-content-between
@@ -19,8 +18,6 @@
         Aspiration Details
       - when :assignment
         Assignment Details
-      - when :position
-        Position Details
     %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", style: "cursor: pointer;"}
       %span.not-collapsed
         %i.bi.bi-chevron-up.me-1
@@ -54,14 +51,6 @@
               %ul.mb-0
                 - object.assignment_outcomes.ordered.each do |outcome|
                   %li= outcome.description
-        - when :position
-          - pos = object.is_a?(Position) ? object : object.try(:position)
-          - if pos
-            - if pos.title&.external_title.present?
-              %p.mb-1
-                %strong= pos.title.external_title
-            - if pos.position_summary.present?
-              %p.mb-0= pos.position_summary
     - if more_details_url.present?
       .mt-2
-        = link_to "For even more details", more_details_url, class: "btn btn-sm btn-outline-secondary"
+        = link_to more_details_link_text, more_details_url, class: "btn btn-sm btn-outline-secondary"

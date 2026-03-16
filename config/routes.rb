@@ -305,6 +305,7 @@ Rails.application.routes.draw do
     
     # Teammates resource routes for position, assignments, and aspirations
     resources :teammates, module: :organizations, only: [] do
+      get 'position_check_in', on: :member, to: 'teammates/position_check_ins#show', as: :position_check_in
       resource :position, only: [:show, :update], controller: 'teammates/position' do
         post :create_employment, on: :member
         get :confirm_termination, on: :member

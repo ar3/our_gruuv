@@ -14,6 +14,21 @@ class CompanyTeammatePolicy < ApplicationPolicy
     show?
   end
 
+  # Updating position/employment: same as update? except you cannot update your own
+  # position unless you have employment management permissions.
+  def update_position?
+    return true if admin_bypass?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    if viewing_teammate == record
+      return viewing_teammate.can_manage_employment?
+    end
+    return false unless viewing_teammate.employed?
+    return true if viewing_teammate.can_manage_employment?
+    return true if viewing_teammate.in_managerial_hierarchy_of?(record)
+    false
+  end
+
   def complete_picture?
     # Can view complete picture if they can view teammate
     return true if admin_bypass?

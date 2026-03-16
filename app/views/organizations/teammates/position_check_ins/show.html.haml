@@ -1,0 +1,116 @@
+- content_for :title, "1-by-1 Check-in – Position – #{@teammate.person.display_name}"
+
+- content_for :go_back_link do
+  = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Check-ins
+
+.row.mb-3
+  .col-12
+    = render "shared/single_item_check_in/header_switcher"
+
+.row.justify-content-center
+  .col-lg-12
+    - if @position
+      - pos = @position
+      - collapse_id = "position_check_in_details_#{pos.id}"
+      - pos_preview_raw = [pos.title&.external_title.to_s, pos.position_summary.to_s].reject(&:blank?).join(" ").strip
+      - pos_preview = pos_preview_raw[0, 400]
+      - pos_preview = "#{pos_preview}…" if pos_preview_raw.length > 400
+      .card.mb-4
+        .card-header.d-flex.align-items-center.justify-content-between
+          %h2.mb-0.h5= pos.title&.external_title.presence || "Position"
+          %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", style: "cursor: pointer;"}
+            %span.not-collapsed
+              %i.bi.bi-chevron-up.me-1
+              %small.text-muted (Hide details)
+            %span.collapsed
+              %i.bi.bi-chevron-down.me-1
+              %small.text-muted (Show details)
+        .card-body
+          - if pos_preview.present?
+            %p.mb-0.collapsed-preview= pos_preview
+          .collapse{id: collapse_id}
+            .mt-2
+              - if pos.title&.external_title.present?
+                %p.mb-1
+                  %strong= pos.title.external_title
+              - if pos.position_summary.present?
+                %p.mb-0= pos.position_summary
+              - required = pos.required_assignments.includes(:assignment)
+              - suggested = pos.suggested_assignments.includes(:assignment)
+              - if required.any?
+                .mb-2
+                  %strong Required assignments
+                  %ul.mb-0
+                    - required.each do |pa|
+                      %li
+                        = link_to pa.assignment.title, organization_teammate_assignment_path(@organization, @teammate, pa.assignment), class: "text-decoration-none"
+              - if suggested.any?
+                .mb-2
+                  %strong Optional assignments
+                  %ul.mb-0
+                    - suggested.each do |pa|
+                      %li
+                        = link_to pa.assignment.title, organization_teammate_assignment_path(@organization, @teammate, pa.assignment), class: "text-decoration-none"
+              - if @current_employment&.seat
+                .mb-2
+                  %strong Seat
+                  %p.mb-0
+                    = link_to @current_employment.seat.display_name, organization_seat_path(@organization, @current_employment.seat), class: "text-decoration-none"
+              .mb-2
+                = link_to "Position details", organization_position_path(@organization, pos), class: "btn btn-sm btn-outline-secondary"
+                = link_to "Go to #{@teammate.person.casual_name}'s seat management page", organization_teammate_position_path(@organization, @teammate), class: "btn btn-sm btn-outline-secondary"
+    - else
+      .alert.alert-info No current position. Define position in seat management.
+
+    - if @open_check_in
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Current Check-in
+        .card-body
+          = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
+            = form.hidden_field :current_url, value: position_check_in_organization_teammate_path(@organization, @teammate), id: nil
+            = form.hidden_field :current_type, value: "position", id: nil
+            = form.hidden_field :current_id, value: "", id: nil
+            = form.fields_for :position_check_in, @open_check_in do |pf|
+              - if current_person == @teammate.person
+                .mb-3
+                  %label.form-label Employee Rating
+                  = pf.select :employee_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.employee_rating }, class: "form-select"
+                .mb-3
+                  %label.form-label Private Notes
+                  = pf.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+              - else
+                .mb-3
+                  %label.form-label Manager Rating
+                  = pf.select :manager_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.manager_rating }, class: "form-select"
+                .mb-3
+                  %label.form-label Manager Notes
+                  = pf.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+              .mb-3
+                - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+                .form-check
+                  = pf.radio_button :status, "draft", checked: !is_complete, class: "form-check-input"
+                  = pf.label :status_draft, "Draft", class: "form-check-label"
+                .form-check
+                  = pf.radio_button :status, "complete", checked: is_complete, class: "form-check-input"
+                  = pf.label :status_complete, "Ready for review", class: "form-check-label"
+            .row
+              .col-12.mt-3
+                .d-flex.flex-wrap.gap-2
+                  = form.submit "Save and stay here", name: "save_and_stay", class: "btn btn-primary"
+                  - if @single_item_next_requires_check_in && @single_item_next_url.present?
+                    = form.submit "Save and move to next", name: "save_and_go_to_next", class: "btn btn-outline-primary"
+                  = link_to "Cancel", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
+                .d-flex.flex-wrap.gap-2.mt-2
+                  - if @single_item_next_requires_check_in && @single_item_next_url.present?
+                    = form.submit "Save and go to Bulk Check-in", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+                  = form.submit "Save and go to Review Check-ins", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+    - else
+      .alert.alert-info No open position check-in. Create one from the bulk check-in page.
+
+    - if @check_ins.present?
+      = render "shared/single_item_check_in/prior_check_ins_table", check_ins: @check_ins, sentence_type: :position, employee_name: @teammate.person.casual_name
+
+    = render "shared/single_item_check_in/current_period_observations"

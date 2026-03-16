@@ -168,4 +168,57 @@ RSpec.describe CompanyTeammatePolicy, type: :policy do
       end
     end
   end
+
+  describe 'update_position?' do
+    permissions :update_position? do
+      context 'when user is admin' do
+        it 'allows access via admin bypass' do
+          expect(subject).to permit(admin_pundit_user, person_teammate)
+          expect(subject).to permit(admin_pundit_user, other_person_teammate)
+        end
+      end
+
+      context 'when viewing own teammate record' do
+        before do
+          person_teammate.update!(first_employed_at: 1.month.ago)
+          create(:employment_tenure, teammate: person_teammate, company: organization)
+        end
+
+        it 'denies updating own position without employment management permission' do
+          person_teammate.update!(can_manage_employment: false)
+          expect(subject).not_to permit(pundit_user, person_teammate)
+        end
+
+        it 'allows updating own position with employment management permission' do
+          person_teammate.update!(can_manage_employment: true)
+          expect(subject).to permit(pundit_user, person_teammate)
+        end
+      end
+
+      context 'when viewing another teammate' do
+        before do
+          person_teammate.update!(first_employed_at: 1.month.ago)
+          other_person_teammate.update!(first_employed_at: 1.month.ago)
+          create(:employment_tenure, teammate: person_teammate, company: organization)
+          create(:employment_tenure, teammate: other_person_teammate, company: organization)
+        end
+
+        it 'allows when viewer has can_manage_employment' do
+          person_teammate.update!(can_manage_employment: true)
+          expect(subject).to permit(pundit_user, other_person_teammate)
+        end
+
+        it 'allows when viewer is in managerial hierarchy of record' do
+          tenure = EmploymentTenure.find_by(company_teammate: other_person_teammate, company: organization)
+          tenure.update!(manager_teammate: person_teammate)
+          expect(subject).to permit(pundit_user, other_person_teammate)
+        end
+
+        it 'denies when viewer is a peer without employment management' do
+          person_teammate.update!(can_manage_employment: false)
+          expect(subject).not_to permit(pundit_user, other_person_teammate)
+        end
+      end
+    end
+  end
 end

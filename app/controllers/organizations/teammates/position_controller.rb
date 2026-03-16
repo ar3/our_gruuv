@@ -43,7 +43,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   end
 
   def update
-    authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
+    authorize @teammate, :update_position?, policy_class: CompanyTeammatePolicy
     
     @current_employment = @teammate.employment_tenures.active.first
     
@@ -89,7 +89,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   end
 
   def confirm_termination
-    authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
+    authorize @teammate, :update_position?, policy_class: CompanyTeammatePolicy
     
     @current_employment = @teammate.employment_tenures.active.first
     
@@ -128,7 +128,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   end
 
   def process_termination
-    authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
+    authorize @teammate, :update_position?, policy_class: CompanyTeammatePolicy
     
     @current_employment = @teammate.employment_tenures.active.first
     
@@ -176,7 +176,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   end
 
   def create_employment
-    authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
+    authorize @teammate, :update_position?, policy_class: CompanyTeammatePolicy
     
     company = organization.root_company || organization
     

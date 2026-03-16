@@ -130,6 +130,23 @@ module ApplicationHelper
     end
   end
 
+  # Caption for the observations section on single-item check-in pages.
+  # Options: aspiration (Aspiration) and/or assignment (Assignment) for "involving X".
+  def observations_section_caption(teammate, since_date, has_finalized, aspiration: nil, assignment: nil)
+    casual_name = teammate.person.casual_name
+    start_date = if has_finalized && since_date.present?
+      format_date_in_user_timezone(since_date, format: '%B %d, %Y')
+    else
+      earliest = teammate.employment_tenures.minimum(:started_at)
+      earliest.present? ? format_date_in_user_timezone(earliest, format: '%B %d, %Y') : format_date_in_user_timezone(since_date, format: '%B %d, %Y')
+    end
+    end_date = format_date_in_user_timezone(Time.current, format: '%B %d, %Y')
+    involving = [aspiration&.name, assignment&.title].compact.first
+    parts = ["Showing all observations about #{casual_name}, between #{start_date} and #{end_date}"]
+    parts << "involving #{involving}" if involving.present?
+    parts.join(", ") + "."
+  end
+
   # Formats eligibility requirement details for aspirational values into a sentence (no object/title prefix).
   # details: { minimum_months_at_or_above_rating_criteria:, minimum_percentage_meeting:, minimum_percentage_exceeding: }
   def format_aspirational_values_requirement(details)

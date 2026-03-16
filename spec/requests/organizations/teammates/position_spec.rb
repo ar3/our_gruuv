@@ -195,6 +195,30 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       # Should be ordered by last_name, first_name
       expect(all_employees.map { |e| e.person.last_name }).to eq(all_employees.map { |e| e.person.last_name }.sort)
     end
+
+    it 'shows a centered link to the position check-in page with count of overall check-ins' do
+      get organization_teammate_position_path(organization, employee_teammate)
+
+      expect(response.body).to include(position_check_in_organization_teammate_path(organization, employee_teammate))
+      expect(response.body).to include(employee_person.casual_name)
+      expect(response.body).to include('overall check-ins')
+    end
+
+    it 'shows singular "check-in" when there is exactly one position check-in' do
+      create(:position_check_in, teammate: employee_teammate, employment_tenure: current_tenure)
+
+      get organization_teammate_position_path(organization, employee_teammate)
+
+      expect(response.body).to include('overall check-in')
+      expect(response.body).not_to include('overall check-ins')
+    end
+
+    it 'does not show All Position Check-ins or Current Check-in cards' do
+      get organization_teammate_position_path(organization, employee_teammate)
+
+      expect(response.body).not_to include('All Position Check-ins')
+      expect(response.body).not_to include('Current Check-in')
+    end
   end
 
   describe 'PATCH /organizations/:id/teammates/:id/position' do
