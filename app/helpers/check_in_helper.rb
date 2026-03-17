@@ -217,6 +217,17 @@ module CheckInHelper
     teammate.current_manager&.casual_name.presence || 'Manager'
   end
 
+  # True when the "Make Changes" toggle should use warning styling: no finalized check-in in 60+ days
+  # and the current side (employee or manager) has not marked the row complete.
+  # latest_finalized: the latest finalized check-in record for this item (or nil).
+  # role: :employee or :manager (which side's "Make Changes" we're rendering).
+  def single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, role)
+    latest_at = latest_finalized&.official_check_in_completed_at
+    last_finalized_days_ago = latest_at ? ((Time.current - latest_at) / 1.day).to_i : 9999
+    return false if last_finalized_days_ago < 60
+    role == :employee ? !check_in.employee_completed? : !check_in.manager_completed?
+  end
+
   def aspiration_check_in_status_label(check_in, latest_finalized_at, teammate)
     single_item_check_in_status_label(check_in, latest_finalized_at, teammate)
   end

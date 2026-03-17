@@ -223,4 +223,52 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(helper.aspiration_check_in_waiting_for_name(check_in, teammate)).to eq('Manager')
     end
   end
+
+  describe '#single_item_check_in_make_changes_needs_attention?' do
+    let(:organization) { create(:organization) }
+    let(:person) { create(:person, first_name: 'Jane', last_name: 'Doe') }
+    let(:teammate) { create(:company_teammate, person: person, organization: organization) }
+    let(:aspiration) { create(:aspiration, company: organization) }
+
+    it 'returns false when last finalized under 60 days ago (employee not completed)' do
+      latest_finalized = instance_double('AspirationCheckIn', official_check_in_completed_at: 30.days.ago)
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: nil, manager_completed_at: nil)
+      expect(helper.single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, :employee)).to eq(false)
+    end
+
+    it 'returns true when last finalized 60+ days ago and employee not completed' do
+      latest_finalized = instance_double('AspirationCheckIn', official_check_in_completed_at: 70.days.ago)
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: nil, manager_completed_at: nil)
+      expect(helper.single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, :employee)).to eq(true)
+    end
+
+    it 'returns false when last finalized 60+ days ago but employee completed' do
+      latest_finalized = instance_double('AspirationCheckIn', official_check_in_completed_at: 70.days.ago)
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: 1.day.ago, manager_completed_at: nil)
+      expect(helper.single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, :employee)).to eq(false)
+    end
+
+    it 'returns true when never finalized and employee not completed' do
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: nil, manager_completed_at: nil)
+      expect(helper.single_item_check_in_make_changes_needs_attention?(check_in, nil, :employee)).to eq(true)
+    end
+
+    it 'returns true when last finalized 60+ days ago and manager not completed (manager role)' do
+      latest_finalized = instance_double('AspirationCheckIn', official_check_in_completed_at: 70.days.ago)
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: 1.day.ago, manager_completed_at: nil)
+      expect(helper.single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, :manager)).to eq(true)
+    end
+
+    it 'returns false when last finalized 60+ days ago but manager completed (manager role)' do
+      latest_finalized = instance_double('AspirationCheckIn', official_check_in_completed_at: 70.days.ago)
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration,
+        employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago)
+      expect(helper.single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, :manager)).to eq(false)
+    end
+  end
 end
