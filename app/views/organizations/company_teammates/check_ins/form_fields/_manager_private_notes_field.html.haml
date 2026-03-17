@@ -5,7 +5,7 @@
                  placeholder: 'Manager notes...'
 
 .mt-2
-  - teammate = @person.teammates.find_by(organization: @organization)
+  - teammate = @teammate.presence || @person.teammates.find_by(organization: @organization)
   - if teammate
     - since_date = check_in.previous_finalized_check_in&.official_check_in_completed_at || 1.year.ago
     - observations = visible_observations_for_person(current_person, @organization)
