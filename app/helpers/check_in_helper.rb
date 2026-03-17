@@ -49,6 +49,11 @@ module CheckInHelper
     end
   end
 
+  # Options for the official rating dropdown on the finalization page only. Includes a nil option.
+  def assignment_official_rating_options_for_finalization
+    [["Never took this on", ""]] + assignment_rating_options
+  end
+
   # Phrase for "they <alignment> taking on this assignment" in audit check-in sentences
   def assignment_alignment_phrase(alignment)
     return 'did not specify alignment' if alignment.blank?
