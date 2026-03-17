@@ -37,7 +37,7 @@
                               name: "save_and_view_aspiration_#{check_in.aspiration.id}"
                 %div.mt-1
                   = render 'shared/last_finalized_pill', latest_finalized: latest_finalized, popover_content: last_finalized_check_in_popover_content(latest_finalized, check_in.teammate.person.casual_name, :aspiration)
-              = render partial_name, check_in: check_in, form: af, main_form: form, view_mode: view_mode
+              = render partial_name, check_in: check_in, form: af, main_form: form, view_mode: view_mode, latest_finalized: latest_finalized
 - else
   .alert.alert-info
     %i.bi.bi-info-circle.me-2

@@ -36,18 +36,19 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
 
     it 'shows employee fields and allows saving check-in' do
       visit organization_teammate_assignment_path(company, employee_teammate, assignment)
-      
+
       expect(page).to have_content('Test Assignment')
-      expect(page).to have_content('John Doe')
-      
+      expect(page).to have_content(employee_person.casual_name)
+
       # Verify forecasted energy field is NOT present
       expect(page).not_to have_content('Forecasted Energy')
       expect(page).not_to have_field('tenure', type: 'select')
-      
-      # Verify employee fields are present
-      expect(page).to have_content('Actual Energy')
-      expect(page).to have_content('Personal Alignment')
-      expect(page).to have_content('My Rating')
+
+      # Verify employee fields are present (assignment detail page uses sentence-style labels)
+      expect(page).to have_content('Reflect on the past')
+      expect(page).to have_content('Select percentage')
+      expect(page).to have_content('Select alignment')
+      expect(page).to have_content('Select rating')
       expect(page).to have_content('Private Notes')
       
       # Verify manager fields are NOT present
@@ -63,16 +64,16 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       select '🟢 Exceeding', from: "check_ins[assignment_check_ins][#{check_in.id}][employee_rating]"
       fill_in "check_ins[assignment_check_ins][#{check_in.id}][employee_private_notes]", with: 'Great assignment!'
       choose "check_ins_assignment_check_ins_#{check_in.id}_status_complete"
-      
-      # Submit form
-      click_button 'Update Check-in'
-      
+
+      # Submit form (Save and go to Review Check-ins redirects to finalization when complete)
+      click_button 'Save and go to Review Check-ins'
+
       # When check-in is marked complete, it redirects to finalization page
       expect(page).to have_current_path(organization_company_teammate_finalization_path(company, employee_teammate))
-      
+
       # Should see success message or finalization content
       expect(page).to have_content(/Check-in|Finalization|ready/i)
-      
+
       # Verify data was saved
       check_in.reload
       expect(check_in.actual_energy_percentage).to eq(75)
@@ -90,22 +91,21 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
 
     it 'shows manager fields and allows saving check-in' do
       visit organization_teammate_assignment_path(company, employee_teammate, assignment)
-      
+
       expect(page).to have_content('Test Assignment')
-      expect(page).to have_content('John Doe')
-      
+      expect(page).to have_content(employee_person.casual_name)
+
       # Verify forecasted energy field is NOT present
       expect(page).not_to have_content('Forecasted Energy')
       expect(page).not_to have_field('tenure', type: 'select')
-      
+
       # Verify manager fields are present
       expect(page).to have_content('Manager Rating')
       expect(page).to have_content('Manager Notes')
-      
-      # Verify employee fields are NOT present
-      expect(page).not_to have_content('Actual Energy')
-      expect(page).not_to have_content('Personal Alignment')
-      expect(page).not_to have_content('My Rating')
+
+      # Verify employee-only fields are NOT present (assignment detail uses sentence-style labels)
+      expect(page).not_to have_content('When I think about how much of my energy')
+      expect(page).not_to have_content('Select alignment')
       expect(page).not_to have_content('Private Notes')
       
       # Fill out manager check-in fields
@@ -115,13 +115,13 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       select '🔵 Meeting', from: "check_ins[assignment_check_ins][#{check_in.id}][manager_rating]"
       fill_in "check_ins[assignment_check_ins][#{check_in.id}][manager_private_notes]", with: 'Good work!'
       choose "check_ins_assignment_check_ins_#{check_in.id}_status_complete"
-      
-      # Submit form
-      click_button 'Update Check-in'
-      
+
+      # Submit form (Save and go to Review Check-ins redirects to finalization when complete)
+      click_button 'Save and go to Review Check-ins'
+
       # When check-in is marked complete, it redirects to finalization page
       expect(page).to have_current_path(organization_company_teammate_finalization_path(company, employee_teammate))
-      
+
       # Should see success message or finalization content
       expect(page).to have_content(/Check-in|Finalization|ready/i)
       

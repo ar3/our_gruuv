@@ -14,9 +14,12 @@
   = form.hidden_field :manager_rating, value: check_in.manager_rating
   = form.hidden_field :manager_private_notes, value: check_in.manager_private_notes
   
+  - needs_attention = single_item_check_in_make_changes_needs_attention?(check_in, local_assigns[:latest_finalized], :manager)
+  - make_changes_btn_class = needs_attention ? 'btn btn-outline-warning' : 'btn btn-outline-secondary'
+  - make_changes_label = needs_attention ? 'Not Ready' : 'Make Changes'
   .btn-group-vertical{role: "group", "aria-label": "Status selection"}
     = form.radio_button :status, 'draft', checked: !check_in.manager_completed?, class: 'btn-check', id: "aspiration_table_manager_status_draft_#{check_in.id}"
-    = form.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "aspiration_table_manager_status_draft_#{check_in.id}"
+    = form.label :status_draft, make_changes_label, class: make_changes_btn_class, for: "aspiration_table_manager_status_draft_#{check_in.id}"
     = form.radio_button :status, 'complete', checked: check_in.manager_completed?, class: 'btn-check', id: "aspiration_table_manager_status_complete_#{check_in.id}"
     = form.label :status_complete, 'Ready for Finalization', class: 'btn btn-outline-primary', for: "aspiration_table_manager_status_complete_#{check_in.id}"
 

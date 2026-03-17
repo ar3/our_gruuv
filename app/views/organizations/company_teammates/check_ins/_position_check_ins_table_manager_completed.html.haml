@@ -22,7 +22,7 @@
             %br
             %small.text-muted #{@person.casual_name} completed #{time_ago_in_words(check_in.employee_completed_at)} ago
           - else
-            .badge.bg-warning Waiting for Employee
+            .badge.bg-secondary Waiting for Employee
             %br
             %small.text-muted #{@person.casual_name} has to complete their self-assessment
         %td

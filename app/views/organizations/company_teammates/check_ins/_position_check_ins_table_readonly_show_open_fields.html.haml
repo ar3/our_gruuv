@@ -23,4 +23,5 @@
           %td
             = render 'organizations/company_teammates/check_ins/form_fields/manager_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in
+            - position_latest_finalized = PositionCheckIn.latest_finalized_for(check_in.teammate)
+            = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in, latest_finalized: position_latest_finalized, view_mode: local_assigns[:view_mode]

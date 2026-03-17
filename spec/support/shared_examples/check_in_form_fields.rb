@@ -14,8 +14,8 @@ RSpec.shared_examples "position check-in form fields" do |view_type|
     expect(page).to have_css('input[name*="position_check_in"][name*="status"][type="radio"][value="draft"]', visible: :hidden)
     expect(page).to have_css('input[name*="position_check_in"][name*="status"][type="radio"][value="complete"]', visible: :hidden)
     
-    # Should have button labels
-    expect(page).to have_button('Make Changes', class: 'btn-outline-secondary')
+    # Should have button labels (draft option may show "Make Changes" or "Not Ready" when 60+ days since last finalized)
+    expect(page).to (have_button('Make Changes').or have_button('Not Ready'))
     expect(page).to have_button('Ready', class: 'btn-outline-primary')
   end
 end
@@ -36,8 +36,8 @@ RSpec.shared_examples "assignment check-in form fields" do |view_type|
     expect(page).to have_css('input[name*="assignment_check_ins"][name*="status"][type="radio"][value="draft"]', visible: :hidden)
     expect(page).to have_css('input[name*="assignment_check_ins"][name*="status"][type="radio"][value="complete"]', visible: :hidden)
     
-    # Should have button labels
-    expect(page).to have_button('Make Changes', class: 'btn-outline-secondary')
+    # Should have button labels (draft option may show "Make Changes" or "Not Ready" when 60+ days since last finalized)
+    expect(page).to (have_button('Make Changes').or have_button('Not Ready'))
     expect(page).to have_button('Ready', class: 'btn-outline-primary')
   end
 end
@@ -58,8 +58,8 @@ RSpec.shared_examples "aspiration check-in form fields" do |view_type|
     expect(page).to have_css('input[name*="aspiration_check_ins"][name*="status"][type="radio"][value="draft"]', visible: :hidden)
     expect(page).to have_css('input[name*="aspiration_check_ins"][name*="status"][type="radio"][value="complete"]', visible: :hidden)
     
-    # Should have button labels
-    expect(page).to have_button('Make Changes', class: 'btn-outline-secondary')
+    # Should have button labels (draft option may show "Make Changes" or "Not Ready" when 60+ days since last finalized)
+    expect(page).to (have_button('Make Changes').or have_button('Not Ready'))
     expect(page).to have_button('Ready', class: 'btn-outline-primary')
   end
 end

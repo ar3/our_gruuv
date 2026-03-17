@@ -14,5 +14,5 @@
 %td
   = render 'organizations/company_teammates/check_ins/form_fields/assignment_manager_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
-  = render 'organizations/company_teammates/check_ins/form_fields/assignment_status_field', form: form, check_in: check_in
+  = render 'organizations/company_teammates/check_ins/form_fields/assignment_status_field', form: form, check_in: check_in, latest_finalized: local_assigns[:latest_finalized], view_mode: local_assigns[:view_mode]
 

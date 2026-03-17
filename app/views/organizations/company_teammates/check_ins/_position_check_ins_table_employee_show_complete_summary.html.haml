@@ -25,10 +25,13 @@
             -# Hidden fields to preserve existing values when form is submitted
             = pf.hidden_field :employee_rating, value: check_in.employee_rating
             = pf.hidden_field :employee_private_notes, value: check_in.employee_private_notes
-            
+            - position_latest_finalized = PositionCheckIn.latest_finalized_for(check_in.teammate)
+            - needs_attention = single_item_check_in_make_changes_needs_attention?(check_in, position_latest_finalized, :employee)
+            - make_changes_btn_class = needs_attention ? 'btn btn-outline-warning' : 'btn btn-outline-secondary'
+            - make_changes_label = needs_attention ? 'Not Ready' : 'Make Changes'
             .btn-group-vertical{role: "group", "aria-label": "Status selection"}
               = pf.radio_button :status, 'draft', checked: !check_in.employee_completed?, class: 'btn-check', id: "position_table_employee_status_draft_#{check_in.id}"
-              = pf.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "position_table_employee_status_draft_#{check_in.id}"
+              = pf.label :status_draft, make_changes_label, class: make_changes_btn_class, for: "position_table_employee_status_draft_#{check_in.id}"
               = pf.radio_button :status, 'complete', checked: check_in.employee_completed?, class: 'btn-check', id: "position_table_employee_status_complete_#{check_in.id}"
               = pf.label :status_complete, 'Ready for Manager', class: 'btn btn-outline-primary', for: "position_table_employee_status_complete_#{check_in.id}"
 
