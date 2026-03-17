@@ -19,6 +19,6 @@
     = form.text_area "assignment_check_ins[#{check_in.id}][shared_notes]", class: "form-control form-control-sm", rows: 2, placeholder: "Shared summary and action items..."
   %td
     %div.mb-2
-      = form.select "assignment_check_ins[#{check_in.id}][official_rating]", assignment_rating_options, { selected: check_in.manager_rating || check_in.employee_rating, prompt: 'Select rating...' }, { class: "form-select form-select-sm", required: true }
+      = form.select "assignment_check_ins[#{check_in.id}][official_rating]", assignment_rating_options, { selected: check_in.manager_rating || check_in.employee_rating, prompt: 'Select rating...' }, { class: "form-select form-select-sm" }
   %td.text-center
     = form.check_box "assignment_check_ins[#{check_in.id}][finalize]", { class: "form-check-input" }, "1", "0"

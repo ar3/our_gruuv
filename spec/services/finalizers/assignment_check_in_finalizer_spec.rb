@@ -192,11 +192,16 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         )
       end
       
-      it 'fails with error message' do
+      it 'succeeds and finalizes check-in with nil official_rating' do
         result = finalizer.finalize
         
-        expect(result.ok?).to be false
-        expect(result.error).to include('required')
+        expect(result).to be_ok
+        assignment_check_in.reload
+        expect(assignment_check_in.official_rating).to be_nil
+        expect(assignment_check_in.official_check_in_completed_at).to be_present
+        expect(assignment_tenure.reload.official_rating).to be_nil
+        new_tenure = AssignmentTenure.order(created_at: :desc).first
+        expect(new_tenure.official_rating).to be_nil
       end
     end
     

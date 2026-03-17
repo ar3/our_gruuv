@@ -27,7 +27,7 @@
       - if view_mode == :employee
         %small.text-muted Waiting for manager to set
       - else
-        = form.select "assignment_check_ins[#{check_in.id}][official_rating]", assignment_rating_options, { selected: check_in.manager_rating || check_in.employee_rating, prompt: 'Select rating...' }, { class: "form-select form-select-sm", required: true }
+        = form.select "assignment_check_ins[#{check_in.id}][official_rating]", assignment_rating_options, { selected: check_in.manager_rating || check_in.employee_rating, prompt: 'Select rating...' }, { class: "form-select form-select-sm" }
     %div.mb-2
       - if view_mode == :employee
         %small.text-muted Waiting for manager to set

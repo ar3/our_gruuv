@@ -118,11 +118,14 @@ RSpec.describe Finalizers::AspirationCheckInFinalizer do
         )
       end
       
-      it 'returns error result' do
+      it 'succeeds and finalizes check-in with nil official_rating' do
         result = finalizer.finalize
         
-        expect(result.ok?).to be false
-        expect(result.error).to eq('Official rating required')
+        expect(result).to be_ok
+        check_in.reload
+        expect(check_in.official_rating).to be_nil
+        expect(check_in.official_check_in_completed_at).to be_present
+        expect(check_in.finalized_by_teammate).to eq(finalized_by)
       end
     end
   end

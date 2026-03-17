@@ -161,8 +161,6 @@ class AssignmentCheckIn < ApplicationRecord
 
 
   def finalize_check_in!(final_rating: nil, finalized_by: nil)
-    raise ArgumentError, "Final rating is required for check-in finalization" if final_rating.blank?
-    
     update!(
       official_check_in_completed_at: Time.current,
       official_rating: final_rating,

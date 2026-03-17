@@ -377,10 +377,15 @@ RSpec.describe AssignmentCheckIn, type: :model do
       expect(check_in.official_check_in_completed_at).to be_present
     end
 
-    it 'raises error without final rating' do
-        expect {
-          check_in.finalize_check_in!(final_rating: nil)
-        }.to raise_error(ArgumentError, 'Final rating is required for check-in finalization')
+    it 'finalizes check-in with nil rating when final_rating is nil' do
+      manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
+
+      check_in.finalize_check_in!(final_rating: nil, finalized_by: manager_teammate)
+
+      expect(check_in.officially_completed?).to be true
+      expect(check_in.official_rating).to be_nil
+      expect(check_in.finalized_by_teammate).to eq(manager_teammate)
+      expect(check_in.official_check_in_completed_at).to be_present
     end
   end
 

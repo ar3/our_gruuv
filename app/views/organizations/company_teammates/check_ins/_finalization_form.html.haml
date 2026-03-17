@@ -22,7 +22,7 @@
         .mb-3
           = form.label "check_in_#{check_in.id}_final_rating", "Final Rating", class: "form-label"
           %span.text-danger *
-          = form.select "check_in_#{check_in.id}_final_rating", options_for_select([ ['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding'] ], check_in.official_rating), { prompt: 'Select final rating...' }, { class: "form-select", required: true }
+          = form.select "check_in_#{check_in.id}_final_rating", options_for_select([ ['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding'] ], check_in.official_rating), { prompt: 'Select final rating...' }, { class: "form-select" }
       .col-6
         .mb-3
           = form.label "check_in_#{check_in.id}_shared_notes", "Shared Notes", class: "form-label"

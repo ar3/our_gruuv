@@ -12,8 +12,7 @@ module Finalizers
     
     def finalize
       return Result.err("Check-in not ready") unless @check_in.ready_for_finalization?
-      return Result.err("Official rating required") if @official_rating.nil?
-      
+
       # Find active tenure for this assignment
       active_tenure = AssignmentTenure.where(company_teammate: @teammate, assignment: @check_in.assignment)
                                      .where(ended_at: nil)

@@ -11,8 +11,7 @@ module Finalizers
     
     def finalize
       return Result.err("Check-in not ready") unless @check_in.ready_for_finalization?
-      return Result.err("Official rating required") if @official_rating.nil?
-      
+
       # Finalize the check-in
       @check_in.update!(
         official_rating: @official_rating,
