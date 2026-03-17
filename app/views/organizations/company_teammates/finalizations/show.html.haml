@@ -11,6 +11,9 @@
     %i.bi.bi-arrow-left.me-2
     Back to Check-Ins
 
+-# Only prompt "did you save?" when there is an editable form (manager with check-ins ready to finalize)
+- if @view_mode == :manager && (@ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?)
+  %div{ data: { controller: "confirm-leave" }, style: "display: none;", "aria-hidden": "true" }
 = render 'shared/check_in_wizard_header', organization: @organization, teammate: @teammate, current_step: 2
 
 = form_with url: organization_company_teammate_finalization_path(organization, @teammate), method: :post, local: true do |f|

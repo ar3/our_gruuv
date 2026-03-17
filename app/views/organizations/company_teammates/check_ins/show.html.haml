@@ -18,6 +18,7 @@
       %i.bi.bi-arrow-left.me-2
       Back to Profile
 
+%div{ data: { controller: "confirm-leave" }, style: "display: none;", "aria-hidden": "true" }
 = render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 1
 
 -# Authorization Debug Section
