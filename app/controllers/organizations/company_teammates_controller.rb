@@ -1227,18 +1227,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def load_assignment_check_in_data
-    # Use the shared helper method to ensure consistency across:
-    # - The collapsed alert sentence
-    # - The status indicator color  
-    # - The expanded assignment list
     active_tenure = @teammate.active_employment_tenure
     @position_display_name_for_assignments = active_tenure&.position&.display_name || "undefined position"
     
-    # Get the relevant assignments using the shared method
     relevant_assignments = helpers.relevant_assignments_for_about_me(@teammate, organization)
-    @required_assignments = relevant_assignments.to_a # Used in view for summary sentence
-    
-    # Build maps for position_assignment and assignment_tenure lookups
+    @required_assignments = relevant_assignments.to_a
+
     required_position_assignments = if active_tenure&.position
       active_tenure.position.required_assignments.includes(:assignment)
     else
@@ -1260,25 +1254,51 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       active_tenures_map[assignment_tenure.assignment_id] = assignment_tenure
     end
     
+    relevant_assignment_ids = @required_assignments.map(&:id)
+
+    # Batch-load most-recent tenure per assignment (avoids N+1 from find_or_create_open_for)
+    tenures_by_assignment = {}
+    AssignmentTenure.where(teammate_id: @teammate.id, assignment_id: relevant_assignment_ids)
+                    .order(started_at: :desc)
+                    .each { |t| tenures_by_assignment[t.assignment_id] ||= t }
+
+    # Batch-load open check-ins per assignment
+    open_check_ins_by_assignment = AssignmentCheckIn
+      .where(company_teammate: @teammate, assignment_id: relevant_assignment_ids)
+      .open
+      .index_by(&:assignment_id)
+
+    # Batch-load latest finalized check-in per assignment
+    finalized_by_assignment = {}
+    AssignmentCheckIn
+      .where(company_teammate: @teammate, assignment_id: relevant_assignment_ids)
+      .closed
+      .order(official_check_in_completed_at: :desc)
+      .each { |ci| finalized_by_assignment[ci.assignment_id] ||= ci }
+
     cutoff_date = 90.days.ago
     @assignment_check_ins_data = relevant_assignments.map do |assignment|
-      check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
-      latest_finalized = AssignmentCheckIn
-        .where(company_teammate: @teammate, assignment: assignment)
-        .closed
-        .order(official_check_in_completed_at: :desc)
-        .first
-      
+      tenure = tenures_by_assignment[assignment.id]
+      check_in = open_check_ins_by_assignment[assignment.id]
+
+      if check_in.nil? && tenure
+        check_in = AssignmentCheckIn.create!(
+          company_teammate: @teammate,
+          assignment: assignment,
+          check_in_started_on: Date.current,
+          actual_energy_percentage: tenure.anticipated_energy_percentage
+        )
+      end
+
       {
         assignment: assignment,
-        position_assignment: required_assignments_map[assignment.id], # May be nil for active-only assignments
-        assignment_tenure: active_tenures_map[assignment.id], # May be nil for required-only assignments
+        position_assignment: required_assignments_map[assignment.id],
+        assignment_tenure: active_tenures_map[assignment.id],
         check_in: check_in,
-        latest_finalized: latest_finalized
+        latest_finalized: finalized_by_assignment[assignment.id]
       }
     end
     
-    # Count assignments with finalized check-ins in the last 90 days
     @assignments_with_recent_check_ins_count = @assignment_check_ins_data.count do |data|
       data[:latest_finalized] && data[:latest_finalized].official_check_in_completed_at >= cutoff_date
     end
