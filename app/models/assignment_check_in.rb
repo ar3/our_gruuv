@@ -159,6 +159,18 @@ class AssignmentCheckIn < ApplicationRecord
     manager_rating.present? || manager_private_notes.present?
   end
 
+  # True if this (open) check-in has any meaningful input: rating from either side,
+  # either side completed their part, non-whitespace notes from either side, or employee energy.
+  # Used to promote non-active assignment check-ins into Group 1 on the check-ins page.
+  def has_meaningful_input?
+    employee_rating.present? ||
+      manager_rating.present? ||
+      employee_completed? ||
+      manager_completed? ||
+      employee_private_notes.to_s.strip.present? ||
+      manager_private_notes.to_s.strip.present? ||
+      actual_energy_percentage.present?
+  end
 
   def finalize_check_in!(final_rating: nil, finalized_by: nil)
     update!(

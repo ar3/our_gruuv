@@ -825,15 +825,17 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(non_active_assignment_ids).to include(suggested_assignment.id)
       end
 
-      it 'places assignments without active tenure: required in Unique-to-You, suggested (added today) in recently added' do
+      it 'places assignments without active tenure: required in Group 1 (active), suggested (added today) in recently added' do
         # No tenure created for these assignments (they're position-based only); check-ins get check_in_started_on: Date.current
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
+        active_check_ins = assigns(:active_assignment_check_ins)
         recently_added = assigns(:recently_added_assignment_check_ins)
         non_active_check_ins = assigns(:non_active_assignment_check_ins)
         
-        # Required stays in Unique-to-You (non_active)
-        expect(non_active_check_ins.map(&:assignment_id)).to include(required_assignment.id)
+        # Required is promoted to Group 1 (active) even without active tenure
+        expect(active_check_ins.map(&:assignment_id)).to include(required_assignment.id)
+        expect(non_active_check_ins.map(&:assignment_id)).not_to include(required_assignment.id)
         # Suggested with no tenure, created today, is "recently added" so appears outside Unique-to-You
         expect(recently_added.map(&:assignment_id)).to include(suggested_assignment.id)
         expect(non_active_check_ins.map(&:assignment_id)).not_to include(suggested_assignment.id)
@@ -854,10 +856,11 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'splits non-active: recently added (within 7 days) and not required appear in recently_added_assignment_check_ins' do
-        # Assignment not on position; had an inactive tenure started 5 days ago (so "recently added")
+        # Assignment not on position; had an inactive tenure started 5 days ago (so "recently added"); no meaningful input so not promoted
         recent_assignment = create(:assignment, company: organization, title: 'Recently Added')
         create(:assignment_tenure, teammate: employee_teammate, assignment: recent_assignment, started_at: 5.days.ago, ended_at: 1.day.ago)
-        create(:assignment_check_in, company_teammate: employee_teammate, assignment: recent_assignment, check_in_started_on: 5.days.ago)
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: recent_assignment, check_in_started_on: 5.days.ago,
+               actual_energy_percentage: nil, employee_rating: nil, manager_rating: nil, employee_private_notes: nil, manager_private_notes: nil)
 
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
 
@@ -871,7 +874,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       it 'splits non-active: added more than 7 days ago and not required appear only in non_active_assignment_check_ins (Unique-to-You)' do
         old_assignment = create(:assignment, company: organization, title: 'Older Assignment')
         create(:assignment_tenure, teammate: employee_teammate, assignment: old_assignment, started_at: 10.days.ago, ended_at: 1.day.ago)
-        create(:assignment_check_in, company_teammate: employee_teammate, assignment: old_assignment, check_in_started_on: 10.days.ago)
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: old_assignment, check_in_started_on: 10.days.ago,
+               actual_energy_percentage: nil, employee_rating: nil, manager_rating: nil, employee_private_notes: nil, manager_private_notes: nil)
 
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
 
@@ -882,18 +886,104 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(non_active.map(&:assignment_id)).to include(old_assignment.id)
       end
 
-      it 'keeps required-but-non-active assignments in non_active_assignment_check_ins (Unique-to-You)' do
+      it 'promotes required-but-non-active assignments to active_assignment_check_ins (Group 1)' do
         # Required assignment with no active tenure (they have not taken it on yet)
         AssignmentTenure.where(company_teammate: employee_teammate, assignment: required_assignment).destroy_all
 
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
 
+        active_check_ins = assigns(:active_assignment_check_ins)
         recently_added = assigns(:recently_added_assignment_check_ins)
         non_active = assigns(:non_active_assignment_check_ins)
 
-        # Required assignments stay in Unique-to-You even if check-in was created recently
+        # Required assignments are promoted to Group 1 even without active tenure
+        expect(active_check_ins.map(&:assignment_id)).to include(required_assignment.id)
         expect(recently_added.map(&:assignment_id)).not_to include(required_assignment.id)
-        expect(non_active.map(&:assignment_id)).to include(required_assignment.id)
+        expect(non_active.map(&:assignment_id)).not_to include(required_assignment.id)
+      end
+
+      it 'promotes non-active assignment to Group 1 when employee has saved a rating' do
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: suggested_assignment).destroy_all
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: suggested_assignment,
+               check_in_started_on: Date.current, employee_rating: :meeting)
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        expect(assigns(:active_assignment_check_ins).map(&:assignment_id)).to include(suggested_assignment.id)
+        expect(assigns(:recently_added_assignment_check_ins).map(&:assignment_id)).not_to include(suggested_assignment.id)
+        expect(assigns(:non_active_assignment_check_ins).map(&:assignment_id)).not_to include(suggested_assignment.id)
+      end
+
+      it 'promotes non-active assignment to Group 1 when manager has saved a rating' do
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: suggested_assignment).destroy_all
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: suggested_assignment,
+               check_in_started_on: Date.current, manager_rating: :exceeding)
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        expect(assigns(:active_assignment_check_ins).map(&:assignment_id)).to include(suggested_assignment.id)
+      end
+
+      it 'promotes non-active assignment to Group 1 when employee has completed their side' do
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: suggested_assignment).destroy_all
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: suggested_assignment,
+               check_in_started_on: Date.current, employee_completed_at: 1.hour.ago)
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        expect(assigns(:active_assignment_check_ins).map(&:assignment_id)).to include(suggested_assignment.id)
+      end
+
+      it 'promotes non-active assignment to Group 1 when manager has completed their side' do
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: suggested_assignment).destroy_all
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: suggested_assignment,
+               check_in_started_on: Date.current, manager_completed_at: 1.hour.ago, manager_completed_by_teammate: manager_teammate)
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        expect(assigns(:active_assignment_check_ins).map(&:assignment_id)).to include(suggested_assignment.id)
+      end
+
+      it 'promotes non-active assignment to Group 1 when employee has non-whitespace notes' do
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: suggested_assignment).destroy_all
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: suggested_assignment,
+               check_in_started_on: Date.current, employee_private_notes: '  Some notes  ')
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        expect(assigns(:active_assignment_check_ins).map(&:assignment_id)).to include(suggested_assignment.id)
+      end
+
+      it 'promotes non-active assignment to Group 1 when manager has non-whitespace notes' do
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: suggested_assignment).destroy_all
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: suggested_assignment,
+               check_in_started_on: Date.current, manager_private_notes: 'Manager feedback')
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        expect(assigns(:active_assignment_check_ins).map(&:assignment_id)).to include(suggested_assignment.id)
+      end
+
+      it 'promotes non-active assignment to Group 1 when employee has saved energy' do
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: suggested_assignment).destroy_all
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: suggested_assignment,
+               check_in_started_on: Date.current, actual_energy_percentage: 50)
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        expect(assigns(:active_assignment_check_ins).map(&:assignment_id)).to include(suggested_assignment.id)
+      end
+
+      it 'keeps non-active assignment in recently_added when no meaningful input' do
+        AssignmentTenure.where(company_teammate: employee_teammate, assignment: suggested_assignment).destroy_all
+        create(:assignment_check_in, company_teammate: employee_teammate, assignment: suggested_assignment,
+               check_in_started_on: Date.current, actual_energy_percentage: nil, employee_rating: nil, manager_rating: nil,
+               employee_private_notes: nil, manager_private_notes: nil)
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        expect(assigns(:active_assignment_check_ins).map(&:assignment_id)).not_to include(suggested_assignment.id)
+        expect(assigns(:recently_added_assignment_check_ins).map(&:assignment_id)).to include(suggested_assignment.id)
       end
     end
 

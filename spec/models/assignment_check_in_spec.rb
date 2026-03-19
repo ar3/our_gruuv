@@ -105,6 +105,55 @@ RSpec.describe AssignmentCheckIn, type: :model do
     end
   end
 
+  describe '#has_meaningful_input?' do
+    it 'returns false when check-in is blank' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current,
+        actual_energy_percentage: nil, employee_rating: nil, manager_rating: nil, employee_private_notes: nil, manager_private_notes: nil)
+      expect(check_in.has_meaningful_input?).to be false
+    end
+
+    it 'returns true when employee_rating is set' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current, employee_rating: :meeting)
+      expect(check_in.has_meaningful_input?).to be true
+    end
+
+    it 'returns true when manager_rating is set' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current, manager_rating: :exceeding)
+      expect(check_in.has_meaningful_input?).to be true
+    end
+
+    it 'returns true when employee has completed their side' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current, employee_completed_at: 1.hour.ago)
+      expect(check_in.has_meaningful_input?).to be true
+    end
+
+    it 'returns true when manager has completed their side' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current, manager_completed_at: 1.hour.ago, manager_completed_by_teammate: teammate)
+      expect(check_in.has_meaningful_input?).to be true
+    end
+
+    it 'returns true when employee_private_notes has non-whitespace' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current, employee_private_notes: '  notes  ')
+      expect(check_in.has_meaningful_input?).to be true
+    end
+
+    it 'returns false when employee_private_notes is only whitespace' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current,
+        employee_private_notes: "  \n\t  ", actual_energy_percentage: nil, employee_rating: nil, manager_rating: nil, manager_private_notes: nil)
+      expect(check_in.has_meaningful_input?).to be false
+    end
+
+    it 'returns true when manager_private_notes has non-whitespace' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current, manager_private_notes: 'Manager notes')
+      expect(check_in.has_meaningful_input?).to be true
+    end
+
+    it 'returns true when actual_energy_percentage is set' do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: Date.current, actual_energy_percentage: 0)
+      expect(check_in.has_meaningful_input?).to be true
+    end
+  end
+
   describe 'find_or_create_open_for' do
     before { assignment_tenure }
 

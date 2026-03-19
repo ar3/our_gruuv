@@ -232,8 +232,15 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       check_ins.each { |ci| ci.instance_variable_set(:@assignment_tenure, tenures_by_assignment[ci.assignment_id]) }
     end
 
-    # Partition non-active: recently added (outside Unique-to-You) vs older (inside Unique-to-You)
     required_assignment_ids = required_assignment_ids_for_teammate
+
+    # Promote to Group 1 (active list): required for position, or has meaningful input on the open check-in
+    to_promote, non_active_tenure_check_ins = non_active_tenure_check_ins.partition do |check_in|
+      required_assignment_ids.include?(check_in.assignment_id) || check_in.has_meaningful_input?
+    end
+    active_tenure_check_ins.concat(to_promote)
+
+    # Partition remaining non-active: recently added (outside Unique-to-You) vs older (inside Unique-to-You)
     recently_added_cutoff = RECENTLY_ADDED_DAYS.days.ago.to_date
     recently_added_tenure_check_ins = []
     unique_to_you_tenure_check_ins = []
