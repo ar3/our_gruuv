@@ -190,7 +190,7 @@ class Webhooks::SlackController < ApplicationController
       return { response_action: 'errors', errors: { base: 'Organization not found' } }
     end
     
-    teammate = Teammate.find_by(id: teammate_id)
+    teammate = CompanyTeammate.find_by(id: teammate_id)
     unless teammate
       incoming_webhook.mark_failed!("Teammate not found for id: #{teammate_id}")
       return { response_action: 'errors', errors: { base: 'Teammate not found' } }
@@ -246,6 +246,7 @@ class Webhooks::SlackController < ApplicationController
     result = Goals::CheckInService.call(
       goal: goal,
       current_person: teammate.person,
+      current_company_teammate: teammate,
       confidence_percentage: confidence_percentage,
       confidence_reason: confidence_reason
     )

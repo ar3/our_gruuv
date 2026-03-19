@@ -61,8 +61,8 @@ module Goals
         )
         
         if existing_check_in
-          # Set PaperTrail whodunnit for version tracking
-          PaperTrail.request.whodunnit = current_person.id.to_s
+          # Set PaperTrail whodunnit for version tracking (company teammate id)
+          PaperTrail.request.whodunnit = teammate.id.to_s
           existing_check_in.destroy
           @success_count += 1
         end
@@ -98,6 +98,7 @@ module Goals
       result = CheckInService.call(
         goal: goal,
         current_person: current_person,
+        current_company_teammate: teammate,
         confidence_percentage: confidence_percentage,
         confidence_reason: confidence_reason,
         most_likely_target_date: check_in_data[:most_likely_target_date],

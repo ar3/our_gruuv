@@ -2,9 +2,10 @@ module Goals
   class CheckInService
     def self.call(...) = new(...).call
 
-    def initialize(goal:, current_person:, confidence_percentage: nil, confidence_reason: nil, most_likely_target_date: nil, week_start: nil)
+    def initialize(goal:, current_person:, current_company_teammate: nil, confidence_percentage: nil, confidence_reason: nil, most_likely_target_date: nil, week_start: nil)
       @goal = goal
       @current_person = current_person
+      @current_company_teammate = current_company_teammate
       @confidence_percentage = confidence_percentage.present? ? confidence_percentage.to_i : nil
       @confidence_reason = confidence_reason&.strip.presence
       @most_likely_target_date_param = most_likely_target_date
@@ -12,8 +13,8 @@ module Goals
     end
 
     def call
-      # Set PaperTrail whodunnit for version tracking
-      PaperTrail.request.whodunnit = @current_person.id.to_s
+      teammate = @current_company_teammate || CompanyTeammate.find_by(person: @current_person, organization: @goal.company)
+      PaperTrail.request.whodunnit = teammate&.id&.to_s
 
       # Parse target date if provided
       most_likely_target_date = nil

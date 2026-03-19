@@ -77,9 +77,10 @@
                 %td= format_time_in_user_timezone(version.created_at)
                 %td
                   - if version.whodunnit.present?
-                    - teammate = Teammate.find_by(id: version.whodunnit)
-                    - if teammate
-                      = teammate.person.display_name
+                    - teammate = CompanyTeammate.find_by(id: version.whodunnit)
+                    - actor_person = teammate&.person || Person.find_by(id: version.whodunnit)
+                    - if actor_person
+                      = actor_person.display_name
                     - else
                       %span.text-muted Unknown
                   - else

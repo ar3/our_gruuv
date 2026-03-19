@@ -515,6 +515,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     result = Goals::CheckInService.call(
       goal: @goal,
       current_person: current_person,
+      current_company_teammate: current_company_teammate,
       confidence_percentage: params[:confidence_percentage],
       confidence_reason: params[:confidence_reason],
       most_likely_target_date: params[:most_likely_target_date]
@@ -739,8 +740,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Get current week start
     current_week_start = Date.current.beginning_of_week(:monday)
     
-    # Set PaperTrail whodunnit for version tracking
-    PaperTrail.request.whodunnit = current_person.id.to_s
+    # Set PaperTrail whodunnit for version tracking (company teammate id)
+    PaperTrail.request.whodunnit = current_company_teammate.id.to_s if current_company_teammate
     
     # Create or update final check-in
     check_in = GoalCheckIn.find_or_initialize_by(

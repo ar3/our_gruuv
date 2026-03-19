@@ -101,6 +101,19 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def show
     authorize @ability
+    versions = @ability.versions.order(:created_at).load
+    @paper_trail_create_version = versions.find { |v| v.event == 'create' } || versions.first
+    @paper_trail_latest_version = versions.last
+
+    milestone_scope = @ability.teammate_milestones
+      .joins(:company_teammate)
+      .where(teammates: { organization_id: @ability.company_id })
+      .includes(company_teammate: :person)
+    @teammate_milestone_rows = milestone_scope.to_a
+      .group_by(&:teammate_id)
+      .values
+      .map { |records| records.max_by(&:milestone_level) }
+      .sort_by { |m| m.company_teammate.person.casual_name.to_s.downcase }
   end
 
   def new
@@ -250,7 +263,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
   private
 
   def set_ability
-    @ability = Ability.where(company: @organization).find(params[:id])
+    @ability = Ability.where(company: @organization).includes(:department).find(params[:id])
   end
 
   def calculate_abilities_by_department_stats(abilities)

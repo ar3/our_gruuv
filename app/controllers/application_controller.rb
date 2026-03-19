@@ -355,6 +355,8 @@ class ApplicationController < ActionController::Base
       current_teammate_id: current_company_teammate&.id,
       impersonating_teammate_id: impersonating? ? session[:impersonating_teammate_id] : nil
     }
+    # Attribute versions to the signed-in company teammate when present (teammates.id / teammates table)
+    PaperTrail.request.whodunnit = current_company_teammate.id.to_s if current_company_teammate
   end
 
   # Ensure person has at least one active teammate, creating "OurGruuv Demo" teammate if needed
