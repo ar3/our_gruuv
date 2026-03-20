@@ -157,4 +157,31 @@ RSpec.describe CheckInBehavior, type: :model do
       end
     end
   end
+
+  describe '#clarity_level' do
+    it 'returns :obscured when never finalized' do
+      allow(check_in).to receive(:official_check_in_completed_at).and_return(nil)
+      expect(check_in.clarity_level).to eq(:obscured)
+    end
+
+    it 'returns :crystal_clear when finalized within 30 days' do
+      allow(check_in).to receive(:official_check_in_completed_at).and_return(10.days.ago)
+      expect(check_in.clarity_level).to eq(:crystal_clear)
+    end
+
+    it 'returns :clear when finalized within 60 days' do
+      allow(check_in).to receive(:official_check_in_completed_at).and_return(45.days.ago)
+      expect(check_in.clarity_level).to eq(:clear)
+    end
+
+    it 'returns :blurred when finalized within 90 days' do
+      allow(check_in).to receive(:official_check_in_completed_at).and_return(75.days.ago)
+      expect(check_in.clarity_level).to eq(:blurred)
+    end
+
+    it 'returns :obscured when finalized more than 90 days ago' do
+      allow(check_in).to receive(:official_check_in_completed_at).and_return(120.days.ago)
+      expect(check_in.clarity_level).to eq(:obscured)
+    end
+  end
 end

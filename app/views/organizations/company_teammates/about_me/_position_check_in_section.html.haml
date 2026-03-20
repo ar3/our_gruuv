@@ -24,10 +24,15 @@
   .card.mb-4
     .card-body
       - if @current_position
+        - position_clarity_level = @latest_finalized_position_check_in&.clarity_level || :obscured
+        - position_neither_side_ready = @position_check_in.present? && !@position_check_in.employee_completed? && !@position_check_in.manager_completed?
+        - position_show_clarity_merge = position_neither_side_ready && [:crystal_clear, :clear].include?(position_clarity_level)
         .mb-3
           %h5.mb-2
             Position:
-            = link_to @current_position.display_name, organization_position_path(organization, @current_position), class: "text-decoration-none"
+            - if position_clarity_level == :obscured
+              %i.bi.bi-exclamation-triangle-fill.text-danger.me-1
+            = link_to @current_position.display_name, position_check_in_organization_teammate_path(organization, @teammate), class: "text-decoration-none"
           
           - if @latest_finalized_position_check_in
             %p.mb-2
@@ -39,25 +44,30 @@
           - if @position_check_in
             .mb-3
               %h6.mb-2 Currently Active Check-In Status:
-              .row
-                .col-md-6
-                  %p.mb-1
-                    %strong Employee Side:
-                    - if @position_check_in.employee_completed?
-                      %span.badge.bg-success Ready
-                      %small.text-muted.ms-2
-                        (#{format_time_in_user_timezone(@position_check_in.employee_completed_at)})
-                    - else
-                      %span.badge.bg-warning Not ready
-                .col-md-6
-                  %p.mb-1
-                    %strong Manager Side:
-                    - if @position_check_in.manager_completed?
-                      %span.badge.bg-success Ready
-                      %small.text-muted.ms-2
-                        (#{format_time_in_user_timezone(@position_check_in.manager_completed_at)})
-                    - else
-                      %span.badge.bg-warning Not ready
+              - if position_show_clarity_merge
+                .alert.alert-success.mb-1
+                  - next_check_in_window = distance_of_time_in_words(@latest_finalized_position_check_in.official_check_in_completed_at, @latest_finalized_position_check_in.official_check_in_completed_at + 60.days)
+                  = "#{@teammate.person.casual_name} is #{position_clarity_level.to_s.humanize.downcase} and a new check-in should be considered in #{next_check_in_window}"
+              - else
+                .row
+                  .col-md-6
+                    %p.mb-1
+                      %strong Employee Side:
+                      - if @position_check_in.employee_completed?
+                        %span.badge.bg-success Ready
+                        %small.text-muted.ms-2
+                          (#{format_time_in_user_timezone(@position_check_in.employee_completed_at)})
+                      - else
+                        %span.badge.bg-warning Not ready
+                  .col-md-6
+                    %p.mb-1
+                      %strong Manager Side:
+                      - if @position_check_in.manager_completed?
+                        %span.badge.bg-success Ready
+                        %small.text-muted.ms-2
+                          (#{format_time_in_user_timezone(@position_check_in.manager_completed_at)})
+                      - else
+                        %span.badge.bg-warning Not ready
           - else
             %p.mb-2.text-muted Check-in not started
       - else

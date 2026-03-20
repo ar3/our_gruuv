@@ -1,6 +1,10 @@
 module CheckInBehavior
   extend ActiveSupport::Concern
   
+  CLARITY_CRYSTAL_CLEAR_DAYS = 30
+  CLARITY_CLEAR_DAYS = 60
+  CLARITY_BLURRED_DAYS = 90
+  
   included do
     # Common associations
     belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
@@ -55,6 +59,32 @@ module CheckInBehavior
   
   def ready_for_finalization?
     employee_completed? && manager_completed? && !officially_completed?
+  end
+
+  # Clarity states based on finalized recency:
+  # - :crystal_clear => finalized within 30 days
+  # - :clear => finalized within 60 days
+  # - :blurred => finalized within 90 days
+  # - :obscured => finalized more than 90 days ago (or never)
+  def clarity_level(reference_time: Time.current)
+    finalized_at = official_check_in_completed_at
+    return :obscured if finalized_at.blank?
+
+    days_since_finalized = (reference_time.to_date - finalized_at.to_date).to_i
+
+    if days_since_finalized <= CLARITY_CRYSTAL_CLEAR_DAYS
+      :crystal_clear
+    elsif days_since_finalized <= CLARITY_CLEAR_DAYS
+      :clear
+    elsif days_since_finalized <= CLARITY_BLURRED_DAYS
+      :blurred
+    else
+      :obscured
+    end
+  end
+
+  def clarity_label(reference_time: Time.current)
+    clarity_level(reference_time: reference_time).to_s.humanize
   end
   
   # Completion state methods (only for OPEN check-ins)

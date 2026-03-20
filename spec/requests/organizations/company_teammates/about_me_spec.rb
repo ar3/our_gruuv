@@ -305,6 +305,70 @@ RSpec.describe 'About Me Page', type: :request do
       get about_me_organization_company_teammate_path(organization, teammate)
       expect(response.body).to include('Abilities')
     end
+
+    context 'check-in clarity UI and links' do
+      let(:title) { create(:title, company: organization) }
+      let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+      let(:position) { create(:position, title: title, position_level: position_level) }
+      let(:assignment) { create(:assignment, company: organization, title: 'Clarity Assignment') }
+      let(:aspiration) { create(:aspiration, company: organization, name: 'Clarity Aspiration') }
+      let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+      let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+      before do
+        EmploymentTenure.where(company_teammate: teammate, company: organization, ended_at: nil).update_all(ended_at: 2.years.ago)
+        create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
+        teammate.reload
+        create(:position_assignment, position: teammate.active_employment_tenure.position, assignment: assignment, assignment_type: 'required')
+
+        create(:assignment_check_in,
+               teammate: teammate,
+               assignment: assignment,
+               employee_completed_at: 50.days.ago,
+               manager_completed_at: 50.days.ago,
+               manager_completed_by_teammate: manager_completed_by,
+               official_check_in_completed_at: 50.days.ago,
+               finalized_by_teammate: finalized_by)
+        create(:aspiration_check_in,
+               teammate: teammate,
+               aspiration: aspiration,
+               employee_completed_at: 120.days.ago,
+               manager_completed_at: 120.days.ago,
+               manager_completed_by_teammate: manager_completed_by,
+               official_check_in_completed_at: 120.days.ago,
+               finalized_by_teammate: finalized_by)
+
+        AssignmentCheckIn.find_or_create_open_for(teammate, assignment)&.update!(employee_completed_at: nil, manager_completed_at: nil)
+        AspirationCheckIn.find_or_create_open_for(teammate, aspiration)&.update!(employee_completed_at: nil, manager_completed_at: nil)
+
+        PositionCheckIn.find_or_create_open_for(teammate)&.update!(employee_completed_at: nil, manager_completed_at: nil)
+        create(:position_check_in,
+               teammate: teammate,
+               employment_tenure: teammate.active_employment_tenure,
+               employee_completed_at: 20.days.ago,
+               manager_completed_at: 20.days.ago,
+               manager_completed_by_teammate: manager_completed_by,
+               official_check_in_completed_at: 20.days.ago,
+               finalized_by_teammate: finalized_by)
+      end
+
+      it 'links expanded rows to teammate+object check-in pages' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include(organization_teammate_assignment_path(organization, teammate, assignment))
+        expect(response.body).to include(organization_teammate_aspiration_path(organization, teammate, aspiration))
+        expect(response.body).to include(position_check_in_organization_teammate_path(organization, teammate))
+      end
+
+      it 'shows merged clarity success alert when clear/crystal clear and neither side is ready' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to match(/#{Regexp.escape(person.casual_name)} is (crystal clear|clear) and a new check-in should be considered in/i)
+      end
+
+      it 'shows obscured warning icon for obscured check-ins' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('bi-exclamation-triangle-fill')
+      end
+    end
   end
 
   describe 'Observations section' do
