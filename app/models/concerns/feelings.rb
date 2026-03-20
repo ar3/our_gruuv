@@ -2,6 +2,7 @@ module Feelings
   FEELINGS = [
     { display: '😀 (Happy)', discrete_feeling: :happy, base_feeling: :happy, display_grouping: :happy, positive_negative_or_neutral: :positive },
     { display: '🫱🏾‍🫲🏼 (Supported)', discrete_feeling: :supported, base_feeling: :happy, display_grouping: :happy, positive_negative_or_neutral: :positive },
+    { display: '🤜🏼🤛🏾 (Connected)', discrete_feeling: :connected, base_feeling: :happy, display_grouping: :happy, positive_negative_or_neutral: :positive },
     { display: '🫶 (Appreciated)', discrete_feeling: :appreciated, base_feeling: :happy, display_grouping: :happy, positive_negative_or_neutral: :positive },
     { display: '🧠 (Clear)', discrete_feeling: :clear, base_feeling: :happy, display_grouping: :happy, positive_negative_or_neutral: :positive },
     { display: '😋 (Enthusiastic)', discrete_feeling: :enthusiastic, base_feeling: :happy, display_grouping: :happy, positive_negative_or_neutral: :positive },

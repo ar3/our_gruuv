@@ -51,6 +51,121 @@
             Published observations grouped by the department of the person the observation is about (first observee when multiple).
           #observations-by-department-chart{style: "height: 400px;"}
 
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-warning.text-dark
+          %h4.mb-0
+            %i.bi.bi-emoji-smile.me-2
+            Published observations feelings (#{chart_title_period})
+        .card-body
+          %p.small.text-muted.mb-3
+            Distribution of all primary and secondary feelings set on published observations in this timeframe.
+          #observations-feelings-pie-chart{style: "height: 420px;"}
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-success.text-white
+          %h4.mb-0
+            %i.bi.bi-pie-chart.me-2
+            Published observations ratings distribution (#{chart_title_period})
+        .card-body
+          %p.small.text-muted.mb-3
+            Distribution of all ratings given on published observations in this timeframe.
+          #observations-ratings-pie-chart{style: "height: 420px;"}
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-light
+          %h4.mb-0
+            %i.bi.bi-table.me-2
+            Ratings Ratio Health Check (#{chart_title_period})
+        .card-body
+          %p.small.text-muted.mb-3
+            Healthy target for Kudos : Constructive is about 5:1; other rows use a 3:1 target.
+          .table-responsive
+            %table.table.table-hover.align-middle
+              %thead
+                %tr
+                  %th Ratio
+                  %th Healthy Target
+                  %th This Org (Timeframe)
+                  %th Why it matters
+              %tbody
+                - @observations_rating_health_ratios.each do |row|
+                  - popover_html = safe_join([content_tag(:div, row[:popover_line_1]), content_tag(:div, row[:popover_line_2])]).html_safe
+                  %tr
+                    %td= row[:name]
+                    %td= row[:healthy_ratio]
+                    %td
+                      %span.d-inline-block.border-bottom.border-dotted{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => popover_html, style: "cursor: help;", tabindex: "0"}= row[:display_ratio]
+                    %td
+                      - org_name = @organization.display_name
+                      - if row[:kudos_constructive_band].present?
+                        - case row[:kudos_constructive_band]
+                        - when :above_seven
+                          .alert.alert-warning.mb-0.small
+                            %p.mb-2
+                              This is an indication that #{org_name} is likely not putting constructive feedback in OG. Which is understandable as giving constructive feedback is one of the hardest things you can do. Documenting it in a system like this can create anxiety. However, a few things to consider
+                            %ul.mb-0.ps-3
+                              %li.mb-1 Does this feedback help people get better? Being Kind is being Clear… is it kind to withhold feedback that could help?
+                              %li.mb-1 Can an organization have high talent density without having high truth density?
+                              %li.mb-0 Culture: OG cultures strive to ensure that no one wonders where they stand… and everyone knows how to get better… and a healthy mix of kudos and constructive style feedback is a prime indication of that
+                        - when :healthy
+                          .alert.alert-success.mb-0.small
+                            #{org_name} has a healthy ratio of Kudos vs Constructive feedback… which is a great indication that this is a culture that celebrates clarity and ensuring everyone knows where they stand and how to improve. 🎉 Well Done 🎉
+                        - when :below_three
+                          .alert.alert-warning.mb-0.small
+                            This ratio is an indication that #{org_name} has a culture of constructive feedback which is good, but it should also be balanced with a healthy dose of kudos as well. Folks need to know, not just what not to do, but what success looks like.
+                        - when :no_data
+                          %p.small.text-muted.mb-0 Not enough observation ratings in this timeframe to assess this ratio.
+                      - elsif row[:solid_exceptional_band].present?
+                        - case row[:solid_exceptional_band]
+                        - when :above_five
+                          .alert.alert-warning.mb-0.small
+                            %p.mb-0
+                              #{org_name} should consider when truly
+                              %strong exceptional
+                              performance deserves the top rating. Exceptional should be rare—but not
+                              %em this
+                              rare. If Solid dominates this heavily, highlight the most extreme positive outcomes so standout impact stays visible and ratings don’t all collapse into “good enough.”
+                        - when :below_one
+                          .alert.alert-warning.mb-0.small
+                            %p.mb-0
+                              This pattern suggests a potential
+                              %strong calibration
+                              issue: Exceptional may be used too often relative to Solid, which makes it harder for people to tell strong work from truly stand-out work.
+                        - when :healthy
+                          .alert.alert-success.mb-0.small
+                            #{org_name} has a healthy balance between Solid and Exceptional—enough differentiation without over-using the top bucket. 🎉 Well done 🎉
+                        - when :no_data
+                          %p.small.text-muted.mb-0 Not enough observation ratings in this timeframe to assess this ratio.
+                      - elsif row[:misaligned_concerning_band].present?
+                        - case row[:misaligned_concerning_band]
+                        - when :above_five
+                          .alert.alert-warning.mb-0.small
+                            %p.mb-0
+                              #{org_name} should consider when the most serious gaps deserve a
+                              %strong Concerning
+                              rating. Concerning should be rare—but not
+                              %em this
+                              rare. If Misaligned dominates this heavily, ensure the most extreme issues are still called out so serious problems aren’t only ever labeled as “soft” misalignment.
+                        - when :below_one
+                          .alert.alert-warning.mb-0.small
+                            %p.mb-0
+                              This pattern suggests a potential
+                              %strong calibration
+                              issue: Concerning may be used too often relative to Misaligned, which blurs the line between “needs correction” and “serious cause for attention.”
+                        - when :healthy
+                          .alert.alert-success.mb-0.small
+                            #{org_name} has a healthy balance between Misaligned and Concerning—clear enough escalation for the worst cases without over-labeling everyday gaps. 🎉 Well done 🎉
+                        - when :no_data
+                          %p.small.text-muted.mb-0 Not enough observation ratings in this timeframe to assess this ratio.
+                      - else
+                        = row[:details]
+
   %hr.my-5
 
   / Observations Kudos vs Feedback table
@@ -285,5 +400,117 @@
     }
     window.addEventListener('load', function() {
       if (typeof Highcharts !== 'undefined') initializeDeptChart();
+    });
+  })();
+
+  (function() {
+    var pieData = #{@observations_feelings_pie_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+
+    function initializeFeelingsPieChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-feelings-pie-chart');
+      if (!el) return;
+      Highcharts.chart('observations-feelings-pie-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Published observations feelings (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        tooltip: { pointFormat: '<b>{point.y}</b> observations ({point.percentage:.1f}%)' },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '{point.name}: {point.y}'
+            }
+          }
+        },
+        series: [{
+          name: 'Observations',
+          colorByPoint: true,
+          data: pieData
+        }]
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighchartsFeelingsPie() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeFeelingsPieChart();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighchartsFeelingsPie, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeFeelingsPieChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsFeelingsPie);
+    } else {
+      waitForHighchartsFeelingsPie();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeFeelingsPieChart();
+    });
+  })();
+
+  (function() {
+    var pieData = #{@observations_ratings_pie_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+
+    function initializeRatingsPieChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-ratings-pie-chart');
+      if (!el) return;
+      Highcharts.chart('observations-ratings-pie-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Published observations ratings distribution (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        tooltip: { pointFormat: '<b>{point.y}</b> ratings ({point.percentage:.1f}%)' },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '{point.name}: {point.y}'
+            }
+          }
+        },
+        series: [{
+          name: 'Ratings',
+          colorByPoint: true,
+          data: pieData
+        }]
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighchartsRatingsPie() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeRatingsPieChart();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighchartsRatingsPie, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeRatingsPieChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsRatingsPie);
+    } else {
+      waitForHighchartsRatingsPie();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeRatingsPieChart();
     });
   })();

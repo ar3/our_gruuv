@@ -176,6 +176,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @observations_chart_data = observations_chart_series_by_privacy(base_scope, chart_range)
     @observations_by_observer_department_chart_data = observations_by_observer_department_chart_series(base_scope, chart_range)
     @observations_by_department_chart_data = observations_by_department_chart_series(base_scope, chart_range)
+    @observations_feelings_pie_chart_data = observations_feelings_pie_chart_data(range)
+    @observations_ratings_pie_chart_data = observations_ratings_pie_chart_data(range)
+    @observations_rating_health_ratios = observations_rating_health_ratios(range)
 
     # Observers (person_ids) who have given at least one observation
     observer_ids = base_scope.distinct.pluck(:observer_id).compact
@@ -610,6 +613,140 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     data = week_dates.map { |wd| raw_normalized[wd.to_s] || 0 }
     series = [{ name: 'Feedback requests created', data: data }]
     { categories: categories, series: series }
+  end
+
+  def observations_feelings_pie_chart_data(range)
+    scope = Observation
+      .for_company(company)
+      .not_soft_deleted
+      .published
+    scope = scope.where(published_at: range) if range
+
+    feeling_counts = scope
+      .pluck(:primary_feeling, :secondary_feeling)
+      .flatten
+      .compact
+      .tally
+
+    feeling_counts
+      .sort_by { |_feeling, count| -count }
+      .map do |feeling, count|
+        hydrated = Feelings.hydrate(feeling)
+        label = hydrated&.dig(:display).presence || feeling.to_s.humanize
+        { name: label, y: count }
+      end
+  end
+
+  def observations_ratings_pie_chart_data(range)
+    scope = ObservationRating
+      .joins(:observation)
+      .where(observations: { company_id: company.id })
+      .merge(Observation.not_soft_deleted.published)
+    scope = scope.where(observations: { published_at: range }) if range
+
+    rating_labels = {
+      'strongly_agree' => 'Exceptional',
+      'agree' => 'Solid',
+      'disagree' => 'Misaligned',
+      'strongly_disagree' => 'Concerning',
+      'na' => 'N/A'
+    }
+
+    scope
+      .group(:rating)
+      .count
+      .sort_by { |_rating, count| -count }
+      .map do |rating, count|
+        label = rating_labels[rating.to_s] || rating.to_s.humanize
+        { name: label, y: count }
+      end
+  end
+
+  def observations_rating_health_ratios(range)
+    scope = ObservationRating
+      .joins(:observation)
+      .where(observations: { company_id: company.id })
+      .merge(Observation.not_soft_deleted.published)
+    scope = scope.where(observations: { published_at: range }) if range
+
+    counts = scope.group(:rating).count
+    strongly_agree = counts['strongly_agree'].to_i
+    agree = counts['agree'].to_i
+    disagree = counts['disagree'].to_i
+    strongly_disagree = counts['strongly_disagree'].to_i
+
+    kudos = strongly_agree + agree
+    constructive = disagree + strongly_disagree
+
+    [
+      {
+        name: 'Kudos : Constructive',
+        healthy_ratio: '5:1',
+        display_ratio: rounded_ratio_display(kudos, constructive),
+        popover_line_1: "Exceptional or Solid Ratings Total: #{kudos}",
+        popover_line_2: "Misaligned or Concerning Ratings Total: #{constructive}",
+        kudos_constructive_band: kudos_constructive_ratio_band(kudos, constructive)
+      },
+      {
+        name: 'Solid : Exceptional',
+        healthy_ratio: '3:1',
+        display_ratio: rounded_ratio_display(agree, strongly_agree),
+        popover_line_1: "Solid Ratings Total: #{agree}",
+        popover_line_2: "Exceptional Ratings Total: #{strongly_agree}",
+        solid_exceptional_band: two_tier_ratio_band(agree, strongly_agree)
+      },
+      {
+        name: 'Misaligned : Concerning',
+        healthy_ratio: '3:1',
+        display_ratio: rounded_ratio_display(disagree, strongly_disagree),
+        popover_line_1: "Misaligned Ratings Total: #{disagree}",
+        popover_line_2: "Concerning Ratings Total: #{strongly_disagree}",
+        misaligned_concerning_band: two_tier_ratio_band(disagree, strongly_disagree)
+      }
+    ]
+  end
+
+  # Rounded ratio for display: e.g. 3:1 when left/right ≈ 3; whole numbers only.
+  def rounded_ratio_display(left, right)
+    l = left.to_i
+    r = right.to_i
+    return '0:0' if l.zero? && r.zero?
+    return "#{l}:0" if r.zero?
+    return "0:#{r}" if l.zero?
+
+    x = (l.to_f / r).round
+    "#{x}:1"
+  end
+
+  # Float kudos per constructive for banding (>7, 3..7, <3); :no_data if neither side has ratings.
+  def kudos_constructive_ratio_band(kudos, constructive)
+    k = kudos.to_i
+    c = constructive.to_i
+    return :no_data if k.zero? && c.zero?
+    return :above_seven if c.zero? && k.positive?
+
+    r = k.to_f / c
+    return :above_seven if r > 7
+    return :healthy if r >= 3
+
+    :below_three
+  end
+
+  # For Solid:Exceptional and Misaligned:Concerning — left:right where healthy ~3:1.
+  # > 5:1 → “too rare” on the right bucket; < 1:1 → calibration concern.
+  def two_tier_ratio_band(left, right)
+    l = left.to_i
+    r = right.to_i
+    return :no_data if l.zero? && r.zero?
+    return :above_five if r.zero? && l.positive?
+
+    return :below_one if l.zero? && r.positive?
+
+    ratio = l.to_f / r
+    return :above_five if ratio > 5
+    return :below_one if ratio < 1
+
+    :healthy
   end
 
   def feedback_observations_published_chart_series(chart_range)
