@@ -118,6 +118,33 @@ RSpec.describe Organizations::CheckInsHealthController, type: :controller do
     end
   end
 
+  describe 'GET #export_employee_summary' do
+    it 'authorizes with check_ins_health? and returns CSV' do
+      get :export_employee_summary, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.content_type).to include('text/csv')
+      expect(response.headers['Content-Disposition']).to include('attachment')
+    end
+
+    it 'generates CSV with expected employee summary headers' do
+      get :export_employee_summary, params: { organization_id: company.id }
+      csv = CSV.parse(response.body, headers: true)
+      expect(csv.headers).to include(
+        'Name',
+        'Email',
+        'Position',
+        'Title',
+        'Department',
+        'Manager Name',
+        'Manager Email',
+        'Total Percentage Clear',
+        'Aspirational Values Total Percentage Clear',
+        'Required Assignments Total Percentage Clear',
+        'Position Total Percentage Clear'
+      )
+    end
+  end
+
   describe 'GET #by_manager' do
     context 'when user has manage_employment' do
       it 'returns success' do

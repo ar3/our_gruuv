@@ -33,6 +33,13 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response.body).to include(organization_check_ins_health_by_manager_path(company))
     end
 
+    it 'shows employee summary CSV download button' do
+      get organization_check_ins_health_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Download employee check-in summary CSV')
+      expect(response.body).to include(organization_check_ins_health_employee_summary_export_path(company))
+    end
+
     it 'with manager_id=just_me returns success' do
       get organization_check_ins_health_path(company), params: { manager_id: 'just_me' }
       expect(response).to have_http_status(:success)
@@ -42,6 +49,15 @@ RSpec.describe 'Check-ins Health', type: :request do
   describe 'GET /organizations/:organization_id/check_ins_health_export' do
     it 'returns CSV attachment' do
       get organization_check_ins_health_export_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.content_type).to include('text/csv')
+      expect(response.headers['Content-Disposition']).to include('attachment')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/check_ins_health_employee_summary_export' do
+    it 'returns CSV attachment' do
+      get organization_check_ins_health_employee_summary_export_path(company)
       expect(response).to have_http_status(:success)
       expect(response.content_type).to include('text/csv')
       expect(response.headers['Content-Disposition']).to include('attachment')

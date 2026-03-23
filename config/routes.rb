@@ -140,6 +140,7 @@ Rails.application.routes.draw do
     get :check_ins_health, to: 'organizations/check_ins_health#index'
     get :check_ins_health_by_manager, to: 'organizations/check_ins_health#by_manager'
     get :check_ins_health_export, to: 'organizations/check_ins_health#export'
+    get :check_ins_health_employee_summary_export, to: 'organizations/check_ins_health#export_employee_summary'
 
     # Employment management wizard
     resources :employment_management, only: [:index, :new, :create], controller: 'organizations/employment_management' do

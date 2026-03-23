@@ -76,6 +76,9 @@
     = link_to organization_check_ins_health_export_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
       %i.bi.bi-download.me-2
       Download check-ins (CSV)
+    = link_to organization_check_ins_health_employee_summary_export_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
+      %i.bi.bi-download.me-2
+      Download employee check-in summary CSV
     - if can_view_check_ins_health_by_manager?
       = link_to organization_check_ins_health_by_manager_path(@organization), class: 'btn btn-outline-primary' do
         %i.bi.bi-people.me-2

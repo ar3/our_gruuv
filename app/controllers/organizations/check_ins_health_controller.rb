@@ -48,6 +48,18 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
               disposition: 'attachment'
   end
 
+  def export_employee_summary
+    authorize @organization, :check_ins_health?
+    apply_filter_default_if_needed
+    active_teammates = filtered_teammates_for_check_ins_health
+    csv_content = CheckInsHealthEmployeeSummaryCsvBuilder.new(@organization, active_teammates).call
+    filename = "employee_check_in_summary_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
+    send_data csv_content,
+              filename: filename,
+              type: 'text/csv',
+              disposition: 'attachment'
+  end
+
   def by_manager
     authorize @organization, :check_ins_health?
     unless can_view_check_ins_health_by_manager?
