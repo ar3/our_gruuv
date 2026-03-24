@@ -33,7 +33,7 @@
           = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
             %tr{data: {check_in_id: check_in.id}}
               %td
-                - latest_finalized = AssignmentCheckIn.latest_finalized_for(check_in.teammate, check_in.assignment)
+                - latest_finalized = check_in.instance_variable_get(:@latest_finalized_check_in) || AssignmentCheckIn.latest_finalized_for(check_in.teammate, check_in.assignment)
                 = form.submit check_in.assignment.title,
                               class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
                               name: "save_and_view_assignment_#{check_in.assignment.id}"

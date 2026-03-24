@@ -63,7 +63,7 @@
                     %small.text-muted= check_in.check_in_started_on.strftime('%b %d, %Y')
                   %td
                     = link_to "Review",
-                              organization_company_teammate_check_ins_path(current_organization, check_in.company_teammate),
+                              get_shit_done_check_in_review_path(current_organization, check_in),
                               class: "btn btn-primary btn-sm"
       - else
         %p.text-muted.mb-0 No check-ins awaiting your input.

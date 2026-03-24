@@ -240,6 +240,20 @@ module CheckInHelper
   def aspiration_check_in_waiting_for_name(check_in, teammate)
     single_item_check_in_waiting_for_name(check_in, teammate)
   end
+
+  # Get Shit Done: link to the 1-by-1 check-in page for this record (assignment / aspiration / position).
+  def get_shit_done_check_in_review_path(organization, check_in)
+    case check_in
+    when AssignmentCheckIn
+      organization_teammate_assignment_path(organization, check_in.company_teammate, check_in.assignment)
+    when AspirationCheckIn
+      organization_teammate_aspiration_path(organization, check_in.company_teammate, check_in.aspiration)
+    when PositionCheckIn
+      position_check_in_organization_teammate_path(organization, check_in.company_teammate)
+    else
+      organization_company_teammate_check_ins_path(organization, check_in.company_teammate)
+    end
+  end
 end
 
 

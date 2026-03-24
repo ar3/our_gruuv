@@ -187,6 +187,10 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('GSD Test Assignment')
         expect(response.body).to include('Complete as Employee')
+        assignment_path = Rails.application.routes.url_helpers.organization_teammate_assignment_path(
+          company, employee_teammate, assignment
+        )
+        expect(response.body).to include(assignment_path)
       end
 
       it 'shows check-ins for direct reports where employee completed but manager has not (as manager)' do
@@ -202,6 +206,10 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('GSD Test Assignment')
         expect(response.body).to include('Complete as Manager')
+        assignment_path = Rails.application.routes.url_helpers.organization_teammate_assignment_path(
+          company, employee_teammate, assignment
+        )
+        expect(response.body).to include(assignment_path)
       end
 
       it 'does not show check-ins where neither side is complete' do
@@ -241,6 +249,10 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('GSD Test Aspiration')
         expect(response.body).to include('Aspirational Value')
+        aspiration_path = Rails.application.routes.url_helpers.organization_teammate_aspiration_path(
+          company, employee_teammate, aspiration
+        )
+        expect(response.body).to include(aspiration_path)
       end
 
       it 'shows position check-ins awaiting employee input' do
@@ -256,6 +268,10 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Position')
         expect(response.body).to include('Complete as Employee')
+        position_check_in_path = Rails.application.routes.url_helpers.position_check_in_organization_teammate_path(
+          company, employee_teammate
+        )
+        expect(response.body).to include(position_check_in_path)
       end
 
       it 'lists check-ins awaiting input as a hidden category when empty' do

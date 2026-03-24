@@ -271,4 +271,31 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(helper.single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, :manager)).to eq(false)
     end
   end
+
+  describe '#get_shit_done_check_in_review_path' do
+    let(:organization) { create(:organization) }
+    let(:person) { create(:person) }
+    let(:teammate) { create(:company_teammate, person: person, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization) }
+    let(:aspiration) { create(:aspiration, company: organization) }
+    let(:employment_tenure) { create(:employment_tenure, company_teammate: teammate, company: organization) }
+
+    it 'returns the 1-by-1 assignment check-in path for AssignmentCheckIn' do
+      check_in = build(:assignment_check_in, teammate: teammate, assignment: assignment)
+      expected = helper.organization_teammate_assignment_path(organization, teammate, assignment)
+      expect(helper.get_shit_done_check_in_review_path(organization, check_in)).to eq(expected)
+    end
+
+    it 'returns the 1-by-1 aspiration check-in path for AspirationCheckIn' do
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration)
+      expected = helper.organization_teammate_aspiration_path(organization, teammate, aspiration)
+      expect(helper.get_shit_done_check_in_review_path(organization, check_in)).to eq(expected)
+    end
+
+    it 'returns the position check-in path for PositionCheckIn' do
+      check_in = build(:position_check_in, teammate: teammate, employment_tenure: employment_tenure)
+      expected = helper.position_check_in_organization_teammate_path(organization, teammate)
+      expect(helper.get_shit_done_check_in_review_path(organization, check_in)).to eq(expected)
+    end
+  end
 end

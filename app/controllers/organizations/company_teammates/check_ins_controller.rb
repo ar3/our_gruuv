@@ -351,6 +351,19 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     check_ins.each do |ci|
       ci.instance_variable_set(:@assignment_tenure, tenures_by_assignment[ci.assignment_id])
     end
+
+    # Batch load the latest finalized check-in per assignment so rendering the assignment
+    # table does not issue one query per row.
+    latest_finalized_by_assignment = AssignmentCheckIn
+      .where(company_teammate: @teammate, assignment_id: assignment_ids)
+      .closed
+      .includes(finalized_by_teammate: :person)
+      .order(assignment_id: :asc, official_check_in_completed_at: :desc)
+      .group_by(&:assignment_id)
+      .transform_values(&:first)
+    check_ins.each do |ci|
+      ci.instance_variable_set(:@latest_finalized_check_in, latest_finalized_by_assignment[ci.assignment_id])
+    end
   end
 
   def update_assignment_check_ins(check_ins_params = params)
