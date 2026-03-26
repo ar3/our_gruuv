@@ -190,35 +190,48 @@
                       %td
                         - if assignment.position_assignments.any?
                           - position_assignments_by_title = assignment.position_assignments.group_by { |pa| pa.position.title }
-                          - position_assignments_by_title.each_with_index do |(title, position_assignments), index|
-                            - if position_assignments.count > 1
-                              - collapse_id = "assignment_#{assignment.id}_title_#{title.id}"
-                              %small
-                                %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
-                                  %span.not-collapsed
-                                    %i.bi.bi-chevron-up.me-1
-                                  %span.collapsed
-                                    %i.bi.bi-chevron-down.me-1
-                                  = title.external_title
-                                .collapse{id: collapse_id}
-                                  - position_assignments.each do |position_assignment|
-                                    - position = position_assignment.position
-                                    %small.d-block.ms-3.mt-1
-                                      %i.bi.bi-arrow-right.me-1
-                                      = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
-                                        = position.position_level.level
-                                      - if position_assignment.energy_percentage_suffix.present?
-                                        = " #{position_assignment.energy_percentage_suffix}"
-                            - else
-                              - position_assignment = position_assignments.first
-                              - position = position_assignment.position
-                              %small
-                                = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
-                                  = position.display_name
-                                - if position_assignment.energy_percentage_suffix.present?
-                                  = " #{position_assignment.energy_percentage_suffix}"
-                            - unless index == position_assignments_by_title.size - 1
-                              %br
+                          - titles_count = position_assignments_by_title.size
+                          - positions_count = assignment.position_assignments.size
+                          %details.assignments-index-positions-details
+                            %summary.small
+                              %span.assignments-index-positions-summary-collapsed
+                                #{titles_count} #{titles_count == 1 ? 'title' : 'titles'}, #{positions_count} #{positions_count == 1 ? 'position' : 'positions'}
+                                %span.text-primary.ms-1
+                                  Show details
+                                  %i.bi.bi-chevron-down.ms-1
+                              %span.assignments-index-positions-summary-expanded.text-primary
+                                Show less
+                                %i.bi.bi-chevron-up.ms-1
+                            .pt-1
+                              - position_assignments_by_title.each_with_index do |(title, position_assignments), index|
+                                - if position_assignments.count > 1
+                                  - collapse_id = "assignment_#{assignment.id}_title_#{title.id}"
+                                  %small
+                                    %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
+                                      %span.not-collapsed
+                                        %i.bi.bi-chevron-up.me-1
+                                      %span.collapsed
+                                        %i.bi.bi-chevron-down.me-1
+                                      = title.external_title
+                                    .collapse{id: collapse_id}
+                                      - position_assignments.each do |position_assignment|
+                                        - position = position_assignment.position
+                                        %small.d-block.ms-3.mt-1
+                                          %i.bi.bi-arrow-right.me-1
+                                          = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
+                                            = position.position_level.level
+                                          - if position_assignment.energy_percentage_suffix.present?
+                                            = " #{position_assignment.energy_percentage_suffix}"
+                                - else
+                                  - position_assignment = position_assignments.first
+                                  - position = position_assignment.position
+                                  %small
+                                    = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
+                                      = position.display_name
+                                    - if position_assignment.energy_percentage_suffix.present?
+                                      = " #{position_assignment.energy_percentage_suffix}"
+                                - unless index == position_assignments_by_title.size - 1
+                                  %br
                         - else
                           %span.text-muted
                             %i.bi.bi-dash.me-1

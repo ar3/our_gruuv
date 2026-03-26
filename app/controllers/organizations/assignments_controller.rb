@@ -18,7 +18,11 @@ class Organizations::AssignmentsController < ApplicationController
     )
     
     # Eager-load associations used by index view to avoid N+1 (abilities / assignment_abilities)
-    @assignments = query.call.includes(:department, assignment_abilities: :ability)
+    @assignments = query.call.includes(
+      :department,
+      assignment_abilities: :ability,
+      position_assignments: { position: [:title, :position_level] }
+    )
 
     # Group assignments by department for section headers (nil = "No Department")
     assignments_array = @assignments.to_a

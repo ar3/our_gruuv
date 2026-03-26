@@ -1007,3 +1007,23 @@ body:has(.vertical-nav.open) .floating-toggle {
 .check-in-health-neon-green {
   background-color: #00e676 !important; // Bright neon/lime green (Material green A400)
 }
+
+// Assignments index: positions column uses <details> for expand/collapse
+.assignments-index-positions-details {
+  > summary {
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+
+  &[open] > summary .assignments-index-positions-summary-collapsed {
+    display: none !important;
+  }
+
+  &:not([open]) > summary .assignments-index-positions-summary-expanded {
+    display: none !important;
+  }
+}

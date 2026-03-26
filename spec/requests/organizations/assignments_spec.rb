@@ -53,6 +53,49 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('Assignments')
       end
     end
+
+    context 'by-department spotlight and positions column on index' do
+      before do
+        person_teammate
+        sign_in_as_teammate_for_request(person, organization)
+      end
+
+      let!(:spotlight_department) { create(:department, company: organization, name: 'Engineering Spotlight') }
+      let!(:department_linked_assignment) { create(:assignment, company: organization, department: spotlight_department) }
+
+      it 'links each department name in the by-department spotlight to the department show page in a new tab' do
+        get organization_assignments_path(organization)
+        expect(response).to have_http_status(:success)
+
+        doc = Nokogiri::HTML(response.body)
+        href = organization_department_path(organization, spotlight_department)
+        link = doc.at_css(%(a[href="#{href}"]))
+        expect(link).to be_present
+        expect(link['target']).to eq('_blank')
+        expect(link['rel']).to be_present
+        expect(link['rel'].split).to include('noopener', 'noreferrer')
+        expect(link.text).to include('Engineering Spotlight')
+      end
+
+      it 'shows a positions summary with title and position counts, show details, and show less when the assignment has position assignments' do
+        position_major_level = create(:position_major_level)
+        pl1 = create(:position_level, position_major_level: position_major_level, level: '1.0')
+        pl2 = create(:position_level, position_major_level: position_major_level, level: '2.0')
+        shared_title = create(:title, company: organization, position_major_level: position_major_level)
+        pos_one = create(:position, title: shared_title, position_level: pl1)
+        pos_two = create(:position, title: shared_title, position_level: pl2)
+        assign_with_positions = create(:assignment, company: organization)
+        create(:position_assignment, position: pos_one, assignment: assign_with_positions)
+        create(:position_assignment, position: pos_two, assignment: assign_with_positions)
+
+        get organization_assignments_path(organization)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('1 title, 2 positions')
+        expect(response.body).to include('Show details')
+        expect(response.body).to include('Show less')
+        expect(response.body).to include('assignments-index-positions-details')
+      end
+    end
   end
 
   describe 'GET /organizations/:organization_id/assignments/:id' do
