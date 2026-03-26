@@ -1,15 +1,19 @@
 class Observations::PostNotificationJob < ApplicationJob
   queue_as :default
 
-  def perform(observation_id, notify_teammate_ids = [], kudos_channel_organization_id = nil)
-    Rails.logger.info "🔍🔍🔍🔍🔍 PostNotificationJob: perform: observation_id: #{observation_id}, notify_teammate_ids: #{notify_teammate_ids}, kudos_channel_organization_id: #{kudos_channel_organization_id}"
+  def perform(observation_id, notify_teammate_ids = [], kudos_channel_organization_id = nil, existing_dm_main_notification_id: nil)
+    Rails.logger.info "🔍🔍🔍🔍🔍 PostNotificationJob: perform: observation_id: #{observation_id}, notify_teammate_ids: #{notify_teammate_ids}, kudos_channel_organization_id: #{kudos_channel_organization_id}, existing_dm_main_notification_id: #{existing_dm_main_notification_id}"
     observation = Observation.find(observation_id)
-    
+
+    if existing_dm_main_notification_id.present?
+      return update_sent_dm_notification(observation, existing_dm_main_notification_id)
+    end
+
     # Send group DM to selected teammates
     if notify_teammate_ids.present?
       send_group_dm(observation, notify_teammate_ids)
     end
-    
+
     # Post to kudos channel if requested
     if kudos_channel_organization_id.present?
       post_to_channel(observation, kudos_channel_organization_id)
@@ -134,6 +138,103 @@ class Observations::PostNotificationJob < ApplicationJob
     { success: false, error: e.message }
   end
 
+  def update_sent_dm_notification(observation, existing_main_id)
+    existing_main = observation.notifications.find_by(id: existing_main_id)
+    return { success: false, error: 'DM notification not found' } unless existing_main
+    return { success: false, error: 'Invalid notification type' } unless existing_main.notification_type == 'observation_dm'
+    return { success: false, error: 'Not a root DM message' } if existing_main.original_message_id.present?
+    return { success: false, error: 'DM was not sent successfully' } unless existing_main.status == 'sent_successfully'
+    if existing_main.metadata['is_thread_reply'].to_s == 'true'
+      return { success: false, error: 'Not a main DM message' }
+    end
+
+    channel_id = existing_main.metadata['channel']
+    return { success: false, error: 'Missing channel' } unless channel_id.present?
+
+    teammate_ids = Array(existing_main.metadata['teammate_ids']).map(&:to_i).reject(&:zero?)
+    is_group_dm = [true, 'true'].include?(existing_main.metadata['is_group_dm'])
+
+    main_blocks = build_channel_main_message(observation, observation.company)
+    thread_blocks = build_channel_thread_reply(observation, observation.company)
+
+    observer_teammate = observation.company.teammates.includes(:teammate_identities).find_by(person: observation.observer)
+    observer_slack_identity = observer_teammate&.teammate_identities&.find { |ti| ti.provider == 'slack' }
+    observer_casual_name = observation.observer.casual_name
+    username_override = "#{observer_casual_name} via OG"
+
+    icon_url = if observer_slack_identity.present? && observer_slack_identity.profile_image_url.present?
+      observer_slack_identity.profile_image_url
+    else
+      "#{Rails.application.routes.url_helpers.root_url.chomp('/')}/favicon-32x32.png"
+    end
+
+    main_notification = observation.notifications.create!(
+      notification_type: 'observation_dm',
+      original_message: existing_main,
+      status: 'preparing_to_send',
+      metadata: {
+        channel: channel_id,
+        is_group_dm: is_group_dm,
+        teammate_ids: teammate_ids,
+        username: username_override,
+        icon_url: icon_url
+      },
+      rich_message: main_blocks,
+      fallback_text: build_channel_fallback_text(observation, observation.company)
+    )
+
+    result = SlackService.new(observation.company).update_message(main_notification.id)
+
+    thread_notification = observation.notifications
+                                      .where(notification_type: 'observation_dm')
+                                      .where("metadata->>'is_thread_reply' = 'true'")
+                                      .where(main_thread: existing_main)
+                                      .successful
+                                      .first
+
+    if thread_notification.present? && existing_main.message_id.present?
+      thread_update = observation.notifications.create!(
+        notification_type: 'observation_dm',
+        original_message: thread_notification,
+        main_thread: existing_main,
+        status: 'preparing_to_send',
+        metadata: {
+          channel: channel_id,
+          is_group_dm: is_group_dm,
+          teammate_ids: teammate_ids,
+          is_thread_reply: true,
+          username: username_override,
+          icon_url: icon_url
+        },
+        rich_message: thread_blocks,
+        fallback_text: build_thread_fallback_text(observation, observation.company)
+      )
+      SlackService.new(observation.company).update_message(thread_update.id)
+    elsif existing_main.message_id.present?
+      thread_new = observation.notifications.create!(
+        notification_type: 'observation_dm',
+        main_thread: existing_main,
+        status: 'preparing_to_send',
+        metadata: {
+          channel: channel_id,
+          is_group_dm: is_group_dm,
+          teammate_ids: teammate_ids,
+          is_thread_reply: true,
+          username: username_override,
+          icon_url: icon_url
+        },
+        rich_message: thread_blocks,
+        fallback_text: build_thread_fallback_text(observation, observation.company)
+      )
+      SlackService.new(observation.company).post_message(thread_new.id)
+    end
+
+    result
+  rescue => e
+    Rails.logger.error "Failed to update observation DM: #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
+    { success: false, error: e.message }
+  end
 
   def post_to_channel(observation, organization_id)
     return unless observation.can_post_to_slack_channel? && observation.published?
@@ -149,6 +250,7 @@ class Observations::PostNotificationJob < ApplicationJob
                                         .where(notification_type: 'observation_channel')
                                         .where("metadata->>'is_main_message' = 'true'")
                                         .where("metadata->>'organization_id' = ?", organization_id.to_s)
+                                        .where(original_message_id: nil)
                                         .successful
                                         .first
     

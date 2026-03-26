@@ -74,7 +74,7 @@ class Observation < ApplicationRecord
   scope :not_soft_deleted, -> { where(deleted_at: nil) }
   
   before_validation :set_observed_at_default
-  after_update :update_channel_notifications_if_needed
+  after_update :update_slack_notifications_if_needed
   
   def permalink_id
     base_id = "#{observed_at.strftime('%Y-%m-%d')}-#{id}"
@@ -184,29 +184,46 @@ class Observation < ApplicationRecord
   end
   
 
-  def update_channel_notifications_if_needed
-    # Only update if observation is still public (company or world) and published
-    return unless (privacy_level == 'public_to_company' || privacy_level == 'public_to_world') && published?
-    
-    # Check if relevant attributes changed (not just metadata like updated_at)
-    relevant_changes = saved_change_to_story? || 
-                       saved_change_to_primary_feeling? || 
+  def update_slack_notifications_if_needed
+    return unless published?
+
+    relevant_changes = saved_change_to_story? ||
+                       saved_change_to_primary_feeling? ||
                        saved_change_to_secondary_feeling? ||
                        saved_change_to_story_extras?
-    
-    if relevant_changes
-      # Find all organizations that have channel notifications for this observation
-      channel_notifications = notifications
-                                .where(notification_type: 'observation_channel')
-                                .where("metadata->>'is_main_message' = 'true'")
-                                .successful
-      
-      channel_notifications.each do |notification|
+
+    return unless relevant_changes
+
+    # Root channel posts (one Slack message per org); re-post uses update path in the job
+    if can_post_to_slack_channel?
+      channel_roots = notifications
+                        .where(notification_type: 'observation_channel')
+                        .where("metadata->>'is_main_message' = 'true'")
+                        .where(original_message_id: nil)
+                        .successful
+
+      channel_roots.each do |notification|
         organization_id = notification.metadata['organization_id']
-        if organization_id.present?
-          Observations::PostNotificationJob.perform_and_get_result(id, [], organization_id)
-        end
+        next if organization_id.blank?
+
+        Observations::PostNotificationJob.perform_and_get_result(id, [], organization_id)
       end
+    end
+
+    # Private / any privacy: DM threads that were already sent
+    dm_roots = notifications
+                 .where(notification_type: 'observation_dm')
+                 .where("COALESCE(metadata->>'is_thread_reply', 'false') != 'true'")
+                 .where(original_message_id: nil)
+                 .successful
+
+    dm_roots.each do |notification|
+      Observations::PostNotificationJob.perform_and_get_result(
+        id,
+        [],
+        nil,
+        existing_dm_main_notification_id: notification.id
+      )
     end
   end
   

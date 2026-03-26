@@ -488,6 +488,96 @@ RSpec.describe Observation, type: :model do
         expect(observation.observed_at).to be_present
       end
     end
+
+    describe 'after_update slack notification refresh' do
+      let(:published_observation) do
+        save_observation_with_observees(
+          build(:observation,
+                observer: observer,
+                company: company,
+                story: 'Original story',
+                primary_feeling: 'happy',
+                privacy_level: :public_to_company,
+                published_at: Time.current)
+        )
+      end
+
+      it 'asks PostNotificationJob to refresh each root channel post when story changes' do
+        create(:notification,
+               notifiable: published_observation,
+               notification_type: 'observation_channel',
+               status: 'sent_successfully',
+               message_id: '111.222',
+               metadata: {
+                 'channel' => 'C111',
+                 'organization_id' => company.id.to_s,
+                 'is_main_message' => 'true'
+               })
+
+        expect(Observations::PostNotificationJob).to receive(:perform_and_get_result).with(
+          published_observation.id,
+          [],
+          company.id.to_s
+        )
+
+        published_observation.update!(story: 'Edited public story')
+      end
+
+      it 'asks PostNotificationJob to refresh each root DM when story changes' do
+        published_observation.update!(privacy_level: :observed_only, published_at: Time.current)
+
+        dm_root = create(:notification,
+                         notifiable: published_observation,
+                         notification_type: 'observation_dm',
+                         status: 'sent_successfully',
+                         message_id: '333.444',
+                         metadata: {
+                           'channel' => 'D999',
+                           'teammate_ids' => [teammate1.id],
+                           'is_group_dm' => false
+                         })
+
+        expect(Observations::PostNotificationJob).to receive(:perform_and_get_result).with(
+          published_observation.id,
+          [],
+          nil,
+          existing_dm_main_notification_id: dm_root.id
+        )
+
+        published_observation.update!(story: 'Edited private story')
+      end
+
+      it 'does not refresh when the observation is still a draft' do
+        draft = save_observation_with_observees(
+          build(:observation,
+                observer: observer,
+                company: company,
+                story: 'Draft',
+                published_at: nil)
+        )
+        create(:notification,
+               notifiable: draft,
+               notification_type: 'observation_dm',
+               status: 'sent_successfully',
+               message_id: '555.666',
+               metadata: { 'channel' => 'D888', 'teammate_ids' => [teammate1.id] })
+
+        allow(Observations::PostNotificationJob).to receive(:perform_and_get_result)
+
+        draft.update!(story: 'Still draft')
+
+        expect(Observations::PostNotificationJob).not_to have_received(:perform_and_get_result)
+      end
+
+      it 'does not refresh when no content fields change' do
+        published_observation
+        allow(Observations::PostNotificationJob).to receive(:perform_and_get_result)
+
+        published_observation.touch
+
+        expect(Observations::PostNotificationJob).not_to have_received(:perform_and_get_result)
+      end
+    end
   end
 
   describe 'scopes' do

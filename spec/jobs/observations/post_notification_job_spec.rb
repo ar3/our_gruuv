@@ -145,6 +145,54 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
       end
     end
 
+    context 'when updating an existing sent DM' do
+      let(:notify_teammate_ids) { [observee_teammate.id.to_s] }
+
+      before do
+        allow(slack_service).to receive(:update_message) do |notification_id|
+          notification = Notification.find(notification_id)
+          orig = notification.original_message
+          ts = orig&.message_id || '1234567890.123456'
+          notification.update!(status: 'sent_successfully', message_id: ts)
+          { success: true, message_id: ts }
+        end
+      end
+
+      it 'calls update_message for the main message and thread reply' do
+        job = Observations::PostNotificationJob.new
+        job.perform(observation.id, notify_teammate_ids)
+
+        main_root = observation.reload.notifications
+                                .where(notification_type: 'observation_dm', original_message_id: nil)
+                                .where("COALESCE(metadata->>'is_thread_reply', 'false') != 'true'")
+                                .first!
+        observation.update!(story: 'Revised DM story body for update path')
+
+        update_count = 0
+        allow(slack_service).to receive(:update_message) do |notification_id|
+          update_count += 1
+          notification = Notification.find(notification_id)
+          orig = notification.original_message
+          ts = orig&.message_id || '1234567890.123456'
+          notification.update!(status: 'sent_successfully', message_id: ts)
+          { success: true, message_id: ts }
+        end
+
+        job.perform(observation.id, [], nil, existing_dm_main_notification_id: main_root.id)
+        expect(update_count).to eq(2)
+
+        edit_main = observation.notifications
+                                 .where(original_message: main_root)
+                                 .where("COALESCE(metadata->>'is_thread_reply', 'false') != 'true'")
+                                 .order(:id)
+                                 .last!
+        rich = edit_main.rich_message.is_a?(String) ? JSON.parse(edit_main.rich_message) : edit_main.rich_message
+        story_text = rich.find { |b| b['type'] == 'section' && b.dig('text', 'text')&.include?('Revised DM story') }
+                            &.dig('text', 'text')
+        expect(story_text).to include('Revised DM story body for update path')
+      end
+    end
+
     context 'when sending to channels' do
       let(:notify_teammate_ids) { [] }
       let(:kudos_channel) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C999999') }
