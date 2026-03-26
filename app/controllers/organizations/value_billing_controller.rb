@@ -50,7 +50,7 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
       .merge(Observation.not_soft_deleted.published)
       .where(observations: { published_at: chart_range })
       .group(Arel.sql("date_trunc('week', observations.published_at)::date"))
-      .count
+      .count(:id)
   end
 
   def weekly_completed_check_in_counts(teammate_ids_scope, chart_range)

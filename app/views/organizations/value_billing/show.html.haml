@@ -59,7 +59,7 @@
   (function() {
     var chartData = #{@value_billing_chart_data.to_json};
 
-    function renderChart(containerId, title, data, yAxisTitle, asCurrency) {
+    function renderChart(containerId, title, data, yAxisTitle, asCurrency, unitValue) {
       if (typeof Highcharts === 'undefined') return;
       var container = document.getElementById(containerId);
       if (!container) return;
@@ -81,7 +81,8 @@
             if (asCurrency) {
               return '<span style="color:' + this.color + '">\u25CF</span> ' + this.series.name + ': <b>$' + this.y.toFixed(2) + '</b><br/>';
             }
-            return '<span style="color:' + this.color + '">\u25CF</span> ' + this.series.name + ': <b>' + this.y + '</b><br/>';
+            var valueAmount = (this.y * (unitValue || 0)).toFixed(2);
+            return '<span style="color:' + this.color + '">\u25CF</span> ' + this.series.name + ': <b>' + this.y + '</b> (<b>$' + valueAmount + '</b>)<br/>';
           }
         },
         series: [{ name: title, data: data }]
@@ -94,35 +95,40 @@
         'Total weekly value attained',
         chartData.total_value,
         'Value in dollars',
-        true
+        true,
+        0
       );
       renderChart(
         'value-billing-milestones-chart',
         'Milestones attained',
         chartData.milestones,
         'Count',
-        false
+        false,
+        1.0
       );
       renderChart(
         'value-billing-observees-chart',
         'Observees in published observations',
         chartData.observees,
         'Count',
-        false
+        false,
+        0.5
       );
       renderChart(
         'value-billing-check-ins-chart',
         'Completed check-ins',
         chartData.completed_check_ins,
         'Count',
-        false
+        false,
+        0.5
       );
       renderChart(
         'value-billing-goal-check-ins-chart',
         'Goal check-ins made',
         chartData.goal_check_ins,
         'Count',
-        false
+        false,
+        0.25
       );
     }
 
