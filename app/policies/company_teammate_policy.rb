@@ -40,6 +40,8 @@ class CompanyTeammatePolicy < ApplicationPolicy
     false
   end
 
+  alias_method :my_growth?, :complete_picture?
+
   def internal?
     # Internal teammate view - allows viewing any teammate record that exists
     # regardless of employment status (not yet active, inactive, or active)

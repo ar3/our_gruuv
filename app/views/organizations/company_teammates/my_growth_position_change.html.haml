@@ -1,0 +1,67 @@
+- content_for :title, "My Growth — #{@teammate.person.casual_name}"
+
+- content_for :header do
+  = render 'organizations/company_teammates/my_growth/header',
+    teammate: @teammate,
+    intent_text: "Clarify readiness for the current role and a selected target role using the same eligibility rules."
+
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+= render 'organizations/company_teammates/my_growth/nav'
+
+.alert.alert-info
+  %p.mb-0
+    There are four ways to grow: new experiences, gaining skills/knowledge/abilities, goal attainment, and position/title changes. This is the last of the four. 
+    %span.fw-bold.fs-5 Position / Title Change.
+    There is nothing like being recognized for exceeding expectations of new Assignments, earning Milestones that you can take with you for the rest of your career, or the sweet feeling of accomplishing your goals — but many want to know how they can earn more responsibility, autonomy, and title-accolades, and OG aims to make that fair and clear!
+
+.card.mb-4
+  .card-header
+    %h5.mb-0 Current Position
+  .card-body
+    .row.g-3.align-items-center
+      .col-lg-5
+        - if @current_employment&.position
+          %h4.mb-1= @current_employment.position.display_name
+          %p.small.text-muted.mb-0 Current role
+        - else
+          %p.text-muted.mb-0 No active employment / position in this organization.
+      .col-lg-7
+        - if @current_position_eligibility
+          .d-flex.align-items-center.gap-3
+            - if @current_position_eligibility[:overall_eligible]
+              %i.bi.bi-check-circle-fill.text-success{class: "fs-1"}
+              %span.fw-semibold.fs-4 Eligible
+            - else
+              %i.bi.bi-tools.text-warning{class: "fs-1"}
+              %span.fw-semibold.fs-4 Not eligible yet
+          = link_to 'Explore full eligibility details', organization_eligibility_requirement_path(organization, @current_employment.position, teammate_id: @teammate.id), class: 'small'
+
+.card.mb-4
+  .card-header
+    %h5.mb-0 Target Position
+  .card-body
+    .row.g-3.align-items-center
+      .col-lg-5
+        - if @positions_by_department.present?
+          = form_with url: update_next_goal_position_organization_company_teammate_path(organization, @teammate), method: :patch, local: true, data: { turbo: false } do
+            = label_tag :next_goal_position_id, 'Select the position you are working toward', class: 'form-label'
+            = select_tag :next_goal_position_id,
+              options_for_select([['— None —', '']]) + positions_grouped_options_for_select(@positions_by_department, @teammate.next_goal_position_id),
+              class: 'form-select',
+              onchange: 'this.form.requestSubmit()'
+        - else
+          %p.text-muted No positions available for your company.
+      .col-lg-7
+        - if @next_goal_position_eligibility
+          .d-flex.align-items-center.gap-3
+            - if @next_goal_position_eligibility[:overall_eligible]
+              %i.bi.bi-check-circle-fill.text-success{class: "fs-1"}
+              %span.fw-semibold.fs-4 Eligible
+            - else
+              %i.bi.bi-tools.text-warning{class: "fs-1"}
+              %span.fw-semibold.fs-4 Not eligible yet
+          = link_to 'Explore full eligibility details', organization_eligibility_requirement_path(organization, @next_goal_position, teammate_id: @teammate.id), class: 'small'
+        - else
+          %p.small.text-muted.mb-0 Choose a target position to see eligibility.

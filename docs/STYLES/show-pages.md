@@ -42,6 +42,22 @@ All show pages should follow this consistent header layout:
   = content_for :go_back_link  # Single back link to index page
 ```
 
+### Header Meta Indicators (New Standard)
+- **Info intent icon**: Add an info icon next to the title that explains page intent on hover via tooltip.
+- **Beta state badge**: For in-progress experiences, add a `Beta` badge with a labs/flask icon (`bi-flask`).
+- **Placement**: Keep both immediately adjacent to the page title in `content_for :header`.
+
+```haml
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0 Page title
+    %span.text-muted{"data-bs-toggle" => "tooltip", "data-bs-title" => "What this page is intended to do"}
+      %i.bi.bi-info-circle
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+```
+
 ### Required Content For Sections
 All show pages MUST use these three content_for sections:
 

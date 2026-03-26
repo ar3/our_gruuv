@@ -38,8 +38,9 @@ class UpdateAbilitiesForDepartmentSeparation < ActiveRecord::Migration[8.0]
     # For abilities that belonged to Companies (not Departments), company_id stays the same
     # No update needed for those
 
-    # Add foreign key for company_id (to organizations table)
-    add_foreign_key :abilities, :organizations, column: :company_id
+    # Column rename preserves the original FK; normalize so exactly one FK exists.
+    remove_foreign_key :abilities, column: :company_id if foreign_key_exists?(:abilities, column: :company_id)
+    add_foreign_key :abilities, :organizations, column: :company_id unless foreign_key_exists?(:abilities, :organizations, column: :company_id)
   end
 
   def down

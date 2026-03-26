@@ -1,0 +1,17 @@
+%ul.nav.nav-pills.mb-4.flex-wrap.gap-1
+  %li.nav-item
+    = link_to my_growth_experiences_organization_company_teammate_path(organization, @teammate),
+      class: "nav-link #{'active' if action_name == 'my_growth_experiences'}" do
+      Grow by experiences
+  %li.nav-item
+    = link_to my_growth_abilities_organization_company_teammate_path(organization, @teammate),
+      class: "nav-link #{'active' if action_name == 'my_growth_abilities'}" do
+      Grow by Abilities
+  %li.nav-item
+    = link_to my_growth_goals_organization_company_teammate_path(organization, @teammate),
+      class: "nav-link #{'active' if action_name == 'my_growth_goals'}" do
+      Grow by Goals
+  %li.nav-item
+    = link_to my_growth_position_change_organization_company_teammate_path(organization, @teammate),
+      class: "nav-link #{'active' if action_name == 'my_growth_position_change'}" do
+      Position / Title Change

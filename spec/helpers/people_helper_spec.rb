@@ -49,6 +49,12 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Active Job View')
     end
 
+    it 'returns My Growth for my_growth_experiences on company_teammates' do
+      allow(helper).to receive(:action_name).and_return('my_growth_experiences')
+      allow(helper).to receive(:controller_name).and_return('company_teammates')
+      expect(helper.people_current_view_name).to eq('My Growth')
+    end
+
     it 'returns Acknowledgement for audit action' do
       allow(helper).to receive(:action_name).and_return('audit')
       allow(helper).to receive(:controller_name).and_return('employees')

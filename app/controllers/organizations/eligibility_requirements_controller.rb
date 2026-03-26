@@ -95,8 +95,8 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     @milestone_table_rows = build_milestone_table_rows
 
     # Milestone Mileage: earned addends (teammate's milestones) and required addends (position + required assignments)
-    @mileage_earned_addends = build_mileage_earned_addends
-    @mileage_required_addends = build_mileage_required_addends
+    @mileage_earned_addends = EligibilityMileageAddends.earned_for(@teammate)
+    @mileage_required_addends = EligibilityMileageAddends.required_for(@position)
 
     # Section (1): Managerial hierarchy for footer (teammate + managers with company_teammate for links)
     @managerial_hierarchy_for_display = build_managerial_hierarchy_for_display
@@ -196,54 +196,6 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
         passed: passed
       }
     end.sort_by { |row| row[:ability].name }
-  end
-
-  # For Milestone Mileage: one row per ability with grouped milestones. Each addend: ability_name, levels (e.g. [1,2,3]), points (cumulative).
-  # Display in view: "<highest level display> <ability name> – Milestone 1, 2, & 3".
-  def build_mileage_earned_addends
-    return { addends: [], total: 0 } unless @teammate
-
-    mileage_service = MilestoneMileageService.new
-    milestones = @teammate.teammate_milestones.includes(:ability).order(:milestone_level, :attained_at)
-    by_ability = milestones.group_by { |m| [m.ability_id, m.ability.name] }
-    addends = by_ability.map do |(_ability_id, ability_name), group|
-      levels = group.map(&:milestone_level).sort.uniq
-      points = group.sum { |m| mileage_service.milestone_points(m.milestone_level) }
-      { ability_name: ability_name, levels: levels, points: points }
-    end.sort_by { |a| a[:ability_name] }
-    { addends: addends, total: mileage_service.total_mileage_for(@teammate) }
-  end
-
-  # For Milestone Mileage: one row per ability with highest required level; points = cumulative (1 through that level).
-  # Display: "<highest level display> <ability name> – Milestone 1, 2, & 3" (out to highest required).
-  def build_mileage_required_addends
-    return { addends: [], total: 0 } unless @position
-
-    mileage_service = MilestoneMileageService.new
-    max_level_by_ability = {} # ability_id => { name:, level: }
-
-    @position.position_abilities.includes(:ability).each do |pa|
-      id = pa.ability_id
-      if max_level_by_ability[id].nil? || pa.milestone_level > max_level_by_ability[id][:level]
-        max_level_by_ability[id] = { name: pa.ability.name, level: pa.milestone_level }
-      end
-    end
-    @position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
-      position_assignment.assignment.assignment_abilities.includes(:ability).each do |aa|
-        id = aa.ability_id
-        if max_level_by_ability[id].nil? || aa.milestone_level > max_level_by_ability[id][:level]
-          max_level_by_ability[id] = { name: aa.ability.name, level: aa.milestone_level }
-        end
-      end
-    end
-
-    addends = max_level_by_ability.values.map do |info|
-      level = info[:level]
-      levels = (1..level).to_a
-      { ability_name: info[:name], levels: levels, points: mileage_service.points_through_milestone(level) }
-    end.sort_by { |a| a[:ability_name] }
-    total = addends.sum { |a| a[:points] }
-    { addends: addends, total: total }
   end
 
   # Returns hash: aspiration_id => [ { month: Date, status: :exceeding|:meeting|:working_to_meet|:none, actual: Boolean }, ... ]

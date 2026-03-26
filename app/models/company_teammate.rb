@@ -3,6 +3,7 @@ class CompanyTeammate < ApplicationRecord
 
   belongs_to :person
   belongs_to :organization
+  belongs_to :next_goal_position, class_name: 'Position', optional: true
 
   # Reverse associations
   has_many :teammate_milestones, foreign_key: 'teammate_id', dependent: :nullify
@@ -34,6 +35,7 @@ class CompanyTeammate < ApplicationRecord
   validates :first_employed_at, presence: true, if: :employed?
   validates :last_terminated_at, comparison: { greater_than: :first_employed_at }, allow_nil: true
   validate :company_level_permissions
+  validate :next_goal_position_belongs_to_same_company, if: -> { next_goal_position_id.present? }
 
   # Scopes
   scope :for_organization_hierarchy, ->(org) {
@@ -472,5 +474,12 @@ class CompanyTeammate < ApplicationRecord
 
   def company_level_permissions
     # Company teammates can have any combination of permissions
+  end
+
+  def next_goal_position_belongs_to_same_company
+    company = organization.root_company || organization
+    return if next_goal_position && Position.for_company(company).where(id: next_goal_position_id).exists?
+
+    errors.add(:next_goal_position, 'must be a position in your company')
   end
 end

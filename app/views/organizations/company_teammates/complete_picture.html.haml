@@ -100,16 +100,10 @@
                       %small.text-muted= "for #{distance_of_time_in_words(tenure.started_at, Date.current)}"
                   
                   / Last finalized check-in: official rating + personal alignment (+ popover with three sentences)
-                  - latest_finalized = @latest_finalized_assignment_check_ins_by_assignment_id[tenure.assignment_id]
-                  - if latest_finalized && (latest_finalized.official_rating.present? || latest_finalized.employee_personal_alignment.present?)
-                    - popover_html = last_finalized_check_in_popover_content(latest_finalized, @teammate.person.casual_name, :assignment)
-                    - fin_cls = latest_finalized.official_rating == 'exceeding' ? 'bg-success' : latest_finalized.official_rating == 'meeting' ? 'bg-primary' : latest_finalized.official_rating == 'working_to_meet' ? 'bg-warning' : 'bg-secondary'
-                    .me-3.d-inline-flex.align-items-center.flex-wrap.gap-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "bottom", "data-bs-html" => "true", "data-bs-content" => popover_html, tabindex: "0", role: "button", "aria-label" => "Check-in summary for #{tenure.assignment.title}"}
-                      - if latest_finalized.official_rating.present?
-                        %span.badge{class: fin_cls, title: "Finalized rating"}= assignment_rating_display(latest_finalized.official_rating)
-                      - if latest_finalized.employee_personal_alignment.present?
-                        %span.badge.bg-info.text-dark{title: "How they feel about this assignment"}= latest_finalized.employee_personal_alignment.humanize
-                      %small.text-muted.ms-1= "as of #{latest_finalized.official_check_in_completed_at.strftime('%b %d')}"
+                  = render 'organizations/company_teammates/assignment_latest_check_in_badges',
+                    latest_finalized: @latest_finalized_assignment_check_ins_by_assignment_id[tenure.assignment_id],
+                    tenure: tenure,
+                    teammate: @teammate
                 
                 / Expand/Collapse Button
                 %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#assignment-#{tenure.id}", "aria-expanded" => "false", "aria-controls" => "assignment-#{tenure.id}"}

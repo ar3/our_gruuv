@@ -1,0 +1,177 @@
+- chart_title_period = local_assigns.fetch(:chart_title_period)
+- goals_chart_data = local_assigns.fetch(:goals_chart_data)
+- second_chart_data = local_assigns[:second_chart_data] || { categories: [], series: [] }
+- first_chart_dom_id = local_assigns.fetch(:first_chart_dom_id)
+- second_chart_dom_id = local_assigns.fetch(:second_chart_dom_id)
+- second_card_heading = local_assigns[:second_card_heading] || ''
+- second_y_axis_title = local_assigns[:second_y_axis_title] || 'Count'
+- second_highcharts_title = local_assigns[:second_highcharts_title] || ''
+- wrap_class = local_assigns[:wrap_class] || 'container-fluid'
+- second_header_icon = local_assigns[:second_header_icon] || 'bi-bullseye'
+- hide_second_chart = local_assigns[:hide_second_chart] || false
+- goals_for_network_graph = local_assigns[:goals_for_network_graph]
+- goal_links_for_network_graph = local_assigns[:goal_links_for_network_graph]
+- goals_org = local_assigns[:organization]
+-# Bootstrap Icons: pass suffix only (e.g. bi-people) so we output bi bi-people
+
+%div{class: wrap_class}
+  - if goals_for_network_graph.present? || goals_for_network_graph == []
+    .row.mb-4
+      .col-12
+        .card.border-0.shadow-sm
+          .card-header.bg-light
+            %h5.mb-0
+              %i.bi.bi-diagram-3-fill.me-2
+              Goals Network
+          .card-body
+            - if goals_for_network_graph.any?
+              .goals-network-mermaid
+                %pre.mermaid
+                  != goals_mermaid_flowchart_dsl(goals_for_network_graph, goal_links_for_network_graph, organization: goals_org)
+              :javascript
+                (function() {
+                  function initMermaid() {
+                    if (typeof mermaid === 'undefined') {
+                      setTimeout(initMermaid, 100);
+                      return;
+                    }
+                    mermaid.initialize({
+                      startOnLoad: false,
+                      flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+                      securityLevel: 'loose'
+                    });
+                    var container = document.querySelector('.goals-network-mermaid');
+                    if (container && container.querySelector('.mermaid')) {
+                      mermaid.run({ nodes: container.querySelectorAll('.mermaid'), suppressErrors: true });
+                    }
+                  }
+                  if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initMermaid);
+                  } else {
+                    initMermaid();
+                  }
+                })();
+            - else
+              .alert.alert-info.mb-0
+                %h6.mb-2
+                  %i.bi.bi-info-circle.me-2
+                  No goals to display
+                %p.mb-0 There are no active goals or recently completed goals in this scope.
+
+  - if goals_for_network_graph.present? || goals_for_network_graph == []
+    %hr.my-5
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-bullseye.me-2
+            Goals by Week (#{chart_title_period})
+        .card-body
+          %div{id: first_chart_dom_id, style: "height: 400px;"}
+
+  - unless hide_second_chart
+    %hr.my-5
+
+    .row.mb-4
+      .col-12
+        .card.border-0.shadow-sm
+          .card-header.bg-secondary.text-white
+            %h4.mb-0
+              %i.bi{class: "#{second_header_icon} me-2"}
+              = second_card_heading
+          .card-body
+            %div{id: second_chart_dom_id, style: "height: 400px;"}
+
+:javascript
+  (function() {
+    var goalsChartData = #{goals_chart_data.to_json};
+    var secondChartData = #{second_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+    var firstId = #{first_chart_dom_id.to_json};
+    var secondId = #{second_chart_dom_id.to_json};
+    var secondYTitle = #{second_y_axis_title.to_json};
+    var secondChartTitle = #{second_highcharts_title.to_json};
+
+    function initializeGoalsChart() {
+      if (typeof Highcharts === 'undefined') return;
+      if (!document.getElementById(firstId)) return;
+      Highcharts.chart(firstId, {
+        chart: { type: 'column' },
+        title: { text: 'Goals by week (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: goalsChartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of goals' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: goalsChartData.series
+      });
+    }
+
+    function initializeSecondChart() {
+      if (typeof Highcharts === 'undefined') return;
+      if (!document.getElementById(secondId)) return;
+      Highcharts.chart(secondId, {
+        chart: { type: 'column' },
+        title: { text: secondChartTitle },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: secondChartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: secondYTitle },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: secondChartData.series
+      });
+    }
+
+    function initializeCharts() {
+      initializeGoalsChart();
+      if (!#{hide_second_chart.to_json}) initializeSecondChart();
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeCharts;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeCharts();
+    });
+  })();

@@ -113,6 +113,69 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @kudos_return_text = params[:return_text].presence
   end
 
+  def my_growth_experiences
+    authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    @person = @teammate.person
+    @current_organization = organization
+    load_my_growth_employment_context
+    load_my_growth_experiences_rows
+  end
+
+  def my_growth_abilities
+    authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    @person = @teammate.person
+    @current_organization = organization
+    load_my_growth_employment_context
+    @position = @current_employment&.position
+    if @position
+      @eligibility_report = PositionEligibilityService.new.check_eligibility(@teammate, @position)
+      @mileage_earned_addends = EligibilityMileageAddends.earned_for(@teammate)
+      @mileage_required_addends = EligibilityMileageAddends.required_for(@position)
+    end
+  end
+
+  def my_growth_goals
+    authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    @person = @teammate.person
+    @current_organization = organization
+    @timeframe = my_growth_parse_timeframe(params[:timeframe])
+    range = my_growth_date_range_for(@timeframe)
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = my_growth_chart_title_period(@timeframe)
+    goals_scope = GoalsChartSeries.goals_base_scope(company).where(owner: @teammate)
+    @goals_chart_data = GoalsChartSeries.stacked_series(chart_range, goals_scope)
+    graph_goal_ids = goals_scope.active.pluck(:id)
+    @goals_for_network_graph = graph_goal_ids.any? ? Goal.where(id: graph_goal_ids).includes(:owner, :creator).order(:title) : []
+    @goal_links_for_network_graph = graph_goal_ids.any? ? GoalLink.where(parent_id: graph_goal_ids, child_id: graph_goal_ids).includes(:parent, :child) : []
+  end
+
+  def my_growth_position_change
+    authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    @person = @teammate.person
+    @current_organization = organization
+    load_my_growth_employment_context
+    load_my_growth_positions_by_department
+    @next_goal_position = @teammate.next_goal_position
+    if (pos = @current_employment&.position)
+      @current_position_eligibility = PositionEligibilityService.new.check_eligibility(@teammate, pos)
+    end
+    if @next_goal_position
+      @next_goal_position_eligibility = PositionEligibilityService.new.check_eligibility(@teammate, @next_goal_position)
+    end
+  end
+
+  def update_next_goal_position
+    authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    @teammate.next_goal_position_id = params[:next_goal_position_id].presence
+    if @teammate.save
+      redirect_back fallback_location: my_growth_position_change_organization_company_teammate_path(organization, @teammate),
+                    notice: 'Next goal position updated.'
+    else
+      redirect_back fallback_location: my_growth_position_change_organization_company_teammate_path(organization, @teammate),
+                    alert: @teammate.errors.full_messages.to_sentence.presence || 'Could not update next goal position.'
+    end
+  end
+
   def internal
     authorize @teammate, :internal?, policy_class: CompanyTeammatePolicy
     # Internal view - organization-specific data for teammates (active, inactive, or not yet active)
@@ -690,6 +753,130 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   private
+
+  def load_my_growth_employment_context
+    @employment_tenures = @teammate.employment_tenures
+      .includes(:company, :position, :manager_teammate)
+      .where(company: organization)
+      .order(started_at: :desc)
+      .decorate
+    @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
+  end
+
+  def load_my_growth_experiences_rows
+    @my_growth_active_rows = []
+    @my_growth_missing_required_rows = []
+    position = @current_employment&.position
+    active_tenures = @teammate.assignment_tenures.active
+      .joins(:assignment)
+      .where(assignments: { company: organization })
+      .includes(:assignment)
+    sorted_active = active_tenures.sort_by do |t|
+      e = t.anticipated_energy_percentage
+      [e.nil? ? 1 : 0, -(e || 0), t.assignment.title.to_s.downcase]
+    end
+
+    required_by_assignment_id = {}
+    suggested_by_assignment_id = {}
+    if position
+      position.position_assignments.includes(:assignment).each do |pa|
+        if pa.assignment_type == 'required'
+          required_by_assignment_id[pa.assignment_id] = pa
+        elsif pa.assignment_type == 'suggested'
+          suggested_by_assignment_id[pa.assignment_id] = pa
+        end
+      end
+    end
+
+    active_ids = sorted_active.map(&:assignment_id)
+    casual = @teammate.person.casual_name.presence || 'this teammate'
+
+    sorted_active.each do |tenure|
+      aid = tenure.assignment_id
+      is_required = required_by_assignment_id.key?(aid)
+      right_variant = if is_required
+                        :required
+                      elsif suggested_by_assignment_id.key?(aid)
+                        :suggested_pill
+                      else
+                        :unique_pill
+                      end
+      @my_growth_active_rows << {
+        tenure: tenure,
+        assignment: tenure.assignment,
+        right_variant: right_variant,
+        casual_name: casual,
+        position_assignment: required_by_assignment_id[aid] || suggested_by_assignment_id[aid]
+      }
+    end
+
+    assignment_ids = sorted_active.map(&:assignment_id).uniq
+    @latest_finalized_assignment_check_ins_by_assignment_id = {}
+    if assignment_ids.any?
+      AssignmentCheckIn
+        .where(company_teammate: @teammate, assignment_id: assignment_ids)
+        .closed
+        .includes(:assignment, manager_completed_by_teammate: :person, finalized_by_teammate: :person)
+        .order(official_check_in_completed_at: :desc)
+        .each do |check_in|
+          @latest_finalized_assignment_check_ins_by_assignment_id[check_in.assignment_id] ||= check_in
+        end
+    end
+
+    return unless position
+
+    missing = position.required_assignments.reject { |pa| active_ids.include?(pa.assignment_id) }
+    sorted_missing = missing.sort_by do |pa|
+      e = pa.anticipated_energy_percentage
+      [e.nil? ? 1 : 0, -(e || 0), pa.assignment.title.to_s.downcase]
+    end
+    sorted_missing.each do |pa|
+      @my_growth_missing_required_rows << {
+        position_assignment: pa,
+        assignment: pa.assignment,
+        casual_name: casual
+      }
+    end
+  end
+
+  def load_my_growth_positions_by_department
+    co = organization.root_company || organization
+    positions = Position.joins(title: :company)
+      .where(titles: { company_id: co.id })
+      .includes(:title, :position_level)
+      .ordered
+    @positions_by_department = positions.group_by { |pos| pos.title.department || co }
+  end
+
+  def my_growth_parse_timeframe(param)
+    case param.to_s
+    when 'year' then :year
+    when 'all_time' then :all_time
+    else :'90_days'
+    end
+  end
+
+  def my_growth_date_range_for(timeframe)
+    case timeframe
+    when :'90_days'
+      90.days.ago..Time.current
+    when :year
+      1.year.ago..Time.current
+    when :all_time
+      nil
+    else
+      90.days.ago..Time.current
+    end
+  end
+
+  def my_growth_chart_title_period(timeframe)
+    case timeframe
+    when :'90_days' then 'Last 90 Days'
+    when :year then 'Last Year'
+    when :all_time then 'Last 52 Weeks'
+    else 'Last 90 Days'
+    end
+  end
 
   def set_teammate
     @teammate = organization.teammates.find(params[:id])

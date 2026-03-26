@@ -1,0 +1,49 @@
+- teammate = local_assigns.fetch(:teammate)
+- eligibility_report = local_assigns.fetch(:eligibility_report)
+- earned = local_assigns.fetch(:mileage_earned_addends)
+- required = local_assigns.fetch(:mileage_required_addends)
+- section_body_id = local_assigns.fetch(:section_body_id, 'section7Body')
+- mileage_check = eligibility_report[:checks].find { |check| check[:key] == :mileage_requirements }
+.row.mb-4
+  .col-12
+    .card
+      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "##{section_body_id}", role: "button", tabindex: "0", style: "cursor: pointer;" }
+        .d-flex.flex-column
+          %h3.mb-0 (7) You must meet the required Milestone Mileage…
+          - section7_caption = format_eligibility_check_sentence(mileage_check)
+          - if section7_caption.present?
+            .small.text-muted.mt-1= section7_caption
+        .d-flex.align-items-center.small.text-muted
+          %span.expand-detail-label.d-inline-flex.align-items-center
+            Expand for details
+            %i.bi.bi-chevron-down.ms-1
+          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+            Show less detail
+            %i.bi.bi-chevron-up.ms-1
+      .card-body.collapse.py-2{ id: section_body_id }
+        = render "organizations/eligibility_requirements/milestone_mileage_content",
+          teammate: teammate,
+          organization: organization,
+          position: @position,
+          eligibility_report: eligibility_report,
+          mileage_earned_addends: earned,
+          mileage_required_addends: required
+      - if mileage_check.present? && mileage_check[:status] != :not_configured
+        - minimum_miles = mileage_check.dig(:details, :minimum_mileage_points).to_i
+        - mileage_passed = mileage_check[:status] == :passed
+        - mileage_details = mileage_check[:details] || {}
+        - mileage_percentage = mileage_details[:threshold_type] == 'percentage'
+        .card-footer.fw-semibold.small.py-2{class: mileage_passed ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
+          - if mileage_percentage
+            .small.text-muted.mb-1
+              Required: #{mileage_details[:threshold_value]}% more than required milestone total (#{mileage_details[:minimum_required_from_milestones]} points) = #{minimum_miles} points
+          .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+            .me-2
+              Total: #{earned[:total]} Milestone Miles earned vs #{minimum_miles} required
+            .align-middle.h2.fs-2
+              - if mileage_passed
+                %i.bi.bi-check-circle-fill.text-success.fs-2.align-middle
+                %span.ms-1 Meeting requirements
+              - else
+                %i.bi.bi-tools.fs-2.align-middle
+                %span.ms-1 Working to meet requirements

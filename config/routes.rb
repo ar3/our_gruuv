@@ -266,6 +266,11 @@ Rails.application.routes.draw do
         patch :update_assignment_tenure_check_in_bypass
         post :set_default_assignments
         get :kudos_points
+        get 'my_growth/experiences', action: :my_growth_experiences, as: :my_growth_experiences
+        get 'my_growth/abilities', action: :my_growth_abilities, as: :my_growth_abilities
+        get 'my_growth/goals', action: :my_growth_goals, as: :my_growth_goals
+        get 'my_growth/position_change', action: :my_growth_position_change, as: :my_growth_position_change
+        patch :update_next_goal_position
       end
       
       # Unified check-ins page (spreadsheet-style giant form)

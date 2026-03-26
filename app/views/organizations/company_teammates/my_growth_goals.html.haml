@@ -1,0 +1,45 @@
+- content_for :title, "My Growth — #{@teammate.person.casual_name}"
+
+- content_for :head do
+  %script{ src: "https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.12.0/mermaid.min.js", "data-turbo-track": "reload" }
+
+- content_for :header do
+  = render 'organizations/company_teammates/my_growth/header',
+    teammate: @teammate,
+    intent_text: "Visualize goal relationships and weekly momentum for goals this teammate owns."
+
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+= render 'organizations/company_teammates/my_growth/nav'
+
+.alert.alert-info
+  %p.mb-0
+    There are four ways to grow: new experiences, gaining skills/knowledge/abilities, goal attainment, and position/title changes. This is the third of the four. 
+    %span.fw-bold.fs-5 Grow by Goals.
+    Setting goals — personal, professional, dream goals — these are an incredible way to track your progress to where you are wanting to go. Growth accountability!
+
+.mb-4
+  = link_to organization_goals_path(organization, owner_id: "CompanyTeammate_#{@teammate.id}", view: 'hierarchical-collapsible'), class: "btn btn-outline-primary btn-lg" do
+    %i.bi.bi-bullseye.me-2
+    My Goals
+
+.mb-4
+  .btn-group{role: "group"}
+    = link_to "Last 90 days", my_growth_goals_organization_company_teammate_path(organization, @teammate, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Last Year", my_growth_goals_organization_company_teammate_path(organization, @teammate, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "All-Time", my_growth_goals_organization_company_teammate_path(organization, @teammate, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+
+= render 'shared/goals_weekly_charts',
+  chart_title_period: @chart_title_period,
+  goals_for_network_graph: @goals_for_network_graph,
+  goal_links_for_network_graph: @goal_links_for_network_graph,
+  organization: organization,
+  goals_chart_data: @goals_chart_data,
+  first_chart_dom_id: 'my-growth-goals-by-week-chart',
+  second_chart_dom_id: 'my-growth-goals-by-week-chart-hidden',
+  second_card_heading: '',
+  second_y_axis_title: 'Number of goals',
+  second_highcharts_title: '',
+  hide_second_chart: true,
+  wrap_class: 'container-fluid px-0'

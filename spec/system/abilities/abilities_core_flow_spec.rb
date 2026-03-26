@@ -111,6 +111,11 @@ RSpec.describe 'Abilities Core Flow', type: :system do
       expect(page).to have_content('Achieved Milestones')
       expect(page).to have_content('Leadership')
       expect(page).to have_content('Milestone 2')
+
+      # My Growth (same access as complete picture for managers)
+      visit my_growth_experiences_organization_company_teammate_path(company, employee_teammate)
+      expect(page).to have_content('My Growth')
+      expect(page).to have_content('Grow by experiences')
       
       # Verify milestone appears on ability show page
       visit organization_ability_path(company, ability)

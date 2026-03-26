@@ -1,0 +1,11 @@
+- teammate = local_assigns.fetch(:teammate)
+- intent_text = local_assigns.fetch(:intent_text)
+.d-flex.align-items-center.gap-3
+  = teammate_profile_image(teammate, size: 48)
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0= "#{teammate.person.casual_name.strip}'s growth"
+    %span.text-muted{"data-bs-toggle" => "tooltip", "data-bs-title" => intent_text}
+      %i.bi.bi-info-circle
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta

@@ -439,6 +439,13 @@ module NavigationHelper
             path: organization_eligibility_requirements_path(current_organization),
             policy_check: -> { policy(:eligibility_requirement).index? },
             coming_soon: false
+          },
+          {
+            label: 'My Growth',
+            icon: 'bi-flask',
+            path: my_growth_experiences_organization_company_teammate_path(current_organization, current_company_teammate),
+            policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
+            coming_soon: false
           }
         ]
       },

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_09_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1354,6 +1354,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_120000) do
     t.boolean "can_manage_departments_and_teams"
     t.boolean "can_customize_company", default: false
     t.boolean "can_manage_kudos_rewards", default: false, null: false
+    t.bigint "next_goal_position_id"
     t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
     t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
@@ -1363,6 +1364,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_120000) do
     t.index ["first_employed_at", "last_terminated_at"], name: "index_teammates_on_first_employed_at_and_last_terminated_at"
     t.index ["first_employed_at"], name: "index_teammates_on_first_employed_at"
     t.index ["last_terminated_at"], name: "index_teammates_on_last_terminated_at"
+    t.index ["next_goal_position_id"], name: "index_teammates_on_next_goal_position_id"
     t.index ["organization_id"], name: "index_teammates_on_organization_id"
     t.index ["person_id", "organization_id"], name: "index_person_org_access_on_person_and_org", unique: true
     t.index ["person_id"], name: "index_teammates_on_person_id"
@@ -1590,6 +1592,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_120000) do
   add_foreign_key "teammate_milestones", "teammates", column: "published_by_teammate_id"
   add_foreign_key "teammates", "organizations"
   add_foreign_key "teammates", "people"
+  add_foreign_key "teammates", "positions", column: "next_goal_position_id"
   add_foreign_key "teams", "departments"
   add_foreign_key "teams", "organizations", column: "company_id"
   add_foreign_key "third_party_object_associations", "third_party_objects"

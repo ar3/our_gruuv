@@ -33,8 +33,9 @@ class UpdateAspirationsForDepartmentSeparation < ActiveRecord::Migration[8.0]
       WHERE d.migrate_from_organization_id = aspirations.company_id
     SQL
 
-    # Add foreign key for company_id (to organizations table)
-    add_foreign_key :aspirations, :organizations, column: :company_id
+    # Column rename preserves the original FK; normalize so exactly one FK exists.
+    remove_foreign_key :aspirations, column: :company_id if foreign_key_exists?(:aspirations, column: :company_id)
+    add_foreign_key :aspirations, :organizations, column: :company_id unless foreign_key_exists?(:aspirations, :organizations, column: :company_id)
   end
 
   def down

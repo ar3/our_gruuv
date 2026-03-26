@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_06_132801) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -291,6 +291,27 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_06_132801) do
     t.index ["notification_id"], name: "idx_on_notification_id_0b2ce78a91"
     t.index ["organization_id", "hour_marker", "employee_teammate_id", "manager_teammate_id", "action_taker_teammate_id"], name: "idx_check_in_completion_batches_unique_key", unique: true
     t.index ["organization_id"], name: "idx_on_organization_id_8c776f246c"
+  end
+
+  create_table "check_in_health_cache_refresh_schedules", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.datetime "refresh_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["refresh_at"], name: "index_check_in_health_cache_refresh_schedules_on_refresh_at"
+    t.index ["teammate_id"], name: "index_check_in_health_cache_refresh_schedules_on_teammate_id", unique: true
+  end
+
+  create_table "check_in_health_caches", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "refreshed_at"
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_check_in_health_caches_on_organization_id"
+    t.index ["teammate_id", "organization_id"], name: "index_check_in_health_caches_on_teammate_and_organization", unique: true
+    t.index ["teammate_id"], name: "index_check_in_health_caches_on_teammate_id"
   end
 
   create_table "comments", force: :cascade do |t|
@@ -1333,6 +1354,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_06_132801) do
     t.boolean "can_manage_departments_and_teams"
     t.boolean "can_customize_company", default: false
     t.boolean "can_manage_kudos_rewards", default: false, null: false
+    t.bigint "next_goal_position_id"
     t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
     t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
@@ -1342,6 +1364,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_06_132801) do
     t.index ["first_employed_at", "last_terminated_at"], name: "index_teammates_on_first_employed_at_and_last_terminated_at"
     t.index ["first_employed_at"], name: "index_teammates_on_first_employed_at"
     t.index ["last_terminated_at"], name: "index_teammates_on_last_terminated_at"
+    t.index ["next_goal_position_id"], name: "index_teammates_on_next_goal_position_id"
     t.index ["organization_id"], name: "index_teammates_on_organization_id"
     t.index ["person_id", "organization_id"], name: "index_person_org_access_on_person_and_org", unique: true
     t.index ["person_id"], name: "index_teammates_on_person_id"
@@ -1461,6 +1484,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_06_132801) do
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "action_taker_teammate_id"
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "employee_teammate_id"
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "manager_teammate_id"
+  add_foreign_key "check_in_health_cache_refresh_schedules", "teammates"
+  add_foreign_key "check_in_health_caches", "organizations"
+  add_foreign_key "check_in_health_caches", "teammates"
   add_foreign_key "comments", "organizations"
   add_foreign_key "comments", "people", column: "creator_id"
   add_foreign_key "company_label_preferences", "organizations", column: "company_id"
@@ -1566,6 +1592,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_06_132801) do
   add_foreign_key "teammate_milestones", "teammates", column: "published_by_teammate_id"
   add_foreign_key "teammates", "organizations"
   add_foreign_key "teammates", "people"
+  add_foreign_key "teammates", "positions", column: "next_goal_position_id"
   add_foreign_key "teams", "departments"
   add_foreign_key "teams", "organizations", column: "company_id"
   add_foreign_key "third_party_object_associations", "third_party_objects"

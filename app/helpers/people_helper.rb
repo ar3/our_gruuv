@@ -146,6 +146,10 @@ module PeopleHelper
     if controller_name == 'company_teammates' && action_name == 'kudos_points'
       return "#{company_label_plural('kudos_point', 'Kudos Point')} Mode"
     end
+
+    if controller_name == 'company_teammates' && %w[my_growth_experiences my_growth_abilities my_growth_goals my_growth_position_change].include?(action_name)
+      return 'My Growth'
+    end
     
     case action_name.downcase
     when 'show'

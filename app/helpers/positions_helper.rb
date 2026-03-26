@@ -1,4 +1,27 @@
 module PositionsHelper
+  # Same grouping as shared/forms/_position_field (seat management).
+  def positions_grouped_options_for_select(positions_by_department, selected_id)
+    return '' if positions_by_department.blank?
+
+    grouped_options = []
+    organization = positions_by_department.keys.find { |org| org.is_a?(Organization) && !org.is_a?(Department) }
+    departments = positions_by_department.keys.select { |org| org.is_a?(Department) }.sort_by(&:display_name)
+
+    if organization && positions_by_department[organization].any?
+      org_positions = positions_by_department[organization].map { |p| [p.display_name, p.id] }
+      grouped_options << [organization.display_name, org_positions]
+    end
+
+    departments.each do |dept|
+      next unless positions_by_department[dept].any?
+
+      dept_positions = positions_by_department[dept].map { |p| [p.display_name, p.id] }
+      grouped_options << [dept.display_name, dept_positions]
+    end
+
+    grouped_options_for_select(grouped_options, selected_id)
+  end
+
   def milestone_level_display(level)
     case level
     when 1

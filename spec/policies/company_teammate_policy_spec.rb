@@ -4,6 +4,13 @@ require 'ostruct'
 RSpec.describe CompanyTeammatePolicy, type: :policy do
   subject { described_class }
 
+  describe 'my_growth?' do
+    it 'matches complete_picture? for the same record' do
+      policy = described_class.new(pundit_user, person_teammate)
+      expect(policy.my_growth?).to eq(policy.complete_picture?)
+    end
+  end
+
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:other_person) { create(:person) }
