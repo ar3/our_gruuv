@@ -181,6 +181,21 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         end
       end
 
+      it 'assigns an empty latest-finalized check-in hash when none are finalized' do
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
+        expect(assigns(:latest_finalized_assignment_check_ins_by_assignment_id)).to eq({})
+      end
+
+      it 'assigns the latest finalized assignment check-in per assignment' do
+        create(:assignment_check_in, :finalized, teammate: person_teammate, assignment: assignment,
+                                                 official_check_in_completed_at: 3.months.ago)
+        newer = create(:assignment_check_in, :finalized, teammate: person_teammate, assignment: assignment,
+                                                         official_check_in_completed_at: 1.month.ago)
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
+        mapped = assigns(:latest_finalized_assignment_check_ins_by_assignment_id)
+        expect(mapped[assignment.id].id).to eq(newer.id)
+      end
+
       it 'includes associated data to avoid N+1 queries' do
         get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         

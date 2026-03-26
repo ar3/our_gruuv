@@ -1,7 +1,7 @@
-- content_for :title, "Complete Picture - #{@teammate.person.display_name}"
+- content_for :title, "#{@teammate.person.casual_name.strip}'s Day-to-Day (real job description)"
 
 - content_for :header do
-  %h1.mb-0= @teammate.person.display_name
+  %h1.mb-0= "#{@teammate.person.casual_name.strip}'s Day-to-Day (real job description)"
   %small.text-muted Complete Picture View
 
 - content_for :header_action do
@@ -99,14 +99,17 @@
                       %span.badge.bg-info.me-1= "#{tenure.anticipated_energy_percentage}%"
                       %small.text-muted= "for #{distance_of_time_in_words(tenure.started_at, Date.current)}"
                   
-                  / Last Check-in Rating
-                  - latest_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: tenure.assignment).recent.first
-                  - if latest_check_in && (latest_check_in.employee_rating.present? || latest_check_in.manager_rating.present?)
-                    .me-3
-                      - rating = latest_check_in.manager_rating.presence || latest_check_in.employee_rating
-                      - badge_class = rating == 'exceeding' ? 'bg-success' : rating == 'meeting' ? 'bg-primary' : 'bg-warning'
-                      %span.badge{class: badge_class}= rating.humanize
-                      %small.text-muted.ms-1= "as of #{latest_check_in.check_in_started_on.strftime('%b %d')}"
+                  / Last finalized check-in: official rating + personal alignment (+ popover with three sentences)
+                  - latest_finalized = @latest_finalized_assignment_check_ins_by_assignment_id[tenure.assignment_id]
+                  - if latest_finalized && (latest_finalized.official_rating.present? || latest_finalized.employee_personal_alignment.present?)
+                    - popover_html = last_finalized_check_in_popover_content(latest_finalized, @teammate.person.casual_name, :assignment)
+                    - fin_cls = latest_finalized.official_rating == 'exceeding' ? 'bg-success' : latest_finalized.official_rating == 'meeting' ? 'bg-primary' : latest_finalized.official_rating == 'working_to_meet' ? 'bg-warning' : 'bg-secondary'
+                    .me-3.d-inline-flex.align-items-center.flex-wrap.gap-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "bottom", "data-bs-html" => "true", "data-bs-content" => popover_html, tabindex: "0", role: "button", "aria-label" => "Check-in summary for #{tenure.assignment.title}"}
+                      - if latest_finalized.official_rating.present?
+                        %span.badge{class: fin_cls, title: "Finalized rating"}= assignment_rating_display(latest_finalized.official_rating)
+                      - if latest_finalized.employee_personal_alignment.present?
+                        %span.badge.bg-info.text-dark{title: "How they feel about this assignment"}= latest_finalized.employee_personal_alignment.humanize
+                      %small.text-muted.ms-1= "as of #{latest_finalized.official_check_in_completed_at.strftime('%b %d')}"
                 
                 / Expand/Collapse Button
                 %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#assignment-#{tenure.id}", "aria-expanded" => "false", "aria-controls" => "assignment-#{tenure.id}"}
@@ -204,32 +207,64 @@
                                 %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) is within the expected range (#{min_energy}%-#{max_energy}%)
                       
                       / Check-in Information
-                      - latest_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: tenure.assignment).recent.first
+                      - latest_check_in = @latest_finalized_assignment_check_ins_by_assignment_id[tenure.assignment_id] || AssignmentCheckIn.where(company_teammate: @teammate, assignment: tenure.assignment).recent.first
                       - if latest_check_in
+                        - emp_name = @teammate.person.casual_name
+                        - check_in_finalized = latest_check_in.official_check_in_completed_at.present?
+                        - finalizer_name = latest_check_in.finalized_by_teammate&.person&.casual_name.presence || latest_check_in.manager_completed_by_teammate&.person&.casual_name.presence || 'their manager'
+                        - mgr_name = latest_check_in.manager_completed_by_teammate&.person&.casual_name.presence || latest_check_in.finalized_by_teammate&.person&.casual_name.presence || 'their manager'
+                        - off_rating = latest_check_in.official_rating
+                        - off_badge_class = off_rating == 'exceeding' ? 'bg-success' : off_rating == 'meeting' ? 'bg-primary' : off_rating == 'working_to_meet' ? 'bg-warning' : 'bg-secondary'
                         .mb-3
                           %h6.mb-2
                             %i.bi.bi-calendar-check.me-2
                             Latest Check-in
                           %p.mb-1
                             %strong Date:
-                            = latest_check_in.check_in_started_on.strftime('%b %d, %Y')
-                          
-                          - if latest_check_in.actual_energy_percentage.present?
-                            %p.mb-1
-                              %strong Actual Energy:
-                              = "#{latest_check_in.actual_energy_percentage}%"
-                          
-                          - if latest_check_in.employee_rating.present?
-                            %p.mb-1
-                              %strong Employee Rating:
-                              %span.badge{class: latest_check_in.employee_rating == 'exceeding' ? 'bg-success' : latest_check_in.employee_rating == 'meeting' ? 'bg-primary' : 'bg-warning'}
-                                = latest_check_in.employee_rating.humanize
-                          
-                          - if latest_check_in.manager_rating.present?
-                            %p.mb-1
-                              %strong Manager Rating:
-                              %span.badge{class: latest_check_in.manager_rating == 'exceeding' ? 'bg-success' : latest_check_in.manager_rating == 'meeting' ? 'bg-primary' : 'bg-warning'}
-                                = latest_check_in.manager_rating.humanize
+                            - if check_in_finalized
+                              = format_date_in_user_timezone(latest_check_in.official_check_in_completed_at, format: '%b %d, %Y')
+                            - else
+                              = format_date_in_user_timezone(latest_check_in.check_in_started_on, format: '%b %d, %Y')
+                          - if check_in_finalized
+                            - if tenure.anticipated_energy_percentage.present?
+                              %p.mb-2
+                                #{h(emp_name)} and #{h(finalizer_name)} agreed that #{h(emp_name)} will likely spend #{tenure.anticipated_energy_percentage}% of their energy on being
+                                %strong= h(tenure.assignment.title)
+                                \.
+                            - if off_rating.present? && latest_check_in.check_in_started_on.present?
+                              %p.mb-2
+                                = "#{h(emp_name)} and #{h(mgr_name)} agreed that from ".html_safe
+                                %strong= format_date_in_user_timezone(latest_check_in.check_in_started_on, format: '%b %d, %Y')
+                                = " to ".html_safe
+                                %strong= format_date_in_user_timezone(latest_check_in.official_check_in_completed_at, format: '%b %d, %Y')
+                                = ", #{h(emp_name)} was ".html_safe
+                                %span.badge{class: off_badge_class}= assignment_rating_display(off_rating)
+                                = " expectations.".html_safe
+                                - if latest_check_in.employee_personal_alignment.present?
+                                  = " #{h(emp_name)} felt ".html_safe
+                                  %span.badge.bg-info.text-dark= latest_check_in.employee_personal_alignment.humanize
+                                  = " about taking on ".html_safe
+                                  %strong= h(tenure.assignment.title)
+                                  = " in the future.".html_safe
+                          - else
+                            - if latest_check_in.actual_energy_percentage.present?
+                              %p.mb-1
+                                %strong Actual Energy:
+                                = "#{latest_check_in.actual_energy_percentage}%"
+                            - if latest_check_in.employee_personal_alignment.present?
+                              %p.mb-1
+                                %strong How they feel about this assignment:
+                                %span.badge.bg-info.text-dark= latest_check_in.employee_personal_alignment.humanize
+                            - if latest_check_in.manager_rating.present?
+                              %p.mb-1
+                                %strong Manager rating:
+                                %span.badge{class: latest_check_in.manager_rating == 'exceeding' ? 'bg-success' : latest_check_in.manager_rating == 'meeting' ? 'bg-primary' : 'bg-warning'}
+                                  = assignment_rating_display(latest_check_in.manager_rating)
+                            - if latest_check_in.official_rating.present?
+                              %p.mb-1
+                                %strong Finalized rating:
+                                %span.badge{class: latest_check_in.official_rating == 'exceeding' ? 'bg-success' : latest_check_in.official_rating == 'meeting' ? 'bg-primary' : 'bg-warning'}
+                                  = assignment_rating_display(latest_check_in.official_rating)
                       
                       / Statistics
                       .mb-3
@@ -245,13 +280,9 @@
                           = AssignmentCheckIn.where(company_teammate: @teammate, assignment: tenure.assignment).open.count
                       
                       / Actions
-                      = link_to organization_assignment_path(@current_organization, tenure.assignment), class: "btn btn-outline-primary" do
-                        %i.bi.bi-eye.me-2
-                        View Assignment
-                      
-                      = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-secondary" do
-                        %i.bi.bi-list.me-2
-                        Manage Tenures
+                      = link_to organization_teammate_assignment_path(@current_organization, @teammate, tenure.assignment), class: "btn btn-outline-primary" do
+                        %i.bi.bi-calendar-check.me-2
+                        Assignment check-in
         
         - if policy(@teammate).manager? || policy(organization).manage_employment?
           .mt-3

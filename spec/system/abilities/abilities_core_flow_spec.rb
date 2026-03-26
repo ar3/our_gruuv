@@ -114,7 +114,7 @@ RSpec.describe 'Abilities Core Flow', type: :system do
       
       # Verify milestone appears on ability show page
       visit organization_ability_path(company, ability)
-      expect(page).to have_content('People with milestones:')
+      expect(page).to have_content('Teammates with milestone attainments')
       expect(page).to have_content('1')
     end
   end

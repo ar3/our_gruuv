@@ -49,7 +49,20 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
                                 &.joins(:assignment)
                                 &.where(assignments: { company: organization })
                                 &.includes(:assignment) || []
-    
+
+    assignment_ids = @assignment_tenures.map(&:assignment_id).uniq
+    @latest_finalized_assignment_check_ins_by_assignment_id = {}
+    if assignment_ids.any?
+      AssignmentCheckIn
+        .where(company_teammate: @teammate, assignment_id: assignment_ids)
+        .closed
+        .includes(:assignment, manager_completed_by_teammate: :person, finalized_by_teammate: :person)
+        .order(official_check_in_completed_at: :desc)
+        .each do |check_in|
+          @latest_finalized_assignment_check_ins_by_assignment_id[check_in.assignment_id] ||= check_in
+        end
+    end
+
     # Filter milestones to only show those for abilities in this organization
     @teammate_milestones = @teammate&.teammate_milestones
                                 &.joins(:ability)
