@@ -135,9 +135,9 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('(3) You must exemplify our Aspirational Values')
-      expect(response.body).to include('(4) You must pass criteria for Required Assignments')
-      expect(response.body).to include('(5) You must pass criteria for Unique-to-You Assignments')
+      expect(response.body).to include('(3) Criteria for exemplifying our Aspirational Values')
+      expect(response.body).to include('(4) Criteria for Required Assignments')
+      expect(response.body).to include('(5) Criteria for Unique-to-You Assignments')
       expect(response.body).to include('section3Body')
       expect(response.body).to include('section4Body')
       expect(response.body).to include('section5Body')
@@ -151,7 +151,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('(5) You must pass criteria for Unique-to-You Assignments')
+      expect(response.body).to include('(5) Criteria for Unique-to-You Assignments')
       # With no unique-to-you requirements configured (or 0% expectation) and no assignments, show Not applicable
       expect(response.body).to include('Not applicable')
       expect(response.body).to include('bg-info')
@@ -256,8 +256,8 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('(6) You must pass criteria for Required Milestones')
-      expect(response.body).to include('(7) You must meet the required Milestone Mileage')
+      expect(response.body).to include('(6) Criteria for Required Milestones')
+      expect(response.body).to include('(7) Required Milestone Mileage')
       expect(response.body).to include('section6Body')
       expect(response.body).to include('section7Body')
     end
@@ -305,7 +305,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('(8) You must meet the Required Overall position ratings')
+      expect(response.body).to include('(8) Required Overall position ratings')
       expect(response.body).to include('section8Body')
       expect(response.body).to include('Position check-ins (past 12 months)')
       expect(controller.instance_variable_get(:@position_check_in_eligibility_result)).to be_present
@@ -326,7 +326,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('(8) You must meet the Required Overall position ratings')
+      expect(response.body).to include('(8) Required Overall position ratings')
       expect(controller.instance_variable_get(:@position_check_in_eligibility_result)).to be_present
     end
   end

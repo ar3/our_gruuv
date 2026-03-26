@@ -1,8 +1,10 @@
 -# Renders the "totals row" content for a check-in requirements section, for use in a card footer.
--# Locals: eligibility_result (CheckInRequirementsEligibility::CalculatorResult), optional footer_bg_class override
+-# Locals: eligibility_result (CheckInRequirementsEligibility::CalculatorResult), optional footer_bg_class override,
+-#   collapse_body_id (optional) — card body id for footer "Expand for details" when collapsed
 - summary = local_assigns[:eligibility_result]&.summary
 - return if summary.blank?
 - footer_bg_class = local_assigns[:footer_bg_class]
+- collapse_body_id = local_assigns[:collapse_body_id]
 - unless footer_bg_class.present?
   - case summary.overall_eligibility_status
   - when :eligible
@@ -15,19 +17,38 @@
 .card-footer.fw-semibold.small.py-2{class: footer_bg_class}
   .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
     - if summary.total.positive?
-      .me-2
-        Total: #{summary.count_exceeding} Exceeding, #{summary.count_maybe_exceeding} On-Track to be Exceeding, #{summary.count_meeting} Meeting, #{summary.count_maybe_meeting} On-Track to be Meeting, #{summary.count_miss} Miss, #{summary.count_unknown} Unknown
-        = " = "
-        %br.d-none.d-md-block/
-        - if summary.full_exceed_pct == summary.exceed_plus_maybe_exceed_pct
-          #{summary.full_exceed_pct}% Exceeding #{summary.exceed_status_icon}
-        - else
-          #{summary.full_exceed_pct}% Exceeding | #{summary.exceed_plus_maybe_exceed_pct}% On-Track to be Exceeding #{summary.exceed_status_icon}
-        %br/
-        - if summary.full_meet_pct == summary.meet_plus_maybe_meet_pct
-          #{summary.full_meet_pct}% Meeting #{summary.meet_status_icon}
-        - else
-          #{summary.full_meet_pct}% Meeting | #{summary.meet_plus_maybe_meet_pct}% On-Track to be Meeting #{summary.meet_status_icon}
+      - if collapse_body_id.present?
+        .me-2
+          .eligibility-footer-detail-left
+            Total: #{summary.count_exceeding} Exceeding, #{summary.count_maybe_exceeding} On-Track to be Exceeding, #{summary.count_meeting} Meeting, #{summary.count_maybe_meeting} On-Track to be Meeting, #{summary.count_miss} Miss, #{summary.count_unknown} Unknown
+            = " = "
+            %br.d-none.d-md-block/
+            - if summary.full_exceed_pct == summary.exceed_plus_maybe_exceed_pct
+              #{summary.full_exceed_pct}% Exceeding #{summary.exceed_status_icon}
+            - else
+              #{summary.full_exceed_pct}% Exceeding | #{summary.exceed_plus_maybe_exceed_pct}% On-Track to be Exceeding #{summary.exceed_status_icon}
+            %br/
+            - if summary.full_meet_pct == summary.meet_plus_maybe_meet_pct
+              #{summary.full_meet_pct}% Meeting #{summary.meet_status_icon}
+            - else
+              #{summary.full_meet_pct}% Meeting | #{summary.meet_plus_maybe_meet_pct}% On-Track to be Meeting #{summary.meet_status_icon}
+          .eligibility-footer-expand-collapsed
+            %a.text-decoration-none.small{ href: "##{collapse_body_id}", data: { bs_toggle: "collapse", bs_target: "##{collapse_body_id}" } }
+              Expand for details
+      - else
+        .me-2
+          Total: #{summary.count_exceeding} Exceeding, #{summary.count_maybe_exceeding} On-Track to be Exceeding, #{summary.count_meeting} Meeting, #{summary.count_maybe_meeting} On-Track to be Meeting, #{summary.count_miss} Miss, #{summary.count_unknown} Unknown
+          = " = "
+          %br.d-none.d-md-block/
+          - if summary.full_exceed_pct == summary.exceed_plus_maybe_exceed_pct
+            #{summary.full_exceed_pct}% Exceeding #{summary.exceed_status_icon}
+          - else
+            #{summary.full_exceed_pct}% Exceeding | #{summary.exceed_plus_maybe_exceed_pct}% On-Track to be Exceeding #{summary.exceed_status_icon}
+          %br/
+          - if summary.full_meet_pct == summary.meet_plus_maybe_meet_pct
+            #{summary.full_meet_pct}% Meeting #{summary.meet_status_icon}
+          - else
+            #{summary.full_meet_pct}% Meeting | #{summary.meet_plus_maybe_meet_pct}% On-Track to be Meeting #{summary.meet_status_icon}
     .align-middle.h2
       - case summary.overall_eligibility_status
       - when :eligible
