@@ -1,5 +1,6 @@
 .row
-  - @observations.each do |observation|
+  - observations = local_assigns[:observations] || @observations
+  - observations.each do |observation|
     .col-md-6.col-lg-4.mb-4
       .card.h-100.shadow-sm
         .card-body

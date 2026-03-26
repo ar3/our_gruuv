@@ -25,6 +25,22 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     authorize @team, :show?
     @team_members = @team.team_members.includes(company_teammate: :person).order('people.last_name, people.first_name')
     @team.huddles.preload(:huddle_participants).load
+    team_teammate_ids = @team_members.pluck(:company_teammate_id)
+
+    @team_observee_kudos = if team_teammate_ids.any?
+      visibility_query = ObservationVisibilityQuery.new(current_person, @organization)
+      visibility_query.visible_observations
+                      .where(deleted_at: nil)
+                      .kudos_observations
+                      .where('observed_at >= ?', 14.days.ago)
+                      .joins(:observees)
+                      .where(observees: { teammate_id: team_teammate_ids })
+                      .includes(:observer, { observed_teammates: :person }, :observation_ratings)
+                      .order(observed_at: :desc)
+                      .distinct
+    else
+      Observation.none
+    end
   end
 
   def new

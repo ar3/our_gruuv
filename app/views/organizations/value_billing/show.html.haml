@@ -1,0 +1,135 @@
+- content_for :title, "Admin: Value / Billing"
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0
+      %i.bi.bi-currency-dollar.me-2
+      Value / Billing
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.row.mb-4
+  .col-12
+    .alert.alert-light.border
+      %h6.mb-2 How value is calculated
+      %ul.mb-0
+        %li Every milestone attained is worth $1.00
+        %li Every person named as an observee in a published observation is worth $0.50
+        %li Every completed aspiration, assignment, or position check-in is worth $0.50
+        %li Every goal check-in made is worth $0.25
+
+.row.mb-4
+  .col-12
+    .card.border-0.shadow-sm
+      .card-header.bg-primary.text-white
+        %h4.mb-0
+          %i.bi.bi-graph-up.me-2
+          Total value attained by week
+      .card-body
+        #value-billing-total-chart{style: "height: 360px;"}
+
+.row.g-4
+  .col-12.col-xl-6
+    .card.border-0.shadow-sm.h-100
+      .card-header.bg-light
+        %h5.mb-0 Milestones attained ($1.00 each)
+      .card-body
+        #value-billing-milestones-chart{style: "height: 280px;"}
+  .col-12.col-xl-6
+    .card.border-0.shadow-sm.h-100
+      .card-header.bg-light
+        %h5.mb-0 Observees in published observations ($0.50 each)
+      .card-body
+        #value-billing-observees-chart{style: "height: 280px;"}
+  .col-12.col-xl-6
+    .card.border-0.shadow-sm.h-100
+      .card-header.bg-light
+        %h5.mb-0 Completed check-ins ($0.50 each)
+      .card-body
+        #value-billing-check-ins-chart{style: "height: 280px;"}
+  .col-12.col-xl-6
+    .card.border-0.shadow-sm.h-100
+      .card-header.bg-light
+        %h5.mb-0 Goal check-ins made ($0.25 each)
+      .card-body
+        #value-billing-goal-check-ins-chart{style: "height: 280px;"}
+
+:javascript
+  (function() {
+    var chartData = #{@value_billing_chart_data.to_json};
+
+    function renderChart(containerId, title, data, yAxisTitle, asCurrency) {
+      if (typeof Highcharts === 'undefined') return;
+      var container = document.getElementById(containerId);
+      if (!container) return;
+
+      Highcharts.chart(containerId, {
+        chart: { type: 'line' },
+        title: { text: title },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: chartData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: yAxisTitle }
+        },
+        tooltip: {
+          pointFormatter: function() {
+            if (asCurrency) {
+              return '<span style="color:' + this.color + '">\u25CF</span> ' + this.series.name + ': <b>$' + this.y.toFixed(2) + '</b><br/>';
+            }
+            return '<span style="color:' + this.color + '">\u25CF</span> ' + this.series.name + ': <b>' + this.y + '</b><br/>';
+          }
+        },
+        series: [{ name: title, data: data }]
+      });
+    }
+
+    function initializeValueBillingCharts() {
+      renderChart(
+        'value-billing-total-chart',
+        'Total weekly value attained',
+        chartData.total_value,
+        'Value in dollars',
+        true
+      );
+      renderChart(
+        'value-billing-milestones-chart',
+        'Milestones attained',
+        chartData.milestones,
+        'Count',
+        false
+      );
+      renderChart(
+        'value-billing-observees-chart',
+        'Observees in published observations',
+        chartData.observees,
+        'Count',
+        false
+      );
+      renderChart(
+        'value-billing-check-ins-chart',
+        'Completed check-ins',
+        chartData.completed_check_ins,
+        'Count',
+        false
+      );
+      renderChart(
+        'value-billing-goal-check-ins-chart',
+        'Goal check-ins made',
+        chartData.goal_check_ins,
+        'Count',
+        false
+      );
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeValueBillingCharts);
+    } else {
+      initializeValueBillingCharts();
+    }
+    window.addEventListener('load', initializeValueBillingCharts);
+  })();

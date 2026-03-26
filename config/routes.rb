@@ -89,6 +89,7 @@ Rails.application.routes.draw do
     
     # Start Here (quick guide / landing)
     get 'start_here', to: 'organizations/start_here#show', as: :start_here
+    get 'value_billing', to: 'organizations/value_billing#show', as: :value_billing
 
     # Get Shit Done Dashboard
     resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done'

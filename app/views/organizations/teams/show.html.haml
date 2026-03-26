@@ -191,3 +191,17 @@
               No huddles yet for this team.
               = button_to "Start a huddle", start_huddle_from_team_huddles_path(team_id: @team.id), method: :post, class: "btn btn-link p-0 align-baseline alert-link text-muted", data: { turbo: false }
               to get started.
+
+    .card.mt-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-stars.me-2
+          Team Kudos (Last 14 Days)
+          %span.badge.bg-secondary.ms-2= @team_observee_kudos.size
+      .card-body
+        - if @team_observee_kudos.any?
+          = render 'organizations/observations/wall_view', observations: @team_observee_kudos
+        - else
+          .alert.alert-light.mb-0
+            %small.text-muted
+              No kudos in the last 14 days where a team member is an observee.

@@ -404,6 +404,13 @@ module NavigationHelper
             path: organization_slack_path(current_organization),
             policy_check: -> { policy(current_organization).view_slack_settings? },
             coming_soon: false
+          },
+          {
+            label: 'Value / Billing',
+            icon: 'bi-cash-coin',
+            path: organization_value_billing_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
           }
         ]
       },
