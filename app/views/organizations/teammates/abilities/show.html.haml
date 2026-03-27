@@ -1,0 +1,85 @@
+- casual = @teammate.person.casual_name.presence || @teammate.person.display_name
+- content_for :title, "#{casual} + #{@ability.name}"
+
+- content_for :head do
+  :css
+    .ability-milestone-details-toggle .milestone-details-label-expanded { display: none; }
+    .ability-milestone-details-toggle[aria-expanded="true"] .milestone-details-label-expanded { display: inline; }
+    .ability-milestone-details-toggle[aria-expanded="true"] .milestone-details-label-collapsed { display: none; }
+
+- content_for :go_back_link do
+  = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Check-ins
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    = teammate_profile_image(@teammate, size: 48)
+    %h1.mb-0.fs-3
+      = casual
+      %span.text-muted.fw-normal= " + "
+      = @ability.name
+
+.row.justify-content-center
+  .col-lg-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Milestones attained
+      .card-body
+        - if @teammate_milestones.any?
+          %ul.list-unstyled.mb-0
+            - @teammate_milestones.each do |tm|
+              %li.mb-3.pb-3.border-bottom.border-light
+                .fw-semibold
+                  = link_to "Milestone #{tm.milestone_level} — #{milestone_level_display(tm.milestone_level)} #{@ability.name}", organization_teammate_milestone_path(@organization, tm), class: "text-decoration-none"
+                .small.text-muted.mt-1
+                  Attained #{tm.attained_at.strftime("%B %d, %Y")}
+                  - if tm.certifying_teammate
+                    = " · Certified by #{tm.certifying_teammate.person.display_name}"
+        - else
+          %p.text-muted.mb-0 No milestones attained for this ability yet.
+
+    .card.mb-4
+      .card-header.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+        %h5.mb-0= @ability.display_name
+        %a.text-decoration-none.small.ability-milestone-details-toggle{ href: "#ability-milestone-details", "data-bs-toggle" => "collapse", "data-bs-target" => "#ability-milestone-details", role: "button", "aria-expanded" => "false", "aria-controls" => "ability-milestone-details" }
+          %span.milestone-details-label-collapsed
+            Expand to see milestone details
+            %i.bi.bi-chevron-down.ms-1
+          %span.milestone-details-label-expanded
+            Hide milestone details
+            %i.bi.bi-chevron-up.ms-1
+      .card-body
+        - if @ability.description.present?
+          .markdown-content.mb-0= render_markdown(@ability.description)
+        - else
+          %p.text-muted.mb-0 No description yet.
+      .collapse#ability-milestone-details
+        .card-body.border-top.bg-light
+          - (1..5).each do |level|
+            .mb-4
+              %h6.mb-2 Milestone #{level} — #{milestone_level_display(level)} #{@ability.name}
+              .markdown-content--bordered.card.card-body
+                - milestone_description = @ability.milestone_description(level)
+                - if milestone_description.present?
+                  = render_markdown(milestone_description)
+                - else
+                  %p.text-muted.mb-0 This milestone has not been defined.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Observations
+      .card-body
+        - if @observations.any?
+          .list-group
+            - @observations.each do |observation|
+              = render "organizations/observations/observation_large_list_item", observation: observation, organization: @organization
+        - else
+          %p.text-muted.mb-0 No observations you can access involve this teammate and this ability.
+
+    .d-flex.align-items-center.gap-2.flex-wrap.mb-5
+      - if @can_award_milestone
+        = link_to "Award milestone", @award_milestone_url, class: "btn btn-primary"
+      - else
+        %button.btn.btn-primary{ type: "button", disabled: true, "aria-describedby": "award-milestone-reason" } Award milestone
+        %i.bi.bi-exclamation-triangle.text-warning.fs-5#award-milestone-reason{ role: "img", tabindex: "0", data: { bs_toggle: "tooltip", bs_placement: "top", bs_title: @award_milestone_disabled_reason }, title: @award_milestone_disabled_reason, "aria-label": "Why Award milestone is unavailable" }

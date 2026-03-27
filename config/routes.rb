@@ -320,6 +320,7 @@ Rails.application.routes.draw do
       end
       resources :assignments, only: [:show], controller: 'teammates/assignments'
       resources :aspirations, only: [:show], controller: 'teammates/aspirations'
+      resources :abilities, only: [:show], controller: 'teammates/abilities'
     end
     
     # Positions management

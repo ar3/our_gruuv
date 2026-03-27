@@ -262,35 +262,10 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
   end
 
   def load_eligible_teammates
-    current_teammate = current_company_teammate
-    
-    # If user has manage_employment permission on their own company_teammate
-    if current_teammate.can_manage_employment?
-      # Show all active company teammates except current user
-      CompanyTeammate.where(organization: organization)
-        .where.not(id: current_teammate.id)
-        .where(last_terminated_at: nil)
-        .includes(:person, :employment_tenures)
-        .order('people.last_name, people.first_name')
-    else
-      # Check if user has reports
-      reports = EmployeeHierarchyQuery.new(
-        person: current_teammate.person,
-        organization: organization
-      ).call
-      
-      if reports.any?
-        # Get teammates for all reports
-        report_person_ids = reports.map { |r| r[:person_id] }
-        CompanyTeammate.where(organization: organization)
-          .where(person_id: report_person_ids, last_terminated_at: nil)
-          .includes(:person, :employment_tenures)
-          .order('people.last_name, people.first_name')
-      else
-        # No reports - return empty and show message
-        []
-      end
-    end
+    TeammateMilestoneRecipientEligibilityQuery.new(
+      awarding_teammate: current_company_teammate,
+      organization: organization
+    ).eligible_teammates
   end
 
   def load_abilities_for_teammate(teammate)
