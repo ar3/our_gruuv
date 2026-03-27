@@ -150,7 +150,7 @@
         = render "organizations/eligibility_requirements/check_in_requirements_section",
           section_title: "Company Aspirational Values Check-In Requirements",
           requirement_sentence: (company_asp_check && company_asp_check[:details].present?) ? format_aspirational_values_requirement(company_asp_check[:details]) : nil,
-          rows: @aspirational_values_table_rows.select { |r| r[:section] == 'company' }.map { |r| { name: r[:aspiration].name, id: r[:aspiration].id } },
+          rows: @aspirational_values_table_rows.select { |r| r[:section] == 'company' }.map { |r| { name: r[:aspiration].name, id: r[:aspiration].id, path: organization_teammate_aspiration_path(@organization, @teammate, r[:aspiration]) } },
           monthly_status_by_id: @aspirational_values_monthly_status,
           eligibility_result: company_asp_result,
           show_totals_in_body: false
@@ -180,7 +180,7 @@
         = render "organizations/eligibility_requirements/check_in_requirements_section",
           section_title: "Required Assignment Check-In Requirements",
           requirement_sentence: (required_check && required_check[:details].present?) ? format_assignments_requirement(required_check[:details]) : nil,
-          rows: @required_assignments.map { |a| { name: a.title, id: a.id } },
+          rows: @required_assignments.map { |a| { name: a.title, id: a.id, path: organization_teammate_assignment_path(@organization, @teammate, a) } },
           monthly_status_by_id: @required_assignments_monthly_status,
           eligibility_result: @required_assignments_eligibility_result,
           show_totals_in_body: false
@@ -213,7 +213,7 @@
           = render "organizations/eligibility_requirements/check_in_requirements_section",
             section_title: "Unique-to-You Assignment Check-In Requirements",
             requirement_sentence: (unique_check && unique_check[:details].present?) ? format_assignments_requirement(unique_check[:details], assignment_label: "unique-to-you assignments") : nil,
-            rows: @unique_assignments.map { |a| { name: a.title, id: a.id } },
+            rows: @unique_assignments.map { |a| { name: a.title, id: a.id, path: organization_teammate_assignment_path(@organization, @teammate, a) } },
             monthly_status_by_id: @unique_assignments_monthly_status || {},
             eligibility_result: @unique_assignments_eligibility_result,
             show_totals_in_body: false
@@ -348,7 +348,7 @@
           = render "organizations/eligibility_requirements/check_in_requirements_section",
             section_title: "Position check-ins (past 12 months)",
             requirement_sentence: nil,
-            rows: [{ name: "Overall position rating", id: :position }],
+            rows: [{ name: "Overall position rating", id: :position, path: position_check_in_organization_teammate_path(@organization, @teammate) }],
             monthly_status_by_id: @position_check_in_monthly_status_by_row_id || {},
             eligibility_result: @position_check_in_eligibility_result,
             show_totals_in_body: false

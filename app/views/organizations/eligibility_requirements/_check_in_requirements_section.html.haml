@@ -22,7 +22,11 @@
       - monthly = monthly_status_by_id.present? ? (monthly_status_by_id[row[:id]] || []) : []
       - row_result = eligibility_result&.row_result_by_id(row[:id])
       %tr
-        %td= row[:name]
+        %td
+          - if row[:path].present?
+            = link_to row[:name], row[:path], class: "text-decoration-none"
+          - else
+            = row[:name]
         %td
           %span.d-inline-flex.gap-1.align-items-center{ role: "img", "aria-label": "12 months: green = exceeding, blue = meeting, orange = working to meet, light grey = no check-in. Checkmark = rating finalized that month." }
             - monthly.each do |cell|
