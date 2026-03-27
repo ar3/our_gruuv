@@ -34,7 +34,8 @@
                 - latest_finalized = AspirationCheckIn.latest_finalized_for(check_in.teammate, check_in.aspiration)
                 = form.submit check_in.aspiration.name,
                               class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
-                              name: "save_and_view_aspiration_#{check_in.aspiration.id}"
+                              name: "save_and_view_aspiration_#{check_in.aspiration.id}",
+                              data: { bs_toggle: 'tooltip', bs_placement: 'top', bs_title: unified_check_ins_single_item_submit_title }
                 %div.mt-1
                   = render 'shared/last_finalized_pill', latest_finalized: latest_finalized, popover_content: last_finalized_check_in_popover_content(latest_finalized, check_in.teammate.person.casual_name, :aspiration)
               = render partial_name, check_in: check_in, form: af, main_form: form, view_mode: view_mode, latest_finalized: latest_finalized

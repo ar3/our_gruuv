@@ -35,6 +35,15 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     preload_aspiration_check_in_associations!
     @relevant_abilities = load_relevant_abilities || []
+    @active_required_assignment_check_ins = filter_active_required_assignment_check_ins
+    @check_ins_fresh_banner = CheckIns::AllFreshBannerService.call(
+      teammate: @teammate,
+      organization: organization,
+      view_mode: @view_mode,
+      position_check_in: @position_check_in,
+      aspiration_check_ins: @aspiration_check_ins,
+      assignment_check_ins: @active_required_assignment_check_ins
+    )
   end
   
   def update
@@ -279,6 +288,20 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     return [] unless active_employment&.position
 
     active_employment.position.required_assignments.pluck(:assignment_id)
+  end
+
+  def filter_active_required_assignment_check_ins
+    required_ids = required_assignment_ids_for_teammate.to_set
+    return [] if required_ids.empty?
+
+    active_assignment_ids = AssignmentTenure
+      .where(company_teammate: @teammate, ended_at: nil)
+      .pluck(:assignment_id)
+      .to_set
+
+    @active_assignment_check_ins.select do |ci|
+      required_ids.include?(ci.assignment_id) && active_assignment_ids.include?(ci.assignment_id)
+    end
   end
 
   def load_or_build_aspiration_check_ins

@@ -6,7 +6,8 @@
 = hidden_field_tag "return_url", return_url
 = form.submit check_in.employment_tenure.position.display_name,
               class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
-              name: "save_and_view_position"
+              name: "save_and_view_position",
+              data: { bs_toggle: 'tooltip', bs_placement: 'top', bs_title: unified_check_ins_single_item_submit_title }
 - latest_finalized = PositionCheckIn.latest_finalized_for(check_in.teammate)
 %div.mt-1
   = render 'shared/last_finalized_pill', latest_finalized: latest_finalized, popover_content: last_finalized_check_in_popover_content(latest_finalized, check_in.teammate.person.casual_name, :position)

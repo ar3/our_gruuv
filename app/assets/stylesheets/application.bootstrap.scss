@@ -1027,3 +1027,14 @@ body:has(.vertical-nav.open) .floating-toggle {
     display: none !important;
   }
 }
+
+// Unified check-ins page: "all fresh" success banner
+.check-ins-fresh-banner {
+  min-height: 13rem;
+}
+
+.check-ins-fresh-banner__icon {
+  font-size: 5.5rem;
+  line-height: 1;
+  opacity: 0.92;
+}

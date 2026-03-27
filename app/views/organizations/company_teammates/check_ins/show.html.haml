@@ -21,6 +21,11 @@
 %div{ data: { controller: "confirm-leave" }, style: "display: none;", "aria-hidden": "true" }
 = render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 1
 
+- if @check_ins_fresh_banner&.show_banner
+  = render 'organizations/company_teammates/check_ins/all_fresh_banner',
+           banner: @check_ins_fresh_banner,
+           teammate: @teammate
+
 -# Authorization Debug Section
 - if params[:debug] == 'true' && @debug_data
   .alert.alert-secondary.mt-3
@@ -173,7 +178,6 @@
         #{@debug_data[:policy_action]} = FALSE (Access Denied)
 
 = form_with url: organization_company_teammate_check_ins_path(organization, @teammate), method: :patch, scope: :check_ins do |f|
-  
   -# Aspiration Section
   = render 'shared/section_header', 
            title: 'Aspirational Values', 

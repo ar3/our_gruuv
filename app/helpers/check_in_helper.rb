@@ -241,6 +241,11 @@ module CheckInHelper
     single_item_check_in_waiting_for_name(check_in, teammate)
   end
 
+  # Tooltip for name/title submits on the unified check-ins page that open the single-item flow.
+  def unified_check_ins_single_item_submit_title
+    'Click here to do the same check-in process as you are doing on this page, but focusing on just this one thing at a time!'
+  end
+
   # Get Shit Done: link to the 1-by-1 check-in page for this record (assignment / aspiration / position).
   def get_shit_done_check_in_review_path(organization, check_in)
     case check_in

@@ -1,0 +1,18 @@
+- return unless banner&.show_banner
+
+.alert.alert-success.check-ins-fresh-banner.mb-4.border-0.shadow-sm.py-5.px-4.d-flex.align-items-center{ role: 'status' }
+  .d-flex.flex-row.align-items-center.gap-4.w-100
+    .flex-shrink-0.d-flex.align-items-center
+      %i.bi.bi-check-circle-fill.check-ins-fresh-banner__icon{ aria: { hidden: true } }
+    .flex-grow-1.min-w-0.ps-1
+      %p.mb-3.fw-semibold.fs-5.lh-base All check-ins are fresh... your work here is likely done for now!
+      %p.mb-3.text-body-secondary.lh-lg
+        Some folks do their check-ins more frequently than once every 90 days... if that is you... please scroll down and get your check-in on!!
+      - if banner.show_clarity_follow_up && !banner.check_back_in_days.nil?
+        %p.mb-0.text-body-secondary.lh-lg
+          #{teammate.person.casual_name} is 100% clear on where they stand at #{banner.organization_display_name}.
+          - n = banner.check_back_in_days
+          - if n.zero?
+            Check back today.
+          - else
+            Check back in #{pluralize(n, 'day')}.
