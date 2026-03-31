@@ -5,34 +5,6 @@ class PositionEligibilityService
     'exceeding' => 3
   }.freeze
 
-  # Default eligibility requirement values when none are set for a position.
-  # Used when viewing the eligibility requirements page and when pre-populating the manage form.
-  DEFAULT_ELIGIBILITY_REQUIREMENTS = {
-    'company_aspirational_values_check_in_requirements' => {
-      'minimum_months_at_or_above_rating_criteria' => 3,
-      'minimum_percentage_of_aspirational_values_meeting' => 80,
-      'minimum_percentage_of_aspirational_values_exceeding' => 0
-    }.freeze,
-    'required_assignment_check_in_requirements' => {
-      'minimum_months_at_or_above_rating_criteria' => 3,
-      'minimum_percentage_of_assignments_meeting' => 80,
-      'minimum_percentage_of_assignments_exceeding' => 0
-    }.freeze,
-    'unique_to_you_assignment_check_in_requirements' => {
-      'minimum_months_at_or_above_rating_criteria' => 0,
-      'minimum_percentage_of_assignments_meeting' => 0,
-      'minimum_percentage_of_assignments_exceeding' => 0
-    }.freeze,
-    'position_check_in_requirements' => {
-      'minimum_rating' => 2,
-      'minimum_months_at_or_above_rating_criteria' => 3
-    }.freeze,
-    'mileage_requirements' => {
-      'threshold_type' => 'percentage',
-      'threshold_value' => 20
-    }.freeze
-  }.freeze
-
   def initialize(mileage_service: MilestoneMileageService.new)
     @mileage_service = mileage_service
   end
@@ -59,22 +31,9 @@ class PositionEligibilityService
     }
   end
 
-  # Returns eligibility data hash with default values applied wherever a section is blank.
-  # Used for parsing requirements in check_eligibility and for pre-populating the manage form.
-  def self.eligibility_data_with_defaults(raw)
-    raw = raw.to_h if raw.respond_to?(:to_h)
-    result = raw.stringify_keys
-    DEFAULT_ELIGIBILITY_REQUIREMENTS.each do |section_key, default_section|
-      existing = result[section_key]
-      result[section_key] = default_section.dup if existing.blank?
-    end
-    result
-  end
-
   def parse_requirements(position)
-    raw = position&.eligibility_requirements_explicit || {}
-    raw = raw.to_h if raw.respond_to?(:to_h)
-    with_defaults = self.class.eligibility_data_with_defaults(raw)
+    resolved = PositionEligibilityResolver.resolve(position)
+    with_defaults = resolved.record.to_eligibility_service_hash
 
     {
       milestone_requirements: with_defaults['milestone_requirements'] || [],

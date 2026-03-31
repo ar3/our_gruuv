@@ -6,19 +6,9 @@
     Back to Departments
 
 - content_for :header do
-  .d-flex.align-items-center.justify-content-between
-    %h1.mb-0
-      %i.bi.bi-diagram-3.me-2
-      = @department.name
-    .d-flex.gap-2
-      - if policy(@department).update?
-        = link_to edit_organization_department_path(@organization, @department), class: "btn btn-outline-primary" do
-          %i.bi.bi-pencil.me-2
-          Edit
-      - if policy(@department).archive?
-        = link_to archive_organization_department_path(@organization, @department), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this department?" } do
-          %i.bi.bi-archive.me-2
-          Archive
+  %h1.mb-0
+    %i.bi.bi-diagram-3.me-2
+    = @department.name
 
 .row.justify-content-center
   .col-lg-12
@@ -28,32 +18,46 @@
           %i.bi.bi-info-circle.me-2
           Details
       .card-body
-        %dl.row
-          %dt.col-sm-3 Type
-          %dd.col-sm-9
-            %span.badge.bg-primary
-              Department
-          %dt.col-sm-3 Company
-          %dd.col-sm-9
-            = link_to organization_path(@department.company), class: "text-decoration-none" do
-              = @department.company.name
-          %dt.col-sm-3 Parent Department
-          %dd.col-sm-9
-            - if @department.parent_department
-              -# Build hierarchy path from root to parent
-              - hierarchy_path = @department.ancestors_list.reverse
-              -# Display hierarchy with links
-              - hierarchy_path.each_with_index do |dept, index|
-                - if policy(dept).show?
-                  = link_to organization_department_path(@organization, dept), class: "text-decoration-none" do
-                    = dept.name
+        .row
+          .col-lg-8
+            %dl.row.mb-0
+              %dt.col-sm-4 Type
+              %dd.col-sm-8
+                %span.badge.bg-primary
+                  Department
+              %dt.col-sm-4 Company
+              %dd.col-sm-8
+                = link_to organization_path(@department.company), class: "text-decoration-none" do
+                  = @department.company.name
+              %dt.col-sm-4 Parent Department
+              %dd.col-sm-8
+                - if @department.parent_department
+                  - hierarchy_path = @department.ancestors_list.reverse
+                  - hierarchy_path.each_with_index do |dept, index|
+                    - if policy(dept).show?
+                      = link_to organization_department_path(@organization, dept), class: "text-decoration-none" do
+                        = dept.name
+                    - else
+                      %span= dept.name
+                    - unless index == hierarchy_path.length - 1
+                      %span.text-muted.mx-1
+                        %i.bi.bi-chevron-right
                 - else
-                  %span= dept.name
-                - unless index == hierarchy_path.length - 1
-                  %span.text-muted.mx-1
-                    %i.bi.bi-chevron-right
-            - else
-              %span.text-muted (Root Department)
+                  %span.text-muted (Root Department)
+          .col-lg-4.border-start.border-secondary
+            %h6.text-muted Actions
+            .d-grid.gap-2
+              - if policy(@department).update?
+                = link_to edit_organization_department_path(@organization, @department), class: "btn btn-outline-primary" do
+                  %i.bi.bi-pencil.me-2
+                  Edit
+              = link_to organization_department_position_eligibility_defaults_path(@organization, @department), class: "btn btn-outline-primary" do
+                %i.bi.bi-sliders.me-2
+                Position eligibility defaults
+              - if policy(@department).archive?
+                = link_to archive_organization_department_path(@organization, @department), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this department?" } do
+                  %i.bi.bi-archive.me-2
+                  Archive
 
     - if @child_departments.any?
       .card.mb-4

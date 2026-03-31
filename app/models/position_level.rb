@@ -14,4 +14,17 @@ class PositionLevel < ApplicationRecord
   def level_name
     level
   end
+
+  # Minor segment of "major.minor" must be 1, 2, or 3 for eligibility cascade FKs.
+  ELIGIBILITY_MINOR_RANGE = (1..3).freeze
+
+  def eligibility_minor_slot
+    m = level.to_s.match(/\A\d+\.(\d+)\z/)
+    raise ArgumentError, "Invalid position level format: #{level.inspect}" if m.blank?
+
+    n = m[1].to_i
+    raise ArgumentError, "Position level minor must be 1, 2, or 3 (got #{n})" unless ELIGIBILITY_MINOR_RANGE.cover?(n)
+
+    n
+  end
 end

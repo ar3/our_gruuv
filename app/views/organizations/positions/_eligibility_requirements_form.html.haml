@@ -1,0 +1,207 @@
+- eligibility = local_assigns.fetch(:eligibility, {})
+- minimum_mileage_from_assignments = local_assigns.fetch(:minimum_mileage_from_assignments, 0)
+- mileage_id_suffix = local_assigns.fetch(:mileage_id_suffix, '')
+- form_url = local_assigns.fetch(:form_url)
+- cancel_path = local_assigns.fetch(:cancel_path)
+- http_method = local_assigns.fetch(:http_method, :patch)
+- submit_label = local_assigns.fetch(:submit_label, 'Save Eligibility Requirements')
+
+= form_with url: form_url, method: http_method, local: true do |form|
+  - if flash[:alert]
+    .alert.alert-danger
+      = flash[:alert]
+
+  / Company Aspirational Values Check-In Requirements
+  .card.mb-4
+    .card-header.bg-light
+      %h6.mb-0 Company Aspirational Values Check-In Requirements
+    .card-body
+      .row
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+          = form.number_field "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+            value: eligibility.dig('company_aspirational_values_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+            class: "form-control",
+            min: 0,
+            step: 1
+          %small.form-text.text-muted Number of months at or above rating
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_percentage_of_aspirational_values_meeting]", "Minimum % that are meeting expectations", class: "form-label"
+          = form.number_field "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_percentage_of_aspirational_values_meeting]",
+            value: eligibility.dig('company_aspirational_values_check_in_requirements', 'minimum_percentage_of_aspirational_values_meeting'),
+            class: "form-control",
+            min: 0,
+            max: 100,
+            step: 0.1,
+            placeholder: "0-100"
+          %small.form-text.text-muted Percentage of company aspirational values (0-100)
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_percentage_of_aspirational_values_exceeding]", "Minimum % that are exceeding expectations", class: "form-label"
+          = form.number_field "eligibility_requirements[company_aspirational_values_check_in_requirements][minimum_percentage_of_aspirational_values_exceeding]",
+            value: eligibility.dig('company_aspirational_values_check_in_requirements', 'minimum_percentage_of_aspirational_values_exceeding'),
+            class: "form-control",
+            min: 0,
+            max: 100,
+            step: 0.1,
+            placeholder: "0-100"
+          %small.form-text.text-muted Percentage of company aspirational values (0-100)
+
+  %hr.mt-4.mb-4/
+
+  .card.mb-4
+    .card-header.bg-light
+      %h6.mb-0 Required Assignment Check-In Requirements
+    .card-body
+      .row
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[required_assignment_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+          = form.number_field "eligibility_requirements[required_assignment_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+            value: eligibility.dig('required_assignment_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+            class: "form-control",
+            min: 0,
+            step: 1
+          %small.form-text.text-muted Number of months at or above rating
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[required_assignment_check_in_requirements][minimum_percentage_of_assignments_meeting]", "Minimum % that are meeting expectations", class: "form-label"
+          = form.number_field "eligibility_requirements[required_assignment_check_in_requirements][minimum_percentage_of_assignments_meeting]",
+            value: eligibility.dig('required_assignment_check_in_requirements', 'minimum_percentage_of_assignments_meeting'),
+            class: "form-control",
+            min: 0,
+            max: 100,
+            step: 0.1,
+            placeholder: "0-100"
+          %small.form-text.text-muted Percentage of required assignments (0-100)
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[required_assignment_check_in_requirements][minimum_percentage_of_assignments_exceeding]", "Minimum % that are exceeding expectations", class: "form-label"
+          = form.number_field "eligibility_requirements[required_assignment_check_in_requirements][minimum_percentage_of_assignments_exceeding]",
+            value: eligibility.dig('required_assignment_check_in_requirements', 'minimum_percentage_of_assignments_exceeding'),
+            class: "form-control",
+            min: 0,
+            max: 100,
+            step: 0.1,
+            placeholder: "0-100"
+          %small.form-text.text-muted Percentage of required assignments (0-100)
+
+  .card.mb-4
+    .card-header.bg-light
+      %h6.mb-0 Unique-to-You Assignment Check-In Requirements
+    .card-body
+      .row
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+          = form.number_field "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+            value: eligibility.dig('unique_to_you_assignment_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+            class: "form-control",
+            min: 0,
+            step: 1
+          %small.form-text.text-muted Number of months at or above rating
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_percentage_of_assignments_meeting]", "Minimum % that are meeting expectations", class: "form-label"
+          = form.number_field "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_percentage_of_assignments_meeting]",
+            value: eligibility.dig('unique_to_you_assignment_check_in_requirements', 'minimum_percentage_of_assignments_meeting'),
+            class: "form-control",
+            min: 0,
+            max: 100,
+            step: 0.1,
+            placeholder: "0-100"
+          %small.form-text.text-muted Percentage of unique-to-you assignments (0-100)
+        .col-md-4.mb-3
+          = form.label "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_percentage_of_assignments_exceeding]", "Minimum % that are exceeding expectations", class: "form-label"
+          = form.number_field "eligibility_requirements[unique_to_you_assignment_check_in_requirements][minimum_percentage_of_assignments_exceeding]",
+            value: eligibility.dig('unique_to_you_assignment_check_in_requirements', 'minimum_percentage_of_assignments_exceeding'),
+            class: "form-control",
+            min: 0,
+            max: 100,
+            step: 0.1,
+            placeholder: "0-100"
+          %small.form-text.text-muted Percentage of unique-to-you assignments (0-100)
+
+  %hr.mt-4.mb-4/
+
+  .card.mb-4
+    .card-header.bg-light
+      %h6.mb-0 Position Check-In Requirements
+    .card-body
+      .row
+        .col-md-6.mb-3
+          = form.label "eligibility_requirements[position_check_in_requirements][minimum_rating]", "Minimum Rating", class: "form-label"
+          = form.select "eligibility_requirements[position_check_in_requirements][minimum_rating]",
+            options_for_select(position_rating_options, eligibility.dig('position_check_in_requirements', 'minimum_rating').to_s.presence && eligibility.dig('position_check_in_requirements', 'minimum_rating').to_i),
+            { include_blank: "Select rating" },
+            class: "form-select"
+          %small.form-text.text-muted Rating that must be met or exceeded (-3 to 3)
+        .col-md-6.mb-3
+          = form.label "eligibility_requirements[position_check_in_requirements][minimum_months_at_or_above_rating_criteria]", "Minimum Months", class: "form-label"
+          = form.number_field "eligibility_requirements[position_check_in_requirements][minimum_months_at_or_above_rating_criteria]",
+            value: eligibility.dig('position_check_in_requirements', 'minimum_months_at_or_above_rating_criteria'),
+            class: "form-control",
+            min: 0,
+            step: 1
+          %small.form-text.text-muted Number of months at or above minimum rating
+
+  %hr.mt-4.mb-4/
+
+  - mileage_req = eligibility.dig('mileage_requirements') || {}
+  - mileage_type = mileage_req['threshold_type'].presence || 'absolute'
+  - mileage_val = mileage_req['threshold_value'].presence || mileage_req['minimum_mileage_points']
+  - abs_id = "mileage_threshold_absolute#{mileage_id_suffix}"
+  - pct_id = "mileage_threshold_percentage#{mileage_id_suffix}"
+  .card.mb-4
+    .card-header.bg-light
+      %h6.mb-0 Milestone Mileage Requirements
+    .card-body
+      .mb-3
+        = form.label "eligibility_requirements[mileage_requirements][threshold_type]", "Threshold type", class: "form-label"
+        .d-flex.gap-3
+          .form-check
+            = form.radio_button "eligibility_requirements[mileage_requirements][threshold_type]", "absolute", checked: (mileage_type == 'absolute'), id: abs_id, class: "form-check-input"
+            = form.label "eligibility_requirements[mileage_requirements][threshold_type]_absolute#{mileage_id_suffix}", "Absolute", for: abs_id, class: "form-check-label"
+          .form-check
+            = form.radio_button "eligibility_requirements[mileage_requirements][threshold_type]", "percentage", checked: (mileage_type == 'percentage'), id: pct_id, class: "form-check-input"
+            = form.label "eligibility_requirements[mileage_requirements][threshold_type]_percentage#{mileage_id_suffix}", "Percentage more than required", for: pct_id, class: "form-check-label"
+      .mb-3.mileage-absolute-fields{ style: ("display: none;" if mileage_type == 'percentage') }
+        = form.label "eligibility_requirements[mileage_requirements][minimum_mileage_points]", "Minimum Mileage Points", class: "form-label"
+        = form.number_field "eligibility_requirements[mileage_requirements][minimum_mileage_points]",
+          value: (mileage_type == 'absolute' ? mileage_val : minimum_mileage_from_assignments),
+          class: "form-control mileage-absolute-value",
+          min: minimum_mileage_from_assignments || 0,
+          step: 1
+        - if minimum_mileage_from_assignments && minimum_mileage_from_assignments > 0
+          %small.form-text.text-muted
+            Total milestone points required across all abilities. Minimum: #{minimum_mileage_from_assignments} points (based on required assignments).
+        - else
+          %small.form-text.text-muted Total milestone points required across all abilities
+      .mb-3.mileage-percentage-fields{ style: ("display: none;" if mileage_type == 'absolute') }
+        = form.label "eligibility_requirements[mileage_requirements][threshold_value]", "Percentage more than required", class: "form-label"
+        = form.number_field "eligibility_requirements[mileage_requirements][threshold_value]",
+          value: (mileage_type == 'percentage' ? mileage_val : 0),
+          class: "form-control",
+          min: 0,
+          step: 1
+        %small.form-text.text-muted
+          Minimum total = required milestone points × (100 + this value) / 100, rounded. 0 = no extra.
+      - if minimum_mileage_from_assignments && minimum_mileage_from_assignments > 0
+        %small.form-text.text-muted.d-block
+          Required milestone total for this position: #{minimum_mileage_from_assignments} points.
+  %script
+    :plain
+      (function() {
+        var suffix = "#{j mileage_id_suffix}";
+        var abs = document.getElementById('mileage_threshold_absolute' + suffix);
+        var pct = document.getElementById('mileage_threshold_percentage' + suffix);
+        var root = (abs || pct) && (abs || pct).closest('.card-body');
+        var absFields = root ? root.querySelectorAll('.mileage-absolute-fields') : [];
+        var pctFields = root ? root.querySelectorAll('.mileage-percentage-fields') : [];
+        function update() {
+          var showAbs = abs && abs.checked;
+          absFields.forEach(function(el) { el.style.display = showAbs ? '' : 'none'; });
+          pctFields.forEach(function(el) { el.style.display = showAbs ? 'none' : ''; });
+        }
+        if (abs) abs.addEventListener('change', update);
+        if (pct) pct.addEventListener('change', update);
+        update();
+      })();
+
+  .d-flex.justify-content-between.mt-4
+    = link_to "Cancel", cancel_path, class: "btn btn-secondary"
+    = form.submit submit_label, class: "btn btn-primary"

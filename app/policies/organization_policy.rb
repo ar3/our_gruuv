@@ -18,13 +18,13 @@ class OrganizationPolicy < ApplicationPolicy
   def manage_maap?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization
-    admin_bypass? || viewing_teammate.can_manage_maap?
+    admin_bypass? || maap_teammate_for_record&.can_manage_maap?
   end
 
   def manage_assignments?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization
-    admin_bypass? || viewing_teammate.can_manage_maap?
+    admin_bypass? || maap_teammate_for_record&.can_manage_maap?
   end
 
   def view_feedback_requests?
@@ -204,6 +204,11 @@ class OrganizationPolicy < ApplicationPolicy
   end
 
   private
+
+  # Fresh DB read so permission changes apply (matches PositionPolicy pattern; avoids stale teammate in tests).
+  def maap_teammate_for_record
+    CompanyTeammate.find_by(person_id: viewing_teammate.person_id, organization_id: record.id)
+  end
 
   def organization_in_hierarchy?
     return false unless viewing_teammate

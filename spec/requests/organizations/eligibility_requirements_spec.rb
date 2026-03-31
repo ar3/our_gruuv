@@ -24,12 +24,9 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
 
   describe 'GET /organizations/:organization_id/eligibility_requirements/:id' do
     before do
-      position.update!(
-        eligibility_requirements_explicit: {
-          "mileage_requirements" => {
-            "minimum_mileage_points" => 0
-          }
-        }
+      assign_position_eligibility_from_hash!(
+        position,
+        'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 0 }
       )
     end
 
@@ -197,15 +194,14 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
     end
 
     it 'uses 3-level eligibility summary: Exceeding, On-Track to be Exceeding, Meeting, On-Track to be Meeting, and Eligible or Working to Meet' do
-      position.update!(
-        eligibility_requirements_explicit: position.eligibility_requirements_explicit.merge(
-          'company_aspirational_values_check_in_requirements' => {
-            'minimum_months_at_or_above_rating_criteria' => 12,
-            'minimum_percentage_of_aspirational_values_meeting' => 80,
-            'minimum_percentage_of_aspirational_values_exceeding' => 20
-          }
-        )
+      h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
+        'company_aspirational_values_check_in_requirements' => {
+          'minimum_months_at_or_above_rating_criteria' => 12,
+          'minimum_percentage_of_aspirational_values_meeting' => 80,
+          'minimum_percentage_of_aspirational_values_exceeding' => 20
+        }
       )
+      assign_position_eligibility_from_hash!(position, h)
       create(:aspiration, company: organization, name: 'Integrity', sort_order: 0)
 
       get organization_eligibility_requirement_path(
@@ -221,15 +217,14 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
     end
 
     it 'shows row status using new category labels (Exceeding, Meeting, Miss, Unknown, etc.)' do
-      position.update!(
-        eligibility_requirements_explicit: position.eligibility_requirements_explicit.merge(
-          'company_aspirational_values_check_in_requirements' => {
-            'minimum_months_at_or_above_rating_criteria' => 12,
-            'minimum_percentage_of_aspirational_values_meeting' => 80,
-            'minimum_percentage_of_aspirational_values_exceeding' => 20
-          }
-        )
+      h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
+        'company_aspirational_values_check_in_requirements' => {
+          'minimum_months_at_or_above_rating_criteria' => 12,
+          'minimum_percentage_of_aspirational_values_meeting' => 80,
+          'minimum_percentage_of_aspirational_values_exceeding' => 20
+        }
       )
+      assign_position_eligibility_from_hash!(position, h)
       create(:aspiration, company: organization, name: 'Integrity', sort_order: 0)
 
       get organization_eligibility_requirement_path(
@@ -289,14 +284,13 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
     end
 
     it 'renders section (8) position ratings when position check-in requirements are configured' do
-      position.update!(
-        eligibility_requirements_explicit: position.eligibility_requirements_explicit.merge(
-          'position_check_in_requirements' => {
-            'minimum_rating' => 2,
-            'minimum_months_at_or_above_rating_criteria' => 6
-          }
-        )
+      h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
+        'position_check_in_requirements' => {
+          'minimum_rating' => 2,
+          'minimum_months_at_or_above_rating_criteria' => 6
+        }
       )
+      assign_position_eligibility_from_hash!(position, h)
 
       get organization_eligibility_requirement_path(
         organization,
@@ -311,13 +305,8 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(controller.instance_variable_get(:@position_check_in_eligibility_result)).to be_present
     end
 
-    it 'renders section (8) with default position check-in requirements when none are explicitly set' do
-      # With defaults, a position with no position_check_in_requirements set still shows section (8) using defaults
-      position.update!(
-        eligibility_requirements_explicit: {
-          'mileage_requirements' => { 'minimum_mileage_points' => 0 }
-        }
-      )
+    it 'renders section (8) with default position check-in requirements when none are set on the position' do
+      position.update!(position_eligibility_requirement_id: nil)
 
       get organization_eligibility_requirement_path(
         organization,

@@ -277,13 +277,15 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
 
     context 'when position has eligibility requirements' do
       before do
-        position_company.update(eligibility_requirements_summary: 'Must have 5 years experience')
+        assign_position_eligibility_from_hash!(
+          position_company,
+          'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 5 }
+        )
       end
 
-      it 'displays eligibility requirements' do
+      it 'renders public job description successfully (eligibility summary field removed)' do
         get organization_public_maap_position_path(company, position_company)
-        expect(response.body).to include('Eligibility Requirements')
-        expect(response.body).to include('Must have 5 years experience')
+        expect(response).to have_http_status(:success)
       end
     end
 

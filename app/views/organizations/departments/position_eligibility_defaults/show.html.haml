@@ -1,0 +1,35 @@
+- content_for :title, "Position eligibility defaults — #{@department.name}"
+- content_for :header, "Position eligibility defaults"
+
+- content_for :go_back_link do
+  = link_to organization_department_path(@organization, @department), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to department
+
+- can_maap = policy(@organization).manage_maap?
+
+.card.mb-4
+  .card-body
+    %p.text-muted.mb-0
+      Department defaults override organization defaults for titles in this department (by minor 1–3).
+
+- @minor_rows.each do |row|
+  .row.mb-4
+    .col-lg-8
+      = render 'organizations/position_eligibility_defaults/minor_requirement_summary_card',
+        header_title: "Minor #{row[:minor]}",
+        requirement: row[:requirement],
+        missing_text: 'Not set — organization default applies'
+    .col-lg-4
+      .d-grid.gap-2
+        - if can_maap
+          = link_to edit_minor_organization_department_position_eligibility_defaults_path(@organization, @department, minor: row[:minor]), class: 'btn btn-primary' do
+            %i.bi.bi-pencil.me-1
+            Edit
+        - else
+          .d-flex.align-items-center.gap-2
+            .flex-grow-1
+              %button.btn.btn-secondary.w-100{type: 'button', disabled: true}
+                %i.bi.bi-pencil.me-1
+                Edit
+            %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: 'tooltip', bs_placement: 'left' }, title: 'Requires MAAP management permission (can_manage_maap).' }

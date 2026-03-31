@@ -1,0 +1,26 @@
+- header_title = local_assigns.fetch(:header_title)
+- header_caption = local_assigns[:header_caption]
+- requirement = local_assigns[:requirement]
+- missing_text = local_assigns.fetch(:missing_text, 'Not linked')
+- section_order = %w(company_aspirational_values_check_in_requirements required_assignment_check_in_requirements unique_to_you_assignment_check_in_requirements mileage_requirements position_check_in_requirements)
+
+.card.h-100
+  .card-header
+    %h6.mb-0= header_title
+    - if header_caption.present?
+      .caption.small.text-muted= header_caption
+  .card-body
+    - if requirement
+      - sections = requirement.to_eligibility_service_hash
+      - if sections.any?
+        - ordered_keys = section_order.select { |k| sections.key?(k) } + (sections.keys - section_order)
+        %ul.mb-0
+          - ordered_keys.each do |k|
+            - details = sections[k]
+            %li
+              %strong= eligibility_check_label(k.to_sym)
+              %span.text-muted.small.ms-1= eligibility_requirement_section_summary(k, details)
+      - else
+        %span.text-muted Empty profile
+    - else
+      %span.text-muted= missing_text

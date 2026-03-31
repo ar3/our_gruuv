@@ -22,6 +22,12 @@
       to be eligible for consideration of
       = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
       …
+    - if @eligibility_config_source_path.present?
+      .caption.small.text-muted.mt-1
+        These requirements are currently coming from
+        %strong= @eligibility_config_source_label
+        = "."
+        = link_to @eligibility_config_source_link_text, @eligibility_config_source_path, class: "ms-1"
 
 .row.mb-4
   .col-12

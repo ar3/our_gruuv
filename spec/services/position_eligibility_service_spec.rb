@@ -22,10 +22,9 @@ RSpec.describe PositionEligibilityService do
 
     before do
       create(:position_assignment, position: position, assignment: required_assignment, assignment_type: 'required')
-      position.update!(
-        eligibility_requirements_explicit: {
-          "unique_to_you_assignment_check_in_requirements" => requirements
-        }
+      assign_position_eligibility_from_hash!(
+        position,
+        'unique_to_you_assignment_check_in_requirements' => requirements
       )
     end
 
@@ -62,13 +61,12 @@ RSpec.describe PositionEligibilityService do
 
     it 'returns not_applicable when no unique-to-you assignments and minimum meeting expectation is 0% or empty' do
       create(:assignment_tenure, teammate: teammate, assignment: required_assignment, ended_at: nil)
-      position.update!(
-        eligibility_requirements_explicit: {
-          "unique_to_you_assignment_check_in_requirements" => {
-            "minimum_months_at_or_above_rating_criteria" => 12,
-            "minimum_percentage_of_assignments_meeting" => 0,
-            "minimum_percentage_of_assignments_exceeding" => 0
-          }
+      assign_position_eligibility_from_hash!(
+        position,
+        'unique_to_you_assignment_check_in_requirements' => {
+          'minimum_months_at_or_above_rating_criteria' => 12,
+          'minimum_percentage_of_assignments_meeting' => 0,
+          'minimum_percentage_of_assignments_exceeding' => 0
         }
       )
 
@@ -125,10 +123,9 @@ RSpec.describe PositionEligibilityService do
     it 'passes when teammate meets absolute minimum mileage' do
       create(:position_ability, position: position, ability: ability, milestone_level: 2)
       create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 2)
-      position.update!(
-        eligibility_requirements_explicit: {
-          'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 2 }
-        }
+      assign_position_eligibility_from_hash!(
+        position,
+        'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 2 }
       )
 
       report = described_class.new.check_eligibility(teammate, position)
@@ -142,10 +139,9 @@ RSpec.describe PositionEligibilityService do
     it 'fails when teammate is below absolute minimum mileage' do
       create(:position_ability, position: position, ability: ability, milestone_level: 2)
       create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 1)
-      position.update!(
-        eligibility_requirements_explicit: {
-          'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 5 }
-        }
+      assign_position_eligibility_from_hash!(
+        position,
+        'mileage_requirements' => { 'threshold_type' => 'absolute', 'threshold_value' => 5 }
       )
 
       report = described_class.new.check_eligibility(teammate, position)
@@ -159,10 +155,9 @@ RSpec.describe PositionEligibilityService do
     it 'uses percentage more than required: base 20, 20% more = 24; teammate 20 fails, 26 passes' do
       # Base = one ability at M5 => points_through(5) = 1+2+3+6+8 = 20.
       create(:position_ability, position: position, ability: ability, milestone_level: 5)
-      position.update!(
-        eligibility_requirements_explicit: {
-          'mileage_requirements' => { 'threshold_type' => 'percentage', 'threshold_value' => 20 }
-        }
+      assign_position_eligibility_from_hash!(
+        position,
+        'mileage_requirements' => { 'threshold_type' => 'percentage', 'threshold_value' => 20 }
       )
 
       # 20 * (100+20)/100 = 24 required. Teammate with 20 (M1–M5 for ability = 1+2+3+6+8) fails.
@@ -185,40 +180,14 @@ RSpec.describe PositionEligibilityService do
     end
   end
 
-  describe '.eligibility_data_with_defaults and default requirements' do
-    it 'fills in default sections when raw is empty' do
-      result = described_class.eligibility_data_with_defaults({})
-      expect(result['company_aspirational_values_check_in_requirements']).to eq(
-        'minimum_months_at_or_above_rating_criteria' => 3,
-        'minimum_percentage_of_aspirational_values_meeting' => 80,
-        'minimum_percentage_of_aspirational_values_exceeding' => 0
-      )
-      expect(result['position_check_in_requirements']).to eq(
-        'minimum_rating' => 2,
-        'minimum_months_at_or_above_rating_criteria' => 3
-      )
-      expect(result['mileage_requirements']).to eq(
-        'threshold_type' => 'percentage',
-        'threshold_value' => 20
-      )
-    end
-
-    it 'keeps explicit sections when present and only fills blank sections' do
-      raw = {
-        'position_check_in_requirements' => { 'minimum_rating' => 3, 'minimum_months_at_or_above_rating_criteria' => 6 }
-      }
-      result = described_class.eligibility_data_with_defaults(raw)
-      expect(result['position_check_in_requirements']).to eq('minimum_rating' => 3, 'minimum_months_at_or_above_rating_criteria' => 6)
-      expect(result['mileage_requirements']).to eq('threshold_type' => 'percentage', 'threshold_value' => 20)
-    end
-
-    it 'applies default position check-in and mileage when position has no eligibility data' do
+  describe 'organization default eligibility (cascade)' do
+    it 'uses seeded organization defaults when position has no position_eligibility_requirement' do
       organization = create(:organization, :company)
       title = create(:title, company: organization)
       position_level = create(:position_level, position_major_level: title.position_major_level)
       position = create(:position, title: title, position_level: position_level)
       teammate = create(:company_teammate, organization: organization)
-      position.update!(eligibility_requirements_explicit: {})
+      position.update!(position_eligibility_requirement_id: nil)
 
       report = described_class.new.check_eligibility(teammate, position)
       pos_check = report[:checks].find { |c| c[:key] == :position_check_in_requirements }

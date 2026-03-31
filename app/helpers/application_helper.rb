@@ -202,9 +202,13 @@ module ApplicationHelper
       if details[:threshold_type] == 'percentage' || details['threshold_type'] == 'percentage'
         pct = details[:threshold_value] || details['threshold_value']
         base = details[:minimum_required_from_milestones] || details['minimum_required_from_milestones']
-        pct.present? ? "At least #{pct}% more than required milestone mileage (#{base} points)." : nil
+        if pct.present? && base.present?
+          "At least #{pct}% more than required milestone mileage (#{base} points)."
+        elsif pct.present?
+          "At least #{pct}% more than required milestone mileage."
+        end
       else
-        pts = details[:minimum_mileage_points] || details['minimum_mileage_points']
+        pts = details[:minimum_mileage_points] || details['minimum_mileage_points'] || details[:threshold_value] || details['threshold_value']
         pts.present? ? "At least #{pts} mileage points." : nil
       end
     when :position_check_in_requirements
@@ -228,6 +232,15 @@ module ApplicationHelper
     end
   end
 
+  # Short summary sentence for one section on defaults pages.
+  def eligibility_requirement_section_summary(key, details)
+    format_eligibility_check_sentence(
+      key: key.to_sym,
+      status: :passed,
+      details: details || {}
+    ) || "Configured."
+  end
+
   # Display label for each eligibility check (used on position show page where there is no section title).
   def eligibility_check_label(key)
     case key.to_sym
@@ -244,9 +257,10 @@ module ApplicationHelper
   # Builds requirement sentences from a position's stored eligibility config (for position show page).
   # Each sentence is prefixed with the check label so the list is self-explanatory without section titles.
   def eligibility_requirements_sentences_from_config(position)
-    return [] unless position&.eligibility_requirements_explicit.present?
+    return [] unless position
 
-    config = position.eligibility_requirements_explicit.to_h
+    config = PositionEligibilityResolver.resolve(position).record.to_eligibility_service_hash
+    return [] if config.blank?
     keys = %w[
       milestone_requirements mileage_requirements position_check_in_requirements
       required_assignment_check_in_requirements unique_to_you_assignment_check_in_requirements
@@ -304,6 +318,46 @@ module ApplicationHelper
 
     abilities = Ability.where(id: levels_by_ability_id.keys).index_by(&:id)
     levels_by_ability_id.keys.filter_map { |id| abilities[id] ? { ability: abilities[id], minimum_milestone_level: levels_by_ability_id[id] } : nil }.sort_by { |h| h[:ability].name }
+  end
+
+  # Combined milestone requirements for position show page:
+  # one row per ability with the required max milestone plus all requirement sources.
+  # Returns rows: { ability:, minimum_milestone_level:, sources: [ "Direct (M2)", "Assignment Name (M3)" ] }
+  def all_milestone_requirement_rows_for_position(position)
+    return [] unless position
+
+    grouped = Hash.new { |h, k| h[k] = { levels: [], sources: [] } }
+
+    position.position_abilities.each do |pa|
+      next unless pa.ability_id.present? && pa.milestone_level.present?
+      grouped[pa.ability_id][:levels] << pa.milestone_level.to_i
+      grouped[pa.ability_id][:sources] << "Direct (M#{pa.milestone_level.to_i})"
+    end
+
+    position.position_assignments.select { |pa| pa.assignment_type == 'required' }.each do |pa|
+      assignment = pa.assignment
+      assignment_label = assignment&.title.presence || "Assignment ##{assignment&.id}"
+      assignment&.assignment_abilities&.each do |aa|
+        next unless aa.ability_id.present? && aa.milestone_level.present?
+        level = aa.milestone_level.to_i
+        grouped[aa.ability_id][:levels] << level
+        grouped[aa.ability_id][:sources] << "#{assignment_label} (M#{level})"
+      end
+    end
+
+    return [] if grouped.empty?
+
+    abilities = Ability.where(id: grouped.keys).index_by(&:id)
+    grouped.keys.filter_map do |ability_id|
+      ability = abilities[ability_id]
+      next unless ability
+      data = grouped[ability_id]
+      {
+        ability: ability,
+        minimum_milestone_level: data[:levels].max,
+        sources: data[:sources].uniq
+      }
+    end.sort_by { |row| row[:ability].name }
   end
 
   # Returns :pass, :maybe, or :miss for one aspirational value row given monthly statuses and requirement.

@@ -26,6 +26,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       return
     end
 
+    set_eligibility_source_context
     @eligibility_report = PositionEligibilityService.new.check_eligibility(@teammate, @position)
     load_requirement_lists
   end
@@ -43,6 +44,30 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
   def set_teammate
     teammate_id = params[:teammate_id].presence || current_company_teammate&.id
     @teammate = CompanyTeammate.find(teammate_id)
+  end
+
+  def set_eligibility_source_context
+    resolved = PositionEligibilityResolver.resolve(@position)
+    @eligibility_config_source = resolved.source
+    @eligibility_minor = @position.position_level.eligibility_minor_slot
+
+    case resolved.source
+    when :position
+      @eligibility_config_source_label = "position-specific settings"
+      @eligibility_config_source_path = organization_position_path(@organization, @position)
+      @eligibility_config_source_link_text = "View this position"
+    when :department
+      department = @position.title.department
+      @eligibility_config_source_label = "department defaults (minor #{@eligibility_minor})"
+      @eligibility_config_source_path =
+        organization_department_position_eligibility_defaults_path(@organization, department)
+      @eligibility_config_source_link_text = "View department eligibility defaults"
+    else
+      @eligibility_config_source_label = "organization defaults (minor #{@eligibility_minor})"
+      @eligibility_config_source_path =
+        organization_position_eligibility_defaults_path(@organization)
+      @eligibility_config_source_link_text = "View organization eligibility defaults"
+    end
   end
 
   def set_selectable_teammates

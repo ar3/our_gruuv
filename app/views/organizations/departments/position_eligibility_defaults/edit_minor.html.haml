@@ -1,0 +1,21 @@
+- content_for :title, "Edit eligibility defaults — #{@department.name} — minor #{@minor}"
+- content_for :header, "Edit eligibility defaults (minor #{@minor})"
+
+- content_for :go_back_link do
+  = link_to organization_department_position_eligibility_defaults_path(@organization, @department), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to summary
+
+.card
+  .card-header
+    %h5.mb-0
+      Department: #{@department.name} — minor #{@minor}
+  .card-body
+    = render 'organizations/positions/eligibility_requirements_form',
+      eligibility: @eligibility_data,
+      minimum_mileage_from_assignments: @minimum_mileage_from_assignments,
+      mileage_id_suffix: @mileage_id_suffix,
+      form_url: update_minor_organization_department_position_eligibility_defaults_path(@organization, @department, minor: @minor),
+      cancel_path: organization_department_position_eligibility_defaults_path(@organization, @department),
+      http_method: :patch,
+      submit_label: 'Save defaults'

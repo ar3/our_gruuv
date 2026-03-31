@@ -1,6 +1,10 @@
 class Department < ApplicationRecord
+  has_paper_trail
   # Associations
   belongs_to :company, class_name: 'Organization'
+  belongs_to :minor_1_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true
+  belongs_to :minor_2_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true
+  belongs_to :minor_3_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true
   belongs_to :parent_department, class_name: 'Department', optional: true
   has_many :child_departments, class_name: 'Department', foreign_key: 'parent_department_id', dependent: :destroy
   

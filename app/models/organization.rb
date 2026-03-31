@@ -1,5 +1,6 @@
 class Organization < ApplicationRecord
   include PgSearch::Model
+  has_paper_trail
 
   # STI removed: always treat as Organization (ignore type column if present)
   self.inheritance_column = :_type_disabled
@@ -52,6 +53,11 @@ class Organization < ApplicationRecord
   has_many :company_label_preferences, foreign_key: 'company_id', dependent: :destroy
 
   belongs_to :observable_moment_notifier_teammate, class_name: 'CompanyTeammate', optional: true
+  belongs_to :minor_1_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true
+  belongs_to :minor_2_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true
+  belongs_to :minor_3_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true
+
+  after_create_commit :ensure_position_eligibility_defaults
 
   # Validations
   validates :name, presence: true
@@ -376,6 +382,10 @@ class Organization < ApplicationRecord
   end
 
   private
+
+  def ensure_position_eligibility_defaults
+    Organizations::PositionEligibilityDefaultSeeder.ensure!(self)
+  end
 
   def observable_moment_notifier_teammate_belongs_to_organization
     return unless observable_moment_notifier_teammate.present?

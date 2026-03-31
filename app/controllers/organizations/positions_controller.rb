@@ -128,6 +128,7 @@ class Organizations::PositionsController < ApplicationController
     end
     @eligibility_requirements_sentences = helpers.eligibility_requirements_sentences_from_config(@position)
     @ability_milestone_requirements = helpers.ability_milestone_requirements_for_position(@position)
+    set_eligibility_source_context_for_show
     render layout: determine_layout
   end
 
@@ -392,116 +393,33 @@ class Organizations::PositionsController < ApplicationController
 
   def manage_eligibility
     authorize @position, :manage_eligibility?
-    
-    # Parse existing JSONB for form pre-population; use defaults when no values are set
-    raw = @position.eligibility_requirements_explicit || {}
-    @eligibility_data = PositionEligibilityService.eligibility_data_with_defaults(raw)
-    
-    # Calculate minimum mileage from required assignments
+
+    resolved = PositionEligibilityResolver.resolve(@position)
+    @eligibility_data = resolved.record.to_eligibility_service_hash
+    @eligibility_config_source = resolved.source
     @minimum_mileage_from_assignments = calculate_minimum_mileage_from_assignments
-    
+
     render layout: determine_layout
   end
 
   def update_eligibility
     authorize @position, :manage_eligibility?
-    
+
     eligibility_params = params[:eligibility_requirements]&.permit! || {}
-    new_eligibility_data = {}
-    
-    # Build JSONB hash, only including sections with at least one field filled
-    if eligibility_params[:mileage_requirements].present?
-      mileage = eligibility_params[:mileage_requirements].to_h.with_indifferent_access
-      threshold_type = mileage[:threshold_type].presence
-      threshold_value = mileage[:threshold_value]
-      legacy_points = mileage[:minimum_mileage_points]
-      if threshold_type == 'percentage'
-        new_eligibility_data['mileage_requirements'] = { 'threshold_type' => 'percentage', 'threshold_value' => threshold_value.to_i } if threshold_value.present? || threshold_value == 0
-      elsif legacy_points.present?
-        new_eligibility_data['mileage_requirements'] = { 'threshold_type' => 'absolute', 'threshold_value' => legacy_points.to_i }
-      elsif threshold_type == 'absolute' && threshold_value.present?
-        new_eligibility_data['mileage_requirements'] = { 'threshold_type' => 'absolute', 'threshold_value' => threshold_value.to_i }
-      end
-    end
-    
-    if eligibility_params[:position_check_in_requirements].present?
-      pos_check = eligibility_params[:position_check_in_requirements]
-      if pos_check[:minimum_rating].present? || pos_check[:minimum_months_at_or_above_rating_criteria].present?
-        pos_data = {}
-        pos_data['minimum_rating'] = pos_check[:minimum_rating].to_i if pos_check[:minimum_rating].present?
-        pos_data['minimum_months_at_or_above_rating_criteria'] = pos_check[:minimum_months_at_or_above_rating_criteria].to_i if pos_check[:minimum_months_at_or_above_rating_criteria].present?
-        new_eligibility_data['position_check_in_requirements'] = pos_data if pos_data.any?
-      end
-    end
-    
-    if eligibility_params[:required_assignment_check_in_requirements].present?
-      req_ass = eligibility_params[:required_assignment_check_in_requirements]
-      req_data = build_check_in_requirement_data(req_ass, :assignments)
-      new_eligibility_data['required_assignment_check_in_requirements'] = req_data if req_data.any?
-    end
+    new_eligibility_data = EligibilityRequirements::BuildEligibilityHash.call(eligibility_params)
+    min_floor = calculate_minimum_mileage_from_assignments
+    errors = EligibilityRequirements::ValidateEligibilityHash.call(new_eligibility_data, minimum_mileage_floor: min_floor)
 
-    if eligibility_params[:unique_to_you_assignment_check_in_requirements].present?
-      unique_ass = eligibility_params[:unique_to_you_assignment_check_in_requirements]
-      unique_data = build_check_in_requirement_data(unique_ass, :assignments)
-      new_eligibility_data['unique_to_you_assignment_check_in_requirements'] = unique_data if unique_data.any?
-    end
-
-    if eligibility_params[:company_aspirational_values_check_in_requirements].present?
-      company_asp = eligibility_params[:company_aspirational_values_check_in_requirements]
-      company_data = build_check_in_requirement_data(company_asp, :aspirational_values)
-      new_eligibility_data['company_aspirational_values_check_in_requirements'] = company_data if company_data.any?
-    end
-
-    # Validate numeric ranges
-    errors = []
-    new_eligibility_data.each do |key, value|
-      if value.is_a?(Hash)
-        if value['minimum_months_at_or_above_rating_criteria'].present? && value['minimum_months_at_or_above_rating_criteria'] < 0
-          errors << "#{key.humanize}: Minimum months must be >= 0"
-        end
-        %w[minimum_percentage_of_assignments minimum_percentage_of_assignments_meeting minimum_percentage_of_assignments_exceeding].each do |pct_key|
-          if value[pct_key].present? && (value[pct_key].to_f < 0 || value[pct_key].to_f > 100)
-            errors << "#{key.humanize}: #{pct_key.humanize} must be between 0 and 100"
-          end
-        end
-        %w[minimum_percentage_of_aspirational_values minimum_percentage_of_aspirational_values_meeting minimum_percentage_of_aspirational_values_exceeding].each do |pct_key|
-          if value[pct_key].present? && (value[pct_key].to_f < 0 || value[pct_key].to_f > 100)
-            errors << "#{key.humanize}: #{pct_key.humanize} must be between 0 and 100"
-          end
-        end
-        if value['minimum_rating'].present? && key == 'position_check_in_requirements'
-          rating = value['minimum_rating'].to_i
-          unless (-3..3).include?(rating)
-            errors << "Position check-in minimum rating must be between -3 and 3"
-          end
-        end
-      end
-    end
-
-    # Validate mileage requirements: absolute >= minimum from assignments; percentage >= 0
-    if new_eligibility_data['mileage_requirements'].present?
-      mileage = new_eligibility_data['mileage_requirements']
-      min_from_assignments = calculate_minimum_mileage_from_assignments
-      if mileage['threshold_type'] == 'percentage'
-        val = mileage['threshold_value']
-        errors << "Percentage more than required must be >= 0" if val.present? && val.to_i < 0
-      else
-        val = mileage['threshold_value'].to_i
-        errors << "Minimum mileage points must be >= 0" if val < 0
-        if val < min_from_assignments
-          errors << "Minimum mileage points (#{val}) cannot be lower than the total from required assignments (#{min_from_assignments})"
-        end
-      end
-    end
-    
     if errors.any?
-      # Convert params to string-keyed hash for form re-population
       @eligibility_data = eligibility_params.to_h.deep_stringify_keys
-      @minimum_mileage_from_assignments = calculate_minimum_mileage_from_assignments
+      @minimum_mileage_from_assignments = min_floor
+      resolved = PositionEligibilityResolver.resolve(@position)
+      @eligibility_config_source = resolved.source
       flash[:alert] = "Validation errors: #{errors.join('; ')}"
       render :manage_eligibility, status: :unprocessable_entity, layout: determine_layout
     else
-      @position.update!(eligibility_requirements_explicit: new_eligibility_data)
+      requirement = EligibilityRequirements::FindOrCreate.call!(new_eligibility_data)
+      @position.update!(position_eligibility_requirement_id: requirement.id)
       redirect_to organization_position_path(@organization, @position), notice: 'Eligibility requirements updated successfully.'
     end
   end
@@ -514,6 +432,7 @@ class Organizations::PositionsController < ApplicationController
 
   def set_position
     @position = @organization.positions.includes(
+      :position_eligibility_requirement,
       position_abilities: :ability,
       position_assignments: { assignment: :assignment_abilities }
     ).find(params[:id])
@@ -538,8 +457,29 @@ class Organizations::PositionsController < ApplicationController
     @assignments = @organization.assignments.unarchived.ordered
   end
 
+  def set_eligibility_source_context_for_show
+    resolved = PositionEligibilityResolver.resolve(@position)
+    minor = @position.position_level.eligibility_minor_slot
+
+    case resolved.source
+    when :position
+      @eligibility_source_caption_text = "These requirements are currently coming from position-specific settings. Click Manage Eligibility in the Actions bar to edit."
+      @eligibility_source_link_text = nil
+      @eligibility_source_link_path = nil
+    when :department
+      department = @position.title.department
+      @eligibility_source_caption_text = "These requirements are currently coming from department defaults (minor #{minor})."
+      @eligibility_source_link_text = "View department eligibility defaults"
+      @eligibility_source_link_path = organization_department_position_eligibility_defaults_path(@organization, department)
+    else
+      @eligibility_source_caption_text = "These requirements are currently coming from organization defaults (minor #{minor})."
+      @eligibility_source_link_text = "View organization eligibility defaults"
+      @eligibility_source_link_path = organization_position_eligibility_defaults_path(@organization)
+    end
+  end
+
   def position_params
-    params.require(:position).permit(:title_id, :position_level_id, :external_title, :position_summary, :eligibility_requirements_summary, :version_type)
+    params.require(:position).permit(:title_id, :position_level_id, :external_title, :position_summary, :version_type)
   end
 
   def calculate_minimum_mileage_from_assignments
@@ -559,28 +499,4 @@ class Organizations::PositionsController < ApplicationController
     total_points
   end
 
-  # Build stored hash for assignment or aspirational check-in requirements (two percentages: meeting and exceeding).
-  def build_check_in_requirement_data(params_hash, type)
-    params_hash = params_hash.to_h.with_indifferent_access
-    months = params_hash[:minimum_months_at_or_above_rating_criteria].presence
-    if type == :assignments
-      pct_meeting = params_hash[:minimum_percentage_of_assignments_meeting].presence
-      pct_exceeding = params_hash[:minimum_percentage_of_assignments_exceeding].presence
-    else
-      pct_meeting = params_hash[:minimum_percentage_of_aspirational_values_meeting].presence
-      pct_exceeding = params_hash[:minimum_percentage_of_aspirational_values_exceeding].presence
-    end
-    return {} if months.blank? || (pct_meeting.blank? && pct_exceeding.blank?)
-
-    data = {}
-    data['minimum_months_at_or_above_rating_criteria'] = months.to_i
-    if type == :assignments
-      data['minimum_percentage_of_assignments_meeting'] = pct_meeting.to_f if pct_meeting.present?
-      data['minimum_percentage_of_assignments_exceeding'] = pct_exceeding.to_f if pct_exceeding.present?
-    else
-      data['minimum_percentage_of_aspirational_values_meeting'] = pct_meeting.to_f if pct_meeting.present?
-      data['minimum_percentage_of_aspirational_values_exceeding'] = pct_exceeding.to_f if pct_exceeding.present?
-    end
-    data
-  end
 end

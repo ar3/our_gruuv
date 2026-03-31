@@ -121,6 +121,11 @@ Rails.application.routes.draw do
     end
 
     resources :eligibility_requirements, module: :organizations, only: [:index, :show]
+
+    resource :position_eligibility_defaults, only: [:show], module: :organizations, controller: 'position_eligibility_defaults' do
+      get 'minors/:minor/edit', action: :edit_minor, as: :edit_minor
+      patch 'minors/:minor', action: :update_minor, as: :update_minor
+    end
     
     # Teammate Milestones
     resources :teammate_milestones, module: :organizations, only: [:new, :create, :show] do
@@ -500,6 +505,11 @@ Rails.application.routes.draw do
     
     # Departments management
     resources :departments, module: :organizations, except: [:destroy] do
+      resource :position_eligibility_defaults, only: [:show],
+               controller: 'departments/position_eligibility_defaults' do
+        get 'minors/:minor/edit', action: :edit_minor, as: :edit_minor
+        patch 'minors/:minor', action: :update_minor, as: :update_minor
+      end
       member do
         patch :archive
         get :associate_abilities

@@ -5,7 +5,6 @@ class PositionForm < Reform::Form
   property :title_id
   property :position_level_id
   property :position_summary
-  property :eligibility_requirements_summary
   property :version_type, virtual: true
 
   # Use ActiveModel validations

@@ -5,6 +5,7 @@ class Position < ApplicationRecord
   # Associations
   belongs_to :title
   belongs_to :position_level
+  belongs_to :position_eligibility_requirement, optional: true
   has_many :position_assignments, dependent: :destroy
   has_many :assignments, through: :position_assignments
   has_many :position_abilities, dependent: :destroy
@@ -20,9 +21,6 @@ class Position < ApplicationRecord
   validates :position_level, presence: true
   validates :position_level, uniqueness: { scope: :title_id }
   validates :position_level, inclusion: { in: ->(position) { position.title&.position_major_level&.position_levels || [] } }
-  
-  # Callbacks
-  before_save :normalize_eligibility_requirements_summary
   
   # Scopes
   scope :unarchived, -> { where(deleted_at: nil) }
@@ -128,9 +126,4 @@ class Position < ApplicationRecord
       position_level: [:level]
     }
   
-  private
-  
-  def normalize_eligibility_requirements_summary
-    self.eligibility_requirements_summary = nil unless eligibility_requirements_summary.present?
-  end
-end 
+end

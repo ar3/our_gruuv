@@ -6,6 +6,7 @@ RSpec.describe TitleMaturityService, type: :service do
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:title) { create(:title, company: company, position_major_level: position_major_level) }
   let(:service) { described_class.new(title) }
+  let(:title_maturity_eligibility_marker) { create(:position_eligibility_requirement) }
 
   describe '.calculate_phase' do
     it 'returns 1 when no positions have assignments' do
@@ -247,11 +248,11 @@ RSpec.describe TitleMaturityService, type: :service do
     end
 
     context 'Phase 7' do
-      it 'returns 8 when all positions have eligibility_requirements_summary' do
+      it 'returns 8 when all positions have a position_eligibility_requirement' do
         # Set up phases 1-6: positions, assignments, tenures, check-ins, abilities with milestones, teammate milestones
         # Use old updated_at timestamps so phase 8 isn't met
-        position1 = create(:position, title: title, position_level: position_level, eligibility_requirements_summary: 'Requirements', updated_at: 7.months.ago)
-        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), eligibility_requirements_summary: 'Requirements', updated_at: 7.months.ago)
+        position1 = create(:position, title: title, position_level: position_level, position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 7.months.ago)
+        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 7.months.ago)
         assignment1 = create(:assignment, company: company, updated_at: 7.months.ago)
         assignment2 = create(:assignment, company: company, updated_at: 7.months.ago)
         create(:position_assignment, position: position1, assignment: assignment1, assignment_type: 'required')
@@ -274,12 +275,12 @@ RSpec.describe TitleMaturityService, type: :service do
         expect(described_class.calculate_phase(title)).to eq(8)
       end
 
-      it 'returns 7 when positions exist but not all have eligibility_requirements_summary' do
+      it 'returns 7 when positions exist but not all have a position_eligibility_requirement' do
         # Set up phases 1-6: positions, assignments, tenures, check-ins, abilities with milestones, teammate milestones
         # Use old updated_at timestamps so phase 8 isn't met
-        position1 = create(:position, title: title, position_level: position_level, eligibility_requirements_summary: 'Requirements', updated_at: 7.months.ago)
+        position1 = create(:position, title: title, position_level: position_level, position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 7.months.ago)
         position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), updated_at: 7.months.ago)
-        # position2 has nil eligibility_requirements_summary
+        # position2 has nil position_eligibility_requirement_id
         assignment1 = create(:assignment, company: company, updated_at: 7.months.ago)
         assignment2 = create(:assignment, company: company, updated_at: 7.months.ago)
         create(:position_assignment, position: position1, assignment: assignment1, assignment_type: 'required')
@@ -306,8 +307,8 @@ RSpec.describe TitleMaturityService, type: :service do
     context 'Phase 8' do
       xit 'returns 9 when ≥5% of entities updated in last 6 months' do
         # Set up phases 1-7: positions, assignments, tenures, check-ins, abilities with milestones, teammate milestones, eligibility summaries
-        position1 = create(:position, title: title, position_level: position_level, eligibility_requirements_summary: 'Requirements', updated_at: 3.months.ago)
-        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), eligibility_requirements_summary: 'Requirements', updated_at: 3.months.ago)
+        position1 = create(:position, title: title, position_level: position_level, position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 3.months.ago)
+        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 3.months.ago)
         assignment1 = create(:assignment, company: company, updated_at: 2.months.ago)
         assignment2 = create(:assignment, company: company, updated_at: 2.months.ago)
         create(:position_assignment, position: position1, assignment: assignment1, assignment_type: 'required')
@@ -337,8 +338,8 @@ RSpec.describe TitleMaturityService, type: :service do
 
       it 'returns 8 when <5% of entities updated in last 6 months' do
         # Set up phases 1-7: positions, assignments, tenures, check-ins, abilities with milestones, teammate milestones, eligibility summaries
-        position1 = create(:position, title: title, position_level: position_level, eligibility_requirements_summary: 'Requirements', updated_at: 7.months.ago)
-        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), eligibility_requirements_summary: 'Requirements', updated_at: 7.months.ago)
+        position1 = create(:position, title: title, position_level: position_level, position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 7.months.ago)
+        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 7.months.ago)
         assignment1 = create(:assignment, company: company, updated_at: 8.months.ago)
         assignment2 = create(:assignment, company: company, updated_at: 8.months.ago)
         create(:position_assignment, position: position1, assignment: assignment1, assignment_type: 'required')
@@ -369,8 +370,8 @@ RSpec.describe TitleMaturityService, type: :service do
     context 'Phase 9' do
       it 'returns 9 when ≥10% have published observations in last 6 months' do
         # Set up phases 1-8: positions, assignments, tenures, check-ins, abilities with milestones, teammate milestones, eligibility summaries, updated entities
-        position1 = create(:position, title: title, position_level: position_level, eligibility_requirements_summary: 'Requirements', updated_at: 3.months.ago)
-        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), eligibility_requirements_summary: 'Requirements', updated_at: 3.months.ago)
+        position1 = create(:position, title: title, position_level: position_level, position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 3.months.ago)
+        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 3.months.ago)
         assignment1 = create(:assignment, company: company, updated_at: 2.months.ago)
         assignment2 = create(:assignment, company: company, updated_at: 2.months.ago)
         create(:position_assignment, position: position1, assignment: assignment1, assignment_type: 'required')
@@ -404,8 +405,8 @@ RSpec.describe TitleMaturityService, type: :service do
 
       it 'returns 8 when <10% have published observations' do
         # Set up phases 1-8: positions, assignments, tenures, check-ins, abilities with milestones, teammate milestones, eligibility summaries, updated entities
-        position1 = create(:position, title: title, position_level: position_level, eligibility_requirements_summary: 'Requirements', updated_at: 3.months.ago)
-        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), eligibility_requirements_summary: 'Requirements', updated_at: 3.months.ago)
+        position1 = create(:position, title: title, position_level: position_level, position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 3.months.ago)
+        position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 3.months.ago)
         assignment1 = create(:assignment, company: company, updated_at: 2.months.ago)
         assignment2 = create(:assignment, company: company, updated_at: 2.months.ago)
         create(:position_assignment, position: position1, assignment: assignment1, assignment_type: 'required')
@@ -444,8 +445,8 @@ RSpec.describe TitleMaturityService, type: :service do
 
     it 'returns congratulations message for phase 9' do
       # Set up all phases to be met (phases 1-9)
-      position1 = create(:position, title: title, position_level: position_level, eligibility_requirements_summary: 'Requirements', updated_at: 3.months.ago)
-      position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), eligibility_requirements_summary: 'Requirements', updated_at: 3.months.ago)
+      position1 = create(:position, title: title, position_level: position_level, position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 3.months.ago)
+      position2 = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level), position_eligibility_requirement_id: title_maturity_eligibility_marker.id, updated_at: 3.months.ago)
       assignment1 = create(:assignment, company: company, updated_at: 2.months.ago)
       assignment2 = create(:assignment, company: company, updated_at: 2.months.ago)
       create(:position_assignment, position: position1, assignment: assignment1, assignment_type: 'required')

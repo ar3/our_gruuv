@@ -10,9 +10,3 @@
     - else
       %p No summary provided
     
-    - if position.eligibility_requirements_summary.present?
-      %h3.mt-4
-        %strong Eligibility Requirements:
-      .markdown-content= render_markdown(position.eligibility_requirements_summary)
-
-

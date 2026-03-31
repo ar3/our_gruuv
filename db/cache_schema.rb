@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_30_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -360,9 +360,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "minor_1_position_eligibility_requirement_id"
+    t.bigint "minor_2_position_eligibility_requirement_id"
+    t.bigint "minor_3_position_eligibility_requirement_id"
     t.index ["company_id"], name: "index_departments_on_company_id"
     t.index ["deleted_at"], name: "index_departments_on_deleted_at"
     t.index ["migrate_from_organization_id"], name: "index_departments_on_migrate_from_organization_id", unique: true
+    t.index ["minor_1_position_eligibility_requirement_id"], name: "idx_on_minor_1_position_eligibility_requirement_id_d7457b9170"
+    t.index ["minor_2_position_eligibility_requirement_id"], name: "idx_on_minor_2_position_eligibility_requirement_id_bb818898ae"
+    t.index ["minor_3_position_eligibility_requirement_id"], name: "idx_on_minor_3_position_eligibility_requirement_id_efcbcebcad"
     t.index ["parent_department_id"], name: "index_departments_on_parent_department_id"
   end
 
@@ -876,8 +882,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
     t.datetime "deleted_at"
     t.jsonb "kudos_points_economy_config", default: {}
     t.bigint "observable_moment_notifier_teammate_id"
+    t.bigint "minor_1_position_eligibility_requirement_id"
+    t.bigint "minor_2_position_eligibility_requirement_id"
+    t.bigint "minor_3_position_eligibility_requirement_id"
     t.index ["deleted_at"], name: "index_organizations_on_deleted_at"
     t.index ["kudos_points_economy_config"], name: "index_organizations_on_kudos_points_economy_config", using: :gin
+    t.index ["minor_1_position_eligibility_requirement_id"], name: "idx_on_minor_1_position_eligibility_requirement_id_86bf397477"
+    t.index ["minor_2_position_eligibility_requirement_id"], name: "idx_on_minor_2_position_eligibility_requirement_id_bed31dbd53"
+    t.index ["minor_3_position_eligibility_requirement_id"], name: "idx_on_minor_3_position_eligibility_requirement_id_ca91f18c27"
     t.index ["observable_moment_notifier_teammate_id"], name: "index_organizations_on_observable_moment_notifier_teammate_id"
   end
 
@@ -1002,6 +1014,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
     t.check_constraint "official_rating IS NULL OR official_rating >= '-3'::integer AND official_rating <= 3", name: "valid_official_rating_range"
   end
 
+  create_table "position_eligibility_requirements", force: :cascade do |t|
+    t.string "requirements_fingerprint", null: false
+    t.string "mileage_threshold_type"
+    t.integer "mileage_threshold_value"
+    t.integer "position_check_in_minimum_rating"
+    t.integer "position_check_in_minimum_months"
+    t.integer "required_assignment_minimum_months"
+    t.decimal "required_assignment_pct_meeting", precision: 8, scale: 2
+    t.decimal "required_assignment_pct_exceeding", precision: 8, scale: 2
+    t.integer "unique_to_you_minimum_months"
+    t.decimal "unique_to_you_pct_meeting", precision: 8, scale: 2
+    t.decimal "unique_to_you_pct_exceeding", precision: 8, scale: 2
+    t.integer "aspirational_minimum_months"
+    t.decimal "aspirational_pct_meeting", precision: 8, scale: 2
+    t.decimal "aspirational_pct_exceeding", precision: 8, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["requirements_fingerprint"], name: "idx_position_eligibility_req_fingerprint", unique: true
+  end
+
   create_table "position_levels", force: :cascade do |t|
     t.bigint "position_major_level_id", null: false
     t.string "level", null: false
@@ -1027,12 +1059,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
     t.text "position_summary"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.text "eligibility_requirements_summary"
     t.string "semantic_version", default: "0.0.1", null: false
-    t.jsonb "eligibility_requirements_explicit", default: {}, null: false
     t.datetime "deleted_at"
+    t.bigint "position_eligibility_requirement_id"
     t.index ["deleted_at"], name: "index_positions_on_deleted_at"
-    t.index ["eligibility_requirements_explicit"], name: "index_positions_on_eligibility_requirements_explicit", using: :gin
+    t.index ["position_eligibility_requirement_id"], name: "index_positions_on_position_eligibility_requirement_id"
     t.index ["position_level_id"], name: "index_positions_on_position_level_id"
     t.index ["title_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true
     t.index ["title_id"], name: "index_positions_on_title_id"
@@ -1492,6 +1523,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
   add_foreign_key "company_label_preferences", "organizations", column: "company_id"
   add_foreign_key "departments", "departments", column: "parent_department_id"
   add_foreign_key "departments", "organizations", column: "company_id"
+  add_foreign_key "departments", "position_eligibility_requirements", column: "minor_1_position_eligibility_requirement_id"
+  add_foreign_key "departments", "position_eligibility_requirements", column: "minor_2_position_eligibility_requirement_id"
+  add_foreign_key "departments", "position_eligibility_requirements", column: "minor_3_position_eligibility_requirement_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"
@@ -1549,6 +1583,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
   add_foreign_key "observees", "observations"
   add_foreign_key "observees", "teammates"
   add_foreign_key "one_on_one_links", "teammates"
+  add_foreign_key "organizations", "position_eligibility_requirements", column: "minor_1_position_eligibility_requirement_id"
+  add_foreign_key "organizations", "position_eligibility_requirements", column: "minor_2_position_eligibility_requirement_id"
+  add_foreign_key "organizations", "position_eligibility_requirements", column: "minor_3_position_eligibility_requirement_id"
   add_foreign_key "organizations", "teammates", column: "observable_moment_notifier_teammate_id"
   add_foreign_key "page_visits", "people"
   add_foreign_key "person_identities", "people"
@@ -1560,6 +1597,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_022135) do
   add_foreign_key "position_check_ins", "maap_snapshots"
   add_foreign_key "position_check_ins", "teammates"
   add_foreign_key "position_levels", "position_major_levels"
+  add_foreign_key "positions", "position_eligibility_requirements"
   add_foreign_key "positions", "position_levels"
   add_foreign_key "positions", "titles"
   add_foreign_key "prompt_answers", "prompt_questions"

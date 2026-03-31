@@ -113,7 +113,7 @@ class TitleMaturityService
     when 5
       "Next: Have employees earn milestones for the abilities required by their assignments."
     when 6
-      "Next: Add eligibility requirements summaries to all positions."
+      "Next: Add position-specific eligibility configuration for all positions."
     when 7
       "Next: Ensure at least 5% of Abilities, Assignments, and Positions are updated in the last 6 months."
     when 8
@@ -549,12 +549,12 @@ class TitleMaturityService
     end
   end
 
-  # Phase 7 Health: Positions with eligibility requirements summaries
+  # Phase 7 Health: Positions with position-specific eligibility requirement link
   def phase_seven_health
     positions = title.positions.to_a
     return :red if positions.empty?
 
-    positions_with_summaries = positions.count { |p| p.eligibility_requirements_summary.present? }
+    positions_with_summaries = positions.count { |p| p.position_eligibility_requirement_id.present? }
     percentage = positions.length > 0 ? (positions_with_summaries.to_f / positions.length) * 100 : 0.0
 
     if percentage == 0
@@ -571,26 +571,26 @@ class TitleMaturityService
   def phase_seven_reason
     health = phase_seven_health
     positions = title.positions.to_a
-    positions_with_summaries = positions.count { |p| p.eligibility_requirements_summary.present? }
+    positions_with_summaries = positions.count { |p| p.position_eligibility_requirement_id.present? }
     percentage = positions.length > 0 ? (positions_with_summaries.to_f / positions.length) * 100 : 0.0
 
     case health
     when :red
       {
         status: :red,
-        reason: "#{percentage.round(1)}% of positions have eligibility requirements summaries",
-        to_green: "Ensure more than 34% of positions have eligibility requirements summaries"
+        reason: "#{percentage.round(1)}% of positions have position-specific eligibility configured",
+        to_green: "Ensure more than 34% of positions have position-specific eligibility configured"
       }
     when :yellow
       {
         status: :yellow,
-        reason: "#{percentage.round(1)}% of positions have eligibility requirements summaries",
-        to_green: "Ensure at least 68% of positions have eligibility requirements summaries"
+        reason: "#{percentage.round(1)}% of positions have position-specific eligibility configured",
+        to_green: "Ensure at least 68% of positions have position-specific eligibility configured"
       }
     when :green
       {
         status: :green,
-        reason: "#{percentage.round(1)}% of positions have eligibility requirements summaries",
+        reason: "#{percentage.round(1)}% of positions have position-specific eligibility configured",
         to_green: "Maintain this healthy state"
       }
     end
@@ -950,13 +950,13 @@ class TitleMaturityService
     end
   end
 
-  # Phase 7: All positions have non-nil eligibility_requirements_summary
+  # Phase 7: All positions have a position-specific eligibility requirement row
   def phase_seven_met?
     positions = title.positions
     return false if positions.empty?
 
     positions.all? do |position|
-      position.eligibility_requirements_summary.present?
+      position.position_eligibility_requirement_id.present?
     end
   end
 
