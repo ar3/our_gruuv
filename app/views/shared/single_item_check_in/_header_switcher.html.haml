@@ -55,7 +55,7 @@
       = render "shared/last_finalized_pill", latest_finalized: @latest_finalized_for_pill, popover_content: popover_content
     - rate_data = check_in_health_completion_rate_and_breakdown(@check_in_health_cache)
     - health_table_data = single_item_health_popover_table(@check_in_health_cache)
-    - health_popover_html = health_table_data ? render(partial: "shared/single_item_check_in/health_popover_table", locals: { table_data: health_table_data }) : "No check-in health data yet."
+    - health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : "No check-in health data yet."
     - if rate_data
       .d-flex.flex-column.align-items-end
         %span.fw-bold.fs-5{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "left", "data-bs-html" => "true", "data-bs-content" => health_popover_html.html_safe, style: "cursor: pointer;"}
