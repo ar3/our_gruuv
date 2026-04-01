@@ -1,4 +1,8 @@
 module CheckInHelper
+  FRESH_PILL_DAYS = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS
+  WARNING_PILL_DAYS = CheckInBehavior::CLARITY_BLURRED_DAYS
+  NO_ACTION_NEEDED_DAYS = CheckInBehavior::CLARITY_CLEAR_DAYS
+
   # Reference the single source of truth from EmploymentTenure
   def position_rating_display(rating)
     return 'Not Rated' if rating.nil?
@@ -127,13 +131,16 @@ module CheckInHelper
     "Last Finalized #{time_ago_in_words(latest_check_in.official_check_in_completed_at)} ago"
   end
 
-  # Bootstrap badge class for pill by recency: green <=45d, warning 46-90d, danger >90d, grey never
+  # Bootstrap badge class for pill by recency:
+  # green <= crystal clear days, info <= clear days, warning <= blurred days, danger after that, grey never.
   def last_finalized_pill_class(latest_check_in)
     return 'bg-secondary' if latest_check_in.blank?
-    days = (Time.current - latest_check_in.official_check_in_completed_at) / 1.day
-    if days <= 45
+    days = (Time.zone.today - latest_check_in.official_check_in_completed_at.to_date).to_i
+    if days <= FRESH_PILL_DAYS
       'bg-success'
-    elsif days <= 90
+    elsif days <= NO_ACTION_NEEDED_DAYS
+      'bg-info text-dark'
+    elsif days <= WARNING_PILL_DAYS
       'bg-warning text-dark'
     else
       'bg-danger'
@@ -143,6 +150,92 @@ module CheckInHelper
   # True when the "Last Finalized" pill is green (recently finalized, no action needed).
   def last_finalized_recent?(latest_check_in)
     last_finalized_pill_class(latest_check_in) == 'bg-success'
+  end
+
+  # True when open row fields should be hidden by default because the item is fresh
+  # and no one has started the current check-in yet.
+  def hide_fresh_open_check_in_fields?(check_in, latest_finalized, view_mode:)
+    return false if check_in.blank?
+    return false unless check_in.open?
+    return false unless latest_finalized&.clarity_level == :crystal_clear
+    return false if view_mode == :readonly
+    return false unless other_side_incomplete_for_view?(check_in, view_mode)
+    return false unless viewer_side_fields_unset_for_fresh_hide?(check_in, view_mode)
+
+    true
+  end
+
+  def last_finalized_days_ago(latest_check_in)
+    return nil if latest_check_in.blank?
+
+    (Time.zone.today - latest_check_in.official_check_in_completed_at.to_date).to_i
+  end
+
+  def other_side_incomplete_for_view?(check_in, view_mode)
+    case view_mode
+    when :employee
+      !check_in.manager_completed?
+    when :manager
+      !check_in.employee_completed?
+    else
+      false
+    end
+  end
+
+  def viewer_side_fields_unset_for_fresh_hide?(check_in, view_mode)
+    case check_in
+    when AssignmentCheckIn
+      assignment_viewer_side_fields_unset?(check_in, view_mode)
+    when AspirationCheckIn
+      aspiration_viewer_side_fields_unset?(check_in, view_mode)
+    when PositionCheckIn
+      position_viewer_side_fields_unset?(check_in, view_mode)
+    else
+      false
+    end
+  end
+
+  def assignment_viewer_side_fields_unset?(check_in, view_mode)
+    case view_mode
+    when :employee
+      default_energy = check_in.assignment_tenure&.anticipated_energy_percentage
+      energy_unset = check_in.actual_energy_percentage.nil? || check_in.actual_energy_percentage == default_energy
+      check_in.employee_rating.blank? &&
+        check_in.employee_private_notes.to_s.strip.blank? &&
+        check_in.employee_personal_alignment.blank? &&
+        energy_unset
+    when :manager
+      check_in.manager_rating.blank? &&
+        check_in.manager_private_notes.to_s.strip.blank?
+    else
+      false
+    end
+  end
+
+  def aspiration_viewer_side_fields_unset?(check_in, view_mode)
+    case view_mode
+    when :employee
+      check_in.employee_rating.blank? &&
+        check_in.employee_private_notes.to_s.strip.blank?
+    when :manager
+      check_in.manager_rating.blank? &&
+        check_in.manager_private_notes.to_s.strip.blank?
+    else
+      false
+    end
+  end
+
+  def position_viewer_side_fields_unset?(check_in, view_mode)
+    case view_mode
+    when :employee
+      check_in.employee_rating.blank? &&
+        check_in.employee_private_notes.to_s.strip.blank?
+    when :manager
+      check_in.manager_rating.blank? &&
+        check_in.manager_private_notes.to_s.strip.blank?
+    else
+      false
+    end
   end
 
   # Popover content: same sentence structure as audit page (shared partial)
@@ -199,7 +292,7 @@ module CheckInHelper
       return 'Waiting to be reviewed'
     end
     last_finalized_days_ago = latest_finalized_at ? ((Time.current - latest_finalized_at) / 1.day).to_i : 9999
-    if last_finalized_days_ago < 60
+    if last_finalized_days_ago < NO_ACTION_NEEDED_DAYS
       return 'Nothing to do yet'
     end
     employee_name = teammate.person.casual_name.presence || 'Employee'
@@ -222,14 +315,15 @@ module CheckInHelper
     teammate.current_manager&.casual_name.presence || 'Manager'
   end
 
-  # True when the "Make Changes" toggle should use warning styling: no finalized check-in in 60+ days
+  # True when the "Make Changes" toggle should use warning styling: no finalized check-in
+  # within clear days and the current side has not marked the row complete.
   # and the current side (employee or manager) has not marked the row complete.
   # latest_finalized: the latest finalized check-in record for this item (or nil).
   # role: :employee or :manager (which side's "Make Changes" we're rendering).
   def single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, role)
     latest_at = latest_finalized&.official_check_in_completed_at
     last_finalized_days_ago = latest_at ? ((Time.current - latest_at) / 1.day).to_i : 9999
-    return false if last_finalized_days_ago < 60
+    return false if last_finalized_days_ago < NO_ACTION_NEEDED_DAYS
     role == :employee ? !check_in.employee_completed? : !check_in.manager_completed?
   end
 

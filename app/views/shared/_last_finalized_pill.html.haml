@@ -9,12 +9,18 @@
     %span.d-flex.flex-column.text-start
       - if latest_finalized.present?
         - completed_at = latest_finalized.official_check_in_completed_at
-        - time_ago = time_ago_in_words(completed_at)
-        %span.d-block
-          Last Finalized
-          %span.mt-1= " #{time_ago} ago"
-        - next_check_in_date = completed_at + 60.days
-        - caption = next_check_in_date < Time.current ? "Consider checking-in SOON / NOW" : "Consider checking-in again in #{time_ago_in_words(next_check_in_date)}"
-        %small.d-block= caption
+        - if pill_class == 'bg-info text-dark'
+          - days_ago = last_finalized_days_ago(latest_finalized)
+          - blurred_window_at = completed_at + CheckInBehavior::CLARITY_BLURRED_DAYS.days
+          %span.d-block= "Last finalized #{days_ago} days ago."
+          %small.d-block= "Consider checkin-in between now and #{time_ago_in_words(blurred_window_at)}."
+        - else
+          - time_ago = time_ago_in_words(completed_at)
+          %span.d-block
+            Last Finalized
+            %span.mt-1= " #{time_ago} ago"
+          - next_check_in_date = completed_at + CheckInBehavior::CLARITY_CLEAR_DAYS.days
+          - caption = next_check_in_date < Time.current ? "Consider checking-in SOON / NOW" : "Consider checking-in again in #{time_ago_in_words(next_check_in_date)}"
+          %small.d-block= caption
       - else
         %span.d-block= "Never Finalized"

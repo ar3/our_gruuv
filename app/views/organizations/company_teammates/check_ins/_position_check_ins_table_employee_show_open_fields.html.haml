@@ -1,4 +1,7 @@
 -# Position Check-Ins Table View - Employee Show Open Fields
+- position_latest_finalized = PositionCheckIn.latest_finalized_for(check_in.teammate)
+- hide_fresh_fields = hide_fresh_open_check_in_fields?(check_in, position_latest_finalized, view_mode: :employee)
+- toggle_target = ".fresh-position-toggle-#{check_in.id}"
 = form.fields_for :position_check_in do |pf|
   .table-responsive
     %table.table.table-striped
@@ -14,13 +17,42 @@
           %td
             = render 'organizations/company_teammates/check_ins/position_name_and_last_finalized', check_in: check_in, form: form
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+            - if hide_fresh_fields
+              %div{class: "collapse show fresh-position-toggle-#{check_in.id}"}
+                .alert.alert-success.py-2.mb-0.small
+                  %i.bi.bi-check-circle-fill{style: "font-size: 1.15rem;"}
+              %div{class: "collapse fresh-position-toggle-#{check_in.id}"}
+                = render 'organizations/company_teammates/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+            - else
+              = render 'organizations/company_teammates/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/employee_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+            - if hide_fresh_fields
+              %div{class: "collapse show fresh-position-toggle-#{check_in.id}"}
+                .alert.alert-success.py-2.mb-0.small
+                  %i.bi.bi-check-circle-fill{style: "font-size: 1.15rem;"}
+              %div{class: "collapse fresh-position-toggle-#{check_in.id}"}
+                = render 'organizations/company_teammates/check_ins/form_fields/employee_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+            - else
+              = render 'organizations/company_teammates/check_ins/form_fields/employee_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            - other_mode = check_in.other_participant_display_mode(:employee)
-            - partial_name = "position_check_ins_table_employee_#{other_mode}"
-            = render partial_name, check_in: check_in
+            - if hide_fresh_fields
+              %div{class: "collapse show fresh-position-toggle-#{check_in.id}"}
+                .alert.alert-success.py-2.mb-0.small
+                  %i.bi.bi-check-circle-fill{style: "font-size: 1.15rem;"}
+              %div{class: "collapse fresh-position-toggle-#{check_in.id}"}
+                - other_mode = check_in.other_participant_display_mode(:employee)
+                - partial_name = "position_check_ins_table_employee_#{other_mode}"
+                = render partial_name, check_in: check_in
+            - else
+              - other_mode = check_in.other_participant_display_mode(:employee)
+              - partial_name = "position_check_ins_table_employee_#{other_mode}"
+              = render partial_name, check_in: check_in
           %td
-            - position_latest_finalized = PositionCheckIn.latest_finalized_for(check_in.teammate)
-            = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in, latest_finalized: position_latest_finalized, view_mode: local_assigns[:view_mode].presence || :employee
+            - if hide_fresh_fields
+              %div{class: "collapse show fresh-position-toggle-#{check_in.id}"}
+                .alert.alert-success.py-2.mb-0.small
+                  %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => toggle_target, "aria-expanded" => "false"} I want to check-in early
+              %div{class: "collapse fresh-position-toggle-#{check_in.id}"}
+                = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in, latest_finalized: position_latest_finalized, view_mode: local_assigns[:view_mode].presence || :employee
+            - else
+              = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in, latest_finalized: position_latest_finalized, view_mode: local_assigns[:view_mode].presence || :employee

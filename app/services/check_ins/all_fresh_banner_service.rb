@@ -4,7 +4,7 @@ module CheckIns
   # Determines whether the unified check-in page should show the "all fresh" success banner.
   # Scope: required + active assignment check-ins, all company aspirations, position check-in.
   class AllFreshBannerService
-    FRESH_DAYS = CheckInBehavior::CLARITY_CLEAR_DAYS
+    FRESH_DAYS = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS
 
     Result = Struct.new(
       :show_banner,

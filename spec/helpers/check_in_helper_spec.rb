@@ -20,12 +20,17 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(helper.last_finalized_pill_class(nil)).to eq('bg-secondary')
     end
 
-    it 'returns bg-success when 45 days ago or less' do
+    it 'returns bg-success when within crystal clear days' do
       check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 30.days.ago)
       expect(helper.last_finalized_pill_class(check_in)).to eq('bg-success')
     end
 
-    it 'returns bg-warning text-dark when 46-90 days ago' do
+    it 'returns bg-info text-dark when between crystal clear and clear windows' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 45.days.ago)
+      expect(helper.last_finalized_pill_class(check_in)).to eq('bg-info text-dark')
+    end
+
+    it 'returns bg-warning text-dark when between clear and blurred windows' do
       check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 75.days.ago)
       expect(helper.last_finalized_pill_class(check_in)).to eq('bg-warning text-dark')
     end
@@ -35,13 +40,18 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(helper.last_finalized_pill_class(check_in)).to eq('bg-danger')
     end
 
-    it 'returns bg-success at 44 days (within 45-day window)' do
-      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 44.days.ago)
+    it 'returns bg-success at 30 days' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 30.days.ago)
       expect(helper.last_finalized_pill_class(check_in)).to eq('bg-success')
     end
 
-    it 'returns bg-warning at 46 days' do
+    it 'returns bg-info at 46 days' do
       check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 46.days.ago)
+      expect(helper.last_finalized_pill_class(check_in)).to eq('bg-info text-dark')
+    end
+
+    it 'returns bg-warning at 61 days' do
+      check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 61.days.ago)
       expect(helper.last_finalized_pill_class(check_in)).to eq('bg-warning text-dark')
     end
 
@@ -56,12 +66,12 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(helper.last_finalized_recent?(nil)).to eq(false)
     end
 
-    it 'returns true when last finalized 45 days ago or less' do
+    it 'returns true when last finalized within crystal clear window' do
       check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 30.days.ago)
       expect(helper.last_finalized_recent?(check_in)).to eq(true)
     end
 
-    it 'returns false when last finalized 46 days ago' do
+    it 'returns false when last finalized in clear window' do
       check_in = instance_double('PositionCheckIn', official_check_in_completed_at: 46.days.ago)
       expect(helper.last_finalized_recent?(check_in)).to eq(false)
     end

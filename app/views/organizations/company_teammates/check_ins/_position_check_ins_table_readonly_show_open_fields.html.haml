@@ -1,4 +1,7 @@
 -# Position Check-Ins Table View - Readonly Show Open Fields
+- position_latest_finalized = PositionCheckIn.latest_finalized_for(check_in.teammate)
+- hide_fresh_fields = hide_fresh_open_check_in_fields?(check_in, position_latest_finalized, view_mode: :readonly)
+- early_toggle_target = ".fresh-position-early-#{check_in.id}"
 = form.fields_for :position_check_in do |pf|
   .table-responsive
     %table.table.table-striped
@@ -15,13 +18,47 @@
           %td
             = render 'organizations/company_teammates/check_ins/position_name_and_last_finalized', check_in: check_in, form: form
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+            - if hide_fresh_fields
+              .alert.alert-success.py-2.mb-0.small
+                Fresh check-in.
+                %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+              %div{class: "collapse fresh-position-early-#{check_in.id}"}
+                = render 'organizations/company_teammates/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+            - else
+              = render 'organizations/company_teammates/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/employee_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+            - if hide_fresh_fields
+              .alert.alert-success.py-2.mb-0.small
+                Fresh check-in.
+                %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+              %div{class: "collapse fresh-position-early-#{check_in.id}"}
+                = render 'organizations/company_teammates/check_ins/form_fields/employee_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+            - else
+              = render 'organizations/company_teammates/check_ins/form_fields/employee_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/manager_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+            - if hide_fresh_fields
+              .alert.alert-success.py-2.mb-0.small
+                Fresh check-in.
+                %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+              %div{class: "collapse fresh-position-early-#{check_in.id}"}
+                = render 'organizations/company_teammates/check_ins/form_fields/manager_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+            - else
+              = render 'organizations/company_teammates/check_ins/form_fields/manager_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/manager_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+            - if hide_fresh_fields
+              .alert.alert-success.py-2.mb-0.small
+                Fresh check-in.
+                %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+              %div{class: "collapse fresh-position-early-#{check_in.id}"}
+                = render 'organizations/company_teammates/check_ins/form_fields/manager_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+            - else
+              = render 'organizations/company_teammates/check_ins/form_fields/manager_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            - position_latest_finalized = PositionCheckIn.latest_finalized_for(check_in.teammate)
-            = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in, latest_finalized: position_latest_finalized, view_mode: local_assigns[:view_mode]
+            - if hide_fresh_fields
+              .alert.alert-success.py-2.mb-0.small
+                Fresh check-in.
+                %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+              %div{class: "collapse fresh-position-early-#{check_in.id}"}
+                = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in, latest_finalized: position_latest_finalized, view_mode: local_assigns[:view_mode]
+            - else
+              = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in, latest_finalized: position_latest_finalized, view_mode: local_assigns[:view_mode]

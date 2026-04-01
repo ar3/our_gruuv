@@ -1,14 +1,51 @@
 -# Aspiration Check-Ins Table View - Readonly Show Open Fields
+- hide_fresh_fields = hide_fresh_open_check_in_fields?(check_in, local_assigns[:latest_finalized], view_mode: :readonly)
+- early_toggle_target = ".fresh-aspiration-early-#{check_in.id}"
 %td{style: "display: none;"}
   = render 'organizations/company_teammates/check_ins/form_fields/aspiration_id_field', form: form, check_in: check_in
 %td
-  = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+  - if hide_fresh_fields
+    .alert.alert-success.py-2.mb-0.small
+      Fresh check-in.
+      %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+    %div{class: "collapse fresh-aspiration-early-#{check_in.id}"}
+      = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+  - else
+    = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
-  = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
+  - if hide_fresh_fields
+    .alert.alert-success.py-2.mb-0.small
+      Fresh check-in.
+      %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+    %div{class: "collapse fresh-aspiration-early-#{check_in.id}"}
+      = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
+  - else
+    = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
-  = render 'organizations/company_teammates/check_ins/form_fields/aspiration_manager_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+  - if hide_fresh_fields
+    .alert.alert-success.py-2.mb-0.small
+      Fresh check-in.
+      %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+    %div{class: "collapse fresh-aspiration-early-#{check_in.id}"}
+      = render 'organizations/company_teammates/check_ins/form_fields/aspiration_manager_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+  - else
+    = render 'organizations/company_teammates/check_ins/form_fields/aspiration_manager_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
-  = render 'organizations/company_teammates/check_ins/form_fields/aspiration_manager_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
+  - if hide_fresh_fields
+    .alert.alert-success.py-2.mb-0.small
+      Fresh check-in.
+      %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+    %div{class: "collapse fresh-aspiration-early-#{check_in.id}"}
+      = render 'organizations/company_teammates/check_ins/form_fields/aspiration_manager_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
+  - else
+    = render 'organizations/company_teammates/check_ins/form_fields/aspiration_manager_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
-  = render 'organizations/company_teammates/check_ins/form_fields/aspiration_status_field', form: form, check_in: check_in, latest_finalized: local_assigns[:latest_finalized], view_mode: local_assigns[:view_mode]
+  - if hide_fresh_fields
+    .alert.alert-success.py-2.mb-0.small
+      Fresh check-in.
+      %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => early_toggle_target, "aria-expanded" => "false"} New Check-in early!
+    %div{class: "collapse fresh-aspiration-early-#{check_in.id}"}
+      = render 'organizations/company_teammates/check_ins/form_fields/aspiration_status_field', form: form, check_in: check_in, latest_finalized: local_assigns[:latest_finalized], view_mode: local_assigns[:view_mode]
+  - else
+    = render 'organizations/company_teammates/check_ins/form_fields/aspiration_status_field', form: form, check_in: check_in, latest_finalized: local_assigns[:latest_finalized], view_mode: local_assigns[:view_mode]
 
