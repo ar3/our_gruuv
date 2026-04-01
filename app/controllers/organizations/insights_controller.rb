@@ -168,15 +168,20 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     @organization = company
     @timeframe = parse_timeframe(params[:timeframe])
-    range = date_range_for(@timeframe)
+    range, @insights_custom_from, @insights_custom_to = observations_insights_date_range_and_custom_fields
 
     base_scope = Observation.for_company(company).not_soft_deleted.published
     base_scope = base_scope.where(observed_at: range) if range
 
     chart_range = range || (52.weeks.ago..Time.current)
+    @insights_chart_period_label = observations_insights_chart_period_label(@timeframe, range, chart_range)
     @observations_chart_data = observations_chart_series_by_privacy(base_scope, chart_range)
     @observations_by_observer_department_chart_data = observations_by_observer_department_chart_series(base_scope, chart_range)
     @observations_by_department_chart_data = observations_by_department_chart_series(base_scope, chart_range)
+    @observations_privacy_pie_chart_data = observations_privacy_pie_chart_data_from_scope(base_scope)
+    @observations_observer_department_pie_chart_data = stacked_series_to_pie_points(@observations_by_observer_department_chart_data)
+    @observations_observee_department_pie_chart_data = stacked_series_to_pie_points(@observations_by_department_chart_data)
+    @observations_insights_summary = observations_insights_summary_stats(base_scope)
     @observations_feelings_pie_chart_data = observations_feelings_pie_chart_data(range)
     @observations_ratings_pie_chart_data = observations_ratings_pie_chart_data(range)
     @observations_rating_health_ratios = observations_rating_health_ratios(range)
@@ -383,6 +388,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     case param.to_s
     when 'year' then :year
     when 'all_time' then :all_time
+    when 'custom' then :custom
     else :'90_days'
     end
   end
@@ -393,11 +399,95 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       90.days.ago..Time.current
     when :year
       1.year.ago..Time.current
-    when :all_time
+    when :all_time, :custom
       nil
     else
       90.days.ago..Time.current
     end
+  end
+
+  # Observations insights: custom range from params; other insight actions treat :custom like open-ended (nil) and use 52-week chart default.
+  def observations_insights_date_range_and_custom_fields
+    case @timeframe
+    when :custom
+      insights_custom_observations_range
+    else
+      [date_range_for(@timeframe), nil, nil]
+    end
+  end
+
+  def insights_custom_observations_range
+    default_from = 90.days.ago.to_date
+    default_to = Time.zone.today
+    from_s = params[:from].presence
+    to_s = params[:to].presence
+
+    unless from_s && to_s
+      range = default_from.beginning_of_day..default_to.end_of_day
+      return [range, default_from.iso8601, default_to.iso8601]
+    end
+
+    begin
+      from_d = Date.iso8601(from_s)
+      to_d = Date.iso8601(to_s)
+    rescue ArgumentError
+      flash.now[:alert] = 'Enter valid From and To dates (YYYY-MM-DD).'
+      range = default_from.beginning_of_day..default_to.end_of_day
+      return [range, from_s, to_s]
+    end
+
+    if from_d > to_d
+      flash.now[:alert] = 'From date must be on or before To date.'
+      range = default_from.beginning_of_day..default_to.end_of_day
+      return [range, from_s, to_s]
+    end
+
+    range = from_d.beginning_of_day..to_d.end_of_day
+    [range, from_s, to_s]
+  end
+
+  def observations_insights_chart_period_label(timeframe, range, chart_range)
+    case timeframe
+    when :'90_days' then 'Last 90 Days'
+    when :year then 'Last Year'
+    when :all_time then 'Last 52 Weeks'
+    when :custom
+      r = range
+      r ||= chart_range
+      return 'Custom range' unless r
+      "#{r.begin.in_time_zone.strftime('%b %-d, %Y')} – #{r.end.in_time_zone.strftime('%b %-d, %Y')}"
+    else
+      'Last 90 Days'
+    end
+  end
+
+  def observations_privacy_pie_chart_data_from_scope(base_scope)
+    counts = base_scope.group(:privacy_level).count
+    Observation.privacy_levels.keys.map do |privacy|
+      { name: privacy.to_s.humanize.titleize, y: counts[privacy].to_i }
+    end
+  end
+
+  def stacked_series_to_pie_points(chart_data)
+    return [] unless chart_data.is_a?(Hash) && chart_data[:series].present?
+
+    chart_data[:series].map do |s|
+      { name: s[:name].to_s, y: Array(s[:data]).sum(&:to_i) }
+    end
+  end
+
+  def observations_insights_summary_stats(base_scope)
+    obs_subquery = base_scope.except(:order).select(:id)
+    rating_scope = ObservationRating.where(observation_id: obs_subquery)
+
+    {
+      stories_count: base_scope.count,
+      unique_observer_teammates: base_scope.distinct.count(:observer_id),
+      unique_observee_teammates: Observee.where(observation_id: obs_subquery).distinct.count(:teammate_id),
+      unique_aspirations_rated: rating_scope.where(rateable_type: 'Aspiration').distinct.count(:rateable_id),
+      unique_assignments_rated: rating_scope.where(rateable_type: 'Assignment').distinct.count(:rateable_id),
+      unique_abilities_rated: rating_scope.where(rateable_type: 'Ability').distinct.count(:rateable_id)
+    }
   end
 
   def prompts_download_teammate_scope

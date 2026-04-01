@@ -59,17 +59,33 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Observations Kudos vs Feedback')
       expect(response.body).to include('Observations Sharing')
       expect(response.body).to include('observations-by-privacy-chart')
+      expect(response.body).to include('observations-by-privacy-pie-chart')
       expect(response.body).to include('observations-by-observer-department-chart')
+      expect(response.body).to include('observations-by-observer-department-pie-chart')
+      expect(response.body).to include('observations-by-observee-department-pie-chart')
       expect(response.body).to include("Observations by observer's department")
       expect(response.body).to include('observations-by-department-chart')
       expect(response.body).to include("Observations by observee's department")
     end
 
-    it 'includes timeframe filter links (Last 90 days, Last Year, All-Time)' do
+    it 'includes timeframe filter links (Last 90 days, Last Year, All-Time, Custom)' do
       get organization_insights_observations_path(organization)
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
+      expect(response.body).to include('Custom')
+    end
+
+    it 'returns success with timeframe=custom and from/to dates' do
+      get organization_insights_observations_path(
+        organization,
+        timeframe: 'custom',
+        from: 30.days.ago.to_date.iso8601,
+        to: Time.zone.today.iso8601
+      )
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('In this timeframe:')
+      expect(response.body).to include('observation-based stories')
     end
 
     it 'returns success with timeframe=year' do

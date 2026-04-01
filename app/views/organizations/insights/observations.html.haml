@@ -1,7 +1,5 @@
 - content_for :title, "Insights: Observations"
 
-- chart_title_period = case @timeframe when :'90_days' then "Last 90 Days" when :year then "Last Year" when :all_time then "Last 52 Weeks" else "Last 90 Days" end
-
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
@@ -9,11 +7,27 @@
       Insights: Observations
 
 / Timeframe selector
-.mb-4
-  .btn-group{role: "group"}
+.mb-3
+  .btn-group.flex-wrap{role: "group"}
     = link_to "Last 90 days", organization_insights_observations_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
     = link_to "Last Year", organization_insights_observations_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
     = link_to "All-Time", organization_insights_observations_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Custom", organization_insights_observations_path(@organization, { timeframe: 'custom', from: @insights_custom_from, to: @insights_custom_to }.compact), class: "btn #{@timeframe == :custom ? 'btn-primary' : 'btn-outline-primary'}"
+  - if @timeframe == :custom
+    = form_tag organization_insights_observations_path(@organization), method: :get, class: "row g-2 align-items-end mt-3" do
+      = hidden_field_tag :timeframe, 'custom'
+      .col-sm-auto
+        = label_tag :from, "From", class: "form-label small mb-0 d-block"
+        = date_field_tag :from, @insights_custom_from, class: "form-control form-control-sm", required: true
+      .col-sm-auto
+        = label_tag :to, "To", class: "form-label small mb-0 d-block"
+        = date_field_tag :to, @insights_custom_to, class: "form-control form-control-sm", required: true
+      .col-sm-auto
+        = submit_tag "Apply range", class: "btn btn-sm btn-primary"
+
+- s = @observations_insights_summary
+.border-bottom.py-2.mb-3.small.text-muted
+  In this timeframe: There were #{number_with_delimiter(s[:stories_count])} observation-based stories told by #{number_with_delimiter(s[:unique_observer_teammates])} unique teammates, observing #{number_with_delimiter(s[:unique_observee_teammates])} unique teammates. Rating #{number_with_delimiter(s[:unique_aspirations_rated])} unique Aspirational Values, #{number_with_delimiter(s[:unique_assignments_rated])} unique assignments, and #{number_with_delimiter(s[:unique_abilities_rated])} unique Abilities.
 
 .container-fluid
   / Stacked bar chart by privacy level
@@ -23,9 +37,13 @@
         .card-header.bg-primary.text-white
           %h4.mb-0
             %i.bi.bi-eye.me-2
-            Observations by Week (#{chart_title_period})
+            Observations by Week (#{@insights_chart_period_label})
         .card-body
           #observations-by-privacy-chart{style: "height: 400px;"}
+          %hr.my-4
+          %p.small.text-muted.mb-2
+            Total observations in this period by privacy level (same categories as the chart above).
+          #observations-by-privacy-pie-chart{style: "height: 380px;"}
 
   .row.mb-4
     .col-12
@@ -33,11 +51,15 @@
         .card-header.bg-secondary.text-white
           %h4.mb-0
             %i.bi.bi-person-check.me-2
-            Observations by observer's department (#{chart_title_period})
+            Observations by observer's department (#{@insights_chart_period_label})
         .card-body
           %p.small.text-muted.mb-3
             Published observations grouped by the department of the person who wrote the observation (the observer).
           #observations-by-observer-department-chart{style: "height: 400px;"}
+          %hr.my-4
+          %p.small.text-muted.mb-2
+            Total observations in this period by observer department (same categories as the chart above).
+          #observations-by-observer-department-pie-chart{style: "height: 380px;"}
 
   .row.mb-4
     .col-12
@@ -45,11 +67,15 @@
         .card-header.bg-info.text-white
           %h4.mb-0
             %i.bi.bi-building.me-2
-            Observations by observee's department (#{chart_title_period})
+            Observations by observee's department (#{@insights_chart_period_label})
         .card-body
           %p.small.text-muted.mb-3
             Published observations grouped by the department of the person the observation is about (first observee when multiple).
           #observations-by-department-chart{style: "height: 400px;"}
+          %hr.my-4
+          %p.small.text-muted.mb-2
+            Total observations in this period by observee department (same categories as the chart above).
+          #observations-by-observee-department-pie-chart{style: "height: 380px;"}
 
   .row.mb-4
     .col-12
@@ -57,7 +83,7 @@
         .card-header.bg-warning.text-dark
           %h4.mb-0
             %i.bi.bi-emoji-smile.me-2
-            Published observations feelings (#{chart_title_period})
+            Published observations feelings (#{@insights_chart_period_label})
         .card-body
           %p.small.text-muted.mb-3
             Distribution of all primary and secondary feelings set on published observations in this timeframe.
@@ -69,7 +95,7 @@
         .card-header.bg-success.text-white
           %h4.mb-0
             %i.bi.bi-pie-chart.me-2
-            Published observations ratings distribution (#{chart_title_period})
+            Published observations ratings distribution (#{@insights_chart_period_label})
         .card-body
           %p.small.text-muted.mb-3
             Distribution of all ratings given on published observations in this timeframe.
@@ -81,7 +107,7 @@
         .card-header.bg-light
           %h4.mb-0
             %i.bi.bi-table.me-2
-            Ratings Ratio Health Check (#{chart_title_period})
+            Ratings Ratio Health Check (#{@insights_chart_period_label})
         .card-body
           %p.small.text-muted.mb-3
             Healthy target for Kudos : Constructive is about 5:1; other rows use a 3:1 target.
@@ -237,7 +263,7 @@
 :javascript
   (function() {
     var chartData = #{@observations_chart_data.to_json};
-    var chartTitle = #{chart_title_period.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
 
     function initializeChart() {
       if (typeof Highcharts === 'undefined') return;
@@ -293,7 +319,7 @@
 
   (function() {
     var chartData = #{@observations_by_observer_department_chart_data.to_json};
-    var chartTitle = #{chart_title_period.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
 
     function initializeObserverDeptChart() {
       if (typeof Highcharts === 'undefined') return;
@@ -348,8 +374,64 @@
   })();
 
   (function() {
+    var pieData = #{@observations_observer_department_pie_chart_data.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
+
+    function initializeObserverDeptPieChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-by-observer-department-pie-chart');
+      if (!el) return;
+      var colors = Highcharts.getOptions().colors || [];
+      var data = pieData.map(function(d, i) {
+        return { name: d.name, y: d.y, color: colors[i % colors.length] };
+      });
+      Highcharts.chart('observations-by-observer-department-pie-chart', {
+        chart: { type: 'pie' },
+        title: { text: "Observer department totals (" + chartTitle + ")" },
+        accessibility: { enabled: false },
+        tooltip: { pointFormat: '<b>{point.y}</b> observations ({point.percentage:.1f}%)' },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '{point.name}: {point.y}'
+            }
+          }
+        },
+        series: [{ name: "Observer's department", data: data }]
+      });
+    }
+
+    var attemptsPieObs = 0;
+    function waitForHighchartsObserverDeptPie() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeObserverDeptPieChart();
+      } else if (attemptsPieObs < 100) {
+        attemptsPieObs++;
+        setTimeout(waitForHighchartsObserverDeptPie, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeObserverDeptPieChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsObserverDeptPie);
+    } else {
+      waitForHighchartsObserverDeptPie();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeObserverDeptPieChart();
+    });
+  })();
+
+  (function() {
     var chartData = #{@observations_by_department_chart_data.to_json};
-    var chartTitle = #{chart_title_period.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
 
     function initializeDeptChart() {
       if (typeof Highcharts === 'undefined') return;
@@ -404,8 +486,120 @@
   })();
 
   (function() {
+    var pieData = #{@observations_observee_department_pie_chart_data.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
+
+    function initializeObserveeDeptPieChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-by-observee-department-pie-chart');
+      if (!el) return;
+      var colors = Highcharts.getOptions().colors || [];
+      var data = pieData.map(function(d, i) {
+        return { name: d.name, y: d.y, color: colors[i % colors.length] };
+      });
+      Highcharts.chart('observations-by-observee-department-pie-chart', {
+        chart: { type: 'pie' },
+        title: { text: "Observee department totals (" + chartTitle + ")" },
+        accessibility: { enabled: false },
+        tooltip: { pointFormat: '<b>{point.y}</b> observations ({point.percentage:.1f}%)' },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '{point.name}: {point.y}'
+            }
+          }
+        },
+        series: [{ name: "Observee's department", data: data }]
+      });
+    }
+
+    var attemptsPieObv = 0;
+    function waitForHighchartsObserveeDeptPie() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeObserveeDeptPieChart();
+      } else if (attemptsPieObv < 100) {
+        attemptsPieObv++;
+        setTimeout(waitForHighchartsObserveeDeptPie, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeObserveeDeptPieChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsObserveeDeptPie);
+    } else {
+      waitForHighchartsObserveeDeptPie();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeObserveeDeptPieChart();
+    });
+  })();
+
+  (function() {
+    var pieData = #{@observations_privacy_pie_chart_data.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
+
+    function initializePrivacyPieChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-by-privacy-pie-chart');
+      if (!el) return;
+      var colors = Highcharts.getOptions().colors || [];
+      var data = pieData.map(function(d, i) {
+        return { name: d.name, y: d.y, color: colors[i % colors.length] };
+      });
+      Highcharts.chart('observations-by-privacy-pie-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Privacy level totals (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        tooltip: { pointFormat: '<b>{point.y}</b> observations ({point.percentage:.1f}%)' },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '{point.name}: {point.y}'
+            }
+          }
+        },
+        series: [{ name: 'Privacy level', data: data }]
+      });
+    }
+
+    var attemptsPrivacyPie = 0;
+    function waitForHighchartsPrivacyPie() {
+      if (typeof Highcharts !== 'undefined') {
+        initializePrivacyPieChart();
+      } else if (attemptsPrivacyPie < 100) {
+        attemptsPrivacyPie++;
+        setTimeout(waitForHighchartsPrivacyPie, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializePrivacyPieChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsPrivacyPie);
+    } else {
+      waitForHighchartsPrivacyPie();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializePrivacyPieChart();
+    });
+  })();
+
+  (function() {
     var pieData = #{@observations_feelings_pie_chart_data.to_json};
-    var chartTitle = #{chart_title_period.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
 
     function initializeFeelingsPieChart() {
       if (typeof Highcharts === 'undefined') return;
@@ -461,7 +655,7 @@
 
   (function() {
     var pieData = #{@observations_ratings_pie_chart_data.to_json};
-    var chartTitle = #{chart_title_period.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
 
     function initializeRatingsPieChart() {
       if (typeof Highcharts === 'undefined') return;

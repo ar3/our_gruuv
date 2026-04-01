@@ -247,6 +247,22 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(assigns(:timeframe)).to eq(:all_time)
     end
 
+    it 'accepts timeframe custom with from and to' do
+      from_d = 20.days.ago.to_date
+      to_d = Time.zone.today
+      get :observations, params: {
+        organization_id: company.id,
+        timeframe: 'custom',
+        from: from_d.iso8601,
+        to: to_d.iso8601
+      }
+      expect(assigns(:timeframe)).to eq(:custom)
+      expect(assigns(:insights_custom_from)).to eq(from_d.iso8601)
+      expect(assigns(:insights_custom_to)).to eq(to_d.iso8601)
+      expect(assigns(:observations_insights_summary)).to be_a(Hash)
+      expect(assigns(:observations_privacy_pie_chart_data)).to be_an(Array)
+    end
+
     it 'assigns chart data with categories and series (90_days has ~13 weeks)' do
       get :observations, params: { organization_id: company.id }
       chart = assigns(:observations_chart_data)
