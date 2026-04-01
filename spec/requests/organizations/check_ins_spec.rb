@@ -462,4 +462,72 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       end
     end
   end
+
+  describe "GET /organizations/:org_id/company_teammates/:company_teammate_id/check_ins/review_most_recent" do
+    let!(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
+    let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago) }
+    let!(:aspiration) { create(:aspiration, company: organization, name: 'Test Aspiration') }
+
+    let!(:paired_assignment_check_in) do
+      create(
+        :assignment_check_in,
+        teammate: employee_teammate,
+        assignment: assignment,
+        employee_completed_at: 12.days.ago,
+        manager_completed_at: 11.days.ago,
+        manager_completed_by_teammate: manager_teammate,
+        official_check_in_completed_at: 10.days.ago,
+        finalized_by_teammate: manager_teammate,
+        official_rating: 'meeting',
+        check_in_started_on: 14.days.ago.to_date
+      )
+    end
+
+    let!(:employee_only_assignment_check_in) do
+      create(
+        :assignment_check_in,
+        teammate: employee_teammate,
+        assignment: assignment,
+        employee_completed_at: 2.days.ago,
+        manager_completed_at: nil,
+        check_in_started_on: 3.days.ago.to_date
+      )
+    end
+
+    let!(:employee_only_aspiration_check_in) do
+      create(
+        :aspiration_check_in,
+        :employee_completed,
+        teammate: employee_teammate,
+        aspiration: aspiration,
+        check_in_started_on: 3.days.ago.to_date
+      )
+    end
+
+    it "renders the beta history table and waiting copy for unpaired aspiration employee completion" do
+      sign_in_as_teammate_for_request(manager_person, organization)
+
+      get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Review Most Recent for')
+      expect(response.body).to include('Beta')
+      expect(response.body).to include('Last Reviewed')
+      expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
+      expect(response.body).to include(organization_teammate_aspiration_path(organization, employee_teammate, aspiration))
+      expect(response.body).to include('completed a new check-in')
+      expect(response.body).to include('is waiting on')
+    end
+
+    it "shows the same core table columns when viewed by the employee" do
+      sign_in_as_teammate_for_request(employee_person, organization)
+
+      get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Last Reviewed')
+      expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
+      expect(response.body).to include('Last Check-In by')
+    end
+  end
 end

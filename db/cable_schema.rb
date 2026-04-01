@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_30_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_31_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -80,6 +80,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_30_120000) do
     t.index ["manager_completed_by_id"], name: "index_aspiration_check_ins_on_manager_completed_by_id"
     t.index ["manager_completed_by_teammate_id"], name: "index_aspiration_check_ins_on_manager_completed_by_teammate_id"
     t.index ["teammate_id", "aspiration_id", "official_check_in_completed_at"], name: "index_aspiration_check_ins_on_teammate_aspiration_open"
+    t.index ["teammate_id", "aspiration_id"], name: "index_aspiration_check_ins_on_teammate_and_aspiration"
     t.index ["teammate_id"], name: "index_aspiration_check_ins_on_teammate_id"
   end
 
@@ -144,6 +145,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_30_120000) do
     t.index ["manager_completed_by_id"], name: "index_assignment_check_ins_on_manager_completed_by_id"
     t.index ["manager_completed_by_teammate_id"], name: "index_assignment_check_ins_on_manager_completed_by_teammate_id"
     t.index ["official_check_in_completed_at"], name: "index_assignment_check_ins_on_official_check_in_completed_at"
+    t.index ["teammate_id", "assignment_id"], name: "index_assignment_check_ins_on_teammate_and_assignment"
     t.index ["teammate_id"], name: "index_assignment_check_ins_on_teammate_id"
     t.check_constraint "actual_energy_percentage IS NULL OR actual_energy_percentage >= 0 AND actual_energy_percentage <= 100", name: "check_actual_energy_percentage_range"
   end
@@ -1008,6 +1010,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_30_120000) do
     t.index ["manager_completed_by_teammate_id"], name: "index_position_check_ins_on_manager_completed_by_teammate_id"
     t.index ["official_check_in_completed_at"], name: "index_position_check_ins_on_official_check_in_completed_at"
     t.index ["teammate_id", "check_in_started_on"], name: "idx_on_teammate_id_check_in_started_on_52d3f0832c"
+    t.index ["teammate_id", "employee_completed_at"], name: "index_position_check_ins_on_teammate_employee_completed_desc", order: { employee_completed_at: :desc }
+    t.index ["teammate_id", "manager_completed_at"], name: "index_position_check_ins_on_teammate_manager_completed_desc", order: { manager_completed_at: :desc }
+    t.index ["teammate_id", "official_check_in_completed_at"], name: "index_position_check_ins_on_teammate_official_completed_desc", order: { official_check_in_completed_at: :desc }
     t.index ["teammate_id"], name: "index_position_check_ins_on_teammate_id"
     t.check_constraint "employee_rating IS NULL OR employee_rating >= '-3'::integer AND employee_rating <= 3", name: "valid_employee_rating_range"
     t.check_constraint "manager_rating IS NULL OR manager_rating >= '-3'::integer AND manager_rating <= 3", name: "valid_manager_rating_range"

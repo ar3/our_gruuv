@@ -1,0 +1,10 @@
+-# Locals: finalized_check_in, open_check_in, employee_name, manager_name, side (:employee | :manager)
+- seg = aspiration_review_most_recent_side_segments(finalized: finalized_check_in, open: open_check_in, employee_name: employee_name, manager_name: manager_name, side: side)
+- if seg[:primary_text].present?
+  .small{style: "white-space: pre-line;"}= seg[:primary_text]
+- else
+  %span.text-muted No completed check-in yet.
+- if seg[:secondary_text].present?
+  - if seg[:secondary_hr]
+    %hr.my-2
+  .small{style: "white-space: pre-line;"}= seg[:secondary_text]

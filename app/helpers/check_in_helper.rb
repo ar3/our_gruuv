@@ -246,6 +246,140 @@ module CheckInHelper
     'Click here to do the same check-in process as you are doing on this page, but focusing on just this one thing at a time!'
   end
 
+  # Review-most-recent (aspirations): finalized column — third sentence only ("they agreed ... Shared Notes").
+  def aspiration_review_most_recent_last_reviewed_line(check_in, employee_name)
+    return nil if check_in.blank?
+
+    aspiration_check_in_sentence_lines(check_in, employee_name)[2]
+  end
+
+  # Review-most-recent (aspirations): employee or manager column — primary sentence + optional hr + draft / waiting.
+  def aspiration_review_most_recent_side_segments(finalized:, open:, employee_name:, manager_name:, side:)
+    primary_text = case side
+    when :employee
+      if finalized.present?
+        aspiration_check_in_sentence_lines(finalized, employee_name)[0]
+      end
+    when :manager
+      if finalized.present?
+        aspiration_check_in_sentence_lines(finalized, employee_name)[1]
+      end
+    else
+      nil
+    end
+
+    secondary_hr = false
+    secondary_text = nil
+
+    if open&.open?
+      if side == :employee && open.employee_completed?
+        secondary_hr = true
+        if open.manager_completed?
+          secondary_text = aspiration_check_in_sentence_lines(open, employee_name)[0]
+        else
+          secondary_text = "#{employee_name} completed a new check-in #{time_ago_in_words(open.employee_completed_at)} ago, and is waiting on #{manager_name} to complete their side."
+        end
+      elsif side == :manager && open.manager_completed?
+        secondary_hr = true
+        if open.employee_completed?
+          secondary_text = aspiration_check_in_sentence_lines(open, employee_name)[1]
+        else
+          secondary_text = "#{manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
+        end
+      end
+    end
+
+    { primary_text: primary_text, secondary_hr: secondary_hr, secondary_text: secondary_text }
+  end
+
+  # Review-most-recent (assignments): finalized column — third sentence only ("they agreed ... Shared Notes").
+  def assignment_review_most_recent_last_reviewed_line(check_in, employee_name)
+    return nil if check_in.blank?
+
+    assignment_check_in_sentence_lines(check_in, employee_name)[2]
+  end
+
+  # Review-most-recent (assignments): employee or manager column — primary sentence + optional hr + draft / waiting.
+  def assignment_review_most_recent_side_segments(finalized:, open:, employee_name:, manager_name:, side:)
+    primary_text = case side
+    when :employee
+      if finalized.present?
+        assignment_check_in_sentence_lines(finalized, employee_name)[0]
+      end
+    when :manager
+      if finalized.present?
+        assignment_check_in_sentence_lines(finalized, employee_name)[1]
+      end
+    else
+      nil
+    end
+
+    secondary_hr = false
+    secondary_text = nil
+
+    if open&.open?
+      if side == :employee && open.employee_completed?
+        secondary_hr = true
+        if open.manager_completed?
+          secondary_text = assignment_check_in_sentence_lines(open, employee_name)[0]
+        else
+          secondary_text = "#{employee_name} completed a new check-in #{time_ago_in_words(open.employee_completed_at)} ago, and is waiting on #{manager_name} to complete their side."
+        end
+      elsif side == :manager && open.manager_completed?
+        secondary_hr = true
+        if open.employee_completed?
+          secondary_text = assignment_check_in_sentence_lines(open, employee_name)[1]
+        else
+          secondary_text = "#{manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
+        end
+      end
+    end
+
+    { primary_text: primary_text, secondary_hr: secondary_hr, secondary_text: secondary_text }
+  end
+
+  # Review-most-recent (position): finalized column — third sentence only ("they agreed ... Shared Notes").
+  def position_review_most_recent_last_reviewed_line(check_in, employee_name)
+    return nil if check_in.blank?
+
+    position_check_in_sentence_lines(check_in, employee_name)[2]
+  end
+
+  # Review-most-recent (position): employee or manager column — primary sentence + optional hr + draft / waiting.
+  def position_review_most_recent_side_segments(finalized:, open:, employee_name:, manager_name:, side:)
+    primary_text = case side
+    when :employee
+      finalized.present? ? position_check_in_sentence_lines(finalized, employee_name)[0] : nil
+    when :manager
+      finalized.present? ? position_check_in_sentence_lines(finalized, employee_name)[1] : nil
+    else
+      nil
+    end
+
+    secondary_hr = false
+    secondary_text = nil
+
+    if open&.open?
+      if side == :employee && open.employee_completed?
+        secondary_hr = true
+        if open.manager_completed?
+          secondary_text = position_check_in_sentence_lines(open, employee_name)[0]
+        else
+          secondary_text = "#{employee_name} completed a new check-in #{time_ago_in_words(open.employee_completed_at)} ago, and is waiting on #{manager_name} to complete their side."
+        end
+      elsif side == :manager && open.manager_completed?
+        secondary_hr = true
+        if open.employee_completed?
+          secondary_text = position_check_in_sentence_lines(open, employee_name)[1]
+        else
+          secondary_text = "#{manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
+        end
+      end
+    end
+
+    { primary_text: primary_text, secondary_hr: secondary_hr, secondary_text: secondary_text }
+  end
+
   # Get Shit Done: link to the 1-by-1 check-in page for this record (assignment / aspiration / position).
   def get_shit_done_check_in_review_path(organization, check_in)
     case check_in

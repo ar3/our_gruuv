@@ -1,0 +1,4 @@
+-# Locals: waiting (hash with :actor_name, :waiting_for_name, :completed_at or nil)
+- if waiting.present?
+  %span.badge.bg-info.text-dark.mb-2
+    = "#{waiting[:actor_name]} completed their check-in #{time_ago_in_words(waiting[:completed_at])} ago and is waiting on #{waiting[:waiting_for_name]} to complete their side."

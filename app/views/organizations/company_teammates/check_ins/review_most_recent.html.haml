@@ -1,0 +1,150 @@
+- content_for :title, "Beta: Review Most Recent - #{@teammate.person.display_name}"
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0 Review Most Recent for #{@teammate.person.display_name}
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+- content_for :header_action do
+  = form_with url: review_most_recent_organization_company_teammate_check_ins_path(organization, @selected_teammate), method: :get, local: true do
+    .d-flex.align-items-center.gap-2
+      %label.form-label.mb-0{for: "teammate_switcher"} Employee
+      %select#teammate_switcher.form-select.form-select-sm{name: "company_teammate_id", onchange: "window.location=this.value;"}
+        - @viewable_teammates.each do |teammate|
+          %option{value: review_most_recent_organization_company_teammate_check_ins_path(organization, teammate), selected: teammate.id == @selected_teammate.id}
+            = teammate.person.display_name
+
+- content_for :go_back_link do
+  = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Check-In
+
+- employee_name = @teammate.person.casual_name
+- manager_name = @teammate.current_manager&.casual_name.presence || 'Manager'
+
+= render 'shared/section_header',
+         title: 'Aspirational Values',
+         icon: 'bi-star',
+         description: 'Compare latest reviewed and latest completion by each side'
+
+.table-responsive
+  %table.table.table-striped
+    %thead
+      %tr
+        %th Aspiration
+        %th Last Reviewed
+        %th Last Check-In by #{employee_name}
+        %th Last Check-In by #{manager_name}
+    %tbody
+      - @aspiration_rows.each do |row|
+        - history = @aspiration_histories[row[:aspiration_id]]
+        - fin = history[:latest_finalized]
+        - opn = history[:open_check_in]
+        %tr
+          %td
+            = link_to row[:aspiration].name, organization_teammate_aspiration_path(organization, @teammate, row[:aspiration]), class: 'text-decoration-none'
+            %div.mt-1
+              = render 'shared/last_finalized_pill', latest_finalized: fin, popover_content: last_finalized_check_in_popover_content(fin, employee_name, :aspiration)
+          %td
+            - if fin.present?
+              .small{style: "white-space: pre-line;"}= aspiration_review_most_recent_last_reviewed_line(fin, employee_name)
+              - if opn&.ready_for_finalization?
+                %hr.my-2
+                .small
+                  Ready for review 🎉!
+                  = link_to 'Review now', organization_company_teammate_finalization_path(organization, @teammate), class: 'ms-1'
+            - else
+              %span.text-muted No completed check-in yet.
+          %td
+            = render 'review_most_recent_aspiration_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :employee
+          %td
+            = render 'review_most_recent_aspiration_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :manager
+
+= render 'shared/section_header',
+         title: 'Assignments/Outcomes',
+         icon: 'bi-clipboard-check',
+         description: 'Compare latest reviewed and latest completion by each side'
+
+.table-responsive
+  %table.table.table-striped
+    %thead
+      %tr
+        %th Assignment
+        %th Last Reviewed
+        %th Last Check-In by #{employee_name}
+        %th Last Check-In by #{manager_name}
+    %tbody
+      - @assignment_rows.each do |row|
+        - history = @assignment_histories[row[:assignment_id]]
+        - fin = history[:latest_finalized]
+        - opn = history[:open_check_in]
+        %tr
+          %td
+            = link_to row[:assignment].title, organization_teammate_assignment_path(organization, @teammate, row[:assignment]), class: 'text-decoration-none'
+            %div.mt-1
+              = render 'shared/last_finalized_pill', latest_finalized: fin, popover_content: last_finalized_check_in_popover_content(fin, employee_name, :assignment)
+            - if row[:assignment].archived?
+              %div.mt-1
+                %span.badge.bg-danger Archived
+            - elsif row[:assignment_tenure]&.active?
+              %div.mt-1
+                %span.badge.bg-success
+                  Active Assignment - #{row[:assignment_tenure].anticipated_energy_percentage}%
+          %td
+            - if fin.present?
+              .small{style: "white-space: pre-line;"}= assignment_review_most_recent_last_reviewed_line(fin, employee_name)
+              - if opn&.ready_for_finalization?
+                %hr.my-2
+                .small
+                  Ready for review 🎉!
+                  = link_to 'Review now', organization_company_teammate_finalization_path(organization, @teammate), class: 'ms-1'
+            - else
+              %span.text-muted No completed check-in yet.
+          %td
+            = render 'review_most_recent_assignment_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :employee
+          %td
+            = render 'review_most_recent_assignment_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :manager
+
+= render 'shared/section_header',
+         title: 'Position/Overall',
+         icon: 'bi-briefcase',
+         description: 'Compare latest reviewed and latest completion by each side'
+
+- if @position_check_in.present?
+  - ph = @position_history
+  - fin = ph[:latest_finalized]
+  - opn = ph[:open_check_in]
+  .table-responsive
+    %table.table.table-striped
+      %thead
+        %tr
+          %th Position
+          %th Last Reviewed
+          %th Last Check-In by #{employee_name}
+          %th Last Check-In by #{manager_name}
+      %tbody
+        %tr
+          %td
+            = link_to @position_check_in.employment_tenure.position.display_name, position_check_in_organization_teammate_path(organization, @teammate), class: 'text-decoration-none'
+            %div.mt-1
+              = render 'shared/last_finalized_pill', latest_finalized: fin, popover_content: last_finalized_check_in_popover_content(fin, employee_name, :position)
+          %td
+            - if fin.present?
+              .small{style: "white-space: pre-line;"}= position_review_most_recent_last_reviewed_line(fin, employee_name)
+              - if opn&.ready_for_finalization?
+                %hr.my-2
+                .small
+                  Ready for review 🎉!
+                  = link_to 'Review now', organization_company_teammate_finalization_path(organization, @teammate), class: 'ms-1'
+            - else
+              %span.text-muted No completed check-in yet.
+          %td
+            = render 'review_most_recent_position_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :employee
+          %td
+            = render 'review_most_recent_position_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :manager
+- else
+  .alert.alert-info
+    %i.bi.bi-info-circle.me-2
+    No position available for this teammate.

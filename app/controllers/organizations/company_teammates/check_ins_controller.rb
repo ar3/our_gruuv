@@ -2,6 +2,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   # Non-active, non-required assignments added within this many days show outside "Unique-to-You"
   RECENTLY_ADDED_DAYS = 7
 
+  helper EmployeesHelper
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :determine_view_mode
@@ -43,6 +45,49 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       position_check_in: @position_check_in,
       aspiration_check_ins: @aspiration_check_ins,
       assignment_check_ins: @active_required_assignment_check_ins
+    )
+  end
+
+  def review_most_recent
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    @person = @teammate.person
+    @_review_most_recent_history_loads = []
+    timings = {}
+    total_ms = Benchmark.ms do
+      timings[:viewable_teammates_ms] = Benchmark.ms do
+        @viewable_teammates = load_viewable_teammates.to_a
+      end
+      @selected_teammate = @teammate
+
+      timings[:position_check_in_ms] = Benchmark.ms do
+        @position_check_in = PositionCheckIn
+          .where(company_teammate: @teammate)
+          .includes({ manager_completed_by_teammate: :person }, employment_tenure: :position)
+          .order(check_in_started_on: :desc, created_at: :desc)
+          .first
+      end
+
+      timings[:assignment_rows_ms] = Benchmark.ms { @assignment_rows = build_assignment_rows }
+      timings[:aspiration_rows_ms] = Benchmark.ms { @aspiration_rows = build_aspiration_rows }
+
+      timings[:position_history_ms] = Benchmark.ms { @position_history = build_position_history }
+      timings[:assignment_histories_ms] = Benchmark.ms do
+        @assignment_histories = build_assignment_histories(@assignment_rows.map { |row| row[:assignment_id] })
+      end
+      timings[:aspiration_histories_ms] = Benchmark.ms do
+        @aspiration_histories = build_aspiration_histories(@aspiration_rows.map { |row| row[:aspiration_id] })
+      end
+    end
+
+    log_review_most_recent_profile(
+      total_ms: total_ms,
+      timings: timings,
+      assignment_row_count: @assignment_rows.size,
+      aspiration_row_count: @aspiration_rows.size,
+      assignment_history_bucket_count: @assignment_histories.size,
+      aspiration_history_bucket_count: @aspiration_histories.size,
+      history_loads: @_review_most_recent_history_loads
     )
   end
   
@@ -105,6 +150,256 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
     Rails.logger.debug "Final view_mode: #{@view_mode}"
     Rails.logger.debug "=== END DEBUG ===\n"
+  end
+
+  def load_viewable_teammates
+    base_scope = CompanyTeammate
+      .for_organization_hierarchy(organization)
+      .joins(:person)
+      .includes(:person)
+      .where(last_terminated_at: nil)
+
+    if policy(organization).manage_employment?
+      base_scope.order('people.preferred_name ASC NULLS LAST, people.first_name ASC, people.last_name ASC')
+    else
+      CompanyTeammate
+        .self_and_reporting_hierarchy(current_company_teammate, organization)
+        .joins(:person)
+        .includes(:person)
+        .where(last_terminated_at: nil)
+        .order('people.preferred_name ASC NULLS LAST, people.first_name ASC, people.last_name ASC')
+    end
+  end
+
+  def build_position_history
+    includes_hash = [ :manager_completed_by_teammate, { employment_tenure: :position } ]
+    scope = PositionCheckIn.where(company_teammate: @teammate)
+
+    latest_finalized = scope
+      .where.not(official_check_in_completed_at: nil)
+      .includes(*includes_hash)
+      .order(official_check_in_completed_at: :desc, created_at: :desc)
+      .first
+
+    open_check_in = scope
+      .where(official_check_in_completed_at: nil)
+      .includes(*includes_hash)
+      .order(check_in_started_on: :desc, created_at: :desc)
+      .first
+
+    {
+      sentence_type: :position,
+      latest_finalized: latest_finalized,
+      open_check_in: open_check_in
+    }
+  end
+
+  def build_assignment_rows
+    active_tenures = AssignmentTenure
+      .joins(:assignment)
+      .where(company_teammate: @teammate, ended_at: nil)
+      .where(assignments: { company: organization.self_and_descendants })
+      .includes(:assignment)
+
+    assignment_ids = active_tenures.map(&:assignment_id).uniq
+    assignment_tenure_by_id = active_tenures.index_by(&:assignment_id)
+
+    active_employment = @teammate.employment_tenures.active.where(company: organization).first
+    if active_employment&.position
+      assignment_ids |= active_employment.position.required_assignments.pluck(:assignment_id)
+      assignment_ids |= active_employment.position.suggested_assignments.pluck(:assignment_id)
+    end
+
+    assignment_ids |= AssignmentCheckIn
+      .joins(:assignment)
+      .where(company_teammate: @teammate, assignments: { company: organization.self_and_descendants })
+      .distinct
+      .pluck(:assignment_id)
+
+    assignments_by_id = Assignment.where(id: assignment_ids).index_by(&:id)
+
+    assignment_ids.filter_map do |assignment_id|
+      assignment = assignments_by_id[assignment_id]
+      next unless assignment
+
+      {
+        assignment_id: assignment_id,
+        assignment: assignment,
+        assignment_tenure: assignment_tenure_by_id[assignment_id]
+      }
+    end
+  end
+
+  def build_aspiration_rows
+    Aspiration.within_hierarchy(organization).ordered.map do |aspiration|
+      { aspiration_id: aspiration.id, aspiration: aspiration }
+    end
+  end
+
+  def build_assignment_histories(assignment_ids)
+    assignment_ids = assignment_ids.compact.uniq
+    return {} if assignment_ids.empty?
+
+    includes_hash = [ :assignment, { manager_completed_by_teammate: :person }, { company_teammate: :person } ]
+    base_scope = AssignmentCheckIn.where(company_teammate: @teammate, assignment_id: assignment_ids)
+
+    latest_finalized_rows = base_scope
+      .where.not(official_check_in_completed_at: nil)
+      .includes(*includes_hash)
+      .order(official_check_in_completed_at: :desc, created_at: :desc)
+      .to_a
+
+    latest_open_rows = base_scope
+      .where(official_check_in_completed_at: nil)
+      .includes(*includes_hash)
+      .order(check_in_started_on: :desc, created_at: :desc)
+      .to_a
+
+    finalized_by_assignment = latest_finalized_rows.uniq { |row| row.assignment_id }.index_by(&:assignment_id)
+    open_by_assignment = latest_open_rows.uniq { |row| row.assignment_id }.index_by(&:assignment_id)
+
+    assignment_ids.each_with_object({}) do |assignment_id, memo|
+      memo[assignment_id] = {
+        sentence_type: :assignment,
+        latest_finalized: finalized_by_assignment[assignment_id],
+        open_check_in: open_by_assignment[assignment_id]
+      }
+    end
+  end
+
+  def build_aspiration_histories(aspiration_ids)
+    aspiration_ids = aspiration_ids.compact.uniq
+    return {} if aspiration_ids.empty?
+
+    includes_hash = [ :aspiration, { manager_completed_by_teammate: :person }, { company_teammate: :person } ]
+    base_scope = AspirationCheckIn.where(company_teammate: @teammate, aspiration_id: aspiration_ids)
+
+    latest_finalized_rows = base_scope
+      .where.not(official_check_in_completed_at: nil)
+      .includes(*includes_hash)
+      .order(official_check_in_completed_at: :desc, created_at: :desc)
+      .to_a
+
+    latest_open_rows = base_scope
+      .where(official_check_in_completed_at: nil)
+      .includes(*includes_hash)
+      .order(check_in_started_on: :desc, created_at: :desc)
+      .to_a
+
+    finalized_by_aspiration = latest_finalized_rows.uniq { |row| row.aspiration_id }.index_by(&:aspiration_id)
+    open_by_aspiration = latest_open_rows.uniq { |row| row.aspiration_id }.index_by(&:aspiration_id)
+
+    aspiration_ids.each_with_object({}) do |aspiration_id, memo|
+      memo[aspiration_id] = {
+        sentence_type: :aspiration,
+        latest_finalized: finalized_by_aspiration[aspiration_id],
+        open_check_in: open_by_aspiration[aspiration_id]
+      }
+    end
+  end
+
+  def build_history_summary(scope:, sentence_type:, latest_finalized:)
+    latest_employee = scope.where.not(employee_completed_at: nil).order(employee_completed_at: :desc).first
+    latest_employee_with_manager = scope.where.not(employee_completed_at: nil).where.not(manager_completed_at: nil).order(employee_completed_at: :desc).first
+
+    latest_manager = scope.where.not(manager_completed_at: nil).order(manager_completed_at: :desc).first
+    latest_manager_with_employee = scope.where.not(manager_completed_at: nil).where.not(employee_completed_at: nil).order(manager_completed_at: :desc).first
+
+    {
+      sentence_type: sentence_type,
+      latest_finalized: latest_finalized,
+      latest_employee_with_manager: latest_employee_with_manager,
+      latest_manager_with_employee: latest_manager_with_employee,
+      employee_waiting_on_manager: waiting_message_for_employee_side(latest_employee),
+      manager_waiting_on_employee: waiting_message_for_manager_side(latest_manager)
+    }
+  end
+
+  def load_recent_then_fallback_history(model:, foreign_key:, ids:, includes_hash:)
+    recent_cutoff = 1.year.ago
+    completion_condition = "employee_completed_at IS NOT NULL OR manager_completed_at IS NOT NULL OR official_check_in_completed_at IS NOT NULL"
+    recent_window_condition = "(employee_completed_at >= :cutoff OR manager_completed_at >= :cutoff OR official_check_in_completed_at >= :cutoff)"
+
+    recent_rows = []
+    recent_ms = Benchmark.ms do
+      recent_rows = model
+        .where(company_teammate: @teammate, foreign_key => ids)
+        .where(completion_condition)
+        .where(recent_window_condition, cutoff: recent_cutoff)
+        .includes(*includes_hash)
+        .to_a
+    end
+
+    recent_by_id = recent_rows.group_by { |row| row.public_send(foreign_key) }
+    missing_ids = ids - recent_by_id.keys
+
+    fallback_ms = 0.0
+    fallback_rows = []
+    if missing_ids.any?
+      fallback_ms = Benchmark.ms do
+        fallback_rows = model
+          .where(company_teammate: @teammate, foreign_key => missing_ids)
+          .where(completion_condition)
+          .includes(*includes_hash)
+          .to_a
+      end
+    end
+
+    if @_review_most_recent_history_loads
+      @_review_most_recent_history_loads << {
+        model: model.name,
+        foreign_key: foreign_key,
+        ids_requested: ids.size,
+        recent_ms: recent_ms.round(2),
+        recent_rows: recent_rows.size,
+        missing_ids_for_fallback: missing_ids.size,
+        fallback_ms: fallback_ms.round(2),
+        fallback_rows: fallback_rows.size,
+        combined_rows: recent_rows.size + fallback_rows.size
+      }
+    end
+
+    recent_rows + fallback_rows
+  end
+
+  def log_review_most_recent_profile(total_ms:, timings:, assignment_row_count:, aspiration_row_count:,
+    assignment_history_bucket_count:, aspiration_history_bucket_count:, history_loads:)
+    payload = {
+      event: "review_most_recent",
+      organization_id: organization.id,
+      teammate_id: @teammate.id,
+      viewable_teammate_count: @viewable_teammates.size,
+      total_ms: total_ms.round(2),
+      timings_ms: timings.transform_values { |v| v.round(2) },
+      assignment_row_count: assignment_row_count,
+      aspiration_row_count: aspiration_row_count,
+      assignment_history_bucket_count: assignment_history_bucket_count,
+      aspiration_history_bucket_count: aspiration_history_bucket_count,
+      history_loads: history_loads
+    }
+    Rails.logger.info(payload.to_json)
+  rescue StandardError => e
+    Rails.logger.warn("[review_most_recent] failed to log profile: #{e.class}: #{e.message}")
+  end
+
+  def waiting_message_for_employee_side(latest_employee)
+    return nil if latest_employee.blank? || latest_employee.manager_completed_at.present?
+
+    {
+      actor_name: @teammate.person.casual_name,
+      waiting_for_name: @teammate.current_manager&.casual_name.presence || 'their manager',
+      completed_at: latest_employee.employee_completed_at
+    }
+  end
+
+  def waiting_message_for_manager_side(latest_manager)
+    return nil if latest_manager.blank? || latest_manager.employee_completed_at.present?
+
+    {
+      actor_name: @teammate.current_manager&.casual_name.presence || 'Manager',
+      waiting_for_name: @teammate.person.casual_name,
+      completed_at: latest_manager.manager_completed_at
+    }
   end
 
   def load_or_build_position_check_in

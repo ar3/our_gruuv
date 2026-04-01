@@ -1,0 +1,5 @@
+-# Locals: check_in, employee_name, sentence_type (symbol)
+- if check_in.present?
+  = render 'shared/check_in_finalized_sentences', check_in: check_in, employee_name: employee_name, sentence_type: sentence_type
+- else
+  %span.text-muted No completed check-in yet.

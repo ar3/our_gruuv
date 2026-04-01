@@ -453,6 +453,13 @@ module NavigationHelper
             path: my_growth_experiences_organization_company_teammate_path(current_organization, current_company_teammate),
             policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
             coming_soon: false
+          },
+          {
+            label: 'Check-In History',
+            icon: 'bi-table',
+            path: review_most_recent_organization_company_teammate_check_ins_path(current_organization, current_company_teammate),
+            policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
+            coming_soon: false
           }
         ]
       },
