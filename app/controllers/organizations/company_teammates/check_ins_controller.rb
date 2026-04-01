@@ -57,6 +57,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     total_ms = Benchmark.ms do
       timings[:viewable_teammates_ms] = Benchmark.ms do
         @viewable_teammates = load_viewable_teammates.to_a
+        @viewable_teammate_groups = group_viewable_teammates_by_department(@viewable_teammates)
       end
       @selected_teammate = @teammate
 
@@ -156,19 +157,30 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     base_scope = CompanyTeammate
       .for_organization_hierarchy(organization)
       .joins(:person)
-      .includes(:person)
+      .includes(:person, employment_tenures: { position: { title: :department } })
       .where(last_terminated_at: nil)
 
     if policy(organization).manage_employment?
-      base_scope.order('people.preferred_name ASC NULLS LAST, people.first_name ASC, people.last_name ASC')
+      base_scope.order('people.last_name ASC NULLS LAST, people.first_name ASC, people.preferred_name ASC NULLS LAST')
     else
       CompanyTeammate
         .self_and_reporting_hierarchy(current_company_teammate, organization)
         .joins(:person)
-        .includes(:person)
+        .includes(:person, employment_tenures: { position: { title: :department } })
         .where(last_terminated_at: nil)
-        .order('people.preferred_name ASC NULLS LAST, people.first_name ASC, people.last_name ASC')
+        .order('people.last_name ASC NULLS LAST, people.first_name ASC, people.preferred_name ASC NULLS LAST')
     end
+  end
+
+  def group_viewable_teammates_by_department(teammates)
+    groups = teammates.group_by do |teammate|
+      active_tenure = teammate.employment_tenures.find do |tenure|
+        tenure.ended_at.nil? && tenure.company_id == organization.id
+      end
+      active_tenure&.position&.title&.department&.name.presence || 'No Department'
+    end
+
+    groups.sort_by { |department_name, _| department_name == 'No Department' ? "\uFFFF" : department_name.downcase }.to_h
   end
 
   def build_position_history

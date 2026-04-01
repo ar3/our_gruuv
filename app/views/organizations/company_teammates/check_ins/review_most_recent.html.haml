@@ -1,8 +1,8 @@
-- content_for :title, "Beta: Review Most Recent - #{@teammate.person.display_name}"
+- content_for :title, "Check-In Statuses - #{@teammate.person.casual_name}"
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0 Review Most Recent for #{@teammate.person.display_name}
+    %h1.mb-0 Check-In Statuses - #{@teammate.person.casual_name}
     %span.badge.text-bg-warning
       %i.bi.bi-flask.me-1
       Beta
@@ -12,9 +12,11 @@
     .d-flex.align-items-center.gap-2
       %label.form-label.mb-0{for: "teammate_switcher"} Employee
       %select#teammate_switcher.form-select.form-select-sm{name: "company_teammate_id", onchange: "window.location=this.value;"}
-        - @viewable_teammates.each do |teammate|
-          %option{value: review_most_recent_organization_company_teammate_check_ins_path(organization, teammate), selected: teammate.id == @selected_teammate.id}
-            = teammate.person.display_name
+        - @viewable_teammate_groups.each do |department_name, teammates|
+          %optgroup{label: department_name}
+            - teammates.each do |teammate|
+              %option{value: review_most_recent_organization_company_teammate_check_ins_path(organization, teammate), selected: teammate.id == @selected_teammate.id}
+                = teammate.person.display_name
 
 - content_for :go_back_link do
   = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "go-back-link" do

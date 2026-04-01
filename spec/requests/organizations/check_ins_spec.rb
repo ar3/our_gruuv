@@ -510,7 +510,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Review Most Recent for')
+      expect(response.body).to include("Check-In Statuses - #{employee_person.casual_name}")
       expect(response.body).to include('Beta')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")

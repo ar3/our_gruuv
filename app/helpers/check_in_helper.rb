@@ -284,7 +284,8 @@ module CheckInHelper
         if open.employee_completed?
           secondary_text = aspiration_check_in_sentence_lines(open, employee_name)[1]
         else
-          secondary_text = "#{manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
+          completed_by_manager_name = open.manager_completed_by_teammate&.person&.casual_name.presence || manager_name
+          secondary_text = "#{completed_by_manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
         end
       end
     end
@@ -330,7 +331,8 @@ module CheckInHelper
         if open.employee_completed?
           secondary_text = assignment_check_in_sentence_lines(open, employee_name)[1]
         else
-          secondary_text = "#{manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
+          completed_by_manager_name = open.manager_completed_by_teammate&.person&.casual_name.presence || manager_name
+          secondary_text = "#{completed_by_manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
         end
       end
     end
@@ -372,7 +374,8 @@ module CheckInHelper
         if open.employee_completed?
           secondary_text = position_check_in_sentence_lines(open, employee_name)[1]
         else
-          secondary_text = "#{manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
+          completed_by_manager_name = open.manager_completed_by_teammate&.person&.casual_name.presence || manager_name
+          secondary_text = "#{completed_by_manager_name} completed a new check-in #{time_ago_in_words(open.manager_completed_at)} ago, and is waiting on #{employee_name} to complete their side."
         end
       end
     end
