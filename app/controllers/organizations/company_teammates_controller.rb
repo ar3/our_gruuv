@@ -879,7 +879,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def set_teammate
-    @teammate = organization.teammates.find(params[:id])
+    teammate_id = params[:id].to_s == 'my' ? current_company_teammate&.id : params[:id]
+    @teammate = organization.teammates.find(teammate_id)
   end
 
   def maap_snapshot
