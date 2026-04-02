@@ -2,6 +2,9 @@
 - header_caption = local_assigns[:header_caption]
 - requirement = local_assigns[:requirement]
 - missing_text = local_assigns.fetch(:missing_text, 'Not linked')
+- missing_link_path = local_assigns[:missing_link_path]
+- missing_link_lead = local_assigns.fetch(:missing_link_lead, 'Not set — ')
+- missing_link_text = local_assigns.fetch(:missing_link_text, 'organization default applies')
 - section_order = %w(company_aspirational_values_check_in_requirements required_assignment_check_in_requirements unique_to_you_assignment_check_in_requirements mileage_requirements position_check_in_requirements)
 
 .card.h-100
@@ -23,4 +26,9 @@
       - else
         %span.text-muted Empty profile
     - else
-      %span.text-muted= missing_text
+      - if missing_link_path.present?
+        %span.text-muted
+          = missing_link_lead
+          = link_to missing_link_text, missing_link_path, class: 'link-secondary'
+      - else
+        %span.text-muted= missing_text

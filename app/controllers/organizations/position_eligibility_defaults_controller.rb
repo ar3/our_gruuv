@@ -43,7 +43,7 @@ module Organizations
     private
 
     def authorize_show!
-      authorize @organization, :show?
+      authorize @organization, :view_position_eligibility_defaults?
     end
 
     def authorize_maap!

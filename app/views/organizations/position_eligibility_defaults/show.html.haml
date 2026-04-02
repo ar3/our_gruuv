@@ -17,8 +17,8 @@
   .row.mb-4
     .col-lg-8
       = render 'organizations/position_eligibility_defaults/minor_requirement_summary_card',
-        header_title: "Positions *.#{row[:minor]}",
-        header_caption: ['Emerging / starting salary. Coming from different or less responsibility than what is expected', 'Established / solid experience', 'Elite / mastery of what is expected'][row[:minor] - 1] + ' within the title',
+        header_title: PositionEligibilityMinorLevels.card_header_title(row[:minor]),
+        header_caption: PositionEligibilityMinorLevels.header_caption_within_title(row[:minor]),
         requirement: row[:requirement],
         missing_text: 'Not linked'
     .col-lg-4

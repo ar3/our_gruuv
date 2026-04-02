@@ -18,7 +18,10 @@ RSpec.describe 'Department position eligibility defaults', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Position eligibility defaults')
-      expect(response.body).to include('Minor 1')
+      expect(response.body).to include('Positions *.1')
+      expect(response.body).to include('Positions *.3')
+      expect(response.body).to include(organization_position_eligibility_defaults_path(organization))
+      expect(response.body).to include('organization default applies')
     end
   end
 

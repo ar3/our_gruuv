@@ -17,9 +17,10 @@
   .row.mb-4
     .col-lg-8
       = render 'organizations/position_eligibility_defaults/minor_requirement_summary_card',
-        header_title: "Minor #{row[:minor]}",
+        header_title: PositionEligibilityMinorLevels.card_header_title(row[:minor]),
+        header_caption: PositionEligibilityMinorLevels.header_caption_within_title(row[:minor]),
         requirement: row[:requirement],
-        missing_text: 'Not set — organization default applies'
+        missing_link_path: organization_position_eligibility_defaults_path(@organization)
     .col-lg-4
       .d-grid.gap-2
         - if can_maap

@@ -203,6 +203,16 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  # Read-only org-wide defaults: any teammate with active employment in this org, or MAAP managers.
+  def view_position_eligibility_defaults?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return true if admin_bypass?
+    return true if manage_maap?
+
+    viewing_teammate.person&.active_employment_tenure_in?(record)
+  end
+
   private
 
   # Fresh DB read so permission changes apply (matches PositionPolicy pattern; avoids stale teammate in tests).

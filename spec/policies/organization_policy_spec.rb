@@ -209,6 +209,44 @@ RSpec.describe OrganizationPolicy, type: :policy do
     end
   end
 
+  describe '#view_position_eligibility_defaults?' do
+    context 'when organization matches viewing_teammate.organization' do
+      it 'allows MAAP managers even without an active employment tenure' do
+        policy = OrganizationPolicy.new(pundit_user_maap, organization)
+        expect(policy.view_position_eligibility_defaults?).to be true
+      end
+
+      it 'allows teammates with active employment tenure in the organization' do
+        tenure_teammate = CompanyTeammate.create!(
+          person: create(:person),
+          organization: organization,
+          can_manage_maap: false
+        )
+        create(:employment_tenure, company_teammate: tenure_teammate, company: organization)
+        pundit_user = OpenStruct.new(user: tenure_teammate, impersonating_teammate: nil)
+        policy = OrganizationPolicy.new(pundit_user, organization)
+        expect(policy.view_position_eligibility_defaults?).to be true
+      end
+
+      it 'denies teammates without MAAP and without active employment tenure' do
+        policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+        expect(policy.view_position_eligibility_defaults?).to be false
+      end
+
+      it 'respects admin_bypass?' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.view_position_eligibility_defaults?).to be true
+      end
+    end
+
+    context 'when organization does not match viewing_teammate.organization' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.view_position_eligibility_defaults?).to be false
+      end
+    end
+  end
+
   describe '#view_goals?' do
     context 'when organization is in viewing_teammate hierarchy' do
       it 'allows access for any teammate' do

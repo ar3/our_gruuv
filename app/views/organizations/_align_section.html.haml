@@ -59,9 +59,6 @@
             = link_to new_organization_aspiration_path(organization), class: "btn btn-outline-primary" do
               %i.bi.bi-plus-circle.me-2
               Create Aspiration
-            = link_to organization_position_eligibility_defaults_path(organization), class: "btn btn-outline-primary" do
-              %i.bi.bi-sliders.me-2
-              Position eligibility defaults
           - else
             .d-flex.align-items-center.gap-2
               .flex-grow-1
@@ -69,9 +66,15 @@
                   %i.bi.bi-list.me-2
                   View Aspirations
               %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
+
+          - if policy(organization).view_position_eligibility_defaults?
+            = link_to organization_position_eligibility_defaults_path(organization), class: "btn btn-outline-primary" do
+              %i.bi.bi-sliders.me-2
+              Position eligibility defaults
+          - else
             .d-flex.align-items-center.gap-2
               .flex-grow-1
                 = link_to organization_position_eligibility_defaults_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
                   %i.bi.bi-sliders.me-2
                   Position eligibility defaults
-              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
+              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires active employment in this organization" } }

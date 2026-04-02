@@ -20,6 +20,30 @@ RSpec.describe 'Organization position eligibility defaults', type: :request do
       expect(response.body).to include('Positions *.1')
       expect(response.body).to include('Positions *.3')
     end
+
+    it 'allows a teammate with active employment tenure who cannot manage MAAP' do
+      employee_person = create(:person)
+      employee_teammate = create(
+        :company_teammate,
+        person: employee_person,
+        organization: organization,
+        can_manage_maap: false
+      )
+      create(:employment_tenure, company_teammate: employee_teammate, company: organization)
+      sign_in_as_teammate_for_request(employee_person, organization)
+
+      get organization_position_eligibility_defaults_path(organization)
+
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'redirects when the teammate has no MAAP access and no active employment tenure' do
+      teammate.update!(can_manage_maap: false)
+
+      get organization_position_eligibility_defaults_path(organization)
+
+      expect(response).to redirect_to(root_path)
+    end
   end
 
   describe 'PATCH /organizations/:organization_id/position_eligibility_defaults/minors/:minor' do
