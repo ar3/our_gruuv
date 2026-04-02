@@ -24,6 +24,11 @@ module PositionEligibilityMinorLevels
     "#{TIER_DESCRIPTION.fetch(minor)} within the title"
   end
 
+  # Short tier copy for tooltips and inline help (nil if minor is not 1–3).
+  def self.tier_description(minor)
+    TIER_DESCRIPTION[minor] if minor.is_a?(Integer) && VALID.cover?(minor)
+  end
+
   def self.validate_minor!(minor)
     return if VALID.cover?(minor)
 

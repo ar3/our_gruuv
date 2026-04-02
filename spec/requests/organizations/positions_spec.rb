@@ -112,6 +112,19 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Department')
     end
+
+    it 'shows major and minor level definitions inline in the Spotlight position level section' do
+      pml = title.position_major_level
+      pml.update!(description: 'Major ladder description inline')
+      position.position_level.update!(level: '2.2')
+
+      get organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Position Level')
+      expect(response.body).to include("#{pml.major_level}.* = Major ladder description inline")
+      expect(response.body).to include('*.2 = Established / solid experience')
+    end
   end
 
   describe 'GET /organizations/:organization_id/positions/:id/job_description' do

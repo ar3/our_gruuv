@@ -21,6 +21,17 @@ RSpec.describe PositionEligibilityMinorLevels do
     end
   end
 
+  describe ".tier_description" do
+    it "returns tier copy for minors 1–3" do
+      expect(described_class.tier_description(1)).to include("Emerging")
+    end
+
+    it "returns nil for invalid minors" do
+      expect(described_class.tier_description(0)).to be_nil
+      expect(described_class.tier_description(4)).to be_nil
+    end
+  end
+
   describe ".TIER_DESCRIPTION" do
     it "defines all three minors" do
       expect(described_class::TIER_DESCRIPTION.keys).to contain_exactly(1, 2, 3)
