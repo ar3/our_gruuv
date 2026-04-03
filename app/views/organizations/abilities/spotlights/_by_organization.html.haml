@@ -22,11 +22,17 @@
       %ul.list-unstyled.mb-0
         - left_column.each do |dept_data|
           %li.mb-2
-            = dept_data[:display_name]
+            - if dept_data[:department]
+              = link_to dept_data[:display_name], organization_department_path(@organization, dept_data[:department]), class: 'text-decoration-none', target: '_blank', rel: 'noopener noreferrer'
+            - else
+              = dept_data[:display_name]
             %span.badge.bg-primary.ms-1= dept_data[:count]
     .col-md-6
       %ul.list-unstyled.mb-0
         - right_column.each do |dept_data|
           %li.mb-2
-            = dept_data[:display_name]
+            - if dept_data[:department]
+              = link_to dept_data[:display_name], organization_department_path(@organization, dept_data[:department]), class: 'text-decoration-none', target: '_blank', rel: 'noopener noreferrer'
+            - else
+              = dept_data[:display_name]
             %span.badge.bg-primary.ms-1= dept_data[:count]
