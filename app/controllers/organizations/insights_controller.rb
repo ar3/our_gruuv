@@ -110,7 +110,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     goals_scope = goals_base_scope
     @goals_chart_data = GoalsChartSeries.stacked_series(chart_range, goals_scope)
-    @goals_employees_chart_data = GoalsChartSeries.employees_with_goals_series(chart_range, goals_scope)
+    @goals_lifecycle_chart_data = GoalsChartSeries.lifecycle_series(chart_range, goals_scope)
+    @goals_employees_chart_data = GoalsChartSeries.employees_goal_weekly_status_series(chart_range, goals_scope)
+    @goals_association_chart_data = GoalsChartSeries.association_structure_series(chart_range, goals_scope)
 
     # Goals network graph: active + completed in last 90 days, company-level visibility
     @goals_for_network_graph, @goal_links_for_network_graph = goals_network_graph_data

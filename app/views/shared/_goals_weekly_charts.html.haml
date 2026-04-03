@@ -9,6 +9,8 @@
 - wrap_class = local_assigns[:wrap_class] || 'container-fluid'
 - second_header_icon = local_assigns[:second_header_icon] || 'bi-bullseye'
 - hide_second_chart = local_assigns[:hide_second_chart] || false
+- charts_after_first = local_assigns[:charts_after_first] || []
+- charts_after_second = local_assigns[:charts_after_second] || []
 - goals_for_network_graph = local_assigns[:goals_for_network_graph]
 - goal_links_for_network_graph = local_assigns[:goal_links_for_network_graph]
 - goals_org = local_assigns[:organization]
@@ -84,30 +86,54 @@
           .card-body
             %div{id: second_chart_dom_id, style: "height: 400px;"}
 
+  - charts_after_first.each do |ch|
+    %hr.my-5
+    .row.mb-4
+      .col-12
+        .card.border-0.shadow-sm
+          .card-header{class: ch[:header_class]}
+            %h4.mb-0
+              %i.bi{class: "#{ch[:header_icon]} me-2"}
+              = ch[:card_heading]
+          .card-body
+            %div{id: ch[:dom_id], style: "height: 400px;"}
+
+  - charts_after_second.each do |ch|
+    %hr.my-5
+    .row.mb-4
+      .col-12
+        .card.border-0.shadow-sm
+          .card-header{class: ch[:header_class]}
+            %h4.mb-0
+              %i.bi{class: "#{ch[:header_icon]} me-2"}
+              = ch[:card_heading]
+          .card-body
+            %div{id: ch[:dom_id], style: "height: 400px;"}
+
 :javascript
   (function() {
     var goalsChartData = #{goals_chart_data.to_json};
     var secondChartData = #{second_chart_data.to_json};
+    var chartsAfterFirst = #{charts_after_first.to_json};
+    var chartsAfterSecond = #{charts_after_second.to_json};
     var chartTitle = #{chart_title_period.to_json};
     var firstId = #{first_chart_dom_id.to_json};
     var secondId = #{second_chart_dom_id.to_json};
     var secondYTitle = #{second_y_axis_title.to_json};
     var secondChartTitle = #{second_highcharts_title.to_json};
 
-    function initializeGoalsChart() {
-      if (typeof Highcharts === 'undefined') return;
-      if (!document.getElementById(firstId)) return;
-      Highcharts.chart(firstId, {
+    function stackedColumnOptions(categories, series, yTitle, titleText) {
+      return {
         chart: { type: 'column' },
-        title: { text: 'Goals by week (' + chartTitle + ')' },
+        title: { text: titleText },
         accessibility: { enabled: false },
         xAxis: {
-          categories: goalsChartData.categories,
+          categories: categories,
           title: { text: 'Week of' }
         },
         yAxis: {
           min: 0,
-          title: { text: 'Number of goals' },
+          title: { text: yTitle },
           stackLabels: { enabled: true }
         },
         plotOptions: {
@@ -116,39 +142,51 @@
             dataLabels: { enabled: false }
           }
         },
-        series: goalsChartData.series
-      });
+        series: series
+      };
+    }
+
+    function initializeGoalsChart() {
+      if (typeof Highcharts === 'undefined') return;
+      if (!document.getElementById(firstId)) return;
+      Highcharts.chart(firstId, stackedColumnOptions(
+        goalsChartData.categories,
+        goalsChartData.series,
+        'Number of goals',
+        'Goals by week (' + chartTitle + ')'
+      ));
     }
 
     function initializeSecondChart() {
       if (typeof Highcharts === 'undefined') return;
       if (!document.getElementById(secondId)) return;
-      Highcharts.chart(secondId, {
-        chart: { type: 'column' },
-        title: { text: secondChartTitle },
-        accessibility: { enabled: false },
-        xAxis: {
-          categories: secondChartData.categories,
-          title: { text: 'Week of' }
-        },
-        yAxis: {
-          min: 0,
-          title: { text: secondYTitle },
-          stackLabels: { enabled: true }
-        },
-        plotOptions: {
-          column: {
-            stacking: 'normal',
-            dataLabels: { enabled: false }
-          }
-        },
-        series: secondChartData.series
+      Highcharts.chart(secondId, stackedColumnOptions(
+        secondChartData.categories,
+        secondChartData.series,
+        secondYTitle,
+        secondChartTitle
+      ));
+    }
+
+    function initializeExtraCharts(list) {
+      if (!list || !list.length) return;
+      list.forEach(function(ch) {
+        var el = document.getElementById(ch.dom_id);
+        if (!el || !ch.chart_data) return;
+        Highcharts.chart(ch.dom_id, stackedColumnOptions(
+          ch.chart_data.categories,
+          ch.chart_data.series,
+          ch.y_axis_title,
+          ch.chart_title
+        ));
       });
     }
 
     function initializeCharts() {
       initializeGoalsChart();
       if (!#{hide_second_chart.to_json}) initializeSecondChart();
+      initializeExtraCharts(chartsAfterFirst);
+      initializeExtraCharts(chartsAfterSecond);
     }
 
     var attempts = 0;

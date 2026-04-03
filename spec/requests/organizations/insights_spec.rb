@@ -312,6 +312,12 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('goals-employees-chart')
     end
 
+    it 'includes lifecycle and association chart containers' do
+      get organization_insights_goals_path(organization)
+      expect(response.body).to include('goals-lifecycle-chart')
+      expect(response.body).to include('goals-association-chart')
+    end
+
     it 'includes the goals network graph section above the timeframe selector' do
       create(:goal, creator: teammate, owner: teammate, company: organization, privacy_level: 'everyone_in_company', started_at: 1.week.ago)
       get organization_insights_goals_path(organization)

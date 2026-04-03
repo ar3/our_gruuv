@@ -19,6 +19,8 @@
   custom_to: @insights_custom_to,
   wrapper_class: 'mb-4'
 
+- charts_after_first = [{ dom_id: 'goals-lifecycle-chart', card_heading: "Goals lifecycle by week (#{chart_title_period})", chart_title: "Goals lifecycle by week (#{chart_title_period})", y_axis_title: 'Number of goals', header_class: 'bg-info text-white', header_icon: 'bi-calendar-week', chart_data: @goals_lifecycle_chart_data }]
+- charts_after_second = [{ dom_id: 'goals-association-chart', card_heading: "Goals by association & status (#{chart_title_period})", chart_title: "Goals by association and status (#{chart_title_period})", y_axis_title: 'Number of goals', header_class: 'bg-dark text-white', header_icon: 'bi-link-45deg', chart_data: @goals_association_chart_data }]
 = render 'shared/goals_weekly_charts',
   chart_title_period: chart_title_period,
   goals_for_network_graph: @goals_for_network_graph,
@@ -28,7 +30,9 @@
   second_chart_data: @goals_employees_chart_data,
   first_chart_dom_id: 'goals-by-week-chart',
   second_chart_dom_id: 'goals-employees-chart',
-  second_card_heading: "Employees with Goals by Week (#{chart_title_period})",
+  second_card_heading: "Employees with goals by week (#{chart_title_period})",
   second_y_axis_title: 'Number of employees',
   second_highcharts_title: "Employees with goals by week (#{chart_title_period})",
-  second_header_icon: 'bi-people'
+  second_header_icon: 'bi-people',
+  charts_after_first: charts_after_first,
+  charts_after_second: charts_after_second
