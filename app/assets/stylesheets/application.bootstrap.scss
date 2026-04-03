@@ -1038,3 +1038,8 @@ body:has(.vertical-nav.open) .floating-toggle {
   line-height: 1;
   opacity: 0.92;
 }
+
+// 1-by-1 check-in card: same icon scale as bulk banner without forcing tall min-height
+.check-ins-fresh-banner--compact {
+  min-height: 0;
+}

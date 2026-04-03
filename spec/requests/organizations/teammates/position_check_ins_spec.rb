@@ -39,5 +39,39 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       get position_check_in_organization_teammate_path(organization, teammate)
       expect(response).to render_template("organizations/teammates/position_check_ins/show")
     end
+
+    context "when latest finalized is crystal clear and the open check-in is fresh on the employee side" do
+      let!(:_finalized_position_check_in) do
+        create(:position_check_in, :closed,
+          teammate: teammate,
+          employment_tenure: employment_tenure,
+          official_check_in_completed_at: 5.days.ago)
+      end
+      let!(:_open_position_check_in) do
+        create(:position_check_in,
+          teammate: teammate,
+          employment_tenure: employment_tenure,
+          check_in_started_on: Date.current,
+          employee_rating: nil,
+          employee_private_notes: nil,
+          manager_rating: nil,
+          manager_private_notes: nil,
+          employee_completed_at: nil,
+          manager_completed_at: nil,
+          official_check_in_completed_at: nil,
+          official_rating: nil,
+          shared_notes: nil,
+          manager_completed_by_teammate: nil,
+          finalized_by_teammate: nil)
+      end
+
+      it "shows the crystal-clear banner and early check-in link" do
+        get position_check_in_organization_teammate_path(organization, teammate)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("crystal clear on where they stand")
+        expect(response.body).to include("click here to check in early.")
+        expect(response.body).to include("fresh-single-check-in-toggle-#{_open_position_check_in.id}")
+      end
+    end
   end
 end

@@ -16,12 +16,7 @@ module CheckIns
       
       case action_name
       when /^view_position$/
-        organization_teammate_position_path(
-          @organization,
-          @teammate,
-          return_text: @params[:return_text],
-          return_url: @params[:return_url]
-        )
+        position_check_in_organization_teammate_path(@organization, @teammate)
       when /^view_assignment_(\d+)$/
         assignment_id = $1.to_i
         organization_teammate_assignment_path(
@@ -154,8 +149,8 @@ module CheckIns
 
     private
 
-    def organization_teammate_position_path(*args)
-      Rails.application.routes.url_helpers.organization_teammate_position_path(*args)
+    def position_check_in_organization_teammate_path(*args)
+      Rails.application.routes.url_helpers.position_check_in_organization_teammate_path(*args)
     end
 
     def organization_teammate_assignment_path(*args)

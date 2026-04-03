@@ -341,6 +341,32 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         sign_in_as_teammate_for_request(manager_person, organization)
       end
 
+      it "uses save_and_view_position on the position name submit" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to match(/save_and_view_position/)
+      end
+
+      it "redirects to the 1-by-1 position check-in page after save when using the position name submit" do
+        position_label = position.display_name
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+              params: {
+                check_ins: {
+                  save_and_view_position: position_label,
+                  position_check_in: {
+                    manager_rating: 2,
+                    manager_private_notes: "notes from position submit",
+                    status: "draft"
+                  }
+                }
+              }
+
+        expect(response).to redirect_to(
+          position_check_in_organization_teammate_path(organization, employee_teammate)
+        )
+      end
+
       it "shows only manager fields and hides employee fields" do
         get organization_company_teammate_check_ins_path(organization, employee_teammate)
         

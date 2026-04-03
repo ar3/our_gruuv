@@ -126,68 +126,69 @@
         .card-header
           %h5.mb-0 Current Check-in
         .card-body
-          = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
-            = form.hidden_field :current_url, value: organization_teammate_assignment_path(@organization, @teammate, @assignment), id: nil
-            = form.hidden_field :current_type, value: "assignment", id: nil
-            = form.hidden_field :current_id, value: @assignment.id, id: nil
-            = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
-              .row
-                .col-12
-                  .mb-1
-                    Reflect on the past
-                - if current_person == @teammate.person
-                  .col-md-6
-                    .mb-3
-                      %label.form-label When I think about how much of my energy I spent on #{@assignment.title} since the last check-in, I spent about...
-                      = af.select :actual_energy_percentage, energy_percentage_options, { include_blank: 'Select percentage...', selected: @open_check_in.actual_energy_percentage }, { class: "form-select" }
+          = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @assignment.title, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
+            = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
+              = form.hidden_field :current_url, value: organization_teammate_assignment_path(@organization, @teammate, @assignment), id: nil
+              = form.hidden_field :current_type, value: "assignment", id: nil
+              = form.hidden_field :current_id, value: @assignment.id, id: nil
+              = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
+                .row
+                  .col-12
+                    .mb-1
+                      Reflect on the past
+                  - if current_person == @teammate.person
+                    .col-md-6
+                      .mb-3
+                        %label.form-label When I think about how much of my energy I spent on #{@assignment.title} since the last check-in, I spent about...
+                        = af.select :actual_energy_percentage, energy_percentage_options, { include_blank: 'Select percentage...', selected: @open_check_in.actual_energy_percentage }, { class: "form-select" }
+                    
+                    .col-md-6
+                      .mb-3
+                        %label.form-label When I think about taking on #{@assignment.title} in the future, the pharse that best describes how I feel is...
+                        = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
+                    
+                    .col-md-6
+                      .mb-3
+                        %label.form-label When I think about the outcomes of #{@assignment.title}, since the last check-in I would rate my performance against the expectations as...
+                        = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+                    
+                    .col-md-6
+                      .mb-3
+                        %label.form-label Notes
+                        = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
                   
-                  .col-md-6
-                    .mb-3
-                      %label.form-label When I think about taking on #{@assignment.title} in the future, the pharse that best describes how I feel is...
-                      = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
+                  - if current_person != @teammate.person
+                    .col-md-6
+                      .mb-3
+                        %label.form-label Manager Rating
+                        = af.select :manager_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+                    
+                    .col-md-6
+                      .mb-3
+                        %label.form-label Notes
+                        = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
                   
-                  .col-md-6
-                    .mb-3
-                      %label.form-label When I think about the outcomes of #{@assignment.title}, since the last check-in I would rate my performance against the expectations as...
-                      = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+                  = af.hidden_field :assignment_id, value: @assignment.id
                   
-                  .col-md-6
+                  .col-12
                     .mb-3
-                      %label.form-label Notes
-                      = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                
-                - if current_person != @teammate.person
-                  .col-md-6
-                    .mb-3
-                      %label.form-label Manager Rating
-                      = af.select :manager_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
-                  
-                  .col-md-6
-                    .mb-3
-                      %label.form-label Notes
-                      = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                
-                = af.hidden_field :assignment_id, value: @assignment.id
-                
-                .col-12
-                  .mb-3
-                    - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
-                    .form-check
-                      = af.radio_button :status, 'draft', checked: !is_complete, class: 'form-check-input'
-                      = af.label :status_draft, 'Draft', class: 'form-check-label'
-                    .form-check
-                      = af.radio_button :status, 'complete', checked: is_complete, class: 'form-check-input'
-                      = af.label :status_complete, 'Ready for review', class: 'form-check-label'
-                .col-12.mt-3
-                  .d-flex.flex-wrap.gap-2
-                    = form.submit "Save and stay here", name: "save_and_stay", class: "btn btn-primary"
-                    - if @single_item_next_requires_check_in && @single_item_next_url.present?
-                      = form.submit "Save and move to next", name: "save_and_go_to_next", class: "btn btn-outline-primary"
-                    = link_to "Cancel", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
-                  .d-flex.flex-wrap.gap-2.mt-2
-                    - if @single_item_next_requires_check_in && @single_item_next_url.present?
-                      = form.submit "Save and go to Bulk Check-in", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
-                    = form.submit "Save and go to Review Check-ins", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+                      - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+                      .form-check
+                        = af.radio_button :status, 'draft', checked: !is_complete, class: 'form-check-input'
+                        = af.label :status_draft, 'Draft', class: 'form-check-label'
+                      .form-check
+                        = af.radio_button :status, 'complete', checked: is_complete, class: 'form-check-input'
+                        = af.label :status_complete, 'Ready for review', class: 'form-check-label'
+                  .col-12.mt-3
+                    .d-flex.flex-wrap.gap-2
+                      = form.submit "Save and stay here", name: "save_and_stay", class: "btn btn-primary"
+                      - if @single_item_next_requires_check_in && @single_item_next_url.present?
+                        = form.submit "Save and move to next", name: "save_and_go_to_next", class: "btn btn-outline-primary"
+                      = link_to "Cancel", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
+                    .d-flex.flex-wrap.gap-2.mt-2
+                      - if @single_item_next_requires_check_in && @single_item_next_url.present?
+                        = form.submit "Save and go to Bulk Check-in", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+                      = form.submit "Save and go to Review Check-ins", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
 
     / Tenure History
     .card.mb-4

@@ -165,6 +165,27 @@ module CheckInHelper
     true
   end
 
+  # 1-by-1 check-in pages: same employee vs manager rule as bulk (CheckInsController#determine_view_mode).
+  def single_item_check_in_view_mode(teammate, current_person)
+    return :manager if teammate.blank? || current_person.blank?
+
+    current_person == teammate.person ? :employee : :manager
+  end
+
+  def single_item_hide_fresh_open_check_in_form?(check_in, latest_finalized, teammate:, current_person:)
+    hide_fresh_open_check_in_fields?(
+      check_in,
+      latest_finalized,
+      view_mode: single_item_check_in_view_mode(teammate, current_person)
+    )
+  end
+
+  def single_item_crystal_clear_recency_phrase(latest_finalized)
+    return "" if latest_finalized.blank? || latest_finalized.official_check_in_completed_at.blank?
+
+    "#{time_ago_in_words(latest_finalized.official_check_in_completed_at)} ago"
+  end
+
   def last_finalized_days_ago(latest_check_in)
     return nil if latest_check_in.blank?
 

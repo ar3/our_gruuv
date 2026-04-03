@@ -1,0 +1,18 @@
+- hide_fresh = single_item_hide_fresh_open_check_in_form?(open_check_in, latest_finalized, teammate: teammate, current_person: current_person)
+- toggle_class = "fresh-single-check-in-toggle-#{open_check_in.id}"
+- target_sel = ".#{toggle_class}"
+- if hide_fresh
+  %div{class: "collapse show #{toggle_class}"}
+    .alert.alert-success.check-ins-fresh-banner.check-ins-fresh-banner--compact.mb-0.border-0.shadow-sm.py-4.px-3.d-flex.align-items-center{ role: "status" }
+      .d-flex.flex-row.align-items-center.gap-3.w-100
+        .flex-shrink-0.d-flex.align-items-center
+          %i.bi.bi-check-circle-fill.check-ins-fresh-banner__icon{ aria: { hidden: true } }
+        .flex-grow-1.min-w-0.ps-1
+          %p.mb-0.lh-lg.text-body
+            #{teammate.person.casual_name} is crystal clear on where they stand when thinking about them and #{object_name} as of #{single_item_crystal_clear_recency_phrase(latest_finalized)}.
+            However, OG encourages continuous feedback so
+            %a{ href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => target_sel, "aria-expanded" => "false" } click here to check in early.
+  %div{class: "collapse #{toggle_class}"}
+    = yield
+- else
+  = yield

@@ -69,44 +69,45 @@
         .card-header
           %h5.mb-0 Current Check-in
         .card-body
-          = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
-            = form.hidden_field :current_url, value: position_check_in_organization_teammate_path(@organization, @teammate), id: nil
-            = form.hidden_field :current_type, value: "position", id: nil
-            = form.hidden_field :current_id, value: "", id: nil
-            = form.fields_for :position_check_in, @open_check_in do |pf|
-              - if current_person == @teammate.person
+          = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @single_item_name, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
+            = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
+              = form.hidden_field :current_url, value: position_check_in_organization_teammate_path(@organization, @teammate), id: nil
+              = form.hidden_field :current_type, value: "position", id: nil
+              = form.hidden_field :current_id, value: "", id: nil
+              = form.fields_for :position_check_in, @open_check_in do |pf|
+                - if current_person == @teammate.person
+                  .mb-3
+                    %label.form-label Employee Rating
+                    = pf.select :employee_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.employee_rating }, class: "form-select"
+                  .mb-3
+                    %label.form-label Private Notes
+                    = pf.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                - else
+                  .mb-3
+                    %label.form-label Manager Rating
+                    = pf.select :manager_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.manager_rating }, class: "form-select"
+                  .mb-3
+                    %label.form-label Manager Notes
+                    = pf.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
                 .mb-3
-                  %label.form-label Employee Rating
-                  = pf.select :employee_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.employee_rating }, class: "form-select"
-                .mb-3
-                  %label.form-label Private Notes
-                  = pf.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-              - else
-                .mb-3
-                  %label.form-label Manager Rating
-                  = pf.select :manager_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.manager_rating }, class: "form-select"
-                .mb-3
-                  %label.form-label Manager Notes
-                  = pf.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-              .mb-3
-                - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
-                .form-check
-                  = pf.radio_button :status, "draft", checked: !is_complete, class: "form-check-input"
-                  = pf.label :status_draft, "Draft", class: "form-check-label"
-                .form-check
-                  = pf.radio_button :status, "complete", checked: is_complete, class: "form-check-input"
-                  = pf.label :status_complete, "Ready for review", class: "form-check-label"
-            .row
-              .col-12.mt-3
-                .d-flex.flex-wrap.gap-2
-                  = form.submit "Save and stay here", name: "save_and_stay", class: "btn btn-primary"
-                  - if @single_item_next_requires_check_in && @single_item_next_url.present?
-                    = form.submit "Save and move to next", name: "save_and_go_to_next", class: "btn btn-outline-primary"
-                  = link_to "Cancel", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
-                .d-flex.flex-wrap.gap-2.mt-2
-                  - if @single_item_next_requires_check_in && @single_item_next_url.present?
-                    = form.submit "Save and go to Bulk Check-in", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
-                  = form.submit "Save and go to Review Check-ins", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+                  - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+                  .form-check
+                    = pf.radio_button :status, "draft", checked: !is_complete, class: "form-check-input"
+                    = pf.label :status_draft, "Draft", class: "form-check-label"
+                  .form-check
+                    = pf.radio_button :status, "complete", checked: is_complete, class: "form-check-input"
+                    = pf.label :status_complete, "Ready for review", class: "form-check-label"
+              .row
+                .col-12.mt-3
+                  .d-flex.flex-wrap.gap-2
+                    = form.submit "Save and stay here", name: "save_and_stay", class: "btn btn-primary"
+                    - if @single_item_next_requires_check_in && @single_item_next_url.present?
+                      = form.submit "Save and move to next", name: "save_and_go_to_next", class: "btn btn-outline-primary"
+                    = link_to "Cancel", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
+                  .d-flex.flex-wrap.gap-2.mt-2
+                    - if @single_item_next_requires_check_in && @single_item_next_url.present?
+                      = form.submit "Save and go to Bulk Check-in", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+                    = form.submit "Save and go to Review Check-ins", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
     - else
       .alert.alert-info No open position check-in. Create one from the bulk check-in page.
 

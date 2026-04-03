@@ -37,5 +37,17 @@ RSpec.describe CheckIns::RedirectUrlService do
       )
       expect(url).to eq(Rails.application.routes.url_helpers.organization_company_teammate_finalization_path(organization, teammate))
     end
+
+    it "save_and_view_position returns the 1-by-1 position check-in path" do
+      url = described_class.call(
+        button_name: "save_and_view_position",
+        organization: organization,
+        teammate: teammate,
+        params: {}
+      )
+      expect(url).to eq(
+        Rails.application.routes.url_helpers.position_check_in_organization_teammate_path(organization, teammate)
+      )
+    end
   end
 end

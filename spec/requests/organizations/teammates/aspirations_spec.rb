@@ -48,6 +48,33 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
       end
     end
 
+    context "when latest finalized is crystal clear and the open check-in is still fresh on the employee side" do
+      let!(:_finalized_aspiration_check_in) do
+        create(:aspiration_check_in, :finalized,
+          teammate: employee_teammate,
+          aspiration: aspiration,
+          official_check_in_completed_at: 5.days.ago)
+      end
+      let!(:_open_aspiration_check_in) do
+        create(:aspiration_check_in,
+          teammate: employee_teammate,
+          aspiration: aspiration,
+          check_in_started_on: Date.current)
+      end
+
+      before { sign_in_as_teammate_for_request(employee_person, organization) }
+
+      it "shows the crystal-clear banner and check-in early link instead of leading with the form" do
+        get aspiration_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("crystal clear on where they stand")
+        expect(response.body).to include("thinking about them and #{aspiration.name}")
+        expect(response.body).to include("click here to check in early.")
+        expect(response.body).to include("fresh-single-check-in-toggle-#{_open_aspiration_check_in.id}")
+        expect(response.body).to include("Save and stay here")
+      end
+    end
+
     context "when check-in is completed by employee only" do
       before do
         create(:aspiration_check_in, :employee_completed, teammate: employee_teammate, aspiration: aspiration)
