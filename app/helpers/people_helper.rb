@@ -128,6 +128,10 @@ module PeopleHelper
     return 'Manage Profile Mode' unless action_name
     
     # Check for check_ins controller
+    if controller_name == 'check_ins' && action_name == 'review_most_recent'
+      return 'Check-In Status'
+    end
+
     if controller_name == 'check_ins' && action_name == 'show'
       return 'Check-In'
     end

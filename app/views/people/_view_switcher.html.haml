@@ -96,6 +96,22 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
     
     %li
+      - if action_name == 'review_most_recent' && controller_name == 'check_ins'
+        .dropdown-item.text-muted
+          %i.bi.bi-table.me-2
+          Check-In Status (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif @teammate && policy(@teammate).view_check_ins?
+        = link_to review_most_recent_organization_company_teammate_check_ins_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-table.me-2
+          Check-In Status
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-table.me-2
+          Check-In Status
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
+    
+    %li
       - if action_name == 'show' && controller_name == 'finalizations'
         .dropdown-item.text-muted
           %i.bi.bi-check-circle.me-2

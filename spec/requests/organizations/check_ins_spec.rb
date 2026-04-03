@@ -334,6 +334,16 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         expect(html).to include(step3_path)
         expect(html).not_to include(audit_organization_employee_path(organization, other_teammate))
       end
+
+      it "shows bulk vs status intro with link to the check-in status page" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("You can check in on all assignments, aspirational values, and position in bulk")
+        expect(response.body).to include("Go to the Check-in Status page")
+        expect(response.body).to include("On that page you can view all of the recent check-ins in an easy to understand table")
+        expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate))
+      end
     end
 
     context "manager viewing employee check-ins" do
@@ -536,7 +546,13 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Check-In Statuses - #{employee_person.casual_name}")
+      expect(response.body).to include("Check-In Statuses -")
+      expect(response.body).to include(employee_person.casual_name)
+      expect(response.body).not_to include('id="teammate_switcher"')
+      expect(response.body).to include('Check-in on any single assignment, value, or position one at a time by clicking on the name listed below')
+      expect(response.body).to include('Go to the Bulk Check-in page')
+      expect(response.body).to include('On that page you can check-in on just one item or all of them at once')
+      expect(response.body).to include('Check-In Status (Active)')
       expect(response.body).to include('Beta')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
@@ -551,6 +567,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('Go to the Bulk Check-in page')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
       expect(response.body).to include('Last Check-In by')

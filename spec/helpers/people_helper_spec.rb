@@ -31,6 +31,12 @@ RSpec.describe PeopleHelper, type: :helper do
       end
     end
 
+    it 'returns Check-In Status for check_ins review_most_recent action' do
+      allow(helper).to receive(:action_name).and_return('review_most_recent')
+      allow(helper).to receive(:controller_name).and_return('check_ins')
+      expect(helper.people_current_view_name).to eq('Check-In Status')
+    end
+
     it 'returns Public View for public action' do
       allow(helper).to receive(:action_name).and_return('public')
       allow(helper).to receive(:controller_name).and_return('people')

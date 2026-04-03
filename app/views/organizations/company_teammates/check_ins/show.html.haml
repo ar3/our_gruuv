@@ -177,6 +177,17 @@
         %i.bi.bi-x-circle-fill.me-1
         #{@debug_data[:policy_action]} = FALSE (Access Denied)
 
+.row.g-3.mb-3
+  .col-12.col-lg-6
+    .alert.alert-info.mb-0
+      %i.bi.bi-info-circle.me-2
+      You can check in on as many or as few assignments, aspirational values, and position in bulk using the form below ---- or click any name to check in on that item one at a time.
+  .col-12.col-lg-6.d-flex.flex-column.justify-content-center
+    = link_to review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-primary w-100" do
+      Go to the Check-in Status page
+    %small.text-muted.mt-2
+      On that page you can view all of the recent check-ins in an easy to understand table
+
 = form_with url: organization_company_teammate_check_ins_path(organization, @teammate), method: :patch, scope: :check_ins do |f|
   -# Aspiration Section
   = render 'shared/section_header', 

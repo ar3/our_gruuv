@@ -1,0 +1,21 @@
+-# locals: organization, selected_teammate, viewable_teammate_groups
+.dropdown.d-inline-flex.align-items-center
+  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Switch employee for check-in statuses"}
+    = teammate_profile_image(selected_teammate, size: 32)
+    %span= selected_teammate.person.casual_name
+  %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+    - viewable_teammate_groups.each do |department_name, teammates|
+      %li
+        %h6.dropdown-header.mb-0.mt-1= department_name
+      - teammates.each do |teammate|
+        %li
+          - path = review_most_recent_organization_company_teammate_check_ins_path(organization, teammate)
+          - if teammate.id == selected_teammate.id
+            .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+              = teammate_profile_image(teammate, size: 28)
+              %span.flex-grow-1= teammate.person.display_name
+              %i.bi.bi-check-circle.text-success
+          - else
+            = link_to path, class: "dropdown-item d-flex align-items-center gap-2" do
+              = teammate_profile_image(teammate, size: 28)
+              = teammate.person.display_name
