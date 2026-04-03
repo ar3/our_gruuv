@@ -276,6 +276,44 @@ RSpec.describe ObservationsQuery, type: :query do
         expect(results).not_to include(observation1, draft_observation)
       end
     end
+
+    context 'by rateable_type and rateable_id' do
+      let(:assignment) { create(:assignment, company: company) }
+      let!(:obs_with_assignment_rating) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_world, observed_at: Time.current).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.observation_ratings.build(rateable_type: 'Assignment', rateable_id: assignment.id, rating: :agree)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let(:params) { { rateable_type: 'Assignment', rateable_id: assignment.id.to_s } }
+
+      it 'returns only observations that include a rating for that assignment' do
+        results = query.call.to_a
+        expect(results).to include(obs_with_assignment_rating)
+        expect(results).not_to include(observation3)
+      end
+    end
+
+    context 'by observation_type' do
+      let!(:kudos_observation) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_world, observation_type: :kudos).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let(:params) { { observation_type: 'kudos' } }
+
+      it 'returns only observations of that type' do
+        results = query.call.to_a
+        expect(results).to include(kudos_observation)
+        expect(results).not_to include(observation3)
+      end
+    end
   end
 
   describe 'sorting' do

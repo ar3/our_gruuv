@@ -1,4 +1,6 @@
 class Organizations::AbilitiesController < Organizations::OrganizationNamespaceBaseController
+  include AssignsPublicKudosRateableCard
+
   before_action :authenticate_person!
   before_action :set_ability, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore]
 
@@ -114,6 +116,13 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       .values
       .map { |records| records.max_by(&:milestone_level) }
       .sort_by { |m| m.company_teammate.person.casual_name.to_s.downcase }
+
+    assign_public_kudos_for_rateable_card!(
+      organization: @organization,
+      rateable_type: "Ability",
+      rateable_id: @ability.id,
+      rateable_display_name: @ability.display_name
+    )
   end
 
   def new

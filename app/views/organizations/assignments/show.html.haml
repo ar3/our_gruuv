@@ -272,4 +272,12 @@
 
     / Comments Section
     = render 'shared/comment_summary', commentable: @assignment, organization: @organization
-              
+
+    .row
+      .col-12
+        = render "shared/public_kudos_for_rateable_card",
+          organization: @organization,
+          public_kudos: @public_kudos_for_rateable,
+          rateable_display_name: @public_kudos_rateable_display_name,
+          all_kudos_url: @public_kudos_all_kudos_observations_url,
+          all_types_url: @public_kudos_all_types_observations_url

@@ -1,4 +1,7 @@
 class Organizations::AssignmentsController < ApplicationController
+  include PreloadsObservationRateables
+  include AssignsPublicKudosRateableCard
+
   before_action :authenticate_person!
   before_action :set_organization
   before_action :set_assignment, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore]
@@ -183,7 +186,14 @@ class Organizations::AssignmentsController < ApplicationController
       .includes(position: [:title, :position_level])
       .joins(position: [:title, :position_level])
       .order('position_assignments.assignment_type, titles.external_title, position_levels.level')
-    
+
+    assign_public_kudos_for_rateable_card!(
+      organization: @organization,
+      rateable_type: "Assignment",
+      rateable_id: @assignment.id,
+      rateable_display_name: @assignment.title
+    )
+
     render layout: determine_layout
   end
 

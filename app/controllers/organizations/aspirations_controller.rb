@@ -1,4 +1,6 @@
 class Organizations::AspirationsController < Organizations::OrganizationNamespaceBaseController
+  include AssignsPublicKudosRateableCard
+
   before_action :authenticate_person!
   before_action :set_aspiration, only: [:show, :edit, :update, :destroy]
 
@@ -11,14 +13,14 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
 
   def show
     authorize @aspiration
-    
-    # Load public observations (public_to_company or public_to_world) for this aspiration
-    @observations = @aspiration.observations
-      .where(privacy_level: ['public_to_company', 'public_to_world'])
-      .published
-      .includes(:observer, { observed_teammates: :person }, :observation_ratings)
-      .recent
-    
+
+    assign_public_kudos_for_rateable_card!(
+      organization: @organization,
+      rateable_type: "Aspiration",
+      rateable_id: @aspiration.id,
+      rateable_display_name: @aspiration.name
+    )
+
     render layout: determine_layout
   end
 

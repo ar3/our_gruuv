@@ -1,0 +1,20 @@
+- organization = local_assigns[:organization]
+- public_kudos = local_assigns[:public_kudos]
+- rateable_display_name = local_assigns[:rateable_display_name]
+- all_kudos_url = local_assigns[:all_kudos_url]
+- all_types_url = local_assigns[:all_types_url]
+
+.card.mb-4
+  .card-header
+    %h5.mb-0 Public Kudos
+  .card-body
+    - if public_kudos.respond_to?(:any?) && public_kudos.any?
+      = render "organizations/observations/wall_view", observations: public_kudos, organization: organization
+    - else
+      %p.text-muted.mb-0
+        No public kudos for #{rateable_display_name} yet.
+    .row.g-2.mt-3
+      .col-6
+        = link_to "Show all Kudos for #{rateable_display_name}", all_kudos_url, class: "btn btn-outline-primary w-100"
+      .col-6
+        = link_to "Show all Feedback, Notes, or Kudos for #{rateable_display_name}", all_types_url, class: "btn btn-outline-secondary w-100"

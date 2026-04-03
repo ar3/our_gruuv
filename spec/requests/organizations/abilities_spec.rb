@@ -188,6 +188,20 @@ RSpec.describe 'Organizations::Abilities', type: :request do
     end
   end
 
+  describe 'GET show' do
+    let(:ability) { create(:ability, company: organization, name: 'Kudos Card Ability') }
+
+    it 'renders Public Kudos card with observation index links' do
+      get organization_ability_path(organization, ability)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Public Kudos')
+      expect(response.body).to include('Show all Kudos for')
+      expect(response.body).to include('rateable_type=Ability')
+      expect(response.body).to include("rateable_id=#{ability.id}")
+      expect(response.body).to include('view=wall')
+    end
+  end
+
   describe 'archiving' do
     let(:ability) { create(:ability, company: organization) }
 

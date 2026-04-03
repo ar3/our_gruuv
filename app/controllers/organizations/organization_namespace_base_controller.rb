@@ -60,4 +60,6 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
   def skip_organization_setup?
     false
   end
+
+  include PreloadsObservationRateables
 end

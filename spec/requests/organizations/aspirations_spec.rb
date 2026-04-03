@@ -115,36 +115,40 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
         observer: observer,
         company: organization,
         privacy_level: :public_to_company,
+        observation_type: :kudos,
         story: 'Public to company observation')
       obs.update!(published_at: 1.day.ago)
       obs
     end
-    
+
     let(:public_to_world_observation) do
       obs = create(:observation,
         observer: observer,
         company: organization,
         privacy_level: :public_to_world,
+        observation_type: :kudos,
         story: 'Public to world observation')
       obs.update!(published_at: 2.days.ago)
       obs
     end
-    
+
     let(:private_observation) do
       obs = create(:observation,
         observer: observer,
         company: organization,
         privacy_level: :observed_only,
+        observation_type: :kudos,
         story: 'Private observation')
       obs.update!(published_at: 3.days.ago)
       obs
     end
-    
+
     let(:draft_observation) do
       create(:observation,
         observer: observer,
         company: organization,
         privacy_level: :public_to_company,
+        observation_type: :kudos,
         story: 'Draft observation')
       # published_at remains nil (draft) - don't call update!
     end
@@ -155,7 +159,7 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
       sign_in_as_teammate_for_request(person, organization)
     end
 
-    context 'when there are public observations for the aspiration' do
+    context 'when there are public kudos for the aspiration' do
       before do
         # Create observation ratings linking observations to the aspiration
         create(:observation_rating, 
@@ -177,10 +181,10 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
           rating: :agree)
       end
 
-      it 'displays public observations in wall view' do
+      it 'displays public kudos in wall view' do
         get organization_aspiration_path(organization, aspiration)
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Public Observations')
+        expect(response.body).to include('Public Kudos')
         expect(response.body).to include('Public to company observation')
         expect(response.body).to include('Public to world observation')
         expect(response.body).not_to include('Private observation')
@@ -188,11 +192,11 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
       end
     end
 
-    context 'when there are no public observations for the aspiration' do
-      it 'displays a message indicating no observations' do
+    context 'when there are no public kudos for the aspiration' do
+      it 'displays a message indicating no public kudos' do
         get organization_aspiration_path(organization, aspiration)
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('No public observations yet.')
+        expect(response.body).to include("No public kudos for #{aspiration.name} yet.")
       end
     end
   end

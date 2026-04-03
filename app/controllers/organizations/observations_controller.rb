@@ -1783,6 +1783,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     observations = query.filter_by_draft_status(observations)
     observations = query.filter_by_observer(observations)
     observations = query.filter_by_involving_teammate(observations)
+    observations = query.filter_by_observee_ids(observations)
+    observations = query.filter_by_rateable(observations)
+    observations = query.filter_by_observation_type(observations)
+    observations = query.filter_by_soft_deleted_status(observations)
     observations
   end
 

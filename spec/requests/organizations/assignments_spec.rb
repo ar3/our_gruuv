@@ -111,6 +111,14 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include(assignment.title)
       end
 
+      it 'renders Public Kudos card with links to filtered observations wall' do
+        get organization_assignment_path(organization, assignment)
+        expect(response.body).to include('Public Kudos')
+        expect(response.body).to include('rateable_type=Assignment')
+        expect(response.body).to include("rateable_id=#{assignment.id}")
+        expect(response.body).to include('view=wall')
+      end
+
       it 'renders view switcher' do
         get organization_assignment_path(organization, assignment)
         expect(response.body).to include('Organization View')

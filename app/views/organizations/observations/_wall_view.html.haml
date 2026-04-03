@@ -1,5 +1,6 @@
 .row
   - observations = local_assigns[:observations] || @observations
+  - org = local_assigns[:organization] || @organization
   - observations.each do |observation|
     .col-md-6.col-lg-4.mb-4
       .card.h-100.shadow-sm
@@ -74,9 +75,9 @@
             - if policy(observation).view_permalink?
               = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary", title: "Public permalink" do
                 %i.bi.bi-globe
-            = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary", title: "Show page" do
+            = link_to organization_observation_path(org, observation), class: "btn btn-outline-primary", title: "Show page" do
               %i.bi.bi-eye
             - if policy(observation).update?
-              = link_to edit_organization_observation_path(@organization, observation, return_url: organization_observation_path(@organization, observation), return_text: 'Back to Observation'), class: "btn btn-outline-secondary" do
+              = link_to edit_organization_observation_path(org, observation, return_url: organization_observation_path(org, observation), return_text: 'Back to Observation'), class: "btn btn-outline-secondary" do
                 %i.bi.bi-pencil
 

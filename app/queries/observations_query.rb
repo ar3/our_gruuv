@@ -15,6 +15,8 @@ class ObservationsQuery
     observations = filter_by_observer(observations)
     observations = filter_by_involving_teammate(observations)
     observations = filter_by_observee_ids(observations)
+    observations = filter_by_rateable(observations)
+    observations = filter_by_observation_type(observations)
     observations = filter_by_soft_deleted_status(observations)
     observations = apply_sort(observations)
     observations
@@ -30,6 +32,9 @@ class ObservationsQuery
     end
     filters[:include_soft_deleted] = params[:include_soft_deleted] if params[:include_soft_deleted].present?
     filters[:involving_teammate_id] = params[:involving_teammate_id] if params[:involving_teammate_id].present?
+    filters[:rateable_type] = params[:rateable_type] if params[:rateable_type].present?
+    filters[:rateable_id] = params[:rateable_id] if params[:rateable_id].present?
+    filters[:observation_type] = params[:observation_type] if params[:observation_type].present?
     filters
   end
 
@@ -154,6 +159,30 @@ class ObservationsQuery
     observations = observations.joins(:observees).where(observees: { teammate_id: observee_ids }).distinct
     observations = observations.merge(Observation.published).merge(Observation.not_journal)
     observations
+  end
+
+  def filter_by_rateable(observations)
+    rateable_type = params[:rateable_type].to_s.presence
+    rateable_id = params[:rateable_id].presence
+    return observations unless rateable_type && rateable_id
+
+    allowed = %w[Assignment Ability Aspiration]
+    return observations unless allowed.include?(rateable_type)
+
+    observations
+      .joins(:observation_ratings)
+      .where(observation_ratings: { rateable_type: rateable_type, rateable_id: rateable_id })
+      .distinct
+  end
+
+  def filter_by_observation_type(observations)
+    ot = params[:observation_type].to_s.presence
+    return observations unless ot
+
+    allowed = %w[kudos feedback quick_note generic]
+    return observations unless allowed.include?(ot)
+
+    observations.where(observation_type: ot)
   end
 
   def filter_by_soft_deleted_status(observations)

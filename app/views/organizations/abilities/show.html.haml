@@ -201,8 +201,9 @@
     = render 'shared/comment_summary', commentable: @ability, organization: @organization
 
 
-.row 
+.row
   .col-12
+
     .card.mb-4{ role: "region", "aria-labelledby": "assignments-heading", id: "assignments-requiring-this-ability" }
       .card-header
         %h5.mb-0{ id: "assignments-heading" }
@@ -268,3 +269,11 @@
             %i.bi.bi-info-circle.me-2
             No teammates have earned a milestone for this ability yet.
             = link_to "Celebrate milestones", celebrate_milestones_organization_path(@organization), class: "alert-link fw-semibold ms-1"
+.row.mt-2
+  .col-12
+    = render "shared/public_kudos_for_rateable_card",
+      organization: @organization,
+      public_kudos: @public_kudos_for_rateable,
+      rateable_display_name: @public_kudos_rateable_display_name,
+      all_kudos_url: @public_kudos_all_kudos_observations_url,
+      all_types_url: @public_kudos_all_types_observations_url
