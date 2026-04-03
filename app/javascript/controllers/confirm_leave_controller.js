@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Prompts "Did you save?" when user clicks a link that would navigate away (GET, same tab).
-// Used on check-ins and finalization pages so form submits (POST/PATCH) are not intercepted.
+// After the form is edited, prompts "Did you save?" when the user clicks a link that would
+// navigate away (GET, same tab). Form submits (POST/PATCH) are not intercepted.
 export default class extends Controller {
   static values = {
     message: {
@@ -11,6 +11,7 @@ export default class extends Controller {
   }
 
   connect() {
+    this.dirty = false
     this.boundHandleClick = this.handleClick.bind(this)
     document.addEventListener("click", this.boundHandleClick, true)
   }
@@ -19,9 +20,20 @@ export default class extends Controller {
     document.removeEventListener("click", this.boundHandleClick, true)
   }
 
+  markDirty() {
+    this.dirty = true
+  }
+
+  markCleanOnSuccess(event) {
+    if (event.detail?.success) {
+      this.dirty = false
+    }
+  }
+
   handleClick(event) {
     const link = event.target.closest("a[href]")
     if (!link || !this.isNavigatingLink(link)) return
+    if (!this.dirty) return
 
     event.preventDefault()
     event.stopPropagation()

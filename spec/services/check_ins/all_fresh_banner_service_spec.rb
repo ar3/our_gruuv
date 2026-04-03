@@ -66,11 +66,12 @@ RSpec.describe CheckIns::AllFreshBannerService do
            finalized_by_teammate: manager_teammate)
   end
 
-  it 'shows banner and follow-up when every item was finalized within 60 days' do
+  it 'shows banner and follow-up when every item was finalized within the clarity fresh window' do
     result = call(view_mode: :manager)
     expect(result.show_banner).to be true
     expect(result.show_clarity_follow_up).to be true
-    expect(result.check_back_in_days).to eq(40) # 60 - 20 days since earliest (aspiration)
+    # Earliest finalized is aspiration at 20.days.ago; window is CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS (30).
+    expect(result.check_back_in_days).to eq(CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS - 20)
     expect(result.organization_display_name).to eq(organization.name)
   end
 
@@ -89,7 +90,7 @@ RSpec.describe CheckIns::AllFreshBannerService do
     expect(result.check_back_in_days).to be_nil
   end
 
-  it 'does not show banner when the viewer has not completed their side and last finalization is older than 60 days' do
+  it 'does not show banner when the viewer has not completed their side and last finalization is older than the clarity fresh window' do
     past = 70.days.ago
     PositionCheckIn.where(teammate_id: teammate.id).closed.update_all(official_check_in_completed_at: past)
     AspirationCheckIn.where(teammate_id: teammate.id, aspiration: aspiration).closed.update_all(official_check_in_completed_at: past)
@@ -113,10 +114,11 @@ RSpec.describe CheckIns::AllFreshBannerService do
     expect(result.show_clarity_follow_up).to be false
   end
 
-  it 'returns check back today when the earliest finalized is exactly 60 days ago' do
-    AspirationCheckIn.where(teammate_id: teammate.id, aspiration: aspiration).closed.update_all(official_check_in_completed_at: 60.days.ago)
-    PositionCheckIn.where(teammate_id: teammate.id).closed.update_all(official_check_in_completed_at: 30.days.ago)
-    AssignmentCheckIn.where(teammate_id: teammate.id, assignment: assignment).closed.update_all(official_check_in_completed_at: 45.days.ago)
+  it 'returns check back today when the earliest finalized is exactly at the end of the clarity fresh window' do
+    d = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS
+    AspirationCheckIn.where(teammate_id: teammate.id, aspiration: aspiration).closed.update_all(official_check_in_completed_at: d.days.ago)
+    PositionCheckIn.where(teammate_id: teammate.id).closed.update_all(official_check_in_completed_at: (d - 10).days.ago)
+    AssignmentCheckIn.where(teammate_id: teammate.id, assignment: assignment).closed.update_all(official_check_in_completed_at: (d - 5).days.ago)
 
     result = call(view_mode: :manager)
     expect(result.show_clarity_follow_up).to be true

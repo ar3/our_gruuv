@@ -18,7 +18,6 @@
       %i.bi.bi-arrow-left.me-2
       Back to Profile
 
-%div{ data: { controller: "confirm-leave" }, style: "display: none;", "aria-hidden": "true" }
 = render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 1
 
 - if @check_ins_fresh_banner&.show_banner
@@ -188,7 +187,9 @@
     %small.text-muted.mt-2
       On that page you can view all of the recent check-ins in an easy to understand table
 
-= form_with url: organization_company_teammate_check_ins_path(organization, @teammate), method: :patch, scope: :check_ins do |f|
+= form_with url: organization_company_teammate_check_ins_path(organization, @teammate), method: :patch, scope: :check_ins,
+            data: { controller: "confirm-leave",
+                    action: "input->confirm-leave#markDirty change->confirm-leave#markDirty turbo:submit-end->confirm-leave#markCleanOnSuccess" } do |f|
   -# Aspiration Section
   = render 'shared/section_header', 
            title: 'Aspirational Values', 

@@ -56,7 +56,8 @@ RSpec.describe CheckInHealthCompletionRate do
       expect(described_class.completion_rate_for_caches([])).to eq(0)
     end
 
-    it 'returns 100 when all points are max (4 per area)' do
+    it 'returns 100 when earned points match max (4 position + 4 per assignment row + 4 per aspiration row)' do
+      # Max denominator: see CheckInHealthCache — each payload row scores 0–4; here 1×4 + 2×4 + 1×4 = 16.
       cache = instance_double(
         CheckInHealthCache,
         completion_points: {
@@ -70,7 +71,8 @@ RSpec.describe CheckInHealthCompletionRate do
       expect(described_class.completion_rate_for_caches([cache])).to eq(100.0)
     end
 
-    it 'returns ~50 when half the points are earned' do
+    it 'returns 50 when total earned points are half of max' do
+      # Earned 2+4+2 = 8; max 4 + (2 assignment slots × 4) + (1 aspiration × 4) = 16 → 50%.
       cache = instance_double(
         CheckInHealthCache,
         completion_points: {
@@ -78,11 +80,10 @@ RSpec.describe CheckInHealthCompletionRate do
           assignments: 4.0,
           aspirations: 2.0
         },
-        payload_assignments: [{}],
+        payload_assignments: [{}, {}],
         payload_aspirations: [{}]
       )
-      rate = described_class.completion_rate_for_caches([cache])
-      expect(rate).to be_within(1).of(50)
+      expect(described_class.completion_rate_for_caches([cache])).to eq(50.0)
     end
   end
 end

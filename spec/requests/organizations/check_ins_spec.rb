@@ -339,7 +339,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         get organization_company_teammate_check_ins_path(organization, employee_teammate)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("You can check in on all assignments, aspirational values, and position in bulk")
+        expect(response.body).to include("You can check in on as many or as few assignments, aspirational values, and position in bulk")
         expect(response.body).to include("Go to the Check-in Status page")
         expect(response.body).to include("On that page you can view all of the recent check-ins in an easy to understand table")
         expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate))

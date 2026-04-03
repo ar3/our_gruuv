@@ -49,8 +49,8 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       expect(page).to have_content('Select percentage')
       expect(page).to have_content('Select alignment')
       expect(page).to have_content('Select rating')
-      expect(page).to have_content('Private Notes')
-      
+      expect(page).to have_content('Notes')
+
       # Verify manager fields are NOT present
       expect(page).not_to have_content('Manager Rating')
       expect(page).not_to have_content('Manager Notes')
@@ -101,7 +101,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
 
       # Verify manager fields are present
       expect(page).to have_content('Manager Rating')
-      expect(page).to have_content('Manager Notes')
+      expect(page).to have_content('Notes')
 
       # Verify employee-only fields are NOT present (assignment detail uses sentence-style labels)
       expect(page).not_to have_content('When I think about how much of my energy')

@@ -12,11 +12,11 @@
     Back to Check-Ins
 
 -# Only prompt "did you save?" when there is an editable form (manager with check-ins ready to finalize)
-- if @view_mode == :manager && (@ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?)
-  %div{ data: { controller: "confirm-leave" }, style: "display: none;", "aria-hidden": "true" }
+- finalize_confirm_leave = @view_mode == :manager && (@ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?)
+- finalization_form_data = finalize_confirm_leave ? { controller: "confirm-leave", action: "input->confirm-leave#markDirty change->confirm-leave#markDirty turbo:submit-end->confirm-leave#markCleanOnSuccess" } : {}
 = render 'shared/check_in_wizard_header', organization: @organization, teammate: @teammate, current_step: 2
 
-= form_with url: organization_company_teammate_finalization_path(organization, @teammate), method: :post, local: true do |f|
+= form_with url: organization_company_teammate_finalization_path(organization, @teammate), method: :post, local: true, data: finalization_form_data do |f|
   -# Aspiration Section
   = render 'shared/section_header', 
            title: 'Aspirational Values', 
