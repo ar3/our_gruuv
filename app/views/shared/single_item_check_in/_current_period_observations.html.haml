@@ -1,10 +1,12 @@
 -# Expects: @observations_since_finalized (array), @observations_involving_url, @teammate, @observations_since_date, @observations_has_finalized_check_in (for empty-state timeframe text)
--# Optional: @aspiration, @assignment (for "involving" in caption)
+-# Optional: @aspiration, @assignment (caption + "Show all" link: teammate & object when one is set)
 .card.mb-4.mt-4
   .card-header.d-flex.align-items-center.justify-content-between
     %h5.mb-0 Research: Current Period Observations
     - if @observations_involving_url.present?
-      = link_to "Show all observations involving #{@teammate.person.casual_name}", @observations_involving_url, class: "btn btn-sm btn-outline-secondary", target: "_blank", rel: "noopener"
+      - observations_object_label = @assignment&.title.presence || @aspiration&.name.presence
+      - involving_phrase = observations_object_label.present? ? "#{@teammate.person.casual_name} & #{observations_object_label}" : @teammate.person.casual_name
+      = link_to "Show all observations involving #{involving_phrase}", @observations_involving_url, class: "btn btn-sm btn-outline-secondary", target: "_blank", rel: "noopener"
   .card-body
     - caption_text = observations_section_caption(@teammate, @observations_since_date, @observations_has_finalized_check_in, aspiration: @aspiration, assignment: @assignment)
     %p.small.text-muted.mb-2= caption_text

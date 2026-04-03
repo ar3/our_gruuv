@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
+require "nokogiri"
 
 RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :request do
   let(:organization) { create(:organization) }
@@ -72,6 +73,30 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response.body).to include("click here to check in early.")
         expect(response.body).to include("fresh-single-check-in-toggle-#{_open_aspiration_check_in.id}")
         expect(response.body).to include("Save and stay here")
+      end
+
+      it "links current period observations to the observations index with observee and aspiration (no timeframe)" do
+        get aspiration_show_path
+        expect(response).to have_http_status(:success)
+
+        doc = Nokogiri::HTML(response.body)
+        link = doc.at_xpath("//a[contains(., 'Show all observations involving')]")
+        expect(link).to be_present
+        expect(link.text).to include(employee_person.casual_name)
+        expect(link.text).to include(aspiration.name)
+
+        href = link["href"]
+        uri = URI.parse(href)
+        params = Rack::Utils.parse_nested_query(uri.query)
+        expect(uri.path).to eq(organization_observations_path(organization))
+        expect(params["observee_ids"]).to eq([employee_teammate.id.to_s])
+        expect(params["rateable_type"]).to eq("Aspiration")
+        expect(params["rateable_id"]).to eq(aspiration.id.to_s)
+        expect(params["timeframe"]).to be_nil
+        expect(params["timeframe_start_date"]).to be_nil
+        expect(params["timeframe_end_date"]).to be_nil
+        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_url"]).to eq(aspiration_show_path)
       end
     end
 

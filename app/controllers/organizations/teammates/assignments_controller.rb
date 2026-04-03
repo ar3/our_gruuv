@@ -83,12 +83,11 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       .includes(:observer, :observed_teammates, :observation_ratings)
       .order(observed_at: :desc)
       .limit(50)
-    @observations_involving_url = filtered_observations_organization_observations_path(
+    @observations_involving_url = organization_observations_path(
       organization,
       observee_ids: [@teammate.id],
       rateable_type: "Assignment",
       rateable_id: @assignment.id,
-      start_date: since_date.iso8601,
       return_url: organization_teammate_assignment_path(organization, @teammate, @assignment),
       return_text: "Back to 1-by-1 check-in"
     )

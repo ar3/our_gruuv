@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "nokogiri"
 
 RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
   let(:organization) { create(:organization) }
@@ -71,6 +72,30 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
         expect(response.body).to include("crystal clear on where they stand")
         expect(response.body).to include("click here to check in early.")
         expect(response.body).to include("fresh-single-check-in-toggle-#{_open_position_check_in.id}")
+      end
+
+      it "links current period observations to the observations index with observee only (no rateable or timeframe)" do
+        path = position_check_in_organization_teammate_path(organization, teammate)
+        get path
+        expect(response).to have_http_status(:success)
+
+        doc = Nokogiri::HTML(response.body)
+        link = doc.at_xpath("//a[contains(., 'Show all observations involving')]")
+        expect(link).to be_present
+        expect(link.text).to eq("Show all observations involving #{person.casual_name}")
+
+        href = link["href"]
+        uri = URI.parse(href)
+        params = Rack::Utils.parse_nested_query(uri.query)
+        expect(uri.path).to eq(organization_observations_path(organization))
+        expect(params["observee_ids"]).to eq([teammate.id.to_s])
+        expect(params["rateable_type"]).to be_nil
+        expect(params["rateable_id"]).to be_nil
+        expect(params["timeframe"]).to be_nil
+        expect(params["timeframe_start_date"]).to be_nil
+        expect(params["timeframe_end_date"]).to be_nil
+        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_url"]).to eq(path)
       end
     end
   end
