@@ -3,7 +3,7 @@
 - content_for :head do
   %script{ src: "https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.12.0/mermaid.min.js", "data-turbo-track": "reload" }
 
-- chart_title_period = case @timeframe when :'90_days' then "Last 90 Days" when :year then "Last Year" when :all_time then "Last 52 Weeks" else "Last 90 Days" end
+- chart_title_period = @chart_title_period
 
 - content_for :header do
   .d-flex.align-items-center
@@ -11,12 +11,13 @@
       %i.bi.bi-bar-chart-line.me-2
       Insights: Goals
 
-/ Timeframe selector — charts below change based on selected timeframe
-.mb-4
-  .btn-group{role: "group"}
-    = link_to "Last 90 days", organization_insights_goals_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "Last Year", organization_insights_goals_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "All-Time", organization_insights_goals_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_goals_path(@organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-4'
 
 = render 'shared/goals_weekly_charts',
   chart_title_period: chart_title_period,

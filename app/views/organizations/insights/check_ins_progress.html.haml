@@ -1,6 +1,6 @@
 - content_for :title, "Insights: Check-ins Progress"
 
-- chart_title_period = @chart_title_period || "Last 90 Days"
+- chart_title_period = @chart_title_period
 
 - content_for :header do
   .d-flex.align-items-center
@@ -8,12 +8,14 @@
       %i.bi.bi-clipboard-check.me-2
       Insights: Check-ins Progress
 
-/ Timeframe selector
-.mb-4
-  .btn-group{role: "group"}
-    = link_to "Last 90 days", organization_insights_check_ins_progress_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "Last Year", organization_insights_check_ins_progress_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "All-Time", organization_insights_check_ins_progress_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_check_ins_progress_path(@organization, **opts.merge(sort: params[:sort]).compact) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  form_hidden_fields: { sort: params[:sort] }.compact,
+  wrapper_class: 'mb-4'
 
 .container-fluid
   .row.mb-4

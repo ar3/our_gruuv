@@ -6,24 +6,13 @@
       %i.bi.bi-bar-chart-line.me-2
       Insights: Observations
 
-/ Timeframe selector
-.mb-3
-  .btn-group.flex-wrap{role: "group"}
-    = link_to "Last 90 days", organization_insights_observations_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "Last Year", organization_insights_observations_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "All-Time", organization_insights_observations_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "Custom", organization_insights_observations_path(@organization, { timeframe: 'custom', from: @insights_custom_from, to: @insights_custom_to }.compact), class: "btn #{@timeframe == :custom ? 'btn-primary' : 'btn-outline-primary'}"
-  - if @timeframe == :custom
-    = form_tag organization_insights_observations_path(@organization), method: :get, class: "row g-2 align-items-end mt-3" do
-      = hidden_field_tag :timeframe, 'custom'
-      .col-sm-auto
-        = label_tag :from, "From", class: "form-label small mb-0 d-block"
-        = date_field_tag :from, @insights_custom_from, class: "form-control form-control-sm", required: true
-      .col-sm-auto
-        = label_tag :to, "To", class: "form-label small mb-0 d-block"
-        = date_field_tag :to, @insights_custom_to, class: "form-control form-control-sm", required: true
-      .col-sm-auto
-        = submit_tag "Apply range", class: "btn btn-sm btn-primary"
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_observations_path(@organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-3'
 
 - s = @observations_insights_summary
 .border-bottom.py-2.mb-3.small.text-muted

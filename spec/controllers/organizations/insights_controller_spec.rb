@@ -224,6 +224,21 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       get :goals, params: { organization_id: company.id }
       expect(assigns(:goals_for_network_graph).map(&:id)).to include(goal.id)
     end
+
+    it 'accepts timeframe custom with from and to' do
+      from_d = 20.days.ago.to_date
+      to_d = Time.zone.today
+      get :goals, params: {
+        organization_id: company.id,
+        timeframe: 'custom',
+        from: from_d.iso8601,
+        to: to_d.iso8601
+      }
+      expect(assigns(:timeframe)).to eq(:custom)
+      expect(assigns(:insights_custom_from)).to eq(from_d.iso8601)
+      expect(assigns(:insights_custom_to)).to eq(to_d.iso8601)
+      expect(assigns(:goals_chart_data)).to be_a(Hash)
+    end
   end
 
   describe 'GET #observations' do

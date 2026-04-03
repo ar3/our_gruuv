@@ -74,14 +74,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @positions_distribution_chart_data = assignments_positions_distribution_chart_data(assignments_scope)
 
     @timeframe = parse_timeframe(params[:timeframe])
-    range = date_range_for(@timeframe)
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
     chart_range = range || (52.weeks.ago..Time.current)
-    @chart_title_period = case @timeframe
-      when :'90_days' then 'Last 90 Days'
-      when :year then 'Last Year'
-      when :all_time then 'Last 52 Weeks'
-      else 'Last 90 Days'
-    end
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     @assignments_updated_chart_data = assignments_updated_chart_data(company, chart_range)
     @finalized_check_ins_chart_data = assignments_finalized_check_ins_chart_data(company, chart_range)
     @observation_ratings_chart_data = assignments_observation_ratings_chart_data(company, chart_range)
@@ -97,14 +92,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @assignments_per_ability_chart_data = abilities_assignments_per_milestone_chart_data(abilities_scope)
 
     @timeframe = parse_timeframe(params[:timeframe])
-    range = date_range_for(@timeframe)
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
     chart_range = range || (52.weeks.ago..Time.current)
-    @chart_title_period = case @timeframe
-      when :'90_days' then 'Last 90 Days'
-      when :year then 'Last Year'
-      when :all_time then 'Last 52 Weeks'
-      else 'Last 90 Days'
-    end
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     @abilities_updated_chart_data = abilities_updated_chart_data(company, chart_range)
     @milestones_earned_chart_data = abilities_milestones_earned_chart_data(company, chart_range)
     @observation_ratings_chart_data = abilities_observation_ratings_chart_data(company, chart_range)
@@ -115,8 +105,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     @organization = company
     @timeframe = parse_timeframe(params[:timeframe])
-    range = date_range_for(@timeframe)
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
     chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     goals_scope = goals_base_scope
     @goals_chart_data = GoalsChartSeries.stacked_series(chart_range, goals_scope)
     @goals_employees_chart_data = GoalsChartSeries.employees_with_goals_series(chart_range, goals_scope)
@@ -130,8 +121,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     @organization = company
     @timeframe = parse_timeframe(params[:timeframe])
-    range = date_range_for(@timeframe)
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
     chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     @prompts_answers_chart_data = prompts_answers_chart_series(chart_range)
     @prompts_teammates_chart_data = prompts_teammates_chart_series(chart_range)
     @prompts_download_teammate_count = prompts_download_teammate_scope.count
@@ -154,8 +146,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     @organization = company
     @timeframe = parse_timeframe(params[:timeframe])
-    range = date_range_for(@timeframe)
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
     chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     @feedback_requests_created_chart_data = feedback_requests_created_chart_series(chart_range)
     @feedback_observations_published_chart_data = feedback_observations_published_chart_series(chart_range)
     @top_feedback_givers = top_feedback_givers_for_insights(range)
@@ -168,13 +161,13 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     @organization = company
     @timeframe = parse_timeframe(params[:timeframe])
-    range, @insights_custom_from, @insights_custom_to = observations_insights_date_range_and_custom_fields
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
 
     base_scope = Observation.for_company(company).not_soft_deleted.published
     base_scope = base_scope.where(observed_at: range) if range
 
     chart_range = range || (52.weeks.ago..Time.current)
-    @insights_chart_period_label = observations_insights_chart_period_label(@timeframe, range, chart_range)
+    @insights_chart_period_label = insights_chart_title_period(@timeframe, range, chart_range)
     @observations_chart_data = observations_chart_series_by_privacy(base_scope, chart_range)
     @observations_by_observer_department_chart_data = observations_by_observer_department_chart_series(base_scope, chart_range)
     @observations_by_department_chart_data = observations_by_department_chart_series(base_scope, chart_range)
@@ -277,14 +270,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     @organization = company
     @timeframe = parse_timeframe(params[:timeframe])
-    range = date_range_for(@timeframe)
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
     chart_range = range || (52.weeks.ago..Time.current)
-    @chart_title_period = case @timeframe
-      when :'90_days' then 'Last 90 Days'
-      when :year then 'Last Year'
-      when :all_time then 'Last 52 Weeks'
-      else 'Last 90 Days'
-    end
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     @check_ins_progress_chart_data = check_ins_progress_chart_data(company, chart_range)
     @check_ins_progress_by_department_chart_data = check_ins_progress_by_department_chart_data(company, chart_range)
     @department_health_rows = build_department_health_rows(company)
@@ -406,17 +394,18 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     end
   end
 
-  # Observations insights: custom range from params; other insight actions treat :custom like open-ended (nil) and use 52-week chart default.
-  def observations_insights_date_range_and_custom_fields
+  # Returns [range, custom_from_str, custom_to_str]. For preset timeframes, custom dates are nil.
+  # For :custom, range is from params (or defaults); from/to strings feed the date inputs and Custom link.
+  def insights_date_range_and_custom_fields
     case @timeframe
     when :custom
-      insights_custom_observations_range
+      insights_custom_date_range
     else
       [date_range_for(@timeframe), nil, nil]
     end
   end
 
-  def insights_custom_observations_range
+  def insights_custom_date_range
     default_from = 90.days.ago.to_date
     default_to = Time.zone.today
     from_s = params[:from].presence
@@ -446,7 +435,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     [range, from_s, to_s]
   end
 
-  def observations_insights_chart_period_label(timeframe, range, chart_range)
+  def insights_chart_title_period(timeframe, range, chart_range)
     case timeframe
     when :'90_days' then 'Last 90 Days'
     when :year then 'Last Year'

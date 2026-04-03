@@ -110,6 +110,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
+      expect(response.body).to include('Custom')
       expect(response.body).to include('check-ins-progress-chart')
       expect(response.body).to include('check-ins-by-department-chart')
       expect(response.body).to include('Check-ins by department')
@@ -169,6 +170,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
+      expect(response.body).to include('Custom')
     end
 
     it 'returns success with timeframe=year' do
@@ -215,6 +217,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
+      expect(response.body).to include('Custom')
     end
 
     it 'returns success with timeframe=year' do
@@ -275,6 +278,18 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
+      expect(response.body).to include('Custom')
+    end
+
+    it 'returns success with timeframe=custom and from/to dates' do
+      get organization_insights_goals_path(
+        organization,
+        timeframe: 'custom',
+        from: 30.days.ago.to_date.iso8601,
+        to: Time.zone.today.iso8601
+      )
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('goals-by-week-chart')
     end
 
     it 'returns success with timeframe=year' do
@@ -349,6 +364,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Abilities by number of Assignments (grouped by Required Milestone)')
       expect(response.body).to include('Below are time-based analytics')
       expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Custom')
       expect(response.body).to include('milestones-distribution-chart')
       expect(response.body).to include('assignments-per-ability-chart')
       expect(response.body).to include('abilities-updated-chart')

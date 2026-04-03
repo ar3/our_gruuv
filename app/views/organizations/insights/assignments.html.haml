@@ -35,14 +35,13 @@
 
 %hr.my-5
 %h5.text-muted.mb-3 Below are time-based analytics
-.mb-4
-  .btn-group{role: "group"}
-    = link_to organization_insights_assignments_path(@organization, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}" do
-      Last 90 days
-    = link_to organization_insights_assignments_path(@organization, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}" do
-      Last Year
-    = link_to organization_insights_assignments_path(@organization, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}" do
-      All-Time
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_assignments_path(@organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-4'
 
 / Assignments with updates (by week)
 .row.mb-4
