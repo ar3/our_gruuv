@@ -54,33 +54,37 @@
                   %label.small.text-muted.mb-0{for: "reorder_pos_#{wid}"} Position
                   = select_tag :position, options_for_select((1..row[:total]).to_a, row[:position]), id: "reorder_pos_#{wid}", class: "form-select form-select-sm", style: "width: auto; min-width: 4rem;", onchange: "this.form.submit()"
 
-.mt-2.mb-4
-  %button.btn.btn-outline-primary.w-100.text-center{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#start-here-add-widgets", "aria-expanded": "false"}
-    Add new widgets
+.start-here-add-widgets-section{data: { controller: "start-here-add-widgets" }}
+  .mt-2.mb-4
+    %button.btn.btn-outline-primary.w-100.text-center{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#start-here-add-widgets", "aria-expanded": "false", "data-start-here-add-widgets-target": "trigger"}
+      Add new widgets
 
-.collapse.mb-5#start-here-add-widgets
-  .card.mb-3.border
-    .card-body
-      %p.small.text-muted.mb-2 Replace your whole layout with a starter set (you can still edit widgets afterward).
-      .d-flex.flex-wrap.gap-2
-        = button_to "Manager default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "manager" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
-        = button_to "Non-manager default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "non_manager" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
-        = button_to "OG enthusiast default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "og_enthusiast" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
-  %hr.my-3
-  %p.small.text-muted.mb-2 Add individual widgets by group.
-  - dash.inactive_widgets_by_group.each do |group_name, widgets|
-    .card.mb-3
-      .card-header.fw-semibold.small.text-uppercase.text-muted= group_name
+  .collapse.mb-5#start-here-add-widgets
+    .d-flex.justify-content-end.mb-2
+      %button.btn.btn-sm.btn-link.text-muted.text-decoration-none{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#start-here-add-widgets", "aria-expanded": "true", "aria-controls": "start-here-add-widgets"}
+        Hide add widgets
+    .card.mb-3.border
       .card-body
-        - if widgets.any?
-          - widgets.each do |iw|
-            .row.g-2.align-items-center.border-bottom.py-3
-              .col-12.col-md-3.fw-semibold= iw.selection_title
-              .col-12.col-md-6.text-muted.small= iw.selection_description
-              .col-12.col-md-3
-                = button_to "Add", organization_start_here_add_widget_path(current_organization), method: :post, params: { widget_id: iw.widget_id }, form: { data: { turbo: false } }, class: "btn btn-outline-primary w-100 w-md-auto"
-        - else
-          %p.small.text-muted.mb-0 All added in this group.
+        %p.small.text-muted.mb-2 Replace your whole layout with a starter set (you can still edit widgets afterward).
+        .d-flex.flex-wrap.gap-2
+          = button_to "Manager default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "manager" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+          = button_to "Non-manager default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "non_manager" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+          = button_to "OG enthusiast default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "og_enthusiast" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+    %hr.my-3
+    %p.small.text-muted.mb-2 Add individual widgets by group.
+    - dash.inactive_widgets_by_group.each do |group_name, widgets|
+      .card.mb-3
+        .card-header.fw-semibold.small.text-uppercase.text-muted= group_name
+        .card-body
+          - if widgets.any?
+            - widgets.each do |iw|
+              .row.g-2.align-items-center.border-bottom.py-3
+                .col-12.col-md-3.fw-semibold= iw.selection_title
+                .col-12.col-md-6.text-muted.small= iw.selection_description
+                .col-12.col-md-3
+                  = button_to "Add", organization_start_here_add_widget_path(current_organization), method: :post, params: { widget_id: iw.widget_id }, form: { data: { turbo: false } }, class: "btn btn-outline-primary w-100 w-md-auto"
+          - else
+            %p.small.text-muted.mb-0 All added in this group.
 
 - prefs = current_user_preferences
 - layout_cur = prefs.layout.to_s.presence || "vertical"

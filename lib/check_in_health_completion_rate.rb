@@ -34,6 +34,32 @@ module CheckInHealthCompletionRate
     max_points.positive? ? (total_points / max_points * 100).round(1) : 0
   end
 
+  # Same formula as CheckInHealthHelper#check_in_health_completion_rate_and_breakdown (single cache).
+  # Returns nil if cache is nil; otherwise
+  # { completion_rate:, position_pct:, assignments_pct:, aspirations_pct: }.
+  def completion_breakdown_for_cache(cache)
+    return nil unless cache
+
+    pts = cache.completion_points
+    pos_pts = pts[:position].to_f
+    assign_pts = pts[:assignments].to_f
+    aspir_pts = pts[:aspirations].to_f
+    pos_max = 4.0
+    assign_max = (cache.payload_assignments.size * 4).to_f
+    assign_max = 4.0 if cache.payload_assignments.empty?
+    aspir_max = (cache.payload_aspirations.size * 4).to_f
+    aspir_max = 4.0 if cache.payload_aspirations.empty?
+    total_pts = pos_pts + assign_pts + aspir_pts
+    total_max = pos_max + assign_max + aspir_max
+    rate = total_max.positive? ? (total_pts / total_max * 100).round(1) : 0
+    {
+      completion_rate: rate,
+      position_pct: pos_max.positive? ? (pos_pts / pos_max * 100).round(0) : 0,
+      assignments_pct: assign_max.positive? ? (assign_pts / assign_max * 100).round(0) : 0,
+      aspirations_pct: aspir_max.positive? ? (aspir_pts / aspir_max * 100).round(0) : 0
+    }
+  end
+
   # Average of each direct report's own completion % (0 if they have no cache row). Uses per-person max denominators.
   def average_completion_rate_per_teammate(teammate_ids, organization_id)
     return 0.0 if teammate_ids.blank?

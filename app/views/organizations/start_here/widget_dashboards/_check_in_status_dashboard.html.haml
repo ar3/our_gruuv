@@ -1,0 +1,22 @@
+- ct = context.company_teammate
+- org = context.organization
+- cache = ct.present? && org.present? ? CheckInHealthCache.find_by(teammate_id: ct.id, organization_id: org.id) : nil
+- breakdown = CheckInHealthCompletionRate.completion_breakdown_for_cache(cache)
+- total = breakdown&.fetch(:completion_rate, 0) || 0
+- values_pct = breakdown&.fetch(:aspirations_pct, 0) || 0
+- assignments_pct = breakdown&.fetch(:assignments_pct, 0) || 0
+- position_pct = breakdown&.fetch(:position_pct, 0) || 0
+- name = ERB::Util.html_escape(context.casual_name.to_s)
+.start-here-check-in-status-dashboard.mb-3
+  %p.small.mb-2= "#{name}, you are #{total}% clear on where you stand.".html_safe
+  %table.table.table-sm.table-bordered.small.mb-0
+    %thead
+      %tr
+        %th{scope: "col"} Values
+        %th{scope: "col"} Assignments
+        %th{scope: "col"} Position
+    %tbody
+      %tr
+        %td.text-end= "#{values_pct}%"
+        %td.text-end= "#{assignments_pct}%"
+        %td.text-end= "#{position_pct}%"

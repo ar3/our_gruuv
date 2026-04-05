@@ -93,12 +93,14 @@ class Organizations::StartHereController < Organizations::OrganizationNamespaceB
     w = StartHere::Widget::Registry.instance(widget_id, context)
     return { ok: false, error: "This widget is not available." } unless w.active?
 
+    partial_used = lookup_context.template_exists?(widget_id, [ DASHBOARD_PARTIAL_PREFIX ], true, [], formats: [ :html ])
     html =
-      if lookup_context.template_exists?(widget_id, [ DASHBOARD_PARTIAL_PREFIX ], true, [], formats: [ :html ])
+      if partial_used
         render_to_string(partial: "#{DASHBOARD_PARTIAL_PREFIX}/#{widget_id}", locals: { widget: w, context: context }, formats: [ :html ])
       else
         w.dashboard_content.to_s
       end
+
     { ok: true, html: html }
   rescue StandardError => e
     Rails.logger.error("[StartHere#widget_dashboards] widget_id=#{widget_id.inspect} #{e.class}: #{e.message}\n#{e.backtrace&.first(8)&.join("\n")}")

@@ -70,6 +70,8 @@ RSpec.describe 'Organizations::StartHere', type: :request do
   end
 
   describe 'POST /organizations/:organization_id/start_here/widget_dashboards' do
+    before { get organization_start_here_path(company) }
+
     it 'returns JSON with html for widgets on the user dashboard' do
       post organization_start_here_widget_dashboards_path(company),
            params: { widget_ids: %w[about_me get_shit_done] },
@@ -80,6 +82,54 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(json['widgets']['about_me']['html']).to be_present
       expect(json['widgets']['about_me']['html']).to include('Your check-ins, goals, observations, and growth in one place.')
       expect(json['widgets']['get_shit_done']['ok']).to eq(true)
+    end
+
+    it 'returns check-in status widget html with clarity line and Values/Assignments/Position table' do
+      post organization_start_here_add_widget_path(company), params: { widget_id: "my_check_in" }
+      create(:check_in_health_cache, teammate: teammate, organization: company)
+
+      post organization_start_here_widget_dashboards_path(company),
+           params: { widget_ids: %w[my_check_in] },
+           as: :json
+      json = JSON.parse(response.body)
+      html = json.dig("widgets", "my_check_in", "html").to_s
+      expect(json.dig("widgets", "my_check_in", "ok")).to eq(true)
+      expect(html).to include("clear on where you stand")
+      expect(html).to include("Values")
+      expect(html).to include("Assignments")
+      expect(html).to include("Position")
+    end
+
+    it 'returns beta_check_in_history card body with same check-in clarity partial' do
+      post organization_start_here_add_widget_path(company), params: { widget_id: "beta_check_in_history" }
+      create(:check_in_health_cache, teammate: teammate, organization: company)
+
+      post organization_start_here_widget_dashboards_path(company),
+           params: { widget_ids: %w[beta_check_in_history] },
+           as: :json
+      json = JSON.parse(response.body)
+      html = json.dig("widgets", "beta_check_in_history", "html").to_s
+      expect(json.dig("widgets", "beta_check_in_history", "ok")).to eq(true)
+      expect(html).to include("clear on where you stand")
+      expect(html).to include("Values")
+    end
+
+    it 'returns active job view widget with active assignment count and total energy %' do
+      post organization_start_here_add_widget_path(company), params: { widget_id: "about_complete_picture" }
+      a1 = create(:assignment, company: company)
+      create(:assignment_tenure, teammate: teammate, assignment: a1, anticipated_energy_percentage: 25)
+      a2 = create(:assignment, company: company)
+      create(:assignment_tenure, teammate: teammate, assignment: a2, anticipated_energy_percentage: 35)
+
+      post organization_start_here_widget_dashboards_path(company),
+           params: { widget_ids: %w[about_complete_picture] },
+           as: :json
+      json = JSON.parse(response.body)
+      html = json.dig("widgets", "about_complete_picture", "html").to_s
+      expect(json.dig("widgets", "about_complete_picture", "ok")).to eq(true)
+      expect(html).to include("2 active assignments")
+      expect(html).to include("60%")
+      expect(html).to include("of your energy allocated")
     end
 
     it 'omits widget ids that are not on the user dashboard' do

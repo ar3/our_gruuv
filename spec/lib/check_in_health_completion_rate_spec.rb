@@ -101,6 +101,30 @@ RSpec.describe CheckInHealthCompletionRate do
     end
   end
 
+  describe '.completion_breakdown_for_cache' do
+    it 'returns nil when cache is nil' do
+      expect(described_class.completion_breakdown_for_cache(nil)).to be_nil
+    end
+
+    it 'returns overall and per-area percentages matching full completion' do
+      cache = instance_double(
+        CheckInHealthCache,
+        completion_points: {
+          position: 4.0,
+          assignments: 8.0,
+          aspirations: 4.0
+        },
+        payload_assignments: [{}, {}],
+        payload_aspirations: [{}]
+      )
+      b = described_class.completion_breakdown_for_cache(cache)
+      expect(b[:completion_rate]).to eq(100.0)
+      expect(b[:position_pct]).to eq(100)
+      expect(b[:assignments_pct]).to eq(100)
+      expect(b[:aspirations_pct]).to eq(100)
+    end
+  end
+
   describe '.average_completion_rate_per_teammate' do
     it 'returns 0 when no teammate ids' do
       expect(described_class.average_completion_rate_per_teammate([], 1)).to eq(0.0)
