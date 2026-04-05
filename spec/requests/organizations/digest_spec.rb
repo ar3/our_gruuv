@@ -28,6 +28,28 @@ RSpec.describe 'Organizations::Digest', type: :request do
     end
   end
 
+  describe 'POST /organizations/:organization_id/digest/sync_all_mediums' do
+    it 'sets slack, email, and SMS digest to the same frequency and redirects to Start Here' do
+      UserPreference.for_person(person).update_preference('digest_slack', 'off')
+      UserPreference.for_person(person).update_preference('digest_email', 'daily')
+      UserPreference.for_person(person).update_preference('digest_sms', 'weekly')
+
+      post sync_all_mediums_organization_digest_path(company), params: { frequency: 'weekly' }
+
+      expect(response).to redirect_to(organization_start_here_path(company))
+      pref = UserPreference.for_person(person).reload
+      expect(pref.preference(:digest_slack)).to eq('weekly')
+      expect(pref.preference(:digest_email)).to eq('weekly')
+      expect(pref.preference(:digest_sms)).to eq('weekly')
+    end
+
+    it 'rejects invalid frequency' do
+      post sync_all_mediums_organization_digest_path(company), params: { frequency: 'hourly' }
+      expect(response).to redirect_to(organization_start_here_path(company))
+      expect(flash[:alert]).to match(/Invalid digest schedule/)
+    end
+  end
+
   describe 'PATCH /organizations/:organization_id/digest' do
     it 'updates preferences and redirects to return_url when given (Save preferences button)' do
       return_url = organization_get_shit_done_path(company)

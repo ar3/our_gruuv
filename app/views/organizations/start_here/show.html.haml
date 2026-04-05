@@ -1,75 +1,108 @@
 - content_for :title, "Start Here"
-- casual_name = current_company_teammate&.person&.casual_name || "Me"
-- gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
-- pending_count = pending_get_shit_done_count(current_company_teammate)
 - org_name = current_organization&.name || "Organization"
-- kudos_path = organization_observations_path(current_organization, privacy: %w[public_to_company public_to_world], spotlight: 'most_observed', view: 'wall')
-- show_my_employees = current_company_teammate&.has_direct_reports? && policy(current_organization).show?
+- dash = @start_here_dashboard
+- rows = dash.active_rows
 
 - content_for :header do
-  .d-flex.flex-wrap.align-items-center.gap-2
-    %h1.mb-0 Start Here
-  %p.lead.text-muted.mb-0
-    A quick guide to #{org_name}'s Gruuv. Pick a place to go.
+  .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2.w-100
+    %div
+      %h1.mb-0 Start Here
+      %p.lead.text-muted.mb-0
+        A quick guide to #{org_name}'s Gruuv. Pick a place to go.
+
+- preset_confirm = "This replaces your current Start Here layout. You can still add, remove, and reorder widgets afterward. Continue?"
+
+- if rows.empty?
+  .alert.alert-info.mb-4
+    You have no widgets on this page yet. Use “Add new widgets” below.
 
 .row.g-4
-  .col-12.col-md-6.col-lg-4
-    .card.h-100.border-0.shadow-sm
-      .card-body.d-flex.flex-column
-        %h5.card-title
-          About #{casual_name}
-        %p.card-text.text-muted.flex-grow-1
-          Your profile, check-ins, observations, and growth in one place.
-        = link_to about_me_organization_company_teammate_path(current_organization, current_company_teammate), class: "btn btn-primary btn-lg w-100 mt-auto" do
-          %i.bi.bi-person.me-2
-          Go to About #{casual_name}
-
-  .col-12.col-md-6.col-lg-4
-    .card.h-100.border-0.shadow-sm
-      .card-body.d-flex.flex-column
-        %h5.card-title
-          #{casual_name}'s #{gsd_label} list
-        %p.card-text.text-muted.flex-grow-1
-          - if pending_count == 0
-            Nothing needs your attention right now.
-          - elsif pending_count == 1
-            1 item needs your attention.
-          - else
-            #{pending_count} items need your attention.
-        = link_to organization_get_shit_done_path(current_organization), class: "btn btn-primary btn-lg w-100 mt-auto" do
-          %i.bi.bi-clipboard-check.me-2
-          Open #{gsd_label}
-
-  .col-12.col-md-6.col-lg-4
-    .card.h-100.border-0.shadow-sm
-      .card-body.d-flex.flex-column
-        %h5.card-title
-          #{org_name} Kudos
-        %p.card-text.text-muted.flex-grow-1
-          See recognition and kudos shared across the organization.
-        = link_to kudos_path, class: "btn btn-primary btn-lg w-100 mt-auto" do
-          %i.bi.bi-gift.me-2
-          View #{org_name} Kudos
-
-  - if show_my_employees
-    .col-12.col-md-6.col-lg-4
+  - rows.each do |row|
+    - w = row[:widget]
+    - wid = row[:id]
+    - collapse_id = "start-here-widget-tools-#{wid}"
+    .col-12.col-sm-6.col-md-4
       .card.h-100.border-0.shadow-sm
         .card-body.d-flex.flex-column
-          %h5.card-title
-            My Employees
-          %p.card-text.text-muted.flex-grow-1
-            View and support the people who report to you.
-          = link_to organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'manager_lite'), class: "btn btn-primary btn-lg w-100 mt-auto" do
-            %i.bi.bi-person-badge.me-2
-            My Employees
+          %h5.card-title.mb-2= w.display_title
+          .mb-3.start-here-dashboard-content
+            != w.dashboard_content
+          .row.g-2.align-items-center.mt-auto
+            .col-10
+              - if w.button_path.present?
+                = link_to w.button_path, class: "btn btn-primary btn-lg w-100" do
+                  %i{class: "#{w.icon} me-2"}
+                  = w.button_label
+            .col-2.text-end
+              %button.btn.btn-link.text-muted.p-0{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{collapse_id}", "aria-expanded": "false", "aria-controls": collapse_id}
+                %i.bi.bi-pencil.fs-5
+          .collapse.border-top.mt-3.pt-3{id: collapse_id}
+            .row.g-3.align-items-end
+              .col-12.col-md-6
+                = button_to "Remove", organization_start_here_remove_widget_path(current_organization), method: :post, params: { widget_id: wid }, form: { data: { turbo: false } }, class: "btn btn-outline-danger"
+              .col-12.col-md-6
+                = form_with url: organization_start_here_reorder_widget_path(current_organization), method: :post, local: true, html: { data: { turbo: false } }, class: "d-flex flex-wrap align-items-center gap-2 justify-content-md-end" do
+                  = hidden_field_tag :widget_id, wid
+                  %label.small.text-muted.mb-0{for: "reorder_pos_#{wid}"} Position
+                  = select_tag :position, options_for_select((1..row[:total]).to_a, row[:position]), id: "reorder_pos_#{wid}", class: "form-select form-select-sm", style: "width: auto; min-width: 4rem;", onchange: "this.form.submit()"
 
-  .col-12.col-md-6.col-lg-4
-    .card.h-100.border-0.shadow-sm
-      .card-body.d-flex.flex-column
-        %h5.card-title
-          Insights
-        %p.card-text.text-muted.flex-grow-1
-          Charts and reports on observations, goals, check-ins, and more.
-        = link_to organization_insights_path(current_organization), class: "btn btn-primary btn-lg w-100 mt-auto" do
-          %i.bi.bi-bar-chart-line.me-2
-          Go to Insights
+.mt-2.mb-4
+  %button.btn.btn-outline-primary.w-100.text-center{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#start-here-add-widgets", "aria-expanded": "false"}
+    Add new widgets
+
+.collapse.mb-5#start-here-add-widgets
+  .card.mb-3.border
+    .card-body
+      %p.small.text-muted.mb-2 Replace your whole layout with a starter set (you can still edit widgets afterward).
+      .d-flex.flex-wrap.gap-2
+        = button_to "Manager default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "manager" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+        = button_to "Non-manager default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "non_manager" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+        = button_to "OG enthusiast default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "og_enthusiast" }, form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+  %hr.my-3
+  %p.small.text-muted.mb-2 Add individual widgets by group.
+  - dash.inactive_widgets_by_group.each do |group_name, widgets|
+    .card.mb-3
+      .card-header.fw-semibold.small.text-uppercase.text-muted= group_name
+      .card-body
+        - if widgets.any?
+          - widgets.each do |iw|
+            .row.g-2.align-items-center.border-bottom.py-3
+              .col-12.col-md-3.fw-semibold= iw.selection_title
+              .col-12.col-md-6.text-muted.small= iw.selection_description
+              .col-12.col-md-3
+                = button_to "Add", organization_start_here_add_widget_path(current_organization), method: :post, params: { widget_id: iw.widget_id }, form: { data: { turbo: false } }, class: "btn btn-outline-primary w-100 w-md-auto"
+        - else
+          %p.small.text-muted.mb-0 All added in this group.
+
+- prefs = current_user_preferences
+- layout_cur = prefs.layout.to_s.presence || "vertical"
+- digest_mode = og_digest_unified_mode(prefs, current_company_teammate)
+
+%hr.my-4
+%a.start-here-customize-toggle.h5.fw-semibold.text-body.text-decoration-none.d-inline-flex.align-items-center.gap-2.mb-3.collapsed{href: "#start-here-other-customize", role: "button", data: { turbo: false, bs_toggle: "collapse", bs_target: "#start-here-other-customize" }, "aria-expanded": "false", "aria-controls": "start-here-other-customize"}
+  Other ways to customize OurGruuv
+  %i.bi.bi-chevron-down.start-here-customize-chevron-down{aria: { hidden: true }}
+  %i.bi.bi-chevron-up.start-here-customize-chevron-up{aria: { hidden: true }}
+
+.collapse#start-here-other-customize
+  - if show_start_page_picker_on_start_here?(prefs)
+    .mb-4
+      %label.form-label.small.fw-semibold.mb-1{for: "start_here_start_page"} Start page when I open #{org_name}
+      = form_with url: organization_start_here_update_start_page_path(current_organization), method: :post, local: true, html: { data: { turbo: false }, class: "mb-0" } do
+        = select_tag :start_page, options_for_select(start_page_options_for_select(current_organization, current_company_teammate), start_page_preference(current_organization, current_person)), { id: "start_here_start_page", class: "form-select", onchange: "this.form.submit()" }
+      %p.form-text.text-muted.small.mb-0 Choose where you land when you sign in or click the org name in the header.
+
+  .mb-4
+    %p.small.fw-semibold.text-muted.mb-2 Navigation style
+    .d-flex.flex-wrap.gap-2
+      = button_to "Vertical", layout_user_preferences_path, method: :patch, params: { layout: "vertical" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'vertical' ? 'btn-primary' : 'btn-outline-secondary'}"
+      = button_to "Horizontal", layout_user_preferences_path, method: :patch, params: { layout: "horizontal" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'horizontal' ? 'btn-primary' : 'btn-outline-secondary'}"
+      = button_to "Clean/No Navigation", layout_user_preferences_path, method: :patch, params: { layout: "no_nav" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'no_nav' ? 'btn-primary' : 'btn-outline-secondary'}"
+
+  .mb-5
+    %p.small.fw-semibold.text-muted.mb-2 Send me the OG digest
+    .d-flex.flex-wrap.gap-2.align-items-center
+      = button_to "Off", sync_all_mediums_organization_digest_path(current_organization), method: :post, params: { frequency: "off" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{digest_mode == 'off' ? 'btn-primary' : 'btn-outline-secondary'}"
+      = button_to "Weekly", sync_all_mediums_organization_digest_path(current_organization), method: :post, params: { frequency: "weekly" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{digest_mode == 'weekly' ? 'btn-primary' : 'btn-outline-secondary'}"
+      = button_to "Daily", sync_all_mediums_organization_digest_path(current_organization), method: :post, params: { frequency: "daily" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{digest_mode == 'daily' ? 'btn-primary' : 'btn-outline-secondary'}"
+      = link_to "Custom", edit_organization_digest_path(current_organization, return_url: organization_start_here_path(current_organization), return_text: "Back to Start Here"), class: "btn btn-sm #{digest_mode == 'custom' ? 'btn-primary' : 'btn-outline-secondary'}"

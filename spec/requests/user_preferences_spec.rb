@@ -16,6 +16,19 @@ RSpec.describe 'User Preferences', type: :request do
           patch layout_user_preferences_path, params: { layout: 'horizontal' }
         }.to change { user_preference.reload.layout }.from('vertical').to('horizontal')
       end
+
+      it 'accepts no_nav layout' do
+        expect {
+          patch layout_user_preferences_path, params: { layout: 'no_nav' }
+        }.to change { user_preference.reload.layout }.to('no_nav')
+      end
+
+      it 'forces org start page to Start Here when switching to no_nav' do
+        key = "start_page_#{organization.id}"
+        user_preference.update_preference(key, 'about_me')
+        patch layout_user_preferences_path, params: { layout: 'no_nav' }
+        expect(user_preference.reload.preference(key)).to eq('start_here')
+      end
       
       it 'redirects back with notice' do
         patch layout_user_preferences_path, params: { layout: 'vertical' }
@@ -245,6 +258,28 @@ RSpec.describe 'User Preferences', type: :request do
       # Horizontal layout should have navbar, not vertical nav
       expect(response.body).to include('navbar navbar-expand-lg')
       expect(response.body).not_to include('vertical-nav-top-bar')
+    end
+
+    it 'uses no-nav layout without sidebar or horizontal navbar' do
+      user_preference.update_preference(:layout, 'no_nav')
+
+      get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('vertical-nav-top-bar')
+      expect(response.body).not_to include('vertical-nav"')
+      expect(response.body).not_to include('navbar-expand-lg')
+    end
+
+    it 'links navbar brand to Start Here when layout is no_nav' do
+      user_preference.update_preference(:layout, 'no_nav')
+
+      get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
+
+      start_here_href = organization_start_here_path(organization)
+      expect(response.body).to include(%(href="#{start_here_href}"))
     end
     
     it 'defaults to vertical layout when no preference exists' do

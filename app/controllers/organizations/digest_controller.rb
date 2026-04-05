@@ -12,6 +12,21 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
     @return_text = params[:return_text].presence
   end
 
+  def sync_all_mediums
+    authorize current_user_preferences, :update?
+    freq = params.require(:frequency).to_s
+    unless %w[off weekly daily].include?(freq)
+      redirect_to organization_start_here_path(@organization), alert: "Invalid digest schedule."
+      return
+    end
+
+    prefs = current_user_preferences
+    prefs.update_preference("digest_slack", freq)
+    prefs.update_preference("digest_email", freq)
+    prefs.update_preference("digest_sms", freq)
+    redirect_to organization_start_here_path(@organization), notice: "Digest schedule updated for all channels."
+  end
+
   def update
     authorize current_user_preferences, :update?
 

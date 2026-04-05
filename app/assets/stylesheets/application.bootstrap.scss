@@ -1043,3 +1043,12 @@ body:has(.vertical-nav.open) .floating-toggle {
 .check-ins-fresh-banner--compact {
   min-height: 0;
 }
+
+// Start Here: “Other ways to customize” collapse (chevron matches Bootstrap .collapsed on trigger)
+.start-here-customize-toggle.collapsed .start-here-customize-chevron-up {
+  display: none !important;
+}
+
+.start-here-customize-toggle:not(.collapsed) .start-here-customize-chevron-down {
+  display: none !important;
+}

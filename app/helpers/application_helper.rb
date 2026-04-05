@@ -616,6 +616,45 @@ module ApplicationHelper
     ]
   end
 
+  # Start page picker only when top/side nav is shown; clean layout always lands on Start Here.
+  def show_start_page_picker_on_start_here?(prefs)
+    %w[vertical horizontal].include?(prefs.layout.to_s)
+  end
+
+  # When Slack, email, and SMS digest frequencies all match off/daily/weekly, that unified value; else "custom".
+  def og_digest_unified_mode(prefs, company_teammate)
+    return "off" unless company_teammate
+
+    slack = prefs.effective_digest_slack(company_teammate)
+    email = prefs.effective_digest_email
+    sms = prefs.effective_digest_sms(company_teammate.person)
+    if slack.to_s == email.to_s && email.to_s == sms.to_s && slack.to_s.in?(%w[off daily weekly])
+      slack.to_s
+    else
+      "custom"
+    end
+  end
+
+  # Authenticated header brand: no-nav layout always links to Start Here.
+  def organization_header_brand_path(organization, company_teammate)
+    return dashboard_organization_path(organization) unless company_teammate
+
+    if current_user_preferences&.layout.to_s == 'no_nav'
+      organization_start_here_path(organization)
+    else
+      preferred_start_page_path(organization, company_teammate)
+    end
+  end
+
+  def start_here_dashboard_service
+    StartHereDashboardService.new(
+      view: self,
+      organization: current_organization,
+      company_teammate: current_company_teammate,
+      person: current_person
+    )
+  end
+
   # Returns "a" or "an" based on whether the word starts with a vowel sound
   def indefinite_article(word)
     return 'a' if word.blank?

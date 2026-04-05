@@ -14,7 +14,7 @@
           .vertical-nav-toggle-spacer
           - if current_person && current_organization
             - if current_company_teammate
-              = link_to preferred_start_page_path(current_organization, current_company_teammate), class: "navbar-brand fw-bold text-decoration-none" do
+              = link_to organization_header_brand_path(current_organization, current_company_teammate), class: "navbar-brand fw-bold text-decoration-none" do
                 = "#{current_organization.display_name}'s Gruuv"
             - else
               = link_to dashboard_organization_path(current_organization), class: "navbar-brand fw-bold text-decoration-none" do
@@ -88,7 +88,11 @@
                   = button_to layout_user_preferences_path, method: :patch, params: { layout: 'vertical' }, class: "dropdown-item #{'active' if current_user_preferences&.layout == 'vertical'}", form: { style: "display: inline;" } do
                     %i.bi.bi-layout-sidebar.me-2
                     Vertical Navigation
-                
+                %li
+                  = button_to layout_user_preferences_path, method: :patch, params: { layout: 'no_nav' }, class: "dropdown-item #{'active' if current_user_preferences&.layout.to_s == 'no_nav'}", form: { style: "display: inline;" } do
+                    %i.bi.bi-house-door.me-2
+                    No navigation (Start Here hub)
+
                 %li= link_to "Switch Organization", switch_organizations_path, class: "dropdown-item"
                 - if current_person&.og_admin?
                   %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"

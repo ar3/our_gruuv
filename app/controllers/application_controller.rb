@@ -192,8 +192,11 @@ class ApplicationController < ActionController::Base
     return 'application' unless current_company_teammate
     
     # Check user preference for layout, default to vertical
-    if current_user_preferences&.layout == 'horizontal'
+    case current_user_preferences&.layout.to_s
+    when 'horizontal'
       'authenticated-horizontal-navigation'
+    when 'no_nav'
+      'authenticated-no-navigation'
     else
       'authenticated-vertical-navigation'
     end

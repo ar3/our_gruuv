@@ -5,12 +5,17 @@ class UserPreferencesController < ApplicationController
     authorize current_user_preferences, :update_layout?
     
     layout = params[:layout]
-    unless %w[horizontal vertical].include?(layout)
+    unless %w[horizontal vertical no_nav].include?(layout)
       render json: { error: 'Invalid layout' }, status: :unprocessable_entity
       return
     end
     
     if current_user_preferences.update_preference(:layout, layout)
+      if layout == "no_nav" && current_company_teammate
+        key = "start_page_#{current_company_teammate.organization_id}"
+        current_user_preferences.update_preference(key, "start_here")
+      end
+
       respond_to do |format|
         format.html { redirect_back(fallback_location: root_path, notice: 'Layout preference updated') }
         format.json { render json: { layout: layout } }

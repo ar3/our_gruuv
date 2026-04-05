@@ -87,15 +87,22 @@ Rails.application.routes.draw do
       get :new_refresh_slack
     end
     
-    # Start Here (quick guide / landing)
+    # Start Here (quick guide / landing; per-person layout, edited on this page)
     get 'start_here', to: 'organizations/start_here#show', as: :start_here
+    post 'start_here/add_widget', to: 'organizations/start_here#add_widget', as: :start_here_add_widget
+    post 'start_here/remove_widget', to: 'organizations/start_here#remove_widget', as: :start_here_remove_widget
+    post 'start_here/reorder_widget', to: 'organizations/start_here#reorder_widget', as: :start_here_reorder_widget
+    post 'start_here/apply_preset', to: 'organizations/start_here#apply_preset', as: :start_here_apply_preset
+    post 'start_here/update_start_page', to: 'organizations/start_here#update_start_page', as: :start_here_update_start_page
     get 'value_billing', to: 'organizations/value_billing#show', as: :value_billing
 
     # Get Shit Done Dashboard
     resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done'
 
     # Digest (user digest preferences; per-organization URL, edits current user's preferences)
-    resource :digest, only: [:edit, :update], controller: 'organizations/digest'
+    resource :digest, only: [:edit, :update], controller: 'organizations/digest' do
+      post :sync_all_mediums, on: :member
+    end
     
     # Observable Moments
     resources :observable_moments, only: [], module: :organizations do
