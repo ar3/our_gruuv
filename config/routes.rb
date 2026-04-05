@@ -94,6 +94,7 @@ Rails.application.routes.draw do
     post 'start_here/reorder_widget', to: 'organizations/start_here#reorder_widget', as: :start_here_reorder_widget
     post 'start_here/apply_preset', to: 'organizations/start_here#apply_preset', as: :start_here_apply_preset
     post 'start_here/update_start_page', to: 'organizations/start_here#update_start_page', as: :start_here_update_start_page
+    post 'start_here/widget_dashboards', to: 'organizations/start_here#widget_dashboards', as: :start_here_widget_dashboards
     get 'value_billing', to: 'organizations/value_billing#show', as: :value_billing
 
     # Get Shit Done Dashboard

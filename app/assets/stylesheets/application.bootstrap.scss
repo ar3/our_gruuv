@@ -1052,3 +1052,9 @@ body:has(.vertical-nav.open) .floating-toggle {
 .start-here-customize-toggle:not(.collapsed) .start-here-customize-chevron-down {
   display: none !important;
 }
+
+// Start Here: skeleton pulse for lazy-loaded card bodies
+.start-here-dashboard-skeleton .placeholder {
+  display: inline-block;
+  min-height: 0.75rem;
+}

@@ -16,7 +16,7 @@
   .alert.alert-info.mb-4
     You have no widgets on this page yet. Use “Add new widgets” below.
 
-.row.g-4
+.row.g-4{data: { controller: "start-here-dashboard", start_here_dashboard_url_value: organization_start_here_widget_dashboards_path(current_organization) }}
   - rows.each do |row|
     - w = row[:widget]
     - wid = row[:id]
@@ -26,7 +26,15 @@
         .card-body.d-flex.flex-column
           %h5.card-title.mb-2= w.display_title
           .mb-3.start-here-dashboard-content
-            != w.dashboard_content
+            .start-here-dashboard-slot{data: { widget_id: wid, start_here_dashboard_target: "slot" }}
+              .start-here-dashboard-skeleton.placeholder-glow
+                .placeholder.col-12.mb-2.rounded{style: "height: 0.9rem;"}
+                .placeholder.col-10.mb-2.rounded{style: "height: 0.9rem;"}
+                .placeholder.col-11.rounded{style: "height: 0.9rem;"}
+              .start-here-dashboard-body.d-none
+              .start-here-dashboard-error.alert.alert-warning.py-2.px-3.small.d-none{role: "alert"}
+                %p.mb-1.start-here-dashboard-error-message
+                %button.btn.btn-link.btn-sm.p-0.align-baseline{type: "button", data: { action: "start-here-dashboard#retry" }} Retry
           .row.g-2.align-items-center.mt-auto
             .col-10
               - if w.button_path.present?

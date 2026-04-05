@@ -26,6 +26,7 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(response.body).to include('Get Shit Done')
       expect(response.body).to include('Kudos')
       expect(response.body).to include('Insights')
+      expect(response.body).to include('start-here-dashboard-skeleton')
     end
 
     it 'uses org label for get_shit_done when set' do
@@ -65,6 +66,27 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       UserPreference.for_person(person).update_preference(key, 'insights')
       get organization_start_here_path(company)
       expect(UserPreference.for_person(person).reload.preference(key)).to eq('start_here')
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/start_here/widget_dashboards' do
+    it 'returns JSON with html for widgets on the user dashboard' do
+      post organization_start_here_widget_dashboards_path(company),
+           params: { widget_ids: %w[about_me get_shit_done] },
+           as: :json
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+      expect(json['widgets']['about_me']['ok']).to eq(true)
+      expect(json['widgets']['about_me']['html']).to be_present
+      expect(json['widgets']['get_shit_done']['ok']).to eq(true)
+    end
+
+    it 'omits widget ids that are not on the user dashboard' do
+      post organization_start_here_widget_dashboards_path(company),
+           params: { widget_ids: %w[about_me not_on_my_dashboard_xyz] },
+           as: :json
+      json = JSON.parse(response.body)
+      expect(json['widgets'].keys).to eq([ 'about_me' ])
     end
   end
 
