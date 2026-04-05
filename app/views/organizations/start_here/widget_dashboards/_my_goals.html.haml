@@ -1,0 +1,24 @@
+- c = MyGoalsDashboardService.new(teammate: context.company_teammate).counts
+- recent = c[:with_recent_check_in]
+- stale = c[:without_recent_check_in]
+- drafts = c[:draft]
+- completed = c[:completed]
+.mb-0.start-here-my-goals-dashboard
+  - if recent.positive?
+    %p.small.text-muted.mb-1
+      %i.bi.bi-check-circle-fill.text-success.me-1.align-text-bottom{aria: { hidden: true }}
+      #{recent} #{recent == 1 ? 'goal has' : 'goals have'} had a check-in in the past 2 weeks
+  - if stale.positive?
+    %p.small.text-muted.mb-1
+      %i.bi.bi-exclamation-triangle-fill.text-warning.me-1.align-text-bottom{aria: { hidden: true }}
+      #{stale} #{stale == 1 ? 'goal has' : 'goals have'} not had a check-in in the past 2 weeks
+  - if drafts.positive?
+    %p.small.text-muted{class: completed.positive? ? "mb-1" : "mb-0"}
+      %i.bi.bi-pause-circle-fill.text-muted.me-1.align-text-bottom{aria: { hidden: true }}
+      #{drafts} #{drafts == 1 ? 'goal is' : 'goals are'} in the draft / unstarted state
+  - if completed.positive?
+    %p.small.text-muted.mb-0
+      %i.bi.bi-trophy-fill.text-muted.me-1.align-text-bottom{aria: { hidden: true }}
+      #{completed} #{completed == 1 ? 'goal' : 'goals'} completed
+  - if recent.zero? && stale.zero? && drafts.zero? && completed.zero?
+    %p.text-muted.small.mb-0 No goals to show yet.
