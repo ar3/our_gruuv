@@ -1,0 +1,14 @@
+- s = MyEmployeesDashboardService.summary(manager_teammate: context.company_teammate, organization: context.organization)
+- x = s[:direct_report_count]
+- y = s[:crystal_clear_count]
+- z = s[:overall_pct]
+- pill = s[:pill_class]
+.mb-0.start-here-my-employees-dashboard
+  - if x.zero?
+    %p.text-muted.small.mb-0 You don't have direct reports in this organization yet.
+  - else
+    %p.small.text-muted.mb-0
+      Serve your #{x} #{x == 1 ? 'direct report' : 'direct reports'}. #{y} of them #{y == 1 ? 'is' : 'are'} crystal clear on where they stand. Overall those you serve are
+      %span.badge.rounded-pill{class: pill}
+        #{z}% clear
+      on where they stand.

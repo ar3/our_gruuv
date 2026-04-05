@@ -35,17 +35,27 @@ function initializePopovers() {
   
   if (bootstrap.Popover) {
     console.log('Found bootstrap.Popover')
-    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, {
-      html: true,
-      sanitize: false
-    }))
+    const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => {
+      if (bootstrap.Popover.getInstance(popoverTriggerEl)) {
+        return bootstrap.Popover.getInstance(popoverTriggerEl)
+      }
+      return new bootstrap.Popover(popoverTriggerEl, {
+        html: true,
+        sanitize: false
+      })
+    })
     console.log('Initialized popovers:', popoverList.length)
   } else if (window.bootstrap && window.bootstrap.Popover) {
     console.log('Found window.bootstrap.Popover')
-    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new window.bootstrap.Popover(popoverTriggerEl, {
-      html: true,
-      sanitize: false
-    }))
+    const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => {
+      if (window.bootstrap.Popover.getInstance(popoverTriggerEl)) {
+        return window.bootstrap.Popover.getInstance(popoverTriggerEl)
+      }
+      return new window.bootstrap.Popover(popoverTriggerEl, {
+        html: true,
+        sanitize: false
+      })
+    })
     console.log('Initialized popovers:', popoverList.length)
   } else {
     console.log('Popover not found in bootstrap object')

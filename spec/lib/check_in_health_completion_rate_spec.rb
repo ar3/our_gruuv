@@ -86,4 +86,30 @@ RSpec.describe CheckInHealthCompletionRate do
       expect(described_class.completion_rate_for_caches([cache])).to eq(50.0)
     end
   end
+
+  describe '.contribution_tuple_for_cache' do
+    it 'returns earned and max points' do
+      cache = instance_double(
+        CheckInHealthCache,
+        completion_points: { position: 4.0, assignments: 4.0, aspirations: 4.0 },
+        payload_assignments: [{}],
+        payload_aspirations: [{}]
+      )
+      pts, mx = described_class.contribution_tuple_for_cache(cache)
+      expect(pts).to eq(12.0)
+      expect(mx).to eq(12.0)
+    end
+  end
+
+  describe '.average_completion_rate_per_teammate' do
+    it 'returns 0 when no teammate ids' do
+      expect(described_class.average_completion_rate_per_teammate([], 1)).to eq(0.0)
+    end
+  end
+
+  describe '.teammate_fully_clear_on_check_ins?' do
+    it 'is false when cache is nil' do
+      expect(described_class.teammate_fully_clear_on_check_ins?(nil)).to be(false)
+    end
+  end
 end
