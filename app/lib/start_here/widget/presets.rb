@@ -23,9 +23,39 @@ module StartHere
             about_complete_picture
           ]
         when :non_manager
-          %w[about_me get_shit_done kudos_wall my_goals insights_dashboard]
+          # Matches start_here_dashboard_widgets_v1 non-manager layout (by position).
+          %w[
+            about_me
+            get_shit_done
+            my_goals
+            kudos_wall
+            observations_involving_me
+            add_new_ogo
+            beta_my_growth
+            beta_check_in_history
+            about_complete_picture
+          ]
         when :og_enthusiast
-          %w[about_me add_new_ogo observations_involving_me kudos_wall all_observations insights_observations]
+          # Matches start_here_dashboard_widgets_v1 OG enthusiast layout (by position).
+          %w[
+            about_me
+            add_new_ogo
+            observations_involving_me
+            kudos_wall
+            all_observations
+            insights_observations
+            beta_check_in_history
+            my_goals
+            employee_hierarchy
+            directory_teams
+            my_employees
+            abilities_index
+            maap_assignments
+            maap_positions
+            admin_teams
+            admin_aspirations
+            celebrate_milestones
+          ]
         else
           []
         end
