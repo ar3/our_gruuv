@@ -1,0 +1,18 @@
+- org_name = context.org_display_name
+- rows = KudosWallDashboardCounts.new(organization: context.organization, person: context.person, company_teammate: context.company_teammate).rows(org_display_name: org_name)
+.start-here-kudos-wall-dashboard
+  %p.text-muted.small.mb-2 Recognition and kudos shared across the organization.
+  %table.table.table-sm.table-bordered.mb-0.small.text-muted
+    %thead
+      %tr
+        %th
+        %th.text-end Last week
+        %th.text-end Last 90 days
+        %th.text-end All time
+    %tbody
+      - rows.each do |label, wk, n90, all|
+        %tr
+          %td= label
+          %td.text-end= number_with_delimiter(wk)
+          %td.text-end= number_with_delimiter(n90)
+          %td.text-end= number_with_delimiter(all)
