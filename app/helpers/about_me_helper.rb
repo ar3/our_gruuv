@@ -391,5 +391,18 @@ module AboutMeHelper
       ""
     end
   end
+
+  # Start Here About Me widget: human-readable section names grouped by status (same rules as About Me / digest).
+  def about_me_section_names_by_status(teammate, organization)
+    return { green: [], yellow: [], red: [] } unless teammate && organization
+
+    service = Digest::AboutMeContentService.new(teammate: teammate, organization: organization)
+    sections = service.sections
+    {
+      green: sections.select { |s| s[:status] == :green }.map { |s| s[:section_name] },
+      yellow: sections.select { |s| s[:status] == :yellow }.map { |s| s[:section_name] },
+      red: sections.select { |s| s[:status] == :red }.map { |s| s[:section_name] }
+    }
+  end
 end
 

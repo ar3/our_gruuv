@@ -94,8 +94,8 @@ class Organizations::StartHereController < Organizations::OrganizationNamespaceB
     return { ok: false, error: "This widget is not available." } unless w.active?
 
     html =
-      if lookup_context.template_exists?(widget_id, [ DASHBOARD_PARTIAL_PREFIX ], true)
-        render_to_string(partial: "#{DASHBOARD_PARTIAL_PREFIX}/#{widget_id}", locals: { widget: w, context: context })
+      if lookup_context.template_exists?(widget_id, [ DASHBOARD_PARTIAL_PREFIX ], true, [], formats: [ :html ])
+        render_to_string(partial: "#{DASHBOARD_PARTIAL_PREFIX}/#{widget_id}", locals: { widget: w, context: context }, formats: [ :html ])
       else
         w.dashboard_content.to_s
       end

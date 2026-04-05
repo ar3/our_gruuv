@@ -1,0 +1,13 @@
+- groups = about_me_section_names_by_status(context.company_teammate, context.organization)
+- status_rows = [ { names: groups[:green], icon: "bi-check-square-fill", color: "text-success" }, { names: groups[:yellow], icon: "bi-exclamation-triangle-fill", color: "text-warning" }, { names: groups[:red], icon: "bi-x-square-fill", color: "text-danger" } ]
+.mb-0.start-here-about-me-dashboard
+  %p.text-muted.small.mb-2
+    Your check-ins, goals, observations, and growth in one place.
+  - status_rows.each do |row|
+    - names = row[:names]
+    - next if names.blank?
+    - n = names.size
+    %p.small.text-muted.mb-1
+      = "#{pluralize(n, 'category')} #{n == 1 ? 'is' : 'are'} "
+      %i{class: "bi #{row[:icon]} #{row[:color]} mx-1 align-text-bottom", aria: { hidden: true }}
+      = ": #{names.join(', ')}"
