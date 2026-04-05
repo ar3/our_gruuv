@@ -297,4 +297,18 @@ RSpec.describe GetShitDoneQueryService do
       expect(result[:total_pending]).to be_a(Integer)
     end
   end
+
+  describe '#pending_category_breakdown' do
+    it 'returns empty when teammate is nil' do
+      expect(described_class.new(teammate: nil).pending_category_breakdown).to eq([])
+    end
+
+    it 'lists only non-empty categories with Get Shit Done page labels' do
+      create(:observation, observer: person, company: company, published_at: nil)
+      rows = service.pending_category_breakdown
+      expect(rows).to include(hash_including(count: 1, label: "Observation Drafts"))
+      expect(rows).to all(include(:count, :label))
+      expect(rows.none? { |r| r[:count].zero? }).to be true
+    end
+  end
 end

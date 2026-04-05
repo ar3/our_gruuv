@@ -62,6 +62,19 @@ class GetShitDoneQueryService
     }
   end
 
+  # Non-zero counts only, same section order and labels as organizations/get_shit_done/show.
+  def pending_category_breakdown
+    return [] unless teammate
+
+    [
+      { count: observable_moments.count, label: "Observable Moments" },
+      { count: maap_snapshots.count, label: "Check-ins Awaiting Acknowledgement" },
+      { count: check_ins_awaiting_input.size, label: "Check-ins Awaiting Your Input" },
+      { count: goals_needing_check_in.count, label: "Goal Check-ins" },
+      { count: observation_drafts.count, label: "Observation Drafts" }
+    ].select { |row| row[:count].positive? }
+  end
+
   private
 
   def check_ins_awaiting_employee_input

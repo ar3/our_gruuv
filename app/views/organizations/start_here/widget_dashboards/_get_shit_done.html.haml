@@ -1,0 +1,14 @@
+- svc = GetShitDoneQueryService.new(teammate: context.company_teammate)
+- pending = svc.total_pending_count
+- breakdown = svc.pending_category_breakdown
+.mb-0.start-here-get-shit-done-dashboard
+  %p.text-muted.small.mb-1
+    - if pending.zero?
+      Nothing needs your attention right now.
+    - elsif pending == 1
+      1 item needs your attention.
+    - else
+      #{pending} items need your attention.
+  - if breakdown.any?
+    %p.text-muted.small.mb-0
+      = breakdown.map { |row| "#{row[:count]} from the #{row[:label]} category" }.to_sentence

@@ -23,7 +23,7 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(response.body).to include('Start Here')
       expect(response.body).to include('quick guide')
       expect(response.body).to include('About')
-      expect(response.body).to include('Get Shit Done')
+      expect(response.body).to include('TODOs')
       expect(response.body).to include('Kudos')
       expect(response.body).to include('Insights')
       expect(response.body).to include('start-here-dashboard-skeleton')
