@@ -4,10 +4,9 @@
 class KudosWallDashboardCounts
   WALL_PRIVACY = %w[public_to_company public_to_world].freeze
 
-  def initialize(organization:, person:, company_teammate:)
+  def initialize(organization:, person:)
     @organization = organization
     @person = person
-    @company_teammate = company_teammate
   end
 
   # [ [ label, week_count, ninety_count, all_count ], ... ]
@@ -15,12 +14,10 @@ class KudosWallDashboardCounts
     return zero_rows(org_display_name) if @organization.blank? || @person.blank?
 
     g = given_base
-    r = received_base
     a = all_base
 
     [
       ["I've given", count_since(g, 1.week.ago), count_since(g, 90.days.ago), g.count],
-      ["Given to me", count_since(r, 1.week.ago), count_since(r, 90.days.ago), r.count],
       ["All of #{org_display_name}", count_since(a, 1.week.ago), count_since(a, 90.days.ago), a.count]
     ]
   end
@@ -31,7 +28,6 @@ class KudosWallDashboardCounts
     z = 0
     [
       ["I've given", z, z, z],
-      ["Given to me", z, z, z],
       ["All of #{org_display_name}", z, z, z]
     ]
   end
@@ -47,12 +43,6 @@ class KudosWallDashboardCounts
 
   def given_base
     wall_base.where(observer_id: @person.id)
-  end
-
-  def received_base
-    return wall_base.none if @company_teammate.blank?
-
-    wall_base.where(id: Observee.where(teammate_id: @company_teammate.id).select(:observation_id))
   end
 
   def all_base
