@@ -31,6 +31,96 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response).to have_http_status(:success)
       end
 
+      context 'Grow by experiences assignment cards' do
+        let(:assignment) { create(:assignment, company: organization, title: 'North Star Delivery') }
+        let(:base_goal_attrs) do
+          {
+            company_id: organization.id,
+            creator: manager_teammate,
+            owner: employee_teammate,
+            goal_type: 'inspirational_objective',
+            most_likely_target_date: nil,
+            earliest_target_date: nil,
+            latest_target_date: nil,
+            completed_at: nil,
+            deleted_at: nil
+          }
+        end
+        let(:started_goal_attrs) { base_goal_attrs.merge(started_at: 1.day.ago) }
+        let(:draft_goal_attrs) { base_goal_attrs.merge(started_at: nil) }
+
+        before do
+          employee.update!(first_name: 'Jamie', last_name: 'Rivera')
+          create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)
+        end
+
+        it 'shows set-goal link when there is no incomplete unarchived goal for that assignment and teammate' do
+          casual = employee_teammate.reload.person.casual_name
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include("Set goal for #{casual} and #{assignment.title}")
+          expect(response.body).to include("/assignments/#{assignment.to_param}/choose_manage_goals")
+          expect(response.body).to include("for_company_teammate_id=#{employee_teammate.id}")
+        end
+
+        it 'shows add-to-goals when an associated goal is started (incomplete and unarchived)' do
+          casual = employee_teammate.reload.person.casual_name
+          goal = create(:goal, **started_goal_attrs)
+          create(:goal_association, goal: goal, associable: assignment)
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include("Add to the 1 goal for #{casual} and #{assignment.title}")
+        end
+
+        it 'shows add-to-goals when an associated goal is still a draft (incomplete and unarchived)' do
+          casual = employee_teammate.reload.person.casual_name
+          goal = create(:goal, **draft_goal_attrs)
+          create(:goal_association, goal: goal, associable: assignment)
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include("Add to the 1 goal for #{casual} and #{assignment.title}")
+        end
+
+        it 'still shows set-goal when the only associated goals are completed' do
+          casual = employee_teammate.reload.person.casual_name
+          g = create(:goal, **started_goal_attrs.merge(completed_at: 1.day.ago))
+          create(:goal_association, goal: g, associable: assignment)
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include("Set goal for #{casual} and #{assignment.title}")
+        end
+
+        it 'still shows set-goal when the only associated goals are archived (soft-deleted)' do
+          casual = employee_teammate.reload.person.casual_name
+          g = create(:goal, **started_goal_attrs.merge(deleted_at: 1.day.ago))
+          create(:goal_association, goal: g, associable: assignment)
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include("Set goal for #{casual} and #{assignment.title}")
+        end
+
+        it 'counts only open goals when mixing completed and open associations' do
+          casual = employee_teammate.reload.person.casual_name
+          open_g = create(:goal, **started_goal_attrs.merge(title: 'Open'))
+          done_g = create(:goal, **started_goal_attrs.merge(title: 'Done', completed_at: 1.day.ago))
+          create(:goal_association, goal: open_g, associable: assignment)
+          create(:goal_association, goal: done_g, associable: assignment)
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include("Add to the 1 goal for #{casual} and #{assignment.title}")
+        end
+
+        it 'pluralizes when multiple incomplete unarchived goals are associated' do
+          casual = employee_teammate.reload.person.casual_name
+          g1 = create(:goal, **started_goal_attrs.merge(title: 'First linked goal'))
+          g2 = create(:goal, **started_goal_attrs.merge(title: 'Second linked goal'))
+          create(:goal_association, goal: g1, associable: assignment)
+          create(:goal_association, goal: g2, associable: assignment)
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include("Add to the 2 goals for #{casual} and #{assignment.title}")
+        end
+      end
+
       it 'allows GET my_growth/abilities' do
         get my_growth_abilities_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)

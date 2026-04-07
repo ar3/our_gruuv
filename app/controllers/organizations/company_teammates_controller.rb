@@ -823,6 +823,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         end
     end
 
+    assignment_ids_for_goal_links = @my_growth_active_rows.map { |r| r[:assignment].id }.uniq
+    @my_growth_assignment_goal_counts_by_id = my_growth_assignment_goal_counts_for_teammate(assignment_ids_for_goal_links)
+
     return unless position
 
     missing = position.required_assignments.reject { |pa| active_ids.include?(pa.assignment_id) }
@@ -836,6 +839,20 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         assignment: pa.assignment,
         casual_name: casual
       }
+    end
+  end
+
+  def my_growth_assignment_goal_counts_for_teammate(assignment_ids)
+    return {} if assignment_ids.blank?
+
+    base = Goal.joins(:goal_associations)
+      .where(goal_associations: { associable_type: 'Assignment', associable_id: assignment_ids })
+      .where(owner_type: 'CompanyTeammate', owner_id: @teammate.id)
+
+    open_by_id = base.merge(Goal.incomplete_unarchived).group('goal_associations.associable_id').count
+
+    assignment_ids.index_with do |aid|
+      { open_associated_goals_count: open_by_id[aid] || 0 }
     end
   end
 

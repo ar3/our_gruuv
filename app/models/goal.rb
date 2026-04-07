@@ -89,6 +89,11 @@ class Goal < ApplicationRecord
       .where(completed_at: nil)
       .where.not(started_at: nil)
   }
+
+  # Incomplete and not soft-deleted ("archived"). Includes drafts (started_at nil).
+  scope :incomplete_unarchived, -> {
+    where(completed_at: nil, deleted_at: nil)
+  }
   
   scope :completed, -> { where.not(completed_at: nil) }
   

@@ -37,17 +37,24 @@
     .row.mb-3.align-items-stretch
       .col-md-6.d-flex
         .card.border.w-100.h-100
-          .card-body
-            %h6.mb-1
-              = link_to row[:assignment].title, organization_teammate_assignment_path(organization, @teammate, row[:assignment]), class: 'text-decoration-none'
-            - if row[:assignment].tagline.present?
-              %p.small.text-muted.mb-2= row[:assignment].tagline
-            - if row[:tenure].anticipated_energy_percentage.present?
-              %span.badge.bg-secondary= "#{row[:tenure].anticipated_energy_percentage}% energy"
-            = render 'organizations/company_teammates/assignment_latest_check_in_badges',
-              latest_finalized: @latest_finalized_assignment_check_ins_by_assignment_id[row[:tenure].assignment_id],
-              tenure: row[:tenure],
-              teammate: @teammate
+          .card-body.d-flex.flex-column.h-100
+            %div
+              %h6.mb-1
+                = link_to row[:assignment].title, organization_teammate_assignment_path(organization, @teammate, row[:assignment]), class: 'text-decoration-none'
+              - if row[:assignment].tagline.present?
+                %p.small.text-muted.mb-0= row[:assignment].tagline
+            .mt-auto.pt-2
+              %hr.my-1.border-secondary.opacity-25
+              .d-flex.flex-wrap.align-items-center.gap-2
+                - if row[:tenure].anticipated_energy_percentage.present?
+                  %span.badge.bg-secondary= "#{row[:tenure].anticipated_energy_percentage}% energy"
+                = render 'organizations/company_teammates/assignment_latest_check_in_badges',
+                  latest_finalized: @latest_finalized_assignment_check_ins_by_assignment_id[row[:tenure].assignment_id],
+                  tenure: row[:tenure],
+                  teammate: @teammate
+              - if policy(@teammate).audit?
+                - counts = @my_growth_assignment_goal_counts_by_id[row[:assignment].id] || { open_associated_goals_count: 0 }
+                = render 'organizations/company_teammates/my_growth/assignment_goal_link_row', organization: organization, teammate: @teammate, assignment: row[:assignment], casual_name: row[:casual_name], counts: counts
       .col-md-6.d-flex
         - right_class = row[:right_variant] == :required ? 'border w-100 h-100' : 'border w-100 h-100 bg-light'
         .card{class: right_class}

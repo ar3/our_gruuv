@@ -322,6 +322,19 @@ RSpec.describe Goal, type: :model do
         expect(result).not_to include(draft_goal, completed_goal, deleted_goal)
       end
     end
+
+    describe '.incomplete_unarchived' do
+      let!(:draft_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil, completed_at: nil, deleted_at: nil) }
+      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago, completed_at: nil, deleted_at: nil) }
+      let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, completed_at: 1.day.ago, deleted_at: nil) }
+      let!(:deleted_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, completed_at: nil, deleted_at: 1.day.ago) }
+
+      it 'includes draft and active goals without completed_at or deleted_at' do
+        result = described_class.incomplete_unarchived
+        expect(result).to include(draft_goal, active_goal)
+        expect(result).not_to include(completed_goal, deleted_goal)
+      end
+    end
     
     describe '.completed' do
       let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
