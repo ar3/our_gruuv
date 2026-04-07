@@ -12,64 +12,51 @@
               About #{teammate.person.casual_name}
             -# .d-flex.flex-column
             .d-flex.align-items-center.gap-2
-              = link_to organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start" do
-                #{teammate.person.casual_name}'s Check-in
-                - latest_finalized = PositionCheckIn.latest_finalized_for(teammate)
-                - if latest_finalized&.official_check_in_completed_at
-                  %br
-                  %small.text-muted.mt-0
-                    Latest: #{format_date_in_user_timezone(latest_finalized.official_check_in_completed_at, current_person)}
+              - latest_finalized = PositionCheckIn.latest_finalized_for(teammate)
+              - last_check_in_when = latest_finalized&.official_check_in_completed_at
+              - last_check_in_phrase = last_check_in_when ? "#{time_ago_in_words(last_check_in_when)} ago" : "not yet"
+              .d-flex.flex-column.gap-1.align-self-center
+                = link_to review_most_recent_organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start text-wrap lh-sm" do
+                  #{teammate.person.casual_name}'s last check-in: #{last_check_in_phrase}
+                = link_to organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start text-wrap lh-sm" do
+                  #{teammate.person.casual_name}'s bulk check-in
               - cache = @check_in_health_caches_by_teammate && @check_in_health_caches_by_teammate[teammate.id]
               - rate_data = check_in_health_completion_rate_and_breakdown(cache)
               - health_table_data = single_item_health_popover_table(cache)
               - health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : "No check-in health data yet."
               - if rate_data
-                .d-flex.flex-column
+                .d-flex.flex-column.align-self-center
                   %span.fw-bold.fs-3{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => health_popover_html.html_safe, style: "cursor: pointer;"}
                     #{rate_data[:completion_rate]}%
                   %span.text-muted.small.caption='... clear on where they stand'
               - else
-                %span.text-muted.fs-3.fw-bold{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => health_popover_html, style: "cursor: pointer;"}
+                %span.text-muted.fs-3.fw-bold.align-self-center{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => health_popover_html, style: "cursor: pointer;"}
                   —
       
       .row.mt-2
-        .col-auto.mb-2
-          = link_to complete_picture_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start" do
-            #{teammate.person.casual_name}'s Unique Job Description
-            %br
-            %small.text-muted.mt-1
-              - if teammate.is_a?(CompanyTeammate)
-                - total_energy = teammate.active_assignment_tenures.sum { |t| t.anticipated_energy_percentage || 0 }
-                - if total_energy == 0
-                  Total Energy: 0% - Recommend finalizing check-ins for all assignments
-                - else
-                  Total Energy: #{total_energy}%
-              - else
-                Total Energy: 0%
         - active_tenure = teammate.is_a?(CompanyTeammate) ? teammate.active_employment_tenure : nil
-        - if active_tenure
-          - if active_tenure.position
-            .col-auto.mb-2
-              = link_to job_description_organization_position_path(@organization, active_tenure.position), class: "btn btn-outline-secondary btn-sm text-start" do
-                = active_tenure.position.title.external_title
+        .col-auto.mb-2
+          .d-flex.align-items-start.gap-2
+            = link_to my_growth_experiences_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start align-self-start" do
+              #{teammate.person.casual_name}'s Growth
+            .d-flex.flex-column.align-items-start
+              = link_to complete_picture_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start" do
+                #{teammate.person.casual_name}'s real day-to-day job
                 %br
                 %small.text-muted.mt-1
-                  #{active_tenure.position.required_assignments_count} required, #{active_tenure.position.suggested_assignments_count} suggested Assignments
-          - else
-            .col-auto.mb-2
-              %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
-                need to define position
-
-
-          - if active_tenure.seat
-            .col-auto.mb-2
-              = link_to organization_seat_path(@organization, active_tenure.seat), class: "btn btn-outline-secondary btn-sm" do
-                = active_tenure.seat.display_name
-
-          
-        - else
-          .col-auto.mb-2
-            %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
-              need to define position
+                  - if teammate.is_a?(CompanyTeammate)
+                    - total_energy = teammate.active_assignment_tenures.sum { |t| t.anticipated_energy_percentage || 0 }
+                    - if total_energy == 0
+                      Total Energy: 0% - Recommend finalizing check-ins for all assignments
+                    - else
+                      Total Energy: #{total_energy}%
+                  - else
+                    Total Energy: 0%
+              - if active_tenure&.position
+                %small.text-muted.mt-1
+                  = link_to job_description_organization_position_path(@organization, active_tenure.position), class: "link-secondary text-decoration-none" do
+                    #{teammate.person.casual_name}'s job blueprint, the #{active_tenure.position.title.external_title} position.
+              - elsif !active_tenure || active_tenure.position.nil?
+                %small.text-muted.mt-1 need to define position
 
 
