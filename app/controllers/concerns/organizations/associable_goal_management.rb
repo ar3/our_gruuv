@@ -6,27 +6,31 @@ module Organizations
 
     included do
       include LoadAssociableGoalsDisplay
+      include Organizations::AssociableGoalFlowParams
     end
 
     def choose_manage_goals
-      authorize associable_for_goal_management, :update?
+      authorize_goal_flow_for_associable_goals!
       @associable = associable_for_goal_management
+      @for_company_teammate_id = params[:for_company_teammate_id].presence
       @return_url = params[:return_url].presence || default_associable_goals_return_url
       @return_text = params[:return_text].presence || default_associable_goals_return_text
       render 'organizations/shared/associable_goals/choose_manage_goals', layout: 'overlay'
     end
 
     def manage_goals
-      authorize associable_for_goal_management, :update?
+      authorize_goal_flow_for_associable_goals!
       @associable = associable_for_goal_management
+      @for_company_teammate_id = params[:for_company_teammate_id].presence
       @return_url = params[:return_url].presence || default_associable_goals_return_url
       @return_text = params[:return_text].presence || default_associable_goals_return_text
       render 'organizations/shared/associable_goals/manage_goals', layout: 'overlay'
     end
 
     def associate_existing_goals
-      authorize associable_for_goal_management, :update?
+      authorize_goal_flow_for_associable_goals!
       @associable = associable_for_goal_management
+      @for_company_teammate_id = params[:for_company_teammate_id].presence
 
       if request.get?
         candidate_goals = Goals::AssociableGoalCandidatesQuery.new(
@@ -50,8 +54,7 @@ module Organizations
         redirect_to associable_goals_associate_existing_path(
           @organization,
           @associable,
-          return_url: return_url,
-          return_text: params[:return_text]
+          **associable_goal_flow_query_params.merge(return_url: return_url, return_text: params[:return_text]).compact
         ),
                     alert: 'Please select at least one goal.'
         return
@@ -65,6 +68,7 @@ module Organizations
         next unless goal
 
         ga = @associable.goal_associations.build(goal: goal)
+        assign_goal_flow_teammate_from_params(ga)
         authorize ga, :create?
         if ga.save
           success_count += 1
@@ -83,14 +87,27 @@ module Organizations
         redirect_to associable_goals_associate_existing_path(
           @organization,
           @associable,
-          return_url: return_url,
-          return_text: params[:return_text]
+          **associable_goal_flow_query_params.merge(return_url: return_url, return_text: params[:return_text]).compact
         ),
                     alert: "Failed to associate goals: #{errors.join(', ')}"
       end
     end
 
     private
+
+    def authorize_goal_flow_for_associable_goals!
+      associable = associable_for_goal_management
+      if params[:for_company_teammate_id].present?
+        subject_teammate = CompanyTeammate.find_by(id: params[:for_company_teammate_id])
+        unless subject_teammate && GoalFlowTeammateScope.teammate_matches_associable?(associable, subject_teammate)
+          raise Pundit::NotAuthorizedError
+        end
+
+        authorize subject_teammate, :audit?, policy_class: CompanyTeammatePolicy
+      else
+        authorize associable, :update?
+      end
+    end
 
     def associable_for_goal_management
       raise NotImplementedError, "#{self.class} must implement #associable_for_goal_management"

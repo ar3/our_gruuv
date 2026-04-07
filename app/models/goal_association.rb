@@ -1,6 +1,10 @@
 class GoalAssociation < ApplicationRecord
   ASSOCIABLE_TYPES = %w[Assignment Ability Aspiration].freeze
 
+  # Set on in-memory records only: teammate whose goals are being managed (teammate lens flow).
+  # Used by GoalAssociationPolicy; not persisted.
+  attr_accessor :goal_flow_teammate_id
+
   belongs_to :goal
   belongs_to :associable, polymorphic: true
 

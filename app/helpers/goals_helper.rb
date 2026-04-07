@@ -624,12 +624,12 @@ module GoalsHelper
   end
 
   # Path to remove a PromptGoal or polymorphic GoalAssociation from the goal side or associable page.
-  def goal_external_association_destroy_path(organization, association_record, return_url: nil)
+  def goal_external_association_destroy_path(organization, association_record, return_url: nil, for_company_teammate_id: nil)
     case association_record
     when PromptGoal
       organization_prompt_prompt_goal_path(organization, association_record.prompt, association_record)
     when GoalAssociation
-      extra = return_url.present? ? { return_url: return_url } : {}
+      extra = { return_url: return_url, for_company_teammate_id: for_company_teammate_id }.compact
       associable_goal_association_path(organization, association_record.associable, association_record, **extra)
     else
       raise ArgumentError, "Unsupported association record: #{association_record.class.name}"

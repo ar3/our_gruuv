@@ -9,6 +9,8 @@
 - content_for :return_text do
   = @return_text
 
+- associable_goal_flow_opts = { return_url: @return_url, return_text: @return_text, for_company_teammate_id: @for_company_teammate_id }.compact
+
 .card.mb-3
   .card-header
     %h5.mb-0
@@ -16,14 +18,14 @@
       How do you want to add goals?
   .card-body
     .list-group.list-group-flush
-      %a.list-group-item.list-group-item-action.d-flex.align-items-center{href: associable_goals_manage_path(@organization, @associable, return_url: @return_url, return_text: @return_text), data: { turbo: false }}
+      %a.list-group-item.list-group-item-action.d-flex.align-items-center{href: associable_goals_manage_path(@organization, @associable, **associable_goal_flow_opts), data: { turbo: false }}
         %i.bi.bi-plus-circle.me-3.fs-4
         .flex-grow-1
           %strong Create new goals
           %small.d-block.text-muted
             Add one or more new goals and associate them with this #{@associable.model_name.human.downcase}.
         %i.bi.bi-chevron-right
-      %a.list-group-item.list-group-item-action.d-flex.align-items-center{href: associable_goals_associate_existing_path(@organization, @associable, return_url: @return_url, return_text: @return_text), data: { turbo: false }}
+      %a.list-group-item.list-group-item-action.d-flex.align-items-center{href: associable_goals_associate_existing_path(@organization, @associable, **associable_goal_flow_opts), data: { turbo: false }}
         %i.bi.bi-link-45deg.me-3.fs-4
         .flex-grow-1
           %strong Associate existing goals

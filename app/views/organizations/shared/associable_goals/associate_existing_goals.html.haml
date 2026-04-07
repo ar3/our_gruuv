@@ -9,6 +9,8 @@
 - content_for :return_text do
   = @return_text
 
+- associable_goal_flow_opts = { return_url: @return_url, return_text: @return_text, for_company_teammate_id: @for_company_teammate_id }.compact
+
 .card.mb-3
   .card-header
     %h5.mb-0
@@ -20,6 +22,7 @@
     = form_with url: associable_goals_associate_existing_path(@organization, @associable), method: :post, local: true do |f|
       = hidden_field_tag :return_url, @return_url
       = hidden_field_tag :return_text, @return_text
+      = hidden_field_tag :for_company_teammate_id, @for_company_teammate_id if @for_company_teammate_id.present?
 
       - if @available_goals_with_status.any?
         .list-group.mb-4

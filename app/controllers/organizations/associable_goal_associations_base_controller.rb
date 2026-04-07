@@ -3,6 +3,7 @@
 # Shared create/destroy for polymorphic GoalAssociation under Assignment, Ability, Aspiration.
 class Organizations::AssociableGoalAssociationsBaseController < Organizations::OrganizationNamespaceBaseController
   include AssociableGoalsHelper
+  include Organizations::AssociableGoalFlowParams
 
   before_action :authenticate_person!
   before_action :set_associable
@@ -11,7 +12,9 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
   after_action :verify_authorized
 
   def create
-    authorize GoalAssociation.new(associable: associable, goal: Goal.new)
+    initial = GoalAssociation.new(associable: associable, goal: Goal.new)
+    assign_goal_flow_teammate_from_params(initial)
+    authorize initial, :create?
 
     goal_ids = Array(params[:goal_ids]).reject(&:blank?)
     # Preserve leading whitespace on each line — Goals::ParseService uses it for nesting depth.
@@ -45,6 +48,7 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
       next unless goal
 
       ga = associable.goal_associations.build(goal: goal)
+      assign_goal_flow_teammate_from_params(ga)
       authorize ga
 
       if ga.save
@@ -54,7 +58,7 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
       end
     end
 
-    owner_teammate = current_teammate
+    owner_teammate = goal_owner_teammate_for_flow || current_teammate
     default_goal_type = 'stepping_stone_activity'
     parse_service = Goals::ParseService.new(bulk_goal_text, default_goal_type)
     parse_result = parse_service.call
@@ -94,6 +98,7 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
           end
         else
           ga = associable.goal_associations.build(goal: goal)
+          assign_goal_flow_teammate_from_params(ga)
           authorize ga
 
           if ga.save
@@ -126,6 +131,7 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
   end
 
   def destroy
+    assign_goal_flow_teammate_from_params(@goal_association)
     authorize @goal_association
 
     redirect_url = params[:return_url].presence || default_return_after_goal_association
@@ -159,7 +165,13 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
     associable_goals_default_show_path(@organization, associable)
   end
 
-  def associable_goal_flow_query_params
-    { return_url: params[:return_url], return_text: params[:return_text] }.compact
+  def goal_owner_teammate_for_flow
+    tid = params[:for_company_teammate_id].presence
+    return if tid.blank?
+
+    ct = CompanyTeammate.find_by(id: tid)
+    return unless ct && GoalFlowTeammateScope.teammate_matches_associable?(associable, ct)
+
+    ct
   end
 end

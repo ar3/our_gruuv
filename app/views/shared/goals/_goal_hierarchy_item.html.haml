@@ -5,6 +5,7 @@
 - organization = local_assigns[:organization]
 - association_record = local_assigns[:association_record]
 - disassociate_return_url = local_assigns[:disassociate_return_url]
+- for_company_teammate_id = local_assigns[:for_company_teammate_id]
 - link_goal_titles = local_assigns.fetch(:link_goal_titles, false)
 - show_goal_progress_link = local_assigns.fetch(:show_goal_progress_link, false)
 - goal_weekly_update_return_url = local_assigns[:goal_weekly_update_return_url]
@@ -37,11 +38,11 @@
         %small.text-muted.d-block.mt-1
           = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal
     - if association_record.present? && organization && policy(association_record).destroy?
-      = button_to goal_external_association_destroy_path(organization, association_record, return_url: disassociate_return_url), method: :delete, class: 'btn btn-sm btn-outline-danger flex-shrink-0', form: { class: 'd-inline', data: { turbo_confirm: 'Remove this goal association?' } } do
+      = button_to goal_external_association_destroy_path(organization, association_record, return_url: disassociate_return_url, for_company_teammate_id: for_company_teammate_id), method: :delete, class: 'btn btn-sm btn-outline-danger flex-shrink-0', form: { class: 'd-inline', data: { turbo_confirm: 'Remove this goal association?' } } do
         %i.bi.bi-trash
   %br
   - child_goals = goal.outgoing_links.includes(:child).map(&:child).compact.select { |g| all_descendant_goal_ids.include?(g.id) && g.deleted_at.nil? }
   - if child_goals.any?
     %ul.list-unstyled.mt-2
       - child_goals.each do |child_goal|
-        = render 'shared/goals/goal_hierarchy_item', goal: child_goal, indent_level: indent_level + 1, all_descendant_goal_ids: all_descendant_goal_ids, linked_goal_check_ins: linked_goal_check_ins, organization: organization, association_record: nil, disassociate_return_url: disassociate_return_url, link_goal_titles: link_goal_titles, show_goal_progress_link: show_goal_progress_link, goal_weekly_update_return_url: goal_weekly_update_return_url, weekly_update_return_text: weekly_update_return_text
+        = render 'shared/goals/goal_hierarchy_item', goal: child_goal, indent_level: indent_level + 1, all_descendant_goal_ids: all_descendant_goal_ids, linked_goal_check_ins: linked_goal_check_ins, organization: organization, association_record: nil, disassociate_return_url: disassociate_return_url, for_company_teammate_id: for_company_teammate_id, link_goal_titles: link_goal_titles, show_goal_progress_link: show_goal_progress_link, goal_weekly_update_return_url: goal_weekly_update_return_url, weekly_update_return_text: weekly_update_return_text

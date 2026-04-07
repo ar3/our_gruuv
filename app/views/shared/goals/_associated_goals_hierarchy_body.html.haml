@@ -4,6 +4,7 @@
 - non_archived_goals = local_assigns[:non_archived_goals] || []
 - association_by_goal_id = local_assigns[:association_by_goal_id] || {}
 - disassociate_return_url = local_assigns[:disassociate_return_url]
+- for_company_teammate_id = local_assigns[:for_company_teammate_id]
 - link_goal_titles = local_assigns.fetch(:link_goal_titles, false)
 - show_goal_progress_link = local_assigns.fetch(:show_goal_progress_link, false)
 - goal_weekly_update_return_url = local_assigns[:goal_weekly_update_return_url]
@@ -30,6 +31,6 @@
             = pluralize(goals_for_type.count, 'goal')
         %ul.list-unstyled
           - sorted_goals.each do |goal|
-            = render 'shared/goals/goal_hierarchy_item', goal: goal, indent_level: 0, all_descendant_goal_ids: all_descendant_goal_ids, linked_goal_check_ins: linked_goal_check_ins, organization: organization, association_record: association_by_goal_id[goal.id], disassociate_return_url: disassociate_return_url, link_goal_titles: link_goal_titles, show_goal_progress_link: show_goal_progress_link, goal_weekly_update_return_url: goal_weekly_update_return_url, weekly_update_return_text: weekly_update_return_text
+            = render 'shared/goals/goal_hierarchy_item', goal: goal, indent_level: 0, all_descendant_goal_ids: all_descendant_goal_ids, linked_goal_check_ins: linked_goal_check_ins, organization: organization, association_record: association_by_goal_id[goal.id], disassociate_return_url: disassociate_return_url, for_company_teammate_id: for_company_teammate_id, link_goal_titles: link_goal_titles, show_goal_progress_link: show_goal_progress_link, goal_weekly_update_return_url: goal_weekly_update_return_url, weekly_update_return_text: weekly_update_return_text
 - else
   %em.text-muted= local_assigns[:empty_message].presence || 'No goals associated yet.'

@@ -1,20 +1,22 @@
 - organization = local_assigns[:organization]
 - associable = local_assigns[:associable]
-- can_manage = local_assigns[:can_manage]
+- can_manage_catalog = local_assigns.fetch(:can_manage, false)
 - linked_goals = local_assigns[:linked_goals] || {}
 - linked_goal_check_ins = local_assigns[:linked_goal_check_ins] || {}
 - association_by_goal_id = local_assigns[:association_by_goal_id] || {}
 - return_url = local_assigns[:return_url]
 - teammate = local_assigns[:teammate]
 - teammate_goal_links = teammate.present?
+- goal_flow_can_manage = teammate.present? ? policy(teammate).audit? : can_manage_catalog
+- associable_goal_flow_opts = { return_url: return_url, return_text: associable_display_title(associable), for_company_teammate_id: teammate&.id }.compact
 
 .card.mb-4{ role: "region", "aria-labelledby": "associated-goals-#{associable.class.name.downcase}-#{associable.id}" }
   .card-header.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
     %h5.mb-0{ id: "associated-goals-#{associable.class.name.downcase}-#{associable.id}" }
       %i.bi.bi-bullseye.me-2
       Associated Goals
-    - if can_manage
-      = link_to associable_goals_choose_manage_path(organization, associable, return_url: return_url, return_text: associable_display_title(associable)), class: 'btn btn-sm btn-primary', target: '_blank', rel: 'noopener' do
+    - if goal_flow_can_manage
+      = link_to associable_goals_choose_manage_path(organization, associable, **associable_goal_flow_opts), class: 'btn btn-sm btn-primary', target: '_blank', rel: 'noopener' do
         %i.bi.bi-plus.me-1
         Add New / Associate Goals
   .card-body
@@ -26,6 +28,7 @@
         non_archived_goals: non_archived_goals,
         association_by_goal_id: association_by_goal_id,
         disassociate_return_url: return_url,
+        for_company_teammate_id: teammate&.id,
         empty_message: "No goals associated with this #{associable.model_name.human.downcase} yet.",
         link_goal_titles: teammate_goal_links,
         show_goal_progress_link: teammate_goal_links,
