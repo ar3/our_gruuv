@@ -25,10 +25,10 @@ RSpec.describe AbilityPolicy, type: :policy do
       end
     end
 
-    context 'when user lacks MAAP permissions for the organization' do
-      it 'denies access' do
+    context 'when user is a teammate in the organization without MAAP manage permissions' do
+      it 'allows access' do
         policy = AbilityPolicy.new(pundit_user_person, ability)
-        expect(policy.show?).to be false
+        expect(policy.show?).to be true
       end
     end
 
@@ -156,10 +156,11 @@ RSpec.describe AbilityPolicy, type: :policy do
       end
     end
 
-    context 'when user lacks MAAP permissions' do
-      it 'returns empty scope' do
+    context 'when user is a teammate in the organization without MAAP manage permissions' do
+      it 'returns abilities for that organization' do
         policy = AbilityPolicy::Scope.new(pundit_user_person, Ability)
-        expect(policy.resolve).to be_empty
+        expect(policy.resolve).to include(ability1, ability2)
+        expect(policy.resolve).not_to include(other_org_ability)
       end
     end
 

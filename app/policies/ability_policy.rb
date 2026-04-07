@@ -1,6 +1,6 @@
 class AbilityPolicy < ApplicationPolicy
   def show?
-    admin_bypass? || user_has_maap_permission_for_record?
+    admin_bypass? || teammate_in_ability_company?
   end
 
   def create?
@@ -31,13 +31,18 @@ class AbilityPolicy < ApplicationPolicy
         scope.all
       else
         return scope.none unless actual_organization
-        return scope.none unless viewing_teammate.can_manage_maap?
         scope.where(company_id: actual_organization.id)
       end
     end
   end
 
   private
+
+  def teammate_in_ability_company?
+    return false unless viewing_teammate
+    return false unless record&.company_id
+    viewing_teammate.organization_id == record.company_id
+  end
 
   def user_has_maap_permission?
     return false unless viewing_teammate
