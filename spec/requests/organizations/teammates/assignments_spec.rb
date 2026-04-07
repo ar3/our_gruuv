@@ -60,6 +60,12 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("fresh-single-check-in-toggle-#{_open_assignment_check_in.id}")
       end
 
+      it "renders Associated Goals on the teammate assignment page" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Associated Goals")
+      end
+
       it "links current period observations to the observations index with observee and assignment (no timeframe)" do
         get assignment_show_path
         expect(response).to have_http_status(:success)
@@ -82,6 +88,32 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(params["timeframe_end_date"]).to be_nil
         expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
         expect(params["return_url"]).to eq(assignment_show_path)
+      end
+    end
+
+    context "with an associated goal" do
+      let!(:associated_goal) do
+        create(:goal,
+          company_id: organization.id,
+          creator: employee_teammate,
+          owner: employee_teammate,
+          title: "Linked Sample Goal",
+          started_at: Time.current,
+          goal_type: "inspirational_objective")
+      end
+      let!(:_goal_association) { create(:goal_association, associable: assignment, goal: associated_goal) }
+
+      before { sign_in_as_teammate_for_request(employee_person, organization) }
+
+      it "lists the goal with show link, Update progress to weekly update, and View all goals for the teammate" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include(organization_goal_path(organization, associated_goal))
+        expect(response.body).to include("Linked Sample Goal")
+        expect(response.body).to include("Update progress")
+        expect(response.body).to include(weekly_update_organization_goal_path(organization, associated_goal))
+        expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
+        expect(response.body).to include("View all of #{employee_person.casual_name}'s goals")
       end
     end
   end

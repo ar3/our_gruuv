@@ -1,4 +1,6 @@
 class Organizations::Teammates::AspirationsController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::LoadAssociableGoalsDisplay
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :set_aspiration
@@ -72,6 +74,8 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
       return_url: organization_teammate_aspiration_path(organization, @teammate, @aspiration),
       return_text: "Back to 1-by-1 check-in"
     )
+
+    load_associable_goals_display!(@aspiration)
   end
 
   private

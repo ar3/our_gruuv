@@ -200,8 +200,13 @@ Rails.application.routes.draw do
         get :archive
         patch :execute_archive
         patch :restore
+        get :choose_manage_goals
+        get :manage_goals
+        get :associate_existing_goals
+        post :associate_existing_goals
       end
       resource :assignment_milestones, only: [:show, :update], module: :abilities
+      resources :goal_associations, module: :abilities, only: [:create, :destroy]
     end
     
     # Prompt Templates management
@@ -245,10 +250,15 @@ Rails.application.routes.draw do
         get :archive
         patch :execute_archive
         patch :restore
+        get :choose_manage_goals
+        get :manage_goals
+        get :associate_existing_goals
+        post :associate_existing_goals
       end
       resource :ability_milestones, only: [:show, :update], module: :assignments
       resources :assignment_outcomes, only: [:edit, :update], module: :assignments
       resource :consumer_assignments, only: [:show, :update], module: :assignments
+      resources :goal_associations, module: :assignments, only: [:create, :destroy]
     end
 
     # Assignment Flows (ordered lists of assignments)
@@ -365,7 +375,15 @@ Rails.application.routes.draw do
     end
     
     # Aspirations management
-    resources :aspirations, module: :organizations
+    resources :aspirations, module: :organizations do
+      member do
+        get :choose_manage_goals
+        get :manage_goals
+        get :associate_existing_goals
+        post :associate_existing_goals
+      end
+      resources :goal_associations, module: :aspirations, only: [:create, :destroy]
+    end
     
     # Goals management
     resources :goals, module: :organizations do

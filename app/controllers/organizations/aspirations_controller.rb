@@ -1,8 +1,9 @@
 class Organizations::AspirationsController < Organizations::OrganizationNamespaceBaseController
   include AssignsPublicKudosRateableCard
+  include Organizations::AssociableGoalManagement
 
   before_action :authenticate_person!
-  before_action :set_aspiration, only: [:show, :edit, :update, :destroy]
+  before_action :set_aspiration, only: [:show, :edit, :update, :destroy, :choose_manage_goals, :manage_goals, :associate_existing_goals]
 
   def index
     authorize company, :view_aspirations?
@@ -96,6 +97,10 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
 
   def set_aspiration
     @aspiration = company.aspirations.includes(:department).find(params[:id])
+  end
+
+  def associable_for_goal_management
+    @aspiration
   end
 
   def aspiration_params

@@ -61,6 +61,28 @@ RSpec.describe 'Organizations::Prompts::PromptGoals', type: :request do
         }.to change { Goal.count }.by(3)
       end
 
+      it 'preserves indented lines for three-level nesting (objective → key result → activity)' do
+        bulk = <<~TEXT
+          Objective O (P)
+          * Key R (P)
+              1. Act A (P)
+        TEXT
+
+        expect {
+          post organization_prompt_prompt_goals_path(organization, prompt), params: { bulk_goal_titles: bulk }
+        }.to change(Goal, :count).by(3)
+          .and change(GoalLink, :count).by(2)
+          .and change(PromptGoal, :count).by(1)
+
+        obj = Goal.find_by!(title: 'Objective O (P)')
+        kr = Goal.find_by!(title: '* Key R (P)')
+        act = Goal.find_by!(title: '1. Act A (P)')
+        expect(GoalLink.exists?(parent: obj, child: kr)).to be true
+        expect(GoalLink.exists?(parent: kr, child: act)).to be true
+        expect(prompt.goals).to include(obj)
+        expect(prompt.goals).not_to include(kr, act)
+      end
+
       it 'strips whitespace from goal titles' do
         post organization_prompt_prompt_goals_path(organization, prompt), params: {
           bulk_goal_titles: "  Goal 1  \n  Goal 2  "

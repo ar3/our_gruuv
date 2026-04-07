@@ -75,6 +75,14 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include(aspiration.name)
       end
+
+      it 'shows teammate lens CTA to the 1-by-1 aspiration page and omits Associated Goals on catalog show' do
+        get organization_aspiration_path(organization, aspiration)
+        lens_href = organization_teammate_aspiration_path(organization, person_teammate, aspiration)
+        expect(response.body).to include(lens_href)
+        expect(response.body).to include('btn-outline-secondary btn-sm w-100')
+        expect(response.body).not_to include('Associated Goals')
+      end
     end
 
     context 'when user has MAAP permissions' do

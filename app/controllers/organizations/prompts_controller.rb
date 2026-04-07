@@ -183,38 +183,11 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     end
     
     @prompt_goals = @prompt.prompt_goals.includes(:goal).to_a
-    
-    # Load linked_goals and linked_goal_check_ins for goal hierarchy display
+
     goal_ids = @prompt.goals.pluck(:id)
-    if goal_ids.any?
-      # Load all goals including completed and deleted for hierarchy display
-      @linked_goals = Goal.where(id: goal_ids).index_by(&:id)
-      
-      # Preload all descendant goals for hierarchy display
-      all_descendant_ids = goal_ids.dup
-      current_level_ids = goal_ids.dup
-      while current_level_ids.any?
-        next_level_ids = GoalLink.where(parent_id: current_level_ids).pluck(:child_id)
-        next_level_ids.each { |id| all_descendant_ids << id unless all_descendant_ids.include?(id) }
-        current_level_ids = next_level_ids
-      end
-      
-      if all_descendant_ids.any?
-        @linked_goals = Goal.where(id: all_descendant_ids).includes(outgoing_links: :child).index_by(&:id)
-        @linked_goal_check_ins = GoalCheckIn
-          .where(goal_id: all_descendant_ids)
-          .includes(:confidence_reporter, :goal)
-          .recent
-          .group_by(&:goal_id)
-          .transform_values { |check_ins| check_ins.first }
-      else
-        @linked_goals = {}
-        @linked_goal_check_ins = {}
-      end
-    else
-      @linked_goals = {}
-      @linked_goal_check_ins = {}
-    end
+    hierarchy = Goals::LinkedGoalsHierarchyLoader.call(goal_ids: goal_ids)
+    @linked_goals = hierarchy[:linked_goals]
+    @linked_goal_check_ins = hierarchy[:linked_goal_check_ins]
     
     # Calculate next prompt for navigation
     if @can_edit
@@ -318,6 +291,9 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       end
     end
     @prompt_goals = @prompt.prompt_goals.includes(:goal).to_a
+    hierarchy = Goals::LinkedGoalsHierarchyLoader.call(goal_ids: @prompt.goals.pluck(:id))
+    @linked_goals = hierarchy[:linked_goals]
+    @linked_goal_check_ins = hierarchy[:linked_goal_check_ins]
     flash.now[:alert] = "Error updating prompt: #{e.message}"
     render :edit, status: :unprocessable_entity
   end

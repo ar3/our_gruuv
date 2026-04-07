@@ -62,7 +62,6 @@
         - if (1..5).all? { |level| @ability.send("milestone_#{level}_description").blank? }
           %em.text-muted No milestone descriptions provided
 
-    
   .col-md-4
     .card.mb-4
       .card-header
@@ -277,3 +276,8 @@
       rateable_display_name: @public_kudos_rateable_display_name,
       all_kudos_url: @public_kudos_all_kudos_observations_url,
       all_types_url: @public_kudos_all_types_observations_url
+
+= render "organizations/shared/teammate_lens_catalog_cta",
+    organization: @organization,
+    associable: @ability,
+    viewing_person: current_person

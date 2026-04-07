@@ -136,7 +136,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Eager load prompt associations for hierarchical views (goal node shows "In reflection: ...").
     # Note: owner is polymorphic so we cannot use includes(owner: :person).
     if @view_style.in?(%w[hierarchical-collapsible hierarchical-indented])
-      @goals = @goals.includes(prompt_goals: { prompt: :prompt_template })
+      @goals = @goals.includes(
+        prompt_goals: { prompt: :prompt_template },
+        goal_associations: :associable
+      )
     end
     
     # For hierarchical-indented view, load most recent check-ins for display
@@ -244,8 +247,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       @linked_goal_check_ins = {}
     end
     
-    # Load prompt associations for display
+    # Load prompt and MAAP associations for display
     @prompt_goals = @goal.prompt_goals.includes(:prompt, prompt: :prompt_template).order(created_at: :desc)
+    @goal_associations = @goal.goal_associations.includes(:associable).order(created_at: :desc)
 
     # Progress chart data for Progress card (only when started and has target date; chart shown only when also has check-in)
     @progress_chart_data = Goals::ProgressChartDataBuilder.call(goal: @goal) if @goal.started_at.present? && (@goal.earliest_target_date.present? || @goal.most_likely_target_date.present? || @goal.latest_target_date.present?)

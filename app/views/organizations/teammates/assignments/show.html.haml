@@ -325,3 +325,13 @@
     / Research: Current period observations
     = render "shared/single_item_check_in/current_period_observations"
 
+    = render 'organizations/shared/goals/associable_associated_goals_card',
+        organization: @organization,
+        associable: @assignment,
+        teammate: @teammate,
+        can_manage: policy(@assignment).update?,
+        linked_goals: @associated_linked_goals,
+        linked_goal_check_ins: @associated_linked_goal_check_ins,
+        association_by_goal_id: @associated_goal_association_by_goal_id,
+        return_url: request.url
+

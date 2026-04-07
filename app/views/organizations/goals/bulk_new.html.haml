@@ -44,7 +44,8 @@
                 }
               %small.text-muted.d-block.mb-2
                 Enter one goal title per line. Default type is measurable outcome. A goal followed by sub-goals becomes an objective.
-              = text_area_tag "bulk_goal_titles", "", rows: 8, class: "form-control", placeholder: "Goal 1\nGoal 2\nObjective 3\n* Key Result 3-1\n* Key Result 3-2\n* Key Result 3-3\nObjective 4\n1. Step 4-1\n2. Step 4-2\n3. Step 4-3"
+              = text_area_tag "bulk_goal_titles", "", id: "bulk_goal_titles", rows: 8, class: "form-control", placeholder: "Goal 1\nGoal 2\nObjective 3\n* Key Result 3-1\n* Key Result 3-2\n* Key Result 3-3\nObjective 4\n1. Step 4-1\n2. Step 4-2\n3. Step 4-3"
+              = render "shared/goals/bulk_nested_goals_example_link"
 
             .d-flex.gap-2.mt-3
               - cancel_path = @owner_param ? organization_goals_path(@organization, owner_id: @owner_param) : organization_goals_path(@organization)

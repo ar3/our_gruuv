@@ -30,6 +30,9 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         get aspiration_show_path
         expect(response).to have_http_status(:success)
         expect(response.body).to include(aspiration.name)
+        expect(response.body).to include("Associated Goals")
+        expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
+        expect(response.body).to include("View all of #{employee_person.casual_name}'s goals")
         expect(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).count).to eq(1)
         expect(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).open.count).to eq(1)
       end

@@ -1,10 +1,11 @@
 class Organizations::AssignmentsController < ApplicationController
   include PreloadsObservationRateables
   include AssignsPublicKudosRateableCard
+  include Organizations::AssociableGoalManagement
 
   before_action :authenticate_person!
   before_action :set_organization
-  before_action :set_assignment, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore]
+  before_action :set_assignment, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore, :choose_manage_goals, :manage_goals, :associate_existing_goals]
 
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
@@ -400,6 +401,10 @@ class Organizations::AssignmentsController < ApplicationController
 
   def assignment_params
     params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :department_id, :version_type, :outcomes_textarea, :published_source_url, :draft_source_url)
+  end
+
+  def associable_for_goal_management
+    @assignment
   end
 
   def create_external_references(assignment, params)

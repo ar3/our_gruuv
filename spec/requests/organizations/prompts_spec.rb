@@ -251,6 +251,13 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       expect(response.body).to include('Associate existing goals with this prompt')
     end
 
+    it 'GET manage_goals includes nested bulk example insert control' do
+      get manage_goals_organization_prompt_path(organization, open_prompt)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Insert a 3-layer example')
+      expect(response.body).to include('data-controller="bulk-goals-example"')
+    end
+
     it 'GET associate_existing_goals renders candidate goals list' do
       goal = create(:goal, owner: teammate, creator: teammate, company: organization, title: 'My Goal')
       get associate_existing_goals_organization_prompt_path(organization, open_prompt)

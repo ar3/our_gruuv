@@ -439,6 +439,15 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:prompt_goals)).to include(prompt_goal)
       expect(assigns(:prompt_goals).first.prompt).to eq(prompt)
     end
+
+    it 'loads polymorphic goal associations (assignments, abilities, aspirations)' do
+      assignment = create(:assignment, company: company)
+      ga = create(:goal_association, associable: assignment, goal: goal)
+
+      get :show, params: { organization_id: company.id, id: goal.id }
+
+      expect(assigns(:goal_associations)).to include(ga)
+    end
     
     context 'when goal is started' do
       let(:started_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago) }

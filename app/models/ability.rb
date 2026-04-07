@@ -16,6 +16,9 @@ class Ability < ApplicationRecord
   has_many :observations, through: :observation_ratings
   has_many :comments, as: :commentable, dependent: :destroy
 
+  has_many :goal_associations, as: :associable, dependent: :destroy
+  has_many :goals, through: :goal_associations
+
   # Validations
   validates :name, presence: true, uniqueness: { scope: :company_id }
   validates :description, presence: true

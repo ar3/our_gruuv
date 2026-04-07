@@ -39,6 +39,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
       it 'allows GET my_growth/goals' do
         get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
+        expect(response.body).to include("View and check-in on all of #{employee.casual_name}'s goals")
       end
 
       it 'allows GET my_growth/position_change' do

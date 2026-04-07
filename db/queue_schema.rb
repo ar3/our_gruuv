@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_31_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_06_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -496,6 +496,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_31_120000) do
     t.index ["deleted_at"], name: "index_feedback_requests_on_deleted_at"
     t.index ["requestor_teammate_id"], name: "index_feedback_requests_on_requestor_teammate_id"
     t.index ["subject_of_feedback_teammate_id"], name: "index_feedback_requests_on_subject_of_feedback_teammate_id"
+  end
+
+  create_table "goal_associations", force: :cascade do |t|
+    t.bigint "goal_id", null: false
+    t.string "associable_type", null: false
+    t.bigint "associable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["associable_type", "associable_id"], name: "index_goal_associations_on_associable"
+    t.index ["goal_id", "associable_type", "associable_id"], name: "index_goal_associations_on_goal_and_associable", unique: true
+    t.index ["goal_id"], name: "index_goal_associations_on_goal_id"
   end
 
   create_table "goal_check_ins", force: :cascade do |t|
@@ -1543,6 +1554,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_31_120000) do
   add_foreign_key "feedback_requests", "organizations", column: "company_id"
   add_foreign_key "feedback_requests", "teammates", column: "requestor_teammate_id"
   add_foreign_key "feedback_requests", "teammates", column: "subject_of_feedback_teammate_id"
+  add_foreign_key "goal_associations", "goals"
   add_foreign_key "goal_check_ins", "goals"
   add_foreign_key "goal_check_ins", "people", column: "confidence_reporter_id"
   add_foreign_key "goal_links", "goals", column: "child_id"

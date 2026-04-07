@@ -1329,6 +1329,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Bulk create goals')
       expect(response.body).to include('Owner')
       expect(response.body).to include('bulk-goal-owner-select')
+      expect(response.body).to include('Insert a 3-layer example')
+      expect(response.body).to include('data-controller="bulk-goals-example"')
     end
 
     it 'includes teammate options in owner dropdown' do

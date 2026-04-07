@@ -5,6 +5,7 @@ module ApplicationHelper
   include CompanyLabelHelper
   include PositionsHelper
   include GoalsHelper
+  include AssociableGoalsHelper
 
   # Color helper methods for consistent UI
   def rating_color(rating)

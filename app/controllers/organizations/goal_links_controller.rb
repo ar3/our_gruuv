@@ -178,9 +178,10 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     
     # Validate that at least one option is provided
     goal_ids = Array(goal_ids).reject(&:blank?)
-    bulk_titles = bulk_goal_titles.to_s.split("\n").map(&:strip).reject(&:blank?)
-    
-    if goal_ids.empty? && bulk_titles.empty?
+    bulk_goal_raw = bulk_goal_titles.to_s
+    bulk_has_lines = bulk_goal_raw.split("\n", -1).any? { |line| line.strip.present? }
+
+    if goal_ids.empty? && !bulk_has_lines
       error_msg = "Please select at least one existing goal or provide at least one new goal title"
       if link_direction == 'incoming'
         redirect_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: return_url, return_text: params[:return_text]),
@@ -230,37 +231,30 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
       end
     end
     
-    # Handle bulk goal creation
-    if bulk_titles.present?
-      titles = bulk_titles
-      
-      unless titles.empty?
-        goal_link = GoalLink.new
-        form = GoalLinkForm.new(goal_link)
-        form.organization = @organization
-        form.current_person = current_person
-        form.current_teammate = current_person.teammates.find_by(organization: @organization)
-        form.linking_goal = @goal
-        
-        # Pass all titles as newline-separated string
-        form_params = {
-          link_direction: link_direction,
-          bulk_create_mode: true,
-          bulk_goal_titles: titles.join("\n"),
-          goal_type: goal_type
-        }
-        
-        # Add metadata notes if provided
-        if params[:metadata_notes].present?
-          form_params[:metadata_notes] = params[:metadata_notes]
-        end
-        
-        if form.validate(form_params) && form.save
-          # Count how many goals were created
-          success_count += form.bulk_create_service&.created_goals&.count || 0
-        else
-          errors.concat(form.errors.full_messages)
-        end
+    # Handle bulk goal creation (raw text preserves indentation for nested parse)
+    if bulk_has_lines
+      goal_link = GoalLink.new
+      form = GoalLinkForm.new(goal_link)
+      form.organization = @organization
+      form.current_person = current_person
+      form.current_teammate = current_person.teammates.find_by(organization: @organization)
+      form.linking_goal = @goal
+
+      form_params = {
+        link_direction: link_direction,
+        bulk_create_mode: true,
+        bulk_goal_titles: bulk_goal_raw,
+        goal_type: goal_type
+      }
+
+      if params[:metadata_notes].present?
+        form_params[:metadata_notes] = params[:metadata_notes]
+      end
+
+      if form.validate(form_params) && form.save
+        success_count += form.bulk_create_service&.created_goals&.count || 0
+      else
+        errors.concat(form.errors.full_messages)
       end
     end
     

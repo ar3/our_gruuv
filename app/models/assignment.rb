@@ -25,6 +25,9 @@ class Assignment < ApplicationRecord
   has_many :assignment_flow_memberships, dependent: :destroy
   has_many :assignment_flows, through: :assignment_flow_memberships
 
+  has_many :goal_associations, as: :associable, dependent: :destroy
+  has_many :goals, through: :goal_associations
+
   # Validations
   validates :title, presence: true, uniqueness: { scope: :company_id }
   validates :tagline, presence: true

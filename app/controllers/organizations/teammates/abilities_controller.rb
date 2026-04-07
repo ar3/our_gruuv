@@ -1,4 +1,6 @@
 class Organizations::Teammates::AbilitiesController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::LoadAssociableGoalsDisplay
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :set_ability
@@ -41,6 +43,8 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
       .order(observed_at: :desc)
 
     preload_rateables_for_observations(@observations)
+
+    load_associable_goals_display!(@ability)
   end
 
   private

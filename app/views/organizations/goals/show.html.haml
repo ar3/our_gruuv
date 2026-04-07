@@ -81,6 +81,26 @@
                   %span.text-muted= ", "
                 = link_to prompt_goal.prompt.prompt_template.title, edit_organization_prompt_path(@organization, prompt_goal.prompt), class: "text-decoration-none"
 
+          - if @goal_associations.any?
+            %dt.col-sm-4 Linked to:
+            %dd.col-sm-8
+              - first_assoc = true
+              - @goal_associations.each do |ga|
+                - next unless ga.associable
+                - unless first_assoc
+                  %span.text-muted= ", "
+                - first_assoc = false
+                - case ga.associable
+                - when Assignment
+                  = link_to ga.associable.title, organization_assignment_path(@organization, ga.associable), class: "text-decoration-none"
+                  %span.text-muted.small (assignment)
+                - when Ability
+                  = link_to ga.associable.name, organization_ability_path(@organization, ga.associable), class: "text-decoration-none"
+                  %span.text-muted.small (ability)
+                - when Aspiration
+                  = link_to ga.associable.name, organization_aspiration_path(@organization, ga.associable), class: "text-decoration-none"
+                  %span.text-muted.small (aspiration)
+
           - if @goal.completed_at.present?
             %dt.col-sm-4 Completed:
             %dd.col-sm-8
@@ -95,22 +115,47 @@
                   %strong Learnings:
                   = simple_format(last_check_in.confidence_reason)
 
-    / Prompt Attachments Card
-    - if @prompt_goals.any?
-      .card.mb-4{ role: "region", "aria-labelledby": "prompt-attachments" }
+    / Associated with (prompts + MAAP)
+    - if @prompt_goals.any? || @goal_associations.any?
+      .card.mb-4{ role: "region", "aria-labelledby": "goal-external-attachments" }
         .card-header
-          %h5.mb-0{ id: "prompt-attachments" }
-            %i.bi.bi-file-text.me-2
-            Associated with Prompts
+          %h5.mb-0{ id: "goal-external-attachments" }
+            %i.bi.bi-link-45deg.me-2
+            Associated with
         .card-body
           - @prompt_goals.each do |prompt_goal|
-            .mb-3.pb-3{class: "#{'border-bottom' unless prompt_goal == @prompt_goals.last}"}
+            .mb-4.pb-3.border-bottom
               = link_to edit_organization_prompt_path(@organization, prompt_goal.prompt), class: "text-decoration-none" do
                 %h6.mb-1
                   %i.bi.bi-file-text.me-2
                   = prompt_goal.prompt.prompt_template.title
               %small.text-muted
-                Associated on #{format_time_in_user_timezone(prompt_goal.created_at)}
+                Reflection · associated #{format_time_in_user_timezone(prompt_goal.created_at)}
+          - @goal_associations.each do |ga|
+            - next unless ga.associable
+            .mb-4
+              - case ga.associable
+              - when Assignment
+                = link_to organization_assignment_path(@organization, ga.associable), class: "text-decoration-none" do
+                  %h6.mb-1
+                    %i.bi.bi-clipboard-check.me-2
+                    = ga.associable.title
+                %small.text-muted
+                  Assignment · associated #{format_time_in_user_timezone(ga.created_at)}
+              - when Ability
+                = link_to organization_ability_path(@organization, ga.associable), class: "text-decoration-none" do
+                  %h6.mb-1
+                    %i.bi.bi-lightning.me-2
+                    = ga.associable.name
+                %small.text-muted
+                  Ability · associated #{format_time_in_user_timezone(ga.created_at)}
+              - when Aspiration
+                = link_to organization_aspiration_path(@organization, ga.associable), class: "text-decoration-none" do
+                  %h6.mb-1
+                    %i.bi.bi-stars.me-2
+                    = ga.associable.name
+                %small.text-muted
+                  Aspiration · associated #{format_time_in_user_timezone(ga.created_at)}
 
     / Outgoing Links Card
     .card.mb-4{ role: "region", "aria-labelledby": "outgoing-links" }

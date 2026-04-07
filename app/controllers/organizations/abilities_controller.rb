@@ -1,8 +1,9 @@
 class Organizations::AbilitiesController < Organizations::OrganizationNamespaceBaseController
   include AssignsPublicKudosRateableCard
+  include Organizations::AssociableGoalManagement
 
   before_action :authenticate_person!
-  before_action :set_ability, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore]
+  before_action :set_ability, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore, :choose_manage_goals, :manage_goals, :associate_existing_goals]
 
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
@@ -123,6 +124,8 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       rateable_id: @ability.id,
       rateable_display_name: @ability.display_name
     )
+
+    render layout: determine_layout
   end
 
   def new
@@ -273,6 +276,10 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def set_ability
     @ability = Ability.where(company: @organization).includes(:department).find(params[:id])
+  end
+
+  def associable_for_goal_management
+    @ability
   end
 
   def calculate_abilities_by_department_stats(abilities)

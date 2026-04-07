@@ -60,8 +60,7 @@ class GoalLinkForm < Reform::Form
   end
   
   def save_bulk_goals
-    titles = bulk_goal_titles.to_s.split("\n").map(&:strip).reject(&:blank?)
-    return false if titles.empty?
+    return false unless bulk_goal_titles.to_s.split("\n", -1).any? { |line| line.strip.present? }
     
     # Prepare metadata if notes are provided
     metadata_hash = nil
@@ -130,8 +129,7 @@ class GoalLinkForm < Reform::Form
     if bulk_goal_titles.blank?
       errors.add(:bulk_goal_titles, "can't be blank")
     else
-      titles = bulk_goal_titles.to_s.split("\n").map(&:strip).reject(&:blank?)
-      if titles.empty?
+      unless bulk_goal_titles.to_s.split("\n", -1).any? { |line| line.strip.present? }
         errors.add(:bulk_goal_titles, "must contain at least one goal title")
       end
     end

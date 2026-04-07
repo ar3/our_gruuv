@@ -393,5 +393,22 @@ RSpec.describe GoalsHelper, type: :helper do
       expect(opts[:class]).to include('bg-danger')
     end
   end
+
+  describe '#nested_bulk_goals_example_text' do
+    it 'appends the associated label in parentheses on every goal line' do
+      text = helper.nested_bulk_goals_example_text('Quarterly Review')
+      expect(text).to include('Objective 1 (Quarterly Review)')
+      expect(text).to include('* Key Result 1 for Objective 1 (Quarterly Review)')
+      expect(text).to include('    1. Activity 1 under KR 1 (Quarterly Review)')
+      expect(text).to include('Objective 3 (Quarterly Review)')
+    end
+
+    it 'parses cleanly with Goals::ParseService' do
+      text = helper.nested_bulk_goals_example_text('X')
+      result = Goals::ParseService.new(text, 'quantitative_key_result').call
+      expect(result[:errors]).to be_empty
+      expect(result[:goals].length).to be >= 30
+    end
+  end
 end
 

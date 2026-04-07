@@ -7,6 +7,9 @@ class Aspiration < ApplicationRecord
   has_many :observations, through: :observation_ratings
   has_many :comments, as: :commentable, dependent: :destroy
 
+  has_many :goal_associations, as: :associable, dependent: :destroy
+  has_many :goals, through: :goal_associations
+
   validates :name, presence: true, uniqueness: { scope: :company_id }
   validates :sort_order, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validate :department_must_belong_to_company

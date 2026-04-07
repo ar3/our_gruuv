@@ -1,0 +1,16 @@
+- associated_label = local_assigns[:associated_label].presence || "your goals"
+- textarea_id = local_assigns.fetch(:textarea_id, "bulk_goal_titles")
+- example_tooltip = nested_bulk_goals_example_tooltip
+.mt-1{ data: { controller: "bulk-goals-example", bulk_goals_example_textarea_id_value: textarea_id } }
+  = content_tag(:pre, nested_bulk_goals_example_text(associated_label), class: "d-none text-start mb-0 small", data: { bulk_goals_example_target: "template" })
+  %button.btn.btn-link.btn-sm.p-0.text-muted.text-decoration-none.border-0.bg-transparent.d-inline-flex.align-items-center.gap-1.text-start{
+    type: "button",
+    data: {
+      action: "bulk-goals-example#insert",
+      bs_toggle: "tooltip",
+      bs_placement: "top",
+      bs_title: example_tooltip
+    } }
+    %i.bi.bi-info-circle.flex-shrink-0
+    %span.small.text-decoration-underline
+      Insert a 3-layer example (objectives → key results → activities)

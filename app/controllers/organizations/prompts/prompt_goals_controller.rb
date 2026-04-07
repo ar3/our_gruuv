@@ -9,9 +9,11 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
     authorize PromptGoal.new(prompt: @prompt, goal: Goal.new)
     
     goal_ids = Array(params[:goal_ids]).reject(&:blank?)
-    bulk_goal_titles = params[:bulk_goal_titles].to_s.split("\n").map(&:strip).reject(&:blank?)
-    
-    if goal_ids.empty? && bulk_goal_titles.empty?
+    # Preserve leading whitespace on each line — Goals::ParseService uses it for nesting depth.
+    bulk_goal_text = params[:bulk_goal_titles].to_s
+    bulk_has_lines = bulk_goal_text.split("\n", -1).any? { |line| line.strip.present? }
+
+    if goal_ids.empty? && !bulk_has_lines
       redirect_to choose_manage_goals_organization_prompt_path(@organization, @prompt, return_url: params[:return_url], return_text: params[:return_text]),
                   alert: 'Please select at least one existing goal or provide at least one new goal title.'
       return
@@ -49,7 +51,7 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
     
     # Parse goals using ParseService
     default_goal_type = 'stepping_stone_activity'
-    parse_service = Goals::ParseService.new(bulk_goal_titles.join("\n"), default_goal_type)
+    parse_service = Goals::ParseService.new(bulk_goal_text, default_goal_type)
     parse_result = parse_service.call
     
     if parse_result[:errors].any?

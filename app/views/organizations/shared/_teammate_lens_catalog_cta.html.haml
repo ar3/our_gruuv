@@ -1,0 +1,9 @@
+- organization = local_assigns[:organization]
+- associable = local_assigns[:associable]
+- viewing_person = local_assigns[:viewing_person]
+- href = organization_teammate_lens_catalog_href(organization, associable, viewing_person)
+- if href.present?
+  .row.mt-3.mb-4
+    .col-12
+      = link_to href, class: "btn btn-outline-secondary btn-sm w-100" do
+        = organization_teammate_lens_catalog_label(associable, viewing_person)

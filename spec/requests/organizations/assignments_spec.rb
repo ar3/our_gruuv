@@ -111,6 +111,14 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include(assignment.title)
       end
 
+      it 'shows teammate lens CTA to the 1-by-1 assignment page and omits Associated Goals on catalog show' do
+        get organization_assignment_path(organization, assignment)
+        lens_href = organization_teammate_assignment_path(organization, person_teammate, assignment)
+        expect(response.body).to include(lens_href)
+        expect(response.body).to include('btn-outline-secondary btn-sm w-100')
+        expect(response.body).not_to include('Associated Goals')
+      end
+
       it 'renders Public Kudos card with links to filtered observations wall' do
         get organization_assignment_path(organization, assignment)
         expect(response.body).to include('Public Kudos')

@@ -200,6 +200,14 @@ RSpec.describe 'Organizations::Abilities', type: :request do
       expect(response.body).to include("rateable_id=#{ability.id}")
       expect(response.body).to include('view=wall')
     end
+
+    it 'shows teammate lens CTA to the 1-by-1 ability page and omits Associated Goals on catalog show' do
+      get organization_ability_path(organization, ability)
+      lens_href = organization_teammate_ability_path(organization, teammate, ability)
+      expect(response.body).to include(lens_href)
+      expect(response.body).to include('btn-outline-secondary btn-sm w-100')
+      expect(response.body).not_to include('Associated Goals')
+    end
   end
 
   describe 'archiving' do

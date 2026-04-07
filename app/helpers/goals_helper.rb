@@ -1,4 +1,6 @@
 module GoalsHelper
+  include AssociableGoalsHelper
+
   # Build Mermaid flowchart DSL for goal parent-child links.
   # Node IDs are safe (g_<id>); labels are escaped for Mermaid (quotes, backslashes).
   # Optional organization for click hrefs to goal show pages.
@@ -485,15 +487,11 @@ module GoalsHelper
           end
           badges = content_tag(:p, class: 'mb-1') do
             owned_by_span = content_tag(:span, " | Owned by: #{goal_owner_display_name(goal)}", class: 'text-muted small ms-2')
-            prompt_span = if goal.prompt_goals.any?
-              link_to(" | #{goal_prompt_association_display(goal)}", edit_organization_prompt_path(organization, goal.prompt_goals.first.prompt), target: '_blank', rel: 'noopener', class: 'text-muted small ms-2 text-decoration-none')
-            else
-              ''
-            end
+            external_links = goal_external_association_links(organization, goal)
             content_tag(:span, goal.timeframe.to_s.humanize, class: "badge me-2 #{timeframe_badge_class(goal.timeframe)}", 'data-bs-toggle': 'tooltip', 'data-bs-title': timeframe_tooltip_text(goal)) +
             content_tag(:span, goal.status.to_s.humanize, class: "badge me-2 #{status_badge_class(goal.status)}") +
             content_tag(:span, goal_visibility_display(goal), class: 'text-muted small ms-2', 'data-bs-toggle': 'tooltip', 'data-bs-title': goal_privacy_tooltip_text(goal)) +
-            owned_by_span + prompt_span
+            owned_by_span + external_links
           end
           check_in_sentence = ''
           if most_recent_check_in.present?
@@ -623,6 +621,97 @@ module GoalsHelper
 
     reflection_label = company_label_for('reflection', 'Reflection')
     "In #{reflection_label.downcase}: #{titles.join(', ')}"
+  end
+
+  # Path to remove a PromptGoal or polymorphic GoalAssociation from the goal side or associable page.
+  def goal_external_association_destroy_path(organization, association_record, return_url: nil)
+    case association_record
+    when PromptGoal
+      organization_prompt_prompt_goal_path(organization, association_record.prompt, association_record)
+    when GoalAssociation
+      extra = return_url.present? ? { return_url: return_url } : {}
+      associable_goal_association_path(organization, association_record.associable, association_record, **extra)
+    else
+      raise ArgumentError, "Unsupported association record: #{association_record.class.name}"
+    end
+  end
+
+  # Plain-text summary of non-prompt goal links (assignments, abilities, aspirations) for compact UI.
+  def goal_non_prompt_associations_summary(goal)
+    return nil if goal.goal_associations.blank?
+
+    parts = []
+    goal.goal_associations.includes(:associable).each do |ga|
+      next unless ga.associable
+
+      label = case ga.associable
+              when Assignment
+                "Assignment: #{ga.associable.title}"
+              when Ability
+                "Ability: #{ga.associable.name}"
+              when Aspiration
+                "Aspiration: #{ga.associable.name}"
+              else
+                ga.associable_type
+              end
+      parts << label
+    end
+    return nil if parts.empty?
+
+    parts.uniq.join(' · ')
+  end
+
+  # Renders links for prompts + polymorphic associables next to goal title (index views).
+  def goal_external_association_links(organization, goal)
+    safe_join(
+      goal_external_association_link_items(organization, goal).compact,
+      tag.span(' ', class: 'text-muted')
+    )
+  end
+
+  def goal_external_association_link_items(organization, goal)
+    items = []
+    if goal.association(:prompt_goals).loaded? ? goal.prompt_goals.any? : goal.prompt_goals.exists?
+      pg = goal.prompt_goals.min_by(&:id)
+      items << link_to(
+        "| #{goal_prompt_association_display(goal)}",
+        edit_organization_prompt_path(organization, pg.prompt),
+        target: '_blank',
+        rel: 'noopener',
+        class: 'text-muted small text-decoration-none'
+      )
+    end
+
+    associations = if goal.association(:goal_associations).loaded?
+                     goal.goal_associations
+                   else
+                     goal.goal_associations.includes(:associable)
+                   end
+
+    associations.each do |ga|
+      next unless ga.associable
+
+      path = case ga.associable
+             when Assignment
+               organization_assignment_path(organization, ga.associable)
+             when Ability
+               organization_ability_path(organization, ga.associable)
+             when Aspiration
+               organization_aspiration_path(organization, ga.associable)
+             else
+               next
+             end
+      text = case ga.associable
+             when Assignment
+               "| Assignment: #{ga.associable.title}"
+             when Ability
+               "| Ability: #{ga.associable.name}"
+             when Aspiration
+               "| Aspiration: #{ga.associable.name}"
+             end
+      items << link_to(text, path, class: 'text-muted small text-decoration-none')
+    end
+    items
   end
   
   # Returns the owner's profile image or organization initials, wrapped with a tooltip showing the full owner name
@@ -774,6 +863,30 @@ module GoalsHelper
       nil
     end
   end
-end
 
+  TOOLTIP_NESTED_BULK_GOALS_EXAMPLE = <<~TEXT.squish.freeze
+    This is here to help you create clear goals the OG way—which means goals that are organized and nested.
+    Completion of one thing makes everything else either easier or unnecessary, continuously pushing you toward your ultimate goals!
+  TEXT
+
+  def nested_bulk_goals_example_tooltip
+    TOOLTIP_NESTED_BULK_GOALS_EXAMPLE
+  end
+
+  # Sample bulk paste for nested goal creation (Goals::ParseService). Used by manage/bulk goal forms.
+  # Every line ends with the associated object name in parentheses so the pattern is obvious for sub-goals too.
+  def nested_bulk_goals_example_text(associated_object_label = nil)
+    label = associated_object_label.to_s.strip.presence || "this context"
+    suf = " (#{label})"
+
+    (1..3).map do |obj_num|
+      kr_block = (1..3).map do |kr|
+        activity_lines = (1..3).map { |a| "    #{a}. Activity #{a} under KR #{kr}#{suf}" }.join("\n")
+        "* Key Result #{kr} for Objective #{obj_num}#{suf}\n#{activity_lines}"
+      end.join("\n")
+
+      "Objective #{obj_num}#{suf}\n#{kr_block}"
+    end.join("\n\n")
+  end
+end
 

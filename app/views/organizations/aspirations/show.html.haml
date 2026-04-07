@@ -37,6 +37,7 @@
           %div.mt-3
             %small.text-muted
               Sort Order: #{@aspiration.sort_order}
+
       / Comments Section
       = render 'shared/comment_summary', commentable: @aspiration, organization: @organization
 
@@ -48,3 +49,8 @@
             rateable_display_name: @public_kudos_rateable_display_name,
             all_kudos_url: @public_kudos_all_kudos_observations_url,
             all_types_url: @public_kudos_all_types_observations_url
+
+      = render "organizations/shared/teammate_lens_catalog_cta",
+          organization: @organization,
+          associable: @aspiration,
+          viewing_person: current_person

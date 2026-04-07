@@ -67,7 +67,10 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     allow(view).to receive(:organization_prompt_prompt_goal_path).and_wrap_original do |method, *args|
       "/organizations/#{args[0].id}/prompts/#{args[1].id}/prompt_goals/#{args[2].id}"
     end
-    
+    allow(view).to receive(:goal_external_association_destroy_path) do |_org, assoc, **_opts|
+      "/organizations/#{organization.id}/prompts/#{assoc.prompt_id}/prompt_goals/#{assoc.id}"
+    end
+
     # Define helper methods that are available in views
     def view.current_organization
       @current_organization
