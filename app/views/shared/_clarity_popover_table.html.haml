@@ -24,3 +24,7 @@
       %td.text-end= "#{table_data.dig(:aspirations, :employee) || 0}%"
       %td.text-end= "#{table_data.dig(:aspirations, :manager) || 0}%"
       %td.text-end= "#{table_data.dig(:aspirations, :together) || 0}%"
+  %tfoot
+    %tr
+      %td.text-muted.small.pt-2{colspan: 4}
+        = check_in_health_clarity_popover_caption

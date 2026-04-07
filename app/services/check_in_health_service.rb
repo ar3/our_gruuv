@@ -1,6 +1,4 @@
 class CheckInHealthService
-  DAYS_THRESHOLD = 90
-
   def self.call(teammate, organization)
     new(teammate, organization).call
   end
@@ -23,6 +21,10 @@ class CheckInHealthService
 
   attr_reader :teammate, :organization
 
+  def blurred_cutoff
+    @blurred_cutoff ||= CheckInBehavior::CLARITY_BLURRED_DAYS.days.ago
+  end
+
   def position_health
     # Find most recent closed position check-in with official_rating
     latest_finalized = PositionCheckIn
@@ -43,13 +45,13 @@ class CheckInHealthService
       status = :alarm
       last_rating_date = nil
       days_since_rating = nil
-    elsif latest_finalized.official_check_in_completed_at < DAYS_THRESHOLD.days.ago
-      # Old rating (>90 days)
+    elsif latest_finalized.official_check_in_completed_at < blurred_cutoff
+      # Older than blurred window
       status = :warning
       last_rating_date = latest_finalized.official_check_in_completed_at.to_date
       days_since_rating = (Date.current - last_rating_date).to_i
     else
-      # Current rating (≤90 days)
+      # Within blurred window
       status = :success
       last_rating_date = latest_finalized.official_check_in_completed_at.to_date
       days_since_rating = (Date.current - last_rating_date).to_i
@@ -86,13 +88,13 @@ class CheckInHealthService
 
     total_count = active_assignments.count
 
-    # Count assignments with completed check-ins in last 90 days
+    # Count assignments with completed check-ins within blurred window
     completed_count = active_assignments.to_a.count do |tenure|
       check_in = AssignmentCheckIn
         .where(company_teammate: teammate, assignment: tenure.assignment)
         .closed
         .where.not(official_check_in_completed_at: nil)
-        .where('official_check_in_completed_at >= ?', DAYS_THRESHOLD.days.ago)
+        .where('official_check_in_completed_at >= ?', blurred_cutoff)
         .order(official_check_in_completed_at: :desc)
         .first
       
@@ -137,12 +139,12 @@ class CheckInHealthService
     aspirations = Aspiration.within_hierarchy(organization)
     total_count = aspirations.count
 
-    # Count aspirations with observation ratings for employee in last 90 days
+    # Count aspirations with observation ratings for employee within blurred window
     # Observations can rate aspirations, so we check observation_ratings
     teammate_observations = Observation
       .joins(:observees)
       .where(observees: { teammate_id: teammate.id })
-      .where('observed_at >= ?', DAYS_THRESHOLD.days.ago)
+      .where('observed_at >= ?', blurred_cutoff)
 
     rated_aspiration_ids = teammate_observations
       .joins(:observation_ratings)

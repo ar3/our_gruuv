@@ -39,6 +39,14 @@ RSpec.describe CheckInHealthCacheBuilder do
     end
   end
 
+  describe 'recency cutoff' do
+    it 'uses CheckInBehavior::CLARITY_BLURRED_DAYS for the builder cutoff' do
+      builder = described_class.new(teammate, organization)
+      cutoff = builder.instance_variable_get(:@cutoff)
+      expect(cutoff).to be_within(2.seconds).of(CheckInBehavior::CLARITY_BLURRED_DAYS.days.ago)
+    end
+  end
+
   describe '#build_and_save' do
     it 'creates or updates CheckInHealthCache for the teammate' do
       expect { described_class.new(teammate, organization).build_and_save }.to change(CheckInHealthCache, :count).by(1)

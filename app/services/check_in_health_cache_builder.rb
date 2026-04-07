@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class CheckInHealthCacheBuilder
-  DAYS_THRESHOLD = 90
-
   def self.call(teammate, organization)
     new(teammate, organization).call
   end
@@ -10,7 +8,8 @@ class CheckInHealthCacheBuilder
   def initialize(teammate, organization)
     @teammate = teammate
     @organization = organization
-    @cutoff = DAYS_THRESHOLD.days.ago
+    # Categories / completion points use the blurred window (same band as :blurred in CheckInBehavior#clarity_level).
+    @cutoff = CheckInBehavior::CLARITY_BLURRED_DAYS.days.ago
   end
 
   def call
@@ -90,7 +89,7 @@ class CheckInHealthCacheBuilder
       return result
     end
 
-    # Open check-in with both sides completed in last 90 days
+    # Open check-in with both sides completed within blurred (CLARITY_BLURRED_DAYS) window
     if open_ci
       emp_at = open_ci.employee_completed_at
       mgr_at = open_ci.manager_completed_at

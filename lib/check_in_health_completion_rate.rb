@@ -23,6 +23,7 @@ module CheckInHealthCompletionRate
   end
 
   # Completion rate from check-ins only (position, assignments, aspirations). Excludes milestones.
+  # Point scores in the cache use CheckInHealthCacheBuilder’s blurred-window (CLARITY_BLURRED_DAYS) cutoff.
   def completion_rate_for_caches(caches)
     total_points = 0.0
     max_points = 0.0

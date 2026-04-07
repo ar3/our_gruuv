@@ -366,12 +366,13 @@ module CheckInHealthHelper
   end
 
   # Table data for single-item header popover: rows = position, assignments, aspirations;
-  # columns = employee, manager, together. Each cell = % "healthy" (completed within 45 days).
+  # columns = employee, manager, together. Each cell = % "current" if that side completed within
+  # CheckInBehavior::CLARITY_CLEAR_DAYS (clear threshold; see popover footnote vs headline rate).
   # Returns nil if cache is nil; otherwise { position: { employee:, manager:, together: }, assignments: {...}, aspirations: {...} } with 0–100 values.
   def single_item_health_popover_table(cache)
     return nil unless cache
 
-    cutoff = 45.days.ago
+    cutoff = CheckInBehavior::CLARITY_CLEAR_DAYS.days.ago
     healthy = lambda { |date_str|
       return false unless date_str.present?
       t = Time.zone.parse(date_str.to_s) rescue nil
@@ -408,6 +409,16 @@ module CheckInHealthHelper
       assignments: { employee: assign_emp, manager: assign_mgr, together: assign_together },
       aspirations: { employee: aspir_emp, manager: aspir_mgr, together: aspir_together }
     }
+  end
+
+  # Footnote for shared/clarity_popover_table (popover uses clear window; headline % uses blurred window in cache).
+  def check_in_health_clarity_popover_caption
+    format(
+      "The above calculations are based on check-ins that have been completed in the last %{clear} days, " \
+      "but the overall clarity percentage is based on check-ins that have been completed in the last %{blurred} days.",
+      clear: CheckInBehavior::CLARITY_CLEAR_DAYS,
+      blurred: CheckInBehavior::CLARITY_BLURRED_DAYS
+    )
   end
 end
 
