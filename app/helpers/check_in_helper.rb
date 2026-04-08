@@ -192,18 +192,19 @@ module CheckInHelper
     mode == :employee ? check_in.employee_completed_at : check_in.manager_completed_at
   end
 
-  def single_item_check_in_move_destination_text(next_requires_check_in:, next_item:)
-    if next_requires_check_in && next_item.present?
+  def single_item_check_in_move_destination_text(next_requires_check_in:, next_item:, show_check_in_status_done: false)
+    if next_requires_check_in && !show_check_in_status_done && next_item.present?
       next_item[:name].to_s
     else
-      "check-in status page"
+      "Check-in Status, because you are done!"
     end
   end
 
-  def single_item_check_in_primary_button_text(is_complete:, next_requires_check_in:, next_item:)
+  def single_item_check_in_primary_button_text(is_complete:, next_requires_check_in:, next_item:, show_check_in_status_done: false)
     destination = single_item_check_in_move_destination_text(
       next_requires_check_in: next_requires_check_in,
-      next_item: next_item
+      next_item: next_item,
+      show_check_in_status_done: show_check_in_status_done
     )
     if is_complete
       "Update and move to #{destination}"

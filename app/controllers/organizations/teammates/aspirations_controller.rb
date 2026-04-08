@@ -45,6 +45,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
     @single_item_next_requires_check_in = next_result[:next_requires_check_in]
     @single_item_next_item = next_result[:next_item]
     @single_item_next_url = next_result[:next_url]
+    @single_item_show_check_in_status_done = next_result[:show_check_in_status_done]
 
     @check_in_health_cache = CheckInHealthCache.find_by(teammate: @teammate, organization: organization)
 

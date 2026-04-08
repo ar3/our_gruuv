@@ -40,6 +40,7 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
     @single_item_next_requires_check_in = next_result[:next_requires_check_in]
     @single_item_next_item = next_result[:next_item]
     @single_item_next_url = next_result[:next_url]
+    @single_item_show_check_in_status_done = next_result[:show_check_in_status_done]
 
     # Last finalized pill uses position-level latest
     @latest_finalized_for_pill = @latest_finalized

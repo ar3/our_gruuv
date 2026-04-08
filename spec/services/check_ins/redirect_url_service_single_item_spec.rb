@@ -54,6 +54,7 @@ RSpec.describe CheckIns::RedirectUrlService do
       allow(CheckIns::SingleItemCheckInNextItemService).to receive(:call).and_return(
         {
           next_requires_check_in: false,
+          show_check_in_status_done: false,
           next_url: "/organizations/#{organization.id}/teammates/#{teammate.id}/position_check_in"
         }
       )
@@ -66,6 +67,31 @@ RSpec.describe CheckIns::RedirectUrlService do
           current_person: teammate.person,
           current_type: "aspiration",
           current_id: "123"
+        }
+      )
+
+      expect(url).to eq(
+        Rails.application.routes.url_helpers.organization_company_teammate_check_ins_path(organization, teammate)
+      )
+    end
+
+    it "save_and_go_to_next returns teammate check-ins page when current is red but all other items are green" do
+      allow(CheckIns::SingleItemCheckInNextItemService).to receive(:call).and_return(
+        {
+          next_requires_check_in: true,
+          show_check_in_status_done: true,
+          next_url: "/organizations/#{organization.id}/teammates/#{teammate.id}/aspirations/1"
+        }
+      )
+
+      url = described_class.call(
+        button_name: "save_and_go_to_next",
+        organization: organization,
+        teammate: teammate,
+        params: {
+          current_person: teammate.person,
+          current_type: "aspiration",
+          current_id: "1"
         }
       )
 

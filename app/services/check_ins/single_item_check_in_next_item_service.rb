@@ -30,9 +30,17 @@ module CheckIns
 
     def call
       items = build_ordered_items
-      current_index = items.index { |i| i[:type] == current_type && i[:id] == current_id }
+      current_index = items.index { |i| same_item?(i) }
       next_item = current_index ? items[(current_index + 1) % items.size] : items.first
       next_requires_check_in = items.any? { |i| i[:bucket] != BUCKET_GREEN }
+
+      current_item = current_index ? items[current_index] : nil
+      others = items.reject { |i| same_item?(i) }
+      show_check_in_status_done =
+        current_item.present? &&
+          current_item[:bucket] == BUCKET_RED &&
+          others.any? &&
+          others.all? { |i| i[:bucket] == BUCKET_GREEN }
 
       next_url = next_item ? url_for_item(next_item) : nil
 
@@ -40,13 +48,24 @@ module CheckIns
         next_url: next_url,
         next_requires_check_in: next_requires_check_in,
         next_item: next_item,
-        ordered_items: items
+        ordered_items: items,
+        show_check_in_status_done: show_check_in_status_done
       }
     end
 
     private
 
     attr_reader :teammate, :organization, :current_person, :current_type, :current_id
+
+    def same_item?(item)
+      return false unless item[:type] == current_type
+
+      if item[:type] == :position
+        current_id.blank?
+      else
+        item[:id].to_i == current_id.to_i
+      end
+    end
 
     def employee?
       current_person&.id == teammate.person_id

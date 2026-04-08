@@ -16,7 +16,7 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
         current_type: :position,
         current_id: nil
       )
-      expect(result).to include(:next_url, :next_requires_check_in, :next_item, :ordered_items)
+      expect(result).to include(:next_url, :next_requires_check_in, :next_item, :ordered_items, :show_check_in_status_done)
       expect(result[:ordered_items]).to be_an(Array)
     end
 
