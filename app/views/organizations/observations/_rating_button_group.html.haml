@@ -12,7 +12,7 @@
 - disagree_id = "#{rating_key}_disagree"
 - strongly_disagree_id = "#{rating_key}_strongly_disagree"
 
-.btn-group{role: "group", 'aria-label': "Rating options"}
+.btn-group{role: "group", 'aria-label': "Rating options", data: { controller: "observation-rating-toggle" }}
   %input{type: "radio", name: field_name, value: "strongly_agree", id: strongly_agree_id, checked: (normalized_value == 'strongly_agree'), class: "btn-check", 'data-rateable-type': rateable_type, 'data-rateable-id': rateable_id, 'data-rating-key': rating_key}
   %label.btn.btn-outline-success{for: strongly_agree_id}
     %i.bi.bi-star-fill.me-2

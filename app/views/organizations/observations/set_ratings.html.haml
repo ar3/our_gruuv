@@ -133,21 +133,3 @@
         = link_to 'Back to Step 1', new_organization_observation_path(@organization), class: 'btn btn-secondary'
         = form.submit 'Next: Review & Manage', class: 'btn btn-primary', name: 'step', value: '3'
 
-:javascript
-  document.addEventListener('DOMContentLoaded', function() {
-    // Handle rating selection for radio buttons
-    document.querySelectorAll('input.btn-check[data-rateable-type]').forEach(function(radio) {
-      radio.addEventListener('change', function() {
-        var rateableType = this.dataset.rateableType;
-        var rateableId = this.dataset.rateableId;
-        var ratingKey = this.dataset.ratingKey;
-        
-        // Update hidden fields
-        var hiddenTypeField = document.querySelector('input[name="observation[observation_ratings_attributes][' + ratingKey + '][rateable_type]"]');
-        var hiddenIdField = document.querySelector('input[name="observation[observation_ratings_attributes][' + ratingKey + '][rateable_id]"]');
-        
-        if (hiddenTypeField) hiddenTypeField.value = rateableType;
-        if (hiddenIdField) hiddenIdField.value = rateableId;
-      });
-    });
-  });
