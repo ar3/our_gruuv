@@ -52,6 +52,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     )
     @single_item_ordered_items = next_result[:ordered_items]
     @single_item_next_requires_check_in = next_result[:next_requires_check_in]
+    @single_item_next_item = next_result[:next_item]
     @single_item_next_url = next_result[:next_url]
 
     @check_in_health_cache = CheckInHealthCache.find_by(teammate: @teammate, organization: organization)

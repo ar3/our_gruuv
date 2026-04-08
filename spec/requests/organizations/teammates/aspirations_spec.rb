@@ -48,7 +48,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         get aspiration_show_path
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Current Check-in")
-        expect(response.body).to include("Save and stay here")
+        expect(response.body).to include("Save as Draft and stay here")
       end
     end
 
@@ -75,7 +75,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response.body).to include("thinking about them and #{aspiration.name}")
         expect(response.body).to include("click here to check in early.")
         expect(response.body).to include("fresh-single-check-in-toggle-#{_open_aspiration_check_in.id}")
-        expect(response.body).to include("Save and stay here")
+        expect(response.body).to include("Save as Draft and stay here")
       end
 
       it "links current period observations to the observations index with observee and aspiration (no timeframe)" do
@@ -199,7 +199,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
 
     before { sign_in_as_teammate_for_request(employee_person, organization) }
 
-    context "when submitting Save and stay here with current_url in check_ins" do
+    context "when submitting Save as Draft and stay here with current_url in check_ins" do
       it "saves and redirects back to the aspiration (values) page, not review" do
         patch organization_company_teammate_check_ins_path(organization, employee_teammate),
           params: {
@@ -216,7 +216,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
                 }
               }
             },
-            save_and_stay: "Save and stay here"
+            save_and_draft_stay: "Save as Draft and stay here"
           }
 
         expect(response).to redirect_to(aspiration_show_path)
@@ -242,7 +242,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
                 }
               }
             },
-            save_and_stay: "Save and stay here"
+            save_and_draft_stay: "Save as Draft and stay here"
           }
         follow_redirect!
         expect(response).to have_http_status(:success)

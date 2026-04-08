@@ -136,6 +136,8 @@ module CheckIns
           current_type: @params[:current_type],
           current_id: @params[:current_id]
         )
+        return organization_company_teammate_check_ins_path(@organization, @teammate) unless result[:next_requires_check_in]
+
         result[:next_url] || organization_company_teammate_finalization_path(@organization, @teammate)
       when /^go_to_bulk_check_in$/
         organization_company_teammate_check_ins_path(@organization, @teammate)

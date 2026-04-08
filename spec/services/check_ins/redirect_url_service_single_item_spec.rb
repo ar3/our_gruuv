@@ -49,5 +49,29 @@ RSpec.describe CheckIns::RedirectUrlService do
         Rails.application.routes.url_helpers.position_check_in_organization_teammate_path(organization, teammate)
       )
     end
+
+    it "save_and_go_to_next returns teammate check-ins page when no items require check-in" do
+      allow(CheckIns::SingleItemCheckInNextItemService).to receive(:call).and_return(
+        {
+          next_requires_check_in: false,
+          next_url: "/organizations/#{organization.id}/teammates/#{teammate.id}/position_check_in"
+        }
+      )
+
+      url = described_class.call(
+        button_name: "save_and_go_to_next",
+        organization: organization,
+        teammate: teammate,
+        params: {
+          current_person: teammate.person,
+          current_type: "aspiration",
+          current_id: "123"
+        }
+      )
+
+      expect(url).to eq(
+        Rails.application.routes.url_helpers.organization_company_teammate_check_ins_path(organization, teammate)
+      )
+    end
   end
 end

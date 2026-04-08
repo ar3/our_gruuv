@@ -172,6 +172,71 @@ module CheckInHelper
     current_person == teammate.person ? :employee : :manager
   end
 
+  def single_item_check_in_status_for_view(check_in, teammate, current_person)
+    mode = single_item_check_in_view_mode(teammate, current_person)
+    complete = mode == :employee ? check_in.employee_completed? : check_in.manager_completed?
+    complete ? "complete" : "draft"
+  end
+
+  def single_item_check_in_counterparty_name(teammate, current_person)
+    mode = single_item_check_in_view_mode(teammate, current_person)
+    if mode == :employee
+      teammate.current_manager&.casual_name.presence || "Manager"
+    else
+      teammate.person.casual_name.presence || "Employee"
+    end
+  end
+
+  def single_item_check_in_completed_at_for_view(check_in, teammate, current_person)
+    mode = single_item_check_in_view_mode(teammate, current_person)
+    mode == :employee ? check_in.employee_completed_at : check_in.manager_completed_at
+  end
+
+  def single_item_check_in_move_destination_text(next_requires_check_in:, next_item:)
+    if next_requires_check_in && next_item.present?
+      next_item[:name].to_s
+    else
+      "check-in status page"
+    end
+  end
+
+  def single_item_check_in_primary_button_text(is_complete:, next_requires_check_in:, next_item:)
+    destination = single_item_check_in_move_destination_text(
+      next_requires_check_in: next_requires_check_in,
+      next_item: next_item
+    )
+    if is_complete
+      "Update and move to #{destination}"
+    else
+      "Mark as Ready for review and move to #{destination}"
+    end
+  end
+
+  def single_item_check_in_primary_caption(is_complete:, counterparty_name:, completed_at:)
+    if is_complete
+      recency = completed_at.present? ? "#{time_ago_in_words(completed_at)} ago" : "earlier"
+      "#{counterparty_name} has been able to see your response since #{recency}"
+    else
+      "#{counterparty_name} will be able to see your response"
+    end
+  end
+
+  def single_item_check_in_secondary_button_text(is_complete:)
+    if is_complete
+      "Mark as Draft and stay here"
+    else
+      "Save as Draft and stay here"
+    end
+  end
+
+  def single_item_check_in_secondary_caption(is_complete:, counterparty_name:)
+    if is_complete
+      "#{counterparty_name} will NO LONGER be able to see your response until you've marked this as ready for review"
+    else
+      "#{counterparty_name} will NOT be able to see your response until you've marked this as ready for review"
+    end
+  end
+
   def single_item_hide_fresh_open_check_in_form?(check_in, latest_finalized, teammate:, current_person:)
     hide_fresh_open_check_in_fields?(
       check_in,

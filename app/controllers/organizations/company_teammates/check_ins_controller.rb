@@ -95,6 +95,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   def update
     @check_in_errors = []
     check_ins_params = params[:check_ins] || params
+    apply_single_item_status_override!
 
     update_position_check_in(check_ins_params) if check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
@@ -112,6 +113,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   def save_and_redirect
     @check_in_errors = []
     check_ins_params = params[:check_ins] || params
+    apply_single_item_status_override!
 
     update_position_check_in(check_ins_params) if check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
@@ -963,7 +965,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       service_params = extract_service_params_for_button(button_name)
       
       CheckIns::RedirectUrlService.call(
-        button_name: button_name,
+        button_name: normalized_redirect_button_name(button_name),
         organization: organization,
         teammate: @teammate,
         params: service_params
@@ -1018,6 +1020,47 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     service_params[:current_person] = current_person
     
     service_params
+  end
+
+  def normalized_redirect_button_name(button_name)
+    case button_name.to_s
+    when "save_and_complete_go_to_next"
+      "save_and_go_to_next"
+    when "save_and_draft_stay"
+      "save_and_stay"
+    else
+      button_name
+    end
+  end
+
+  def apply_single_item_status_override!
+    status = case find_button_name_in_params
+    when "save_and_complete_go_to_next"
+      "complete"
+    when "save_and_draft_stay"
+      "draft"
+    end
+    return unless status
+
+    req = params[:check_ins].presence || params
+
+    if req[:position_check_in].present?
+      req[:position_check_in][:status] = status
+      return
+    end
+
+    assignment_params = req[:assignment_check_ins]
+    if assignment_params.respond_to?(:each_value)
+      first_assignment = assignment_params.each_value.first
+      first_assignment[:status] = status if first_assignment.present?
+      return
+    end
+
+    aspiration_params = req[:aspiration_check_ins]
+    return unless aspiration_params.respond_to?(:each_value)
+
+    first_aspiration = aspiration_params.each_value.first
+    first_aspiration[:status] = status if first_aspiration.present?
   end
   
 end

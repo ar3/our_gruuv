@@ -60,24 +60,17 @@
                 = af.hidden_field :aspiration_id, value: @aspiration.id
                 .row
                   .col-12
-                    .mb-3
-                      - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
-                      .form-check
-                        = af.radio_button :status, 'draft', checked: !is_complete, class: 'form-check-input'
-                        = af.label :status_draft, 'Draft', class: 'form-check-label'
-                      .form-check
-                        = af.radio_button :status, 'complete', checked: is_complete, class: 'form-check-input'
-                        = af.label :status_complete, 'Ready for review', class: 'form-check-label'
-                  .col-12.mt-3
-                    .d-flex.flex-wrap.gap-2
-                      = form.submit "Save and stay here", name: "save_and_stay", class: "btn btn-primary"
-                      - if @single_item_next_requires_check_in && @single_item_next_url.present?
-                        = form.submit "Save and move to next", name: "save_and_go_to_next", class: "btn btn-outline-primary"
-                      = link_to "Cancel", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
-                    .d-flex.flex-wrap.gap-2.mt-2
-                      - if @single_item_next_requires_check_in && @single_item_next_url.present?
-                        = form.submit "Save and go to Bulk Check-in", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
-                      = form.submit "Save and go to Review Check-ins", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+                    - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+                  = render "shared/single_item_check_in/form_save_actions",
+                    form: form,
+                    fields_builder: af,
+                    check_in: @open_check_in,
+                    teammate: @teammate,
+                    organization: @organization,
+                    is_complete: is_complete,
+                    next_requires_check_in: @single_item_next_requires_check_in,
+                    next_item: @single_item_next_item,
+                    next_url: @single_item_next_url
 
     / Check-in History Table
     .card.mb-4

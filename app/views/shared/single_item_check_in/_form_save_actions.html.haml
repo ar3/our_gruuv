@@ -1,0 +1,37 @@
+- status_value = single_item_check_in_status_for_view(check_in, teammate, current_person)
+- counterparty_name = single_item_check_in_counterparty_name(teammate, current_person)
+- completed_at = single_item_check_in_completed_at_for_view(check_in, teammate, current_person)
+- primary_button_text = single_item_check_in_primary_button_text(is_complete: is_complete, next_requires_check_in: next_requires_check_in, next_item: next_item)
+- primary_caption = single_item_check_in_primary_caption(is_complete: is_complete, counterparty_name: counterparty_name, completed_at: completed_at)
+- secondary_button_text = single_item_check_in_secondary_button_text(is_complete: is_complete)
+- secondary_caption = single_item_check_in_secondary_caption(is_complete: is_complete, counterparty_name: counterparty_name)
+
+= fields_builder.hidden_field :status, value: status_value
+
+.col-12.mt-3
+  .d-flex.flex-column.gap-2
+    %div
+      .d-flex.align-items-center.flex-wrap.gap-2
+        = form.submit primary_button_text, name: "save_and_complete_go_to_next", class: "btn btn-primary"
+        .small.text-muted= primary_caption
+      - if is_complete
+        .d-flex.flex-wrap.align-items-center.gap-2.ms-1.mt-1.small.text-muted
+          %span ... OR...
+          - if next_requires_check_in && next_url.present?
+            = form.submit "[Update and go to Bulk Check-in]", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+            %span |
+          = form.submit "[Update and go to Review Check-ins]", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+    %div
+      .d-flex.align-items-center.flex-wrap.gap-2
+        = form.submit secondary_button_text, name: "save_and_draft_stay", class: "btn btn-outline-secondary"
+        .small.text-muted= secondary_caption
+      - unless is_complete
+        .d-flex.flex-wrap.align-items-center.gap-2.ms-1.mt-1.small.text-muted
+          %span ... OR...
+          - if next_requires_check_in && next_url.present?
+            = form.submit "[Update and go to Bulk Check-in]", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+            %span |
+          = form.submit "[Update and go to Review Check-ins]", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+
+  .d-flex.flex-wrap.gap-2.mt-3
+    = link_to "Cancel", organization_company_teammate_check_ins_path(organization, teammate), class: "btn btn-outline-secondary"
