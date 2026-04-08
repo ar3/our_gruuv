@@ -63,12 +63,15 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       select 'Love', from: "check_ins[assignment_check_ins][#{check_in.id}][employee_personal_alignment]"
       select '🟢 Exceeding', from: "check_ins[assignment_check_ins][#{check_in.id}][employee_rating]"
       fill_in "check_ins[assignment_check_ins][#{check_in.id}][employee_private_notes]", with: 'Great assignment!'
-      choose "check_ins_assignment_check_ins_#{check_in.id}_status_complete"
 
-      # Submit form (Save and go to Review Check-ins redirects to finalization when complete)
-      click_button 'Save and go to Review Check-ins'
+      # Draft/ready radios removed: primary submit marks ready and navigates; then tertiary can go to review.
+      find('input[type="submit"][name="save_and_complete_go_to_next"]').click
+      check_in.reload
+      expect(check_in.employee_completed_at).to be_present
 
-      # When check-in is marked complete, it redirects to finalization page
+      visit organization_teammate_assignment_path(company, employee_teammate, assignment)
+      find('input[type="submit"][name="save_and_go_to_review_check_ins"]').click
+
       expect(page).to have_current_path(organization_company_teammate_finalization_path(company, employee_teammate))
 
       # Should see success message or finalization content
@@ -114,17 +117,19 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       # Fill form with nested format
       select '🔵 Meeting', from: "check_ins[assignment_check_ins][#{check_in.id}][manager_rating]"
       fill_in "check_ins[assignment_check_ins][#{check_in.id}][manager_private_notes]", with: 'Good work!'
-      choose "check_ins_assignment_check_ins_#{check_in.id}_status_complete"
 
-      # Submit form (Save and go to Review Check-ins redirects to finalization when complete)
-      click_button 'Save and go to Review Check-ins'
+      find('input[type="submit"][name="save_and_complete_go_to_next"]').click
+      check_in.reload
+      expect(check_in.manager_completed_at).to be_present
 
-      # When check-in is marked complete, it redirects to finalization page
+      visit organization_teammate_assignment_path(company, employee_teammate, assignment)
+      find('input[type="submit"][name="save_and_go_to_review_check_ins"]').click
+
       expect(page).to have_current_path(organization_company_teammate_finalization_path(company, employee_teammate))
 
       # Should see success message or finalization content
       expect(page).to have_content(/Check-in|Finalization|ready/i)
-      
+
       # Verify data was saved
       check_in.reload
       expect(check_in.manager_rating).to eq('meeting')
