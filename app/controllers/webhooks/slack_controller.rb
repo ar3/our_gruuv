@@ -316,7 +316,9 @@ class Webhooks::SlackController < ApplicationController
     message_thread_ts = payload.dig('message', 'thread_ts')
     message_user_id = payload.dig('message', 'user') || payload.dig('message', 'user_id')
     triggering_user_id = payload['user']&.dig('id') || payload['user_id']
-    
+    slack_message = payload['message']
+    payload_message_text = slack_message.is_a?(Hash) ? slack_message['text'] : nil
+
     # Build private metadata for modal
     private_metadata = {
       team_id: team_id,
@@ -326,6 +328,9 @@ class Webhooks::SlackController < ApplicationController
       triggering_user_id: triggering_user_id
     }
     private_metadata[:message_thread_ts] = message_thread_ts if message_thread_ts.present?
+    if payload_message_text.present?
+      private_metadata[:payload_message_text] = payload_message_text
+    end
     private_metadata = private_metadata.to_json
     
     # Open the modal immediately (trigger_id expires in 3 seconds)

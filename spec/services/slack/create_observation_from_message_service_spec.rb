@@ -14,7 +14,8 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
   let(:notes) { 'This is a test note' }
   let(:permalink) { 'https://slack.com/archives/C123456/p1234567890123456' }
   let(:message_text) { "Hello from Slack.\nThis is line two." }
-  
+  let(:payload_message_text) { nil }
+
   let(:service) do
     described_class.new(
       organization: organization,
@@ -23,7 +24,8 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
       message_ts: message_ts,
       message_user_id: observee_slack_id,
       triggering_user_id: observer_slack_id,
-      notes: notes
+      notes: notes,
+      payload_message_text: payload_message_text
     )
   end
 
@@ -34,6 +36,21 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
     allow(mock_slack_service).to receive(:get_message_permalink).and_return({ success: true, permalink: permalink })
     allow(mock_slack_service).to receive(:get_message).and_return({ success: true, text: message_text })
     allow(mock_slack_service).to receive(:store_slack_response)
+  end
+
+  describe '.slack_user_ids_mentioned_in_text' do
+    it 'returns Slack user ids from mrkdwn mentions' do
+      expect(described_class.slack_user_ids_mentioned_in_text('hi <@UABC123> and <@UXYZ9>')).to contain_exactly('UABC123', 'UXYZ9')
+    end
+
+    it 'deduplicates repeated mentions' do
+      expect(described_class.slack_user_ids_mentioned_in_text('<@U1> <@U1>')).to eq(['U1'])
+    end
+
+    it 'returns empty for blank' do
+      expect(described_class.slack_user_ids_mentioned_in_text(nil)).to eq([])
+      expect(described_class.slack_user_ids_mentioned_in_text('')).to eq([])
+    end
   end
 
   describe '#call' do
@@ -65,7 +82,7 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           expect(observation.draft?).to be true
         end
 
-        it 'adds observee to the observation' do
+        it 'adds observee for message author' do
           result = service.call
 
           expect(result.ok?).to be true
@@ -82,6 +99,70 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           )
 
           service.call
+        end
+      end
+
+      context 'when payload_message_text is present' do
+        let(:payload_message_text) { "Payload line one.\nPayload line two." }
+
+        before do
+          create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: observee_slack_id)
+        end
+
+        it 'quotes payload text and does not call get_message' do
+          expect(mock_slack_service).not_to receive(:get_message)
+
+          result = service.call
+
+          expect(result.ok?).to be true
+          observation = result.value
+          expect(observation.story).to include("> Payload line one.")
+          expect(observation.story).to include("> Payload line two.")
+          expect(observation.story).not_to include("> Hello from Slack.")
+        end
+
+        it 'adds observees from author and mentions in payload text' do
+          mentioned_person = create(:person)
+          mentioned_teammate = create(:teammate, person: mentioned_person, organization: organization)
+          mentioned_slack_id = 'U555555'
+          create(:teammate_identity, teammate: mentioned_teammate, provider: 'slack', uid: mentioned_slack_id)
+
+          service_with_mentions = described_class.new(
+            organization: organization,
+            team_id: team_id,
+            channel_id: channel_id,
+            message_ts: message_ts,
+            message_user_id: observee_slack_id,
+            triggering_user_id: observer_slack_id,
+            notes: notes,
+            payload_message_text: "FYI <@#{mentioned_slack_id}> read this"
+          )
+
+          result = service_with_mentions.call
+
+          expect(result.ok?).to be true
+          observation = result.value
+          teammate_ids = observation.observees.map(&:teammate_id).sort
+          expect(teammate_ids).to eq([observee_teammate.id, mentioned_teammate.id].sort)
+        end
+
+        it 'does not add the observer as observee when they are mentioned in payload text' do
+          service_observer_mentioned = described_class.new(
+            organization: organization,
+            team_id: team_id,
+            channel_id: channel_id,
+            message_ts: message_ts,
+            message_user_id: observee_slack_id,
+            triggering_user_id: observer_slack_id,
+            notes: notes,
+            payload_message_text: "Hey <@#{observer_slack_id}> cc <@#{observee_slack_id}>"
+          )
+
+          result = service_observer_mentioned.call
+
+          expect(result.ok?).to be true
+          observation = result.value
+          expect(observation.observees.map(&:teammate_id)).to contain_exactly(observee_teammate.id)
         end
       end
 
@@ -132,7 +213,7 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
         end
       end
 
-      context 'when message is a thread reply (message_thread_ts present)' do
+      context 'when message is a thread reply (message_thread_ts present) and no payload text' do
         let(:message_thread_ts) { '1234567890.000000' }
         let(:service_with_thread) do
           described_class.new(
@@ -143,7 +224,8 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
             message_thread_ts: message_thread_ts,
             message_user_id: observee_slack_id,
             triggering_user_id: observer_slack_id,
-            notes: notes
+            notes: notes,
+            payload_message_text: nil
           )
         end
 
@@ -151,6 +233,35 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           expect(mock_slack_service).to receive(:get_message).with(channel_id, message_ts, thread_ts: message_thread_ts).and_return({ success: true, text: message_text })
 
           service_with_thread.call
+        end
+      end
+
+      context 'when message is a thread reply but payload_message_text is present' do
+        let(:message_thread_ts) { '1234567890.000000' }
+        let(:payload_message_text) { 'Thread reply from payload' }
+
+        let(:service_with_thread_and_payload) do
+          described_class.new(
+            organization: organization,
+            team_id: team_id,
+            channel_id: channel_id,
+            message_ts: message_ts,
+            message_thread_ts: message_thread_ts,
+            message_user_id: observee_slack_id,
+            triggering_user_id: observer_slack_id,
+            notes: notes,
+            payload_message_text: payload_message_text
+          )
+        end
+
+        before do
+          create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: observee_slack_id)
+        end
+
+        it 'does not call get_message' do
+          expect(mock_slack_service).not_to receive(:get_message)
+
+          service_with_thread_and_payload.call
         end
       end
 
@@ -240,4 +351,3 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
     end
   end
 end
-

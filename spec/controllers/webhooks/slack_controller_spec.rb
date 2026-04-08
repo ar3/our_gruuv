@@ -1,24 +1,64 @@
 require 'rails_helper'
 
 RSpec.describe Webhooks::SlackController, type: :controller do
-  let(:signing_secret) { 'test-signing-secret' }
-  let(:timestamp) { Time.now.to_i.to_s }
-  let(:raw_body) { params.to_json }
-  let(:signature) { 'v0=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), signing_secret, "v0:#{timestamp}:#{raw_body}") }
-
-  before do
-    allow(ENV).to receive(:[]).and_call_original
-    allow(ENV).to receive(:[]).with('SLACK_SIGNING_SECRET').and_return(signing_secret)
-    request.headers['X-Slack-Request-Timestamp'] = timestamp
-    request.headers['X-Slack-Signature'] = signature
-  end
-
   describe 'POST #create' do
-    # Existing tests for create method would go here
-    # This is just for the event method
+    let(:organization) { create(:organization, :company, :with_slack_config) }
+    let(:team_id) { 'T123456' }
+    let(:trigger_id) { 'trigger.abc.123' }
+    let(:interaction_payload) do
+      {
+        'type' => 'message_action',
+        'callback_id' => 'create_observation_from_message',
+        'trigger_id' => trigger_id,
+        'team' => { 'id' => team_id },
+        'channel' => { 'id' => 'CCHANNEL1' },
+        'user' => { 'id' => 'UOBSERVER' },
+        'message' => {
+          'ts' => '1234567890.123456',
+          'user' => 'UAUTHOR',
+          'text' => 'Hello <@UMENTIONED>',
+          'thread_ts' => '1234567890.000001'
+        }
+      }
+    end
+
+    before do
+      organization.slack_configuration.update!(workspace_id: team_id)
+      allow_any_instance_of(Webhooks::SlackController).to receive(:verify_slack_signature!)
+    end
+
+    it 'opens modal with private_metadata including payload_message_text from the message' do
+      slack_service = instance_double(SlackService)
+      allow(SlackService).to receive(:new).with(organization).and_return(slack_service)
+
+      expect(slack_service).to receive(:open_create_observation_modal) do |_tid, metadata_json|
+        meta = JSON.parse(metadata_json)
+        expect(meta['payload_message_text']).to eq('Hello <@UMENTIONED>')
+        expect(meta['message_user_id']).to eq('UAUTHOR')
+        expect(meta['triggering_user_id']).to eq('UOBSERVER')
+        expect(meta['message_thread_ts']).to eq('1234567890.000001')
+        { success: true }
+      end
+
+      post :create, params: { payload: interaction_payload.to_json }
+
+      expect(response).to have_http_status(:ok)
+    end
   end
 
   describe 'POST #event' do
+    let(:signing_secret) { 'test-signing-secret' }
+    let(:timestamp) { Time.now.to_i.to_s }
+    let(:raw_body) { params.to_json }
+    let(:signature) { 'v0=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), signing_secret, "v0:#{timestamp}:#{raw_body}") }
+
+    before do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with('SLACK_SIGNING_SECRET').and_return(signing_secret)
+      request.headers['X-Slack-Request-Timestamp'] = timestamp
+      request.headers['X-Slack-Signature'] = signature
+    end
+
     let(:team_id) { 'T123456' }
     let(:organization) { create(:organization, :company, :with_slack_config) }
     let(:slack_config) { organization.slack_configuration }

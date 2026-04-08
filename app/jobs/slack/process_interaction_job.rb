@@ -76,6 +76,7 @@ class Slack::ProcessInteractionJob < ApplicationJob
     message_thread_ts = private_metadata['message_thread_ts'] || private_metadata[:message_thread_ts]
     message_user_id = private_metadata['message_user_id'] || private_metadata[:message_user_id]
     triggering_user_id = private_metadata['triggering_user_id'] || private_metadata[:triggering_user_id]
+    payload_message_text = private_metadata['payload_message_text'] || private_metadata[:payload_message_text]
     
     # Resolve organization
     organization = Organization.find_by_slack_workspace_id(team_id)
@@ -103,7 +104,8 @@ class Slack::ProcessInteractionJob < ApplicationJob
       message_thread_ts: message_thread_ts.presence,
       message_user_id: message_user_id,
       triggering_user_id: triggering_user_id,
-      notes: notes
+      notes: notes,
+      payload_message_text: payload_message_text
     )
     
     result = service.call

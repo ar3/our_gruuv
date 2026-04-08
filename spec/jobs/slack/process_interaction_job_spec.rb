@@ -124,6 +124,24 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
           allow(Rails.application.routes.url_helpers).to receive(:organization_observation_url).and_return('https://example.com/observations/123')
         end
 
+        it 'passes payload_message_text from private_metadata to CreateObservationFromMessageService' do
+          updated_payload = view_submission_payload.deep_dup
+          meta = JSON.parse(updated_payload['view']['private_metadata'])
+          meta['payload_message_text'] = 'Shortcut payload body'
+          updated_payload['view']['private_metadata'] = meta.to_json
+          incoming_webhook.update!(payload: updated_payload)
+          incoming_webhook.reload
+
+          expect(Slack::CreateObservationFromMessageService).to receive(:new).with(
+            hash_including(
+              organization: organization,
+              payload_message_text: 'Shortcut payload body'
+            )
+          ).and_call_original
+
+          described_class.new.perform(incoming_webhook.id)
+        end
+
         it 'creates observation and links webhook' do
           webhook_id = incoming_webhook.id
           # Ensure webhook is fully persisted before job runs

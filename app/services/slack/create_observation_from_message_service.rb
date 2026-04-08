@@ -1,7 +1,9 @@
 class Slack::CreateObservationFromMessageService
   PLACEHOLDER_WHEN_CONTENT_UNAVAILABLE = "<delete or replace this with the content from the slack message... if you want OG to put the content in here, invite the OG Bot to this channel and we'll be able to do this for you automatically in the future>"
 
-  def initialize(organization:, team_id:, channel_id:, message_ts:, message_user_id:, triggering_user_id:, notes:, message_thread_ts: nil)
+  SLACK_USER_MENTION_PATTERN = /<@(U[A-Z0-9]+)>/
+
+  def initialize(organization:, team_id:, channel_id:, message_ts:, message_user_id:, triggering_user_id:, notes:, message_thread_ts: nil, payload_message_text: nil)
     @organization = organization
     @team_id = team_id
     @channel_id = channel_id
@@ -10,6 +12,7 @@ class Slack::CreateObservationFromMessageService
     @message_user_id = message_user_id
     @triggering_user_id = triggering_user_id
     @notes = notes
+    @payload_message_text = payload_message_text
     @slack_service = SlackService.new(@organization)
   end
 
@@ -21,11 +24,7 @@ class Slack::CreateObservationFromMessageService
       return Result.err("Observer (triggering user) not found in OurGruuv.")
     end
 
-    # 2. Resolve observee (the person who authored the Slack message)
-    observee_teammate = TeammateIdentity.find_teammate_by_slack_id(@message_user_id, @organization)
-    # Per user preference, if observee is not found, skip adding them, but still create observation.
-
-    # 3. Get Slack message permalink
+    # 2. Get Slack message permalink
     permalink_result = @slack_service.get_message_permalink(@channel_id, @message_ts)
     unless permalink_result[:success]
       log_debug_response("create_observation_from_message", { status: 'failed', reason: 'Permalink not found' }, { error: permalink_result[:error] })
@@ -33,11 +32,10 @@ class Slack::CreateObservationFromMessageService
     end
     slack_message_permalink = permalink_result[:permalink]
 
-    # 4. Attempt to get message content (non-blocking - if it fails, we add a placeholder)
-    message_result = @slack_service.get_message(@channel_id, @message_ts, thread_ts: @message_thread_ts)
-    message_text = message_result[:success] ? message_result[:text] : nil
+    # 3. Message body: prefer shortcut payload text; otherwise fetch via API (bot not in channel)
+    message_text = resolve_message_text
 
-    # 5. Build observation story
+    # 4. Build observation story
     story_content = @notes.present? ? "#{@notes}\n\n" : ""
     story_content += "==========\n\n"
     story_content += "Link to message: #{slack_message_permalink}"
@@ -48,7 +46,7 @@ class Slack::CreateObservationFromMessageService
       story_content += "\n\n#{PLACEHOLDER_WHEN_CONTENT_UNAVAILABLE}"
     end
 
-    # 6. Create draft observation
+    # 5. Create draft observation
     observation = @organization.observations.build(
       observer: observer_teammate.person,
       story: story_content,
@@ -58,10 +56,7 @@ class Slack::CreateObservationFromMessageService
     )
 
     if observation.save
-      # Add observee using service (which will also add active assignments)
-      if observee_teammate
-        Observations::AddObserveeService.new(observation: observation, teammate_id: observee_teammate.id).call
-      end
+      add_observees_for_slack_participants(observation, message_text)
       log_debug_response("create_observation_from_message", { status: 'success', observation_id: observation.id }, { observation_url: Rails.application.routes.url_helpers.organization_observation_url(@organization, observation) })
       Result.ok(observation)
     else
@@ -75,10 +70,40 @@ class Slack::CreateObservationFromMessageService
     Result.err(error_message)
   end
 
+  def self.slack_user_ids_mentioned_in_text(text)
+    return [] if text.blank?
+
+    text.scan(SLACK_USER_MENTION_PATTERN).flatten.uniq
+  end
+
   private
+
+  def resolve_message_text
+    payload_text = @payload_message_text.to_s.strip.presence
+    return payload_text if payload_text.present?
+
+    message_result = @slack_service.get_message(@channel_id, @message_ts, thread_ts: @message_thread_ts)
+    message_result[:success] ? message_result[:text].to_s.presence : nil
+  end
+
+  def observee_slack_user_ids(message_text)
+    ids = []
+    ids << @message_user_id.to_s if @message_user_id.present?
+    ids.concat(self.class.slack_user_ids_mentioned_in_text(message_text))
+    observer_id = @triggering_user_id.to_s
+    ids.map(&:to_s).uniq.reject { |uid| uid.blank? || uid == observer_id }
+  end
+
+  def add_observees_for_slack_participants(observation, message_text)
+    observee_slack_user_ids(message_text).each do |slack_uid|
+      teammate = TeammateIdentity.find_teammate_by_slack_id(slack_uid, @organization)
+      next unless teammate
+
+      Observations::AddObserveeService.new(observation: observation, teammate_id: teammate.id).call
+    end
+  end
 
   def log_debug_response(method, request_params, response_data)
     @slack_service.store_slack_response(method, request_params, response_data)
   end
 end
-
