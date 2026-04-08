@@ -184,4 +184,28 @@ RSpec.describe CheckInBehavior, type: :model do
       expect(check_in.clarity_level).to eq(:obscured)
     end
   end
+
+  describe ".recency_tricolor_bucket" do
+    it "returns :red when timestamp is blank" do
+      expect(described_class.recency_tricolor_bucket(nil)).to eq(:red)
+    end
+
+    it "returns :green within the crystal_clear day window" do
+      t = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS.days.ago
+      expect(described_class.recency_tricolor_bucket(t)).to eq(:green)
+    end
+
+    it "returns :yellow in the clear window (after crystal_clear, through clear days)" do
+      t = (CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 1).days.ago
+      expect(described_class.recency_tricolor_bucket(t)).to eq(:yellow)
+      t2 = CheckInBehavior::CLARITY_CLEAR_DAYS.days.ago
+      expect(described_class.recency_tricolor_bucket(t2)).to eq(:yellow)
+    end
+
+    it "returns :red beyond the clear window (blurred and obscured vs clarity_level)" do
+      t = (CheckInBehavior::CLARITY_CLEAR_DAYS + 1).days.ago
+      expect(described_class.recency_tricolor_bucket(t)).to eq(:red)
+      expect(described_class.recency_tricolor_bucket(100.days.ago)).to eq(:red)
+    end
+  end
 end

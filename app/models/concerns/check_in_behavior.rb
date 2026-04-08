@@ -4,7 +4,25 @@ module CheckInBehavior
   CLARITY_CRYSTAL_CLEAR_DAYS = 30
   CLARITY_CLEAR_DAYS = 60
   CLARITY_BLURRED_DAYS = 90
-  
+
+  # 1-by-1 next-item / dropdown urgency uses the same calendar-day windows as #clarity_level
+  # (finalized recency), collapsed to three UI buckets:
+  # - :green  => crystal_clear (<= CLARITY_CRYSTAL_CLEAR_DAYS)
+  # - :yellow => clear (CLARITY_CRYSTAL_CLEAR_DAYS < days <= CLARITY_CLEAR_DAYS)
+  # - :red    => blurred + obscured (same bands as #clarity_level :blurred and :obscured) or no timestamp
+  def self.recency_tricolor_bucket(last_activity_at, reference_time: Time.current)
+    return :red if last_activity_at.blank?
+
+    days = (reference_time.to_date - last_activity_at.to_date).to_i
+    if days <= CLARITY_CRYSTAL_CLEAR_DAYS
+      :green
+    elsif days <= CLARITY_CLEAR_DAYS
+      :yellow
+    else
+      :red
+    end
+  end
+
   included do
     # Common associations
     belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'

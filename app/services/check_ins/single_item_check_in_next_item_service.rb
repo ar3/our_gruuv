@@ -3,12 +3,13 @@
 module CheckIns
   # Returns the next single-item check-in target (aspiration, assignment, or position)
   # and whether the "Save and move to next" button should be enabled.
-  # When all items are in the green bucket (≤45d), next_requires_check_in is false
-  # and the button should show "You are done for now! No more check-ins are required at the moment."
+  # Bucket thresholds match CheckInBehavior#clarity_level (crystal clear / clear / blurred+obscured)
+  # via CheckInBehavior.recency_tricolor_bucket. When all items are green (crystal-clear window),
+  # next_requires_check_in is false.
   class SingleItemCheckInNextItemService
-    BUCKET_RED = :red    # >90d or never
-    BUCKET_YELLOW = :yellow # 45-90d
-    BUCKET_GREEN = :green   # ≤45d
+    BUCKET_RED = :red    # blurred + obscured vs clarity, or no activity
+    BUCKET_YELLOW = :yellow # clear window
+    BUCKET_GREEN = :green   # crystal_clear window
 
     def self.call(teammate:, organization:, current_person:, current_type:, current_id: nil)
       new(
@@ -80,11 +81,10 @@ module CheckIns
     end
 
     def bucket_for(last_activity)
-      return BUCKET_RED unless last_activity
-      days = (Time.current - last_activity) / 1.day
-      if days <= 45
+      case CheckInBehavior.recency_tricolor_bucket(last_activity)
+      when :green
         BUCKET_GREEN
-      elsif days <= 90
+      when :yellow
         BUCKET_YELLOW
       else
         BUCKET_RED
