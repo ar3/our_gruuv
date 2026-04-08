@@ -1,0 +1,150 @@
+- content_for :title, "Goals Health Dashboard"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0
+      %i.bi.bi-bullseye.me-2
+      Goals Health Dashboard
+
+.mb-4
+  = content_for :go_back_link
+
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.display_name}
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            .row.text-center
+              .col-3
+                .h3.text-primary= @spotlight_stats[:total_employees]
+                %small.text-muted Total Active Employees
+              .col-3
+                .h3.text-success= @spotlight_stats[:healthy_count]
+                %small.text-muted Healthy
+              .col-3
+                .h3.text-warning= @spotlight_stats[:ok_count]
+                %small.text-muted Ok
+              .col-3
+                .h3.text-danger= @spotlight_stats[:concerning_count]
+                %small.text-muted Needs attention
+          .col-md-4
+            - if @spotlight_stats[:concerning_count] > 0
+              .alert.alert-danger.small.mb-0
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong= "#{@spotlight_stats[:concerning_pct]}% need attention"
+      .card-footer.bg-light
+        .row.align-items-start
+          .col-md-5
+            %small.text-muted
+              %i.bi.bi-funnel.me-1
+              Who to show: #{goals_health_filter_label(@current_manager_filter)}
+          .col-md-7
+            .small.text-muted.text-md-end
+              - goals_health_definition_lines.each do |line|
+                %div.mb-1= line
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        = form_with url: organization_goals_health_path(@organization), method: :get, local: true, id: "goals-health-filter-form" do |f|
+          .row.align-items-end
+            .col-md-10
+              %label.form-label.fw-bold.fs-5.mb-2 Who to show
+              = select_tag :manager_id, options_for_select(@available_manager_filter_options, @current_manager_filter), class: "form-select form-select-lg", id: "goals-health-manager-select", required: true
+              %small.form-text.text-muted Choose scope: everyone, your reports, or a specific manager's direct reports
+            .col-md-2
+              = f.submit "Go", class: "btn btn-primary btn-lg w-100"
+          - if params[:page].present?
+            = hidden_field_tag :page, params[:page]
+
+.row.justify-content-center.mb-3
+  .col-lg-12.d-flex.gap-2.flex-wrap.align-items-center
+    = link_to organization_goals_health_export_path(@organization, manager_id: @current_manager_filter), class: "btn btn-outline-primary" do
+      %i.bi.bi-download.me-2
+      Download goals (CSV)
+    = link_to organization_goals_health_employee_summary_export_path(@organization, manager_id: @current_manager_filter), class: "btn btn-outline-primary" do
+      %i.bi.bi-download.me-2
+      Download employees goals summary (CSV)
+    %button.btn.btn-outline-secondary.disabled{ type: "button", disabled: true }
+      %i.bi.bi-people.me-2
+      By manager (coming soon)
+    = link_to organization_insights_goals_path(@organization), class: "btn btn-outline-secondary" do
+      %i.bi.bi-bar-chart-steps.me-2
+      Company Goal Insights
+
+.row.justify-content-center.mb-2
+  .col-lg-12
+    .d-flex.justify-content-between.align-items-center
+      %small.text-muted= raw pagy_info(@pagy)
+
+.row.justify-content-center
+  .col-lg-12
+    - if @employee_rows.any?
+      .table-responsive
+        %table.table.table-hover.table-layout-fixed
+          %colgroup
+            %col{style: "width: 25%"}
+            %col{style: "width: 25%"}
+            %col{style: "width: 25%"}
+            %col{style: "width: 25%"}
+          %thead
+            %tr
+              %th Employee
+              %th Top-level & associated
+              %th Top-level & unassociated
+              %th Child-goals
+          %tbody
+            - @employee_rows.each do |row|
+              %tr
+                %td
+                  = link_to row[:person].display_name, my_growth_goals_organization_company_teammate_path(@organization, row[:teammate]), class: "text-decoration-none fw-bold"
+                  %br
+                  - if row[:manager_teammate]
+                    %small.text-muted
+                      = link_to row[:manager].display_name, organization_goals_health_path(@organization, manager_id: "CompanyTeammate_#{row[:manager_teammate].id}"), class: "text-muted"
+                  - else
+                    %small.text-muted —
+                %td
+                  %div{ class: goals_health_row_bucket_alert_class(row, :associated) }
+                    %strong= goals_health_status_copy(row[:associated][:status])
+                    %span.ms-2
+                      Draft: #{row[:associated][:draft]}
+                      |
+                      Active: #{row[:associated][:active]}
+                      |
+                      Completed: #{row[:associated][:completed]}
+                %td
+                  %div{ class: goals_health_row_bucket_alert_class(row, :unassociated) }
+                    %strong= goals_health_status_copy(row[:unassociated][:status])
+                    %span.ms-2
+                      Draft: #{row[:unassociated][:draft]}
+                      |
+                      Active: #{row[:unassociated][:active]}
+                      |
+                      Completed: #{row[:unassociated][:completed]}
+                %td
+                  %div{ class: goals_health_row_bucket_alert_class(row, :child) }
+                    %strong= goals_health_status_copy(row[:child][:status])
+                    %span.ms-2
+                      Draft: #{row[:child][:draft]}
+                      |
+                      Active: #{row[:child][:active]}
+                      |
+                      Completed: #{row[:child][:completed]}
+      .d-flex.justify-content-center.mt-4
+        - if @pagy.pages > 1
+          = raw pagy_nav(@pagy)
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No one in this view
+        %p.mb-0
+          Change the filter above or there are no active employees in the selected scope.

@@ -238,6 +238,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Goals Health',
+            icon: 'bi-heart-pulse',
+            path: organization_goals_health_path(current_organization),
+            policy_check: -> { policy(current_organization).goals_health? },
+            coming_soon: false
+          },
+          {
             label: 'Prompts',
             icon: 'bi-journal-text',
             path: organization_insights_prompts_path(current_organization),

@@ -75,6 +75,13 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || organization_in_hierarchy?
   end
 
+  def goals_health?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return false unless viewing_teammate.employed?
+    admin_bypass? || organization_in_hierarchy?
+  end
+
   def view_prompts?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
