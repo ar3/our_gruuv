@@ -33,4 +33,45 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
       end
     end
   end
+
+  describe "next item resolution (resolve_next_item)" do
+    let(:service) do
+      described_class.new(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :assignment,
+        current_id: green_assignment_id
+      )
+    end
+    let(:green_assignment_id) { 200 }
+    let(:yellow_assignment_id) { 100 }
+    let(:fixture_items) do
+      [
+        { type: :assignment, id: yellow_assignment_id, name: "Yellow", bucket: described_class::BUCKET_YELLOW },
+        { type: :assignment, id: green_assignment_id, name: "Current", bucket: described_class::BUCKET_GREEN },
+        { type: :position, id: nil, name: "Position", bucket: described_class::BUCKET_GREEN }
+      ]
+    end
+
+    it "prefers a more urgent bucket over circular next in the green section" do
+      next_pick = service.send(:resolve_next_item, fixture_items, 1)
+      expect(next_pick[:id]).to eq(yellow_assignment_id)
+    end
+
+    it "uses circular order when no other item is more urgent" do
+      only_green = [
+        { type: :assignment, id: 1, name: "First", bucket: described_class::BUCKET_GREEN },
+        { type: :assignment, id: 2, name: "Second", bucket: described_class::BUCKET_GREEN }
+      ]
+      s2 = described_class.new(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :assignment,
+        current_id: 1
+      )
+      expect(s2.send(:resolve_next_item, only_green, 0)[:id]).to eq(2)
+    end
+  end
 end

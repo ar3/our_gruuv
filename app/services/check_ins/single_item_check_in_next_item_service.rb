@@ -32,10 +32,9 @@ module CheckIns
     def call
       items = build_ordered_items
       current_index = items.index { |i| same_item?(i) }
-      next_item = current_index ? items[(current_index + 1) % items.size] : items.first
-      next_requires_check_in = items.any? { |i| i[:bucket] != BUCKET_GREEN }
-
       current_item = current_index ? items[current_index] : nil
+      next_item = resolve_next_item(items, current_index)
+      next_requires_check_in = items.any? { |i| i[:bucket] != BUCKET_GREEN }
       others = items.reject { |i| same_item?(i) }
       show_check_in_status_done =
         current_item.present? &&
@@ -162,6 +161,41 @@ module CheckIns
       order = { BUCKET_RED => 0, BUCKET_YELLOW => 1, BUCKET_GREEN => 2 }
       type_order = { aspiration: 0, assignment: 1, position: 2 }
       items.sort_by { |i| [order[i[:bucket]], type_order[i[:type]] || 99, i[:id].to_i] }
+    end
+
+    # Items are sorted red → yellow → green. Simple (index + 1) % n skips items that sort
+    # *before* the current row (e.g. yellow assignment while on green assignment). Prefer any
+    # other item with a more urgent bucket first; otherwise advance circularly in the list.
+    def resolve_next_item(items, current_index)
+      return items.first if items.blank? || current_index.nil?
+
+      current_bucket = items[current_index][:bucket]
+      current_rank = bucket_urgency_rank(current_bucket)
+
+      more_urgent = items.find do |i|
+        !same_item?(i) && bucket_urgency_rank(i[:bucket]) < current_rank
+      end
+      return more_urgent if more_urgent
+
+      n = items.size
+      return items.first if n <= 1
+
+      (1...n).each do |step|
+        idx = (current_index + step) % n
+        candidate = items[idx]
+        return candidate unless same_item?(candidate)
+      end
+
+      items[(current_index + 1) % n]
+    end
+
+    def bucket_urgency_rank(bucket)
+      case bucket
+      when BUCKET_RED then 0
+      when BUCKET_YELLOW then 1
+      when BUCKET_GREEN then 2
+      else 3
+      end
     end
 
     def url_for_item(item)
