@@ -9,18 +9,17 @@ module StartHere
       def widget_ids_for(preset)
         case preset.to_sym
         when :manager
-          # Matches typical start_here_dashboard_widgets_v1 manager layout (by position).
+          # Manager default preset and blank Start Here dashboard (ensure_manager_default_if_blank!).
           %w[
-            about_me
-            get_shit_done
-            my_goals
             my_employees
-            kudos_wall
-            insights_dashboard
-            observations_involving_me
-            beta_my_growth
+            get_shit_done
+            insights_goals_health
+            about_me
             beta_check_in_history
+            my_goals
             about_complete_picture
+            beta_my_growth
+            observations_involving_me
           ]
         when :non_manager
           # Matches start_here_dashboard_widgets_v1 non-manager layout (by position).

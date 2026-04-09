@@ -75,4 +75,3 @@ class UserPreference < ApplicationRecord
     end
   end
 end
-
