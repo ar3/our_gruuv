@@ -25,6 +25,8 @@ class GoalsHealthGoalsCsvBuilder
       "Employee Name",
       "Employee Email",
       "Manager Name",
+      "Goal Creator",
+      "Goal Created At",
       "Goal Title",
       "Goal Status",
       "Group",
@@ -51,6 +53,8 @@ class GoalsHealthGoalsCsvBuilder
           teammate.person&.display_name.to_s,
           teammate.person&.email.to_s,
           manager&.display_name.to_s,
+          goal.creator&.person&.display_name.to_s,
+          datetime(goal.created_at),
           goal.title.to_s,
           goal_status(goal),
           goal_group(goal, child_goal_ids, associated_goal_ids),
@@ -84,5 +88,11 @@ class GoalsHealthGoalsCsvBuilder
     return "" if value.blank?
 
     value.to_date.iso8601
+  end
+
+  def datetime(value)
+    return "" if value.blank?
+
+    value.respond_to?(:strftime) ? value.strftime("%Y-%m-%d %H:%M") : value.to_s
   end
 end

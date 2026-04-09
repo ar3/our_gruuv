@@ -72,9 +72,6 @@
     = link_to organization_goals_health_employee_summary_export_path(@organization, manager_id: @current_manager_filter), class: "btn btn-outline-primary" do
       %i.bi.bi-download.me-2
       Download employees goals summary (CSV)
-    %button.btn.btn-outline-secondary.disabled{ type: "button", disabled: true }
-      %i.bi.bi-people.me-2
-      By manager (coming soon)
     = link_to organization_insights_goals_path(@organization), class: "btn btn-outline-secondary" do
       %i.bi.bi-bar-chart-steps.me-2
       Company Goal Insights
@@ -112,7 +109,15 @@
                   - else
                     %small.text-muted —
                 %td
-                  %div{ class: goals_health_row_bucket_alert_class(row, :associated) }
+                  %div{
+                    class: goals_health_row_bucket_alert_class(row, :associated),
+                    "data-bs-toggle" => "popover",
+                    "data-bs-trigger" => "hover focus",
+                    "data-bs-placement" => "auto",
+                    "data-bs-html" => "true",
+                    "data-bs-title" => goals_health_cell_popover_title("Top-level & associated"),
+                    "data-bs-content" => goals_health_cell_popover_content(row[:associated_goals])
+                  }
                     %strong= goals_health_status_copy(row[:associated][:status])
                     %span.ms-2
                       Draft: #{row[:associated][:draft]}
@@ -121,7 +126,15 @@
                       |
                       Completed: #{row[:associated][:completed]}
                 %td
-                  %div{ class: goals_health_row_bucket_alert_class(row, :unassociated) }
+                  %div{
+                    class: goals_health_row_bucket_alert_class(row, :unassociated),
+                    "data-bs-toggle" => "popover",
+                    "data-bs-trigger" => "hover focus",
+                    "data-bs-placement" => "auto",
+                    "data-bs-html" => "true",
+                    "data-bs-title" => goals_health_cell_popover_title("Top-level & unassociated"),
+                    "data-bs-content" => goals_health_cell_popover_content(row[:unassociated_goals])
+                  }
                     %strong= goals_health_status_copy(row[:unassociated][:status])
                     %span.ms-2
                       Draft: #{row[:unassociated][:draft]}
@@ -130,7 +143,15 @@
                       |
                       Completed: #{row[:unassociated][:completed]}
                 %td
-                  %div{ class: goals_health_row_bucket_alert_class(row, :child) }
+                  %div{
+                    class: goals_health_row_bucket_alert_class(row, :child),
+                    "data-bs-toggle" => "popover",
+                    "data-bs-trigger" => "hover focus",
+                    "data-bs-placement" => "auto",
+                    "data-bs-html" => "true",
+                    "data-bs-title" => goals_health_cell_popover_title("Child-goals"),
+                    "data-bs-content" => goals_health_cell_popover_content(row[:child_goals])
+                  }
                     %strong= goals_health_status_copy(row[:child][:status])
                     %span.ms-2
                       Draft: #{row[:child][:draft]}

@@ -7,11 +7,11 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
     apply_filter_default_if_needed
 
     active_teammates = filtered_teammates_for_goals_health.to_a
-    @visible_goals_by_teammate = build_visible_goals_by_teammate(active_teammates)
+    @aggregate_goals_by_teammate = build_aggregate_goals_by_teammate(active_teammates)
 
-    all_goal_ids = @visible_goals_by_teammate.values.flatten.map(&:id)
+    all_goal_ids = @aggregate_goals_by_teammate.values.flatten.map(&:id)
     bucket_lookup = Goals::HealthGoalBucketLookup.load_for_goal_ids(all_goal_ids)
-    all_rows = active_teammates.map { |teammate| row_for(teammate, @visible_goals_by_teammate[teammate] || [], bucket_lookup) }
+    all_rows = active_teammates.map { |teammate| row_for(teammate, @aggregate_goals_by_teammate[teammate] || [], bucket_lookup) }
     @spotlight_stats = spotlight_stats(all_rows)
 
     @pagy = Pagy.new(count: all_rows.count, page: params[:page] || 1, items: 25)
@@ -35,9 +35,9 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
     authorize @organization, :goals_health?
     apply_filter_default_if_needed
     teammates = filtered_teammates_for_goals_health.to_a
-    visible_goals_by_teammate = build_visible_goals_by_teammate(teammates)
-    bucket_lookup = Goals::HealthGoalBucketLookup.load_for_goal_ids(visible_goals_by_teammate.values.flatten.map(&:id))
-    csv_content = GoalsHealthEmployeeSummaryCsvBuilder.new(visible_goals_by_teammate, bucket_lookup: bucket_lookup).call
+    aggregate_goals_by_teammate = build_aggregate_goals_by_teammate(teammates)
+    bucket_lookup = Goals::HealthGoalBucketLookup.load_for_goal_ids(aggregate_goals_by_teammate.values.flatten.map(&:id))
+    csv_content = GoalsHealthEmployeeSummaryCsvBuilder.new(aggregate_goals_by_teammate, bucket_lookup: bucket_lookup).call
     filename = "employee_goals_summary_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
     send_data csv_content, filename: filename, type: "text/csv", disposition: "attachment"
   end
@@ -52,6 +52,9 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
       manager: Goals::HealthManagerPerson.for(teammate),
       manager_teammate: Goals::HealthManagerPerson.manager_teammate_for(teammate),
       status: Goals::HealthStatusCalculator.call(goals),
+      associated_goals: buckets[:associated],
+      unassociated_goals: buckets[:unassociated],
+      child_goals: buckets[:child],
       associated: status_and_counts(buckets[:associated]),
       unassociated: status_and_counts(buckets[:unassociated]),
       child: status_and_counts(buckets[:child])
@@ -67,11 +70,24 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
     }
   end
 
+  def build_aggregate_goals_by_teammate(teammates)
+    teammate_ids = teammates.map(&:id)
+    goals = Goal
+      .where(owner_type: "CompanyTeammate", owner_id: teammate_ids, deleted_at: nil)
+      .includes(:goal_check_ins, creator: :person)
+      .to_a
+
+    goals_by_teammate_id = goals.group_by(&:owner_id)
+    teammates.each_with_object({}) do |teammate, hash|
+      hash[teammate] = Array(goals_by_teammate_id[teammate.id])
+    end
+  end
+
   def build_visible_goals_by_teammate(teammates)
     teammate_ids = teammates.map(&:id)
     goals = policy_scope(Goal)
       .where(owner_type: "CompanyTeammate", owner_id: teammate_ids, deleted_at: nil)
-      .includes(:goal_check_ins)
+      .includes(:goal_check_ins, creator: :person)
       .to_a
 
     goals_by_teammate_id = goals.group_by(&:owner_id)
