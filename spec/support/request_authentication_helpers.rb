@@ -25,13 +25,22 @@ module RequestAuthenticationHelpers
         ct
       end
     end
-    
-    # Stub current_company_teammate for request specs
-    allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(teammate)
-    
-    # Also stub current_person and current_organization for backward compatibility
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(teammate.person)
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(teammate.organization)
+
+    teammate_id = teammate.id
+
+    # Re-load from the DB on each call so specs that update the teammate row (e.g. employment
+    # dates on a different AR instance than find_or_create returned) still see current attributes.
+    allow_any_instance_of(ApplicationController).to receive(:current_company_teammate) do
+      CompanyTeammate.includes(:organization, :person).find(teammate_id)
+    end
+
+    allow_any_instance_of(ApplicationController).to receive(:current_person) do
+      CompanyTeammate.includes(:person).find(teammate_id).person
+    end
+
+    allow_any_instance_of(ApplicationController).to receive(:current_organization) do
+      CompanyTeammate.includes(:organization).find(teammate_id).organization
+    end
     
     teammate
   end

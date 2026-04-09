@@ -1,0 +1,14 @@
+-# locals: stats (Hash with total_employees, healthy_count, ok_count, concerning_count)
+.row.text-center.g-1.gx-0.goals-health-spotlight-compact
+  .col-3
+    .fw-semibold.text-primary.small.lh-sm= stats[:total_employees]
+    %div.text-muted{style: "font-size: 0.65rem; line-height: 1.15;"} Total Active Employees
+  .col-3
+    .fw-semibold.text-success.small.lh-sm= stats[:healthy_count]
+    %div.text-muted{style: "font-size: 0.65rem; line-height: 1.15;"} Healthy
+  .col-3
+    .fw-semibold.text-warning.small.lh-sm= stats[:ok_count]
+    %div.text-muted{style: "font-size: 0.65rem; line-height: 1.15;"} Ok
+  .col-3
+    .fw-semibold.text-danger.small.lh-sm= stats[:concerning_count]
+    %div.text-muted{style: "font-size: 0.65rem; line-height: 1.15;"} Needs attention
