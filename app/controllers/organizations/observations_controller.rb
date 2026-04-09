@@ -1625,9 +1625,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       redirect_to redirect_url, notice: notice
     else
       # GET - render picker
+      @selected_observee_ids = @observation.observees.pluck(:teammate_id).to_set
       @teammates = organization.teammates
         .joins(:person)
-        .includes(:person, employment_tenures: [:position, { manager_teammate: :person }])
+        .includes(:person, employment_tenures: { position: { title: :department } })
         .order(Arel.sql('people.last_name, COALESCE(people.preferred_name, people.first_name)'))
       @return_url = params[:return_url] || typed_observation_path_for(@observation)
       @return_text = params[:return_text] || 'Back'

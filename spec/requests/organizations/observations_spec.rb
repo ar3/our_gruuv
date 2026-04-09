@@ -241,6 +241,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
     let!(:tenure_with_position_and_manager) do
       create(:employment_tenure, company_teammate: teammate_with_position_and_manager, company: organization, manager: manager_teammate)
     end
+    let!(:engineering_department) { create(:department, company: organization, name: 'Engineering') }
 
     # Teammate with position, no manager
     let(:with_position_no_manager_person) { create(:person) }
@@ -266,15 +267,15 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response.body).to include('Search teammates...')
     end
 
-    it 'shows all teammates including those with and without positions and managers' do
+    it 'shows all teammates including those with and without positions and department metadata' do
+      tenure_with_position_and_manager.position.title.update!(department: engineering_department)
       get manage_observees_organization_observation_path(organization, draft)
 
       expect(response).to have_http_status(:success)
-      # Teammate with position and manager – name and Manager: line
+      # Teammate with position and department
       expect(response.body).to include(with_position_and_manager_person.preferred_first_then_last_display_name)
-      expect(response.body).to include('Manager:')
-      expect(response.body).to include(manager_person.preferred_first_then_last_display_name)
-      # Teammate with position, no manager – name only (no Manager: for them)
+      expect(response.body).to include('Department: Engineering')
+      # Teammate with position, no department
       expect(response.body).to include(with_position_no_manager_person.preferred_first_then_last_display_name)
       # Teammate without position
       expect(response.body).to include(no_position_person.preferred_first_then_last_display_name)

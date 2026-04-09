@@ -53,7 +53,7 @@
           %input.form-control.form-control-lg.mb-3{ type: "search", placeholder: "Search teammates...", "data-options-filter-target": "input", "aria-label": "Filter teammates" }
           .teammate-columns{ "data-options-filter-target": "list" }
             - @teammates.each do |teammate|
-              - checked = @observation&.observees&.exists?(teammate_id: teammate.id) || false
+              - checked = @selected_observee_ids.include?(teammate.id)
               %label.card.filterable-option.text-decoration-none{ for: "teammate_#{teammate.id}", style: "cursor: pointer;" }
                 .card-body
                   .d-flex.align-items-start
@@ -67,11 +67,11 @@
                           = teammate_profile_image(teammate, size: 48)
                         .flex-grow-1
                           %h6.mb-1= teammate.person.preferred_first_then_last_display_name
-                      - manager = teammate.current_manager
-                      - if manager
+                      - active_tenure = teammate.employment_tenures.find { |tenure| tenure.ended_at.nil? && tenure.company_id == teammate.organization_id }
+                      - department = active_tenure&.position&.title&.department
+                      - if department
                         %p.text-muted.mb-1
-                          %small Manager: #{manager.preferred_first_then_last_display_name}
-                      - active_tenure = teammate.active_employment_tenure
+                          %small Department: #{department.name}
                       - if active_tenure&.position&.title
                         %p.text-muted.mb-0
                           %small Position: #{active_tenure.position.title.external_title}
