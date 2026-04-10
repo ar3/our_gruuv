@@ -34,6 +34,7 @@ module NavigationHelper
             icon: 'bi-clipboard-check',
             path: organization_company_teammate_check_ins_path(current_organization, current_company_teammate),
             policy_check: -> { policy(current_company_teammate).view_check_ins? },
+            active_check: -> { nav_my_check_in_item_active? },
             coming_soon: false
           },
           {
@@ -460,13 +461,6 @@ module NavigationHelper
             path: my_growth_experiences_organization_company_teammate_path(current_organization, current_company_teammate),
             policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
             coming_soon: false
-          },
-          {
-            label: 'Check-In History',
-            icon: 'bi-table',
-            path: review_most_recent_organization_company_teammate_check_ins_path(current_organization, current_company_teammate),
-            policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
-            coming_soon: false
           }
         ]
       },
@@ -510,6 +504,18 @@ module NavigationHelper
     else
       nav_item_active?(item[:path])
     end
+  end
+
+  # My Check-In is active on the bulk check-ins page and check-in status (review_most_recent) for this teammate only.
+  def nav_my_check_in_item_active?
+    return false unless current_organization && current_company_teammate
+    return false unless controller_name == 'check_ins'
+
+    ct_param = params[:company_teammate_id].to_s
+    on_this_teammate = ct_param == 'my' || ct_param == current_company_teammate.id.to_s
+    return false unless on_this_teammate
+
+    %w[show update review_most_recent save_and_redirect].include?(action_name)
   end
 
   # Prompts (My Growth Plan) item is active only on exact prompts index or when editing own prompt.

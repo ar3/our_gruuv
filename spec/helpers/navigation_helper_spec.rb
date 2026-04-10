@@ -165,6 +165,8 @@ RSpec.describe NavigationHelper, type: :helper do
 
         expect(items.length).to eq(7)
         expect(labels[0]).to match(/\AAbout .+\z/)
+        my_check_in = items.find { |i| i[:label] == 'My Check-In' }
+        expect(my_check_in[:active_check]).to be_present
         expect(labels[1]).to eq('My Check-In')
         expect(labels[2]).to eq("OGO's involving me")
         expect(labels[3]).to eq('My Feedback Requests')
@@ -553,6 +555,61 @@ RSpec.describe NavigationHelper, type: :helper do
 
     it 'returns false when item is nil' do
       expect(helper.nav_item_active_for?(nil)).to be false
+    end
+  end
+
+  describe '#nav_my_check_in_item_active?' do
+    before do
+      def helper.current_organization
+        @current_organization
+      end
+
+      def helper.current_company_teammate
+        @current_company_teammate
+      end
+
+      helper.instance_variable_set(:@current_organization, company)
+      helper.instance_variable_set(:@current_company_teammate, teammate)
+      allow(helper).to receive(:controller_name).and_return('check_ins')
+      allow(helper).to receive(:action_name).and_return('show')
+      allow(helper).to receive(:params).and_return(
+        ActionController::Parameters.new(
+          'organization_id' => company.id.to_s,
+          'company_teammate_id' => teammate.id.to_s
+        )
+      )
+    end
+
+    it 'returns true for show when the URL teammate matches current_company_teammate' do
+      expect(helper.nav_my_check_in_item_active?).to be true
+    end
+
+    it 'returns true for review_most_recent when the URL teammate matches' do
+      allow(helper).to receive(:action_name).and_return('review_most_recent')
+      expect(helper.nav_my_check_in_item_active?).to be true
+    end
+
+    it 'returns true when company_teammate_id is my' do
+      allow(helper).to receive(:params).and_return(ActionController::Parameters.new('company_teammate_id' => 'my'))
+      expect(helper.nav_my_check_in_item_active?).to be true
+    end
+
+    it 'returns false when viewing another teammate check-ins' do
+      other = create(:company_teammate, organization: company)
+      allow(helper).to receive(:params).and_return(
+        ActionController::Parameters.new('company_teammate_id' => other.id.to_s)
+      )
+      expect(helper.nav_my_check_in_item_active?).to be false
+    end
+
+    it 'returns false for a different controller' do
+      allow(helper).to receive(:controller_name).and_return('finalizations')
+      expect(helper.nav_my_check_in_item_active?).to be false
+    end
+
+    it 'returns false without current_company_teammate' do
+      helper.instance_variable_set(:@current_company_teammate, nil)
+      expect(helper.nav_my_check_in_item_active?).to be false
     end
   end
 

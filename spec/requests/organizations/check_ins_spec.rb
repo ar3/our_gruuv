@@ -540,7 +540,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       )
     end
 
-    it "renders the beta history table and waiting copy for unpaired aspiration employee completion" do
+    it "renders the check-in statuses table and waiting copy for unpaired aspiration employee completion" do
       sign_in_as_teammate_for_request(manager_person, organization)
 
       get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
@@ -553,7 +553,6 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include('Go to the Bulk Check-in page')
       expect(response.body).to include('On that page you can check-in on just one item or all of them at once')
       expect(response.body).to include('Check-In Status (Active)')
-      expect(response.body).to include('Beta')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
       expect(response.body).to include(organization_teammate_aspiration_path(organization, employee_teammate, aspiration))
