@@ -94,10 +94,11 @@ RSpec.describe 'About Me Page', type: :request do
   end
 
   describe 'Page title and header' do
-    it 'uses title and header "About <casual name>"' do
+    it 'uses title About <casual name> and header About plus teammate switcher' do
       get about_me_organization_company_teammate_path(organization, teammate)
       expect(response.body).to include("<title>About #{person.casual_name}</title>")
-      expect(response.body).to include("About #{person.casual_name}")
+      expect(response.body).to include('About')
+      expect(response.body).to include(person.casual_name)
     end
   end
 

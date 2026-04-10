@@ -1,10 +1,16 @@
-- content_for :title, "About #{@teammate.person.casual_name}"
+- content_for :title, "About #{@selected_teammate.person.casual_name}"
 
 - content_for :header do
-  .d-flex.align-items-center.gap-3
-    = teammate_profile_image(@teammate, size: 48)
-    %h1.mb-0 About #{@teammate.person.casual_name}
-        
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span.fs-1.fw-medium About
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { about_me_organization_company_teammate_path(organization, tm) },
+               switch_aria_label: "Switch teammate for About Me"
+
 - content_for :header_action do
   = render 'people/view_switcher'
 

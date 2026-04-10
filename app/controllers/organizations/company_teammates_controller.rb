@@ -81,7 +81,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   def about_me
     authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
     @person = @teammate.person
-    
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+
     # Check if onboarding spotlight should be shown
     # Only show on viewing teammate's own page and when they don't have BOTH an observation AND a goal
     # Also check company preference to see if onboarding encouragement is enabled
