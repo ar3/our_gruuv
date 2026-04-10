@@ -310,19 +310,18 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       end
 
       it "uses the correct teammate in step links" do
-        # Create another teammate to ensure we're not accidentally using the wrong one
+        # Another teammate in the org: bulk header lists their check-ins URL, but wizard steps stay on the selected employee
         other_person = create(:person)
         other_teammate = create(:teammate, person: other_person, organization: organization)
-        
+
         get organization_company_teammate_check_ins_path(organization, employee_teammate)
-        
+
         expect(response).to have_http_status(:success)
         html = response.body
-        
-        # Verify Step 1 link uses the correct teammate
+
+        # Verify Step 1 link uses the correct teammate (header teammate switcher also links other viewable teammates)
         step1_path = organization_company_teammate_check_ins_path(organization, employee_teammate)
         expect(html).to include(step1_path)
-        expect(html).not_to include(organization_company_teammate_check_ins_path(organization, other_teammate))
         
         # Verify Step 2 link uses the correct teammate
         step2_path = organization_company_teammate_finalization_path(organization, employee_teammate)
@@ -339,6 +338,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         get organization_company_teammate_check_ins_path(organization, employee_teammate)
 
         expect(response).to have_http_status(:success)
+        expect(response.body).to include(" - Check-Ins")
         expect(response.body).to include("You can check in on as many or as few assignments, aspirational values, and position in bulk")
         expect(response.body).to include("Go to the Check-in Status page")
         expect(response.body).to include("On that page you can view all of the recent check-ins in an easy to understand table")

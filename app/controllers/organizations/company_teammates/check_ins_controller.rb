@@ -2,6 +2,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   # Non-active, non-required assignments added within this many days show outside "Unique-to-You"
   RECENTLY_ADDED_DAYS = 7
 
+  include Organizations::AssignsViewableTeammates
+
   helper EmployeesHelper
 
   before_action :authenticate_person!
@@ -14,7 +16,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     
     authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
     @person = @teammate.person
-    
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+
     # Create debug data if debug parameter is present
     if params[:debug] == 'true'
       debug_service = Debug::CheckInsDebugService.new(
@@ -56,10 +59,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     timings = {}
     total_ms = Benchmark.ms do
       timings[:viewable_teammates_ms] = Benchmark.ms do
-        @viewable_teammates = load_viewable_teammates.to_a
-        @viewable_teammate_groups = group_viewable_teammates_by_department(@viewable_teammates)
+        assign_viewable_teammates_context!(selected_teammate: @teammate)
       end
-      @selected_teammate = @teammate
 
       timings[:position_check_in_ms] = Benchmark.ms do
         @position_check_in = PositionCheckIn
@@ -154,36 +155,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
     Rails.logger.debug "Final view_mode: #{@view_mode}"
     Rails.logger.debug "=== END DEBUG ===\n"
-  end
-
-  def load_viewable_teammates
-    base_scope = CompanyTeammate
-      .for_organization_hierarchy(organization)
-      .joins(:person)
-      .includes(:person, employment_tenures: { position: { title: :department } })
-      .where(last_terminated_at: nil)
-
-    if policy(organization).manage_employment?
-      base_scope.order('people.last_name ASC NULLS LAST, people.first_name ASC, people.preferred_name ASC NULLS LAST')
-    else
-      CompanyTeammate
-        .self_and_reporting_hierarchy(current_company_teammate, organization)
-        .joins(:person)
-        .includes(:person, employment_tenures: { position: { title: :department } })
-        .where(last_terminated_at: nil)
-        .order('people.last_name ASC NULLS LAST, people.first_name ASC, people.preferred_name ASC NULLS LAST')
-    end
-  end
-
-  def group_viewable_teammates_by_department(teammates)
-    groups = teammates.group_by do |teammate|
-      active_tenure = teammate.employment_tenures.find do |tenure|
-        tenure.ended_at.nil? && tenure.company_id == organization.id
-      end
-      active_tenure&.position&.title&.department&.name.presence || 'No Department'
-    end
-
-    groups.sort_by { |department_name, _| department_name == 'No Department' ? "\uFFFF" : department_name.downcase }.to_h
   end
 
   def build_position_history

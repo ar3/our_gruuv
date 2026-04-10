@@ -25,16 +25,16 @@ RSpec.describe 'Check-ins Save and Redirect', type: :system do
     visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     # Verify the page loads correctly
-    expect(page).to have_content('Check-Ins for')
-    expect(page).to have_content(employee.display_name)
+    expect(page).to have_content('- Check-Ins')
+    expect(page).to have_content(employee.casual_name)
   end
 
   it 'displays check-ins page correctly' do
     visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     # Verify the page loads and form is present
-    expect(page).to have_content('Check-Ins for')
-    expect(page).to have_content(employee.display_name)
+    expect(page).to have_content('- Check-Ins')
+    expect(page).to have_content(employee.casual_name)
     expect(page).to have_css('form')
   end
 end

@@ -1,6 +1,10 @@
 -# locals: organization, selected_teammate, viewable_teammate_groups
+-# Optional: path_for_teammate — Proc (teammate) -> URL. Default is check-in status page; set explicitly for other flows.
+-# Optional: switch_aria_label — dropdown trigger aria-label
+- path_for_teammate = local_assigns.fetch(:path_for_teammate) { ->(tm) { review_most_recent_organization_company_teammate_check_ins_path(organization, tm) } }
+- switch_aria_label = local_assigns.fetch(:switch_aria_label) { "Switch employee for check-in statuses" }
 .dropdown.d-inline-flex.align-items-center
-  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Switch employee for check-in statuses"}
+  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => switch_aria_label}
     = teammate_profile_image(selected_teammate, size: 32)
     %span= selected_teammate.person.casual_name
   %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
@@ -9,7 +13,7 @@
         %h6.dropdown-header.mb-0.mt-1= department_name
       - teammates.each do |teammate|
         %li
-          - path = review_most_recent_organization_company_teammate_check_ins_path(organization, teammate)
+          - path = path_for_teammate.call(teammate)
           - if teammate.id == selected_teammate.id
             .dropdown-item.text-muted.d-flex.align-items-center.gap-2
               = teammate_profile_image(teammate, size: 28)

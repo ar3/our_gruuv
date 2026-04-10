@@ -1,8 +1,17 @@
-- content_for :title, "Check-Ins - #{@teammate.person.display_name}"
+- content_for :title, teammate_context_page_title(@selected_teammate, "Check-Ins")
 
 - content_for :header do
-  %h1.mb-0 Check-Ins for #{@teammate.person.display_name}
-  %p.text-muted.mb-0= "View Mode: #{@view_mode.to_s.titleize}"
+  .d-flex.flex-column.gap-1
+    .d-flex.align-items-center.gap-2.flex-wrap
+      %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+        = render "shared/teammate_context/title_dropdown",
+                 organization: organization,
+                 selected_teammate: @selected_teammate,
+                 viewable_teammate_groups: @viewable_teammate_groups,
+                 path_for_teammate: ->(tm) { organization_company_teammate_check_ins_path(organization, tm) },
+                 switch_aria_label: "Switch teammate for bulk check-ins"
+        %span= " - Check-Ins"
+    %p.text-muted.mb-0= "View Mode: #{@view_mode.to_s.titleize}"
         
 - content_for :header_action do
   .d-flex.align-items-center.gap-2

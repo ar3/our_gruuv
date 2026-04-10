@@ -43,7 +43,8 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
     it 'allows filling out multiple assignments, aspirations, and position in one save' do
       visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
-      expect(page).to have_content('Check-Ins for John Doe')
+      expect(page).to have_content('- Check-Ins')
+      expect(page).to have_content(employee_person.casual_name)
       # Assignment titles are now in submit buttons, so check for button or content
       expect(page.has_button?('Assignment 1') || page.has_content?('Assignment 1')).to be true
       expect(page.has_button?('Assignment 2') || page.has_content?('Assignment 2')).to be true
