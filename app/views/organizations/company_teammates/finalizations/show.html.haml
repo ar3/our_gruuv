@@ -1,8 +1,17 @@
-- content_for :title, "Finalize Check-Ins - #{@teammate.person.display_name}"
+- finalize_page_label = "Review/Finalize Check-ins Together"
+- content_for :title, teammate_context_page_title(@selected_teammate, finalize_page_label)
 
 - content_for :header do
-  %h1.mb-0 Finalize Check-Ins for #{@teammate.person.display_name}
-        
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { organization_company_teammate_finalization_path(organization, tm) },
+               switch_aria_label: "Switch teammate for review and finalization"
+      %span= " - #{finalize_page_label}"
+
 - content_for :header_action do
   = render 'people/view_switcher'
 

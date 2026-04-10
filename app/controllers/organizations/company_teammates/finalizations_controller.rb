@@ -1,10 +1,13 @@
 class Organizations::CompanyTeammates::FinalizationsController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::AssignsViewableTeammates
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :authorize_finalization
-  
+
   def show
     @person = @teammate.person
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     # Determine view mode
     # All non-employee viewers (including non-direct-managers) behave as managers
     if current_person == @teammate.person
