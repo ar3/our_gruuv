@@ -1044,6 +1044,19 @@ body:has(.vertical-nav.open) .floating-toggle {
   min-height: 0;
 }
 
+// 1-by-1 check-in: perspective blurb (full-bleed notes strip in .card-body)
+.check-in-perspective-notes {
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--bs-card-spacer-x, 1rem));
+  max-width: none;
+  margin-left: calc(-1 * var(--bs-card-spacer-x, 1rem));
+  margin-right: calc(-1 * var(--bs-card-spacer-x, 1rem));
+  padding: 1rem 1.25rem;
+  background-color: var(--bs-secondary-bg);
+  border-left: 6px solid var(--bs-border-color);
+  border-radius: 0 var(--bs-border-radius) var(--bs-border-radius) 0;
+}
+
 // Start Here: “Other ways to customize” collapse (chevron matches Bootstrap .collapsed on trigger)
 .start-here-customize-toggle.collapsed .start-here-customize-chevron-up {
   display: none !important;

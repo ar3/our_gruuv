@@ -70,6 +70,12 @@
           %h5.mb-0 Current Check-in
         .card-body
           = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @single_item_name, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
+            - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+            = render "shared/single_item_check_in/perspective_context",
+              check_in: @open_check_in,
+              teammate: @teammate,
+              object_name: @single_item_name,
+              is_complete: is_complete
             = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
               = form.hidden_field :current_url, value: position_check_in_organization_teammate_path(@organization, @teammate), id: nil
               = form.hidden_field :current_type, value: "position", id: nil
@@ -89,7 +95,6 @@
                   .mb-3
                     %label.form-label Manager Notes
                     = pf.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
                 .row
                   = render "shared/single_item_check_in/form_save_actions",
                     form: form,

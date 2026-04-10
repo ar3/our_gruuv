@@ -50,6 +50,17 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response.body).to include("Current Check-in")
         expect(response.body).to include("Save as Draft and stay here")
       end
+
+      it "shows the perspective context in a notes strip above the form" do
+        get aspiration_show_path
+        expect(response.body).to include('class="check-in-perspective-notes mb-3"')
+        expect(response.body).to include("This is your perspective on #{employee_person.casual_name} and #{aspiration.name}")
+        expect(response.body).to include("until now.")
+        expect(response.body).to include("Your check-in on #{employee_person.casual_name} and #{aspiration.name} is currently:")
+        expect(response.body).to include('class="badge bg-warning text-dark rounded-pill me-1"')
+        expect(response.body).to include("draft")
+        expect(response.body).to include("click the blue button below to mark it ready for review")
+      end
     end
 
     context "when latest finalized is crystal clear and the open check-in is still fresh on the employee side" do
@@ -103,6 +114,20 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
       end
     end
 
+    context "when employee has marked ready for review and views the page" do
+      before do
+        create(:aspiration_check_in, :employee_completed, teammate: employee_teammate, aspiration: aspiration)
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "shows the success pill and save-and-keep copy for the viewer side" do
+        get aspiration_show_path
+        expect(response.body).to include('class="badge bg-success rounded-pill me-1"')
+        expect(response.body).to include("ready for review")
+        expect(response.body).to include("click the blue button below to save and keep it ready for review")
+      end
+    end
+
     context "when check-in is completed by employee only" do
       before do
         create(:aspiration_check_in, :employee_completed, teammate: employee_teammate, aspiration: aspiration)
@@ -113,6 +138,13 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         get aspiration_show_path
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Manager Rating")
+      end
+
+      it "shows counterparty ready-for-review clause and draft pill for manager side" do
+        get aspiration_show_path
+        expect(response.body).to include("#{employee_person.casual_name} has reflected on this and marked their check-in ready for review")
+        expect(response.body).to include('class="badge bg-warning text-dark rounded-pill me-1"')
+        expect(response.body).to include("draft")
       end
     end
 

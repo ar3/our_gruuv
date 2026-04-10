@@ -22,6 +22,27 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
   end
 
   describe "GET show" do
+    context "when there is an open check-in" do
+      before do
+        create(:assignment_check_in,
+          teammate: employee_teammate,
+          assignment: assignment,
+          check_in_started_on: Date.new(2026, 3, 15),
+          employee_completed_at: nil,
+          manager_completed_at: nil)
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "shows the perspective context with assignment title" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("This is your perspective on #{employee_person.casual_name} and #{assignment.title}")
+        expect(response.body).to include("March 15, 2026")
+        expect(response.body).to include("Your check-in on #{employee_person.casual_name} and #{assignment.title} is currently:")
+        expect(response.body).to include("draft")
+      end
+    end
+
     context "when latest finalized is crystal clear and the open check-in is fresh on the employee side" do
       let!(:_finalized_assignment_check_in) do
         create(:assignment_check_in, :finalized,

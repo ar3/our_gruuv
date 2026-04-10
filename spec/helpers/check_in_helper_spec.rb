@@ -253,6 +253,60 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
+  describe '#single_item_check_in_counterparty_ready_review_clause' do
+    let(:organization) { create(:organization) }
+    let(:employee_person) { create(:person, first_name: 'Jamie', last_name: 'Emp') }
+    let(:manager_person) { create(:person, first_name: 'Morgan', last_name: 'Mgr') }
+    let(:employee_teammate) { create(:company_teammate, person: employee_person, organization: organization) }
+    let(:manager_teammate) { create(:company_teammate, person: manager_person, organization: organization) }
+    let(:aspiration) { create(:aspiration, company: organization) }
+
+    before do
+      allow(employee_teammate).to receive(:current_manager).and_return(manager_person)
+    end
+
+    it 'returns empty string when check_in is nil' do
+      expect(helper.single_item_check_in_counterparty_ready_review_clause(nil, employee_teammate, employee_person)).to eq('')
+    end
+
+    it 'when viewing as employee and manager has not completed, names manager' do
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        manager_completed_at: nil)
+      expect(helper.single_item_check_in_counterparty_ready_review_clause(check_in, employee_teammate, employee_person))
+        .to eq("#{manager_person.casual_name} has not completed their check-in yet.")
+    end
+
+    it 'when viewing as employee and manager completed, includes time ago' do
+      completed = 2.days.ago
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        manager_completed_at: completed,
+        manager_completed_by_teammate: manager_teammate,
+        manager_rating: 'meeting',
+        manager_private_notes: 'ok')
+      allow(helper).to receive(:time_ago_in_words).with(completed).and_return('2 days')
+      expect(helper.single_item_check_in_counterparty_ready_review_clause(check_in, employee_teammate, employee_person))
+        .to eq("#{manager_person.casual_name} has reflected on this and marked their check-in ready for review 2 days ago.")
+    end
+
+    it 'when viewing as manager and employee has not completed, names employee' do
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        employee_completed_at: nil)
+      expect(helper.single_item_check_in_counterparty_ready_review_clause(check_in, employee_teammate, manager_person))
+        .to eq("#{employee_person.casual_name} has not completed their check-in yet.")
+    end
+
+    it 'when viewing as manager and employee completed, includes time ago' do
+      completed = 5.hours.ago
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        employee_completed_at: completed,
+        employee_rating: 'meeting',
+        employee_private_notes: 'notes')
+      allow(helper).to receive(:time_ago_in_words).with(completed).and_return('about 5 hours')
+      expect(helper.single_item_check_in_counterparty_ready_review_clause(check_in, employee_teammate, manager_person))
+        .to eq("#{employee_person.casual_name} has reflected on this and marked their check-in ready for review about 5 hours ago.")
+    end
+  end
+
   describe '#single_item_check_in_make_changes_needs_attention?' do
     let(:organization) { create(:organization) }
     let(:person) { create(:person, first_name: 'Jane', last_name: 'Doe') }

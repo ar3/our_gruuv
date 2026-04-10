@@ -212,6 +212,33 @@ module CheckInHelper
     mode == :employee ? check_in.employee_completed_at : check_in.manager_completed_at
   end
 
+  # 1-by-1 check-in form: second sentence in the perspective blurb (counterparty completion).
+  def single_item_check_in_counterparty_ready_review_clause(check_in, teammate, current_person)
+    return "" if check_in.blank? || teammate.blank? || current_person.blank?
+
+    mode = single_item_check_in_view_mode(teammate, current_person)
+    counterparty = single_item_check_in_counterparty_name(teammate, current_person)
+
+    other_done, completed_at =
+      if mode == :employee
+        [check_in.manager_completed?, check_in.manager_completed_at]
+      else
+        [check_in.employee_completed?, check_in.employee_completed_at]
+      end
+
+    if other_done
+      ago =
+        if completed_at.present?
+          "#{time_ago_in_words(completed_at)} ago"
+        else
+          "recently"
+        end
+      "#{counterparty} has reflected on this and marked their check-in ready for review #{ago}."
+    else
+      "#{counterparty} has not completed their check-in yet."
+    end
+  end
+
   def single_item_check_in_move_destination_text(next_requires_check_in:, next_item:, show_check_in_status_done: false)
     if next_requires_check_in && !show_check_in_status_done && next_item.present?
       next_item[:name].to_s

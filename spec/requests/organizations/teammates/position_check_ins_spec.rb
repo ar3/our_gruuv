@@ -36,6 +36,14 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "shows the perspective context for the open position check-in" do
+      get position_check_in_organization_teammate_path(organization, teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("This is your perspective on #{person.casual_name} and #{title.external_title}")
+      expect(response.body).to include("Your check-in on #{person.casual_name} and #{title.external_title} is currently:")
+      expect(response.body).to include("draft")
+    end
+
     it "renders the show template" do
       get position_check_in_organization_teammate_path(organization, teammate)
       expect(response).to render_template("organizations/teammates/position_check_ins/show")
