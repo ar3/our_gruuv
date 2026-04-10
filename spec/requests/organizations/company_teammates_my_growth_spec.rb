@@ -29,6 +29,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
       it 'allows GET my_growth/experiences' do
         get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('Growth')
       end
 
       context 'Grow by experiences assignment cards' do

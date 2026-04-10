@@ -80,6 +80,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     it 'returns http success' do
       get organization_teammate_position_path(organization, employee_teammate)
       expect(response).to have_http_status(:success)
+      expect(response.body).to include(' - Position Management')
     end
 
     it 'loads only available seats (not associated with active tenures)' do

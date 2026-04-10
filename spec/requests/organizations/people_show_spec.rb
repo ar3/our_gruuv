@@ -29,6 +29,7 @@ RSpec.describe 'Organizations::People Show', type: :request do
       it 'returns success' do
         get organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:success)
+        expect(response.body).to include(' - Profile')
       end
 
       it 'loads page visits data' do

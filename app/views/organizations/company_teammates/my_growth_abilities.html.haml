@@ -1,8 +1,8 @@
-- content_for :title, "My Growth — #{@teammate.person.casual_name}"
+- content_for :title, "#{@selected_teammate.person.casual_name.strip}'s Growth"
 
 - content_for :header do
   = render 'organizations/company_teammates/my_growth/header',
-    teammate: @teammate,
+    path_for_teammate: ->(tm) { my_growth_abilities_organization_company_teammate_path(organization, tm) },
     intent_text: "Show milestone mileage progress for growth by abilities against the current position requirements."
 
 - content_for :header_action do

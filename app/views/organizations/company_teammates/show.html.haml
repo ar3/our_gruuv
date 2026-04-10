@@ -1,12 +1,16 @@
-- content_for :title, @teammate.person == current_person ? "My Profile" : @teammate.person.display_name
+- content_for :title, teammate_context_page_title(@selected_teammate, "Profile")
 
 - content_for :header do
-  %h1.mb-0{id: "person-title"}
-  - if @teammate.person == current_person
-    My Profile
-  - else
-    = @teammate.person.display_name
-        
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2{id: "person-title"}
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { organization_company_teammate_path(organization, tm) },
+               switch_aria_label: "Switch teammate for profile"
+      %span= " - Profile"
+
 - content_for :header_action do
   = render 'people/view_switcher'
 

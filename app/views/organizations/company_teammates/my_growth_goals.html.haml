@@ -1,11 +1,11 @@
-- content_for :title, "My Growth — #{@teammate.person.casual_name}"
+- content_for :title, "#{@selected_teammate.person.casual_name.strip}'s Growth"
 
 - content_for :head do
   %script{ src: "https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.12.0/mermaid.min.js", "data-turbo-track": "reload" }
 
 - content_for :header do
   = render 'organizations/company_teammates/my_growth/header',
-    teammate: @teammate,
+    path_for_teammate: ->(tm) { my_growth_goals_organization_company_teammate_path(organization, tm, timeframe: params[:timeframe]) },
     intent_text: "Visualize goal relationships and weekly momentum for goals this teammate owns."
 
 - content_for :header_action do

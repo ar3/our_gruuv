@@ -1,4 +1,5 @@
-- content_for :title, "Position - #{@teammate.person.display_name}"
+- position_switch_params = { return_url: @return_url, return_text: @return_text }.compact
+- content_for :title, teammate_context_page_title(@selected_teammate, "Position Management")
 
 - content_for :go_back_link do
   = link_to @return_url, class: "go-back-link" do
@@ -6,8 +7,15 @@
     = @return_text
 
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0="#{@teammate.person.last_first_display_name} - Position Management/Details"
+  .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { organization_teammate_position_path(organization, tm, **position_switch_params) },
+               switch_aria_label: "Switch teammate for position management"
+      %span= " - Position Management"
 
 - content_for :header_action do
   = render 'people/view_switcher'

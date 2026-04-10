@@ -7,6 +7,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def show
     authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     @person = @teammate.person
     # Organization-scoped teammate view - filtered by the organization from the route
     @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager_teammate)
@@ -112,6 +113,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def kudos_points
     authorize @teammate, :view_kudos_points?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     @person = @teammate.person
     @ledger = @teammate.kudos_ledger
     transactions_scope = @teammate.kudos_transactions.recent
@@ -124,6 +126,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def my_growth_experiences
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     @person = @teammate.person
     @current_organization = organization
     load_my_growth_employment_context
@@ -132,6 +135,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def my_growth_abilities
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     @person = @teammate.person
     @current_organization = organization
     load_my_growth_employment_context
@@ -145,6 +149,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def my_growth_goals
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     @person = @teammate.person
     @current_organization = organization
     @timeframe = my_growth_parse_timeframe(params[:timeframe])
@@ -160,6 +165,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def my_growth_position_change
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     @person = @teammate.person
     @current_organization = organization
     load_my_growth_employment_context
@@ -1210,6 +1216,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def setup_show_instance_variables
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     # Get all employment tenures for this organization
     @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager_teammate)
                                  &.where(company: organization)

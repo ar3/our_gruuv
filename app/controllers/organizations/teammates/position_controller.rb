@@ -1,11 +1,14 @@
 class Organizations::Teammates::PositionController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::AssignsViewableTeammates
+
   before_action :authenticate_person!
   before_action :set_teammate
   after_action :verify_authorized
 
   def show
     authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
-    
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+
     # Set @person for view switcher
     @person = @teammate.person
     
@@ -84,6 +87,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     else
       # Set @person for view switcher
       @person = @teammate.person
+      assign_viewable_teammates_context!(selected_teammate: @teammate)
       render :show, status: :unprocessable_entity
     end
   end
@@ -203,6 +207,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @employment_tenure = EmploymentTenure.new
       @employment_tenure.errors.add(:position_id, "can't be blank") unless position_id.present?
       @employment_tenure.errors.add(:started_at, "can't be blank") unless started_at.present?
+      assign_viewable_teammates_context!(selected_teammate: @teammate)
       render :show, status: :unprocessable_entity
       return
     end
@@ -221,6 +226,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       load_form_data
       @employment_tenure = EmploymentTenure.new
       @employment_tenure.errors.add(:position_id, "does not exist")
+      assign_viewable_teammates_context!(selected_teammate: @teammate)
       render :show, status: :unprocessable_entity
       return
     end
@@ -262,6 +268,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @check_ins = PositionCheckIn.where(company_teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
       @open_check_in = PositionCheckIn.where(company_teammate: @teammate).open.first
       load_form_data
+      assign_viewable_teammates_context!(selected_teammate: @teammate)
       render :show, status: :unprocessable_entity
     end
   end
