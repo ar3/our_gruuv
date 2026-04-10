@@ -1,0 +1,14 @@
+-# locals: position
+- pl = position.position_level
+- pml = position.title&.position_major_level
+%p.mb-1.fw-medium= pl&.level_name || "—"
+- if pml
+  - major_desc = pml.description.presence || "No description"
+  %p.mb-1.small.text-muted.mb-0
+    #{pml.major_level}.* = #{major_desc}
+- if pl
+  - minor_slot = pl.eligibility_minor_slot rescue nil
+  - minor_desc = minor_slot && PositionEligibilityMinorLevels.tier_description(minor_slot)
+  - if minor_desc
+    %p.mb-0.small.text-muted
+      *.#{minor_slot} = #{minor_desc}

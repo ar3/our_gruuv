@@ -1,4 +1,6 @@
 class Organizations::CompanyTeammatesController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::AssignsViewableTeammates
+
   before_action :authenticate_person!
   before_action :set_teammate
   after_action :verify_authorized
@@ -35,14 +37,20 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def complete_picture
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     # Complete picture view - detailed view for managers to see teammate's position, assignments, and milestones
     # Filter by the organization from the route
-    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager_teammate)
-                                 &.where(company: organization)
+    @employment_tenures = @teammate&.employment_tenures&.includes(
+      :company, :seat,
+      manager_teammate: :person,
+      position: [:position_level, { title: [:department, :position_major_level] }]
+    )&.where(company: organization)
                                  &.order(started_at: :desc)
                                  &.decorate || []
     @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
     @current_organization = organization
+
+    load_complete_picture_spotlight_and_observations
 
     # Filter assignments to only show those for this organization
     @assignment_tenures = @teammate&.assignment_tenures&.active
@@ -753,6 +761,113 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   private
+
+  def load_complete_picture_spotlight_and_observations
+    @complete_picture_distinct_position_count = @employment_tenures.map(&:position_id).compact.uniq.size
+
+    @complete_picture_earliest_start_date = if @teammate.first_employed_at.present?
+      @teammate.first_employed_at.to_date
+    elsif @employment_tenures.any?
+      @employment_tenures.map(&:started_at).compact.min&.to_date
+    end
+
+    @complete_picture_in_position_since_date = @current_employment&.started_at&.to_date
+
+    anchor_at = complete_picture_earliest_official_finalized_at
+    @complete_picture_next_check_in_word = helpers.complete_picture_next_check_in_word(anchor_at)
+    @complete_picture_check_ins_url = organization_company_teammate_check_ins_path(organization, @teammate)
+    @complete_picture_seats_management_url = organization_seats_path(organization)
+
+    goals_arr = Goal.where(owner: @teammate, deleted_at: nil).includes(:goal_check_ins).to_a
+    @complete_picture_goals_active_count = goals_arr.count { |g| g.started_at.present? && g.completed_at.nil? }
+    @complete_picture_goals_health_status = Goals::HealthStatusCalculator.call(goals_arr)
+
+    casual = @teammate.person.casual_name
+    return_path = complete_picture_organization_company_teammate_path(organization, @teammate)
+    @complete_picture_my_growth_goals_url = my_growth_goals_organization_company_teammate_path(organization, @teammate)
+    @complete_picture_observations_index_url = organization_observations_path(
+      organization,
+      involving_teammate_id: @teammate.id,
+      timeframe: 'all',
+      return_url: return_path,
+      return_text: "Back to #{casual}'s True Day-to-Day"
+    )
+
+    timeframe_all = { timeframe: 'all' }
+    given_query = ObservationsQuery.new(
+      organization,
+      timeframe_all.merge(observer_id: @teammate.person_id, exclude_observer_as_observee: true),
+      current_person: current_person
+    )
+    @complete_picture_observations_given_count = given_query.call.count
+
+    received_query = ObservationsQuery.new(
+      organization,
+      timeframe_all.merge(observee_ids: [@teammate.id]),
+      current_person: current_person
+    )
+    @complete_picture_observations_received_count = received_query.call.count
+
+    involving_query = ObservationsQuery.new(
+      organization,
+      timeframe_all.merge(involving_teammate_id: @teammate.id),
+      current_person: current_person
+    )
+    @complete_picture_recent_observations = involving_query.call
+      .includes(:observer, { observed_teammates: :person }, :observation_ratings, :notifications)
+      .limit(20)
+      .to_a
+    complete_picture_preload_observation_rateables!(@complete_picture_recent_observations)
+  end
+
+  # Same polymorphic preload as Organizations::ObservationsController#preload_rateables (large list ratings).
+  def complete_picture_preload_observation_rateables!(observations)
+    rating_ids_by_type = observations.flat_map(&:observation_ratings).group_by(&:rateable_type)
+    rating_ids_by_type.each do |rateable_type, ratings|
+      ids = ratings.map(&:rateable_id).uniq
+      next if ids.empty?
+
+      case rateable_type
+      when 'Assignment'
+        Assignment.where(id: ids).load
+      when 'Ability'
+        Ability.where(id: ids).load
+      when 'Aspiration'
+        Aspiration.where(id: ids).load
+      end
+    end
+  end
+
+  # Oldest "latest finalized" across position, assignment, and aspiration check-ins for this org (most urgent stream).
+  def complete_picture_earliest_official_finalized_at
+    times = []
+    teammate = @teammate
+    org = organization
+
+    if (pci = PositionCheckIn.latest_finalized_for(teammate))&.official_check_in_completed_at
+      times << pci.official_check_in_completed_at
+    end
+
+    AssignmentCheckIn
+      .joins(:assignment)
+      .where(company_teammate: teammate, assignments: { company_id: org.id })
+      .closed
+      .group(:assignment_id)
+      .maximum(:official_check_in_completed_at)
+      .each_value { |t| times << t if t }
+
+    aspiration_ids = Aspiration.within_hierarchy(org).pluck(:id)
+    if aspiration_ids.any?
+      AspirationCheckIn
+        .where(company_teammate: teammate, aspiration_id: aspiration_ids)
+        .closed
+        .group(:aspiration_id)
+        .maximum(:official_check_in_completed_at)
+        .each_value { |t| times << t if t }
+    end
+
+    times.compact.min
+  end
 
   def load_my_growth_employment_context
     @employment_tenures = @teammate.employment_tenures

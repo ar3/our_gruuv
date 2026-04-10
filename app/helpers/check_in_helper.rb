@@ -152,6 +152,26 @@ module CheckInHelper
     last_finalized_pill_class(latest_check_in) == 'bg-success'
   end
 
+  # True Day-to-Day spotlight: time until clarity deadline from last finalized (matches _last_finalized_pill branches).
+  # Returns "now" when there is no anchor finalized time or the deadline has passed.
+  def complete_picture_next_check_in_word(official_check_in_completed_at)
+    return 'now' if official_check_in_completed_at.blank?
+
+    completed_at = official_check_in_completed_at
+    pseudo = Struct.new(:official_check_in_completed_at).new(completed_at)
+    pill_class = last_finalized_pill_class(pseudo)
+
+    deadline = if pill_class == 'bg-info text-dark'
+                 completed_at + CheckInBehavior::CLARITY_BLURRED_DAYS.days
+               else
+                 completed_at + CheckInBehavior::CLARITY_CLEAR_DAYS.days
+               end
+
+    return 'now' if Time.current >= deadline
+
+    distance_of_time_in_words(Time.current, deadline)
+  end
+
   # True when open row fields should be hidden by default because the item is fresh
   # and no one has started the current check-in yet.
   def hide_fresh_open_check_in_fields?(check_in, latest_finalized, view_mode:)

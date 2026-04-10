@@ -82,6 +82,25 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
+  describe '#complete_picture_next_check_in_word' do
+    it 'returns "now" when anchor time is blank' do
+      expect(helper.complete_picture_next_check_in_word(nil)).to eq('now')
+    end
+
+    it 'returns "now" when the clear-window deadline is in the past (warning band)' do
+      anchor = 80.days.ago
+      expect(helper.complete_picture_next_check_in_word(anchor)).to eq('now')
+    end
+
+    it 'returns a future distance when within crystal clear band' do
+      anchor = 5.days.ago
+      word = helper.complete_picture_next_check_in_word(anchor)
+      expect(word).not_to eq('now')
+      expect(word).to be_a(String)
+      expect(word.length).to be_positive
+    end
+  end
+
   describe '#assignment_alignment_phrase_past' do
     it 'returns past-tense phrase for each alignment' do
       expect(helper.assignment_alignment_phrase_past('love')).to eq("they'd love to do it again")
