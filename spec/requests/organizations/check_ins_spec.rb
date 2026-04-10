@@ -546,7 +546,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Check-In Statuses -")
+      expect(response.body).to include(" - Check-In Statuses")
       expect(response.body).to include(employee_person.casual_name)
       expect(response.body).not_to include('id="teammate_switcher"')
       expect(response.body).to include('Check-in on any single assignment, value, or position one at a time by clicking on the name listed below')

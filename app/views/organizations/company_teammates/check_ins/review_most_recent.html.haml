@@ -1,13 +1,13 @@
-- content_for :title, "Check-In Statuses - #{@teammate.person.casual_name}"
+- content_for :title, "#{@teammate.person.casual_name} - Check-In Statuses"
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
     %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      %span Check-In Statuses -
       = render "organizations/company_teammates/check_ins/review_most_recent_teammate_title_dropdown",
                organization: organization,
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups
+      %span= " - Check-In Statuses"
 
 - content_for :header_action do
   = render "people/view_switcher"
