@@ -427,6 +427,24 @@ module CheckInHelper
     'Click here to do the same check-in process as you are doing on this page, but focusing on just this one thing at a time!'
   end
 
+  # Review-most-recent: outline CTA when the open check-in is ready for joint finalization (both sides complete).
+  def review_most_recent_joint_review_button_label(check_in, employee_name, manager_name)
+    return '' if check_in.blank?
+
+    object_label = case check_in
+    when AspirationCheckIn
+      check_in.aspiration&.name.presence || 'this value'
+    when AssignmentCheckIn
+      check_in.assignment&.title.presence || 'this assignment'
+    when PositionCheckIn
+      check_in.employment_tenure&.position&.display_name.presence || 'this position'
+    else
+      'this check-in'
+    end
+
+    "Time for #{employee_name} and #{manager_name} to review #{object_label} together!"
+  end
+
   # Review-most-recent (aspirations): finalized column — third sentence only ("they agreed ... Shared Notes").
   def aspiration_review_most_recent_last_reviewed_line(check_in, employee_name)
     return nil if check_in.blank?

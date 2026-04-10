@@ -282,6 +282,41 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
+  describe '#review_most_recent_joint_review_button_label' do
+    let(:organization) { create(:organization) }
+    let(:employee_person) { create(:person, first_name: 'Alex', last_name: 'Emp') }
+    let(:teammate) { create(:company_teammate, person: employee_person, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization, title: 'Q4 Rollout') }
+    let(:aspiration) { create(:aspiration, company: organization, name: 'Integrity') }
+    let(:employment_tenure) { create(:employment_tenure, company_teammate: teammate, company: organization) }
+
+    it 'returns empty string when check_in is nil' do
+      expect(helper.review_most_recent_joint_review_button_label(nil, 'Al', 'Bo')).to eq('')
+    end
+
+    it 'includes aspiration name for AspirationCheckIn' do
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration)
+      expect(helper.review_most_recent_joint_review_button_label(check_in, 'Alex', 'Mo')).to eq(
+        'Time for Alex and Mo to review Integrity together!'
+      )
+    end
+
+    it 'includes assignment title for AssignmentCheckIn' do
+      check_in = build(:assignment_check_in, teammate: teammate, assignment: assignment)
+      expect(helper.review_most_recent_joint_review_button_label(check_in, 'Alex', 'Mo')).to eq(
+        'Time for Alex and Mo to review Q4 Rollout together!'
+      )
+    end
+
+    it 'includes position display name for PositionCheckIn' do
+      check_in = build(:position_check_in, teammate: teammate, employment_tenure: employment_tenure)
+      expected_object = employment_tenure.position.display_name
+      expect(helper.review_most_recent_joint_review_button_label(check_in, 'Alex', 'Mo')).to eq(
+        "Time for Alex and Mo to review #{expected_object} together!"
+      )
+    end
+  end
+
   describe '#get_shit_done_check_in_review_path' do
     let(:organization) { create(:organization) }
     let(:person) { create(:person) }

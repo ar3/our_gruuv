@@ -572,5 +572,42 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
       expect(response.body).to include('Last Check-In by')
     end
+
+    it "shows a joint-review outline button in Last Reviewed when both sides completed the open assignment check-in" do
+      assignment_ready = create(:assignment, company: organization, title: 'Joint Review Assignment')
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_ready, started_at: 6.months.ago)
+
+      create(
+        :assignment_check_in,
+        teammate: employee_teammate,
+        assignment: assignment_ready,
+        employee_completed_at: 60.days.ago,
+        manager_completed_at: 59.days.ago,
+        manager_completed_by_teammate: manager_teammate,
+        official_check_in_completed_at: 58.days.ago,
+        finalized_by_teammate: manager_teammate,
+        official_rating: 'meeting',
+        check_in_started_on: 62.days.ago.to_date
+      )
+      create(
+        :assignment_check_in,
+        teammate: employee_teammate,
+        assignment: assignment_ready,
+        employee_completed_at: 2.days.ago,
+        manager_completed_at: 1.day.ago,
+        manager_completed_by_teammate: manager_teammate,
+        official_check_in_completed_at: nil,
+        check_in_started_on: 2.days.ago.to_date
+      )
+
+      sign_in_as_teammate_for_request(manager_person, organization)
+      get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      button_text = "Time for #{employee_person.casual_name} and #{manager_person.casual_name} to review Joint Review Assignment together!"
+      expect(response.body).to include(button_text)
+      expect(response.body).to include('btn-outline-warning')
+      expect(response.body).to include(organization_company_teammate_finalization_path(organization, employee_teammate))
+    end
   end
 end

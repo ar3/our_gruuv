@@ -1,0 +1,4 @@
+-# Locals: open_check_in, employee_name, manager_name, organization, teammate
+- if open_check_in&.ready_for_finalization?
+  %hr.my-2
+  = link_to review_most_recent_joint_review_button_label(open_check_in, employee_name, manager_name), organization_company_teammate_finalization_path(organization, teammate), class: 'btn btn-outline-warning btn-sm text-start text-wrap lh-sm w-100'
