@@ -1,12 +1,18 @@
-- content_for :title, "Audit - #{@person.display_name}"
+- acknowledge_page_label = "Acknowledge Check-ins"
+- content_for :title, teammate_context_page_title(@selected_teammate, acknowledge_page_label)
 
 - content_for :header do
-  %h1.mb-0
-    %i.bi.bi-clock-history.me-2
-    = @person.display_name
-    %small.text-muted.ms-2 (Audit View)
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: @organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { audit_organization_employee_path(@organization, tm) },
+               switch_aria_label: "Switch teammate for acknowledgement"
+      %span= " - #{acknowledge_page_label}"
     - if current_person == @person && @pending_snapshots&.any?
-      %span.badge.bg-warning.ms-2 #{@pending_snapshots.count} Pending
+      %span.badge.bg-warning.align-self-center #{@pending_snapshots.count} Pending
 
 - content_for :header_action do
   = render 'people/view_switcher'

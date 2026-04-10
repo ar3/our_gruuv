@@ -1,6 +1,7 @@
 class Organizations::EmployeesController < Organizations::OrganizationNamespaceBaseController
   include TeammateHelper
-  
+  include Organizations::AssignsViewableTeammates
+
   before_action :require_authentication
   after_action :verify_authorized
   
@@ -354,7 +355,9 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     
     # Authorize access to audit view (organization context passed via pundit_user)
     authorize @teammate, :audit?, policy_class: CompanyTeammatePolicy
-    
+
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+
     # Get MAAP snapshots for this teammate within this organization
     @maap_snapshots = MaapSnapshot.for_employee_teammate(@teammate)
                                   .for_company(@organization)

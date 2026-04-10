@@ -49,6 +49,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     it 'renders the audit page successfully' do
       get audit_organization_employee_path(organization, employee_teammate)
       expect(response).to be_successful
+      expect(response.body).to include(" - Acknowledge Check-ins")
     end
     
     it 'assigns the correct variables' do
