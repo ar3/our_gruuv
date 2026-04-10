@@ -118,6 +118,96 @@ RSpec.describe Goals::CheckInService, type: :service do
       end
     end
 
+    context 'when child goal has linking parent objectives' do
+      let(:parent_objective) do
+        create(:goal,
+          :inspirational_objective,
+          creator: teammate,
+          owner: teammate,
+          company: organization,
+          most_likely_target_date: Date.today + 6.months,
+          started_at: nil,
+          completed_at: nil)
+      end
+
+      let(:child_goal) do
+        create(:goal,
+          :qualitative_key_result,
+          creator: teammate,
+          owner: teammate,
+          company: organization,
+          most_likely_target_date: Date.today + 1.month,
+          started_at: nil,
+          completed_at: nil)
+      end
+
+      before { create(:goal_link, parent: parent_objective, child: child_goal) }
+
+      it 'starts an unstarted parent objective that has a due date' do
+        expect(parent_objective.started_at).to be_nil
+
+        result = described_class.call(
+          goal: child_goal,
+          current_person: person,
+          confidence_percentage: 70
+        )
+
+        expect(result.ok?).to be true
+        parent_objective.reload
+        expect(parent_objective.started_at).to be_present
+      end
+
+      it 'does not change started_at when parent objective was already started' do
+        parent_objective.update_column(:started_at, 1.week.ago)
+        original = parent_objective.started_at
+
+        result = described_class.call(
+          goal: child_goal,
+          current_person: person,
+          confidence_percentage: 70
+        )
+
+        expect(result.ok?).to be true
+        parent_objective.reload
+        expect(parent_objective.started_at).to eq(original)
+      end
+
+      it 'does not start a vision parent without a due date' do
+        parent_objective.update_columns(
+          most_likely_target_date: nil,
+          earliest_target_date: nil,
+          latest_target_date: nil
+        )
+
+        result = described_class.call(
+          goal: child_goal,
+          current_person: person,
+          confidence_percentage: 70
+        )
+
+        expect(result.ok?).to be true
+        parent_objective.reload
+        expect(parent_objective.started_at).to be_nil
+      end
+
+      it 'does not start a non-objective parent' do
+        parent_objective.update_columns(
+          goal_type: 'qualitative_key_result',
+          most_likely_target_date: Date.today + 3.months
+        )
+
+        result = described_class.call(
+          goal: child_goal,
+          current_person: person,
+          confidence_percentage: 70
+        )
+
+        expect(result.ok?).to be true
+        parent_objective.reload
+        expect(parent_objective.started_at).to be_nil
+      end
+    end
+
     context 'when goal has already been started' do
       let(:started_goal) do
         create(:goal,

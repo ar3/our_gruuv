@@ -86,6 +86,8 @@ module Goals
         @goal.update(started_at: Time.current)
       end
 
+      start_unstarted_parent_objectives_with_due_date
+
       # Auto-complete goal if confidence is 0% or 100%
       if @confidence_percentage.present? && (@confidence_percentage == 0 || @confidence_percentage == 100) && @goal.completed_at.nil?
         @goal.update(completed_at: Time.current)
@@ -106,6 +108,20 @@ module Goals
       Result.err("Invalid date format: #{e.message}")
     rescue => e
       Result.err("Failed to save check-in: #{e.message}")
+    end
+
+    private
+
+    def start_unstarted_parent_objectives_with_due_date
+      @goal.linking_goals.each do |parent|
+        next unless parent.company_id == @goal.company_id
+        next unless parent.objective?
+        next unless parent.most_likely_target_date.present?
+        next if parent.started_at.present?
+        next if parent.deleted_at.present? || parent.completed_at.present?
+
+        parent.update(started_at: Time.current)
+      end
     end
   end
 end
