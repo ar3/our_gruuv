@@ -29,6 +29,8 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
       it "returns success and loads the page (find_or_create_open_for creates an open check-in)" do
         get aspiration_show_path
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="confirm-leave"')
+        expect(response.body).to match(/confirm-leave#markDirty/)
         expect(response.body).to include(aspiration.name)
         expect(response.body).to include("Associated Goals")
         expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
@@ -47,6 +49,8 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
       it "returns success and shows the current check-in form" do
         get aspiration_show_path
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="confirm-leave"')
+        expect(response.body).to match(/confirm-leave#markDirty/)
         expect(response.body).to include("Current Check-in")
         expect(response.body).to include("Save as Draft and stay here")
       end

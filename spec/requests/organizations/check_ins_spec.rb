@@ -338,6 +338,8 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         get organization_company_teammate_check_ins_path(organization, employee_teammate)
 
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="confirm-leave"')
+        expect(response.body).to match(/confirm-leave#markDirty/)
         expect(response.body).to include(" - Check-Ins")
         expect(response.body).to include("You can check in on as many or as few assignments, aspirational values, and position in bulk")
         expect(response.body).to include("Go to the Check-in Status page")

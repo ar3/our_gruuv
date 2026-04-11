@@ -38,7 +38,9 @@
               teammate: @teammate,
               object_name: @aspiration.name,
               is_complete: is_complete
-            = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
+            = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
+              data: { controller: "confirm-leave",
+                      action: "input->confirm-leave#markDirty change->confirm-leave#markDirty turbo:submit-end->confirm-leave#markCleanOnSuccess" } do |form|
               = form.hidden_field :current_url, value: organization_teammate_aspiration_path(@organization, @teammate, @aspiration), id: nil
               = form.hidden_field :current_type, value: "aspiration", id: nil
               = form.hidden_field :current_id, value: @aspiration.id, id: nil
