@@ -670,6 +670,9 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
   end
 
+  # Assignment/aspiration/position updates all use `check_in.update!(update_attrs) if update_attrs.present?`.
+  # After blank coercion, +update_attrs+ may contain only +nil+ values for cleared columns; in ActiveSupport,
+  # only +{}+ is +blank?+, so the hash stays +present?+ and the UPDATE persists NULL clears.
   def update_assignment_check_ins(check_ins_params = params)
     assignment_params = assignment_check_in_params(check_ins_params)
     return unless assignment_params.present?
@@ -686,7 +689,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
       begin
         if attrs[:status] == 'complete'
-          update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
+          update_attrs = CheckIns::CoerceBlankCheckInAttrs.for_assignment(
+            attrs.except(:status, :assignment_id),
+            view_mode: @view_mode
+          )
           check_in.update!(update_attrs) if update_attrs.present?
 
           completion_service = CheckInCompletionService.new(check_in)
@@ -705,7 +711,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
             )
           end
         else
-          update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
+          update_attrs = CheckIns::CoerceBlankCheckInAttrs.for_assignment(
+            attrs.except(:status, :assignment_id),
+            view_mode: @view_mode
+          )
           check_in.update!(update_attrs) if update_attrs.present?
 
           if @view_mode == :employee
@@ -755,7 +764,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
       begin
         if attrs[:status] == 'complete'
-          update_attrs = attrs.except(:status, :aspiration_id).reject { |k, v| v.blank? }
+          update_attrs = CheckIns::CoerceBlankCheckInAttrs.for_aspiration(
+            attrs.except(:status, :aspiration_id),
+            view_mode: @view_mode
+          )
           check_in.update!(update_attrs) if update_attrs.present?
 
           completion_service = CheckInCompletionService.new(check_in)
@@ -774,7 +786,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
             )
           end
         else
-          update_attrs = attrs.except(:status, :aspiration_id).reject { |k, v| v.blank? }
+          update_attrs = CheckIns::CoerceBlankCheckInAttrs.for_aspiration(
+            attrs.except(:status, :aspiration_id),
+            view_mode: @view_mode
+          )
           check_in.update!(update_attrs) if update_attrs.present?
 
           if @view_mode == :employee
@@ -805,7 +820,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
     begin
       if attrs[:status] == 'complete'
-        update_attrs = attrs.except(:status).reject { |k, v| v.blank? }
+        update_attrs = CheckIns::CoerceBlankCheckInAttrs.for_position(
+          attrs.except(:status),
+          view_mode: @view_mode
+        )
         check_in.update!(update_attrs) if update_attrs.present?
 
         completion_service = CheckInCompletionService.new(check_in)
@@ -824,7 +842,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
           )
         end
       else
-        update_attrs = attrs.except(:status).reject { |k, v| v.blank? }
+        update_attrs = CheckIns::CoerceBlankCheckInAttrs.for_position(
+          attrs.except(:status),
+          view_mode: @view_mode
+        )
         check_in.update!(update_attrs) if update_attrs.present?
 
         if @view_mode == :employee
