@@ -2,13 +2,9 @@
 
 - content_for :go_back_link do
   - if params[:return_url].present? && params[:return_text].present?
-    = link_to params[:return_url], class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      = params[:return_text]
+    = nav_return_back(url: params[:return_url], text: params[:return_text])
   - else
-    = link_to organization_path(@organization), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to #{@organization.display_name}
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center

@@ -2,13 +2,9 @@
 
 - content_for :go_back_link do
   - if @return_url.present? && @return_text.present?
-    = link_to @return_url, class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      = @return_text
+    = nav_return_back(url: @return_url, text: @return_text)
   - else
-    = link_to about_me_organization_company_teammate_path(@organization, @teammate), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to About Me
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "About Me", url: about_me_organization_company_teammate_path(@organization, @teammate) }, { label: "Digest settings", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center

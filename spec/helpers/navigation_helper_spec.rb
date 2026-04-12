@@ -68,6 +68,62 @@ RSpec.describe NavigationHelper, type: :helper do
     end
   end
 
+  describe '#nav_return_back' do
+    it 'renders arrow link with text' do
+      html = helper.nav_return_back(url: '/foo', text: 'Back to list')
+      expect(html).to include('go-back-link')
+      expect(html).to include('bi-arrow-left')
+      expect(html).to include('Back to list')
+      expect(html).to include('/foo')
+    end
+
+    it 'returns empty when url is blank' do
+      expect(helper.nav_return_back(url: nil, text: 'x')).to eq('')
+    end
+
+    it 'defaults label to Return when text is blank' do
+      html = helper.nav_return_back(url: '/bar', text: nil)
+      expect(html).to include('Return')
+    end
+  end
+
+  describe '#nav_organization_breadcrumb_crumb' do
+    it 'returns org display name linking to Start Here' do
+      crumb = helper.nav_organization_breadcrumb_crumb(company)
+      expect(crumb[:label]).to eq(company.display_name)
+      expect(crumb[:url]).to eq(helper.organization_start_here_path(company))
+    end
+
+    it 'returns nil when organization is blank' do
+      expect(helper.nav_organization_breadcrumb_crumb(nil)).to be_nil
+    end
+  end
+
+  describe '#nav_hierarchy_with_previous' do
+    it 'renders history back hook, divider, and breadcrumb with org base linking to Start Here' do
+      html = helper.nav_hierarchy_with_previous(organization: company, crumbs: [{ label: 'Goals', url: nil }])
+      expect(html).to include('page-context-nav')
+      expect(html).to include('breadcrumb')
+      expect(html).to include(company.display_name)
+      expect(html).to include(helper.organization_start_here_path(company))
+      expect(html).to include('Goals')
+      expect(html).to include('navigation-previous')
+      expect(html).to include('page-context-nav__divider')
+      expect(html).to include('|')
+      expect(html).to include('page-context-nav__history-back')
+      expect(html).to include('Back')
+      expect(html).to include('bi-arrow-left')
+    end
+
+    it 'returns empty when tail crumbs are blank' do
+      expect(helper.nav_hierarchy_with_previous(organization: company, crumbs: [])).to eq('')
+    end
+
+    it 'returns empty when organization is blank' do
+      expect(helper.nav_hierarchy_with_previous(organization: nil, crumbs: [{ label: 'Goals', url: nil }])).to eq('')
+    end
+  end
+
   describe '#navigation_structure' do
     before do
       # Define the controller methods that are available in helpers

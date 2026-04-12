@@ -17,13 +17,9 @@
 
 - content_for :go_back_link do
   - if @return_url.present? && @return_text.present?
-    = link_to @return_url, class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      = @return_text
+    = nav_return_back(url: @return_url, text: @return_text)
   - else
-    = link_to dashboard_organization_path(@organization), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Dashboard
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Observations", url: nil }])
 
 - content_for :header_action do
   = link_to customize_view_organization_observations_path(@organization, params.except(:controller, :action, :page).permit!.to_h), class: "btn btn-outline-secondary" do

@@ -22,18 +22,9 @@ This document defines the standard style guide for all index pages in the OurGru
 
 **Note**: Page titles are automatically tracked in `PageVisit` records and appear in browser tabs. Always include a descriptive title for every page.
 
-### 2. Back Link Section
-- **Back Link**: Use `content_for :go_back_link` to provide navigation back to the parent page
-- **Icon**: Use `bi-arrow-left` icon with consistent styling
-- **Target**: Should link back to the appropriate parent page (e.g., organization show page)
-- **Styling**: Use the `go-back-link` CSS class for consistent styling
-
-```haml
-- content_for :go_back_link do
-  = link_to organization_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@organization.display_name}
-```
+### 2. Page context (`go_back_link`)
+- Use `content_for :go_back_link` for top-of-page navigation.
+- **Do not** default to “Back to …” + arrow for a logical parent unless you also pass an explicit `return_url` (see [navigation.md](navigation.md): **`nav_return_back`** vs **`nav_hierarchy_with_previous`**).
 
 ### 2. Header Section
 - **Title**: Use `content_for :header` with a flex container

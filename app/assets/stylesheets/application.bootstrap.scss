@@ -428,6 +428,62 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   }
 }
 
+// Hierarchy context (optional Back + | + breadcrumb) — see docs/STYLES/navigation.md
+.page-context-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 0.75rem;
+  row-gap: 0.25rem;
+  font-size: 0.875rem;
+
+  .page-context-nav__history {
+    flex: 0 0 auto;
+    column-gap: 0.75rem;
+  }
+
+  .page-context-nav__history-back {
+    font-size: inherit;
+    line-height: 1.25;
+
+    .page-context-nav__history-icon {
+      font-size: 0.9em;
+      vertical-align: -0.06em;
+    }
+  }
+
+  .page-context-nav__divider {
+    user-select: none;
+    font-weight: 300;
+    opacity: 0.85;
+  }
+
+  .page-context-nav__breadcrumb {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .page-context-breadcrumb {
+    --bs-breadcrumb-divider-color: #adb5bd;
+    font-size: inherit;
+    padding: 0;
+    margin-bottom: 0;
+    background: transparent;
+
+    .breadcrumb-item {
+      color: #6c757d;
+
+      &.active {
+        color: #495057;
+      }
+
+      a:hover {
+        color: #495057;
+      }
+    }
+  }
+}
+
 // ===== NAVIGATION STYLES =====
 // 3-level dropdown navigation
 .dropdown-submenu {

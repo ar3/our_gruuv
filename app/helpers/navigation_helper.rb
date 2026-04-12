@@ -594,6 +594,48 @@ module NavigationHelper
     end.compact
   end
 
+  # --- Page context (breadcrumb + optional browser "Previous page") ---
+  # Explicit in-app return: arrow + muted link (no breadcrumb / no Previous control).
+  def nav_return_back(url:, text: nil)
+    return "".html_safe if url.blank?
+
+    label = text.presence || "Return"
+    link_to(url, class: "go-back-link") do
+      safe_join([tag.i(class: "bi bi-arrow-left me-2"), h(label)], "")
+    end
+  end
+
+  # First breadcrumb segment for an organization: label is org name, link goes to Start Here (not org#show).
+  def nav_organization_breadcrumb_crumb(organization)
+    return nil if organization.blank?
+
+    { label: organization.display_name, url: organization_start_here_path(organization) }
+  end
+
+  # No trusted return URL: optional browser Back (history.back) + breadcrumb, gated by JS for Back visibility.
+  # Always prefixes the org display name linking to Start Here (`organization_start_here_path`).
+  # + `crumbs`: tail only — [{ label: "…", url: "/path" }, …, { label: "Current", url: nil }]; last item is current page.
+  # Requires at least one tail crumb (must not be empty).
+  def nav_hierarchy_with_previous(organization:, crumbs:)
+    base = nav_organization_breadcrumb_crumb(organization)
+    return "".html_safe unless base
+
+    tail = normalize_page_crumbs(crumbs)
+    return "".html_safe if tail.empty?
+
+    normalized = [base] + tail
+
+    content_tag(:div, class: "page-context-nav") do
+      safe_join(
+        [
+          hierarchy_history_back_group,
+          hierarchy_breadcrumb_nav(normalized)
+        ],
+        ""
+      )
+    end
+  end
+
   private
 
   def nav_query_params_match?(link_query, request)
@@ -601,6 +643,72 @@ module NavigationHelper
     link_params = Rack::Utils.parse_nested_query(link_query)
     request_params = request.query_parameters
     link_params == request_params
+  end
+
+  def normalize_page_crumbs(crumbs)
+    Array(crumbs).filter_map do |entry|
+      next if entry.blank?
+
+      hash = entry.respond_to?(:symbolize_keys) ? entry.symbolize_keys : entry
+      label = hash[:label]
+      next if label.blank?
+
+      { label: label.to_s, url: hash[:url].presence }
+    end
+  end
+
+  def hierarchy_breadcrumb_nav(crumbs)
+    content_tag(:nav, class: "page-context-nav__breadcrumb", "aria-label": "Breadcrumb") do
+      content_tag(:ol, class: "breadcrumb page-context-breadcrumb mb-0") do
+        safe_join(
+          crumbs.each_with_index.map do |crumb, index|
+            hierarchy_breadcrumb_li(crumb, last: index == crumbs.length - 1)
+          end,
+          ""
+        )
+      end
+    end
+  end
+
+  def hierarchy_breadcrumb_li(crumb, last:)
+    label = h(crumb[:label])
+    url = crumb[:url]
+    li_class = ["breadcrumb-item"]
+    li_class << "active" if last
+
+    options = { class: li_class.join(" ") }
+    options[:"aria-current"] = "page" if last
+
+    content_tag(:li, **options) do
+      if last || url.blank?
+        label
+      else
+        link_to(label, url, class: "text-reset text-decoration-none")
+      end
+    end
+  end
+
+  def hierarchy_history_back_group
+    content_tag(
+      :div,
+      class: "page-context-nav__history d-none align-items-center",
+      data: { controller: "navigation-previous" }
+    ) do
+      safe_join(
+        [
+          content_tag(
+            :button,
+            safe_join([tag.i(class: "bi bi-arrow-left page-context-nav__history-icon"), " ", "Back"], ""),
+            type: "button",
+            class: "btn btn-link btn-sm text-muted text-decoration-none p-0 page-context-nav__history-back",
+            data: { action: "click->navigation-previous#goBack" },
+            aria: { label: "Back" }
+          ),
+          content_tag(:span, "|", class: "page-context-nav__divider text-muted", "aria-hidden": "true")
+        ],
+        ""
+      )
+    end
   end
 end
 
