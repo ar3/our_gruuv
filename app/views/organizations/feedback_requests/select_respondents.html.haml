@@ -9,9 +9,7 @@
       %small.text-muted.ms-2= @feedback_request.subject_line
 
 - content_for :go_back_link do
-  = link_to feedback_prompt_organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Questions
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Feedback Questions", url: feedback_prompt_organization_feedback_request_path(organization, @feedback_request) }, { label: "Select Respondents", url: nil }])
 
 = render 'shared/feedback_request_wizard_header', organization: organization, feedback_request: @feedback_request, current_step: 4
 

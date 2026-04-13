@@ -13,9 +13,7 @@
   = render "people/view_switcher"
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Check-In
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "Check-In Statuses", url: nil }])
 
 - employee_name = @teammate.person.casual_name
 - manager_name = @teammate.current_manager&.casual_name.presence || 'Manager'

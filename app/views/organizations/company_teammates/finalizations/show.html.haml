@@ -16,9 +16,7 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Check-Ins
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Check-In Status", url: review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: finalize_page_label, url: nil }])
 
 -# Only prompt "did you save?" when there is an editable form (manager with check-ins ready to finalize)
 - finalize_confirm_leave = @view_mode == :manager && (@ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?)

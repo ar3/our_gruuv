@@ -1,9 +1,7 @@
 - content_for :title, "Confirm Termination - #{@teammate.person.display_name}"
 
 - content_for :go_back_link do
-  = link_to organization_teammate_position_path(organization, @teammate), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Position Management
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Position Management", url: organization_teammate_position_path(organization, @teammate) }, { label: "Confirm Termination", url: nil }])
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center

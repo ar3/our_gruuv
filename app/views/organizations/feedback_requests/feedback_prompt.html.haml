@@ -9,9 +9,7 @@
       %small.text-muted.ms-2= @feedback_request.subject_line
 
 - content_for :go_back_link do
-  = link_to select_focus_organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Select Focus
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Select Focus", url: select_focus_organization_feedback_request_path(organization, @feedback_request) }, { label: "Feedback Questions", url: nil }])
 
 = render 'shared/feedback_request_wizard_header', organization: organization, feedback_request: @feedback_request, current_step: 3
 

@@ -18,14 +18,7 @@
     = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  - if @teammate.person.active_employment_tenure_for(organization)
-    = link_to organization_company_teammate_finalization_path(organization, @teammate), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Go to Finalization
-  - else
-    = link_to organization_company_teammate_path(organization, @teammate), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Profile
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Check-In Status", url: review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Check-Ins", url: nil }])
 
 = render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 1
 

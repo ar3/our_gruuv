@@ -12,9 +12,7 @@
           New Request
 
 - content_for :go_back_link do
-  = link_to dashboard_organization_path(organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Dashboard
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Observations", url: organization_observations_path(organization) }, { label: "Feedback Requests", url: nil }])
 
 = render partial: 'organizations/feedback_requests/tabs'
 

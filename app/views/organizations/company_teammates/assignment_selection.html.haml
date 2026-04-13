@@ -4,9 +4,7 @@
   %h1.mb-0 Select Assignments for #{@teammate.person.display_name}
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Check-Ins
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Check-Ins", url: organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Select Assignments", url: nil }])
 
 .row.justify-content-center
   .col-lg-10

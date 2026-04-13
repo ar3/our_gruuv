@@ -7,9 +7,7 @@
       Edit Feedback Request
 
 - content_for :go_back_link do
-  = link_to organization_feedback_request_path(organization, @feedback_request), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Feedback Request
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Feedback Requests", url: organization_feedback_requests_path(organization) }, { label: "Feedback Request", url: organization_feedback_request_path(organization, @feedback_request) }, { label: "Edit", url: nil }])
 
 = render 'shared/feedback_request_wizard_header', organization: organization, feedback_request: @feedback_request, current_step: 1
 

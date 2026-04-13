@@ -15,9 +15,7 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_employees_path(organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    ="Back to Teammates in #{organization.display_name}"
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "Profile", url: nil }])
 
 / About Me Section
 .row

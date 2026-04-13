@@ -16,11 +16,11 @@
 - content_for :header_action do
   = render 'people/view_switcher'
 
-- if @kudos_return_url.present? && @kudos_return_text.present?
-  - content_for :go_back_link do
-    = link_to @kudos_return_url, class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      = @kudos_return_text
+- content_for :go_back_link do
+  - if @kudos_return_url.present? && @kudos_return_text.present?
+    = nav_return_back(url: @kudos_return_url, text: @kudos_return_text)
+  - else
+    = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Profile", url: organization_company_teammate_path(organization, @selected_teammate) }, { label: kudos_heading, url: nil }])
 
 .row.mb-4
   .col-md-6.mb-3.mb-md-0

@@ -2,9 +2,10 @@
 - content_for :title, teammate_context_page_title(@selected_teammate, "Position Management")
 
 - content_for :go_back_link do
-  = link_to @return_url, class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    = @return_text
+  - if params[:return_url].present? && params[:return_text].present?
+    = nav_return_back(url: params[:return_url], text: params[:return_text])
+  - else
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-In Status", url: review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Position Management", url: nil }])
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
