@@ -1,15 +1,20 @@
 class Organizations::ValueBillingController < Organizations::OrganizationNamespaceBaseController
+  include InsightsTimeframeSelection
+
   WEEKLY_MILESTONE_VALUE = 1.0
   WEEKLY_OBSERVEE_VALUE = 0.5
   WEEKLY_CHECK_IN_VALUE = 0.5
   WEEKLY_GOAL_CHECK_IN_VALUE = 0.25
-  WEEKS_TO_SHOW = 12
 
   def show
     authorize organization, :show?
 
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    chart_range = range || (52.weeks.ago..Time.current)
+    @value_billing_period_label = insights_chart_title_period(@timeframe, range, chart_range)
+
     teammate_ids_scope = CompanyTeammate.for_organization_hierarchy(company).select(:id)
-    chart_range = (WEEKS_TO_SHOW - 1).weeks.ago.beginning_of_week..Time.current.end_of_week
     week_dates = build_week_dates(chart_range)
 
     milestone_counts = weekly_milestone_counts(teammate_ids_scope, chart_range)
@@ -24,6 +29,8 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
       completed_check_in_counts,
       goal_check_in_counts
     )
+
+    assign_per_employee_value_metrics
   end
 
   private
@@ -106,5 +113,22 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
       completed_check_ins: completed_check_in_data,
       goal_check_ins: goal_check_in_data
     }
+  end
+
+  def assign_per_employee_value_metrics
+    totals = @value_billing_chart_data[:total_value]
+    @value_billing_total_value_sum = totals.sum
+    @value_billing_week_count = totals.size
+    @value_billing_active_teammate_count =
+      CompanyTeammate.for_organization_hierarchy(company).employed.count
+
+    if @value_billing_week_count.positive? && @value_billing_active_teammate_count.positive?
+      avg_weekly = @value_billing_total_value_sum / @value_billing_week_count
+      @value_billing_per_employee_week = avg_weekly / @value_billing_active_teammate_count
+      @value_billing_per_employee_year = @value_billing_per_employee_week * 52
+    else
+      @value_billing_per_employee_week = nil
+      @value_billing_per_employee_year = nil
+    end
   end
 end

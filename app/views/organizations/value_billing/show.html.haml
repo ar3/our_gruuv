@@ -9,6 +9,14 @@
       %i.bi.bi-flask.me-1
       Beta
 
+= render 'organizations/insights/timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_value_billing_path(organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-3'
+
 .row.mb-4
   .col-12
     .alert.alert-light.border
@@ -26,8 +34,30 @@
         %h4.mb-0
           %i.bi.bi-graph-up.me-2
           Total value attained by week
+          %span.fw-normal.fs-6.text-white-50
+            (#{@value_billing_period_label})
       .card-body
         #value-billing-total-chart{style: "height: 360px;"}
+        - if @value_billing_per_employee_week
+          .border-top.pt-3.mt-3
+            .alert.border-0.border-start.border-5.border-success.bg-success-subtle.rounded.mb-0.py-3.px-3{role: 'region', 'aria-label': 'Per-employee value summary'}
+              .d-flex.flex-wrap.align-items-baseline.gap-2.mb-2
+                %span.fw-semibold= number_to_currency(@value_billing_total_value_sum)
+                %span.text-muted ÷
+                %span= "#{@value_billing_week_count} #{'week'.pluralize(@value_billing_week_count)}"
+                %span.text-muted ÷
+                %span= "#{number_with_delimiter(@value_billing_active_teammate_count)} active #{'teammate'.pluralize(@value_billing_active_teammate_count)}"
+                %span.text-muted =
+              .fs-3.fw-semibold.text-success-emphasis.mb-1
+                #{number_to_currency(@value_billing_per_employee_week)} / employee / week
+              %small.text-muted.d-block
+                #{number_to_currency(@value_billing_per_employee_year)} / employee / year
+        - elsif @value_billing_active_teammate_count.zero?
+          .border-top.pt-3.mt-3
+            %p.text-muted.mb-0 No active teammates in this organization hierarchy; per-employee value is not shown.
+        - elsif @value_billing_week_count.zero?
+          .border-top.pt-3.mt-3
+            %p.text-muted.mb-0 No weeks in the selected range; per-employee value is not shown.
 
 .row.g-4
   .col-12.col-xl-6
@@ -58,6 +88,7 @@
 :javascript
   (function() {
     var chartData = #{@value_billing_chart_data.to_json};
+    var valueBillingPeriodLabel = #{@value_billing_period_label.to_json};
 
     function renderChart(containerId, title, data, yAxisTitle, asCurrency, unitValue) {
       if (typeof Highcharts === 'undefined') return;
@@ -92,7 +123,7 @@
     function initializeValueBillingCharts() {
       renderChart(
         'value-billing-total-chart',
-        'Total weekly value attained',
+        'Total weekly value attained (' + valueBillingPeriodLabel + ')',
         chartData.total_value,
         'Value in dollars',
         true,

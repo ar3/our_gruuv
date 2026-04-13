@@ -19,11 +19,25 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
       expect(response.body).to include('Value / Billing')
       expect(response.body).to include('Beta')
       expect(response.body).to include('Total value attained by week')
+      expect(response.body).to include('Last 90 Days')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Custom')
       expect(response.body).to include('value-billing-total-chart')
       expect(response.body).to include('value-billing-milestones-chart')
       expect(response.body).to include('value-billing-observees-chart')
       expect(response.body).to include('value-billing-check-ins-chart')
       expect(response.body).to include('value-billing-goal-check-ins-chart')
+    end
+
+    it 'accepts timeframe param like Insights' do
+      get organization_value_billing_path(organization, timeframe: 'year')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Last Year')
+    end
+
+    it 'shows per-employee value or no-teammates message when there are no active teammates' do
+      get organization_value_billing_path(organization)
+      expect(response.body).to match(/\/ employee \/ week|No active teammates/)
     end
   end
 end
