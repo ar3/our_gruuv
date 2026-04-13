@@ -1,8 +1,6 @@
 - content_for :title, download_type_display_name(@download_type)
 - content_for :go_back_link do
-  = link_to organization_bulk_downloads_path(current_organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Bulk Downloads
+  = nav_hierarchy_with_previous(organization: current_organization, crumbs: [{ label: "Bulk downloads", url: organization_bulk_downloads_path(current_organization) }, { label: download_type_display_name(@download_type), url: nil }])
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center

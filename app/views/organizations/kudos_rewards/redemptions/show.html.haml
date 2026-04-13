@@ -9,9 +9,7 @@
       = @redemption.status.titleize
 
 - content_for :go_back_link do
-  = link_to organization_kudos_rewards_redemptions_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Redemptions
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Redemptions", url: organization_kudos_rewards_redemptions_path(@organization) }, { label: "Redemption ##{@redemption.id}", url: nil }])
 
 .row
   .col-md-8

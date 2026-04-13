@@ -9,9 +9,7 @@
     header_quick_action_disabled_tooltip: "You need MAAP management permissions for this organization to edit abilities"
       
 - content_for :go_back_link do
-  = link_to organization_abilities_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Abilities
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Abilities", url: organization_abilities_path(@organization) }, { label: @ability.name, url: nil }])
 
 - content_for :header_action do
   = render 'mode_switcher'

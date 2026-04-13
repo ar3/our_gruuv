@@ -150,13 +150,14 @@ RSpec.describe 'Organizations::Goals', type: :request do
       let(:person_without_teammate) { create(:person) }
 
       before do
-        # Sign in as person - this will create a CompanyTeammate; destroy it to simulate missing
+        # Sign in helper stubs find(teammate_id); destroy the row then clear stubs so we do not 404 on find.
         signed_in_teammate = sign_in_as_teammate_for_request(person_without_teammate, organization)
         signed_in_teammate.destroy
+        allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(nil)
         allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person_without_teammate)
       end
-      
-      it 'fails with error when current_teammate is missing' do
+
+      it 'redirects before create when current_company_teammate is missing' do
         expect {
           post organization_goals_path(organization), params: {
             goal: {
@@ -169,11 +170,9 @@ RSpec.describe 'Organizations::Goals', type: :request do
             }
           }
         }.not_to change(Goal, :count)
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to render_template(:new)
-        expect(flash[:alert]).to be_present
-        expect(flash[:alert]).to include('You must be a company teammate to create goals')
+
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to include('session has expired')
       end
     end
   end
@@ -298,16 +297,17 @@ RSpec.describe 'Organizations::Goals', type: :request do
       get organization_goal_path(organization, goal)
       
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Associated with Prompts')
+      expect(response.body).to include('goal-external-attachments')
+      expect(response.body).to include('Associated with')
       expect(response.body).to include(template.title)
-      expect(response.body).to include('Associated on')
+      expect(response.body).to include('Reflection · associated')
     end
     
     it 'does not display prompt attachments section when goal has no prompts' do
       get organization_goal_path(organization, goal)
       
       expect(response).to have_http_status(:success)
-      expect(response.body).not_to include('Associated with Prompts')
+      expect(response.body).not_to include('goal-external-attachments')
     end
     
     it 'can access show page for completed goal' do

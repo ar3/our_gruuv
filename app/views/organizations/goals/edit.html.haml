@@ -1,9 +1,7 @@
 - content_for :title, "Edit Goal"
 
 - content_for :go_back_link do
-  = link_to organization_goal_path(@organization, @goal), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Goal
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @goal.title, url: organization_goal_path(@organization, @goal) }, { label: "Edit", url: nil }])
 
 - content_for :header do
   %h1.mb-0 Edit Goal

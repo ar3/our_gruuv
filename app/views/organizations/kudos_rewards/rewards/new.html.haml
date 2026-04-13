@@ -6,8 +6,6 @@
     Add Reward
 
 - content_for :go_back_link do
-  = link_to organization_kudos_rewards_rewards_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Rewards
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Rewards catalog", url: organization_kudos_rewards_rewards_path(@organization) }, { label: "Add reward", url: nil }])
 
 = render 'form'

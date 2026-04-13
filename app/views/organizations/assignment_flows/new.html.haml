@@ -1,9 +1,7 @@
 - content_for :title, "New Assignment Flow"
 
 - content_for :go_back_link do
-  = link_to organization_assignment_flows_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Assignment Flows
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignment Flows", url: organization_assignment_flows_path(@organization) }, { label: "New flow", url: nil }])
 
 .container-fluid
   .row

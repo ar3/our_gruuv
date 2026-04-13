@@ -4,9 +4,7 @@
   %h1.mb-0 Edit Seat
 
 - content_for :go_back_link do
-  = link_to organization_seat_path(@organization, @seat), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Seat
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @seat.display_name, url: organization_seat_path(@organization, @seat) }, { label: "Edit", url: nil }])
 
 .row.justify-content-center
   .col-lg-10

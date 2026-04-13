@@ -10,11 +10,11 @@
         %i.bi.bi-pencil.me-1
         Edit
 
-- if @rewards_return_url.present? && @rewards_return_text.present?
-  - content_for :go_back_link do
-    = link_to @rewards_return_url, class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      = @rewards_return_text
+- content_for :go_back_link do
+  - if @rewards_return_url.present? && @rewards_return_text.present?
+    = nav_return_back(url: @rewards_return_url, text: @rewards_return_text)
+  - else
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Rewards catalog", url: organization_kudos_rewards_rewards_path(@organization) }, { label: @reward.name, url: nil }])
 
 .row
   .col-md-4.mb-4

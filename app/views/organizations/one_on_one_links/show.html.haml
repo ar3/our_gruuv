@@ -6,9 +6,7 @@
 
 - content_for :go_back_link do
   - if @teammate
-    = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Check-Ins
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-Ins", url: organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "1:1 area", url: nil }])
 
 .card
   .card-body

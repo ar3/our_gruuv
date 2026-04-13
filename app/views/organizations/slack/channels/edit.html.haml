@@ -6,9 +6,7 @@
     Edit Channel Settings
 
 - content_for :go_back_link do
-  = link_to channels_organization_slack_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Channel & Group Associations
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Channel & group associations", url: channels_organization_slack_path(@organization) }, { label: "Edit channel", url: nil }])
 
 - can_manage_slack = policy(@organization).manage_employment?
 

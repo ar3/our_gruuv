@@ -18,9 +18,7 @@
   = content_for :go_back_link  # Single back link to dashboard
 
 - content_for :go_back_link do
-  = link_to organization_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@organization.display_name}
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Teammates", url: nil }])
 
 - content_for :header_action do
   - customize_params = params.except(:controller, :action, :page).permit!.to_h

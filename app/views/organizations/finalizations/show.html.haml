@@ -5,9 +5,7 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Check-Ins
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-In Status", url: review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "Finalize check-ins", url: nil }])
 
 = render 'shared/check_in_wizard_header', organization: @organization, teammate: @teammate, current_step: 2
 

@@ -4,9 +4,7 @@
   %h1.mb-0 Mark Goal as Done: #{@goal.title}
 
 - content_for :go_back_link do
-  = link_to organization_goal_path(@organization, @goal), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Goal
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @goal.title, url: organization_goal_path(@organization, @goal) }, { label: "Done", url: nil }])
 
 .row.justify-content-center
   .col-lg-10

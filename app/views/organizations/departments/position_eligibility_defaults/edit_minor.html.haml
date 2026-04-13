@@ -2,9 +2,7 @@
 - content_for :header, "Edit eligibility defaults (minor #{@minor})"
 
 - content_for :go_back_link do
-  = link_to organization_department_position_eligibility_defaults_path(@organization, @department), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to summary
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Position eligibility defaults", url: organization_department_position_eligibility_defaults_path(@organization, @department) }, { label: "Edit minor #{@minor}", url: nil }])
 
 .card
   .card-header

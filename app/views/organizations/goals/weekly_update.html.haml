@@ -7,9 +7,10 @@
   = render 'mode_switcher', organization: @organization, goal: @goal, current_mode: :check_in
 
 - content_for :go_back_link do
-  = link_to @return_url, class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    = @return_text
+  - if params[:return_url].present? && params[:return_text].present?
+    = nav_return_back(url: params[:return_url], text: params[:return_text])
+  - else
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @goal.title, url: organization_goal_path(@organization, @goal) }, { label: "Weekly update", url: nil }])
 
 / Timeline View
 .timeline-view

@@ -6,7 +6,7 @@
     I'm Interested
 
 - content_for :go_back_link do
-  = link_to "Back to #{@source_page.humanize}", @return_url, class: "text-muted text-decoration-none"
+  = nav_return_back(url: @return_url, text: "Back to #{@source_page.humanize}")
 
 .card
   .card-header

@@ -31,9 +31,10 @@ RSpec.describe 'ChangeLogs#new', type: :request do
         expect(assigns(:change_log)).to be_a_new(ChangeLog)
       end
 
-      it 'includes a back link to change logs index' do
+      it 'includes a return link to change logs index' do
         get new_change_log_path
-        expect(response.body).to include('Back to Change Logs')
+        expect(response.body).to include('go-back-link')
+        expect(response.body).to include('Change logs')
         expect(response.body).to include(change_logs_path)
       end
     end

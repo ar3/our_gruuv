@@ -2,7 +2,7 @@
   %h1 Eligibility Requirements
 
 - content_for :go_back_link do
-  = link_to "Back to Eligibility Selection", organization_eligibility_requirements_path(@organization), class: "btn btn-outline-secondary btn-sm"
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Eligibility selection", url: organization_eligibility_requirements_path(@organization) }, { label: "Requirements", url: nil }])
 
 %style
   :plain

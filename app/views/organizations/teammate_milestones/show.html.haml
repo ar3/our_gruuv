@@ -1,9 +1,8 @@
 - content_for :title, "Milestone Details"
 
 - content_for :go_back_link do
-  = link_to celebrate_milestones_organization_path(@teammate_milestone.teammate.organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Celebrate Milestones
+  - org = @teammate_milestone.teammate.organization
+  = nav_hierarchy_with_previous(organization: org, crumbs: [{ label: "Celebrate milestones", url: celebrate_milestones_organization_path(org) }, { label: "Milestone details", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center

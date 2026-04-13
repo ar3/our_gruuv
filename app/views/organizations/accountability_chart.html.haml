@@ -4,9 +4,7 @@
   %h1.mb-0 Accountability Chart
   
 - content_for :go_back_link do
-  = link_to organization_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Organization
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Organization", url: organization_path(@organization) }, { label: "Accountability chart", url: nil }])
 
 .container-fluid.py-4
   .row

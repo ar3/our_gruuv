@@ -2,9 +2,7 @@
 - content_for :header, "Manage Eligibility Requirements for #{@position.display_name}"
 
 - content_for :go_back_link do
-  = link_to organization_position_path(@organization, @position), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Position
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @position.display_name, url: organization_position_path(@organization, @position) }, { label: "Manage eligibility", url: nil }])
 
 .card
   .card-header

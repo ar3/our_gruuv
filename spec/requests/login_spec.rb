@@ -25,9 +25,11 @@ RSpec.describe 'Login Page', type: :request do
         sign_in_as_teammate_for_request(person, company)
       end
 
-      it 'redirects to organization dashboard' do
+      it 'redirects to the teammate preferred start page' do
         get login_path
-        expect(response).to redirect_to(dashboard_organization_path(company))
+        teammate = person.company_teammates.find_by!(organization: company)
+        # Default start page preference is About Me (see ApplicationHelper#start_page_preference).
+        expect(response).to redirect_to(about_me_organization_company_teammate_path(company, teammate))
       end
     end
   end

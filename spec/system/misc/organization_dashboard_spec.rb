@@ -14,7 +14,9 @@ RSpec.describe 'Organization Dashboard Redirect', type: :system do
       visit dashboard_organization_path(organization)
 
       expect(current_path).to eq(about_me_organization_company_teammate_path(organization, teammate))
-      expect(page).to have_content("About #{person.casual_name}")
+      # Heading is "About Me"; casual name appears elsewhere on the page (may also exist in non-visible nav duplicates).
+      expect(page).to have_content('About Me')
+      expect(page).to have_content(person.casual_name)
     end
 
     it 'redirects correctly when accessed via URL' do

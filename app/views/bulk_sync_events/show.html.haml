@@ -1,14 +1,10 @@
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: current_organization, crumbs: [{ label: "Bulk sync events", url: organization_bulk_sync_events_path(current_organization) }, { label: "Event ##{@bulk_sync_event.id}", url: nil }])
+
 .container-fluid
   -# Define all data variables at the very top level for proper scope
   - preview_actions = @bulk_sync_event.preview_actions.is_a?(Hash) ? @bulk_sync_event.preview_actions : {}
   - results = @bulk_sync_event.results.is_a?(Hash) ? @bulk_sync_event.results : {}
-  
-  -# Back navigation
-  .row.mb-3
-    .col-12
-      = link_to organization_bulk_sync_events_path(current_organization), class: "text-muted text-decoration-none" do
-        %i.bi.bi-arrow-left.me-2
-        Back to Bulk Sync Events
   
   -# Debug: Let's see what we're working with
   -# preview_actions_debug = preview_actions.inspect

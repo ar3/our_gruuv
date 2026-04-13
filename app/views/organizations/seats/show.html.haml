@@ -28,9 +28,7 @@
         %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
 
 - content_for :go_back_link do
-  = link_to organization_seats_path(organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Seats
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Seats", url: organization_seats_path(organization) }, { label: @seat.display_name, url: nil }])
 
 .row.justify-content-center
   .col-12

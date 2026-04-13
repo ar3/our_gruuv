@@ -9,9 +9,7 @@
   = render 'view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_position_path(@organization, @position), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@position.display_name}
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @position.display_name, url: organization_position_path(@organization, @position) }, { label: "Ability milestones", url: nil }])
 
 = form_with model: @form, url: organization_position_ability_milestones_path(@organization, @position), method: :patch, local: true do |f|
   .row.justify-content-center

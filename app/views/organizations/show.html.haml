@@ -20,9 +20,7 @@
             Refresh Slack Identities
   
 - content_for :go_back_link do
-  = link_to organizations_path, class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Organizations
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Organizations", url: organizations_path }, { label: @organization.display_name, url: nil }])
 
 .row.justify-content-center
   .col-lg-12

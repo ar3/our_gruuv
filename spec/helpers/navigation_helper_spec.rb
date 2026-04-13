@@ -68,6 +68,21 @@ RSpec.describe NavigationHelper, type: :helper do
     end
   end
 
+  describe '#comments_index_parent_crumb' do
+    let(:company) { create(:organization, :company) }
+    let(:assignment) { create(:assignment, company: company) }
+
+    it 'returns label and path for an Assignment commentable' do
+      label, url = helper.comments_index_parent_crumb(company, assignment)
+      expect(label).to eq(assignment.title)
+      expect(url).to eq(helper.organization_assignment_path(company, assignment))
+    end
+
+    it 'returns nil pair for unknown commentable' do
+      expect(helper.comments_index_parent_crumb(company, Object.new)).to eq([nil, nil])
+    end
+  end
+
   describe '#nav_return_back' do
     it 'renders arrow link with text' do
       html = helper.nav_return_back(url: '/foo', text: 'Back to list')
@@ -150,7 +165,7 @@ RSpec.describe NavigationHelper, type: :helper do
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
-          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, view_slack_settings?: true, view_company_preferences?: true)
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, view_slack_settings?: true, view_company_preferences?: true)
         elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
           double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, view_company_preferences?: true)
         elsif record.is_a?(CompanyTeammate)

@@ -6,9 +6,7 @@
     Manage Teammate Associations
 
 - content_for :go_back_link do
-  = link_to organization_slack_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Slack Configuration
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Slack configuration", url: organization_slack_path(@organization) }, { label: "Manage teammate associations", url: nil }])
 
 - can_manage_slack = policy(@organization).manage_employment?
 

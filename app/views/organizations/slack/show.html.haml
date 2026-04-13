@@ -6,9 +6,7 @@
     Slack Configuration
 
 - content_for :go_back_link do
-  = link_to organization_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Organization
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Organization", url: organization_path(@organization) }, { label: "Slack configuration", url: nil }])
 
 - can_manage_slack = policy(@organization).manage_employment?
 - slack_disabled_tooltip = "Requires permission to manage employment to modify Slack settings."

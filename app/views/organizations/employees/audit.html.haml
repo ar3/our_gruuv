@@ -18,9 +18,7 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_employees_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    ="Back to Employees in #{@organization.display_name}"
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@organization) }, { label: acknowledge_page_label, url: nil }])
 
 = render 'shared/check_in_wizard_header', organization: @organization, teammate: @teammate, current_step: 3
 

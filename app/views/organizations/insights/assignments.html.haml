@@ -1,9 +1,7 @@
 - content_for :title, "Insights: Assignments"
 
 - content_for :go_back_link do
-  = link_to organization_assignments_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Assignments
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments", url: organization_assignments_path(@organization) }, { label: "Insights: Assignments", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center

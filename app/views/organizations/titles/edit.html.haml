@@ -1,12 +1,12 @@
 - content_for :title, "Edit Title"
 
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @title.external_title, url: organization_title_path(@organization, @title) }, { label: "Edit", url: nil }])
+
 .container.mt-4
   .row.justify-content-center
     .col-lg-8
       .d-flex.justify-content-between.align-items-center.mb-4
-        = link_to organization_title_path(@organization, @title), class: "btn btn-outline-secondary" do
-          %i.bi.bi-arrow-left.me-1
-          Back to #{@title.external_title}
         = render 'mode_switcher'
       
       .card

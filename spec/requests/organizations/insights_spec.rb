@@ -365,7 +365,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
     it 'renders abilities insights page with chart containers and timeframe links' do
       get organization_insights_abilities_path(organization)
       expect(response.body).to include('Insights: Abilities')
-      expect(response.body).to include('Back to Abilities')
+      expect(response.body).to include('page-context-nav')
+      expect(response.body).to include(organization_abilities_path(organization))
       expect(response.body).to include('Distribution of defined Milestones per Ability')
       expect(response.body).to include('Abilities by number of Assignments (grouped by Required Milestone)')
       expect(response.body).to include('Below are time-based analytics')

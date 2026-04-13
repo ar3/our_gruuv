@@ -2,9 +2,7 @@
 
 - content_for :go_back_link do
   - back_path = @owner_param ? organization_goals_path(@organization, owner_id: @owner_param) : organization_goals_path(@organization)
-  = link_to back_path, class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Goals
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: back_path }, { label: "Bulk new", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center

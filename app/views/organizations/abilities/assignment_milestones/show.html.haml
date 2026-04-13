@@ -11,9 +11,7 @@
         Back to Ability
 
 - content_for :go_back_link do
-  = link_to organization_ability_path(@organization, @ability), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@ability.name}
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @ability.name, url: organization_ability_path(@organization, @ability) }, { label: "Assignment milestones", url: nil }])
 
 = form_with model: @form, url: organization_ability_assignment_milestones_path(@organization, @ability), method: :patch, local: true do |f|
   .row.justify-content-center

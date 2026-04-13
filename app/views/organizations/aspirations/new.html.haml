@@ -1,9 +1,7 @@
 - content_for :title, "New Aspiration"
 
 - content_for :go_back_link do
-  = link_to organization_aspirations_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Aspirations
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Aspirations", url: organization_aspirations_path(@organization) }, { label: "New aspiration", url: nil }])
 
 %div.container-fluid
   %div.row

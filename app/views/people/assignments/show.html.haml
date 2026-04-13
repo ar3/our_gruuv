@@ -3,9 +3,7 @@
 
 - content_for :go_back_link do
   - if teammate_for_org
-    = link_to organization_company_teammate_check_ins_path(current_organization, teammate_for_org), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to #{@person.display_name}'s Assignments
+    = nav_hierarchy_with_previous(organization: current_organization, crumbs: [{ label: "Check-Ins", url: organization_company_teammate_check_ins_path(current_organization, teammate_for_org) }, { label: @assignment.title, url: nil }])
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center

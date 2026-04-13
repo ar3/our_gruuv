@@ -14,9 +14,7 @@
   = content_for :go_back_link
 
 - content_for :go_back_link do
-  = link_to organization_check_ins_health_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Check-ins Health Dashboard
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-ins Health Dashboard", url: organization_check_ins_health_path(@organization) }, { label: "Check-ins Health by Manager", url: nil }])
 
 / Sort toggle and table
 .row.justify-content-center

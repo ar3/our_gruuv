@@ -4,9 +4,7 @@
   %h1.mb-0 Create New Seat
 
 - content_for :go_back_link do
-  = link_to organization_seats_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Seats
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Seats", url: organization_seats_path(@organization) }, { label: "New seat", url: nil }])
 
 .row.justify-content-center
   .col-lg-12

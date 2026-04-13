@@ -5,9 +5,7 @@
     header_name: content_tag(:i, '', class: 'bi bi-lightning me-2') + "Edit #{@ability.name}"
 
 - content_for :go_back_link do
-  = link_to organization_ability_path(@organization, @ability), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@ability.name}
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @ability.name, url: organization_ability_path(@organization, @ability) }, { label: "Edit", url: nil }])
 
 - content_for :header_action do
   = render 'mode_switcher'

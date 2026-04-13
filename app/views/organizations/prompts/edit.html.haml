@@ -2,13 +2,9 @@
 
 - content_for :go_back_link do
   - if @can_edit
-    = link_to organization_prompts_path(@organization), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to My #{company_label_plural('reflection', 'Reflection')}
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "My #{company_label_plural('reflection', 'Reflection')}", url: organization_prompts_path(@organization) }, { label: "Edit", url: nil }])
   - else
-    = link_to about_me_organization_company_teammate_path(@organization, @prompt.company_teammate), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Go back to about #{@prompt.company_teammate.person.casual_name}
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "About #{@prompt.company_teammate.person.casual_name}", url: about_me_organization_company_teammate_path(@organization, @prompt.company_teammate) }, { label: "Edit prompt", url: nil }])
 
 - view_mode = params[:view] || 'split'
 - content_for :header do

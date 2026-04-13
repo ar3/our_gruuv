@@ -5,11 +5,10 @@
   %p.text-muted.mb-0 View and sync this team's Asana project
 
 - content_for :go_back_link do
-  - return_url = params[:return_url].presence || organization_team_path(organization, @team)
-  - return_text = params[:return_text].presence || "Back to #{@team.name}"
-  = link_to return_url, class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    = return_text
+  - if params[:return_url].present? && params[:return_text].present?
+    = nav_return_back(url: params[:return_url], text: params[:return_text])
+  - else
+    = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: @team.name, url: organization_team_path(organization, @team) }, { label: "Team Asana link", url: nil }])
 
 - return_to_team_url = params[:return_url].presence || organization_team_path(organization, @team)
 - return_to_team_text = "Back to #{@team.name}"

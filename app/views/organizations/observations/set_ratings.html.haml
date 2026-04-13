@@ -12,9 +12,7 @@
   = content_for :go_back_link
 
 - content_for :go_back_link do
-  = link_to new_organization_observation_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Step 1
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "New observation — step 1", url: new_organization_observation_path(@organization) }, { label: "Ratings & privacy", url: nil }])
 
 - content_for :header_action do
   .text-muted

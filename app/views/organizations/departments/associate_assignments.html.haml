@@ -1,9 +1,7 @@
 - content_for :title, "Associate Assignments with #{@department.name}"
 
 - content_for :go_back_link do
-  = link_to organization_department_path(@organization, @department), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@department.name}
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @department.name, url: organization_department_path(@organization, @department) }, { label: "Associate Assignments", url: nil }])
 
 - content_for :header do
   %h1.mb-0

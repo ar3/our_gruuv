@@ -7,9 +7,7 @@
   = render 'view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_positions_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Positions
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @position.title.display_name, url: organization_title_path(@organization, @position.title) }, { label: @position.position_level.level, url: nil }])
 
 - if @position.archived?
   .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }

@@ -10,9 +10,7 @@
   = content_for :go_back_link
 
 - content_for :go_back_link do
-  = link_to organization_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@organization.display_name}
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals Health Dashboard", url: nil }])
 
 .row.justify-content-center.mb-4
   .col-lg-12

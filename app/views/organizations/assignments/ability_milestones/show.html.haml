@@ -9,9 +9,7 @@
   = render 'assignments/view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@assignment.title}
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @assignment.title, url: organization_assignment_path(@organization, @assignment) }, { label: "Ability milestones", url: nil }])
 
 = form_with model: @form, url: organization_assignment_ability_milestones_path(@organization, @assignment), method: :patch, local: true do |f|
   .row.justify-content-center

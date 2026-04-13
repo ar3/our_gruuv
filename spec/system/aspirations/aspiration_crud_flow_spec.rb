@@ -54,8 +54,8 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
         expect(page).to have_content('Test Aspiration')
         expect(page).to have_content('This is a test aspiration for our system test')
         
-        # Step 6: Go back to index to verify it's still there
-        click_link 'Back to Aspirations'
+        # Step 6: Go back to index via breadcrumb to verify it's still there
+        within('.page-context-nav__breadcrumb') { click_link 'Aspirations' }
         
         # Should be back on index with the aspiration still visible
         expect(page).to have_content('Aspirations')

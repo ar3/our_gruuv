@@ -9,9 +9,7 @@
       = content_for :header_action
 
 - content_for :go_back_link do
-  = link_to organization_observations_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Observations
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Observations", url: organization_observations_path(@organization) }, { label: "Observation", url: nil }])
 
 - content_for :header_action do
   .d-flex.align-items-center.gap-2

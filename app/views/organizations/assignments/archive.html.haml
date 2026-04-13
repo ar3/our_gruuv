@@ -2,9 +2,7 @@
 - content_for :header do
   Archive Assignment: #{@assignment.title}
 - content_for :go_back_link do
-  = link_to organization_assignment_path(@organization, @assignment), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Assignment
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @assignment.title, url: organization_assignment_path(@organization, @assignment) }, { label: "Archive", url: nil }])
 
 .row.justify-content-center
   .col-lg-10

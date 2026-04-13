@@ -10,9 +10,7 @@
       View Authenticated Version
 
 - content_for :go_back_link do
-  = link_to organization_public_maap_assignments_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Assignments
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Public MAAP — assignments", url: organization_public_maap_assignments_path(@organization) }, { label: @assignment.title, url: nil }])
 
 - if @assignment.archived?
   .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }

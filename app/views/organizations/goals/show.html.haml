@@ -7,9 +7,7 @@
   = render 'mode_switcher', organization: @organization, goal: @goal, current_mode: :view
 
 - content_for :go_back_link do
-  = link_to organization_goals_path(@organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Goals
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: organization_goals_path(@organization) }, { label: @goal.title, url: nil }])
 
 .row
   .col-md-8

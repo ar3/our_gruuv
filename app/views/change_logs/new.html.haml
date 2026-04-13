@@ -6,7 +6,7 @@
     New Change Log
 
 - content_for :go_back_link do
-  = link_to "Back to Change Logs", change_logs_path, class: "text-muted text-decoration-none"
+  = nav_return_back(url: change_logs_path, text: "Change logs")
 
 .card
   .card-header

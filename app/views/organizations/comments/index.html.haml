@@ -22,26 +22,9 @@
         = f.label :show_resolved, "Show resolved", class: "form-check-label", for: "show_resolved_toggle"
 
 - content_for :go_back_link do
-  - if @commentable.is_a?(Assignment)
-    = link_to organization_assignment_path(@organization, @commentable), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Assignment
-  - elsif @commentable.is_a?(Ability)
-    = link_to organization_ability_path(@organization, @commentable), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Ability
-  - elsif @commentable.is_a?(Aspiration)
-    = link_to organization_aspiration_path(@organization, @commentable), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Aspiration
-  - elsif @commentable.is_a?(Position)
-    = link_to organization_position_path(@organization, @commentable), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Position
-  - elsif @commentable.is_a?(Title)
-    = link_to organization_title_path(@organization, @commentable), class: "go-back-link" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Title
+  - parent_label, parent_url = comments_index_parent_crumb(@organization, @commentable)
+  - if parent_label.present? && parent_url.present?
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: parent_label, url: parent_url }, { label: "Comments", url: nil }])
 
 .row.justify-content-center
   .col-lg-10

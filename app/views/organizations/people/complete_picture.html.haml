@@ -8,9 +8,7 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_employees_path(@current_organization), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    ="Back to Teammates in #{@current_organization.display_name}"
+  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: "#{@person.display_name} — complete picture", url: nil }])
 
 / Position Information Section
 .card.mb-4{ role: "region", "aria-labelledby": "position-section" }

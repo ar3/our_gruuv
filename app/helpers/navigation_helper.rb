@@ -595,6 +595,26 @@ module NavigationHelper
   end
 
   # --- Page context (breadcrumb + optional browser "Previous page") ---
+  # Parent [label, url] for organizations/comments#index (polymorphic commentable).
+  def comments_index_parent_crumb(organization, commentable)
+    return [nil, nil] if organization.blank? || commentable.blank?
+
+    case commentable
+    when Assignment
+      [commentable.title, organization_assignment_path(organization, commentable)]
+    when Ability
+      [commentable.name, organization_ability_path(organization, commentable)]
+    when Aspiration
+      [commentable.name, organization_aspiration_path(organization, commentable)]
+    when Position
+      [commentable.display_name, organization_position_path(organization, commentable)]
+    when Title
+      [commentable.display_name, organization_title_path(organization, commentable)]
+    else
+      [nil, nil]
+    end
+  end
+
   # Explicit in-app return: arrow + muted link (no breadcrumb / no Previous control).
   def nav_return_back(url:, text: nil)
     return "".html_safe if url.blank?
