@@ -31,6 +31,7 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
     )
 
     assign_per_employee_value_metrics
+    assign_outcome_summary_metrics(chart_range)
   end
 
   private
@@ -130,5 +131,89 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
       @value_billing_per_employee_week = nil
       @value_billing_per_employee_year = nil
     end
+  end
+
+  def assign_outcome_summary_metrics(chart_range)
+    stories_activity_count, stories_teammate_count = stories_counts(chart_range)
+    stand_activity_count, stand_teammate_count = stand_counts(chart_range)
+    growth_activity_count, growth_teammate_count = growth_counts(chart_range)
+    goals_activity_count, goals_teammate_count = goal_progress_counts(chart_range)
+
+    @value_billing_outcome_rows = [
+      {
+        key: :stories,
+        heading: "Capture our Stories",
+        value_sum: stories_activity_count * WEEKLY_OBSERVEE_VALUE,
+        teammate_count: stories_teammate_count,
+        activity_count: stories_activity_count
+      },
+      {
+        key: :stand,
+        heading: "Know where they Stand",
+        value_sum: stand_activity_count * WEEKLY_CHECK_IN_VALUE,
+        teammate_count: stand_teammate_count,
+        activity_count: stand_activity_count
+      },
+      {
+        key: :growth,
+        heading: "Clarify Growth Paths",
+        value_sum: growth_activity_count * WEEKLY_MILESTONE_VALUE,
+        teammate_count: growth_teammate_count,
+        activity_count: growth_activity_count
+      },
+      {
+        key: :goals,
+        heading: "Progress Goals",
+        value_sum: goals_activity_count * WEEKLY_GOAL_CHECK_IN_VALUE,
+        teammate_count: goals_teammate_count,
+        activity_count: goals_activity_count
+      }
+    ]
+  end
+
+  def stories_counts(chart_range)
+    scope = Observee
+      .joins(:observation)
+      .where(observations: { company_id: company.id })
+      .merge(Observation.not_soft_deleted.published)
+      .where(observations: { published_at: chart_range })
+
+    [scope.count, scope.distinct.count(:teammate_id)]
+  end
+
+  def stand_counts(chart_range)
+    teammate_ids_scope = CompanyTeammate.for_organization_hierarchy(company).select(:id)
+
+    assignment_scope = AssignmentCheckIn
+      .where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range)
+    aspiration_scope = AspirationCheckIn
+      .where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range)
+    position_scope = PositionCheckIn
+      .where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range)
+
+    activity_count = assignment_scope.count + aspiration_scope.count + position_scope.count
+    teammate_ids = assignment_scope.distinct.pluck(:teammate_id) |
+      aspiration_scope.distinct.pluck(:teammate_id) |
+      position_scope.distinct.pluck(:teammate_id)
+
+    [activity_count, teammate_ids.size]
+  end
+
+  def growth_counts(chart_range)
+    teammate_ids_scope = CompanyTeammate.for_organization_hierarchy(company).select(:id)
+    scope = TeammateMilestone
+      .where(teammate_id: teammate_ids_scope)
+      .where(attained_at: chart_range.begin.to_date..chart_range.end.to_date)
+
+    [scope.count, scope.distinct.count(:teammate_id)]
+  end
+
+  def goal_progress_counts(chart_range)
+    scope = GoalCheckIn
+      .joins(:goal)
+      .where(goals: { company_id: company.id })
+      .where(created_at: chart_range)
+
+    [scope.count, scope.distinct.count("goals.creator_id")]
   end
 end
