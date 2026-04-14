@@ -241,6 +241,47 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
         company.reload
         expect(company.observable_moment_notifier_teammate_id).to be_nil
       end
+
+      it 'attaches a company logo' do
+        logo = fixture_file_upload('files/logo.png', 'image/png')
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { prompt: 'Reflection' },
+            organization: { logo: logo }
+          }
+        }.to change { company.reload.logo.attached? }.from(false).to(true)
+        expect(company.reload.logo.blob.key).to start_with("company_logos/#{company.id}/")
+        expect(response).to redirect_to(edit_organization_company_preference_path(company))
+      end
+
+      it 'removes the company logo when remove_logo is set' do
+        company.logo.attach(
+          io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+          filename: 'logo.png',
+          content_type: 'image/png'
+        )
+        expect(company.logo.attached?).to eq(true)
+        patch :update, params: {
+          organization_id: company.to_param,
+          preferences: { prompt: 'Reflection' },
+          organization: { remove_logo: '1' }
+        }
+        expect(company.reload.logo.attached?).to eq(false)
+        expect(response).to redirect_to(edit_organization_company_preference_path(company))
+      end
+
+      it 'rejects a non-image logo upload' do
+        bad = fixture_file_upload('files/test.txt', 'text/plain')
+        patch :update, params: {
+          organization_id: company.to_param,
+          preferences: { prompt: 'Reflection' },
+          organization: { logo: bad }
+        }
+        expect(company.reload.logo.attached?).to eq(false)
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(flash[:alert]).to be_present
+      end
     end
 
     it 'requires customize_company permission (update remains restricted)' do

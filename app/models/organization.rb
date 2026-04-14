@@ -52,6 +52,8 @@ class Organization < ApplicationRecord
 
   has_many :company_label_preferences, foreign_key: 'company_id', dependent: :destroy
 
+  has_one_attached :logo
+
   belongs_to :observable_moment_notifier_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :minor_1_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true
   belongs_to :minor_2_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true
@@ -62,6 +64,7 @@ class Organization < ApplicationRecord
   # Validations
   validates :name, presence: true
   validate :observable_moment_notifier_teammate_belongs_to_organization, if: -> { observable_moment_notifier_teammate_id.present? }
+  validate :acceptable_logo, if: -> { logo.attached? }
 
   # Scopes
   scope :ordered, -> { order(:name) }
@@ -392,5 +395,15 @@ class Organization < ApplicationRecord
     return if observable_moment_notifier_teammate.organization_id == id
 
     errors.add(:observable_moment_notifier_teammate_id, 'must belong to this organization')
+  end
+
+  def acceptable_logo
+    allowed = %w[image/png image/jpeg image/jpg image/webp image/gif]
+    unless logo.content_type.in?(allowed)
+      errors.add(:logo, 'must be a PNG, JPEG, WebP, or GIF')
+    end
+    if logo.byte_size > 5.megabytes
+      errors.add(:logo, 'is too large (maximum is 5 MB)')
+    end
   end
 end

@@ -131,6 +131,56 @@ h4, h5, h6 {
   font-size: 1.25rem;
 }
 
+// Authenticated header: org logo, avatars, compact xs layout
+.header-brand-region {
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+.header-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.header-org-logo {
+  max-height: 28px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.header-org-logo--on-dark {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 4px;
+  padding: 2px 6px;
+  max-height: 32px;
+}
+
+.header-org-brand-fallback {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.header-user-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.header-user-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+@media (max-width: 575.98px) {
+  .navbar.navbar-expand-lg.navbar-dark.bg-primary .header-brand-region {
+    max-width: min(52vw, 220px);
+  }
+}
+
 .nav-link {
   font-family: 'Source Sans Pro', sans-serif;
   font-weight: 400;
@@ -646,7 +696,15 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   border-bottom: 1px solid #dee2e6;
   min-height: 56px;
   position: relative;
-  z-index: 1035; // Below floating toggle button
+  z-index: 1045; // Keep below floating toggle (1050), above page content
+
+  > .container-fluid.d-flex {
+    min-width: 0;
+  }
+
+  > .container-fluid.d-flex > .d-flex.align-items-center.gap-3 {
+    flex-shrink: 0;
+  }
   
   .navbar-brand {
     font-size: 1rem;
@@ -675,6 +733,20 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
     &:hover {
       color: #0d6efd;
     }
+  }
+
+  .dropdown-menu {
+    z-index: 1060;
+  }
+}
+
+// Ensure horizontal authenticated navbar dropdowns appear above page content.
+.navbar.navbar-expand-lg.navbar-dark.bg-primary {
+  position: relative;
+  z-index: 1045;
+
+  .dropdown-menu {
+    z-index: 1060;
   }
 }
 
@@ -936,7 +1008,7 @@ body:has(.vertical-nav.open) .floating-toggle {
     visibility: visible !important;
     opacity: 1 !important;
     position: relative;
-    z-index: 1035;
+    z-index: 1045;
   }
   
   .vertical-nav-toggle-btn.floating-toggle {

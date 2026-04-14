@@ -1,0 +1,12 @@
+- link_classes = local_assigns.fetch(:link_classes)
+- brand_path = local_assigns.fetch(:brand_path)
+- on_dark_nav = local_assigns.fetch(:on_dark_nav, false)
+- org = current_organization
+
+= link_to brand_path, class: "#{link_classes} header-brand-link" do
+  - if org.logo.attached?
+    = image_tag url_for(org.logo), class: "header-org-logo #{'header-org-logo--on-dark' if on_dark_nav}", alt: "#{org.display_name} logo"
+  - else
+    %i.bi.bi-building.header-org-brand-fallback.d-inline-flex.d-sm-none.align-items-center{class: on_dark_nav ? 'text-white' : 'text-body', "aria-hidden": true}
+  %span.header-org-brand-text.d-none.d-sm-inline.text-truncate
+    = "#{org.display_name}'s Gruuv"

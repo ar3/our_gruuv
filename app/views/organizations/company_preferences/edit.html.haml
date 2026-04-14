@@ -20,7 +20,7 @@
   .alert.alert-warning.mb-4
     You need Customize Company permission to modify preferences.
 
-= form_with url: organization_company_preference_path(@organization), method: :patch, local: true do |f|
+= form_with url: organization_company_preference_path(@organization), method: :patch, local: true, html: { multipart: true } do |f|
   .row.mb-4
     .col-6
       %h5.mb-3 Prompt
@@ -70,6 +70,24 @@
                         disabled: !can_customize },
                       'true',
                       'false'
+
+  .row.mb-4
+    .col-12.col-md-6
+      %h5.mb-3 Company logo
+      %p.text-muted.small
+        Shown in the app header next to your organization name. Use a square or wide logo; PNG, JPEG, WebP, or GIF, up to 5 MB.
+    .col-12.col-md-6
+      - if @company.logo.attached?
+        .mb-2
+          = image_tag url_for(@company.logo), class: 'img-thumbnail', style: 'max-height: 96px; max-width: 100%; object-fit: contain;', alt: ''
+      - if can_customize
+        - if @company.logo.attached?
+          .form-check.mb-3
+            = check_box_tag 'organization[remove_logo]', '1', false, class: 'form-check-input', id: 'organization_remove_logo'
+            = label_tag 'organization_remove_logo', 'Remove current logo', class: 'form-check-label'
+        = file_field_tag 'organization[logo]', accept: 'image/png,image/jpeg,image/jpg,image/webp,image/gif', class: 'form-control'
+      - elsif !@company.logo.attached?
+        %p.text-muted.small.mb-0 No logo uploaded.
 
   .row.mb-4
     .col-6

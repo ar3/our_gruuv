@@ -27,6 +27,10 @@ module OurGruuv
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
     
+    # Active Storage S3 bucket (see config/storage.yml `amazon` and config/active_storage.yml).
+    # Resolved at boot as: ENV["ACTIVE_STORAGE_S3_BUCKET"] → credentials active_storage.s3_bucket
+    # → config/active_storage.yml for current RAILS_ENV.
+
     # Set default URL options for the application
     config.after_initialize do
       Rails.application.routes.default_url_options = {

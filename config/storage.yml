@@ -6,13 +6,21 @@ local:
   service: Disk
   root: <%= Rails.root.join("storage") %>
 
-# Use bin/rails credentials:edit to set the AWS secrets (as aws:access_key_id|secret_access_key)
-# amazon:
-#   service: S3
-#   access_key_id: <%= Rails.application.credentials.dig(:aws, :access_key_id) %>
-#   secret_access_key: <%= Rails.application.credentials.dig(:aws, :secret_access_key) %>
-#   region: us-east-1
-#   bucket: your_own_bucket-<%= Rails.env %>
+# Active Storage on S3 — same credential sources as S3::ImageUploader / S3::CsvUploader
+# (ENV or Rails.application.credentials under :aws).
+#
+# Bucket: ENV["ACTIVE_STORAGE_S3_BUCKET"], then credentials active_storage.s3_bucket,
+# then config/active_storage.yml for the current RAILS_ENV (see config_for(:active_storage)).
+# Recommended: a dedicated bucket for app uploads / private blobs (not necessarily
+# static.ourgruuv.com used for public change-log images).
+#
+# IAM needs at least: s3:PutObject, s3:GetObject, s3:DeleteObject, s3:ListBucket on that bucket.
+amazon:
+  service: S3
+  access_key_id: <%= ENV["AWS_ACCESS_KEY_ID"].presence || Rails.application.credentials.dig(:aws, :access_key_id) %>
+  secret_access_key: <%= ENV["AWS_SECRET_ACCESS_KEY"].presence || Rails.application.credentials.dig(:aws, :secret_access_key) %>
+  region: <%= ENV["AWS_REGION"].presence || "us-east-1" %>
+  bucket: <%= ENV["ACTIVE_STORAGE_S3_BUCKET"].presence || Rails.application.credentials.dig(:active_storage, :s3_bucket).presence || Rails.application.config_for(:active_storage)[:s3_bucket].presence %>
 
 # Remember not to checkin your GCS keyfile to a repository
 # google:

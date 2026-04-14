@@ -11,6 +11,12 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
     authorize @company, :customize_company?
 
     update_observable_moment_notifier
+    unless apply_logo_update
+      @preferences = load_preferences
+      flash.now[:alert] = @logo_update_error.presence || 'Could not update company logo.'
+      render :edit, status: :unprocessable_entity
+      return
+    end
     if update_preferences
       redirect_to edit_organization_company_preference_path(@organization), notice: 'Company preferences updated successfully.'
     else
@@ -45,6 +51,9 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
 
   def update_observable_moment_notifier
     return if params[:organization].blank?
+    # Avoid clearing the notifier when the form omits this key (e.g. tests or partial updates).
+    org = params[:organization]
+    return unless org.key?(:observable_moment_notifier_teammate_id) || org.key?('observable_moment_notifier_teammate_id')
 
     permitted = params.require(:organization).permit(:observable_moment_notifier_teammate_id)
     raw = permitted[:observable_moment_notifier_teammate_id].to_s.presence
@@ -83,5 +92,35 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
     end
     
     success
+  end
+
+  def apply_logo_update
+    @logo_update_error = nil
+    return true if params[:organization].blank?
+
+    permitted = params.require(:organization).permit(:logo, :remove_logo)
+    if ActiveModel::Type::Boolean.new.cast(permitted[:remove_logo])
+      @company.logo.purge
+      return true
+    end
+    return true if permitted[:logo].blank?
+
+    uploaded_logo = permitted[:logo]
+    original_filename = uploaded_logo.original_filename.to_s
+    extension = File.extname(original_filename).presence || '.png'
+    s3_key = "company_logos/#{@company.id}/#{SecureRandom.uuid}#{extension.downcase}"
+    uploaded_logo.tempfile.rewind if uploaded_logo.respond_to?(:tempfile)
+    @company.logo.attach(
+      io: uploaded_logo.tempfile,
+      filename: original_filename.presence || "company-logo#{extension.downcase}",
+      content_type: uploaded_logo.content_type,
+      key: s3_key
+    )
+    return true if @company.valid?
+
+    @logo_update_error = @company.errors.full_messages_for(:logo).presence&.to_sentence
+    @company.logo.purge
+    @company.reload
+    false
   end
 end

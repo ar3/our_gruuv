@@ -1,0 +1,14 @@
+# Optional S3 bucket defaults for Active Storage (`amazon` in config/storage.yml).
+#
+# Precedence (in storage.yml): ENV["ACTIVE_STORAGE_S3_BUCKET"], then
+# credentials active_storage.s3_bucket, then the value below for the current RAILS_ENV.
+#
+# You can set only ENV per deploy, only credentials, or only this file — or mix them.
+development:
+  s3_bucket:
+
+production:
+  s3_bucket:
+
+test:
+  s3_bucket:

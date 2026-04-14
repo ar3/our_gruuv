@@ -1,0 +1,12 @@
+- as_nav_item = local_assigns.fetch(:as_nav_item, false)
+- toggle_link_class = local_assigns.fetch(:toggle_link_class)
+- menu_class = local_assigns.fetch(:menu_class, 'dropdown-menu dropdown-menu-end')
+- person_label = local_assigns.fetch(:person_label)
+- show_gsd_in_toggle = local_assigns.fetch(:show_gsd_in_toggle, false)
+
+- if as_nav_item
+  %li.nav-item.dropdown
+    = render 'layouts/header_user_menu_inner', toggle_link_class: toggle_link_class, menu_class: menu_class, person_label: person_label, show_gsd_in_toggle: show_gsd_in_toggle
+- else
+  .dropdown
+    = render 'layouts/header_user_menu_inner', toggle_link_class: toggle_link_class, menu_class: menu_class, person_label: person_label, show_gsd_in_toggle: show_gsd_in_toggle
