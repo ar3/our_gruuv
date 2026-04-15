@@ -554,7 +554,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include('Check-in on any single assignment, value, or position one at a time by clicking on the name listed below')
       expect(response.body).to include('Go to the Bulk Check-in page')
       expect(response.body).to include('On that page you can check-in on just one item or all of them at once')
-      expect(response.body).to include('Check-In Status (Active)')
+      expect(response.body).to include('My Check-ins (Active)')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
       expect(response.body).to include(organization_teammate_aspiration_path(organization, employee_teammate, aspiration))
@@ -609,6 +609,24 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include(button_text)
       expect(response.body).to include('btn-outline-warning')
       expect(response.body).to include(organization_company_teammate_finalization_path(organization, employee_teammate))
+    end
+  end
+
+  describe "GET /organizations/:org_id/company_teammates/:company_teammate_id/check_ins/hub" do
+    before do
+      sign_in_as_teammate_for_request(manager_person, organization)
+    end
+
+    it "renders the check-in hub with key action links" do
+      get hub_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(" - Check-in Hub")
+      expect(response.body).to include("My Check-ins (Active)")
+      expect(response.body).to include(organization_company_teammate_check_ins_path(organization, employee_teammate))
+      expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate))
+      expect(response.body).to include(organization_company_teammate_finalization_path(organization, employee_teammate))
+      expect(response.body).to include(audit_organization_employee_path(organization, employee_teammate))
     end
   end
 end

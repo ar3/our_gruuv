@@ -1,0 +1,91 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, "Check-in Hub")
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { hub_organization_company_teammate_check_ins_path(organization, tm) },
+               switch_aria_label: "Switch teammate for check-in hub"
+      %span= " - Check-in Hub"
+
+- content_for :header_action do
+  = render "people/view_switcher"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "Check-in Hub", url: nil }])
+
+.row.g-3.mb-4
+- rate_data = check_in_health_completion_rate_and_breakdown(@check_in_health_cache)
+- health_table_data = single_item_health_popover_table(@check_in_health_cache)
+- health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : "No check-in health data yet."
+
+.d-flex.justify-content-between.align-items-center.mb-3.gap-3.flex-wrap
+  %p.mb-0.fw-medium
+    = "Choose one of these 5 actions below to ensure #{@teammate.person.casual_name} is crystal clear on where they stand."
+  - if rate_data
+    .text-end
+      %span.fw-bold.fs-3{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => health_popover_html.html_safe, style: "cursor: pointer;"}
+        #{rate_data[:completion_rate]}%
+      %span.text-muted.small.ms-1 ... clear on where they stand
+  - else
+    .text-end
+      %span.text-muted.fs-4.fw-bold{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => health_popover_html, style: "cursor: pointer;"}
+        —
+      %span.text-muted.small.ms-1 ... clear on where they stand
+
+.row.g-4.mb-4
+  .col-12.col-lg-6
+    = link_to @next_up_url, class: "text-decoration-none" do
+      .card.h-100.hover-lift.border-primary{style: "cursor: pointer;"}
+        .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
+          .flex-grow-1
+            - if @next_up_requires_check_in
+              %h3.fw-bold.mb-2 Check-In One Thing At A Time
+              %p.fs-5.mb-2= "Next up: #{@next_up_label}"
+              %p.text-muted.mb-0 You can choose anything to check in on.
+            - else
+              %h3.fw-bold.mb-2 Check-In Early On One Thing
+              %p.fs-5.mb-2 You're fully up to date right now.
+              %p.mb-0= "Want to check in early on #{@next_up_label}?"
+          %i.bi.bi-arrow-right-circle.display-2.text-primary
+
+  .col-12.col-lg-3
+    = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "text-decoration-none" do
+      .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
+        .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
+          .flex-grow-1
+            %h4.fw-bold.mb-2 Check-In In Bulk
+            %p.text-muted.mb-0 If you are ready to give multiple ratings at once.
+          %i.bi.bi-grid-1x2-fill.display-4.text-success
+
+  .col-12.col-lg-3
+    = link_to review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate), class: "text-decoration-none" do
+      .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
+        .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
+          .flex-grow-1
+            %h4.fw-bold.mb-2 View Check-In Status
+            %p.text-muted.mb-0 Get a simple view of the most recent check-ins at a glance.
+          %i.bi.bi-table.display-4.text-info
+
+.row.g-3
+  .col-12.col-lg-6
+    = link_to organization_company_teammate_finalization_path(organization, @teammate), class: "text-decoration-none" do
+      - review_card_class = @ready_for_review_count.to_i.positive? ? "border-warning" : "border-secondary"
+      .card.h-100.hover-lift{class: review_card_class, style: "cursor: pointer;"}
+        .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
+          .flex-grow-1
+            %h4.fw-bold.mb-2= "Review #{@ready_for_review_count} Check-Ins Together"
+            %p.text-muted.mb-0 Finalize check-ins that both sides have completed.
+          %i.bi.bi-people-fill.display-4.text-warning
+
+  .col-12.col-lg-6
+    = link_to audit_organization_employee_path(organization, @teammate), class: "text-decoration-none" do
+      .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
+        .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
+          .flex-grow-1
+            %h4.fw-bold.mb-2= "View #{@snapshot_total_count} Audit/Check-In Acknowledgements"
+            %p.text-muted.mb-0= "#{@snapshot_unacknowledged_count} have not been acknowledged yet."
+          %i.bi.bi-journal-check.display-4.text-dark

@@ -127,18 +127,10 @@ module PeopleHelper
   def people_current_view_name
     return 'Manage Profile Mode' unless action_name
     
-    # Check for check_ins controller
-    if controller_name == 'check_ins' && action_name == 'review_most_recent'
-      return 'Check-In Status'
-    end
-
-    if controller_name == 'check_ins' && action_name == 'show'
-      return 'Check-In'
-    end
-    
-    # Check for finalizations controller
-    if controller_name == 'finalizations' && action_name == 'show'
-      return 'Check-In Review'
+    if (controller_name == 'check_ins' && %w[hub show review_most_recent].include?(action_name)) ||
+       (controller_name == 'finalizations' && action_name == 'show') ||
+       (controller_name == 'employees' && action_name == 'audit')
+      return 'My Check-ins'
     end
     
     # Check for position controller
@@ -169,7 +161,7 @@ module PeopleHelper
     when 'about_me'
       'About Me'
     when 'audit'
-      'Acknowledgement'
+      'My Check-ins'
     when 'check_in'
       'Check-In'
     else

@@ -15,14 +15,14 @@ RSpec.describe PeopleHelper, type: :helper do
         expect(helper.people_current_view_name).to eq('Manage Profile Mode')
       end
       
-      it 'returns Check-In for check_ins controller' do
+      it 'returns My Check-ins for check_ins controller' do
         allow(helper).to receive(:controller_name).and_return('check_ins')
-        expect(helper.people_current_view_name).to eq('Check-In')
+        expect(helper.people_current_view_name).to eq('My Check-ins')
       end
       
-      it 'returns Check-In Review for finalizations controller' do
+      it 'returns My Check-ins for finalizations controller' do
         allow(helper).to receive(:controller_name).and_return('finalizations')
-        expect(helper.people_current_view_name).to eq('Check-In Review')
+        expect(helper.people_current_view_name).to eq('My Check-ins')
       end
       
       it 'returns Seat Management Mode for position controller' do
@@ -31,10 +31,16 @@ RSpec.describe PeopleHelper, type: :helper do
       end
     end
 
-    it 'returns Check-In Status for check_ins review_most_recent action' do
+    it 'returns My Check-ins for check_ins review_most_recent action' do
       allow(helper).to receive(:action_name).and_return('review_most_recent')
       allow(helper).to receive(:controller_name).and_return('check_ins')
-      expect(helper.people_current_view_name).to eq('Check-In Status')
+      expect(helper.people_current_view_name).to eq('My Check-ins')
+    end
+
+    it 'returns My Check-ins for check_ins hub action' do
+      allow(helper).to receive(:action_name).and_return('hub')
+      allow(helper).to receive(:controller_name).and_return('check_ins')
+      expect(helper.people_current_view_name).to eq('My Check-ins')
     end
 
     it 'returns Public View for public action' do
@@ -61,10 +67,10 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('My Growth')
     end
 
-    it 'returns Acknowledgement for audit action' do
+    it 'returns My Check-ins for audit action' do
       allow(helper).to receive(:action_name).and_return('audit')
       allow(helper).to receive(:controller_name).and_return('employees')
-      expect(helper.people_current_view_name).to eq('Acknowledgement')
+      expect(helper.people_current_view_name).to eq('My Check-ins')
     end
 
     it 'returns Kudos Points Mode for kudos_points action' do

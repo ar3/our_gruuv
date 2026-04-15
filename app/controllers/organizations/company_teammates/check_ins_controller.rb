@@ -92,6 +92,48 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       history_loads: @_review_most_recent_history_loads
     )
   end
+
+  def hub
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    @person = @teammate.person
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+
+    @ready_for_review_count =
+      PositionCheckIn.where(company_teammate: @teammate).ready_for_finalization.count +
+      AssignmentCheckIn.where(company_teammate: @teammate).ready_for_finalization.count +
+      AspirationCheckIn.where(company_teammate: @teammate).ready_for_finalization.count
+
+    snapshots_scope = MaapSnapshot.for_employee_teammate(@teammate)
+      .for_company(organization)
+      .where.not(effective_date: nil)
+    @snapshot_total_count = snapshots_scope.count
+    @snapshot_unacknowledged_count = snapshots_scope.where(employee_acknowledged_at: nil).count
+    @check_in_health_cache = CheckInHealthCache.find_by(teammate: @teammate, organization: organization)
+
+    next_result = CheckIns::SingleItemCheckInNextItemService.call(
+      teammate: @teammate,
+      organization: organization,
+      current_person: current_person,
+      current_type: :position,
+      current_id: nil
+    )
+    @next_item_candidate = next_result[:ordered_items]&.first
+
+    if next_result[:next_requires_check_in]
+      @next_up_requires_check_in = true
+      @next_up_label = next_result.dig(:next_item, :name).presence || @next_item_candidate&.dig(:name).presence || 'your top check-in'
+      @next_up_url = next_result[:next_url].presence || organization_company_teammate_check_ins_path(organization, @teammate)
+    elsif @next_item_candidate.present?
+      @next_up_requires_check_in = false
+      @next_up_label = @next_item_candidate[:name]
+      @next_up_url = check_in_hub_item_url(@next_item_candidate)
+    else
+      @next_up_requires_check_in = false
+      @next_up_label = 'your top check-in'
+      @next_up_url = organization_company_teammate_check_ins_path(organization, @teammate)
+    end
+  end
   
   def update
     @check_in_errors = []
@@ -1022,6 +1064,21 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       "save_and_stay"
     else
       button_name
+    end
+  end
+
+  def check_in_hub_item_url(item)
+    return organization_company_teammate_check_ins_path(organization, @teammate) if item.blank?
+
+    case item[:type]&.to_sym
+    when :assignment
+      organization_teammate_assignment_path(organization, @teammate, item[:id])
+    when :aspiration
+      organization_teammate_aspiration_path(organization, @teammate, item[:id])
+    when :position
+      position_check_in_organization_teammate_path(organization, @teammate)
+    else
+      organization_company_teammate_check_ins_path(organization, @teammate)
     end
   end
 

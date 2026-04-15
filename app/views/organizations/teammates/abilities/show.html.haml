@@ -8,7 +8,7 @@
     .ability-milestone-details-toggle[aria-expanded="true"] .milestone-details-label-collapsed { display: none; }
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-In Status", url: review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: @ability.name, url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-in Hub", url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: @ability.name, url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap

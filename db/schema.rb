@@ -1523,7 +1523,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
 
   add_foreign_key "abilities", "departments"
   add_foreign_key "abilities", "organizations", column: "company_id"
-  add_foreign_key "abilities", "organizations", column: "company_id"
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -1533,7 +1532,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
   add_foreign_key "aspiration_check_ins", "maap_snapshots"
   add_foreign_key "aspiration_check_ins", "teammates"
   add_foreign_key "aspirations", "departments"
-  add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "assignment_abilities", "abilities"
   add_foreign_key "assignment_abilities", "assignments"
@@ -1685,7 +1683,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
   add_foreign_key "titles", "departments"
-  add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "position_major_levels"
   add_foreign_key "user_preferences", "people"

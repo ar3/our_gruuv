@@ -1,7 +1,7 @@
 - content_for :title, "1-by-1 Check-in – Position – #{@teammate.person.display_name}"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-In Status", url: review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Position Check-In", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-in Hub", url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "Position Check-In", url: nil }])
 
 .row.mb-3
   .col-12

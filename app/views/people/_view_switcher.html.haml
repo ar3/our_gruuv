@@ -80,68 +80,21 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
       
     %li
-      - if action_name == 'show' && controller_name == 'check_ins'
+      - my_check_ins_active = (controller_name == 'check_ins' && %w[hub show review_most_recent].include?(action_name)) || (controller_name == 'finalizations' && action_name == 'show') || (controller_name == 'employees' && action_name == 'audit')
+      - if my_check_ins_active
         .dropdown-item.text-muted
           %i.bi.bi-chat-square-text.me-2
-          Check-In (Active)
+          My Check-ins (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).view_check_ins?
-        = link_to organization_company_teammate_check_ins_path(current_organization, @teammate), class: 'dropdown-item' do
+        = link_to hub_organization_company_teammate_check_ins_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-chat-square-text.me-2
-          Check-In
+          My Check-ins
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-chat-square-text.me-2
-          Check-In
+          My Check-ins
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
-    
-    %li
-      - if action_name == 'review_most_recent' && controller_name == 'check_ins'
-        .dropdown-item.text-muted
-          %i.bi.bi-table.me-2
-          Check-In Status (Active)
-          %i.bi.bi-check-circle.text-success.ms-2
-      - elsif @teammate && policy(@teammate).view_check_ins?
-        = link_to review_most_recent_organization_company_teammate_check_ins_path(current_organization, @teammate), class: 'dropdown-item' do
-          %i.bi.bi-table.me-2
-          Check-In Status
-      - else
-        .dropdown-item.text-muted.disabled
-          %i.bi.bi-table.me-2
-          Check-In Status
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
-    
-    %li
-      - if action_name == 'show' && controller_name == 'finalizations'
-        .dropdown-item.text-muted
-          %i.bi.bi-check-circle.me-2
-          Check-In Review (Active)
-          %i.bi.bi-check-circle.text-success.ms-2
-      - elsif @teammate && policy(@teammate).view_check_ins?
-        = link_to organization_company_teammate_finalization_path(current_organization, @teammate), class: 'dropdown-item' do
-          %i.bi.bi-check-circle.me-2
-          Check-In Review
-      - else
-        .dropdown-item.text-muted.disabled
-          %i.bi.bi-check-circle.me-2
-          Check-In Review
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access finalization features"}
-      
-    %li
-      - if action_name == 'audit'
-        .dropdown-item.text-muted
-          %i.bi.bi-clock-history.me-2
-          Acknowledgement (Active)
-          %i.bi.bi-check-circle.text-success.ms-2
-      - elsif @teammate && policy(@teammate).audit?
-        = link_to audit_organization_employee_path(current_organization, @teammate), class: 'dropdown-item' do
-          %i.bi.bi-clock-history.me-2
-          Acknowledgement
-      - else
-        .dropdown-item.text-muted.disabled
-          %i.bi.bi-clock-history.me-2
-          Acknowledgement
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization or to be in the managerial hierarchy to access audit features"}
       
     %li
       - viewing_own_kudos = @teammate && current_company_teammate == @teammate
