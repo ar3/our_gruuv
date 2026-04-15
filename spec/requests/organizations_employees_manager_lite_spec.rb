@@ -13,6 +13,9 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
     # Create employment tenures with manager relationship
     create(:employment_tenure, teammate: direct_report1_teammate, company: organization, manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
     create(:employment_tenure, teammate: direct_report2_teammate, company: organization, manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
+
+    direct_report1.update!(first_name: 'Alice', last_name: 'Alpha')
+    direct_report2.update!(first_name: 'Bob', last_name: 'Bravo')
     
     # Mock authentication for manager
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
@@ -219,6 +222,13 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
         
         spotlight_stats = assigns(:spotlight_stats)
         expect(spotlight_stats[:teammates_received_observation]).to be >= 1
+      end
+
+      it 'shows a managers_view CTA to observations involving the teammate, with the correct total' do
+        get organization_employees_path(organization, spotlight: 'manager_lite', view: 'managers_view', manager_teammate_id: manager_teammate.id)
+
+        expect(response.body).to include("involving_teammate_id=#{direct_report1_teammate.id}")
+        expect(response.body).to include("View the 2 OGOs involving Alice A.")
       end
     end
 

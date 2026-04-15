@@ -175,6 +175,16 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       else
         @check_in_health_caches_by_teammate = {}
       end
+
+      @managers_view_observations_involving_counts_by_teammate_id =
+        if query.current_view == 'managers_view' && @filtered_and_paginated_teammates.any? &&
+           Pundit.policy(pundit_user, company).view_observations?
+          @filtered_and_paginated_teammates.index_with do |teammate|
+            observations_involving_teammate_total_count(teammate)
+          end
+        else
+          {}
+        end
       
       # For spotlight calculations, we need the original relation (before status filtering) for joins
       # but use filtered_teammates for counts. Pass both to calculate_spotlight_stats.
@@ -429,6 +439,31 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   end
   
   private
+
+  # Matches Organizations::ObservationsController#base_filtered counting for default index params
+  # (visibility + optional filters), scoped to observations involving a specific teammate.
+  def observations_involving_teammate_total_count(teammate)
+    return 0 if teammate.blank?
+
+    query = ObservationsQuery.new(
+      @organization,
+      { involving_teammate_id: teammate.id },
+      current_person: current_person
+    )
+
+    filtered = query.base_scope
+    filtered = query.filter_by_privacy_levels(filtered)
+    filtered = query.filter_by_timeframe(filtered)
+    filtered = query.filter_by_draft_status(filtered)
+    filtered = query.filter_by_observer(filtered)
+    filtered = query.filter_by_involving_teammate(filtered)
+    filtered = query.filter_by_observee_ids(filtered)
+    filtered = query.filter_by_rateable(filtered)
+    filtered = query.filter_by_observation_type(filtered)
+    filtered = query.filter_by_soft_deleted_status(filtered)
+
+    filtered.count
+  end
 
   def active_managers_for_organization
     # Get active managers (for filtering, lenient mode - don't require them to be active teammates)

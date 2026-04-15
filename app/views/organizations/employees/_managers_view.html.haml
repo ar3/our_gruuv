@@ -30,7 +30,7 @@
           = link_to complete_picture_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center" do
             %i.bi.bi-briefcase.text-primary
             %span= "Review #{teammate.person.casual_name}'s Real Day-to-Day Job"
-      .row.g-1.mt-1.align-items-start
+      .row.g-1.mt-1.align-items-stretch
         .offset-md-1.col-12.col-md-2
           - if rate_data
             .d-flex.flex-column
@@ -42,13 +42,22 @@
               %span.text-muted.fs-3.fw-bold{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => health_popover_html, style: "cursor: pointer;"}
                 —
               %span.text-muted.small.caption ...on where they stand
-        .col-6.col-md-6
-          = link_to hub_organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm w-100 text-start text-wrap lh-sm d-inline-flex align-items-start gap-2 shadow-sm hover-lift" do
+        .col-6.col-md-3.d-flex.align-items-stretch
+          = link_to hub_organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm w-100 h-100 flex-grow-1 text-start text-wrap lh-sm d-inline-flex align-items-start gap-2 shadow-sm hover-lift" do
             %i.bi.bi-signpost-split.mt-1.text-primary
             %span
               %span.fw-semibold Decide what to get clear on
               %br
               %small.text-muted= "#{teammate.person.casual_name}'s last check-in: #{last_check_in_phrase}"
+        - if policy(company).view_observations?
+          - ogo_involving_count = (@managers_view_observations_involving_counts_by_teammate_id || {})[teammate.id].to_i
+          .col-6.col-md-3.d-flex.align-items-stretch
+            = link_to organization_observations_path(@organization, involving_teammate_id: teammate.id), class: "btn btn-outline-secondary btn-sm w-100 h-100 fw-normal d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center flex-grow-1" do
+              %i.bi.bi-chat-left-quote.text-primary
+              %span.fw-normal.text-wrap
+                = "View the "
+                %span.fw-bold= ogo_involving_count
+                %span.fw-normal= ogo_involving_count == 1 ? " OGO involving #{teammate.person.casual_name}" : " OGOs involving #{teammate.person.casual_name}"
         .col-12.col-md-3.d-flex.align-items-start
           - if active_tenure&.position
             %small.text-muted.mt-1
