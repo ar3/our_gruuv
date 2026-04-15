@@ -56,6 +56,9 @@ RSpec.describe 'Organizations::Insights', type: :request do
     it 'renders observations insights page with charts and tables' do
       get organization_insights_observations_path(organization)
       expect(response.body).to include('Insights: Observations')
+      expect(response.body).to include('Published observations by journal and notifications')
+      expect(response.body).to include('observations-publish-category-chart')
+      expect(response.body).to include('observations-publish-category-pie-chart')
       expect(response.body).to include('Observations Kudos vs Feedback')
       expect(response.body).to include('Observations Sharing')
       expect(response.body).to include('observations-by-privacy-chart')

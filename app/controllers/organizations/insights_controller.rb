@@ -181,6 +181,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @observations_feelings_pie_chart_data = observations_feelings_pie_chart_data(range)
     @observations_ratings_pie_chart_data = observations_ratings_pie_chart_data(range)
     @observations_rating_health_ratios = observations_rating_health_ratios(range)
+    @observations_publish_category_chart_data = observations_publish_category_chart_series(chart_range)
+    @observations_publish_category_pie_chart_data =
+      stacked_series_to_pie_points(@observations_publish_category_chart_data)
 
     # Observers (person_ids) who have given at least one observation
     observer_ids = base_scope.distinct.pluck(:observer_id).compact
@@ -603,6 +606,91 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       data = week_counts.map { |counts| counts[dept] || 0 }
       { name: dept, data: data }
     end
+    { categories: categories, series: series }
+  end
+
+  # Published observations by week of publish date, stacked by journal vs notification channel.
+  # Buckets: journal (observer_only); else channel DM if any successful observation_channel;
+  # else private message if any successful observation_dm; else no notification.
+  def observations_publish_category_chart_series(chart_range)
+    return { categories: [], series: [] } unless chart_range
+
+    bucket_defs = [
+      [:journal, 'Journal Entries'],
+      [:no_notification, 'Published w/o notification'],
+      [:channel, 'Published w/ channel notification'],
+      [:dm, 'Published w/ private message notification']
+    ]
+
+    scope = Observation
+      .for_company(company)
+      .not_soft_deleted
+      .published
+      .where(published_at: chart_range)
+
+    rows = scope.pluck(:id, :published_at, :privacy_level)
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    if rows.empty?
+      series = bucket_defs.map { |_key, label| { name: label, data: week_dates.map { 0 } } }
+      return { categories: categories, series: series }
+    end
+
+    obs_ids = rows.map(&:first).uniq
+    channel_ids = Notification
+      .where(
+        notifiable_type: 'Observation',
+        notifiable_id: obs_ids,
+        notification_type: 'observation_channel',
+        status: 'sent_successfully'
+      )
+      .distinct
+      .pluck(:notifiable_id)
+      .to_set
+    dm_ids = Notification
+      .where(
+        notifiable_type: 'Observation',
+        notifiable_id: obs_ids,
+        notification_type: 'observation_dm',
+        status: 'sent_successfully'
+      )
+      .distinct
+      .pluck(:notifiable_id)
+      .to_set
+
+    categorized = rows.map do |id, _published_at, privacy_level|
+      category = if privacy_level.to_s == 'observer_only'
+                   :journal
+                 elsif channel_ids.include?(id)
+                   :channel
+                 elsif dm_ids.include?(id)
+                   :dm
+                 else
+                   :no_notification
+                 end
+      [id, _published_at, category]
+    end
+
+    week_bucket_counts = week_dates.map do |week_start|
+      week_end_time = (week_start + 6.days).to_time.end_of_day
+      week_start_time = week_start.to_time.beginning_of_day
+      counts = Hash.new(0)
+      categorized.each do |_id, published_at, cat|
+        next unless published_at && published_at >= week_start_time && published_at <= week_end_time
+
+        counts[cat] += 1
+      end
+      counts
+    end
+
+    series = bucket_defs.map do |key, label|
+      { name: label, data: week_bucket_counts.map { |c| c[key] || 0 } }
+    end
+
     { categories: categories, series: series }
   end
 

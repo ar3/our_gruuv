@@ -249,6 +249,26 @@
                     - @privacy_levels.each do |privacy|
                       %td.text-end= counts[privacy].to_i
 
+  %hr.my-5
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-dark.text-white
+          %h4.mb-0
+            %i.bi.bi-calendar-week.me-2
+            Published observations by journal and notifications (#{@insights_chart_period_label})
+        .card-body
+          %p.small.text-muted.mb-3
+            Week is based on publish date. Journal entries are observer-only published notes.
+            Channel vs private message uses successful Slack notifications only
+            (channel posts vs DMs). If both exist, the observation is counted as channel.
+          #observations-publish-category-chart{style: "height: 400px;"}
+          %hr.my-4
+          %p.small.text-muted.mb-2
+            Totals in this period (same categories as the chart above).
+          #observations-publish-category-pie-chart{style: "height: 380px;"}
+
 :javascript
   (function() {
     var chartData = #{@observations_chart_data.to_json};
@@ -695,5 +715,117 @@
     }
     window.addEventListener('load', function() {
       if (typeof Highcharts !== 'undefined') initializeRatingsPieChart();
+    });
+  })();
+
+  (function() {
+    var chartData = #{@observations_publish_category_chart_data.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
+
+    function initializePublishCategoryChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-publish-category-chart');
+      if (!el) return;
+      Highcharts.chart('observations-publish-category-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Published observations by journal and notifications (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: chartData.categories,
+          title: { text: 'Week of (published)' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of observations' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: chartData.series
+      });
+    }
+
+    var attemptsPubCat = 0;
+    function waitForHighchartsPublishCategory() {
+      if (typeof Highcharts !== 'undefined') {
+        initializePublishCategoryChart();
+      } else if (attemptsPubCat < 100) {
+        attemptsPubCat++;
+        setTimeout(waitForHighchartsPublishCategory, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializePublishCategoryChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsPublishCategory);
+    } else {
+      waitForHighchartsPublishCategory();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializePublishCategoryChart();
+    });
+  })();
+
+  (function() {
+    var pieData = #{@observations_publish_category_pie_chart_data.to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
+
+    function initializePublishCategoryPieChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-publish-category-pie-chart');
+      if (!el) return;
+      var colors = Highcharts.getOptions().colors || [];
+      var data = pieData.map(function(d, i) {
+        return { name: d.name, y: d.y, color: colors[i % colors.length] };
+      });
+      Highcharts.chart('observations-publish-category-pie-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Journal and notification totals (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        tooltip: { pointFormat: '<b>{point.y}</b> observations ({point.percentage:.1f}%)' },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '{point.name}: {point.y}'
+            }
+          }
+        },
+        series: [{ name: 'Published observations', data: data }]
+      });
+    }
+
+    var attemptsPubCatPie = 0;
+    function waitForHighchartsPublishCategoryPie() {
+      if (typeof Highcharts !== 'undefined') {
+        initializePublishCategoryPieChart();
+      } else if (attemptsPubCatPie < 100) {
+        attemptsPubCatPie++;
+        setTimeout(waitForHighchartsPublishCategoryPie, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializePublishCategoryPieChart;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsPublishCategoryPie);
+    } else {
+      waitForHighchartsPublishCategoryPie();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializePublishCategoryPieChart();
     });
   })();
