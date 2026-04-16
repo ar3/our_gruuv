@@ -20,9 +20,10 @@
       = main_form.submit button_text,
                          class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent",
                          name: "save_and_view_observations_assignment_#{check_in.assignment.id}"
-      = main_form.submit "Add Win / Challenge",
-                         class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent",
-                         name: "save_and_add_quick_note_assignment_#{check_in.assignment.id}"
+      - unless local_assigns[:suppress_add_quick_note_submit]
+        = main_form.submit "Add Win / Challenge",
+                           class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent",
+                           name: "save_and_add_quick_note_assignment_#{check_in.assignment.id}"
 
 
 

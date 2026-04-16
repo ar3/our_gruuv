@@ -10,6 +10,7 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
   let!(:aspiration) { create(:aspiration, company: company, name: 'Aspiration 1') }
   let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 2.months.ago) }
   let!(:check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
+  let!(:aspiration_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
 
   before do
     sign_in_as(person, company)
@@ -64,6 +65,79 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
       
       # Verify we're on observation creation page
       expect(page).to have_content(/Create.*Observation|Create Quick Note/i)
+    end
+
+    it 'shows ...or add a win/challenge now under early check-in when crystal clear, and saves like Add Win / Challenge' do
+      create(:assignment_check_in, :finalized,
+             teammate: employee_teammate,
+             assignment: assignment,
+             official_check_in_completed_at: 5.days.ago,
+             check_in_started_on: 20.days.ago)
+
+      check_in.reload
+      expect(check_in.open?).to be true
+      expect(check_in.manager_completed?).to be false
+
+      switch_to_user(employee_person, company)
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
+
+      row = page.all('tr').find { |tr| tr.has_button?(assignment.title) || tr.text.include?(assignment.title) }
+      within(row) do
+        expect(page).to have_text('I want to check-in early')
+        expect(page).to have_text('...or add a')
+        expect(page).to have_button('win/challenge')
+
+        click_link 'I want to check-in early'
+        rating_field_name = find("select[name*='[employee_rating]']", visible: :all)[:name]
+        select '🟢 Exceeding', from: rating_field_name
+        notes_field_name = find("textarea[name*='[employee_private_notes]']", visible: :all)[:name]
+        fill_in notes_field_name, with: 'Crystal clear CTA notes'
+
+        click_button 'win/challenge'
+      end
+
+      expect(page).to have_current_path(/new_quick_note/, wait: 10)
+
+      check_in.reload
+      expect(check_in.employee_rating).to eq('exceeding')
+      expect(check_in.employee_private_notes).to eq('Crystal clear CTA notes')
+      expect(page).to have_content(/Create.*Observation|Create Quick Note/i)
+    end
+
+    it 'shows the same win/challenge CTA for aspiration rows when crystal clear' do
+      create(:aspiration_check_in, :finalized,
+             teammate: employee_teammate,
+             aspiration: aspiration,
+             official_check_in_completed_at: 4.days.ago,
+             check_in_started_on: 15.days.ago)
+
+      aspiration_check_in.reload
+      expect(aspiration_check_in.open?).to be true
+      expect(aspiration_check_in.manager_completed?).to be false
+
+      switch_to_user(employee_person, company)
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
+
+      row = page.all('tr').find { |tr| tr.has_button?(aspiration.name) }
+      within(row) do
+        expect(page).to have_text('I want to check-in early')
+        expect(page).to have_text('...or add a')
+        expect(page).to have_button('win/challenge')
+
+        click_link 'I want to check-in early'
+        rating_field_name = find("select[name*='[employee_rating]']", visible: :all)[:name]
+        select '🟢 Exceeding', from: rating_field_name
+        notes_field_name = find("textarea[name*='[employee_private_notes]']", visible: :all)[:name]
+        fill_in notes_field_name, with: 'Aspiration crystal CTA notes'
+
+        click_button 'win/challenge'
+      end
+
+      expect(page).to have_current_path(/new_quick_note/, wait: 10)
+
+      aspiration_check_in.reload
+      expect(aspiration_check_in.employee_rating).to eq('exceeding')
+      expect(aspiration_check_in.employee_private_notes).to eq('Aspiration crystal CTA notes')
     end
 
   end

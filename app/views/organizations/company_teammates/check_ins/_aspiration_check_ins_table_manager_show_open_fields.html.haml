@@ -39,6 +39,11 @@
     %div{class: "collapse show fresh-aspiration-toggle-#{check_in.id}"}
       .alert.alert-success.py-2.mb-0.small
         %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => toggle_target, "aria-expanded" => "false"} I want to check-in early
+        .mt-1
+          %span ...or add a
+          = main_form.submit "win/challenge",
+                             class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent align-baseline",
+                             name: "save_and_add_quick_note_aspiration_#{check_in.aspiration_id}"
     %div{class: "collapse fresh-aspiration-toggle-#{check_in.id}"}
       = render 'organizations/company_teammates/check_ins/form_fields/aspiration_status_field', form: form, check_in: check_in, latest_finalized: local_assigns[:latest_finalized], view_mode: local_assigns[:view_mode]
   - else
