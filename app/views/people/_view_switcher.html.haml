@@ -66,16 +66,16 @@
       - my_growth_actions = %w[my_growth_experiences my_growth_abilities my_growth_goals my_growth_position_change]
       - if controller_name == 'company_teammates' && my_growth_actions.include?(action_name)
         .dropdown-item.text-muted
-          %i.bi.bi-seedling.me-2
+          %i.bi.bi-flask.me-2
           My Growth (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).complete_picture?
         = link_to my_growth_experiences_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
-          %i.bi.bi-seedling.me-2
+          %i.bi.bi-flask.me-2
           My Growth
       - else
         .dropdown-item.text-muted.disabled
-          %i.bi.bi-seedling.me-2
+          %i.bi.bi-flask.me-2
           My Growth
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
       
