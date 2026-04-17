@@ -93,7 +93,7 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
         notes_field_name = find("textarea[name*='[employee_private_notes]']", visible: :all)[:name]
         fill_in notes_field_name, with: 'Crystal clear CTA notes'
 
-        click_button 'win/challenge'
+        all(:css, "[name*='save_and_add_quick_note_assignment_#{assignment.id}']", visible: :all).first.click
       end
 
       expect(page).to have_current_path(/new_quick_note/, wait: 10)
@@ -130,7 +130,7 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
         notes_field_name = find("textarea[name*='[employee_private_notes]']", visible: :all)[:name]
         fill_in notes_field_name, with: 'Aspiration crystal CTA notes'
 
-        click_button 'win/challenge'
+        all(:css, "[name*='save_and_add_quick_note_aspiration_#{aspiration.id}']", visible: :all).first.click
       end
 
       expect(page).to have_current_path(/new_quick_note/, wait: 10)
@@ -141,5 +141,6 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
     end
 
   end
+
 end
 

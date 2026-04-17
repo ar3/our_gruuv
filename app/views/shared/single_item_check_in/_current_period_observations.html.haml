@@ -1,6 +1,6 @@
 -# Expects: @observations_since_finalized (array), @observations_involving_url, @teammate, @observations_since_date, @observations_has_finalized_check_in (for empty-state timeframe text)
 -# Optional: @aspiration, @assignment (caption + "Show all" link: teammate & object when one is set)
-.card.mb-4.mt-4
+.card.mb-4.mt-4#current-period-observations
   .card-header.d-flex.align-items-center.justify-content-between
     %h5.mb-0 Research: Current Period Observations
     - if @observations_involving_url.present?

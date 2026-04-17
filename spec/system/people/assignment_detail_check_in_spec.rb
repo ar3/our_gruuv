@@ -66,6 +66,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
 
       # Draft/ready radios removed: primary submit marks ready and navigates; then tertiary can go to review.
       find('input[type="submit"][name="save_and_complete_go_to_next"]').click
+      expect(page).to have_content('Check-ins saved successfully.')
       check_in.reload
       expect(check_in.employee_completed_at).to be_present
 
@@ -119,6 +120,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       fill_in "check_ins[assignment_check_ins][#{check_in.id}][manager_private_notes]", with: 'Good work!'
 
       find('input[type="submit"][name="save_and_complete_go_to_next"]').click
+      expect(page).to have_content('Check-ins saved successfully.')
       check_in.reload
       expect(check_in.manager_completed_at).to be_present
 

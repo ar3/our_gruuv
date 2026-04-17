@@ -50,6 +50,69 @@ RSpec.describe CheckIns::RedirectUrlService do
       )
     end
 
+    it "save_and_view_observations_position redirects to position 1-by-1 observations section" do
+      url = described_class.call(
+        button_name: "save_and_view_observations_position",
+        organization: organization,
+        teammate: teammate,
+        params: {}
+      )
+
+      expected = Rails.application.routes.url_helpers.position_check_in_organization_teammate_path(organization, teammate)
+      expect(url).to eq("#{expected}#current-period-observations")
+    end
+
+    it "save_and_view_observations_assignment redirects to assignment 1-by-1 observations section" do
+      assignment = create(:assignment, company: organization)
+      url = described_class.call(
+        button_name: "save_and_view_observations_assignment_#{assignment.id}",
+        organization: organization,
+        teammate: teammate,
+        params: {}
+      )
+
+      expected = Rails.application.routes.url_helpers.organization_teammate_assignment_path(
+        organization,
+        teammate,
+        assignment.id
+      )
+      expect(url).to eq("#{expected}#current-period-observations")
+    end
+
+    it "save_and_view_observations_aspiration redirects to aspiration 1-by-1 observations section" do
+      aspiration = create(:aspiration, company: organization)
+      url = described_class.call(
+        button_name: "save_and_view_observations_aspiration_#{aspiration.id}",
+        organization: organization,
+        teammate: teammate,
+        params: {}
+      )
+
+      expected = Rails.application.routes.url_helpers.organization_teammate_aspiration_path(
+        organization,
+        teammate,
+        aspiration.id
+      )
+      expect(url).to eq("#{expected}#current-period-observations")
+    end
+
+    it "save_and_view_observations_ability redirects to ability 1-by-1 observations section" do
+      ability = create(:ability, company: organization)
+      url = described_class.call(
+        button_name: "save_and_view_observations_ability_#{ability.id}",
+        organization: organization,
+        teammate: teammate,
+        params: {}
+      )
+
+      expected = Rails.application.routes.url_helpers.organization_teammate_ability_path(
+        organization,
+        teammate,
+        ability.id
+      )
+      expect(url).to eq("#{expected}#current-period-observations")
+    end
+
     it "save_and_go_to_next returns teammate check-ins page when no items require check-in" do
       allow(CheckIns::SingleItemCheckInNextItemService).to receive(:call).and_return(
         {

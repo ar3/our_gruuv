@@ -33,52 +33,34 @@ module CheckIns
         )
       when /^view_observations_assignment_(\d+)$/
         assignment_id = $1.to_i
-        since_date = parse_since_date(@params[:since_date])
-        teammate = @params[:teammate] || @teammate
-        filtered_observations_organization_observations_path(
-          @organization,
-          rateable_type: 'Assignment',
-          rateable_id: assignment_id,
-          observee_ids: [teammate.id],
-          start_date: since_date,
-          return_text: @params[:return_text],
-          return_url: @params[:return_url]
+        append_observations_anchor(
+          organization_teammate_assignment_path(
+            @organization,
+            @teammate,
+            assignment_id
+          )
         )
       when /^view_observations_aspiration_(\d+)$/
         aspiration_id = $1.to_i
-        since_date = parse_since_date(@params[:since_date])
-        teammate = @params[:teammate] || @teammate
-        filtered_observations_organization_observations_path(
-          @organization,
-          rateable_type: 'Aspiration',
-          rateable_id: aspiration_id,
-          observee_ids: [teammate.id],
-          start_date: since_date,
-          return_text: @params[:return_text],
-          return_url: @params[:return_url]
+        append_observations_anchor(
+          organization_teammate_aspiration_path(
+            @organization,
+            @teammate,
+            aspiration_id
+          )
         )
       when /^view_observations_ability_(\d+)$/
         ability_id = $1.to_i
-        since_date = parse_since_date(@params[:since_date])
-        teammate = @params[:teammate] || @teammate
-        filtered_observations_organization_observations_path(
-          @organization,
-          rateable_type: 'Ability',
-          rateable_id: ability_id,
-          observee_ids: [teammate.id],
-          start_date: since_date,
-          return_text: @params[:return_text],
-          return_url: @params[:return_url]
+        append_observations_anchor(
+          organization_teammate_ability_path(
+            @organization,
+            @teammate,
+            ability_id
+          )
         )
       when /^view_observations_position$/
-        since_date = parse_since_date(@params[:since_date])
-        teammate = @params[:teammate] || @teammate
-        filtered_observations_organization_observations_path(
-          @organization,
-          observee_ids: [teammate.id],
-          start_date: since_date,
-          return_text: @params[:return_text],
-          return_url: @params[:return_url]
+        append_observations_anchor(
+          position_check_in_organization_teammate_path(@organization, @teammate)
         )
       when /^add_quick_note_assignment_(\d+)$/
         assignment_id = $1.to_i
@@ -165,6 +147,10 @@ module CheckIns
       Rails.application.routes.url_helpers.organization_teammate_aspiration_path(*args)
     end
 
+    def organization_teammate_ability_path(*args)
+      Rails.application.routes.url_helpers.organization_teammate_ability_path(*args)
+    end
+
     def filtered_observations_organization_observations_path(*args)
       Rails.application.routes.url_helpers.filtered_observations_organization_observations_path(*args)
     end
@@ -192,6 +178,10 @@ module CheckIns
       else
         1.year.ago
       end
+    end
+
+    def append_observations_anchor(url)
+      "#{url}#current-period-observations"
     end
   end
 end

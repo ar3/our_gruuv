@@ -997,7 +997,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     if button_name
       # Extract parameters needed for the service
       service_params = extract_service_params_for_button(button_name)
-      
+
       CheckIns::RedirectUrlService.call(
         button_name: normalized_redirect_button_name(button_name),
         organization: organization,
@@ -1111,6 +1111,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     first_aspiration = aspiration_params.each_value.first
     first_aspiration[:status] = status if first_aspiration.present?
   end
-  
+
 end
 
