@@ -5,7 +5,7 @@
 class BulkMilestoneAwardApplyService
   CERTIFICATION_NOTE = 'Bulk Milestone Adjustment'
 
-  # @return [Array<Hash>] one entry per catalog row: :row, :target_level, :removing_levels, :adding_levels
+  # @return [Array<Hash>] one entry per catalog row: :row, :target_level, :existing_levels, :removing_levels, :adding_levels
   def self.preview(teammate:, catalog_rows:, selections_by_ability_id:)
     sel = selections_by_ability_id.transform_keys(&:to_i).transform_values { |v| v.to_i }
     catalog_rows.map do |row|
@@ -16,6 +16,7 @@ class BulkMilestoneAwardApplyService
       {
         row: row,
         target_level: target,
+        existing_levels: current,
         removing_levels: (current - desired).sort.reverse,
         adding_levels: (desired - current).sort
       }

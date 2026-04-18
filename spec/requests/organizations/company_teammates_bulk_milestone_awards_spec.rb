@@ -20,6 +20,7 @@ RSpec.describe 'Company teammate bulk milestone awards', type: :request do
     employee_teammate.employment_tenures.active.first.update!(manager_teammate: manager_teammate)
     create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
     create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)
+    create(:assignment_tenure, teammate: manager_teammate, assignment: assignment)
   end
 
   describe 'when manager awards a report' do
@@ -38,6 +39,23 @@ RSpec.describe 'Company teammate bulk milestone awards', type: :request do
       expect(response.body).to include('Bulk Spec Assignment')
       expect(response.body).to include(organization_teammate_assignment_path(organization, employee_teammate, assignment))
       expect(response.body).to include('data-turbo="false"')
+    end
+
+    it 'GET new for own teammate shows disabled review with tooltip (cannot award self)' do
+      get new_bulk_milestone_award_organization_company_teammate_path(organization, manager_teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Review changes before making them')
+      expect(response.body).to include('disabled="disabled"')
+      expect(response.body).to include('You cannot award a milestone to yourself')
+    end
+
+    it 'POST review for own teammate redirects (cannot bypass disabled UI)' do
+      milestones_payload = { ability.id.to_s => '2' }
+      post review_bulk_milestone_awards_organization_company_teammate_path(organization, manager_teammate),
+           params: { milestones: milestones_payload }
+      expect(response).to redirect_to(celebrate_milestones_organization_path(organization))
+      follow_redirect!
+      expect(response.body).to include('You cannot award a milestone to yourself')
     end
 
     it 'POST review renders the review step (wizard page 2)' do
@@ -77,7 +95,7 @@ RSpec.describe 'Company teammate bulk milestone awards', type: :request do
              params: { milestones: milestones_payload }
       end.to change { employee_teammate.teammate_milestones.where(ability: ability).count }.from(0).to(2)
 
-      expect(response).to redirect_to(celebrate_milestones_organization_path(organization))
+      expect(response).to redirect_to(new_bulk_milestone_award_organization_company_teammate_path(organization, employee_teammate))
 
       m1 = employee_teammate.teammate_milestones.find_by!(ability: ability, milestone_level: 1)
       m2 = employee_teammate.teammate_milestones.find_by!(ability: ability, milestone_level: 2)

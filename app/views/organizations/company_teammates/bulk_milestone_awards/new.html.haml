@@ -37,7 +37,7 @@
               %table.table.table-hover.align-middle
                 %thead
                   %tr
-                    %th{scope: 'col'} Ability
+                    %th{scope: 'col', style: 'max-width: 300px;'} Ability
                     %th{scope: 'col', colspan: 6} Milestone level
                     %th.text-end{scope: 'col'} Sources
                 %tbody
@@ -46,7 +46,7 @@
                     - pre = row[:highest_awarded].to_i
                     - collapse_id = "bulk-milestone-reasons-#{ability.id}"
                     %tr
-                      %td
+                      %td{style: 'max-width: 300px;'}
                         = link_to organization_teammate_ability_path(organization, @teammate, ability), class: 'text-body fw-semibold text-decoration-none' do
                           = row[:display_name]
                         - if ability.description.present?
@@ -83,5 +83,12 @@
                                       M#{req[:milestone_level]}
                             - else
                               %p.small.text-muted.mb-0 No linked requirement lines for this ability in the catalog.
-        .d-flex.gap-2.flex-wrap
-          = submit_tag 'Review changes before making them', class: 'btn btn-primary btn-lg'
+        .d-flex.gap-2.flex-wrap.align-items-center
+          - if @bulk_award_recipient_eligible
+            = submit_tag 'Review changes before making them', class: 'btn btn-primary btn-lg'
+          - else
+            .d-flex.align-items-center.gap-2.flex-wrap
+              .flex-grow-1{style: 'min-width: 12rem;'}
+                = submit_tag 'Review changes before making them', class: 'btn btn-primary btn-lg', disabled: true, style: 'opacity: 0.6; cursor: not-allowed;'
+              - if @bulk_award_review_disabled_tooltip.present?
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: 'tooltip', bs_title: @bulk_award_review_disabled_tooltip}}

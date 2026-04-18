@@ -8,11 +8,14 @@ class Organizations::CompanyTeammates::BulkMilestoneAwardsController < Organizat
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :authorize_bulk_milestones
-  before_action :ensure_eligible_recipient!
+  before_action :ensure_bulk_milestone_new_access!, only: [:new]
+  before_action :ensure_eligible_recipient!, only: %i[review create]
   after_action :verify_authorized
 
   def new
     assign_viewable_teammates_context!(selected_teammate: @teammate)
+    @bulk_award_recipient_eligible = milestone_eligibility.eligible_to_award?(@teammate)
+    @bulk_award_review_disabled_tooltip = milestone_eligibility.ineligibility_explanation(@teammate) unless @bulk_award_recipient_eligible
     @catalog_rows = BulkMilestoneAwardAbilitiesCatalog.call(teammate: @teammate, organization: organization)
     @eligible_teammate_ids = milestone_eligibility.eligible_teammates.pluck(:id).to_set
     @milestones_by_ability_level = bulk_award_milestones_index_for(@catalog_rows)
@@ -53,7 +56,7 @@ class Organizations::CompanyTeammates::BulkMilestoneAwardsController < Organizat
     )
 
     if result.ok?
-      redirect_to celebrate_milestones_organization_path(organization),
+      redirect_to new_bulk_milestone_award_organization_company_teammate_path(organization, @teammate),
                   notice: 'Bulk milestone adjustment was saved.'
     else
       assign_viewable_teammates_context!(selected_teammate: @teammate)
@@ -80,6 +83,16 @@ class Organizations::CompanyTeammates::BulkMilestoneAwardsController < Organizat
 
   def authorize_bulk_milestones
     authorize TeammateMilestone, :create?
+  end
+
+  def ensure_bulk_milestone_new_access!
+    return if current_company_teammate.blank?
+
+    return if milestone_eligibility.eligible_to_award?(@teammate)
+    return if @teammate.id == current_company_teammate.id
+
+    redirect_to celebrate_milestones_organization_path(organization),
+                alert: milestone_eligibility.ineligibility_explanation(@teammate)
   end
 
   def ensure_eligible_recipient!

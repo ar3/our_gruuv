@@ -69,32 +69,41 @@
         .card-header
           %h5.mb-0 Summary by ability
         .card-body
-          .table-responsive
-            %table.table.table-sm.mb-0
-              %thead
-                %tr
-                  %th Ability
-                  %th Target level
-                  %th New milestones (after save)
-                  %th Company-visible new
-              %tbody
-                - @preview_rows.each do |p|
-                  - adding = p[:adding_levels]
-                  - highest_new = adding.max
+          - changing_preview_rows = @preview_rows.select { |p| p[:adding_levels].any? || p[:removing_levels].any? }
+          - if changing_preview_rows.empty?
+            %p.text-muted.mb-0 None. Every ability already matches the selected targets; this save would not add or remove any milestones.
+          - else
+            .table-responsive
+              %table.table.table-sm.mb-0
+                %thead
                   %tr
-                    %td
-                      = link_to p[:row][:display_name], organization_teammate_ability_path(organization, @teammate, p[:row][:ability]), class: 'text-decoration-none'
-                    %td= p[:target_level]
-                    %td
-                      - if adding.empty?
-                        %span.text-muted —
-                      - else
-                        = adding.map { |l| "M#{l}" }.join(', ')
-                    %td
-                      - if highest_new.present?
-                        Milestone #{highest_new} only
-                      - else
-                        %span.text-muted —
+                    %th Before save
+                    %th Ability
+                    %th New milestones (after save)
+                    %th Company-visible new
+                %tbody
+                  - changing_preview_rows.each do |p|
+                    - adding = p[:adding_levels]
+                    - existing = p[:existing_levels]
+                    - highest_new = adding.max
+                    %tr
+                      %td
+                        - if existing.empty?
+                          %span.text-muted —
+                        - else
+                          = existing.map { |l| "M#{l}" }.join(', ')
+                      %td
+                        = link_to p[:row][:display_name], organization_teammate_ability_path(organization, @teammate, p[:row][:ability]), class: 'text-decoration-none'
+                      %td
+                        - if adding.empty?
+                          %span.text-muted —
+                        - else
+                          = adding.map { |l| "M#{l}" }.join(', ')
+                      %td
+                        - if highest_new.present?
+                          Milestone #{highest_new} only
+                        - else
+                          %span.text-muted —
 
       .d-flex.gap-2.flex-wrap.align-items-center
         = link_to 'Back to edit', new_bulk_milestone_award_organization_company_teammate_path(organization, @teammate), class: 'btn btn-outline-secondary'

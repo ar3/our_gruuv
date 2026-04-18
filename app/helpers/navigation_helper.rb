@@ -466,24 +466,15 @@ module NavigationHelper
             label: 'Bulk award milestones',
             icon: 'bi-trophy',
             path: begin
-              q = TeammateMilestoneRecipientEligibilityQuery.new(
-                awarding_teammate: current_company_teammate,
-                organization: current_organization
-              )
-              tm = q.eligible_teammates.first
-              if tm.present?
-                new_bulk_milestone_award_organization_company_teammate_path(current_organization, tm)
+              if current_company_teammate.present?
+                new_bulk_milestone_award_organization_company_teammate_path(current_organization, current_company_teammate)
               else
                 celebrate_milestones_organization_path(current_organization)
               end
             end,
             policy_check: lambda {
               current_company_teammate.present? &&
-                policy(TeammateMilestone).create? &&
-                TeammateMilestoneRecipientEligibilityQuery.new(
-                  awarding_teammate: current_company_teammate,
-                  organization: current_organization
-                ).eligible_teammates.any?
+                policy(TeammateMilestone).create?
             },
             active_check: lambda {
               controller_path == 'organizations/company_teammates/bulk_milestone_awards'
