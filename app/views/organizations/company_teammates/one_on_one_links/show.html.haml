@@ -1,18 +1,31 @@
-- content_for :title, "1:1 Area - #{@teammate.person.display_name}"
+- content_for :title, teammate_context_page_title(@selected_teammate, "1:1 Hub")
 
 - content_for :header do
-  %h1.mb-0 1:1 Area for #{@teammate.person.display_name}
-  %p.text-muted.mb-0 Manage your 1:1 link and integration
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { organization_company_teammate_one_on_one_link_path(organization, tm) },
+               switch_aria_label: "Switch teammate for 1:1 Hub"
+      %span= " - 1:1 Hub"
+
+- content_for :header_action do
+  = render 'people/view_switcher'
 
 - content_for :go_back_link do
   - if params[:return_url].present? && params[:return_text].present?
     = nav_return_back(url: params[:return_url], text: params[:return_text])
   - else
-    = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "About Me", url: about_me_organization_company_teammate_path(organization, @teammate) }, { label: "1:1 Area", url: nil }])
+    = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: nil }])
 
 - casual_name = @teammate.person.casual_name
 - return_to_about_me_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
 - return_to_about_me_text = "Return to About #{casual_name}"
+
+.mb-4
+  = render 'organizations/employees/managers_view'
 
 - if @one_on_one_link.url.present?
   -# Top section: 1:1 Link display
@@ -93,6 +106,9 @@
           - cancel_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
           = link_to "Cancel", cancel_url, class: "btn btn-outline-secondary"
 
+  %hr.my-4
+  = render "organizations/company_teammates/internal_views_navigation", organization: organization, teammate: @teammate, for_one_on_one_hub: true
+
 - else
   -# Single section when no link exists
   .card
@@ -119,3 +135,6 @@
           = f.submit "Save 1:1 Link", class: "btn btn-primary"
           - cancel_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
           = link_to "Cancel", cancel_url, class: "btn btn-outline-secondary"
+
+  %hr.my-4
+  = render "organizations/company_teammates/internal_views_navigation", organization: organization, teammate: @teammate, for_one_on_one_hub: true

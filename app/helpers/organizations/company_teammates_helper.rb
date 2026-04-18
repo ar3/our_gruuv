@@ -3,7 +3,10 @@
 module Organizations::CompanyTeammatesHelper
   # Each entry: title, description, path, enabled, tooltip (for disabled; shown on wrapper with data-bs-toggle="tooltip").
   # Keep enabled? flags in sync with app/views/people/_view_switcher.html.haml; 1:1 uses OneOnOneLinkPolicy#show?.
-  def internal_teammate_views_navigation_entries(organization, teammate)
+  #
+  # When +for_one_on_one_hub:+ is true, the first tile links to the internal teammate page instead of this 1:1 hub
+  # (caller is already on the 1:1 hub).
+  def internal_teammate_views_navigation_entries(organization, teammate, for_one_on_one_hub: false)
     tm = teammate
     person = tm.person
     viewing_own_kudos = current_company_teammate == tm
@@ -18,15 +21,29 @@ module Organizations::CompanyTeammatesHelper
     hierarchy_seat = "You need employment management permissions or to be in the managerial hierarchy to access seat management"
     hierarchy_manage = "You need employment management permissions or to be in the managerial hierarchy to access management features"
     one_on_one_tooltip = "You can open the 1:1 workspace for yourself, people in your managerial hierarchy, or if you have manage employment permission."
+    internal_teammate_tooltip = "You must be an active employee in the same organization to view the teammate version"
+
+    first_entry =
+      if for_one_on_one_hub
+        {
+          title: "Teammate View",
+          description: "Employment, assignments, observations, goals, and quick navigation for this teammate.",
+          path: internal_organization_company_teammate_path(organization, tm),
+          enabled: policy(tm).internal?,
+          tooltip: internal_teammate_tooltip
+        }
+      else
+        {
+          title: "1:1 Area",
+          description: "Agendas, shared notes, and linked project tools for meetings with this teammate.",
+          path: organization_company_teammate_one_on_one_link_path(organization, tm),
+          enabled: can_one_on_one,
+          tooltip: one_on_one_tooltip
+        }
+      end
 
     [
-      {
-        title: "1:1 Area",
-        description: "Agendas, shared notes, and linked project tools for meetings with this teammate.",
-        path: organization_company_teammate_one_on_one_link_path(organization, tm),
-        enabled: can_one_on_one,
-        tooltip: one_on_one_tooltip
-      },
+      first_entry,
       {
         title: "Public view",
         description: "What anyone can see: public milestones and world-visible observations.",

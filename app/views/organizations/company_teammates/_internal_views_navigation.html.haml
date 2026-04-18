@@ -1,5 +1,6 @@
--# locals: organization:, teammate:
-- entries = internal_teammate_views_navigation_entries(organization, teammate)
+-# locals: organization:, teammate:, for_one_on_one_hub: false
+- for_one_on_one_hub = local_assigns.fetch(:for_one_on_one_hub, false)
+- entries = internal_teammate_views_navigation_entries(organization, teammate, for_one_on_one_hub: for_one_on_one_hub)
 .table-responsive
   %table.table.table-bordered.mb-0.internal-teammate-views-grid
     %tbody

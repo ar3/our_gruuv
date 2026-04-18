@@ -37,7 +37,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("1:1 Area")
+      expect(response.body).to include("1:1 Hub")
     end
 
     it "shows existing one-on-one link" do

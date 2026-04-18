@@ -1,7 +1,12 @@
 class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::ObservationsInvolvingTeammateCount
+  include Organizations::AssignsViewableTeammates
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :set_one_on_one_link
+  before_action :assign_viewable_teammates_for_one_on_one, only: %i[show create update]
+  before_action :assign_managers_view_card_for_teammate, only: %i[show create update]
 
   def show
     authorize @one_on_one_link
@@ -106,6 +111,27 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   end
 
   private
+
+  def assign_viewable_teammates_for_one_on_one
+    return unless @teammate
+
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+  end
+
+  def assign_managers_view_card_for_teammate
+    return unless @teammate
+
+    @filtered_and_paginated_teammates = [@teammate]
+    @check_in_health_caches_by_teammate = CheckInHealthCache
+      .where(teammate_id: @teammate.id, organization_id: organization.id)
+      .index_by(&:teammate_id)
+    @managers_view_observations_involving_counts_by_teammate_id =
+      if Pundit.policy(pundit_user, company).view_observations?
+        { @teammate.id => observations_involving_teammate_total_count(@teammate) }
+      else
+        {}
+      end
+  end
 
   def format_sync_error_message(result, source)
     error_type = result[:error_type] || 'unknown_error'
