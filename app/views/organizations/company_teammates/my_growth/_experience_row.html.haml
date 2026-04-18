@@ -8,8 +8,8 @@
 .row.mb-3.align-items-stretch
   .col-lg-6.d-flex
     - if row[:col1_kind] == :active
-      .card.border.w-100.h-100
-        .card-body.d-flex.flex-column.h-100
+      .card.my-growth-experience-day-to-day-stack.border.w-100.h-100.p-0.overflow-hidden.d-flex.flex-column
+        .card-body.d-flex.flex-column.flex-grow-1
           %div
             %h6.mb-1
               = link_to row[:assignment].title, organization_teammate_assignment_path(org, teammate, row[:assignment]), class: 'text-decoration-none'
@@ -24,8 +24,8 @@
                 latest_finalized: latest_check_ins[row[:tenure].assignment_id],
                 tenure: row[:tenure],
                 teammate: teammate
-            - counts = goal_counts_by_id[row[:assignment].id] || { open_associated_goals_count: 0 }
-            = render 'organizations/company_teammates/my_growth/assignment_card_action_footer', organization: org, teammate: teammate, assignment: row[:assignment], casual_name: row[:casual_name], counts: counts
+        - counts = goal_counts_by_id[row[:assignment].id] || { open_associated_goals_count: 0 }
+        = render 'organizations/company_teammates/my_growth/assignment_card_action_footer', organization: org, teammate: teammate, assignment: row[:assignment], casual_name: row[:casual_name], counts: counts
     - else
       - col1_card_class = row[:col1_kind] == :warning_required ? 'card border border-warning w-100 h-100' : 'card border w-100 h-100 my-growth-not-assigned-suggested'
       .card{class: col1_card_class}

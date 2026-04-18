@@ -21,7 +21,7 @@ RSpec.describe 'organizations/company_teammates/my_growth/_assignment_card_actio
   end
 
   context 'when goal flow is not allowed' do
-    it 'renders disabled goal button with tooltip and warning icon' do
+    it 'renders read-only goal half with tooltip and warning icon' do
       render partial: 'organizations/company_teammates/my_growth/assignment_card_action_footer',
              locals: {
                organization: organization,
@@ -31,8 +31,7 @@ RSpec.describe 'organizations/company_teammates/my_growth/_assignment_card_actio
                counts: { open_associated_goals_count: 0 }
              }
 
-      expect(rendered).to include('type="button"')
-      expect(rendered).to include('disabled')
+      expect(rendered).to include('assignment-card-action-footer__read-only-hit')
       expect(rendered).to match(/data-bs-toggle="tooltip"/)
       expect(rendered).to include('bi-exclamation-triangle')
       expect(rendered).to include('You need access as this teammate, their manager, or an employment administrator to set or link goals here.')
