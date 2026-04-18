@@ -35,6 +35,11 @@
 - else
   - completed_categories << { title: 'Observation Drafts', icon: 'bi-file-earmark-text', description: 'Draft observations needing action' }
 
+- if @silent_observations.any?
+  = render partial: 'organizations/get_shit_done/silent_observations_section'
+- else
+  - completed_categories << { title: 'Silent Observations', icon: 'bi-bell-slash', description: 'Published observations not yet shared via Slack or DM' }
+
 - if completed_categories.any?
   .row.mt-5.pt-4
     .col-12

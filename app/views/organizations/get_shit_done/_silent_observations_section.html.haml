@@ -1,0 +1,48 @@
+- silent_count = @silent_observations.count
+= render 'shared/section_header',
+         title: 'Silent Observations',
+         icon: 'bi-bell-slash',
+         description: 'Published observations (not journal-only) that have not been shared via Slack or DM yet',
+         collapsible: true,
+         collapse_target: 'silentObservationsSection',
+         status_indicator: :warning
+
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#silentObservationsSection", "aria-expanded" => "false", "aria-controls" => "silentObservationsSection", style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
+    = pluralize(silent_count, 'silent observation') + ' — publish is done; notifications are not'
+
+.collapse#silentObservationsSection
+  .card.mb-4
+    .card-body
+      - if @silent_observations.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Preview
+                %th Published
+                %th{style: "width: 280px;"} Actions
+            %tbody
+              - @silent_observations.each do |observation|
+                %tr
+                  %td
+                    %strong= truncate(observation.story || 'No story', length: 100)
+                    %br
+                    %small.text-muted
+                      - if observation.observees.any?
+                        = "Observing: #{observation.observed_teammates.map { |t| t.person.display_name }.join(', ')}"
+                      - else
+                        No observees
+                  %td
+                    %small= observation.published_at&.strftime('%b %d, %Y')
+                  %td
+                    .btn-group.btn-group-sm{role: "group"}
+                      = link_to "Edit",
+                                edit_organization_observation_path(organization, observation),
+                                class: "btn btn-primary btn-sm"
+                      = link_to "Send Notification",
+                                organization_observation_path(organization, observation),
+                                class: "btn btn-outline-primary btn-sm"
+      - else
+        %p.text-muted.mb-0 No silent observations.

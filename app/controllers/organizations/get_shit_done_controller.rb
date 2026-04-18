@@ -10,6 +10,7 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
     @observable_moments = query_service.observable_moments
     @maap_snapshots = query_service.maap_snapshots
     @observation_drafts = query_service.observation_drafts
+    @silent_observations = query_service.silent_observations
     @goals_needing_check_in = query_service.goals_needing_check_in
     @check_ins_awaiting_input = query_service.check_ins_awaiting_input
     @total_pending = query_service.total_pending_count

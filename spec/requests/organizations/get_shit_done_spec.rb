@@ -74,7 +74,9 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       draft1 = create(:observation, observer: person, company: company, published_at: nil, story: 'Draft story 1')
       draft2 = create(:observation, observer: person, company: company, published_at: nil, story: 'Draft story 2')
       journal_draft = create(:observation, observer: person, company: company, published_at: nil, privacy_level: :observer_only, story: 'Journal entry')
-      published = create(:observation, observer: person, company: company, published_at: Time.current)
+      # Published non-journal with any notification is not "silent"; otherwise it appears on Silent Observations, not drafts.
+      published = create(:observation, observer: person, company: company, published_at: Time.current, story: "Published with notif #{SecureRandom.hex(4)}")
+      create(:notification, notifiable: published, notification_type: 'observation_dm', status: 'sent_successfully')
       other_draft = create(:observation, observer: other_person, company: company, published_at: nil)
       
       get "/organizations/#{company.to_param}/get_shit_done"
@@ -288,12 +290,54 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("you've completed everything")
-      # All five categories appear in the completed section when the user has no pending items
+      # All categories appear in the completed section when the user has no pending items
       expect(response.body).to include('Observable Moments')
       expect(response.body).to include('Check-ins Awaiting Acknowledgement')
       expect(response.body).to include('Check-ins Awaiting Your Input')
       expect(response.body).to include('Goal Check-ins')
       expect(response.body).to include('Observation Drafts')
+      expect(response.body).to include('Silent Observations')
+    end
+
+    it 'lists silent observations (published, non-journal, no notifications, yours)' do
+      silent_story = "Silent observation body #{SecureRandom.hex(4)}"
+      silent = create(:observation,
+                      observer: person,
+                      company: company,
+                      published_at: Time.current,
+                      privacy_level: :observed_only,
+                      story: silent_story)
+      with_notification = create(:observation,
+                                 observer: person,
+                                 company: company,
+                                 published_at: Time.current,
+                                 privacy_level: :observed_only,
+                                 story: "Has notif #{SecureRandom.hex(4)}")
+      create(:notification, notifiable: with_notification, notification_type: 'observation_dm', status: 'sent_successfully')
+      journal_pub = create(:observation,
+                           observer: person,
+                           company: company,
+                           published_at: Time.current,
+                           privacy_level: :observer_only,
+                           story: "Journal pub #{SecureRandom.hex(4)}")
+      other_pub = create(:observation,
+                         observer: other_person,
+                         company: company,
+                         published_at: Time.current,
+                         privacy_level: :observed_only,
+                         story: "Other person #{SecureRandom.hex(4)}")
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Silent Observations')
+      expect(response.body).to include(silent_story)
+      expect(response.body).to include('Send Notification')
+      expect(response.body).not_to include(with_notification.story)
+      expect(response.body).not_to include(journal_pub.story)
+      expect(response.body).not_to include(other_pub.story)
+      show_path = Rails.application.routes.url_helpers.organization_observation_path(company, silent)
+      expect(response.body).to include(show_path)
     end
 
     it 'includes a link to configure digest' do

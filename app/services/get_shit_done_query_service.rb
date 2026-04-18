@@ -29,6 +29,18 @@ class GetShitDoneQueryService
                .recent
   end
 
+  # Published, non-journal observations you authored with no notifications yet (same criteria as the observation show nudge).
+  def silent_observations
+    return Observation.none unless person && company
+
+    Observation.where(observer: person, company: company)
+               .published
+               .not_journal
+               .not_soft_deleted
+               .without_notifications
+               .recent
+  end
+
   def goals_needing_check_in
     return Goal.none unless teammate
     
@@ -47,6 +59,7 @@ class GetShitDoneQueryService
     observable_moments.count +
       maap_snapshots.count +
       observation_drafts.count +
+      silent_observations.count +
       goals_needing_check_in.count +
       check_ins_awaiting_input.size
   end
@@ -56,6 +69,7 @@ class GetShitDoneQueryService
       observable_moments: observable_moments,
       maap_snapshots: maap_snapshots,
       observation_drafts: observation_drafts,
+      silent_observations: silent_observations,
       goals_needing_check_in: goals_needing_check_in,
       check_ins_awaiting_input: check_ins_awaiting_input,
       total_pending: total_pending_count
@@ -71,7 +85,8 @@ class GetShitDoneQueryService
       { count: maap_snapshots.count, label: "Check-ins Awaiting Acknowledgement" },
       { count: check_ins_awaiting_input.size, label: "Check-ins Awaiting Your Input" },
       { count: goals_needing_check_in.count, label: "Goal Check-ins" },
-      { count: observation_drafts.count, label: "Observation Drafts" }
+      { count: observation_drafts.count, label: "Observation Drafts" },
+      { count: silent_observations.count, label: "Silent Observations" }
     ].select { |row| row[:count].positive? }
   end
 

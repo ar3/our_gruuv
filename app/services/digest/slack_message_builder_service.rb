@@ -10,6 +10,7 @@ module Digest
       observable_moments: 'Observable Moments',
       maap_snapshots: 'Check-ins Awaiting Acknowledgement',
       observation_drafts: 'Observation Drafts',
+      silent_observations: 'Silent Observations',
       goals_needing_check_in: 'Goal Check-ins',
       check_ins_awaiting_input: 'Check-ins Awaiting Your Input'
     }.freeze
@@ -203,7 +204,7 @@ module Digest
         collection.map { |m| slack_escape(m.digest_sentence) }
       when :maap_snapshots
         collection.map { |s| "#{s.change_type.humanize}: #{slack_escape(s.reason.to_s.truncate(60))}" }
-      when :observation_drafts
+      when :observation_drafts, :silent_observations
         collection.map { |o| observation_draft_label(o) }
       when :goals_needing_check_in
         collection.map { |goal| goal_check_in_label(goal) }

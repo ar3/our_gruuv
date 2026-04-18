@@ -71,6 +71,27 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
       expect(assigns(:observation_drafts)).to include(draft1)
       expect(assigns(:observation_drafts)).not_to include(soft_deleted_draft)
     end
+
+    it 'loads silent observations for the current person' do
+      silent = create(:observation,
+                      observer: person,
+                      company: company,
+                      published_at: Time.current,
+                      privacy_level: :observed_only,
+                      story: "Silent #{SecureRandom.hex(4)}")
+      with_notif = create(:observation,
+                          observer: person,
+                          company: company,
+                          published_at: Time.current,
+                          privacy_level: :observed_only,
+                          story: "Not silent #{SecureRandom.hex(4)}")
+      create(:notification, notifiable: with_notif, notification_type: 'observation_dm', status: 'sent_successfully')
+
+      get :show, params: { organization_id: company.id }
+
+      expect(assigns(:silent_observations)).to include(silent)
+      expect(assigns(:silent_observations)).not_to include(with_notif)
+    end
     
     it 'loads goals needing check-in' do
       # Ensure teammate is a CompanyTeammate

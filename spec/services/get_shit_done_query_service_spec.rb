@@ -284,6 +284,49 @@ RSpec.describe GetShitDoneQueryService do
     end
   end
 
+  describe '#silent_observations' do
+    it 'includes published non-journal observations by the person with no notifications' do
+      silent = create(:observation,
+                      observer: person,
+                      company: company,
+                      published_at: Time.current,
+                      privacy_level: :observed_only,
+                      story: "Silent #{SecureRandom.hex(4)}")
+      with_notif = create(:observation,
+                          observer: person,
+                          company: company,
+                          published_at: Time.current,
+                          privacy_level: :public_to_company,
+                          story: "Not silent #{SecureRandom.hex(4)}")
+      create(:notification, notifiable: with_notif, notification_type: 'observation_channel', status: 'sent_successfully')
+
+      rows = service.silent_observations
+      expect(rows).to include(silent)
+      expect(rows).not_to include(with_notif)
+    end
+
+    it 'excludes journal privacy and drafts' do
+      journal = create(:observation,
+                       observer: person,
+                       company: company,
+                       published_at: Time.current,
+                       privacy_level: :observer_only,
+                       story: "Journal #{SecureRandom.hex(4)}")
+      draft = create(:observation,
+                     observer: person,
+                     company: company,
+                     published_at: nil,
+                     privacy_level: :observed_only,
+                     story: "Draft #{SecureRandom.hex(4)}")
+
+      expect(service.silent_observations).not_to include(journal, draft)
+    end
+
+    it 'returns empty relation when teammate is nil' do
+      expect(described_class.new(teammate: nil).silent_observations).to be_empty
+    end
+  end
+
   describe '#all_pending_items' do
     it 'returns a hash with all pending items and total count' do
       result = service.all_pending_items
@@ -291,6 +334,7 @@ RSpec.describe GetShitDoneQueryService do
       expect(result).to have_key(:observable_moments)
       expect(result).to have_key(:maap_snapshots)
       expect(result).to have_key(:observation_drafts)
+      expect(result).to have_key(:silent_observations)
       expect(result).to have_key(:goals_needing_check_in)
       expect(result).to have_key(:check_ins_awaiting_input)
       expect(result).to have_key(:total_pending)
@@ -309,6 +353,17 @@ RSpec.describe GetShitDoneQueryService do
       expect(rows).to include(hash_including(count: 1, label: "Observation Drafts"))
       expect(rows).to all(include(:count, :label))
       expect(rows.none? { |r| r[:count].zero? }).to be true
+    end
+
+    it 'includes Silent Observations when present' do
+      create(:observation,
+             observer: person,
+             company: company,
+             published_at: Time.current,
+             privacy_level: :observed_only,
+             story: "For silent breakdown #{SecureRandom.hex(4)}")
+      rows = service.pending_category_breakdown
+      expect(rows).to include(hash_including(count: 1, label: "Silent Observations"))
     end
   end
 end

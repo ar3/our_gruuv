@@ -72,7 +72,9 @@ class Observation < ApplicationRecord
   scope :for_moment_type, ->(type) { joins(:observable_moment).where(observable_moments: { moment_type: type }) }
   scope :soft_deleted, -> { where.not(deleted_at: nil) }
   scope :not_soft_deleted, -> { where(deleted_at: nil) }
-  
+  # No Notification rows (matches show-page nudge: share reminders when nothing was sent yet)
+  scope :without_notifications, -> { where.missing(:notifications) }
+
   before_validation :set_observed_at_default
   after_update :update_slack_notifications_if_needed
   
