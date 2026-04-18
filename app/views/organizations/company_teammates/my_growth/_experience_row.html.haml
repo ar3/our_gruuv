@@ -1,0 +1,79 @@
+- row = local_assigns[:experience_row]
+- teammate = local_assigns[:teammate]
+- org = local_assigns[:organization]
+- latest_check_ins = local_assigns[:latest_finalized_assignment_check_ins_by_assignment_id]
+- goal_counts_by_id = local_assigns[:my_growth_assignment_goal_counts_by_id]
+- target_position = local_assigns[:target_position]
+
+.row.mb-3.align-items-stretch
+  .col-lg-6.d-flex
+    - if row[:col1_kind] == :active
+      .card.border.w-100.h-100
+        .card-body.d-flex.flex-column.h-100
+          %div
+            %h6.mb-1
+              = link_to row[:assignment].title, organization_teammate_assignment_path(org, teammate, row[:assignment]), class: 'text-decoration-none'
+            - if row[:assignment].tagline.present?
+              %p.small.text-muted.mb-0= row[:assignment].tagline
+          .mt-auto.pt-2
+            %hr.my-1.border-secondary.opacity-25
+            .d-flex.flex-wrap.align-items-center.gap-2
+              - if row[:tenure].anticipated_energy_percentage.present?
+                %span.badge.bg-secondary= "#{row[:tenure].anticipated_energy_percentage}% energy"
+              = render 'organizations/company_teammates/assignment_latest_check_in_badges',
+                latest_finalized: latest_check_ins[row[:tenure].assignment_id],
+                tenure: row[:tenure],
+                teammate: teammate
+            - if policy(teammate).audit?
+              - counts = goal_counts_by_id[row[:assignment].id] || { open_associated_goals_count: 0 }
+              = render 'organizations/company_teammates/my_growth/assignment_goal_link_row', organization: org, teammate: teammate, assignment: row[:assignment], casual_name: row[:casual_name], counts: counts
+    - else
+      - col1_card_class = row[:col1_kind] == :warning_required ? 'card border border-warning w-100 h-100' : 'card border w-100 h-100 my-growth-not-assigned-suggested'
+      .card{class: col1_card_class}
+        .card-body.d-flex.flex-column.h-100
+          %div
+            .d-flex.flex-wrap.align-items-center.gap-2.mb-1
+              %h6.mb-0
+                = link_to row[:assignment].title, organization_teammate_assignment_path(org, teammate, row[:assignment]), class: 'text-decoration-none'
+              - if row[:not_assigned_pill_position_name].present?
+                - pill_classes = row[:col1_kind] == :warning_required ? 'badge text-bg-warning text-wrap text-start' : 'badge bg-warning-subtle text-dark border border-warning-subtle text-wrap text-start'
+                - kind_word = row[:not_assigned_pill_kind] == :required ? 'required' : 'suggested'
+                %span{class: pill_classes}= "#{row[:casual_name]} is not assigned this #{kind_word} assignment from the #{row[:not_assigned_pill_position_name]} blueprint"
+            - if row[:assignment].tagline.present?
+              %p.small.text-muted.mb-0= row[:assignment].tagline
+
+  .col-lg-3.d-flex
+    - cur_card = row[:current_variant] == :required ? 'border w-100 h-100' : 'border w-100 h-100 bg-light'
+    .card{class: cur_card}
+      .card-body
+        .d-flex.flex-wrap.align-items-center.gap-2.mb-2
+          %h6.mb-0
+            = link_to row[:assignment].title, organization_teammate_assignment_path(org, teammate, row[:assignment]), class: 'text-decoration-none'
+          - if row[:current_variant] == :suggested
+            %span.badge.text-bg-info= "unique-to-#{row[:casual_name]} suggested assignment"
+          - elsif row[:current_variant] == :unique
+            %span.badge.text-bg-info= "completely unique-to-#{row[:casual_name]} assignment"
+        - if row[:current_variant] == :required && row[:current_pa]
+          %span.badge.bg-primary= "Required · #{row[:current_pa].energy_range_display}"
+        - elsif row[:current_variant] == :suggested && row[:current_pa]
+          %span.badge.bg-primary= "Suggested · #{row[:current_pa].energy_range_display}"
+
+  .col-lg-3.d-flex
+    - if target_position.present?
+      - tar_card = row[:target_variant] == :required ? 'border w-100 h-100' : 'border w-100 h-100 bg-light'
+      .card{class: tar_card}
+        .card-body
+          .d-flex.flex-wrap.align-items-center.gap-2.mb-2
+            %h6.mb-0
+              = link_to row[:assignment].title, organization_teammate_assignment_path(org, teammate, row[:assignment]), class: 'text-decoration-none'
+            - if row[:target_variant] == :suggested
+              %span.badge.text-bg-info= "unique-to-#{row[:casual_name]} suggested assignment"
+            - elsif row[:target_variant] == :unique
+              %span.badge.text-bg-info= "completely unique-to-#{row[:casual_name]} assignment"
+          - if row[:target_variant] == :required && row[:target_pa]
+            %span.badge.bg-primary= "Required · #{row[:target_pa].energy_range_display}"
+          - elsif row[:target_variant] == :suggested && row[:target_pa]
+            %span.badge.bg-primary= "Suggested · #{row[:target_pa].energy_range_display}"
+    - else
+      .d-flex.align-items-center.justify-content-center.w-100
+        %span.text-muted.small —

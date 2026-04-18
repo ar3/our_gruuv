@@ -12,82 +12,67 @@
 
 .alert.alert-info
   %p.mb-0
-    There are four ways to grow: new experiences, gaining skills/knowledge/abilities, goal attainment, and position/title changes. This is the first of the four. 
+    There are four ways to grow: new experiences, gaining skills/knowledge/abilities, goal attainment, and position/title changes. This is the first of the four.
     %span.fw-bold.fs-5 Grow by experiences.
     Your Assignments are an indication of what you are being relied on for, and therefore can be a great way to gain new experiences that are invaluable to your growth.
 
-.row.mb-3
-  .col-md-6
+- header_row_class = @teammate.next_goal_position.blank? ? 'my-growth-experiences__header-row--elevated' : nil
+.row.mb-3{class: header_row_class}
+  .col-lg-6
     %h2.h4.mb-1= "#{@teammate.person.casual_name}'s real day-to-day"
     %p.small.text-muted.mb-0
       = link_to "View #{@teammate.person.casual_name}'s teammate page", internal_organization_company_teammate_path(organization, @teammate), class: 'text-decoration-none'
-  .col-md-6
+  .col-lg-3
     %h2.h4.mb-1= "#{organization.display_name}'s blueprint"
     %p.small.text-muted.mb-0
       - if @current_employment&.position
         = link_to @current_employment.position.display_name, organization_position_path(organization, @current_employment.position), class: 'text-decoration-none'
       - else
         No current position selected
+  - if @teammate.next_goal_position.present?
+    .col-lg-3
+      %h2.h4.mb-1= "#{organization.display_name}'s blueprint"
+      %p.small.text-muted.mb-0
+        = link_to @teammate.next_goal_position.display_name, organization_position_path(organization, @teammate.next_goal_position), class: 'text-decoration-none'
+  - else
+    .col-lg-3.my-growth-experiences__target-header--absent.d-none.d-lg-block
+      %h2.visually-hidden Target position
+      .my-growth-experiences__no-target-alert.alert.alert-info.small.mb-0
+        %p.mb-2
+          #{@teammate.person.casual_name} does not have a target position, and they are focused on growing in the other three ways: experiences, abilities, and goal quality.
+        %p.mb-2
+        %p.mb-0
+          If a different position is a part of your growth goals, visit the
+          = link_to 'Position / Title Change tab', my_growth_position_change_organization_company_teammate_path(organization, @teammate), class: 'alert-link'
+          to define a target position.
 
-- if @my_growth_active_rows.blank? && @my_growth_missing_required_rows.blank?
+- if @my_growth_experience_primary_rows.blank? && !@my_growth_suggested_toggle_visible && !@my_growth_show_suggested
   .alert.alert-secondary.mb-0
-    No active assignments in this organization and no missing required assignments to compare.
+    No active assignments in this organization and no required blueprint assignments to compare.
 - else
-  - @my_growth_active_rows.each do |row|
-    .row.mb-3.align-items-stretch
-      .col-md-6.d-flex
-        .card.border.w-100.h-100
-          .card-body.d-flex.flex-column.h-100
-            %div
-              %h6.mb-1
-                = link_to row[:assignment].title, organization_teammate_assignment_path(organization, @teammate, row[:assignment]), class: 'text-decoration-none'
-              - if row[:assignment].tagline.present?
-                %p.small.text-muted.mb-0= row[:assignment].tagline
-            .mt-auto.pt-2
-              %hr.my-1.border-secondary.opacity-25
-              .d-flex.flex-wrap.align-items-center.gap-2
-                - if row[:tenure].anticipated_energy_percentage.present?
-                  %span.badge.bg-secondary= "#{row[:tenure].anticipated_energy_percentage}% energy"
-                = render 'organizations/company_teammates/assignment_latest_check_in_badges',
-                  latest_finalized: @latest_finalized_assignment_check_ins_by_assignment_id[row[:tenure].assignment_id],
-                  tenure: row[:tenure],
-                  teammate: @teammate
-              - if policy(@teammate).audit?
-                - counts = @my_growth_assignment_goal_counts_by_id[row[:assignment].id] || { open_associated_goals_count: 0 }
-                = render 'organizations/company_teammates/my_growth/assignment_goal_link_row', organization: organization, teammate: @teammate, assignment: row[:assignment], casual_name: row[:casual_name], counts: counts
-      .col-md-6.d-flex
-        - right_class = row[:right_variant] == :required ? 'border w-100 h-100' : 'border w-100 h-100 bg-light'
-        .card{class: right_class}
-          .card-body
-            .d-flex.flex-wrap.align-items-center.gap-2.mb-2
-              %h6.mb-0
-                = link_to row[:assignment].title, organization_teammate_assignment_path(organization, @teammate, row[:assignment]), class: 'text-decoration-none'
-              - if row[:right_variant] == :suggested_pill
-                %span.badge.text-bg-info
-                  unique-to-#{row[:casual_name]} suggested assignment
-              - elsif row[:right_variant] == :unique_pill
-                %span.badge.text-bg-info
-                  completely unique-to-#{row[:casual_name]} assignment
-            - if row[:assignment].tagline.present?
-              %p.small.text-muted.mb-0= row[:assignment].tagline
-            - pa = row[:position_assignment]
-            - if pa && (pa.min_estimated_energy.present? || pa.max_estimated_energy.present?)
-              .mt-2
-                %span.badge.bg-primary= "Expected energy: #{pa.energy_range_display}"
-  - @my_growth_missing_required_rows.each do |row|
-    .row.mb-3.align-items-stretch
-      .col-md-6.d-flex
-        .card.border.w-100.h-100.border-warning
-          .card-body
-            %span.badge.text-bg-warning.mb-2 required, but #{row[:casual_name]} is not assigned
-            %p.small.text-muted.mb-0 This assignment is required for the current position but is not on #{row[:casual_name]}&rsquo;s active list.
-      .col-md-6.d-flex
-        .card.border.w-100.h-100
-          .card-body
-            %h6.mb-1
-              = link_to row[:assignment].title, organization_teammate_assignment_path(organization, @teammate, row[:assignment]), class: 'text-decoration-none'
-            - if row[:assignment].tagline.present?
-              %p.small.text-muted.mb-2= row[:assignment].tagline
-            - pa = row[:position_assignment]
-            - if pa.min_estimated_energy.present? || pa.max_estimated_energy.present?
-              %span.badge.bg-primary Required · #{pa.energy_range_display}
+  - @my_growth_experience_primary_rows.each do |row|
+    = render 'organizations/company_teammates/my_growth/experience_row',
+      experience_row: row,
+      teammate: @teammate,
+      organization: organization,
+      latest_finalized_assignment_check_ins_by_assignment_id: @latest_finalized_assignment_check_ins_by_assignment_id,
+      my_growth_assignment_goal_counts_by_id: @my_growth_assignment_goal_counts_by_id,
+      target_position: @teammate.next_goal_position
+
+  - if @my_growth_suggested_toggle_visible
+    .row.mb-3
+      .col-12.text-center{id: @my_growth_suggested_anchor}
+        - if @my_growth_show_suggested
+          = link_to 'Hide suggested assignments', my_growth_experiences_organization_company_teammate_path(organization, @teammate, anchor: @my_growth_suggested_anchor), class: 'btn btn-outline-secondary btn-sm'
+        - else
+          = link_to 'Show suggested assignments', my_growth_experiences_organization_company_teammate_path(organization, @teammate, show_suggested: true, anchor: @my_growth_suggested_anchor), class: 'btn btn-outline-secondary btn-sm'
+
+  - if @my_growth_show_suggested
+    - @my_growth_experience_suggested_rows.each do |row|
+      = render 'organizations/company_teammates/my_growth/experience_row',
+        experience_row: row,
+        teammate: @teammate,
+        organization: organization,
+        latest_finalized_assignment_check_ins_by_assignment_id: @latest_finalized_assignment_check_ins_by_assignment_id,
+        my_growth_assignment_goal_counts_by_id: @my_growth_assignment_goal_counts_by_id,
+        target_position: @teammate.next_goal_position

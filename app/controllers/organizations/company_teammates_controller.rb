@@ -886,9 +886,16 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def load_my_growth_experiences_rows
-    @my_growth_active_rows = []
-    @my_growth_missing_required_rows = []
-    position = @current_employment&.position
+    @my_growth_show_suggested = ActiveModel::Type::Boolean.new.cast(params[:show_suggested])
+    @my_growth_suggested_anchor = 'suggested-assignments-toggle'
+
+    casual = @teammate.person.casual_name.presence || 'this teammate'
+    current_position = @current_employment&.position
+    target_position = @teammate.next_goal_position
+
+    cur_req, cur_sug = my_growth_experiences_position_maps(current_position)
+    tar_req, tar_sug = my_growth_experiences_position_maps(target_position)
+
     active_tenures = @teammate.assignment_tenures.active
       .joins(:assignment)
       .where(assignments: { company: organization })
@@ -898,39 +905,66 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       [e.nil? ? 1 : 0, -(e || 0), t.assignment.title.to_s.downcase]
     end
 
-    required_by_assignment_id = {}
-    suggested_by_assignment_id = {}
-    if position
-      position.position_assignments.includes(:assignment).each do |pa|
-        if pa.assignment_type == 'required'
-          required_by_assignment_id[pa.assignment_id] = pa
-        elsif pa.assignment_type == 'suggested'
-          suggested_by_assignment_id[pa.assignment_id] = pa
-        end
+    active_by_assignment_id = sorted_active.index_by(&:assignment_id)
+    active_ids = sorted_active.map(&:assignment_id)
+
+    primary_ids = (active_ids + cur_req.keys + tar_req.keys).uniq
+    suggested_only_ids = (cur_sug.keys + tar_sug.keys).uniq - primary_ids
+
+    all_row_ids = (primary_ids + suggested_only_ids).uniq
+    assignments_by_id = Assignment.where(id: all_row_ids).index_by(&:id)
+
+    primary_active_order = sorted_active.map(&:assignment_id).select { |id| primary_ids.include?(id) }
+    primary_inactive_ids = primary_ids - primary_active_order
+    primary_inactive_sorted = primary_inactive_ids.sort_by do |aid|
+      pa = cur_req[aid] || tar_req[aid]
+      a = assignments_by_id[aid]
+      e = pa&.anticipated_energy_percentage
+      [e.nil? ? 1 : 0, -(e || 0), (a&.title || '').to_s.downcase]
+    end
+
+    @my_growth_experience_primary_rows = []
+    (primary_active_order + primary_inactive_sorted).each do |aid|
+      row = my_growth_experience_build_row(
+        aid,
+        tenure: active_by_assignment_id[aid],
+        assignments_by_id: assignments_by_id,
+        casual_name: casual,
+        current_position: current_position,
+        target_position: target_position,
+        cur_req: cur_req, cur_sug: cur_sug,
+        tar_req: tar_req, tar_sug: tar_sug,
+        section: :primary
+      )
+      @my_growth_experience_primary_rows << row if row
+    end
+
+    suggested_only_sorted = suggested_only_ids.sort_by do |aid|
+      pa = cur_sug[aid] || tar_sug[aid]
+      a = assignments_by_id[aid]
+      e = pa&.anticipated_energy_percentage
+      [e.nil? ? 1 : 0, -(e || 0), (a&.title || '').to_s.downcase]
+    end
+
+    @my_growth_experience_suggested_rows = []
+    if @my_growth_show_suggested
+      suggested_only_sorted.each do |aid|
+        row = my_growth_experience_build_row(
+          aid,
+          tenure: active_by_assignment_id[aid],
+          assignments_by_id: assignments_by_id,
+          casual_name: casual,
+          current_position: current_position,
+          target_position: target_position,
+          cur_req: cur_req, cur_sug: cur_sug,
+          tar_req: tar_req, tar_sug: tar_sug,
+          section: :suggested
+        )
+        @my_growth_experience_suggested_rows << row if row
       end
     end
 
-    active_ids = sorted_active.map(&:assignment_id)
-    casual = @teammate.person.casual_name.presence || 'this teammate'
-
-    sorted_active.each do |tenure|
-      aid = tenure.assignment_id
-      is_required = required_by_assignment_id.key?(aid)
-      right_variant = if is_required
-                        :required
-                      elsif suggested_by_assignment_id.key?(aid)
-                        :suggested_pill
-                      else
-                        :unique_pill
-                      end
-      @my_growth_active_rows << {
-        tenure: tenure,
-        assignment: tenure.assignment,
-        right_variant: right_variant,
-        casual_name: casual,
-        position_assignment: required_by_assignment_id[aid] || suggested_by_assignment_id[aid]
-      }
-    end
+    @my_growth_suggested_toggle_visible = suggested_only_ids.any?
 
     assignment_ids = sorted_active.map(&:assignment_id).uniq
     @latest_finalized_assignment_check_ins_by_assignment_id = {}
@@ -945,23 +979,94 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         end
     end
 
-    assignment_ids_for_goal_links = @my_growth_active_rows.map { |r| r[:assignment].id }.uniq
+    assignment_ids_for_goal_links = sorted_active.map(&:assignment_id).uniq
     @my_growth_assignment_goal_counts_by_id = my_growth_assignment_goal_counts_for_teammate(assignment_ids_for_goal_links)
+  end
 
-    return unless position
+  def my_growth_experiences_position_maps(position)
+    required = {}
+    suggested = {}
+    return [required, suggested] if position.blank?
 
-    missing = position.required_assignments.reject { |pa| active_ids.include?(pa.assignment_id) }
-    sorted_missing = missing.sort_by do |pa|
-      e = pa.anticipated_energy_percentage
-      [e.nil? ? 1 : 0, -(e || 0), pa.assignment.title.to_s.downcase]
+    position.position_assignments.includes(:assignment).each do |pa|
+      if pa.assignment_type == 'required'
+        required[pa.assignment_id] = pa
+      elsif pa.assignment_type == 'suggested'
+        suggested[pa.assignment_id] = pa
+      end
     end
-    sorted_missing.each do |pa|
-      @my_growth_missing_required_rows << {
-        position_assignment: pa,
-        assignment: pa.assignment,
-        casual_name: casual
-      }
+    [required, suggested]
+  end
+
+  def my_growth_experiences_variant(required_h, suggested_h, assignment_id)
+    if required_h[assignment_id]
+      [:required, required_h[assignment_id]]
+    elsif suggested_h[assignment_id]
+      [:suggested, suggested_h[assignment_id]]
+    else
+      [:unique, nil]
     end
+  end
+
+  def my_growth_experiences_not_assigned_pill(section, assignment_id, active,
+                                              cur_req, tar_req, cur_sug, tar_sug,
+                                              current_position, target_position)
+    return [nil, nil] if active
+
+    if section == :primary
+      if cur_req[assignment_id] && current_position
+        [:required, current_position.display_name]
+      elsif tar_req[assignment_id] && target_position
+        [:required, target_position.display_name]
+      else
+        [:required, nil]
+      end
+    elsif cur_sug[assignment_id] && current_position
+      [:suggested, current_position.display_name]
+    elsif tar_sug[assignment_id] && target_position
+      [:suggested, target_position.display_name]
+    else
+      [:suggested, nil]
+    end
+  end
+
+  def my_growth_experience_build_row(assignment_id, tenure:, assignments_by_id:, casual_name:,
+                                     current_position:, target_position:,
+                                     cur_req:, cur_sug:, tar_req:, tar_sug:, section:)
+    assignment = tenure&.assignment || assignments_by_id[assignment_id]
+    return if assignment.blank?
+
+    active = tenure.present?
+    cur_var, cur_pa = my_growth_experiences_variant(cur_req, cur_sug, assignment_id)
+    tar_var, tar_pa = my_growth_experiences_variant(tar_req, tar_sug, assignment_id)
+
+    col1_kind = if active
+                  :active
+                elsif section == :primary
+                  :warning_required
+                else
+                  :warning_suggested
+                end
+
+    pill_kind, pill_position = my_growth_experiences_not_assigned_pill(
+      section, assignment_id, active,
+      cur_req, tar_req, cur_sug, tar_sug,
+      current_position, target_position
+    )
+
+    {
+      assignment: assignment,
+      tenure: tenure,
+      casual_name: casual_name,
+      section: section,
+      col1_kind: col1_kind,
+      not_assigned_pill_kind: pill_kind,
+      not_assigned_pill_position_name: pill_position,
+      current_variant: cur_var,
+      current_pa: cur_pa,
+      target_variant: tar_var,
+      target_pa: tar_pa
+    }
   end
 
   def my_growth_assignment_goal_counts_for_teammate(assignment_ids)

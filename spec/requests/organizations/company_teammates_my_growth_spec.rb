@@ -32,6 +32,25 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response.body).to include('Growth')
       end
 
+      it 'offers show/hide suggested assignments with query param and anchor id' do
+        et = employee_teammate.employment_tenures.active.first
+        position = et.position
+        assignment_required = create(:assignment, company: organization, title: 'Required Active Row')
+        assignment_suggested = create(:assignment, company: organization, title: 'Suggested Only Row')
+        create(:position_assignment, position: position, assignment: assignment_required, assignment_type: 'required')
+        create(:position_assignment, :suggested, position: position, assignment: assignment_suggested)
+        create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_required)
+
+        get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+        expect(response.body).to include('Show suggested assignments')
+        expect(response.body).to include('show_suggested=true')
+        expect(response.body).to include('suggested-assignments-toggle')
+
+        get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate, show_suggested: true)
+        expect(response.body).to include('Hide suggested assignments')
+        expect(response.body).to include('Suggested Only Row')
+      end
+
       context 'Grow by experiences assignment cards' do
         let(:assignment) { create(:assignment, company: organization, title: 'North Star Delivery') }
         let(:base_goal_attrs) do

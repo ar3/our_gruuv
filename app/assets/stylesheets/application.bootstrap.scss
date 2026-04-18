@@ -1199,3 +1199,32 @@ body:has(.vertical-nav.open) .floating-toggle {
   display: inline-block;
   min-height: 0.75rem;
 }
+
+// My Growth — experiences: softer than Bootstrap “warning” for suggested-but-not-on-day-to-day
+.my-growth-not-assigned-suggested {
+  border-color: rgba(234, 179, 8, 0.55) !important;
+  background-color: rgba(254, 252, 232, 0.85);
+}
+
+// My Growth — experiences: no target position — keep header row short; alert overlays third column below (lg+ only)
+.my-growth-experiences__header-row--elevated {
+  @include media-breakpoint-up(lg) {
+    position: relative;
+    z-index: 5;
+  }
+}
+
+.my-growth-experiences__target-header--absent {
+  position: relative;
+  // Matches the middle column’s title + one line of meta (large screens only; column hidden below lg)
+  min-height: 4.25rem;
+}
+
+.my-growth-experiences__no-target-alert {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08);
+}
