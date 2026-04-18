@@ -95,6 +95,14 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       return_url: organization_teammate_assignment_path(organization, @teammate, @assignment),
       return_text: "Back to 1-by-1 check-in"
     )
+    @observations_new_observation_url = new_organization_observation_path(
+      organization,
+      observee_ids: [@teammate.id],
+      rateable_type: "Assignment",
+      rateable_id: @assignment.id,
+      return_url: organization_teammate_assignment_path(organization, @teammate, @assignment),
+      return_text: "Back to 1-by-1 check-in"
+    )
 
     load_associable_goals_display!(@assignment)
   end

@@ -1,14 +1,15 @@
--# Expects: @observations_since_finalized (array), @observations_involving_url, @teammate, @observations_since_date, @observations_has_finalized_check_in (for empty-state timeframe text)
--# Optional: @aspiration, @assignment (caption + "Show all" link: teammate & object when one is set)
+-# Expects: @observations_since_finalized, @observations_involving_url, @observations_new_observation_url, @teammate, @observations_since_date, @observations_has_finalized_check_in
+-# Optional: @aspiration, @assignment, @ability (caption, "View all" / add button: teammate & object when one is set; position has none of these)
+- observations_object_label = @assignment&.title.presence || @aspiration&.name.presence || @ability&.name.presence
+- involving_phrase = observations_object_label.present? ? "#{@teammate.person.casual_name} & #{observations_object_label}" : @teammate.person.casual_name
+- add_label = "+ Add New Win, Challenge, or Note about #{involving_phrase}"
 .card.mb-4.mt-4#current-period-observations
-  .card-header.d-flex.align-items-center.justify-content-between
+  .card-header.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
     %h5.mb-0 Research: Current Period Observations
-    - if @observations_involving_url.present?
-      - observations_object_label = @assignment&.title.presence || @aspiration&.name.presence
-      - involving_phrase = observations_object_label.present? ? "#{@teammate.person.casual_name} & #{observations_object_label}" : @teammate.person.casual_name
-      = link_to "Show all observations involving #{involving_phrase}", @observations_involving_url, class: "btn btn-sm btn-outline-secondary", target: "_blank", rel: "noopener"
+    - if @observations_new_observation_url.present?
+      = link_to add_label, @observations_new_observation_url, class: "btn btn-sm btn-primary"
   .card-body
-    - caption_text = observations_section_caption(@teammate, @observations_since_date, @observations_has_finalized_check_in, aspiration: @aspiration, assignment: @assignment)
+    - caption_text = observations_section_caption(@teammate, @observations_since_date, @observations_has_finalized_check_in, aspiration: @aspiration, assignment: @assignment, ability: @ability)
     %p.small.text-muted.mb-2= caption_text
     - if @observations_since_finalized.present?
       .list-group
@@ -17,3 +18,6 @@
     - else
       - timeframe_text = observations_timeframe_description(@observations_since_date, @observations_has_finalized_check_in)
       .alert.alert-info.mb-0 No observations found #{timeframe_text}.
+  - if @observations_involving_url.present?
+    .card-footer.bg-transparent
+      = link_to "View all observations involving #{involving_phrase}", @observations_involving_url, class: "btn btn-outline-secondary w-100"

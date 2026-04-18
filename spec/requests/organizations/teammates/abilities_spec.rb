@@ -30,7 +30,7 @@ RSpec.describe "Organizations::Teammates::Abilities", type: :request do
       expect(response.body).to include(ability.name)
       expect(response.body).to include("Milestones attained")
       expect(response.body).to include("Expand to see milestone details")
-      expect(response.body).to include("Observations")
+      expect(response.body).to include("Research: Current Period Observations")
       expect(response.body).to include("Associated Goals")
       expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
       expect(response.body).to include("View all of #{employee_person.casual_name}'s goals")
@@ -38,6 +38,51 @@ RSpec.describe "Organizations::Teammates::Abilities", type: :request do
       expect(response.body).to include("teammate_milestones/new")
       expect(response.body).to include("teammate_id=#{employee_teammate.id}")
       expect(response.body).to include("ability_id=#{ability.id}")
+    end
+
+    it "links current period observations to the observations index with observee and ability (no timeframe)" do
+      get ability_show_path
+      expect(response).to have_http_status(:success)
+
+      doc = Nokogiri::HTML(response.body)
+      link = doc.at_xpath("//a[contains(., 'View all observations involving')]")
+      expect(link).to be_present
+      expect(link.text).to include(employee_person.casual_name)
+      expect(link.text).to include(ability.name)
+
+      href = link["href"]
+      uri = URI.parse(href)
+      params = Rack::Utils.parse_nested_query(uri.query)
+      expect(uri.path).to eq(organization_observations_path(organization))
+      expect(params["observee_ids"]).to eq([employee_teammate.id.to_s])
+      expect(params["rateable_type"]).to eq("Ability")
+      expect(params["rateable_id"]).to eq(ability.id.to_s)
+      expect(params["timeframe"]).to be_nil
+      expect(params["timeframe_start_date"]).to be_nil
+      expect(params["timeframe_end_date"]).to be_nil
+      expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+      expect(params["return_url"]).to eq(ability_show_path)
+    end
+
+    it "links add observation from the observations card with observee and ability" do
+      get ability_show_path
+      expect(response).to have_http_status(:success)
+
+      doc = Nokogiri::HTML(response.body)
+      add_link = doc.at_xpath("//a[contains(., 'Add New Win, Challenge, or Note about')]")
+      expect(add_link).to be_present
+      expect(add_link.text).to include(employee_person.casual_name)
+      expect(add_link.text).to include(ability.name)
+
+      href = add_link["href"]
+      uri = URI.parse(href)
+      params = Rack::Utils.parse_nested_query(uri.query)
+      expect(uri.path).to eq(new_organization_observation_path(organization))
+      expect(params["observee_ids"]).to eq([employee_teammate.id.to_s])
+      expect(params["rateable_type"]).to eq("Ability")
+      expect(params["rateable_id"]).to eq(ability.id.to_s)
+      expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+      expect(params["return_url"]).to eq(ability_show_path)
     end
 
     context "when viewer is the teammate on the page (cannot award self)" do

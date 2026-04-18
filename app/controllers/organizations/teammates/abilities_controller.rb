@@ -29,20 +29,46 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
       return_url: request.original_url
     )
 
-    visibility_query = ObservationVisibilityQuery.new(current_person, organization)
-    base = visibility_query.visible_observations
+    ability_show_return_path = organization_teammate_ability_path(organization, @teammate, @ability)
+    latest_milestone = @teammate_milestones.max_by(&:attained_at)
+    since_date = latest_milestone&.attained_at || 10.years.ago
+    @observations_since_date = since_date
+    @observations_has_finalized_check_in = latest_milestone.present?
+    observations_params = {
+      observee_ids: [@teammate.id],
+      rateable_type: "Ability",
+      rateable_id: @ability.id,
+      timeframe: "between",
+      timeframe_start_date: since_date.to_date.to_s,
+      timeframe_end_date: Time.current.to_date.to_s
+    }
+    observations_query = ObservationsQuery.new(organization, observations_params, current_person: current_person)
+    @observations_since_finalized = observations_query.call
       .joins(:observation_ratings)
       .where(observation_ratings: { rateable_type: "Ability", rateable_id: @ability.id })
-
-    as_observer_ids = base.where(observer_id: @teammate.person_id).pluck(:id)
-    as_observed_ids = base.joins(:observees).where(observees: { teammate_id: @teammate.id }).pluck(:id)
-    observation_ids = (as_observer_ids + as_observed_ids).uniq
-
-    @observations = Observation.where(id: observation_ids)
-      .includes(:observer, { observed_teammates: :person }, :observation_ratings, :notifications)
+      .distinct
+      .includes(:observer, :observed_teammates, :observation_ratings)
       .order(observed_at: :desc)
+      .limit(50)
 
-    preload_rateables_for_observations(@observations)
+    preload_rateables_for_observations(@observations_since_finalized)
+
+    @observations_involving_url = organization_observations_path(
+      organization,
+      observee_ids: [@teammate.id],
+      rateable_type: "Ability",
+      rateable_id: @ability.id,
+      return_url: ability_show_return_path,
+      return_text: "Back to 1-by-1 check-in"
+    )
+    @observations_new_observation_url = new_organization_observation_path(
+      organization,
+      observee_ids: [@teammate.id],
+      rateable_type: "Ability",
+      rateable_id: @ability.id,
+      return_url: ability_show_return_path,
+      return_text: "Back to 1-by-1 check-in"
+    )
 
     load_associable_goals_display!(@ability)
   end

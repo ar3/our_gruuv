@@ -122,19 +122,19 @@ module ApplicationHelper
     format_time_in_user_timezone(time, user, format: format)
   end
 
-  # Human-readable timeframe for "observations since last finalized check-in" empty state.
-  # since_date: start of range (last finalized date or long ago), has_finalized: true if there was a finalized check-in.
+  # Human-readable timeframe for the observations card empty state (anchored to last check-in or milestone when present).
+  # since_date: start of range (anchor date or long ago), has_finalized: true when an anchor event exists (check-in or milestone).
   def observations_timeframe_description(since_date, has_finalized)
     if has_finalized && since_date.present?
       "from #{format_date_in_user_timezone(since_date, format: '%B %d, %Y')} to now"
     else
-      "all-time (since this is your first check-in)"
+      "all-time"
     end
   end
 
   # Caption for the observations section on single-item check-in pages.
-  # Options: aspiration (Aspiration) and/or assignment (Assignment) for "involving X".
-  def observations_section_caption(teammate, since_date, has_finalized, aspiration: nil, assignment: nil)
+  # Options: aspiration, assignment, and/or ability for "involving X".
+  def observations_section_caption(teammate, since_date, has_finalized, aspiration: nil, assignment: nil, ability: nil)
     casual_name = teammate.person.casual_name
     start_date = if has_finalized && since_date.present?
       format_date_in_user_timezone(since_date, format: '%B %d, %Y')
@@ -143,7 +143,7 @@ module ApplicationHelper
       earliest.present? ? format_date_in_user_timezone(earliest, format: '%B %d, %Y') : format_date_in_user_timezone(since_date, format: '%B %d, %Y')
     end
     end_date = format_date_in_user_timezone(Time.current, format: '%B %d, %Y')
-    involving = [aspiration&.name, assignment&.title].compact.first
+    involving = [aspiration&.name, assignment&.title, ability&.name].compact.first
     parts = ["Showing all observations about #{casual_name}, between #{start_date} and #{end_date}"]
     parts << "involving #{involving}" if involving.present?
     parts.join(", ") + "."

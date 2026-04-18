@@ -94,7 +94,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response).to have_http_status(:success)
 
         doc = Nokogiri::HTML(response.body)
-        link = doc.at_xpath("//a[contains(., 'Show all observations involving')]")
+        link = doc.at_xpath("//a[contains(., 'View all observations involving')]")
         expect(link).to be_present
         expect(link.text).to include(employee_person.casual_name)
         expect(link.text).to include(assignment.title)
@@ -109,6 +109,27 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(params["timeframe"]).to be_nil
         expect(params["timeframe_start_date"]).to be_nil
         expect(params["timeframe_end_date"]).to be_nil
+        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_url"]).to eq(assignment_show_path)
+      end
+
+      it "links add observation from the observations card with observee and assignment" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+
+        doc = Nokogiri::HTML(response.body)
+        add_link = doc.at_xpath("//a[contains(., 'Add New Win, Challenge, or Note about')]")
+        expect(add_link).to be_present
+        expect(add_link.text).to include(employee_person.casual_name)
+        expect(add_link.text).to include(assignment.title)
+
+        href = add_link["href"]
+        uri = URI.parse(href)
+        params = Rack::Utils.parse_nested_query(uri.query)
+        expect(uri.path).to eq(new_organization_observation_path(organization))
+        expect(params["observee_ids"]).to eq([employee_teammate.id.to_s])
+        expect(params["rateable_type"]).to eq("Assignment")
+        expect(params["rateable_id"]).to eq(assignment.id.to_s)
         expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
         expect(params["return_url"]).to eq(assignment_show_path)
       end

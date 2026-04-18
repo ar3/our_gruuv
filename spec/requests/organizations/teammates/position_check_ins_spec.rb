@@ -90,9 +90,9 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
         expect(response).to have_http_status(:success)
 
         doc = Nokogiri::HTML(response.body)
-        link = doc.at_xpath("//a[contains(., 'Show all observations involving')]")
+        link = doc.at_xpath("//a[contains(., 'View all observations involving')]")
         expect(link).to be_present
-        expect(link.text).to eq("Show all observations involving #{person.casual_name}")
+        expect(link.text).to eq("View all observations involving #{person.casual_name}")
 
         href = link["href"]
         uri = URI.parse(href)
@@ -104,6 +104,27 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
         expect(params["timeframe"]).to be_nil
         expect(params["timeframe_start_date"]).to be_nil
         expect(params["timeframe_end_date"]).to be_nil
+        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_url"]).to eq(path)
+      end
+
+      it "links add observation from the observations card with observee only (no rateable)" do
+        path = position_check_in_organization_teammate_path(organization, teammate)
+        get path
+        expect(response).to have_http_status(:success)
+
+        doc = Nokogiri::HTML(response.body)
+        add_link = doc.at_xpath("//a[contains(., 'Add New Win, Challenge, or Note about')]")
+        expect(add_link).to be_present
+        expect(add_link.text).to eq("+ Add New Win, Challenge, or Note about #{person.casual_name}")
+
+        href = add_link["href"]
+        uri = URI.parse(href)
+        params = Rack::Utils.parse_nested_query(uri.query)
+        expect(uri.path).to eq(new_organization_observation_path(organization))
+        expect(params["observee_ids"]).to eq([teammate.id.to_s])
+        expect(params["rateable_type"]).to be_nil
+        expect(params["rateable_id"]).to be_nil
         expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
         expect(params["return_url"]).to eq(path)
       end

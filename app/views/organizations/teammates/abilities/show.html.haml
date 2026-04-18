@@ -64,16 +64,7 @@
                 - else
                   %p.text-muted.mb-0 This milestone has not been defined.
 
-    .card.mb-4#current-period-observations
-      .card-header
-        %h5.mb-0 Observations
-      .card-body
-        - if @observations.any?
-          .list-group
-            - @observations.each do |observation|
-              = render "organizations/observations/observation_large_list_item", observation: observation, organization: @organization
-        - else
-          %p.text-muted.mb-0 No observations you can access involve this teammate and this ability.
+    = render "shared/single_item_check_in/current_period_observations"
 
     .d-flex.align-items-center.gap-2.flex-wrap.mb-5
       - if @can_award_milestone

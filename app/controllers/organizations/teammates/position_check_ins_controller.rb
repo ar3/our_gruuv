@@ -66,10 +66,17 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
       .order(observed_at: :desc)
       .limit(50)
 
+    position_check_in_return_path = position_check_in_organization_teammate_path(organization, @teammate)
     @observations_involving_url = organization_observations_path(
       organization,
       observee_ids: [@teammate.id],
-      return_url: position_check_in_organization_teammate_path(organization, @teammate),
+      return_url: position_check_in_return_path,
+      return_text: "Back to 1-by-1 check-in"
+    )
+    @observations_new_observation_url = new_organization_observation_path(
+      organization,
+      observee_ids: [@teammate.id],
+      return_url: position_check_in_return_path,
       return_text: "Back to 1-by-1 check-in"
     )
 
