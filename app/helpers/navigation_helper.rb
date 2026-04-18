@@ -461,6 +461,34 @@ module NavigationHelper
             path: my_growth_experiences_organization_company_teammate_path(current_organization, current_company_teammate),
             policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
             coming_soon: false
+          },
+          {
+            label: 'Bulk award milestones',
+            icon: 'bi-trophy',
+            path: begin
+              q = TeammateMilestoneRecipientEligibilityQuery.new(
+                awarding_teammate: current_company_teammate,
+                organization: current_organization
+              )
+              tm = q.eligible_teammates.first
+              if tm.present?
+                new_bulk_milestone_award_organization_company_teammate_path(current_organization, tm)
+              else
+                celebrate_milestones_organization_path(current_organization)
+              end
+            end,
+            policy_check: lambda {
+              current_company_teammate.present? &&
+                policy(TeammateMilestone).create? &&
+                TeammateMilestoneRecipientEligibilityQuery.new(
+                  awarding_teammate: current_company_teammate,
+                  organization: current_organization
+                ).eligible_teammates.any?
+            },
+            active_check: lambda {
+              controller_path == 'organizations/company_teammates/bulk_milestone_awards'
+            },
+            coming_soon: false
           }
         ]
       },

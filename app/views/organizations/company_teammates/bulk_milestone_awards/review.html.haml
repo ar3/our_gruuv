@@ -1,0 +1,101 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, 'Bulk Award Milestones - Review')
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: 'Celebrate milestones', url: celebrate_milestones_organization_path(organization) }, { label: 'Bulk award milestones', url: new_bulk_milestone_award_organization_company_teammate_path(organization, @teammate) }, { label: 'Review', url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render 'shared/teammate_context/title_dropdown',
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { new_bulk_milestone_award_organization_company_teammate_path(organization, tm) },
+               switch_aria_label: 'Switch teammate for bulk award milestones'
+      %span= " - Bulk Award Milestones - Review"
+    %span.badge.text-bg-danger
+      This is dangerous… milestone awarding is usually done one at a time
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.row.justify-content-center.mt-3
+  .col-12.col-xl-11
+    = form_with url: bulk_milestone_awards_organization_company_teammate_path(organization, @teammate), method: :post, local: true, data: { turbo: false } do
+      - @selections.each do |ability_id, level|
+        = hidden_field_tag "milestones[#{ability_id}]", level
+
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Certification (applies to every new milestone in this batch)
+        .card-body
+          %p.mb-2
+            I,
+            %strong= current_person.full_name
+            , certify that
+            %strong= @teammate.person.full_name
+            has met the criteria for the milestones I am about to save—including any lower milestones that will be created automatically so that higher levels stay in order.
+          %p.mb-2
+            The certification note stored for each
+            %strong new
+            milestone will be exactly:
+            %code Bulk Milestone Adjustment
+            (this bulk tool does not allow editing that text.)
+          %p.mb-0
+            %strong Privacy:
+            among
+            %strong new
+            milestones created in this save, only the
+            %em highest
+            new level per ability is company-visible; any other new levels for that ability are saved as private. Existing milestones are not changed except where levels are removed below.
+
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Milestones being removed
+        .card-body
+          - removals = @preview_rows.select { |p| p[:removing_levels].any? }
+          - if removals.empty?
+            %p.text-muted.mb-0 None. No previously awarded levels are being cleared or lowered on this save.
+          - else
+            %ul.mb-0
+              - removals.each do |p|
+                %li
+                  %strong
+                    = link_to p[:row][:display_name], organization_teammate_ability_path(organization, @teammate, p[:row][:ability]), class: 'text-decoration-none'
+                  — removing
+                  = p[:removing_levels].map { |l| "Milestone #{l}" }.join(', ')
+
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Summary by ability
+        .card-body
+          .table-responsive
+            %table.table.table-sm.mb-0
+              %thead
+                %tr
+                  %th Ability
+                  %th Target level
+                  %th New milestones (after save)
+                  %th Company-visible new
+              %tbody
+                - @preview_rows.each do |p|
+                  - adding = p[:adding_levels]
+                  - highest_new = adding.max
+                  %tr
+                    %td
+                      = link_to p[:row][:display_name], organization_teammate_ability_path(organization, @teammate, p[:row][:ability]), class: 'text-decoration-none'
+                    %td= p[:target_level]
+                    %td
+                      - if adding.empty?
+                        %span.text-muted —
+                      - else
+                        = adding.map { |l| "M#{l}" }.join(', ')
+                    %td
+                      - if highest_new.present?
+                        Milestone #{highest_new} only
+                      - else
+                        %span.text-muted —
+
+      .d-flex.gap-2.flex-wrap.align-items-center
+        = link_to 'Back to edit', new_bulk_milestone_award_organization_company_teammate_path(organization, @teammate), class: 'btn btn-outline-secondary'
+        = submit_tag 'Save bulk milestone adjustment', class: 'btn btn-danger btn-lg', data: { turbo_confirm: 'This cannot be reversed. Observable moments for removed milestones may be deleted only when no observation exists yet. Save anyway?' }

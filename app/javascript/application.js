@@ -16,11 +16,29 @@ function initializeTooltips() {
   // Try different ways to access Tooltip
   if (bootstrap.Tooltip) {
     console.log('Found bootstrap.Tooltip')
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    const tooltipList = [...tooltipTriggerList].map((tooltipTriggerEl) => {
+      // Avoid duplicate instances when turbo:load and DOMContentLoaded both run, or on revisits.
+      if (typeof bootstrap.Tooltip.getOrCreateInstance === 'function') {
+        return bootstrap.Tooltip.getOrCreateInstance(tooltipTriggerEl)
+      }
+      if (bootstrap.Tooltip.getInstance(tooltipTriggerEl)) {
+        return bootstrap.Tooltip.getInstance(tooltipTriggerEl)
+      }
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
     console.log('Initialized tooltips:', tooltipList.length)
   } else if (window.bootstrap && window.bootstrap.Tooltip) {
     console.log('Found window.bootstrap.Tooltip')
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new window.bootstrap.Tooltip(tooltipTriggerEl))
+    const Tooltip = window.bootstrap.Tooltip
+    const tooltipList = [...tooltipTriggerList].map((tooltipTriggerEl) => {
+      if (typeof Tooltip.getOrCreateInstance === 'function') {
+        return Tooltip.getOrCreateInstance(tooltipTriggerEl)
+      }
+      if (Tooltip.getInstance(tooltipTriggerEl)) {
+        return Tooltip.getInstance(tooltipTriggerEl)
+      }
+      return new Tooltip(tooltipTriggerEl)
+    })
     console.log('Initialized tooltips:', tooltipList.length)
   } else {
     console.log('Tooltip not found in bootstrap object')

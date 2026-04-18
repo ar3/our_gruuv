@@ -298,6 +298,9 @@ Rails.application.routes.draw do
         get 'my_growth/goals', action: :my_growth_goals, as: :my_growth_goals
         get 'my_growth/position_change', action: :my_growth_position_change, as: :my_growth_position_change
         patch :update_next_goal_position
+        get 'bulk_milestone_awards/new', to: 'company_teammates/bulk_milestone_awards#new', as: :new_bulk_milestone_award
+        post 'bulk_milestone_awards/review', to: 'company_teammates/bulk_milestone_awards#review', as: :review_bulk_milestone_awards
+        post 'bulk_milestone_awards', to: 'company_teammates/bulk_milestone_awards#create', as: :bulk_milestone_awards
       end
       
       # Unified check-ins page (spreadsheet-style giant form)

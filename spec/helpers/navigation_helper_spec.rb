@@ -170,6 +170,8 @@ RSpec.describe NavigationHelper, type: :helper do
           double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, view_company_preferences?: true)
         elsif record.is_a?(CompanyTeammate)
           double(view_check_ins?: true)
+        elsif record == TeammateMilestone || (record.is_a?(Class) && record <= TeammateMilestone)
+          double(create?: true)
         elsif record.is_a?(Huddle)
           double(show?: true)
         else
@@ -423,13 +425,14 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('Check-ins Health')
       end
 
-      it 'includes Beta section with Eligibility Requirements' do
+      it 'includes Beta section with Eligibility Requirements and Bulk award milestones' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Beta' }
         expect(section).to be_present
         expect(section[:section]).to eq('beta')
         labels = section[:items].map { |item| item[:label] }
         expect(labels).to include('Eligibility Requirements')
+        expect(labels).to include('Bulk award milestones')
       end
     end
 

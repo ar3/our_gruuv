@@ -168,4 +168,19 @@ module Organizations::CompanyTeammatesHelper
       render_markdown(text)
     end
   end
+
+  # Bulk milestone award wizard: match Complete Picture milestone slot popovers (earned vs unearned + markdown).
+  def bulk_milestone_award_milestone_popover_html(ability, level, milestone_rec)
+    if level.to_i.zero?
+      return tag.div(class: "small text-muted text-start") do
+        "Milestone 0 clears every attainment for this ability on this teammate."
+      end
+    end
+
+    if milestone_rec.present?
+      complete_picture_earned_milestone_popover_html(milestone_rec, ability)
+    else
+      complete_picture_unearned_milestone_popover_html(ability, level.to_i)
+    end
+  end
 end

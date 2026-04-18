@@ -1,0 +1,87 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, 'Bulk Award Milestones')
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: 'Celebrate milestones', url: celebrate_milestones_organization_path(organization) }, { label: 'Bulk award milestones', url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render 'shared/teammate_context/title_dropdown',
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { new_bulk_milestone_award_organization_company_teammate_path(organization, tm) },
+               switch_aria_label: 'Switch teammate for bulk award milestones'
+      %span= " - Bulk Award Milestones!"
+    %span.badge.text-bg-danger
+      This is dangerous… milestone awarding is usually done one at a time
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.row.justify-content-center.mt-3
+  .col-12.col-xl-11
+    - if @catalog_rows.empty?
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No abilities are linked to this teammate from assignments or current and target positions yet. Nothing to adjust here.
+    - else
+      = form_with url: review_bulk_milestone_awards_organization_company_teammate_path(organization, @teammate), method: :post, local: true, data: { turbo: false } do
+        .card.mb-4
+          .card-header
+            %h5.mb-0 Abilities and target milestone level
+          .card-body
+            %p.text-muted
+              Each row is one ability. Milestone 0 removes every attainment for that ability on this teammate. Choosing a higher level will also create any missing lower milestones (for example, 3 adds 1 and 2 if they are missing).
+            .table-responsive
+              %table.table.table-hover.align-middle
+                %thead
+                  %tr
+                    %th{scope: 'col'} Ability
+                    %th{scope: 'col', colspan: 6} Milestone level
+                    %th.text-end{scope: 'col'} Sources
+                %tbody
+                  - @catalog_rows.each do |row|
+                    - ability = row[:ability]
+                    - pre = row[:highest_awarded].to_i
+                    - collapse_id = "bulk-milestone-reasons-#{ability.id}"
+                    %tr
+                      %td
+                        = link_to organization_teammate_ability_path(organization, @teammate, ability), class: 'text-body fw-semibold text-decoration-none' do
+                          = row[:display_name]
+                        - if ability.description.present?
+                          %br
+                          %small.text-muted= ability.description.truncate(120)
+                      %td.p-0{colspan: 6}
+                        .btn-group.btn-group-sm.flex-wrap{role: 'group', 'aria-label': "Milestone level for #{ability.name}"}
+                          - (0..5).each do |level|
+                            - milestone_rec = @milestones_by_ability_level[[ability.id, level]]
+                            - pop_html = bulk_milestone_award_milestone_popover_html(ability, level, milestone_rec)
+                            - btn_outline = level.zero? ? 'btn-outline-secondary' : 'btn-outline-primary'
+                            = radio_button_tag "milestones[#{ability.id}]", level, (pre == level), class: 'btn-check', id: "bulk_milestone_#{ability.id}_#{level}"
+                            = label_tag "bulk_milestone_#{ability.id}_#{level}", nil, class: "btn #{btn_outline}", role: 'button', data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'top', bs_title: "Milestone #{level}", bs_custom_class: 'complete-picture-milestone-popover', bs_content: pop_html } do
+                              = level.zero? ? '0' : level
+                      %td.align-top.text-end
+                        .d-inline-block.text-start{style: 'max-width: 22rem;'}
+                          %button.btn.btn-sm.btn-outline-secondary.d-inline-flex.align-items-center.gap-1.w-100.justify-content-between.text-start{type: 'button', data: { bs_toggle: 'collapse', bs_target: "##{collapse_id}", aria_expanded: 'false', aria_controls: collapse_id } }
+                            %span Show the reasons why this ability is needed
+                            %i.bi.bi-chevron-down.small.text-muted
+                          .collapse.border.rounded.p-2.mt-2.bg-body-secondary{id: collapse_id}
+                            - if row[:requirement_rows].any?
+                              %ul.list-unstyled.small.mb-0
+                                - row[:requirement_rows].each do |req|
+                                  %li.mb-1.d-flex.align-items-baseline.justify-content-between.gap-2
+                                    .text-truncate.flex-grow-1.min-w-0
+                                      - tt = { bs_toggle: 'tooltip', bs_placement: 'top', bs_title: req[:tooltip], bs_container: 'body' }
+                                      - if req[:assignment]
+                                        = link_to req[:label], organization_teammate_assignment_path(organization, @teammate, req[:assignment]), class: 'text-truncate d-inline-block mw-100 text-body text-decoration-none', data: tt
+                                      - elsif req[:teammate_position_link]
+                                        = link_to req[:label], organization_teammate_position_path(organization, @teammate), class: 'text-truncate d-inline-block mw-100 text-body text-decoration-none', data: tt
+                                      - else
+                                        %span.text-truncate.d-inline-block.mw-100{data: tt}= req[:label]
+                                    %span.text-nowrap.flex-shrink-0.ms-1.text-muted.fw-semibold
+                                      M#{req[:milestone_level]}
+                            - else
+                              %p.small.text-muted.mb-0 No linked requirement lines for this ability in the catalog.
+        .d-flex.gap-2.flex-wrap
+          = submit_tag 'Review changes before making them', class: 'btn btn-primary btn-lg'
