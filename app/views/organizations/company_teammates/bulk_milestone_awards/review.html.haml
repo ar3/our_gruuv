@@ -31,9 +31,9 @@
         .card-body
           %p.mb-2
             I,
-            %strong= current_person.full_name
+            %strong= current_person.all_names_display_name
             , certify that
-            %strong= @teammate.person.full_name
+            %strong= @teammate.person.all_names_display_name
             has met the criteria for the milestones I am about to save—including any lower milestones that will be created automatically so that higher levels stay in order.
           %p.mb-2
             The certification note stored for each

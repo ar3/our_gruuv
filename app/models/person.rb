@@ -128,6 +128,10 @@ class Person < ApplicationRecord
     return "#{email}"
   end
 
+  def all_names_display_name
+    "#{first_name} #{middle_name} #{preferred_name.present? ? "(\"#{preferred_name}\")" : ''} #{last_name_with_suffix}"
+  end
+
   def last_name_with_suffix
     return "#{last_name} #{suffix}" if suffix.present?
     return "#{last_name}"

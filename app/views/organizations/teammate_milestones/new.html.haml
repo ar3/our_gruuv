@@ -147,9 +147,9 @@
                     
                     %p.mb-3
                       I, 
-                      %strong #{current_person.full_name}, 
+                      %strong #{current_person.all_names_display_name}, 
                       hereby certify that 
-                      %strong #{@teammate.person.full_name}
+                      %strong #{@teammate.person.all_names_display_name}
                       has demonstrated the criteria associated with 
                       %strong #{milestone_level_display(level)} #{@ability.name.downcase}.
                       And they have done so...
