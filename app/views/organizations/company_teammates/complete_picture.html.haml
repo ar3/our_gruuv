@@ -135,7 +135,8 @@
                 .d-flex.align-items-center.flex-grow-1
                   %h6.mb-0.me-3
                     %i.bi.bi-clipboard-check.me-2
-                    = tenure.assignment.title
+                    %a.text-decoration-none.text-body{ href: "#assignment-#{tenure.id}", role: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#assignment-#{tenure.id}", "aria-expanded" => "false", "aria-controls" => "assignment-#{tenure.id}" }
+                      = tenure.assignment.title
                   
                   / Current Energy Allocation
                   - if tenure.anticipated_energy_percentage.present?
@@ -165,7 +166,7 @@
                     %h6.mb-3 Assignment Details
                     %p
                       %strong Assignment:
-                      = link_to tenure.assignment.title, organization_assignment_path(@current_organization, tenure.assignment), class: "text-decoration-none"
+                      = link_to tenure.assignment.title, organization_teammate_assignment_path(@current_organization, @teammate, tenure.assignment), class: "text-decoration-none"
                     
                     - if tenure.assignment.tagline.present?
                       %p
@@ -187,13 +188,35 @@
                             %li= outcome.description
                     
                     / Assignment Abilities
-                    - abilities = tenure.assignment.assignment_abilities.includes(:ability)
+                    - abilities = tenure.assignment.assignment_abilities.sort_by { |aa| aa.ability.name.downcase }
                     - if abilities.any?
+                      - milestone_by_ability = @complete_picture_teammate_milestone_level_by_ability_id || {}
+                      - earned_subject = @teammate.person.casual_name
                       .mt-3
-                        %h6 Required Abilities:
-                        %ul.mb-0
+                        %h6 Required abilities
+                        .list-group.list-group-flush.rounded.border.overflow-hidden.shadow-sm
                           - abilities.each do |assignment_ability|
-                            %li= "#{assignment_ability.ability.name} - Level #{assignment_ability.milestone_level}"
+                            - ability = assignment_ability.ability
+                            - required_level = assignment_ability.milestone_level
+                            - earned_level = milestone_by_ability[ability.id].to_i
+                            - milestone_met = earned_level >= required_level
+                            = link_to organization_teammate_ability_path(@current_organization, @teammate, ability), class: "list-group-item list-group-item-action py-3 px-3" do
+                              .fw-semibold.fs-6.text-body.mb-2= ability.name
+                              .d-flex.flex-wrap.justify-content-between.align-items-baseline.column-gap-3.row-gap-1
+                                .small
+                                  %span.text-muted Required for this assignment
+                                  %br
+                                  %span.text-body
+                                    #{milestone_level_display(required_level)} (Milestone #{required_level})
+                                .small.text-end
+                                  %span.text-muted
+                                    #{earned_subject} has earned
+                                  %br
+                                  - if earned_level.positive?
+                                    %span{class: milestone_met ? "text-success fw-semibold" : "text-danger fw-semibold"}
+                                      #{milestone_level_display(earned_level)} (Milestone #{earned_level})
+                                  - else
+                                    %span.text-danger.fw-semibold None yet
                   
                   .col-md-4.border-start.border-secondary
                     .d-grid.gap-2
@@ -340,46 +363,52 @@
               %i.bi.bi-lightning-charge.me-1
               Assignment Tenure Check-in Bypass
 
-/ Milestones Section
-- if @teammate_milestones.any?
-  .card.mb-4{ role: "region", "aria-labelledby": "milestones-section" }
+/ Earned milestones (directly under active assignments when both exist; also shown when milestones exist without active assignments)
+- show_earned_milestones_card = @teammate_milestones.any? || @assignment_tenures.any?
+- if show_earned_milestones_card
+  .card.mb-4#milestones{ role: "region", "aria-labelledby": "milestones-section" }
     .card-header
       %h5.mb-0{ id: "milestones-section" }
         %i.bi.bi-trophy.me-2
-        Achieved Milestones
-        %a.text-decoration-none.ms-3{"data-bs-toggle" => "collapse", "data-bs-target" => "#milestonesCollapse", "aria-expanded" => "true", "aria-controls" => "milestonesCollapse"}
-          %span#milestonesExpandIcon.not-collapsed
-            %i.bi.bi-chevron-up
-            %small.text-muted (Hide milestones)
-          %span#milestonesCollapseText.collapsed
-            %i.bi.bi-chevron-down
-            %small.text-muted="(Show #{pluralize(@teammate_milestones.count, 'milestone')})"
+        Earned milestones
+        - if @teammate_milestones.any?
+          %a.text-decoration-none.ms-3{"data-bs-toggle" => "collapse", "data-bs-target" => "#milestonesCollapse", "aria-expanded" => "true", "aria-controls" => "milestonesCollapse"}
+            %span#milestonesExpandIcon.not-collapsed
+              %i.bi.bi-chevron-up
+              %small.text-muted (Hide milestones)
+            %span#milestonesCollapseText.collapsed
+              %i.bi.bi-chevron-down
+              %small.text-muted="(Show #{pluralize(@teammate_milestones.count, 'milestone')})"
     .card-body
-      .collapse.show#milestonesCollapse
-        %p.text-muted.mb-3
-          %em These are the ability milestones this person has achieved for #{@current_organization.display_name}.
-        
-        .row
-          .col-md-8
-            - @teammate_milestones.each_with_index do |milestone, index|
-              - if index > 0
-                %hr.my-3
-              
-              = link_to organization_teammate_milestone_path(@current_organization, milestone), class: "text-decoration-none d-flex justify-content-between align-items-center py-2" do
-                .flex-grow-1
-                  %strong= milestone.ability.name
-                  %br
-                  %small.text-muted Milestone #{milestone.milestone_level}
-                .text-muted
-                  %small= format_date_in_user_timezone(milestone.created_at, format: '%b %Y')
-          .col-md-4.border-start.border-secondary
-            .d-grid.gap-2
-              = link_to organization_abilities_path(@current_organization), class: "btn btn-outline-primary" do
-                %i.bi.bi-list.me-2
-                View All Abilities
-              = link_to new_organization_ability_path(@current_organization), class: "btn btn-outline-primary" do
-                %i.bi.bi-plus-circle.me-2
-                Create New Ability
+      - if @teammate_milestones.any?
+        .collapse.show#milestonesCollapse
+          %p.text-muted.mb-3
+            %em These are the ability milestones this person has earned for #{@current_organization.display_name}.
+
+          .row
+            .col-md-8
+              - @teammate_milestones.each_with_index do |milestone, index|
+                - if index > 0
+                  %hr.my-3
+
+                = link_to organization_teammate_milestone_path(@current_organization, milestone), class: "text-decoration-none d-flex justify-content-between align-items-center py-2" do
+                  .flex-grow-1
+                    %strong= milestone.ability.name
+                    %br
+                    %small.text-muted Milestone #{milestone.milestone_level}
+                  .text-muted
+                    %small= format_date_in_user_timezone(milestone.attained_at, format: '%b %d, %Y')
+            .col-md-4.border-start.border-secondary
+              .d-grid.gap-2
+                = link_to organization_abilities_path(@current_organization), class: "btn btn-outline-primary" do
+                  %i.bi.bi-list.me-2
+                  View All Abilities
+                = link_to new_organization_ability_path(@current_organization), class: "btn btn-outline-primary" do
+                  %i.bi.bi-plus-circle.me-2
+                  Create New Ability
+      - else
+        %p.text-muted.mb-0
+          %em No milestones earned yet for #{@current_organization.display_name}. Milestones appear here once they are certified for abilities in this organization.
 
 / No Data State
 - if @current_employment&.position&.position_assignments&.empty? && @teammate_milestones.empty? && @assignment_tenures.empty?
@@ -411,4 +440,4 @@
 
 .mt-5
   %p.text-muted
-    %em This complete picture view provides a comprehensive overview of the person's current position, assignments, and achieved milestones for #{@current_organization.display_name} for development planning and performance management.
+    %em This complete picture view provides a comprehensive overview of the person's current position, assignments, and earned milestones for #{@current_organization.display_name} for development planning and performance management.

@@ -60,9 +60,20 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @assignment_tenures = @teammate&.assignment_tenures&.active
                                 &.joins(:assignment)
                                 &.where(assignments: { company: organization })
-                                &.includes(:assignment) || []
+                                &.includes(assignment: { assignment_abilities: :ability }) || []
 
     assignment_ids = @assignment_tenures.map(&:assignment_id).uniq
+    assignment_ability_ids = @assignment_tenures.flat_map do |tenure|
+      tenure.assignment.assignment_abilities.map(&:ability_id)
+    end.uniq
+    @complete_picture_teammate_milestone_level_by_ability_id = if assignment_ability_ids.any?
+                                                                  @teammate.teammate_milestones
+                                                                    .where(ability_id: assignment_ability_ids)
+                                                                    .pluck(:ability_id, :milestone_level)
+                                                                    .to_h
+                                                                else
+                                                                  {}
+                                                                end
     @latest_finalized_assignment_check_ins_by_assignment_id = {}
     if assignment_ids.any?
       AssignmentCheckIn
@@ -81,7 +92,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @teammate_milestones = @teammate&.teammate_milestones
                                 &.joins(:ability)
                                 &.where(abilities: { company_id: organization.id })
-                                &.includes(:ability) || []
+                                &.includes(:ability)
+                                &.order(attained_at: :desc) || []
   end
 
   def about_me
