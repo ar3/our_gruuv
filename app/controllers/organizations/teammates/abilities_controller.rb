@@ -1,5 +1,6 @@
 class Organizations::Teammates::AbilitiesController < Organizations::OrganizationNamespaceBaseController
   include Organizations::LoadAssociableGoalsDisplay
+  include Organizations::AssignsViewableTeammates
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -10,6 +11,8 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
     authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
 
     @organization = organization
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+
     @teammate_milestones = @teammate.teammate_milestones
       .where(ability: @ability)
       .includes(:certifying_teammate)
@@ -28,6 +31,9 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
       ability_id: @ability.id,
       return_url: request.original_url
     )
+
+    relevant_abilities = RelevantAbilitiesQuery.new(teammate: @teammate, organization: organization).call.map { |h| h[:ability] }
+    @abilities_for_switcher = (relevant_abilities + [@ability]).uniq.sort_by(&:name)
 
     ability_show_return_path = organization_teammate_ability_path(organization, @teammate, @ability)
     latest_milestone = @teammate_milestones.max_by(&:attained_at)

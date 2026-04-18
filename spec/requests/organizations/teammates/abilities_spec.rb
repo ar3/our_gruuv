@@ -9,6 +9,11 @@ RSpec.describe "Organizations::Teammates::Abilities", type: :request do
   let!(:employee_teammate) { create(:company_teammate, person: employee_person, organization: organization) }
   let!(:manager_teammate) { create(:company_teammate, person: manager_person, organization: organization, can_manage_employment: true) }
   let(:ability) { create(:ability, company: organization, created_by: manager_person, updated_by: manager_person, name: "Leadership") }
+  let(:ability2) { create(:ability, company: organization, created_by: manager_person, updated_by: manager_person, name: "Strategy") }
+  let!(:assignment) { create(:assignment, company: organization) }
+  let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 2.months.ago) }
+  let!(:assignment_ability_leadership) { create(:assignment_ability, assignment: assignment, ability: ability) }
+  let!(:assignment_ability_strategy) { create(:assignment_ability, assignment: assignment, ability: ability2) }
 
   before do
     create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
@@ -38,6 +43,16 @@ RSpec.describe "Organizations::Teammates::Abilities", type: :request do
       expect(response.body).to include("teammate_milestones/new")
       expect(response.body).to include("teammate_id=#{employee_teammate.id}")
       expect(response.body).to include("ability_id=#{ability.id}")
+
+      body = response.body
+      expect(body).to include(my_growth_abilities_organization_company_teammate_path(organization, employee_teammate))
+      expect(body).to include("Growth")
+      expect(body).to include("Switch teammate for ability milestones")
+      expect(body).to include("Switch ability")
+      expect(body).to include(organization_teammate_ability_path(organization, employee_teammate, ability2))
+      expect(body).not_to include("Checking-in on")
+      expect(body).not_to include("clear on where they stand")
+      expect(body.index("Associated Goals")).to be < body.index("Award milestone")
     end
 
     it "links current period observations to the observations index with observee and ability (no timeframe)" do

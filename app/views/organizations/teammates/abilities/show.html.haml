@@ -8,15 +8,19 @@
     .ability-milestone-details-toggle[aria-expanded="true"] .milestone-details-label-collapsed { display: none; }
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-in Hub", url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: @ability.name, url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Growth", url: my_growth_abilities_organization_company_teammate_path(@organization, @teammate) }, { label: @ability.name, url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
-    = teammate_profile_image(@teammate, size: 48)
-    %h1.mb-0.fs-3
-      = casual
-      %span.text-muted.fw-normal= " + "
-      = @ability.name
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { organization_teammate_ability_path(organization, tm, @ability) },
+               switch_aria_label: "Switch teammate for ability milestones"
+      %span.text-muted.fw-normal.align-self-center.fs-1= "–"
+      = render "shared/teammate_context/ability_title_dropdown"
 
 .row.justify-content-center
   .col-lg-12
@@ -66,13 +70,6 @@
 
     = render "shared/single_item_check_in/current_period_observations"
 
-    .d-flex.align-items-center.gap-2.flex-wrap.mb-5
-      - if @can_award_milestone
-        = link_to "Award milestone", @award_milestone_url, class: "btn btn-primary"
-      - else
-        %button.btn.btn-primary{ type: "button", disabled: true, "aria-describedby": "award-milestone-reason" } Award milestone
-        %i.bi.bi-exclamation-triangle.text-warning.fs-5#award-milestone-reason{ role: "img", tabindex: "0", data: { bs_toggle: "tooltip", bs_placement: "top", bs_title: @award_milestone_disabled_reason }, title: @award_milestone_disabled_reason, "aria-label": "Why Award milestone is unavailable" }
-
     = render 'organizations/shared/goals/associable_associated_goals_card',
         organization: @organization,
         associable: @ability,
@@ -81,3 +78,14 @@
         linked_goal_check_ins: @associated_linked_goal_check_ins,
         association_by_goal_id: @associated_goal_association_by_goal_id,
         return_url: request.url
+
+    .row.mb-5.mt-4
+      .col-3
+      .col-6
+        - if @can_award_milestone
+          = link_to "Award milestone", @award_milestone_url, class: "btn btn-primary btn-lg w-100 py-4 fs-3"
+        - else
+          %button.btn.btn-primary.btn-lg.w-100.py-4.fs-3{ type: "button", disabled: true, "aria-describedby": "award-milestone-reason" } Award milestone
+          .d-flex.justify-content-center.mt-2
+            %i.bi.bi-exclamation-triangle.text-warning.fs-5#award-milestone-reason{ role: "img", tabindex: "0", data: { bs_toggle: "tooltip", bs_placement: "top", bs_title: @award_milestone_disabled_reason }, title: @award_milestone_disabled_reason, "aria-label": "Why Award milestone is unavailable" }
+      .col-3

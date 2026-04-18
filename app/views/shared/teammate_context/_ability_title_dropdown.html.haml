@@ -1,0 +1,15 @@
+-# Expects: @organization, @teammate, @ability, @abilities_for_switcher
+- switch_aria_label = local_assigns.fetch(:switch_aria_label) { "Switch ability" }
+.dropdown.d-inline-flex.align-items-center
+  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => switch_aria_label}
+    %span= @ability.name
+  %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+    - @abilities_for_switcher.each do |ability|
+      %li
+        - if ability.id == @ability.id
+          .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+            %span.flex-grow-1= ability.name
+            %i.bi.bi-check-circle.text-success
+        - else
+          = link_to organization_teammate_ability_path(@organization, @teammate, ability), class: "dropdown-item d-flex align-items-center gap-2" do
+            = ability.name
