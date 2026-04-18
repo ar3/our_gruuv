@@ -1229,6 +1229,27 @@ body:has(.vertical-nav.open) .floating-toggle {
   box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08);
 }
 
+// My Growth — abilities: thick rule above mileage / totals summary row
+.my-growth-abilities-mileage-totals-rule {
+  margin: 1.75rem 0 1.25rem;
+  border: 0;
+  border-top: 6px solid var(--bs-border-color);
+  opacity: 1;
+}
+
+// My Growth — abilities: mileage total in card corner (Bootstrap popover on hover/focus)
+.my-growth-ability-miles {
+  cursor: help;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px dotted var(--bs-secondary-color);
+
+  &:focus-visible {
+    outline: 2px solid var(--bs-focus-ring-color);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
 // My Growth — day-to-day card: footer sits outside .card-body (sibling) so hover hits card edge; overlap body bottom padding
 .my-growth-experience-day-to-day-stack {
   --my-growth-day-to-day-body-padding-bottom: 25px;

@@ -3,7 +3,7 @@
 - content_for :header do
   = render 'organizations/company_teammates/my_growth/header',
     path_for_teammate: ->(tm) { my_growth_abilities_organization_company_teammate_path(organization, tm) },
-    intent_text: "Show milestone mileage progress for growth by abilities against the current position requirements."
+    intent_text: "Compare earned ability milestones against current and target position blueprints."
 
 - content_for :header_action do
   = render 'people/view_switcher'
@@ -12,17 +12,54 @@
 
 .alert.alert-info
   %p.mb-0
-    There are four ways to grow: new experiences, gaining skills/knowledge/abilities, goal attainment, and position/title changes. This is the second of the four. 
+    There are four ways to grow: new experiences, gaining skills/knowledge/abilities, goal attainment, and position/title changes. This is the second of the four.
     %span.fw-bold.fs-5 Grow by Abilities.
     Being recognized for demonstrating the skills, knowledge, and behaviors your organization and experts deem valuable is an incredible way to showcase your growth!
 
-- if @position.blank?
-  .alert.alert-warning.mb-0 No current position on file for this teammate in this organization, so milestone mileage cannot be shown.
+- header_row_class = @teammate.next_goal_position.blank? ? 'my-growth-experiences__header-row--elevated' : nil
+.row.mb-3{class: header_row_class}
+  .col-lg-4
+    %h2.h4.mb-1= "#{@teammate.person.casual_name}'s recognized abilities"
+    %p.small.text-muted.mb-0
+      = link_to "View #{@teammate.person.casual_name}'s teammate page", internal_organization_company_teammate_path(organization, @teammate), class: 'text-decoration-none'
+  .col-lg-4
+    %h2.h4.mb-1= "#{organization.display_name}'s blueprint"
+    %p.small.text-muted.mb-0
+      - if @current_employment&.position
+        = link_to @current_employment.position.display_name, organization_position_path(organization, @current_employment.position), class: 'text-decoration-none'
+      - else
+        No current position selected
+  - if @teammate.next_goal_position.present?
+    .col-lg-4
+      %h2.h4.mb-1= "#{organization.display_name}'s blueprint"
+      %p.small.text-muted.mb-0
+        = link_to @teammate.next_goal_position.display_name, organization_position_path(organization, @teammate.next_goal_position), class: 'text-decoration-none'
+  - else
+    .col-lg-4.my-growth-experiences__target-header--absent.d-none.d-lg-block
+      %h2.visually-hidden Target position
+      .my-growth-experiences__no-target-alert.alert.alert-info.small.mb-0
+        %p.mb-2
+          #{@teammate.person.casual_name} does not have a target position, and they are focused on growing in the other three ways: experiences, abilities, and goal quality.
+        %p.mb-2
+        %p.mb-0
+          If a different position is a part of your growth goals, visit the
+          = link_to 'Position / Title Change tab', my_growth_position_change_organization_company_teammate_path(organization, @teammate), class: 'alert-link'
+          to define a target position.
+
+- if @my_growth_ability_rows.blank?
+  .alert.alert-secondary.mb-3
+    No abilities in earned milestones or current/target position blueprints.
 - else
-  = render "organizations/eligibility_requirements/milestone_mileage_content",
-    teammate: @teammate,
-    organization: organization,
-    position: @position,
-    eligibility_report: @eligibility_report,
-    mileage_earned_addends: @mileage_earned_addends,
-    mileage_required_addends: @mileage_required_addends
+  - @my_growth_ability_rows.each do |row|
+    = render 'organizations/company_teammates/my_growth/ability_growth_row',
+      ability_growth_row: row,
+      teammate: @teammate,
+      organization: organization,
+      current_position: @position,
+      target_position: @teammate.next_goal_position
+
+%hr.my-growth-abilities-mileage-totals-rule
+= render 'organizations/company_teammates/my_growth/mileage_totals_row',
+  summary: @my_growth_mileage_summary,
+  organization: organization,
+  target_position: @teammate.next_goal_position

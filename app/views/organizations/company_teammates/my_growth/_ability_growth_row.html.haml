@@ -1,0 +1,95 @@
+- row = local_assigns[:ability_growth_row]
+- teammate = local_assigns[:teammate]
+- org = local_assigns[:organization]
+- current_position = local_assigns[:current_position]
+- target_position = local_assigns[:target_position]
+- ability = row[:ability]
+- earned_levels = row[:earned_levels] || []
+- cur = row[:current]
+- tar = row[:target]
+- earned_pts = my_growth_ability_earned_miles_total(earned_levels)
+- earned_pop_html = my_growth_milestone_mileage_popover_inner_html(my_growth_milestone_mileage_earned_breakdown_sentence(earned_levels))
+- earned_card_border = my_growth_ability_row_card_border_classes(earned_levels: earned_levels, target_position: target_position, cur: cur, tar: tar)
+- blueprint_card_border = 'border border-2'
+
+.row.mb-3.align-items-stretch
+  .col-lg-4.d-flex
+    .card.w-100.h-100{class: earned_card_border}
+      .card-body.p-3.d-flex.flex-column.h-100
+        .row.g-1.flex-grow-1.align-items-start
+          .col-11.d-flex.flex-column
+            %h6.mb-2
+              = link_to ability.name, organization_teammate_ability_path(org, teammate, ability), class: 'text-decoration-none'
+            - if earned_levels.any?
+              %p.small.mb-0
+                %span.text-muted Milestones earned:
+                = milestone_levels_sentence(earned_levels)
+                %span.text-muted
+                  (#{milestone_level_display(earned_levels.max)})
+            - else
+              %p.small.text-muted.mb-0 No milestones earned yet
+          .col-1.d-flex.justify-content-end.align-items-start
+            = my_growth_ability_miles_trigger_html(total_points: earned_pts, popover_inner_html: earned_pop_html, title: 'Milestone miles earned')
+
+  .col-lg-4.d-flex
+    - if current_position.blank?
+      .card.bg-light.w-100.h-100{class: blueprint_card_border}
+        .card-body.p-3.d-flex.flex-column.h-100
+          .row.g-1.flex-grow-1.align-items-center
+            .col-11
+              %span.small.text-muted.text-center.d-block No current position on file
+            .col-1.d-flex.justify-content-end.align-items-center
+              = my_growth_ability_miles_trigger_html(total_points: 0, popover_inner_html: nil)
+    - elsif cur.blank?
+      .card.w-100.h-100.bg-light{class: blueprint_card_border}
+        .card-body.p-3.d-flex.flex-column.h-100
+          .row.g-1.flex-grow-1.align-items-center
+            .col-11
+              %span.small.text-muted Not required by this blueprint
+            .col-1.d-flex.justify-content-end.align-items-center
+              = my_growth_ability_miles_trigger_html(total_points: 0, popover_inner_html: nil)
+    - else
+      - cur_pts = my_growth_ability_required_miles_total(cur[:minimum_milestone_level])
+      - cur_sentence = my_growth_milestone_mileage_required_breakdown_sentence(cur[:minimum_milestone_level])
+      - cur_pop_html = cur_sentence.present? ? my_growth_milestone_mileage_popover_inner_html(cur_sentence) : nil
+      .card.w-100.h-100{class: blueprint_card_border}
+        .card-body.p-3.d-flex.flex-column.h-100
+          .row.g-1.flex-grow-1.align-items-start
+            .col-11.d-flex.flex-column
+              .mb-2
+                %span.badge.bg-primary
+                  Milestone #{cur[:minimum_milestone_level]} (#{milestone_level_display(cur[:minimum_milestone_level])})
+              - if cur[:sources].present?
+                %p.small.text-muted.mb-0.mt-auto.pt-2
+                  = my_growth_ability_requirement_caption_html(org, teammate, cur[:sources])
+            .col-1.d-flex.justify-content-end.align-items-start
+              = my_growth_ability_miles_trigger_html(total_points: cur_pts, popover_inner_html: cur_pop_html, title: 'Miles needed for this blueprint')
+
+  .col-lg-4.d-flex
+    - if target_position.blank?
+      .d-flex.align-items-center.justify-content-center.w-100
+        %span.text-muted.small —
+    - elsif tar.blank?
+      .card.w-100.h-100.bg-light{class: blueprint_card_border}
+        .card-body.p-3.d-flex.flex-column.h-100
+          .row.g-1.flex-grow-1.align-items-center
+            .col-11
+              %span.small.text-muted Not required by target blueprint
+            .col-1.d-flex.justify-content-end.align-items-center
+              = my_growth_ability_miles_trigger_html(total_points: 0, popover_inner_html: nil)
+    - else
+      - tar_pts = my_growth_ability_required_miles_total(tar[:minimum_milestone_level])
+      - tar_sentence = my_growth_milestone_mileage_required_breakdown_sentence(tar[:minimum_milestone_level])
+      - tar_pop_html = tar_sentence.present? ? my_growth_milestone_mileage_popover_inner_html(tar_sentence) : nil
+      .card.w-100.h-100{class: blueprint_card_border}
+        .card-body.p-3.d-flex.flex-column.h-100
+          .row.g-1.flex-grow-1.align-items-start
+            .col-11.d-flex.flex-column
+              .mb-2
+                %span.badge.bg-primary
+                  Milestone #{tar[:minimum_milestone_level]} (#{milestone_level_display(tar[:minimum_milestone_level])})
+              - if tar[:sources].present?
+                %p.small.text-muted.mb-0.mt-auto.pt-2
+                  = my_growth_ability_requirement_caption_html(org, teammate, tar[:sources])
+            .col-1.d-flex.justify-content-end.align-items-start
+              = my_growth_ability_miles_trigger_html(total_points: tar_pts, popover_inner_html: tar_pop_html, title: 'Miles needed for target blueprint')

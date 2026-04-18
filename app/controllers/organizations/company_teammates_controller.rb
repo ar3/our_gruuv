@@ -2,6 +2,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   include Organizations::AssignsViewableTeammates
 
   helper MyGrowthExperiencesHelper
+  helper MyGrowthAbilitiesHelper
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -142,11 +143,14 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @current_organization = organization
     load_my_growth_employment_context
     @position = @current_employment&.position
-    if @position
-      @eligibility_report = PositionEligibilityService.new.check_eligibility(@teammate, @position)
-      @mileage_earned_addends = EligibilityMileageAddends.earned_for(@teammate)
-      @mileage_required_addends = EligibilityMileageAddends.required_for(@position)
-    end
+    load_my_growth_ability_rows
+    @my_growth_mileage_summary = MyGrowthMileageSummary.build(
+      teammate: @teammate,
+      organization: organization,
+      ability_rows: @my_growth_ability_rows,
+      current_position: @position,
+      target_position: @teammate.next_goal_position
+    )
   end
 
   def my_growth_goals
@@ -885,6 +889,30 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       .order(started_at: :desc)
       .decorate
     @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
+  end
+
+  def load_my_growth_ability_rows
+    current_position = @current_employment&.position
+    target_position = @teammate.next_goal_position
+
+    if current_position
+      current_position = Position.includes(
+        { position_abilities: :ability },
+        position_assignments: { assignment: { assignment_abilities: :ability } }
+      ).find(current_position.id)
+    end
+    if target_position
+      target_position = Position.includes(
+        { position_abilities: :ability },
+        position_assignments: { assignment: { assignment_abilities: :ability } }
+      ).find(target_position.id)
+    end
+
+    @my_growth_ability_rows = MyGrowthAbilityMilestoneRows.build(
+      teammate: @teammate,
+      current_position: current_position,
+      target_position: target_position
+    )
   end
 
   def load_my_growth_experiences_rows

@@ -1,0 +1,96 @@
+- s = local_assigns.fetch(:summary)
+- org = local_assigns.fetch(:organization)
+- target_position = local_assigns.fetch(:target_position)
+- blueprint_card_border = 'border border-2'
+- cur_min = s[:current]&.dig(:minimum_mileage_points)
+- tar_min = s[:target]&.dig(:minimum_mileage_points)
+- earned_border = my_growth_aggregate_mileage_earned_border_classes(earned_miles: s[:total_earned_miles], current_minimum_miles: cur_min, target_minimum_miles: tar_min, target_position_defined: target_position.present?)
+
+.row.mb-3.align-items-stretch
+  .col-lg-4.d-flex
+    .card.w-100.h-100{class: earned_border}
+      .card-body.p-3
+        .row.g-2.align-items-start
+          .col-8
+            - mcount = s[:milestone_record_count].to_i
+            - acount = s[:abilities_with_milestones_count].to_i
+            %p.small.mb-1
+              %span.fw-semibold= mcount
+              = mcount == 1 ? ' milestone' : ' milestones'
+              earned across
+              %span.fw-semibold= acount
+              = acount == 1 ? ' ability.' : ' abilities.'
+            = my_growth_recognizers_summary_html(s[:certifier_rows], milestone_record_count: mcount)
+          .col-4.text-end
+            .fs-2.fw-bold.lh-sm= s[:total_earned_miles]
+            .small.text-muted Miles earned
+
+  .col-lg-4.d-flex
+    - bundle = s[:current]
+    - if bundle
+      .card.w-100.h-100{class: blueprint_card_border}
+        .card-body.p-3
+          .row.g-2.align-items-start
+            .col-8
+              - if bundle[:gap_ability_count].to_i.positive?
+                - gls = bundle[:gap_level_sum].to_i
+                - gac = bundle[:gap_ability_count].to_i
+                %p.small.mb-1
+                  Up to
+                  %span.fw-semibold= gls
+                  = gls == 1 ? ' milestone level to earn across ' : ' milestone levels to earn across '
+                  %span.fw-semibold= gac
+                  = gac == 1 ? ' ability.' : ' abilities.'
+              - else
+                %p.small.mb-1 No outstanding milestone gaps among abilities shown here for the current blueprint.
+              - if bundle[:mileage_configured] && bundle[:remainder_unique_miles].to_i.positive?
+                %p.small.text-muted.mb-0
+                  #{org.display_name} also requires
+                  %span.fw-semibold= bundle[:remainder_unique_miles]
+                  unique-to-you miles beyond those milestone totals.
+            .col-4.text-end
+              .fs-2.fw-bold.lh-sm= bundle[:miles_needed_total]
+              .small.text-muted Miles needed
+    - else
+      .card.w-100.h-100.bg-light{class: blueprint_card_border}
+        .card-body.p-3
+          .row.g-2.align-items-center
+            .col-8
+              %p.small.text-muted.mb-0 No current position — blueprint mileage totals are not available.
+            .col-4.text-end
+              %span.text-muted.fs-5 —
+
+  .col-lg-4.d-flex
+    - bundle = s[:target]
+    - if bundle
+      .card.w-100.h-100{class: blueprint_card_border}
+        .card-body.p-3
+          .row.g-2.align-items-start
+            .col-8
+              - if bundle[:gap_ability_count].to_i.positive?
+                - gls = bundle[:gap_level_sum].to_i
+                - gac = bundle[:gap_ability_count].to_i
+                %p.small.mb-1
+                  Up to
+                  %span.fw-semibold= gls
+                  = gls == 1 ? ' milestone level to earn across ' : ' milestone levels to earn across '
+                  %span.fw-semibold= gac
+                  = gac == 1 ? ' ability.' : ' abilities.'
+              - else
+                %p.small.mb-1 No outstanding milestone gaps among abilities shown here for the target blueprint.
+              - if bundle[:mileage_configured] && bundle[:remainder_unique_miles].to_i.positive?
+                %p.small.text-muted.mb-0
+                  The target position also requires
+                  %span.fw-semibold= bundle[:remainder_unique_miles]
+                  unique-to-you miles beyond those milestone totals.
+            .col-4.text-end
+              .fs-2.fw-bold.lh-sm= bundle[:miles_needed_total]
+              .small.text-muted Miles needed
+    - else
+      .card.w-100.h-100.bg-light{class: blueprint_card_border}
+        .card-body.p-3
+          .row.g-2.align-items-center
+            .col-8
+              %p.small.text-muted.mb-0 No target position — target blueprint mileage totals are not shown.
+            .col-4.text-end
+              %span.text-muted.fs-5 —

@@ -165,6 +165,52 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response).to have_http_status(:success)
       end
 
+      context 'Grow by abilities grid' do
+        let(:title) { create(:title, company: organization) }
+        let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }
+        let(:current_position) { create(:position, title: title, position_level: position_level) }
+        let(:target_title) { create(:title, company: organization) }
+        let(:target_position_level) { create(:position_level, position_major_level: target_title.position_major_level) }
+        let(:target_position) { create(:position, title: target_title, position_level: target_position_level) }
+        let(:ability_direct) { create(:ability, company: organization, name: 'DirectAbility') }
+        let(:ability_from_assignment) { create(:ability, company: organization, name: 'AssignAbility') }
+        let(:assignment) { create(:assignment, company: organization, title: 'Req Assign Title') }
+
+        before do
+          employee_teammate.employment_tenures.active.first.update!(position: current_position)
+          create(:position_ability, position: current_position, ability: ability_direct, milestone_level: 2)
+          create(:assignment_ability, assignment: assignment, ability: ability_from_assignment, milestone_level: 3)
+          create(:position_assignment, position: current_position, assignment: assignment, assignment_type: 'required')
+          create(:teammate_milestone, company_teammate: employee_teammate, ability: ability_from_assignment, milestone_level: 1)
+          employee_teammate.update!(next_goal_position: target_position)
+          create(:position_ability, position: target_position, ability: ability_direct, milestone_level: 3)
+        end
+
+        it 'renders ability rows with Direct and assignment captions, teammate links, mileage section, and miles popovers' do
+          get my_growth_abilities_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include('DirectAbility')
+          expect(response.body).to include('AssignAbility')
+          expect(response.body).to include('Direct requires M2')
+          expect(response.body).to include('requires M3')
+          expect(response.body).to include('Req Assign Title')
+          expect(response.body).to include(organization_teammate_assignment_path(organization, employee_teammate, assignment))
+          expect(response.body).to include(organization_teammate_ability_path(organization, employee_teammate, ability_direct))
+          expect(response.body).to include('my-growth-ability-miles')
+          expect(response.body).to include('data-bs-toggle="popover"')
+          expect(response.body).to include('Miles are a way to allow people to go after expertise')
+          expect(response.body).to include('border-warning')
+          expect(response.body).to include('my-growth-abilities-mileage-totals-rule')
+          expect(response.body).to include('Miles earned')
+          expect(response.body).to include('Miles needed')
+        end
+
+        it 'shows no-target alert when next goal position is blank' do
+          employee_teammate.update!(next_goal_position: nil)
+          get my_growth_abilities_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include('does not have a target position')
+        end
+      end
+
       it 'allows GET my_growth/goals' do
         get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
