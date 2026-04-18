@@ -1,0 +1,24 @@
+-# locals: organization:, teammate:
+- entries = internal_teammate_views_navigation_entries(organization, teammate)
+.table-responsive
+  %table.table.table-bordered.mb-0.internal-teammate-views-grid
+    %tbody
+      - entries.each_slice(3) do |row|
+        %tr
+          - row.each do |entry|
+            %td.p-0.align-top
+              - if entry[:enabled]
+                = link_to entry[:path], class: "btn btn-outline-primary internal-teammate-views-grid__btn w-100 h-100 rounded-0 border-0 text-start d-flex flex-column align-items-stretch" do
+                  .fw-semibold.mb-1.pe-1
+                    = entry[:title]
+                  %small.text-body-secondary.pe-1
+                    = entry[:description]
+              - else
+                %span.d-inline-block.w-100.h-100{ tabindex: 0, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => entry[:tooltip] }
+                  = button_tag type: "button", disabled: true, class: "btn btn-outline-secondary internal-teammate-views-grid__btn internal-teammate-views-grid__btn--disabled w-100 h-100 rounded-0 border-0 text-start d-flex flex-column align-items-stretch" do
+                    .d-flex.align-items-start.gap-2.mb-1
+                      .fw-semibold.text-body-secondary.flex-grow-1
+                        = entry[:title]
+                      %i.bi.bi-exclamation-triangle.text-warning.flex-shrink-0.mt-1{ aria: { hidden: true } }
+                    %small.text-body-secondary
+                      = entry[:description]

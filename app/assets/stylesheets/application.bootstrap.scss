@@ -1337,3 +1337,99 @@ body:has(.vertical-nav.open) .floating-toggle {
     color: var(--bs-body-color);
   }
 }
+
+// Complete picture: five milestone slots — equal flex width; identical hit box for earned vs unearned
+.complete-picture-milestone-slots-row {
+  .complete-picture-milestone-slot {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.complete-picture-milestone-slot__hit {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.5rem 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 1px;
+  border-style: solid;
+  line-height: 1.1;
+  cursor: help;
+  transition: background-color 0.12s ease-out, box-shadow 0.12s ease-out, color 0.12s ease-out, border-color 0.12s ease-out;
+
+  &:focus-visible {
+    outline: 2px solid var(--bs-focus-ring-color);
+    outline-offset: 2px;
+  }
+}
+
+.complete-picture-milestone-slot--earned .complete-picture-milestone-slot__hit {
+  background-color: var(--bs-success);
+  border-color: var(--bs-success);
+  color: var(--bs-white);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.complete-picture-milestone-slot--unearned .complete-picture-milestone-slot__hit {
+  background-color: transparent;
+  border-color: rgba(var(--bs-secondary-rgb), 0.38);
+  color: rgba(var(--bs-secondary-rgb), 0.45);
+
+  i {
+    opacity: 0.65;
+  }
+}
+
+.complete-picture-milestone-slot__caption {
+  min-height: 2.75rem;
+}
+
+.complete-picture-milestone-card__required {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.popover.complete-picture-milestone-popover {
+  max-width: min(42rem, 92vw);
+
+  .popover-body {
+    max-height: min(70vh, 28rem);
+    overflow-y: auto;
+  }
+
+  .complete-picture-milestone-popover-md {
+    // Keep markdown tables readable inside narrow popovers
+    overflow-x: auto;
+  }
+}
+
+// Internal teammate page: flush 3×3 navigation (no gaps between cells; generous padding inside)
+.internal-teammate-views-grid {
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th,
+  td {
+    border-width: 1px;
+    vertical-align: top;
+  }
+
+  .internal-teammate-views-grid__btn {
+    --internal-views-nav-pad-y: 1.35rem;
+    --internal-views-nav-pad-x: 1.25rem;
+
+    min-height: 100%;
+    padding: var(--internal-views-nav-pad-y) var(--internal-views-nav-pad-x);
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  .internal-teammate-views-grid__btn--disabled {
+    opacity: 1;
+    cursor: not-allowed;
+  }
+}

@@ -47,7 +47,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @employment_tenures = @teammate&.employment_tenures&.includes(
       :company, :seat,
       manager_teammate: :person,
-      position: [:position_level, { title: [:department, :position_major_level] }]
+      position: [
+        :position_level,
+        { position_abilities: :ability,
+          position_assignments: { assignment: { assignment_abilities: :ability } },
+          title: [:department, :position_major_level] }
+      ]
     )&.where(company: organization)
                                  &.order(started_at: :desc)
                                  &.decorate || []
@@ -92,8 +97,10 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @teammate_milestones = @teammate&.teammate_milestones
                                 &.joins(:ability)
                                 &.where(abilities: { company_id: organization.id })
-                                &.includes(:ability)
+                                &.includes(:ability, certifying_teammate: :person)
                                 &.order(attained_at: :desc) || []
+
+    load_complete_picture_ability_milestone_cards
   end
 
   def about_me
@@ -788,6 +795,85 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   private
+
+  # Abilities required by current position (direct + required assignments), active assignment tenures,
+  # plus any org-scoped earned milestones not covered above (shown without requirement lines).
+  def load_complete_picture_ability_milestone_cards
+    cards = {}
+    earned_by_ability_id = @teammate_milestones.group_by(&:ability_id)
+
+    pos = @current_employment&.position
+    if pos
+      pos.position_abilities.each do |pa|
+        complete_picture_append_ability_requirement!(
+          cards,
+          ability: pa.ability,
+          milestone_level: pa.milestone_level,
+          dedupe_key: "position_ability:#{pa.id}",
+          label: "Current position"
+        )
+      end
+
+      pos.required_assignments.each do |pos_assignment|
+        assignment = pos_assignment.assignment
+        next if assignment.blank? || assignment.company_id != organization.id
+
+        assignment.assignment_abilities.each do |aa|
+          complete_picture_append_ability_requirement!(
+            cards,
+            ability: aa.ability,
+            milestone_level: aa.milestone_level,
+            dedupe_key: "assignment:#{assignment.id}:#{aa.ability_id}",
+            label: assignment.title.to_s
+          )
+        end
+      end
+    end
+
+    @assignment_tenures.each do |tenure|
+      assignment = tenure.assignment
+      next if assignment.blank?
+
+      assignment.assignment_abilities.each do |aa|
+        complete_picture_append_ability_requirement!(
+          cards,
+          ability: aa.ability,
+          milestone_level: aa.milestone_level,
+          dedupe_key: "assignment:#{assignment.id}:#{aa.ability_id}",
+          label: assignment.title.to_s
+        )
+      end
+    end
+
+    earned_by_ability_id.each do |ability_id, milestones|
+      next if cards[ability_id]
+
+      ability = milestones.first.ability
+      cards[ability_id] = { ability: ability, requirement_keys: [], requirements: [] }
+    end
+
+    @complete_picture_ability_milestone_cards = cards.values.sort_by { |c| c[:ability].name.downcase }.map do |slot|
+      earned = (earned_by_ability_id[slot[:ability].id] || []).sort_by(&:milestone_level)
+      requirements = slot[:requirements].sort_by { |r| [r[:label].to_s.downcase, r[:m]] }
+      {
+        ability: slot[:ability],
+        requirements: requirements,
+        earned_milestones: earned,
+        earned_by_level: earned.index_by(&:milestone_level)
+      }
+    end
+  end
+
+  def complete_picture_append_ability_requirement!(cards, ability:, milestone_level:, dedupe_key:, label:)
+    return if ability.blank? || milestone_level.blank?
+
+    id = ability.id
+    slot = cards[id] ||= { ability: ability, requirement_keys: [], requirements: [] }
+    return if slot[:requirement_keys].include?(dedupe_key)
+
+    slot[:requirement_keys] << dedupe_key
+    slot[:requirements] << { label: label, m: milestone_level.to_i }
+  end
 
   def load_complete_picture_spotlight_and_observations
     @complete_picture_distinct_position_count = @employment_tenures.map(&:position_id).compact.uniq.size

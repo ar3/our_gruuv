@@ -108,5 +108,51 @@ RSpec.describe 'Company teammate complete_picture page', type: :request do
         expect(response.body).to include('All observations involving this teammate')
       end
     end
+
+    context 'with earned milestones' do
+      let(:ability_zebra) { create(:ability, company: organization, name: 'Zebra Skill', created_by: manager, updated_by: manager) }
+      let(:ability_alpha) { create(:ability, company: organization, name: 'Alpha Skill', created_by: manager, updated_by: manager) }
+
+      before do
+        create(:teammate_milestone,
+          company_teammate: employee_teammate,
+          ability: ability_zebra,
+          milestone_level: 1,
+          attained_at: 3.months.ago.to_date,
+          certifying_teammate: manager_teammate)
+        create(:teammate_milestone,
+          company_teammate: employee_teammate,
+          ability: ability_zebra,
+          milestone_level: 2,
+          attained_at: 2.months.ago.to_date,
+          certification_note: 'Great work on demos.',
+          certifying_teammate: manager_teammate)
+        create(:teammate_milestone,
+          company_teammate: employee_teammate,
+          ability: ability_alpha,
+          milestone_level: 1,
+          attained_at: 1.month.ago.to_date,
+          certifying_teammate: manager_teammate)
+      end
+
+      it 'renders per-ability milestone cards with links, Earned captions, popovers, and no ability admin buttons' do
+        get complete_picture_organization_company_teammate_path(organization, employee_teammate)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Earned milestones')
+        expect(response.body).to include('complete-picture-ability-milestone-card')
+        expect(response.body).to include('Alpha Skill')
+        expect(response.body).to include('Zebra Skill')
+        expect(response.body).to include(organization_teammate_ability_path(organization, employee_teammate, ability_alpha))
+        expect(response.body).to include('Last milestone earned')
+        expect(response.body).to include('Demonstrated (Milestone 1)')
+        expect(response.body).to include('Established (Milestone 2)')
+        expect(response.body).to include('bi-patch-check-fill')
+        expect(response.body).to include('data-bs-toggle="popover"')
+        expect(response.body).to include('Awarded by:')
+        expect(response.body).to include('Great work on demos.')
+        expect(response.body).not_to include('View All Abilities')
+        expect(response.body).not_to include('Create New Ability')
+      end
+    end
   end
 end

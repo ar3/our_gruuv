@@ -276,39 +276,45 @@
                       %i.bi.bi-check-circle.me-2
                       No issues detected!
 
-/ Employment Information Section
-.row.mb-4
-  .col-12
-    .card
+/ Employment Information + teammate views navigation
+.row.mb-4.g-3
+  .col-12.col-lg-5
+    .card.h-100
       .card-header
         %h5.mb-0
           %i.bi.bi-briefcase.me-2
           Employment Information
       .card-body
         - if @active_employment_tenure
-          .row
-            .col-md-6
-              %p.mb-2
-                %strong Active Title:
-                - if @active_employment_tenure.position&.title
-                  = link_to @active_employment_tenure.position.title.external_title, organization_title_path(@current_organization, @active_employment_tenure.position.title), class: "text-decoration-none"
-                - else
-                  %span.text-muted Not set
-              %p.mb-2
-                %strong Manager:
-                - if @active_employment_tenure.manager_teammate
-                  = link_to @active_employment_tenure.manager_teammate.person.display_name, internal_organization_company_teammate_path(@current_organization, @active_employment_tenure.manager_teammate), class: "text-decoration-none"
-                - else
-                  %span.text-muted Not set
-            .col-md-6
-              %p.mb-2
-                %strong Earliest Start Date:
-                - if @earliest_start_date
-                  = @earliest_start_date.strftime("%B %d, %Y")
-                - else
-                  %span.text-muted Not available
+          %p.mb-2
+            %strong Active Title:
+            - if @active_employment_tenure.position&.title
+              = link_to @active_employment_tenure.position.title.external_title, organization_title_path(@current_organization, @active_employment_tenure.position.title), class: "text-decoration-none"
+            - else
+              %span.text-muted Not set
+          %p.mb-2
+            %strong Manager:
+            - if @active_employment_tenure.manager_teammate
+              = link_to @active_employment_tenure.manager_teammate.person.display_name, internal_organization_company_teammate_path(@current_organization, @active_employment_tenure.manager_teammate), class: "text-decoration-none"
+            - else
+              %span.text-muted Not set
+          %p.mb-0
+            %strong Earliest start date:
+            - if @earliest_start_date
+              = format_date_in_user_timezone(@earliest_start_date)
+            - else
+              %span.text-muted Not available
         - else
-          %p.text-muted No active employment tenure in this organization.
+          %p.text-muted.mb-0 No active employment tenure in this organization.
+
+  .col-12.col-lg-7
+    .card.h-100
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-grid-3x3-gap.me-2
+          Views for #{@teammate.person.casual_name}
+      .card-body.p-0
+        = render "internal_views_navigation", organization: @current_organization, teammate: @teammate
 
 / Active Assignment Tenures Section
 .row.mb-4

@@ -363,55 +363,90 @@
               %i.bi.bi-lightning-charge.me-1
               Assignment Tenure Check-in Bypass
 
-/ Earned milestones (directly under active assignments when both exist; also shown when milestones exist without active assignments)
-- show_earned_milestones_card = @teammate_milestones.any? || @assignment_tenures.any?
+/ Ability milestones: required by position + required assignments + active tenures; earned trophies per ability
+- total_earned_milestone_count = @complete_picture_ability_milestone_cards.sum { |c| c[:earned_milestones].size }
+- show_earned_milestones_card = @complete_picture_ability_milestone_cards.any? || @assignment_tenures.any?
 - if show_earned_milestones_card
   .card.mb-4#milestones{ role: "region", "aria-labelledby": "milestones-section" }
     .card-header
       %h5.mb-0{ id: "milestones-section" }
-        %i.bi.bi-trophy.me-2
+        %i.bi.bi-patch-check.me-2
         Earned milestones
-        - if @teammate_milestones.any?
+        - if @complete_picture_ability_milestone_cards.any?
           %a.text-decoration-none.ms-3{"data-bs-toggle" => "collapse", "data-bs-target" => "#milestonesCollapse", "aria-expanded" => "true", "aria-controls" => "milestonesCollapse"}
             %span#milestonesExpandIcon.not-collapsed
               %i.bi.bi-chevron-up
               %small.text-muted (Hide milestones)
             %span#milestonesCollapseText.collapsed
               %i.bi.bi-chevron-down
-              %small.text-muted="(Show #{pluralize(@teammate_milestones.count, 'milestone')})"
+              %small.text-muted="(Show #{pluralize(@complete_picture_ability_milestone_cards.size, 'ability')} / #{pluralize(total_earned_milestone_count, 'milestone')})"
     .card-body
-      - if @teammate_milestones.any?
+      - if @complete_picture_ability_milestone_cards.any?
         .collapse.show#milestonesCollapse
           %p.text-muted.mb-3
-            %em These are the ability milestones this person has earned for #{@current_organization.display_name}.
+            %em
+              Each card is an ability tied to #{@current_organization.display_name}: requirements come from this teammate’s current position, required assignments on that position, and their active assignment tenures. The five badges are milestone levels; filled green means certified for that level.
 
-          .row
-            .col-md-8
-              - @teammate_milestones.each_with_index do |milestone, index|
-                - if index > 0
-                  %hr.my-3
+          - @complete_picture_ability_milestone_cards.each do |card|
+            - ability = card[:ability]
+            - earned = card[:earned_milestones]
+            - earned_by_level = card[:earned_by_level]
+            - reqs = card[:requirements]
+            .card.mb-3.complete-picture-ability-milestone-card.border
+              .card-body.py-3
+                .row.g-3.align-items-start
+                  .col-12.col-lg-3
+                    %h6.mb-2
+                      = link_to ability.name, organization_teammate_ability_path(@current_organization, @teammate, ability), class: "text-decoration-none"
+                    - if earned.any?
+                      - last_milestone = earned.max_by(&:attained_at)
+                      %p.small.text-muted.mb-0
+                        Last milestone earned #{format_date_in_user_timezone(last_milestone.attained_at)}
+                    - elsif earned.empty? && reqs.any?
+                      %p.small.text-muted.mb-0 No milestone earned yet for this ability.
+                    - elsif earned.empty?
+                      %p.small.text-muted.mb-0 No current position or assignment requirement; past milestone only.
 
-                = link_to organization_teammate_milestone_path(@current_organization, milestone), class: "text-decoration-none d-flex justify-content-between align-items-center py-2" do
-                  .flex-grow-1
-                    %strong= milestone.ability.name
-                    %br
-                    %small.text-muted Milestone #{milestone.milestone_level}
-                  .text-muted
-                    %small= format_date_in_user_timezone(milestone.attained_at, format: '%b %d, %Y')
-            .col-md-4.border-start.border-secondary
-              .d-grid.gap-2
-                = link_to organization_abilities_path(@current_organization), class: "btn btn-outline-primary" do
-                  %i.bi.bi-list.me-2
-                  View All Abilities
-                = link_to new_organization_ability_path(@current_organization), class: "btn btn-outline-primary" do
-                  %i.bi.bi-plus-circle.me-2
-                  Create New Ability
+                  .col-12.col-lg-6
+                    .d-flex.flex-wrap.flex-lg-nowrap.align-items-stretch.justify-content-between.gap-2.complete-picture-milestone-slots-row
+                      - (1..5).each do |level|
+                        - milestone_rec = earned_by_level[level]
+                        - earned_here = milestone_rec.present?
+                        - pop_html = earned_here ? complete_picture_earned_milestone_popover_html(milestone_rec, ability) : complete_picture_unearned_milestone_popover_html(ability, level)
+                        - verb = complete_picture_milestone_verb_for_level(level)
+                        .text-center.complete-picture-milestone-slot{ class: earned_here ? "complete-picture-milestone-slot--earned" : "complete-picture-milestone-slot--unearned" }
+                          %span.d-block.w-100{ role: "button", tabindex: 0, "aria-label" => "#{ability.name}, milestone #{level}#{earned_here ? ", attained #{format_date_in_user_timezone(milestone_rec.attained_at)}" : ", not yet earned"}", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-custom-class" => "complete-picture-milestone-popover", "data-bs-title" => "Milestone #{level}", "data-bs-content" => pop_html }
+                            .complete-picture-milestone-slot__hit.rounded-3
+                              - if earned_here
+                                %i.bi.bi-patch-check-fill.text-white.fs-4{ aria: { hidden: true } }
+                              - else
+                                %i.bi.bi-patch-check.fs-4{ aria: { hidden: true } }
+                          - if earned_here
+                            .small.text-success.fw-semibold.mt-1.px-1.complete-picture-milestone-slot__caption
+                              #{verb} (Milestone #{level})
+                          - else
+                            .small.text-muted.mt-1.px-1.complete-picture-milestone-slot__caption
+                              Milestone #{level}
+
+                  .col-12.col-lg-3
+                    - if reqs.any?
+                      .complete-picture-milestone-card__required.small.text-muted.text-lg-end
+                        %span.d-block.mb-1 Required by:
+                        .text-wrap.text-break
+                          - reqs.each_with_index do |req, req_i|
+                            - if req_i.positive?
+                              %span ·
+                            %span
+                              = req[:label]
+                              %strong.ms-1 M#{req[:m]}
+                    - else
+                      %p.small.text-muted.text-lg-end.mb-0 No blueprint requirements.
       - else
         %p.text-muted.mb-0
-          %em No milestones earned yet for #{@current_organization.display_name}. Milestones appear here once they are certified for abilities in this organization.
+          %em No ability milestone requirements apply yet for #{@current_organization.display_name}. They appear when this teammate has a position with milestone rules, required assignments, or active assignment tenures that include abilities.
 
 / No Data State
-- if @current_employment&.position&.position_assignments&.empty? && @teammate_milestones.empty? && @assignment_tenures.empty?
+- if @current_employment&.position&.position_assignments&.empty? && @complete_picture_ability_milestone_cards.empty? && @assignment_tenures.empty?
   .alert.alert-info
     %h6.mb-2
       %i.bi.bi-info-circle.me-2
