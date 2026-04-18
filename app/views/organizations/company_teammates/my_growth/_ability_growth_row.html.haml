@@ -3,6 +3,7 @@
 - org = local_assigns[:organization]
 - current_position = local_assigns[:current_position]
 - target_position = local_assigns[:target_position]
+- goal_counts_by_id = local_assigns[:my_growth_ability_goal_counts_by_id] || {}
 - ability = row[:ability]
 - earned_levels = row[:earned_levels] || []
 - cur = row[:current]
@@ -14,8 +15,8 @@
 
 .row.mb-3.align-items-stretch
   .col-lg-4.d-flex
-    .card.w-100.h-100{class: earned_card_border}
-      .card-body.p-3.d-flex.flex-column.h-100
+    .card.my-growth-experience-day-to-day-stack.w-100.h-100.p-0.overflow-hidden.d-flex.flex-column{class: earned_card_border}
+      .card-body.p-3.d-flex.flex-column.flex-grow-1
         .row.g-1.flex-grow-1.align-items-start
           .col-11.d-flex.flex-column
             %h6.mb-2
@@ -30,6 +31,17 @@
               %p.small.text-muted.mb-0 No milestones earned yet
           .col-1.d-flex.justify-content-end.align-items-start
             = my_growth_ability_miles_trigger_html(total_points: earned_pts, popover_inner_html: earned_pop_html, title: 'Milestone miles earned')
+      - ability_counts = goal_counts_by_id[ability.id] || { open_associated_goals_count: 0 }
+      - ability_casual = teammate.person.casual_name.presence || 'this teammate'
+      - abilities_return_url = my_growth_abilities_return_url(org, teammate)
+      = render 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
+        organization: org,
+        teammate: teammate,
+        associable: ability,
+        casual_name: ability_casual,
+        counts: ability_counts,
+        return_url: abilities_return_url,
+        return_text: 'Grow by Abilities'
 
   .col-lg-4.d-flex
     - if current_position.blank?

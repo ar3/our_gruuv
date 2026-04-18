@@ -1257,7 +1257,7 @@ body:has(.vertical-nav.open) .floating-toggle {
   padding-bottom: 5px;
 
   > .card-body.d-flex.flex-column.flex-grow-1 {
-    padding-bottom: var(--my-growth-day-to-day-body-padding-bottom);
+    padding-bottom: var(--my-growth-day-to-day-body-padding-bottom) !important;
   }
 
   > .assignment-card-action-footer {

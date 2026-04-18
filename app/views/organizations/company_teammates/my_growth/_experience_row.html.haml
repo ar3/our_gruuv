@@ -25,7 +25,15 @@
                 tenure: row[:tenure],
                 teammate: teammate
         - counts = goal_counts_by_id[row[:assignment].id] || { open_associated_goals_count: 0 }
-        = render 'organizations/company_teammates/my_growth/assignment_card_action_footer', organization: org, teammate: teammate, assignment: row[:assignment], casual_name: row[:casual_name], counts: counts
+        - exp_return_url = my_growth_experiences_return_url(org, teammate)
+        = render 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
+          organization: org,
+          teammate: teammate,
+          associable: row[:assignment],
+          casual_name: row[:casual_name],
+          counts: counts,
+          return_url: exp_return_url,
+          return_text: 'Grow by experiences'
     - else
       - col1_card_class = row[:col1_kind] == :warning_required ? 'card border border-warning w-100 h-100' : 'card border w-100 h-100 my-growth-not-assigned-suggested'
       .card{class: col1_card_class}

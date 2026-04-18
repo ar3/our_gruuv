@@ -913,6 +913,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       current_position: current_position,
       target_position: target_position
     )
+
+    ability_ids = @my_growth_ability_rows.map { |r| r[:ability].id }.uniq
+    @my_growth_ability_goal_counts_by_id = my_growth_ability_goal_counts_for_teammate(ability_ids)
   end
 
   def load_my_growth_experiences_rows
@@ -1109,6 +1112,20 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     open_by_id = base.merge(Goal.incomplete_unarchived).group('goal_associations.associable_id').count
 
     assignment_ids.index_with do |aid|
+      { open_associated_goals_count: open_by_id[aid] || 0 }
+    end
+  end
+
+  def my_growth_ability_goal_counts_for_teammate(ability_ids)
+    return {} if ability_ids.blank?
+
+    base = Goal.joins(:goal_associations)
+      .where(goal_associations: { associable_type: 'Ability', associable_id: ability_ids })
+      .where(owner_type: 'CompanyTeammate', owner_id: @teammate.id)
+
+    open_by_id = base.merge(Goal.incomplete_unarchived).group('goal_associations.associable_id').count
+
+    ability_ids.index_with do |aid|
       { open_associated_goals_count: open_by_id[aid] || 0 }
     end
   end

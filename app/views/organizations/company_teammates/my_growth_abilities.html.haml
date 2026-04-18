@@ -56,7 +56,8 @@
       teammate: @teammate,
       organization: organization,
       current_position: @position,
-      target_position: @teammate.next_goal_position
+      target_position: @teammate.next_goal_position,
+      my_growth_ability_goal_counts_by_id: @my_growth_ability_goal_counts_by_id
 
 %hr.my-growth-abilities-mileage-totals-rule
 = render 'organizations/company_teammates/my_growth/mileage_totals_row',

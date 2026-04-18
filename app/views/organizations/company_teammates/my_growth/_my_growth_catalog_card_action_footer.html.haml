@@ -1,14 +1,16 @@
 - organization = local_assigns[:organization]
 - teammate = local_assigns[:teammate]
-- assignment = local_assigns[:assignment]
+- associable = local_assigns[:associable]
 - casual_name = local_assigns[:casual_name]
+- return_url = local_assigns[:return_url]
+- return_text = local_assigns[:return_text]
 - open_count = (local_assigns[:counts] || {})[:open_associated_goals_count].to_i
-- ogo_href = my_growth_observation_new_for_assignment_path(organization, teammate, assignment)
-- ogo_label = "Add a win/challenge/note (OGO) about #{casual_name} & #{assignment.title}"
-- goal_flow_allowed = my_growth_goal_flow_allowed_for?(assignment, teammate)
-- return_url = my_growth_experiences_return_url(organization, teammate)
-- goal_href = associable_goals_choose_manage_path(organization, assignment, return_url: return_url, return_text: 'Grow by experiences', for_company_teammate_id: teammate.id)
-- goal_label = my_growth_assignment_goal_button_label(casual_name: casual_name, assignment: assignment, open_count: open_count)
+- object_label = associable_display_title(associable)
+- ogo_href = my_growth_observation_new_for_associable_path(organization, teammate, associable, return_url: return_url, return_text: return_text)
+- ogo_label = "Add a win/challenge/note (OGO) about #{casual_name} & #{object_label}"
+- goal_flow_allowed = my_growth_goal_flow_allowed_for_associable?(associable, teammate)
+- goal_href = associable_goals_choose_manage_path(organization, associable, return_url: return_url, return_text: return_text, for_company_teammate_id: teammate.id)
+- goal_label = my_growth_catalog_goal_button_label(casual_name: casual_name, associable: associable, open_count: open_count)
 .assignment-card-action-footer.border-top.row.g-0
   .assignment-card-action-footer__half.col-6.border-end
     = link_to ogo_href, class: 'assignment-card-action-footer__action text-wrap small flex-grow-1', target: '_blank', rel: 'noopener', data: { turbo: false } do

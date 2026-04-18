@@ -39,7 +39,7 @@ RSpec.describe "Organizations::Teammates::Abilities", type: :request do
       expect(response.body).to include("Associated Goals")
       expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
       expect(response.body).to include("View all of #{employee_person.casual_name}'s goals")
-      expect(response.body).to include("Award milestone")
+      expect(response.body).to include("Prepare to award milestone")
       expect(response.body).to include("teammate_milestones/new")
       expect(response.body).to include("teammate_id=#{employee_teammate.id}")
       expect(response.body).to include("ability_id=#{ability.id}")
@@ -52,7 +52,7 @@ RSpec.describe "Organizations::Teammates::Abilities", type: :request do
       expect(body).to include(organization_teammate_ability_path(organization, employee_teammate, ability2))
       expect(body).not_to include("Checking-in on")
       expect(body).not_to include("clear on where they stand")
-      expect(body.index("Associated Goals")).to be < body.index("Award milestone")
+      expect(body.index("Associated Goals")).to be < body.index("Prepare to award milestone")
     end
 
     it "links current period observations to the observations index with observee and ability (no timeframe)" do
@@ -106,7 +106,7 @@ RSpec.describe "Organizations::Teammates::Abilities", type: :request do
       it "disables award milestone with explanation tooltip" do
         get ability_show_path
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("Award milestone")
+        expect(response.body).to include("Prepare to award milestone")
         expect(response.body).to include("award-milestone-reason")
         expect(response.body).to include("bi-exclamation-triangle")
         expect(response.body).to include("cannot award a milestone to yourself")

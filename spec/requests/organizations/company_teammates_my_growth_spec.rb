@@ -187,7 +187,13 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         end
 
         it 'renders ability rows with Direct and assignment captions, teammate links, mileage section, and miles popovers' do
+          casual = employee.reload.casual_name
           get my_growth_abilities_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include('my-growth-experience-day-to-day-stack')
+          expect(response.body).to include("Add a win/challenge/note (OGO) about #{casual} &amp; DirectAbility")
+          expect(response.body).to include('rateable_type=Ability')
+          expect(response.body).to include("rateable_id=#{ability_direct.id}")
+          expect(response.body).to include('choose_manage_goals')
           expect(response.body).to include('DirectAbility')
           expect(response.body).to include('AssignAbility')
           expect(response.body).to include('Direct requires M2')

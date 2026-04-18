@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'organizations/company_teammates/my_growth/_assignment_card_action_footer', type: :view do
+RSpec.describe 'organizations/company_teammates/my_growth/_my_growth_catalog_card_action_footer', type: :view do
   include MyGrowthExperiencesHelper
   include AssociableGoalsHelper
 
@@ -11,6 +11,8 @@ RSpec.describe 'organizations/company_teammates/my_growth/_assignment_card_actio
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:assignment) { create(:assignment, company: organization, title: 'Ship Widgets') }
   let(:casual_name) { 'Sam K.' }
+  let(:return_url) { '/growth' }
+  let(:return_text) { 'Grow by experiences' }
   let(:audit_allowed) { false }
 
   before do
@@ -22,13 +24,15 @@ RSpec.describe 'organizations/company_teammates/my_growth/_assignment_card_actio
 
   context 'when goal flow is not allowed' do
     it 'renders read-only goal half with tooltip and warning icon' do
-      render partial: 'organizations/company_teammates/my_growth/assignment_card_action_footer',
+      render partial: 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
              locals: {
                organization: organization,
                teammate: teammate,
-               assignment: assignment,
+               associable: assignment,
                casual_name: casual_name,
-               counts: { open_associated_goals_count: 0 }
+               counts: { open_associated_goals_count: 0 },
+               return_url: return_url,
+               return_text: return_text
              }
 
       expect(rendered).to include('assignment-card-action-footer__read-only-hit')
@@ -39,13 +43,15 @@ RSpec.describe 'organizations/company_teammates/my_growth/_assignment_card_actio
     end
 
     it 'still renders an active OGO link' do
-      render partial: 'organizations/company_teammates/my_growth/assignment_card_action_footer',
+      render partial: 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
              locals: {
                organization: organization,
                teammate: teammate,
-               assignment: assignment,
+               associable: assignment,
                casual_name: casual_name,
-               counts: { open_associated_goals_count: 0 }
+               counts: { open_associated_goals_count: 0 },
+               return_url: return_url,
+               return_text: return_text
              }
 
       expect(rendered).to include('/observations/new')
@@ -57,13 +63,15 @@ RSpec.describe 'organizations/company_teammates/my_growth/_assignment_card_actio
     let(:audit_allowed) { true }
 
     it 'renders goal as a link, not disabled' do
-      render partial: 'organizations/company_teammates/my_growth/assignment_card_action_footer',
+      render partial: 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
              locals: {
                organization: organization,
                teammate: teammate,
-               assignment: assignment,
+               associable: assignment,
                casual_name: casual_name,
-               counts: { open_associated_goals_count: 2 }
+               counts: { open_associated_goals_count: 2 },
+               return_url: return_url,
+               return_text: return_text
              }
 
       expect(rendered).to include('choose_manage_goals')
