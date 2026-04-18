@@ -101,6 +101,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
                                 &.order(attained_at: :desc) || []
 
     load_complete_picture_ability_milestone_cards
+    milestone_card_ability_ids = @complete_picture_ability_milestone_cards.map { |c| c[:ability].id }.uniq
+    @complete_picture_ability_goal_counts_by_id = my_growth_ability_goal_counts_for_teammate(milestone_card_ability_ids)
   end
 
   def about_me

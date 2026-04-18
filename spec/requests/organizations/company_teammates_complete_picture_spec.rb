@@ -152,6 +152,12 @@ RSpec.describe 'Company teammate complete_picture page', type: :request do
         expect(response.body).to include('Great work on demos.')
         expect(response.body).not_to include('View All Abilities')
         expect(response.body).not_to include('Create New Ability')
+
+        expect(response.body.scan('my-growth-experience-day-to-day-stack').size).to be >= 2
+        expect(response.body.scan('assignment-card-action-footer').size).to be >= 2
+        expect(response.body).to include('Add a win/challenge/note (OGO)')
+        # Goal half: link when audit? allows goal flow; otherwise read-only strip (same label text)
+        expect(response.body).to match(/choose_manage_goals|assignment-card-action-footer__read-only-hit|Set goal for Sam C/)
       end
     end
   end

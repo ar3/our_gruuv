@@ -392,8 +392,8 @@
             - earned = card[:earned_milestones]
             - earned_by_level = card[:earned_by_level]
             - reqs = card[:requirements]
-            .card.mb-3.complete-picture-ability-milestone-card.border
-              .card-body.py-3
+            .card.my-growth-experience-day-to-day-stack.mb-3.border.complete-picture-ability-milestone-card.p-0.overflow-hidden.d-flex.flex-column
+              .card-body.py-3.d-flex.flex-column.flex-grow-1
                 .row.g-3.align-items-start
                   .col-12.col-lg-3
                     %h6.mb-2
@@ -441,6 +441,18 @@
                               %strong.ms-1 M#{req[:m]}
                     - else
                       %p.small.text-muted.text-lg-end.mb-0 No blueprint requirements.
+
+              - mp_footer_counts = (@complete_picture_ability_goal_counts_by_id || {})[ability.id] || { open_associated_goals_count: 0 }
+              - mp_casual = @teammate.person.casual_name.presence || 'this teammate'
+              - mp_return_url = my_growth_complete_picture_return_url(organization, @teammate)
+              = render 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
+                organization: organization,
+                teammate: @teammate,
+                associable: ability,
+                casual_name: mp_casual,
+                counts: mp_footer_counts,
+                return_url: mp_return_url,
+                return_text: 'True Day-to-Day'
       - else
         %p.text-muted.mb-0
           %em No ability milestone requirements apply yet for #{@current_organization.display_name}. They appear when this teammate has a position with milestone rules, required assignments, or active assignment tenures that include abilities.
