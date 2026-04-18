@@ -37,6 +37,13 @@ RSpec.describe 'Company teammate complete_picture page', type: :request do
         expect(response.body).to include(organization_teammate_assignment_path(organization, employee_teammate, assignment))
         expect(response.body).not_to include('View Assignment')
         expect(response.body).not_to include('Manage Tenures')
+
+        expect(response.body).to include('assignment-card-action-footer')
+        expect(response.body).to include('Add a win/challenge/note (OGO)')
+        expect(response.body).to satisfy { |html|
+          html.include?('choose_manage_goals') ||
+            html.include?('assignment-card-action-footer__read-only-hit')
+        }
       end
 
       it 'includes check-in summary popover markup for the three sentences' do

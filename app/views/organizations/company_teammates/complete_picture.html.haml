@@ -129,7 +129,7 @@
           - if index > 0
             %hr.my-4
           
-          .card.mb-3
+          .card.my-growth-experience-day-to-day-stack.mb-3.border.p-0.overflow-hidden.d-flex.flex-column
             .card-header
               .d-flex.justify-content-between.align-items-center
                 .d-flex.align-items-center.flex-grow-1
@@ -157,7 +157,7 @@
                   %span.collapsed{"id" => "assignmentCollapseText-#{tenure.id}"}
                     %i.bi.bi-chevron-down
                     %small.text-muted (Show details)
-            .card-body
+            .card-body.d-flex.flex-column.flex-grow-1
               .collapse{"id" => "assignment-#{tenure.id}"}
                 .row
                   .col-md-8
@@ -321,7 +321,19 @@
                       = link_to organization_teammate_assignment_path(@current_organization, @teammate, tenure.assignment), class: "btn btn-outline-primary" do
                         %i.bi.bi-calendar-check.me-2
                         Assignment check-in
-        
+
+            - cp_footer_counts = (@complete_picture_assignment_goal_counts_by_id || {})[tenure.assignment_id] || { open_associated_goals_count: 0 }
+            - cp_casual = @teammate.person.casual_name.presence || 'this teammate'
+            - cp_return_url = my_growth_complete_picture_return_url(organization, @teammate)
+            = render 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
+              organization: organization,
+              teammate: @teammate,
+              associable: tenure.assignment,
+              casual_name: cp_casual,
+              counts: cp_footer_counts,
+              return_url: cp_return_url,
+              return_text: 'True Day-to-Day'
+
         - if policy(@teammate).manager? || policy(organization).manage_employment?
           .mt-3
             = link_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate), class: "btn btn-sm btn-outline-secondary" do

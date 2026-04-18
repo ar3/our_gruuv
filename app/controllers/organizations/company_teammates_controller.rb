@@ -75,6 +75,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         end
     end
 
+    @complete_picture_assignment_goal_counts_by_id = my_growth_assignment_goal_counts_for_teammate(assignment_ids)
+
     # Filter milestones to only show those for abilities in this organization
     @teammate_milestones = @teammate&.teammate_milestones
                                 &.joins(:ability)

@@ -31,6 +31,14 @@ module MyGrowthExperiencesHelper
     )
   end
 
+  def my_growth_complete_picture_return_url(organization, teammate)
+    complete_picture_organization_company_teammate_path(
+      organization,
+      teammate,
+      **my_growth_shared_return_path_options
+    )
+  end
+
   def my_growth_observation_new_for_associable_path(organization, teammate, associable, return_url:, return_text:)
     new_organization_observation_path(
       organization,
