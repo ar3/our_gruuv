@@ -24,9 +24,8 @@
                 latest_finalized: latest_check_ins[row[:tenure].assignment_id],
                 tenure: row[:tenure],
                 teammate: teammate
-            - if policy(teammate).audit?
-              - counts = goal_counts_by_id[row[:assignment].id] || { open_associated_goals_count: 0 }
-              = render 'organizations/company_teammates/my_growth/assignment_goal_link_row', organization: org, teammate: teammate, assignment: row[:assignment], casual_name: row[:casual_name], counts: counts
+            - counts = goal_counts_by_id[row[:assignment].id] || { open_associated_goals_count: 0 }
+            = render 'organizations/company_teammates/my_growth/assignment_card_action_footer', organization: org, teammate: teammate, assignment: row[:assignment], casual_name: row[:casual_name], counts: counts
     - else
       - col1_card_class = row[:col1_kind] == :warning_required ? 'card border border-warning w-100 h-100' : 'card border w-100 h-100 my-growth-not-assigned-suggested'
       .card{class: col1_card_class}

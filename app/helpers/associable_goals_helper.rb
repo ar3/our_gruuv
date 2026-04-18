@@ -117,4 +117,21 @@ module AssociableGoalsHelper
       associable.to_s
     end
   end
+
+  def associable_goal_flow_teammate_casual_name(company_teammate)
+    return if company_teammate.blank?
+
+    company_teammate.person.casual_name.presence || company_teammate.person.display_name
+  end
+
+  # e.g. "Associate goals for Jamie and North Star Delivery" when teammate flow; otherwise "Associate goals with North Star Delivery".
+  def associable_goal_flow_overlay_title(action_label, associable, goal_flow_for_company_teammate: nil)
+    object_title = associable_display_title(associable)
+    casual = associable_goal_flow_teammate_casual_name(goal_flow_for_company_teammate)
+    if casual.present?
+      "#{action_label} for #{casual} and #{object_title}"
+    else
+      "#{action_label} with #{object_title}"
+    end
+  end
 end

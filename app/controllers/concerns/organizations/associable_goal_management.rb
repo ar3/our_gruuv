@@ -12,7 +12,7 @@ module Organizations
     def choose_manage_goals
       authorize_goal_flow_for_associable_goals!
       @associable = associable_for_goal_management
-      @for_company_teammate_id = params[:for_company_teammate_id].presence
+      assign_goal_flow_overlay_request_context!
       @return_url = params[:return_url].presence || default_associable_goals_return_url
       @return_text = params[:return_text].presence || default_associable_goals_return_text
       render 'organizations/shared/associable_goals/choose_manage_goals', layout: 'overlay'
@@ -21,7 +21,7 @@ module Organizations
     def manage_goals
       authorize_goal_flow_for_associable_goals!
       @associable = associable_for_goal_management
-      @for_company_teammate_id = params[:for_company_teammate_id].presence
+      assign_goal_flow_overlay_request_context!
       @return_url = params[:return_url].presence || default_associable_goals_return_url
       @return_text = params[:return_text].presence || default_associable_goals_return_text
       render 'organizations/shared/associable_goals/manage_goals', layout: 'overlay'
@@ -30,7 +30,7 @@ module Organizations
     def associate_existing_goals
       authorize_goal_flow_for_associable_goals!
       @associable = associable_for_goal_management
-      @for_company_teammate_id = params[:for_company_teammate_id].presence
+      assign_goal_flow_overlay_request_context!
 
       if request.get?
         candidate_goals = Goals::AssociableGoalCandidatesQuery.new(
@@ -94,6 +94,14 @@ module Organizations
     end
 
     private
+
+    def assign_goal_flow_overlay_request_context!
+      @for_company_teammate_id = params[:for_company_teammate_id].presence
+      @goal_flow_for_company_teammate =
+        if @for_company_teammate_id.present?
+          CompanyTeammate.includes(:person).find_by(id: @for_company_teammate_id)
+        end
+    end
 
     def authorize_goal_flow_for_associable_goals!
       associable = associable_for_goal_management

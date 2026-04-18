@@ -1,0 +1,25 @@
+- organization = local_assigns[:organization]
+- teammate = local_assigns[:teammate]
+- assignment = local_assigns[:assignment]
+- casual_name = local_assigns[:casual_name]
+- open_count = (local_assigns[:counts] || {})[:open_associated_goals_count].to_i
+- ogo_href = my_growth_observation_new_for_assignment_path(organization, teammate, assignment)
+- ogo_label = "Add a win/challenge/note (OGO) about #{casual_name} & #{assignment.title}"
+- goal_flow_allowed = my_growth_goal_flow_allowed_for?(assignment, teammate)
+- return_url = my_growth_experiences_return_url(organization, teammate)
+- goal_href = associable_goals_choose_manage_path(organization, assignment, return_url: return_url, return_text: 'Grow by experiences', for_company_teammate_id: teammate.id)
+- goal_label = my_growth_assignment_goal_button_label(casual_name: casual_name, assignment: assignment, open_count: open_count)
+.row.g-2.mt-2
+  .col-6.d-grid
+    = link_to ogo_href, class: 'btn btn-outline-secondary btn-sm text-wrap text-start py-2', target: '_blank', rel: 'noopener', data: { turbo: false } do
+      = ogo_label
+  .col-6
+    - if goal_flow_allowed
+      .d-grid
+        = link_to goal_href, class: 'btn btn-outline-secondary btn-sm text-wrap text-start py-2', target: '_blank', rel: 'noopener', data: { turbo: false } do
+          = goal_label
+    - else
+      %span.d-inline-block.w-100{tabindex: 0, role: 'presentation', data: { bs_toggle: 'tooltip' }, title: my_growth_goal_flow_denied_tooltip}
+        %button.btn.btn-outline-secondary.btn-sm.w-100.text-wrap.text-start.py-2{type: 'button', disabled: true}
+          %i.bi.bi-exclamation-triangle.me-1
+          = goal_label

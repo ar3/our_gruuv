@@ -1,6 +1,8 @@
 class Organizations::CompanyTeammatesController < Organizations::OrganizationNamespaceBaseController
   include Organizations::AssignsViewableTeammates
 
+  helper MyGrowthExperiencesHelper
+
   before_action :authenticate_person!
   before_action :set_teammate
   after_action :verify_authorized

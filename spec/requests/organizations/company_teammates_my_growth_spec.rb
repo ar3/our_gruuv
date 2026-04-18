@@ -77,9 +77,28 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         it 'shows set-goal link when there is no incomplete unarchived goal for that assignment and teammate' do
           casual = employee_teammate.reload.person.casual_name
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
-          expect(response.body).to include("Set goal for #{casual} and #{assignment.title}")
+          expect(response.body).to include("Set goal for #{casual} &amp; #{assignment.title}")
           expect(response.body).to include("/assignments/#{assignment.to_param}/choose_manage_goals")
           expect(response.body).to include("for_company_teammate_id=#{employee_teammate.id}")
+        end
+
+        it 'includes OGO deep link with observee and assignment rateable' do
+          casual = employee_teammate.reload.person.casual_name
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include('/observations/new')
+          expect(response.body).to include("observee_ids%5B%5D=#{employee_teammate.id}")
+          expect(response.body).to include('rateable_type=Assignment')
+          expect(response.body).to include("rateable_id=#{assignment.id}")
+          expect(response.body).to include("Add a win/challenge/note (OGO) about #{casual} &amp; #{assignment.title}")
+        end
+
+        it 'preserves show_suggested in return_url for OGO and goal links when present' do
+          get my_growth_experiences_organization_company_teammate_path(
+            organization,
+            employee_teammate,
+            show_suggested: true
+          )
+          expect(response.body).to include('show_suggested%3Dtrue')
         end
 
         it 'shows add-to-goals when an associated goal is started (incomplete and unarchived)' do
@@ -88,7 +107,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           create(:goal_association, goal: goal, associable: assignment)
 
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
-          expect(response.body).to include("Add to the 1 goal for #{casual} and #{assignment.title}")
+          expect(response.body).to include("Add to the 1 active goal for #{casual} &amp; #{assignment.title}")
         end
 
         it 'shows add-to-goals when an associated goal is still a draft (incomplete and unarchived)' do
@@ -97,7 +116,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           create(:goal_association, goal: goal, associable: assignment)
 
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
-          expect(response.body).to include("Add to the 1 goal for #{casual} and #{assignment.title}")
+          expect(response.body).to include("Add to the 1 active goal for #{casual} &amp; #{assignment.title}")
         end
 
         it 'still shows set-goal when the only associated goals are completed' do
@@ -106,7 +125,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           create(:goal_association, goal: g, associable: assignment)
 
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
-          expect(response.body).to include("Set goal for #{casual} and #{assignment.title}")
+          expect(response.body).to include("Set goal for #{casual} &amp; #{assignment.title}")
         end
 
         it 'still shows set-goal when the only associated goals are archived (soft-deleted)' do
@@ -115,7 +134,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           create(:goal_association, goal: g, associable: assignment)
 
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
-          expect(response.body).to include("Set goal for #{casual} and #{assignment.title}")
+          expect(response.body).to include("Set goal for #{casual} &amp; #{assignment.title}")
         end
 
         it 'counts only open goals when mixing completed and open associations' do
@@ -126,7 +145,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           create(:goal_association, goal: done_g, associable: assignment)
 
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
-          expect(response.body).to include("Add to the 1 goal for #{casual} and #{assignment.title}")
+          expect(response.body).to include("Add to the 1 active goal for #{casual} &amp; #{assignment.title}")
         end
 
         it 'pluralizes when multiple incomplete unarchived goals are associated' do
@@ -137,7 +156,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           create(:goal_association, goal: g2, associable: assignment)
 
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
-          expect(response.body).to include("Add to the 2 goals for #{casual} and #{assignment.title}")
+          expect(response.body).to include("Add to the 2 active goals for #{casual} &amp; #{assignment.title}")
         end
       end
 

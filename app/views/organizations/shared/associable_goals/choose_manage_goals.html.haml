@@ -1,7 +1,8 @@
-- content_for :title, "Associate Goals"
+- flow_title = associable_goal_flow_overlay_title('Associate goals', @associable, goal_flow_for_company_teammate: @goal_flow_for_company_teammate)
+- content_for :title, flow_title
 
 - content_for :header do
-  Associate goals with "#{associable_display_title(@associable)}"
+  = flow_title
 
 - content_for :return_url do
   = @return_url

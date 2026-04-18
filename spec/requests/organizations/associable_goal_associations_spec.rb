@@ -47,6 +47,12 @@ RSpec.describe 'Associable goal associations', type: :request do
       expect(response.body).to include('data-controller="bulk-goals-example"')
     end
 
+    it 'GET choose_manage_goals without teammate flow shows catalog title in header' do
+      get choose_manage_goals_organization_assignment_path(organization, assignment, return_url: '/', return_text: 'Back')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Associate goals with #{assignment.title}")
+    end
+
     it 'POST creates a goal association' do
       expect do
         post organization_assignment_goal_associations_path(organization, assignment),
@@ -179,6 +185,23 @@ RSpec.describe 'Associable goal associations', type: :request do
               return_url: '/x'
             )
         expect(response).to have_http_status(:success)
+      end
+
+      it 'overlay headers include casual name and assignment when for_company_teammate_id is present' do
+        sign_in_as_teammate_for_request(reporting_manager_person, organization)
+        employee_person.update!(first_name: 'Rae', last_name: 'Sun')
+        assignment.update!(title: 'Widget Ops')
+        casual = employee_person.reload.casual_name
+        flow_params = { for_company_teammate_id: employee_teammate.id, return_url: '/', return_text: 'Back' }
+
+        get choose_manage_goals_organization_assignment_path(organization, assignment, **flow_params)
+        expect(response.body).to include("Associate goals for #{casual} and Widget Ops")
+
+        get associate_existing_goals_organization_assignment_path(organization, assignment, **flow_params)
+        expect(response.body).to include("Associate goals for #{casual} and Widget Ops")
+
+        get manage_goals_organization_assignment_path(organization, assignment, **flow_params)
+        expect(response.body).to include("Create new goals for #{casual} and Widget Ops")
       end
 
       it 'allows DELETE in teammate flow for a reporting manager without MAAP' do
