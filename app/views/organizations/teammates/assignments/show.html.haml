@@ -18,7 +18,10 @@
     / Assignment Details Section
     .card.mb-4
       .card-header
-        %h2.mb-0 #{@assignment.title}
+        .d-flex.align-items-center.gap-2
+          %h2.mb-0= @assignment.title
+          = link_to organization_assignment_path(@organization, @assignment), target: "_blank", rel: "noopener", class: "text-muted text-decoration-none", title: "Open assignment page in new tab", "aria-label" => "Open assignment page in new tab" do
+            %i.bi.bi-box-arrow-up-right
       .card-body
         .row
           .col-12

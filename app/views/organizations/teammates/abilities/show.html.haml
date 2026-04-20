@@ -43,7 +43,10 @@
 
     .card.mb-4
       .card-header.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
-        %h5.mb-0= @ability.display_name
+        .d-flex.align-items-center.gap-2
+          %h5.mb-0= @ability.display_name
+          = link_to organization_ability_path(@organization, @ability), target: "_blank", rel: "noopener", class: "text-muted text-decoration-none", title: "Open ability page in new tab", "aria-label" => "Open ability page in new tab" do
+            %i.bi.bi-box-arrow-up-right
         %a.text-decoration-none.small.ability-milestone-details-toggle{ href: "#ability-milestone-details", "data-bs-toggle" => "collapse", "data-bs-target" => "#ability-milestone-details", role: "button", "aria-expanded" => "false", "aria-controls" => "ability-milestone-details" }
           %span.milestone-details-label-collapsed
             Expand to see milestone details

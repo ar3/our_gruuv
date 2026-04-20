@@ -18,7 +18,10 @@
     / Aspiration Details Section
     .card.mb-4
       .card-header
-        %h2.mb-0 #{@aspiration.name}
+        .d-flex.align-items-center.gap-2
+          %h2.mb-0= @aspiration.name
+          = link_to organization_aspiration_path(@organization, @aspiration), target: "_blank", rel: "noopener", class: "text-muted text-decoration-none", title: "Open aspiration page in new tab", "aria-label" => "Open aspiration page in new tab" do
+            %i.bi.bi-box-arrow-up-right
       .card-body
         - if @aspiration.description.present?
           .markdown-content.mb-0= render_markdown(@aspiration.description)
