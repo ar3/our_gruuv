@@ -283,7 +283,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
         get organization_assignment_path(organization, assignment)
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Meeting')
+        expect(response.body).to include('assignment-official-rating-pie-chart')
         expect(response.body).not_to include('These analytics will be available once 5 or more teammates have had a finalized check-in.')
       end
 
@@ -302,7 +302,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
         get organization_assignment_path(organization, assignment)
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Love')
+        expect(response.body).to include('assignment-personal-alignment-pie-chart')
         expect(response.body).not_to include('These analytics will be available once 5 or more teammates have had a finalized check-in.')
       end
 

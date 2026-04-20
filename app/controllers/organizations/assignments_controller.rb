@@ -151,30 +151,39 @@ class Organizations::AssignmentsController < ApplicationController
       .distinct
       .count
     
-    # Most popular official_rating (if >5 teammates with finalized check-ins)
+    @official_rating_distribution = []
+    @personal_alignment_distribution = []
+
+    # Rating/alignment analytics (if >5 teammates with finalized check-ins)
     if @teammates_with_finalized_check_ins_count > 5
-      finalized_check_ins = AssignmentCheckIn
+      rating_check_ins = AssignmentCheckIn
         .joins(:company_teammate)
         .where(assignment: @assignment)
         .closed
         .where.not(official_rating: nil)
-      
-      rating_counts = finalized_check_ins.group(:official_rating).count
+
+      rating_counts = rating_check_ins.group(:official_rating).count
       @most_popular_official_rating = rating_counts.max_by { |_k, v| v }&.first
+      @official_rating_distribution = rating_counts.map do |rating, count|
+        { name: rating.to_s.humanize, y: count }
+      end
     else
       @most_popular_official_rating = nil
     end
-    
+
     # Most popular employee_personal_alignment (if >5 teammates with finalized check-ins)
     if @teammates_with_finalized_check_ins_count > 5
-      finalized_check_ins = AssignmentCheckIn
+      alignment_check_ins = AssignmentCheckIn
         .joins(:company_teammate)
         .where(assignment: @assignment)
         .closed
         .where.not(employee_personal_alignment: nil)
-      
-      alignment_counts = finalized_check_ins.group(:employee_personal_alignment).count
+
+      alignment_counts = alignment_check_ins.group(:employee_personal_alignment).count
       @most_popular_personal_alignment = alignment_counts.max_by { |_k, v| v }&.first
+      @personal_alignment_distribution = alignment_counts.map do |alignment, count|
+        { name: alignment.to_s.humanize, y: count }
+      end
     else
       @most_popular_personal_alignment = nil
     end
