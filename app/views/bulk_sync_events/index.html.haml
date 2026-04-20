@@ -116,73 +116,56 @@
       .modal-header
         %h5.modal-title#bulkSyncEventFilterModalLabel
           %i.bi.bi-funnel.me-2
-          Filter & Sort Bulk Sync Events (coming soon)
+          Filter & Sort Bulk Sync Events
         %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      .modal-body
-        .row
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-funnel.me-2
-              Filters
-            .mb-3
-              %label.form-label Sync Type
-              %select.form-select
-                %option All Types
-                %option Assignment Check-Ins
-                %option Employee Positions
-                %option Refresh Names
-                %option Refresh Slack
-            .mb-3
-              %label.form-label Status
-              %select.form-select
-                %option All Statuses
-                %option Completed
-                %option Processing
-                %option Failed
-                %option Preview Ready
-            .mb-3
-              %label.form-label Creator
-              %select.form-select
-                %option All Creators
-                %option Current User
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-sort-down.me-2
-              Sort Options
-            .mb-3
-              %label.form-label Sort By
-              %select.form-select
-                %option Created Date (Newest First)
-                %option Created Date (Oldest First)
-                %option Source (A-Z)
-                %option Source (Z-A)
-                %option Status
-            .mb-3
-              %label.form-label View Style
-              .form-check
-                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
-                %label.form-check-label
-                  %i.bi.bi-table.me-2
-                  Table View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
-                %label.form-check-label
-                  %i.bi.bi-grid.me-2
-                  Card View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
-                %label.form-check-label
-                  %i.bi.bi-list.me-2
-                  List View
-            .mb-3
-              %label.form-label Spotlight
-              %select.form-select
-                %option No Spotlight
-                %option Recent Syncs (Last 7 Days)
-                %option Failed Syncs
-                %option Processing Syncs
-      .modal-footer
-        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-        %button.btn.btn-primary.disabled{type: "button"}
-          %i.bi.bi-check.me-2
-          Apply Filters
+      = form_with url: organization_bulk_sync_events_path(current_organization), method: :get, local: true do
+        .modal-body
+          .row
+            .col-md-6
+              %h6.mb-3
+                %i.bi.bi-funnel.me-2
+                Filters
+              .mb-3
+                %label.form-label.fw-bold Status
+                - [['preview', 'Preview'], ['processing', 'Processing'], ['completed', 'Completed'], ['failed', 'Failed']].each do |status_value, status_label|
+                  .form-check
+                    = check_box_tag 'statuses[]', status_value, @selected_statuses.include?(status_value), class: 'form-check-input', id: "status_#{status_value}"
+                    = label_tag "status_#{status_value}", status_label, class: 'form-check-label'
+              .mb-3
+                %label.form-label.fw-bold Sync Type
+                - [['BulkSyncEvent::UploadAssignmentCheckins', 'Upload Assignment Check-Ins'], ['BulkSyncEvent::UploadEmployees', 'Upload Employee Positions'], ['BulkSyncEvent::UploadAssignmentsAndAbilities', 'Upload Assignments and Abilities'], ['BulkSyncEvent::UploadAssignmentsBulk', 'Upload Assignments (Bulk)'], ['BulkSyncEvent::RefreshNamesSync', 'Refresh People Names'], ['BulkSyncEvent::RefreshSlackSync', 'Refresh Slack Identities'], ['BulkSyncEvent::EnsureAssignmentTenuresSync', 'Ensure Assignment Tenures']].each do |type_value, type_label|
+                  .form-check
+                    = check_box_tag 'sync_types[]', type_value, @selected_sync_types.include?(type_value), class: 'form-check-input', id: "sync_type_#{type_value.parameterize}"
+                    = label_tag "sync_type_#{type_value.parameterize}", type_label, class: 'form-check-label'
+              .mb-3
+                %label.form-label.fw-bold Source
+                - [['file_upload', 'File Upload'], ['slack_sync', 'Slack Sync'], ['database_sync', 'Database Sync'], ['manual_auto', 'Manual Auto Slack Run'], ['daily_auto', 'Daily Auto Slack Run']].each do |source_value, source_label|
+                  .form-check
+                    = check_box_tag 'sources[]', source_value, @selected_sources.include?(source_value), class: 'form-check-input', id: "source_#{source_value}"
+                    = label_tag "source_#{source_value}", source_label, class: 'form-check-label'
+              .mb-3
+                %label.form-label.fw-bold Creator
+                .form-check
+                  = check_box_tag 'creators[]', 'system', @selected_creators.include?('system'), class: 'form-check-input', id: 'creator_system'
+                  = label_tag 'creator_system', 'System', class: 'form-check-label'
+                - @creator_options.each do |creator|
+                  .form-check
+                    = check_box_tag 'creators[]', creator.id, @selected_creators.include?(creator.id.to_s), class: 'form-check-input', id: "creator_#{creator.id}"
+                    = label_tag "creator_#{creator.id}", creator.display_name, class: 'form-check-label'
+            .col-md-6
+              %h6.mb-3
+                %i.bi.bi-sort-down.me-2
+                Sort Options
+              .mb-3
+                %label.form-label.fw-bold Sort By
+                - [['created_desc', 'Created Date (Newest First)'], ['created_asc', 'Created Date (Oldest First)'], ['status_asc', 'Status (A-Z)'], ['status_desc', 'Status (Z-A)'], ['type_asc', 'Type (A-Z)'], ['type_desc', 'Type (Z-A)']].each do |sort_value, sort_label|
+                  .form-check
+                    = radio_button_tag 'sort', sort_value, @selected_sort == sort_value, class: 'form-check-input', id: "sort_#{sort_value}"
+                    = label_tag "sort_#{sort_value}", sort_label, class: 'form-check-label'
+        .modal-footer
+          = link_to organization_bulk_sync_events_path(current_organization), class: 'btn btn-outline-secondary' do
+            Reset
+          %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+          %button.btn.btn-primary{type: "submit"}
+            %i.bi.bi-check.me-2
+            Apply Filters

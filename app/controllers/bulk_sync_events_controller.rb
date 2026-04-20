@@ -5,9 +5,76 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
 
   def index
     authorize company, :view_bulk_sync_events?
+    @selected_statuses = Array(params[:statuses]).reject(&:blank?)
+    @selected_sync_types = Array(params[:sync_types]).reject(&:blank?)
+    @selected_sources = Array(params[:sources]).reject(&:blank?)
+    @selected_creators = Array(params[:creators]).reject(&:blank?)
+    @selected_sort = params[:sort].presence || 'created_desc'
+    @current_view = params[:view].presence || 'table'
+    @current_spotlight = params[:spotlight].presence || 'bulk_sync_data_overview'
+
     @bulk_sync_events = policy_scope(BulkSyncEvent)
-                     .includes(:creator, :initiator)
-                     .order(created_at: :desc)
+                        .includes(:creator, :initiator)
+
+    if @selected_statuses.any?
+      @bulk_sync_events = @bulk_sync_events.where(status: @selected_statuses)
+    end
+
+    if @selected_sync_types.any?
+      @bulk_sync_events = @bulk_sync_events.where(type: @selected_sync_types)
+    end
+
+    if @selected_creators.any?
+      creator_ids = @selected_creators.map { |id| id == 'system' ? nil : id.to_i }
+      if creator_ids.include?(nil)
+        ids_without_nil = creator_ids.compact
+        @bulk_sync_events = if ids_without_nil.any?
+                              @bulk_sync_events.where(creator_id: ids_without_nil).or(@bulk_sync_events.where(creator_id: nil))
+                            else
+                              @bulk_sync_events.where(creator_id: nil)
+                            end
+      else
+        @bulk_sync_events = @bulk_sync_events.where(creator_id: creator_ids)
+      end
+    end
+
+    if @selected_sources.any?
+      source_scopes = []
+      source_scopes << @bulk_sync_events.where("source_data ->> 'type' = 'file_upload'") if @selected_sources.include?('file_upload')
+      source_scopes << @bulk_sync_events.where("source_data ->> 'type' = 'slack_sync'") if @selected_sources.include?('slack_sync')
+      source_scopes << @bulk_sync_events.where("source_data ->> 'type' = 'database_sync'") if @selected_sources.include?('database_sync')
+      source_scopes << @bulk_sync_events.where("source_data ->> 'sync_mode' = 'daily'") if @selected_sources.include?('daily_auto')
+      source_scopes << @bulk_sync_events.where("source_data ->> 'sync_mode' = 'manual'") if @selected_sources.include?('manual_auto')
+      @bulk_sync_events = source_scopes.reduce { |combined, scope| combined.or(scope) } if source_scopes.any?
+    end
+
+    @bulk_sync_events = case @selected_sort
+                        when 'created_asc'
+                          @bulk_sync_events.order(created_at: :asc)
+                        when 'status_asc'
+                          @bulk_sync_events.order(status: :asc, created_at: :desc)
+                        when 'status_desc'
+                          @bulk_sync_events.order(status: :desc, created_at: :desc)
+                        when 'type_asc'
+                          @bulk_sync_events.order(type: :asc, created_at: :desc)
+                        when 'type_desc'
+                          @bulk_sync_events.order(type: :desc, created_at: :desc)
+                        else
+                          @bulk_sync_events.order(created_at: :desc)
+                        end
+
+    @creator_options = policy_scope(BulkSyncEvent)
+                       .includes(:creator)
+                       .where.not(creator_id: nil)
+                       .map(&:creator)
+                       .compact
+                       .uniq { |creator| creator.id }
+                       .sort_by(&:display_name)
+
+    @filters_summary = build_filters_summary
+    @sort_summary = sort_label(@selected_sort)
+    @view_summary = view_label(@current_view)
+    @spotlight_summary = spotlight_label(@current_spotlight)
     
     # Spotlight statistics
     @spotlight_stats = {
@@ -154,6 +221,58 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
   end
 
   private
+
+  def build_filters_summary
+    parts = []
+    parts << "#{@selected_statuses.size} status#{'es' unless @selected_statuses.size == 1}" if @selected_statuses.any?
+    parts << "#{@selected_sync_types.size} sync type#{'s' unless @selected_sync_types.size == 1}" if @selected_sync_types.any?
+    parts << "#{@selected_sources.size} source#{'s' unless @selected_sources.size == 1}" if @selected_sources.any?
+    parts << "#{@selected_creators.size} creator#{'s' unless @selected_creators.size == 1}" if @selected_creators.any?
+    parts.any? ? parts.join(' / ') : 'None applied'
+  end
+
+  def sort_label(sort_value)
+    case sort_value
+    when 'created_desc'
+      'Created Date (Newest First)'
+    when 'created_asc'
+      'Created Date (Oldest First)'
+    when 'status_asc'
+      'Status (A-Z)'
+    when 'status_desc'
+      'Status (Z-A)'
+    when 'type_asc'
+      'Type (A-Z)'
+    when 'type_desc'
+      'Type (Z-A)'
+    else
+      'Created Date (Newest First)'
+    end
+  end
+
+  def view_label(view_value)
+    case view_value
+    when 'table'
+      'Table'
+    when 'cards'
+      'Cards'
+    when 'list'
+      'List'
+    else
+      view_value.to_s.humanize
+    end
+  end
+
+  def spotlight_label(spotlight_value)
+    case spotlight_value
+    when 'bulk_sync_data_overview'
+      'Bulk Sync Data Overview'
+    when 'none'
+      'None'
+    else
+      spotlight_value.to_s.humanize
+    end
+  end
 
   def require_login
     unless current_person
