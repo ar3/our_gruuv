@@ -1,7 +1,7 @@
 class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_login
   before_action :set_bulk_sync_event, only: [:show, :destroy, :process_sync]
-  before_action :authorize_bulk_sync_events, only: [:new, :create]
+  before_action :authorize_bulk_sync_events, only: [:new, :create, :run_auto_refresh_slack]
 
   def index
     authorize company, :view_bulk_sync_events?
@@ -74,6 +74,18 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
       # Always re-raise the exception so it's visible
       raise e
     end
+  end
+
+  def run_auto_refresh_slack
+    RefreshSlackIdentitiesAutoSyncJob.perform_later(
+      current_organization.id,
+      current_person.id,
+      current_person.id,
+      'manual'
+    )
+
+    redirect_to organization_bulk_sync_events_path(current_organization),
+                notice: 'Auto refresh Slack sync started. Results will appear in Bulk Sync Events when complete.'
   end
 
   def destroy

@@ -21,8 +21,8 @@ class BulkSyncEventForm
 
   validates :type, presence: true, inclusion: { in: VALID_TYPES }
   validates :organization_id, presence: true
-  validates :creator_id, presence: true
-  validates :initiator_id, presence: true
+  validates :creator_id, numericality: { only_integer: true }, allow_nil: true
+  validates :initiator_id, numericality: { only_integer: true }, allow_nil: true
   
   # File validation only for upload types
   validate :validate_file_for_upload_types, if: :is_upload_type?

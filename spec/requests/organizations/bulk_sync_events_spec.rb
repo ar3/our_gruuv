@@ -21,6 +21,76 @@ RSpec.describe 'Organizations::BulkSyncEvents', type: :request do
     PaperTrail.enabled = true
   end
 
+  describe 'POST /organizations/:organization_id/bulk_sync_events/run_auto_refresh_slack' do
+    before do
+      employment_teammate
+      sign_in_as_teammate_for_request(employment_teammate.person, organization)
+      allow(RefreshSlackIdentitiesAutoSyncJob).to receive(:perform_later)
+    end
+
+    it 'enqueues an auto refresh slack job and redirects to index' do
+      post run_auto_refresh_slack_organization_bulk_sync_events_path(organization)
+
+      expect(RefreshSlackIdentitiesAutoSyncJob).to have_received(:perform_later).with(
+        organization.id,
+        employment_teammate.person.id,
+        employment_teammate.person.id,
+        'manual'
+      )
+      expect(response).to redirect_to(organization_bulk_sync_events_path(organization))
+      expect(flash[:notice]).to include('Auto refresh Slack sync started')
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/bulk_sync_events' do
+    context 'when creating a refresh slack sync event' do
+      let(:preview_event) do
+        create(
+          :bulk_sync_event,
+          type: 'BulkSyncEvent::RefreshSlackSync',
+          organization: organization,
+          creator: admin,
+          initiator: admin,
+          status: 'preview',
+          preview_actions: {
+            'update_slack_identities' => [
+              { 'row' => 1, 'action' => 'update', 'email' => 'teammate@example.com' }
+            ]
+          }
+        )
+      end
+
+      let(:form_double) do
+        instance_double(
+          BulkSyncEventForm,
+          save: true,
+          bulk_sync_event: preview_event
+        )
+      end
+
+      before do
+        admin_teammate
+        sign_in_as_teammate_for_request(admin, organization)
+        allow(BulkSyncEventForm).to receive(:new).and_return(form_double)
+      end
+
+      it 'redirects to the preview page after start sync and preview' do
+        post organization_bulk_sync_events_path(organization), params: {
+          bulk_sync_event: {
+            type: 'BulkSyncEvent::RefreshSlackSync'
+          }
+        }
+
+        expect(response).to redirect_to(organization_bulk_sync_event_path(organization, preview_event))
+        expect(flash[:notice]).to eq('Sync created successfully. Please review the preview before processing.')
+
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Preview Actions')
+      end
+    end
+  end
+
   describe 'GET /organizations/:organization_id/bulk_sync_events/:id' do
     context 'with UploadAssignmentsAndAbilities event' do
       let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }

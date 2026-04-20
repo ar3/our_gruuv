@@ -75,7 +75,7 @@ class RefreshSlackSyncParser
     existing_identities = TeammateIdentity.slack
                                          .joins(:company_teammate)
                                          .where(teammates: { organization: organization })
-                                         .includes(:teammate, :teammate => :person)
+                                         .includes(company_teammate: :person)
 
     updates = []
     slack_users_by_id = slack_users.index_by { |u| u['id'] }
@@ -211,7 +211,7 @@ class RefreshSlackSyncParser
     existing_identities = TeammateIdentity.slack
                                          .joins(:company_teammate)
                                          .where(teammates: { organization: organization })
-                                         .includes(:teammate, :teammate => :person)
+                                         .includes(company_teammate: :person)
 
     suggestions = []
     slack_users_by_id = slack_users.index_by { |u| u['id'] }

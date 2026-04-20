@@ -37,6 +37,10 @@ class BulkSyncEventPolicy < ApplicationPolicy
     admin_bypass? || (requires_maap_permission?(record) ? viewing_teammate.can_manage_maap? : viewing_teammate.can_manage_employment?)
   end
 
+  def run_auto_refresh_slack?
+    create?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate

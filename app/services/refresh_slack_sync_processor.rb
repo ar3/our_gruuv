@@ -1,9 +1,10 @@
 class RefreshSlackSyncProcessor
   attr_reader :bulk_sync_event, :organization, :results
 
-  def initialize(bulk_sync_event, organization)
+  def initialize(bulk_sync_event, organization, fail_on_no_actions: true)
     @bulk_sync_event = bulk_sync_event
     @organization = organization
+    @fail_on_no_actions = fail_on_no_actions
     @results = {
       successes: [],
       failures: [],
@@ -25,11 +26,16 @@ class RefreshSlackSyncProcessor
     terminations_to_process = Array(preview_actions['suggest_terminations'] || [])
 
     if updates_to_process.empty? && associations_to_process.empty? && terminations_to_process.empty?
-      results[:failures] << {
-        type: 'system_error',
-        error: 'No actions selected for processing'
-      }
-      return false
+      if @fail_on_no_actions
+        results[:failures] << {
+          type: 'system_error',
+          error: 'No actions selected for processing'
+        }
+        return false
+      end
+
+      update_summary
+      return true
     end
 
     # Get raw Slack data from source_contents
@@ -128,7 +134,7 @@ class RefreshSlackSyncProcessor
     teammate_id = association_data['teammate_id']
     slack_user_id = association_data['slack_user_id']
 
-    teammate = Teammate.find_by(id: teammate_id)
+    teammate = CompanyTeammate.find_by(id: teammate_id)
     unless teammate
       results[:failures] << {
         type: 'create_slack_association',
@@ -145,6 +151,17 @@ class RefreshSlackSyncProcessor
         teammate_id: teammate_id,
         person_name: teammate.person.display_name,
         error: "Teammate already has a Slack identity"
+      }
+      return
+    end
+
+    # Guard against linking a Slack user ID that's already attached elsewhere.
+    if TeammateIdentity.slack.where(uid: slack_user_id).exists?
+      results[:failures] << {
+        type: 'create_slack_association',
+        teammate_id: teammate_id,
+        person_name: teammate.person.display_name,
+        error: "Slack user #{slack_user_id} is already associated with another teammate"
       }
       return
     end
@@ -199,7 +216,7 @@ class RefreshSlackSyncProcessor
     teammate_id = termination_data['teammate_id']
     suggested_date = termination_data['suggested_termination_date'] || Date.current
 
-    teammate = Teammate.find_by(id: teammate_id)
+    teammate = CompanyTeammate.find_by(id: teammate_id)
     unless teammate
       results[:failures] << {
         type: 'suggest_termination',

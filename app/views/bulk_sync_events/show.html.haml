@@ -116,10 +116,10 @@
             %dd.col-sm-8= format_time_in_user_timezone(@bulk_sync_event.created_at)
             
             %dt.col-sm-4 Creator
-            %dd.col-sm-8= @bulk_sync_event.creator.display_name
+            %dd.col-sm-8= @bulk_sync_event.creator&.display_name || 'System'
             
             %dt.col-sm-4 Initiator
-            %dd.col-sm-8= @bulk_sync_event.initiator.display_name
+            %dd.col-sm-8= @bulk_sync_event.initiator&.display_name || 'System'
             
             - if @bulk_sync_event.attempted_at
               %dt.col-sm-4 Attempted

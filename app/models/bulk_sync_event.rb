@@ -1,6 +1,6 @@
 class BulkSyncEvent < ApplicationRecord
-  belongs_to :creator, class_name: 'Person'
-  belongs_to :initiator, class_name: 'Person'
+  belongs_to :creator, class_name: 'Person', optional: true
+  belongs_to :initiator, class_name: 'Person', optional: true
   belongs_to :organization
 
   # Tell Pundit to use BulkSyncEventPolicy for all STI subclasses

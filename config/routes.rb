@@ -168,6 +168,9 @@ Rails.application.routes.draw do
     
     # Bulk sync events (consolidated for all upload and sync types)
     resources :bulk_sync_events, only: [:index, :show, :new, :create, :destroy] do
+      collection do
+        post :run_auto_refresh_slack
+      end
       member do
         post :process_sync
       end

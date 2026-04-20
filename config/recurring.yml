@@ -1,4 +1,9 @@
 production:
+  daily_refresh_slack_identities:
+    class: DailyRefreshSlackIdentitiesJob
+    queue: default
+    schedule: at 5am every day
+
   daily_operational_cleanup:
     class: DailyOperationalCleanupJob
     queue: default

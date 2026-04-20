@@ -29,6 +29,15 @@
               = link_to "Refresh Slack Identities", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::RefreshSlackSync'}), class: 'dropdown-item'
             %li
               = link_to "Ensure Assignment Tenures", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::EnsureAssignmentTenuresSync'}), class: 'dropdown-item'
+            %li
+              %hr.dropdown-divider
+            %li
+              = button_to "Run Auto Refresh Slack Now",
+                run_auto_refresh_slack_organization_bulk_sync_events_path(current_organization),
+                method: :post,
+                form: { class: 'd-inline' },
+                class: 'dropdown-item border-0 bg-transparent text-start w-100',
+                data: { confirm: "Run auto Slack refresh now for this company? This applies updates/associations immediately and skips termination suggestions." }
       - else
         .btn.btn-primary.disabled.ml-2{style: "opacity: 0.6; cursor: not-allowed;"}
           %i.bi.bi-plus
@@ -74,7 +83,7 @@
                   %span{class: "badge bg-#{bulk_sync_event.status == 'completed' ? 'success' : bulk_sync_event.status == 'failed' ? 'danger' : bulk_sync_event.status == 'processing' ? 'warning' : 'secondary'}"}
                     = bulk_sync_event.status.humanize
                 %td
-                  %small= bulk_sync_event.creator.display_name
+                  %small= bulk_sync_event.creator&.display_name || 'System'
                 %td
                   - if bulk_sync_event.completed?
                     %span.text-success.small
