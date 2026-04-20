@@ -55,11 +55,15 @@
 
 / Active Assignment Tenures Section
 - if @assignment_tenures.any?
+  - assignment_count = @assignment_tenures.count
+  - total_assignment_energy = @assignment_tenures.sum { |tenure| tenure.anticipated_energy_percentage.to_i }
   .card.mb-4{ role: "region", "aria-labelledby": "assignments-section" }
     .card-header
       %h5.mb-0{ id: "assignments-section" }
         %i.bi.bi-list-task.me-2
         Active Assignments
+        %span.text-muted.fw-normal.small.ms-2
+          #{pluralize(assignment_count, 'assignment')}, #{total_assignment_energy}% total forecasted energy
         %a.text-decoration-none.ms-3{"data-bs-toggle" => "collapse", "data-bs-target" => "#assignmentsCollapse", "aria-expanded" => "true", "aria-controls" => "assignmentsCollapse"}
           %span#assignmentsExpandIcon.not-collapsed
             %i.bi.bi-chevron-up
