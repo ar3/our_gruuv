@@ -268,6 +268,19 @@ RSpec.describe Person, type: :model do
         expect(person.canonical_profile_image_url(teammate: teammate)).to eq('https://example.com/person.jpg')
       end
     end
+
+    context 'when teammate context has non-Slack image and another teammate has Slack image' do
+      let(:org1) { create(:organization, :company) }
+      let(:org2) { create(:organization, :company) }
+      let(:teammate_context) { create(:teammate, person: person, organization: org1) }
+      let(:teammate_with_slack) { create(:teammate, person: person, organization: org2) }
+      let!(:jira_identity) { create(:teammate_identity, :jira, teammate: teammate_context, profile_image_url: 'https://example.com/jira.jpg') }
+      let!(:slack_identity) { create(:teammate_identity, :slack, teammate: teammate_with_slack, profile_image_url: 'https://example.com/slack.jpg') }
+
+      it 'prefers Slack globally before teammate non-Slack image' do
+        expect(person.canonical_profile_image_url(teammate: teammate_context)).to eq('https://example.com/slack.jpg')
+      end
+    end
   end
 
   describe '#max_two_initials' do
@@ -361,12 +374,26 @@ RSpec.describe Person, type: :model do
         expect(person.latest_profile_image_url).to eq('https://example.com/teammate.jpg')
       end
 
-      it 'returns person_identity when it is more recently updated' do
-        # Set updated_at to ensure person_identity is newer
+      it 'still returns teammate Slack image even when person identity is newer' do
+        # Even if person identity is newer, Slack is preferred over non-Slack sources.
         person_identity.update_column(:updated_at, 1.day.ago)
         teammate_identity.update_column(:updated_at, 2.days.ago)
         
-        expect(person.latest_profile_image_url).to eq('https://example.com/person.jpg')
+        expect(person.latest_profile_image_url).to eq('https://example.com/teammate.jpg')
+      end
+    end
+
+    context 'when non-Slack image is newer than Slack image' do
+      let(:organization) { create(:organization, :company) }
+      let(:teammate) { create(:teammate, person: person, organization: organization) }
+      let!(:slack_identity) { create(:teammate_identity, :slack, teammate: teammate, profile_image_url: 'https://example.com/slack.jpg') }
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: 'https://example.com/person.jpg') }
+
+      it 'still prefers Slack over non-Slack' do
+        slack_identity.update_column(:updated_at, 2.days.ago)
+        person_identity.update_column(:updated_at, 1.day.ago)
+
+        expect(person.latest_profile_image_url).to eq('https://example.com/slack.jpg')
       end
     end
 

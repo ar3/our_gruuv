@@ -147,31 +147,63 @@ class Person < ApplicationRecord
 
   # Canonical profile image resolver for consistent rendering across the app.
   # Priority:
-  # 1) current teammate's image (if teammate context is provided)
-  # 2) latest image across all identities
-  # 3) nil (caller should render fallback initials/icon)
+  # 1) current teammate's Slack image (if teammate context is provided)
+  # 2) latest Slack image across all teammates
+  # 3) current teammate's latest non-Slack/non-Asana image (if teammate context is provided)
+  # 4) latest non-Slack/non-Asana image across all identities
+  # 5) nil (caller should render fallback initials/icon)
   def canonical_profile_image_url(teammate: nil)
     if teammate.present?
-      teammate_image_url = teammate.teammate_identities
+      teammate_slack_image_url = teammate.teammate_identities
+        .slack
         .where.not(provider: 'asana')
         .where.not(profile_image_url: [ nil, '' ])
         .order(updated_at: :desc)
         .pick(:profile_image_url)
-      return teammate_image_url if teammate_image_url.present?
+      return teammate_slack_image_url if teammate_slack_image_url.present?
     end
 
-    latest_profile_image_url
+    global_slack_image_url = latest_slack_profile_image_url
+    return global_slack_image_url if global_slack_image_url.present?
+
+    if teammate.present?
+      teammate_non_slack_image_url = teammate.teammate_identities
+        .where.not(provider: [ 'slack', 'asana' ])
+        .where.not(profile_image_url: [ nil, '' ])
+        .order(updated_at: :desc)
+        .pick(:profile_image_url)
+      return teammate_non_slack_image_url if teammate_non_slack_image_url.present?
+    end
+
+    latest_non_slack_profile_image_url
   end
 
   def latest_profile_image_url
+    latest_slack_profile_image_url || latest_non_slack_profile_image_url
+  end
+
+  def latest_slack_profile_image_url
+    slack_candidates = []
+
+    company_teammates.includes(:teammate_identities).find_each do |teammate|
+      teammate.teammate_identities.slack.where.not(profile_image_url: [ nil, '' ]).find_each do |identity|
+        slack_candidates << { url: identity.profile_image_url, updated_at: identity.updated_at }
+      end
+    end
+
+    return nil if slack_candidates.empty?
+    slack_candidates.max_by { |i| i[:updated_at] }[:url]
+  end
+
+  def latest_non_slack_profile_image_url
     all_identities = []
 
-    person_identities.where.not(profile_image_url: nil).find_each do |identity|
+    person_identities.where.not(profile_image_url: [ nil, '' ]).find_each do |identity|
       all_identities << { url: identity.profile_image_url, updated_at: identity.updated_at }
     end
 
     company_teammates.includes(:teammate_identities).find_each do |teammate|
-      teammate.teammate_identities.where.not(provider: 'asana').where.not(profile_image_url: nil).find_each do |identity|
+      teammate.teammate_identities.where.not(provider: [ 'slack', 'asana' ]).where.not(profile_image_url: [ nil, '' ]).find_each do |identity|
         all_identities << { url: identity.profile_image_url, updated_at: identity.updated_at }
       end
     end
