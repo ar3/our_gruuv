@@ -194,7 +194,7 @@ class CompanyTeammate < ApplicationRecord
   end
 
   def profile_image_url
-    slack_identity&.profile_image_url || person.google_profile_image_url
+    person.canonical_profile_image_url(teammate: self)
   end
 
   def to_s

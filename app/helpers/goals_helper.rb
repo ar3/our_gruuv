@@ -733,22 +733,7 @@ module GoalsHelper
 
     if goal.owner_type == 'CompanyTeammate'
       teammate = goal.owner
-      profile_url = teammate.profile_image_url
-
-      if profile_url.present?
-        image_tag profile_url,
-                  class: "rounded-circle",
-                  style: "width: #{size}px; height: #{size}px; object-fit: cover;",
-                  alt: teammate.person&.display_name || 'Owner'
-      else
-        # Fallback to person initials
-        initials = teammate.person&.first_name&.first&.upcase || teammate.person&.email&.first&.upcase || '?'
-        content_tag :div,
-                    class: "bg-primary rounded-circle d-flex align-items-center justify-content-center text-white",
-                    style: "width: #{size}px; height: #{size}px;" do
-          content_tag :span, initials, class: "fw-bold", style: "font-size: #{size * 0.4}px;"
-        end
-      end
+      teammate_profile_image(teammate, size: size)
     elsif goal.owner_type.in?(['Company', 'Department', 'Team', 'Organization'])
       org = goal.owner
       # Get initials from organization name (first letter of each word, max 2)

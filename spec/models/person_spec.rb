@@ -217,8 +217,44 @@ RSpec.describe Person, type: :model do
       let!(:google_identity1) { create(:person_identity, :google, person: person, profile_image_url: 'https://google.com/avatar1.jpg') }
       let!(:google_identity2) { create(:person_identity, :google, person: person, profile_image_url: 'https://google.com/avatar2.jpg') }
 
-      it 'returns first Google identity profile image URL' do
-        expect(person.google_profile_image_url).to eq('https://google.com/avatar1.jpg')
+      it 'returns the most recently updated Google identity profile image URL' do
+        google_identity1.update_column(:updated_at, 2.days.ago)
+        google_identity2.update_column(:updated_at, 1.day.ago)
+
+        expect(person.google_profile_image_url).to eq('https://google.com/avatar2.jpg')
+      end
+    end
+  end
+
+  describe '#canonical_profile_image_url' do
+    let(:person) { create(:person) }
+
+    context 'when teammate context has profile image' do
+      let(:organization) { create(:organization, :company) }
+      let(:teammate) { create(:teammate, person: person, organization: organization) }
+      let!(:teammate_identity) { create(:teammate_identity, teammate: teammate, profile_image_url: 'https://example.com/current-teammate.jpg') }
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: 'https://example.com/person.jpg') }
+
+      it 'prefers teammate context image' do
+        expect(person.canonical_profile_image_url(teammate: teammate)).to eq('https://example.com/current-teammate.jpg')
+      end
+    end
+
+    context 'when teammate context has no image' do
+      let(:organization) { create(:organization, :company) }
+      let(:teammate) { create(:teammate, person: person, organization: organization) }
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: 'https://example.com/person.jpg') }
+
+      it 'falls back to latest profile image URL' do
+        expect(person.canonical_profile_image_url(teammate: teammate)).to eq('https://example.com/person.jpg')
+      end
+    end
+
+    context 'without teammate context' do
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: 'https://example.com/person.jpg') }
+
+      it 'returns latest profile image URL' do
+        expect(person.canonical_profile_image_url).to eq('https://example.com/person.jpg')
       end
     end
   end

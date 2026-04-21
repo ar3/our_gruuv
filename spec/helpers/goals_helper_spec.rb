@@ -273,12 +273,10 @@ RSpec.describe GoalsHelper, type: :helper do
 
       it 'returns img tag when teammate has profile image' do
         goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
-        # Mock on the reloaded owner from the database
-        allow(goal.owner).to receive(:profile_image_url).and_return('https://example.com/image.jpg')
+        allow(helper).to receive(:teammate_profile_image).with(goal.owner, size: 48).and_return('<img src="https://example.com/image.jpg" />'.html_safe)
         result = helper.goal_owner_image(goal, size: 48)
         
         expect(result).to include('img')
-        expect(result).to include('rounded-circle')
       end
     end
 

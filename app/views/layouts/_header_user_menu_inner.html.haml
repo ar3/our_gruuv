@@ -6,8 +6,9 @@
 %a{class: toggle_link_class, href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label": "#{person_label} menu"}
   - if impersonating?
     %i.bi.bi-exclamation-triangle.text-warning.flex-shrink-0
-  - if current_person.latest_profile_image_url.present?
-    = image_tag current_person.latest_profile_image_url, class: 'rounded-circle flex-shrink-0 header-user-avatar', alt: '', width: 28, height: 28, style: 'object-fit: cover; width: 28px; height: 28px;'
+  - profile_url = current_person.canonical_profile_image_url(teammate: current_company_teammate)
+  - if profile_url.present?
+    = image_tag profile_url, class: 'rounded-circle flex-shrink-0 header-user-avatar', alt: '', width: 28, height: 28, style: 'object-fit: cover; width: 28px; height: 28px;'
   - else
     %i.bi.bi-person-circle.flex-shrink-0.header-user-icon
   %span.header-user-name.d-none.d-sm-inline.text-truncate

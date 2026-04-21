@@ -291,6 +291,24 @@ module TeammateHelper
     end
   end
 
+  def person_profile_image(person, teammate: nil, size: 48)
+    profile_url = person.canonical_profile_image_url(teammate: teammate)
+
+    if profile_url.present?
+      image_tag profile_url,
+                class: "rounded-circle",
+                style: "width: #{size}px; height: #{size}px; object-fit: cover;",
+                alt: person.display_name
+    else
+      initials = person.max_two_initials.presence || person.email.to_s.first.to_s.upcase || '?'
+      content_tag :div,
+                  class: "bg-primary rounded-circle d-flex align-items-center justify-content-center text-white",
+                  style: "width: #{size}px; height: #{size}px;" do
+        content_tag :span, initials, class: "fw-bold", style: "font-size: #{size * 0.4}px;"
+      end
+    end
+  end
+
   # Check-in status helper methods for manager view
   def overall_employee_status(person, organization)
     return 'unknown' if person.nil? || organization.nil?

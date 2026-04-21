@@ -138,7 +138,28 @@ class Person < ApplicationRecord
   end
 
   def google_profile_image_url
-    google_identity&.profile_image_url
+    person_identities
+      .google
+      .where.not(profile_image_url: [ nil, '' ])
+      .order(updated_at: :desc)
+      .pick(:profile_image_url)
+  end
+
+  # Canonical profile image resolver for consistent rendering across the app.
+  # Priority:
+  # 1) current teammate's image (if teammate context is provided)
+  # 2) latest image across all identities
+  # 3) nil (caller should render fallback initials/icon)
+  def canonical_profile_image_url(teammate: nil)
+    if teammate.present?
+      teammate_image_url = teammate.teammate_identities
+        .where.not(profile_image_url: [ nil, '' ])
+        .order(updated_at: :desc)
+        .pick(:profile_image_url)
+      return teammate_image_url if teammate_image_url.present?
+    end
+
+    latest_profile_image_url
   end
 
   def latest_profile_image_url

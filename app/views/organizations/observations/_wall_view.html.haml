@@ -11,11 +11,7 @@
               - observation.observed_teammates.limit(3).each do |teammate|
                 - person = teammate.person
                 .me-2
-                  - if person.latest_profile_image_url.present?
-                    = image_tag person.latest_profile_image_url, class: "rounded-circle", style: "width: 40px; height: 40px; object-fit: cover;", alt: person.display_name
-                  - else
-                    .rounded-circle.bg-primary.text-white.d-flex.align-items-center.justify-content-center{style: "width: 40px; height: 40px; font-size: 0.9rem;"}
-                      = person.max_two_initials
+                  = person_profile_image(person, teammate: teammate, size: 40)
             - else
               .me-2
                 .rounded-circle.bg-secondary.text-white.d-flex.align-items-center.justify-content-center{style: "width: 40px; height: 40px; font-size: 0.9rem;"}
