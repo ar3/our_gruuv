@@ -164,8 +164,17 @@ class Organizations::AssignmentsController < ApplicationController
 
       rating_counts = rating_check_ins.group(:official_rating).count
       @most_popular_official_rating = rating_counts.max_by { |_k, v| v }&.first
+      official_rating_colors = {
+        'working_to_meet' => '#ffc107', # yellow
+        'meeting' => '#0d6efd',         # blue
+        'exceeding' => '#198754'        # green
+      }
       @official_rating_distribution = rating_counts.map do |rating, count|
-        { name: rating.to_s.humanize, y: count }
+        {
+          name: rating.to_s.humanize,
+          y: count,
+          color: official_rating_colors[rating.to_s]
+        }
       end
     else
       @most_popular_official_rating = nil
@@ -181,8 +190,17 @@ class Organizations::AssignmentsController < ApplicationController
 
       alignment_counts = alignment_check_ins.group(:employee_personal_alignment).count
       @most_popular_personal_alignment = alignment_counts.max_by { |_k, v| v }&.first
+      personal_alignment_colors = {
+        'love' => '#198754',     # green
+        'like' => '#0d6efd',     # blue
+        'neutral' => '#ffc107'   # yellow
+      }
       @personal_alignment_distribution = alignment_counts.map do |alignment, count|
-        { name: alignment.to_s.humanize, y: count }
+        {
+          name: alignment.to_s.humanize,
+          y: count,
+          color: personal_alignment_colors.fetch(alignment.to_s, '#fd7e14') # orange fallback
+        }
       end
     else
       @most_popular_personal_alignment = nil

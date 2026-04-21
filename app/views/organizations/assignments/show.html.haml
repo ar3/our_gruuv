@@ -270,53 +270,62 @@
 
     - if @teammates_with_finalized_check_ins_count > 5
       :javascript
-        document.addEventListener('DOMContentLoaded', function() {
-          if (window.Highcharts && document.getElementById('assignment-official-rating-pie-chart') && #{@official_rating_distribution.present?.to_json}) {
-            Highcharts.chart('assignment-official-rating-pie-chart', {
-              chart: { type: 'pie' },
-              title: { text: null },
-              accessibility: { enabled: false },
-              plotOptions: {
-                pie: {
-                  allowPointSelect: true,
-                  cursor: 'pointer',
-                  dataLabels: {
-                    enabled: true,
-                    format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
-                  }
-                }
-              },
-              series: [{
-                name: 'Official Rating',
-                colorByPoint: true,
-                data: #{@official_rating_distribution.to_json.html_safe}
-              }]
-            });
-          }
+        (function() {
+          var initAssignmentAnalyticsCharts = function() {
+            if (!window.Highcharts) return;
 
-          if (window.Highcharts && document.getElementById('assignment-personal-alignment-pie-chart') && #{@personal_alignment_distribution.present?.to_json}) {
-            Highcharts.chart('assignment-personal-alignment-pie-chart', {
-              chart: { type: 'pie' },
-              title: { text: null },
-              accessibility: { enabled: false },
-              plotOptions: {
-                pie: {
-                  allowPointSelect: true,
-                  cursor: 'pointer',
-                  dataLabels: {
-                    enabled: true,
-                    format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+            var officialRatingEl = document.getElementById('assignment-official-rating-pie-chart');
+            if (officialRatingEl && #{@official_rating_distribution.present?.to_json}) {
+              Highcharts.chart('assignment-official-rating-pie-chart', {
+                chart: { type: 'pie' },
+                title: { text: null },
+                accessibility: { enabled: false },
+                plotOptions: {
+                  pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                      enabled: true,
+                      format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+                    }
                   }
-                }
-              },
-              series: [{
-                name: 'Personal Alignment',
-                colorByPoint: true,
-                data: #{@personal_alignment_distribution.to_json.html_safe}
-              }]
-            });
-          }
-        });
+                },
+                series: [{
+                  name: 'Official Rating',
+                  colorByPoint: false,
+                  data: #{@official_rating_distribution.to_json.html_safe}
+                }]
+              });
+            }
+
+            var personalAlignmentEl = document.getElementById('assignment-personal-alignment-pie-chart');
+            if (personalAlignmentEl && #{@personal_alignment_distribution.present?.to_json}) {
+              Highcharts.chart('assignment-personal-alignment-pie-chart', {
+                chart: { type: 'pie' },
+                title: { text: null },
+                accessibility: { enabled: false },
+                plotOptions: {
+                  pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                      enabled: true,
+                      format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+                    }
+                  }
+                },
+                series: [{
+                  name: 'Personal Alignment',
+                  colorByPoint: false,
+                  data: #{@personal_alignment_distribution.to_json.html_safe}
+                }]
+              });
+            }
+          };
+
+          document.addEventListener('turbo:load', initAssignmentAnalyticsCharts);
+          document.addEventListener('DOMContentLoaded', initAssignmentAnalyticsCharts);
+        })();
 
     / Comments Section
     = render 'shared/comment_summary', commentable: @assignment, organization: @organization
