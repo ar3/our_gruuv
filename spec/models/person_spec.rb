@@ -257,6 +257,17 @@ RSpec.describe Person, type: :model do
         expect(person.canonical_profile_image_url).to eq('https://example.com/person.jpg')
       end
     end
+
+    context 'when teammate has only Asana profile image' do
+      let(:organization) { create(:organization, :company) }
+      let(:teammate) { create(:teammate, person: person, organization: organization) }
+      let!(:asana_identity) { create(:teammate_identity, :asana, teammate: teammate, profile_image_url: 'https://example.com/asana.jpg') }
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: 'https://example.com/person.jpg') }
+
+      it 'ignores Asana and falls back to non-Asana sources' do
+        expect(person.canonical_profile_image_url(teammate: teammate)).to eq('https://example.com/person.jpg')
+      end
+    end
   end
 
   describe '#max_two_initials' do
@@ -383,6 +394,20 @@ RSpec.describe Person, type: :model do
 
       it 'returns nil' do
         expect(person.latest_profile_image_url).to be_nil
+      end
+    end
+
+    context 'when newest image is from Asana identity' do
+      let(:organization) { create(:organization, :company) }
+      let(:teammate) { create(:teammate, person: person, organization: organization) }
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: 'https://example.com/person.jpg') }
+      let!(:asana_identity) { create(:teammate_identity, :asana, teammate: teammate, profile_image_url: 'https://example.com/asana.jpg') }
+
+      it 'ignores Asana when selecting latest profile image URL' do
+        asana_identity.update_column(:updated_at, 1.day.ago)
+        person_identity.update_column(:updated_at, 2.days.ago)
+
+        expect(person.latest_profile_image_url).to eq('https://example.com/person.jpg')
       end
     end
   end

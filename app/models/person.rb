@@ -153,6 +153,7 @@ class Person < ApplicationRecord
   def canonical_profile_image_url(teammate: nil)
     if teammate.present?
       teammate_image_url = teammate.teammate_identities
+        .where.not(provider: 'asana')
         .where.not(profile_image_url: [ nil, '' ])
         .order(updated_at: :desc)
         .pick(:profile_image_url)
@@ -170,7 +171,7 @@ class Person < ApplicationRecord
     end
 
     company_teammates.includes(:teammate_identities).find_each do |teammate|
-      teammate.teammate_identities.where.not(profile_image_url: nil).find_each do |identity|
+      teammate.teammate_identities.where.not(provider: 'asana').where.not(profile_image_url: nil).find_each do |identity|
         all_identities << { url: identity.profile_image_url, updated_at: identity.updated_at }
       end
     end
