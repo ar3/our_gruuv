@@ -138,15 +138,28 @@ RSpec.describe Digest::SlackMessageBuilderService do
     end
   end
 
+  describe '#about_me_main_payload' do
+    it 'returns hash with header and short weekly summary only' do
+      builder = described_class.new(teammate: teammate, organization: organization)
+      result = builder.about_me_main_payload
+
+      expect(result).to have_key(:blocks)
+      expect(result).to have_key(:text)
+      expect(result[:blocks].first.dig(:text, :text)).to include('Weekly 1:1 check-in for')
+      expect(result[:text]).to include('sections are healthy')
+      expect(result[:text]).to include('It is time for our weekly check-in.')
+    end
+  end
+
   describe '#thread2_about_me' do
-    it 'returns hash with :blocks and :text with healthy/attention summary and section links' do
+    it 'returns detailed section content without weekly summary sentence' do
       builder = described_class.new(teammate: teammate, organization: organization)
       result = builder.thread2_about_me
 
       expect(result).to have_key(:blocks)
       expect(result).to have_key(:text)
-      # New format: "<x> sections are healthy, <y> need some attention, <z> need the most attention."
-      expect(result[:text]).to match(/section.*healthy|attention|most attention/i)
+      expect(result[:text]).to include('NEEDS MOST ATTENTION').or include('NEEDS SOME ATTENTION').or include('HEALTHY')
+      expect(result[:text]).not_to include('It is time for our weekly check-in.')
     end
   end
 

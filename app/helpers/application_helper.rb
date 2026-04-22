@@ -623,14 +623,14 @@ module ApplicationHelper
     %w[vertical horizontal].include?(prefs.layout.to_s)
   end
 
-  # When Slack, email, and SMS digest frequencies all match off/daily/weekly, that unified value; else "custom".
+  # When Slack, email, and SMS digest settings all match on/off, that unified value; else "custom".
   def og_digest_unified_mode(prefs, company_teammate)
     return "off" unless company_teammate
 
     slack = prefs.effective_digest_slack(company_teammate)
     email = prefs.effective_digest_email
     sms = prefs.effective_digest_sms(company_teammate.person)
-    if slack.to_s == email.to_s && email.to_s == sms.to_s && slack.to_s.in?(%w[off daily weekly])
+    if slack.to_s == email.to_s && email.to_s == sms.to_s && slack.to_s.in?(%w[off on])
       slack.to_s
     else
       "custom"

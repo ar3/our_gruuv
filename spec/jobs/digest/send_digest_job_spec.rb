@@ -28,8 +28,8 @@ RSpec.describe Digest::SendDigestJob, type: :job do
         allow_any_instance_of(Notification).to receive(:message_id).and_return('123.456')
       end
 
-      it 'opens DM with user, creates main + two thread notifications, and posts as ourgruuvbot' do
-        UserPreference.for_person(person).update_preference('digest_slack', 'weekly')
+      it 'opens DM with user, creates main + one thread notification, and posts as ourgruuvbot' do
+        UserPreference.for_person(person).update_preference('digest_slack', 'on')
         slack_service = instance_double(SlackService)
         allow(SlackService).to receive(:new).and_return(slack_service)
         allow(slack_service).to receive(:open_dm).with(user_id: 'U123').and_return({ success: true, channel_id: 'D0G9XK8HV' })
@@ -40,20 +40,20 @@ RSpec.describe Digest::SendDigestJob, type: :job do
 
         expect {
           described_class.perform_now(teammate.id)
-        }.to change { Notification.where(notification_type: 'gsd_digest').count }.by(3)
+        }.to change { Notification.where(notification_type: 'gsd_digest').count }.by(2)
 
         expect(slack_service).to have_received(:open_dm).with(user_id: 'U123')
-        expect(slack_service).to have_received(:post_message).exactly(3).times
+        expect(slack_service).to have_received(:post_message).exactly(2).times
         main_notification = Notification.where(notification_type: 'gsd_digest').order(:id).first
         expect(main_notification.metadata['channel']).to eq('D0G9XK8HV')
         expect(main_notification.metadata['username']).to eq('ourgruuvbot')
       end
     end
 
-    context 'when digest_sms is on and person has phone' do
+    context 'when digest_sms is enabled and person has phone' do
       before do
         person.update!(unique_textable_phone_number: '+15551234567')
-        UserPreference.for_person(person).update_preference('digest_sms', 'weekly')
+        UserPreference.for_person(person).update_preference('digest_sms', 'on')
         allow(ENV).to receive(:[]).and_call_original
         allow(ENV).to receive(:[]).with('NOTIFICATION_API_CLIENT_ID').and_return('client_id')
         allow(ENV).to receive(:[]).with('NOTIFICATION_API_CLIENT_SECRET').and_return('secret')
@@ -80,7 +80,7 @@ RSpec.describe Digest::SendDigestJob, type: :job do
 
     it 'does not call NotificationApiService when person has no phone' do
       person.update!(unique_textable_phone_number: nil)
-      UserPreference.for_person(person).update_preference('digest_sms', 'weekly')
+      UserPreference.for_person(person).update_preference('digest_sms', 'on')
       expect(NotificationApiService).not_to receive(:new)
       described_class.perform_now(teammate.id)
     end

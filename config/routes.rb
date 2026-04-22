@@ -103,6 +103,8 @@ Rails.application.routes.draw do
     # Digest (user digest preferences; per-organization URL, edits current user's preferences)
     resource :digest, only: [:edit, :update], controller: 'organizations/digest' do
       post :sync_all_mediums, on: :member
+      post :send_gsd_test, on: :member
+      post :send_about_me_test, on: :member
     end
     
     # Observable Moments

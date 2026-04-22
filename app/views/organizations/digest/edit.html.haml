@@ -12,69 +12,114 @@
       %i.bi.bi-bell.me-2
       Digest settings
     %p.text-muted.mb-0.ms-2
-      Choose how often you receive a reminder of your #{company_label_for('get_shit_done', 'Get Shit Done')} list and About Me health.
+      Choose where you receive reminders for your #{company_label_for('get_shit_done', 'Get Shit Done')} list.
 
 - has_slack = @teammate.has_slack_identity?
 - has_phone = @teammate.person.unique_textable_phone_number.present?
 - effective_slack = @user_preference.effective_digest_slack(@teammate)
 - effective_email = @user_preference.effective_digest_email
 - effective_sms = @user_preference.effective_digest_sms(@teammate.person)
-- display_sms = (effective_sms == 'off' && has_phone) ? 'weekly' : effective_sms
+- gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
+- gsd_test_enabled = @gsd_pending_items_count.to_i.positive?
 
 .card.mb-4
   .card-body
+    .row.g-4.mb-4
+      .col-12.col-lg-6
+        .border.rounded.p-3.h-100
+          %h6.mb-2= "#{gsd_label} digest"
+          %p.text-muted.small.mb-3
+            Sent daily at 8:00 AM in your timezone when you have items in #{gsd_label}. Uses your notification preferences below.
+          - if gsd_test_enabled
+            = link_to send_gsd_test_organization_digest_path(@organization, return_url: @return_url, return_text: @return_text),
+                      class: 'btn btn-outline-primary btn-sm',
+                      data: { turbo_method: :post } do
+              %i.bi.bi-send.me-2
+              = "Send test (#{gsd_label})"
+          - else
+            %button.btn.btn-outline-primary.btn-sm{ type: 'button', disabled: true }
+              %i.bi.bi-send.me-2
+              = "Send test (#{gsd_label})"
+            %span.ms-2.text-muted.small{ data: { bs_toggle: 'tooltip', bs_placement: 'top' }, title: "Add an item to your #{gsd_label} list, then you can send a test." }
+              %i.bi.bi-info-circle
+      .col-12.col-lg-6
+        .border.rounded.p-3.h-100
+          %h6.mb-2 1:1 About Me digest
+          %p.text-muted.small.mb-3
+            Sent weekly on each selected day to a DM with the employee and their direct manager. Uses the same notification preferences below.
+          - about_me_test_options = @about_me_teammates.map { |tm| [tm.person.display_name, tm.id] }
+          = form_with url: send_about_me_test_organization_digest_path(@organization), method: :post, local: true, class: "d-flex flex-wrap gap-2 align-items-center" do
+            = hidden_field_tag :return_url, @return_url
+            = hidden_field_tag :return_text, @return_text
+            = select_tag :teammate_id,
+                         options_for_select(about_me_test_options, @teammate.id),
+                         class: 'form-select form-select-sm',
+                         style: 'max-width: 280px;'
+            = button_tag type: 'submit', class: 'btn btn-outline-secondary btn-sm' do
+              %i.bi.bi-send.me-1
+              Send test (1:1)
+
     = form_with url: organization_digest_path(@organization), method: :patch, local: true do |f|
       - if @return_url.present?
         = hidden_field_tag :return_url, @return_url
       - if @return_text.present?
         = hidden_field_tag :return_text, @return_text
 
-      .row.mb-4
-        .col-12.col-md-6
-          %h5.mb-2 Slack
-          - if has_slack
-            %p.text-muted.small.mb-2
-              Receive the digest in Slack.
-            = select_tag :digest_slack, options_for_select([['Off', 'off'], ['Daily', 'daily'], ['Weekly', 'weekly']], effective_slack), { class: 'form-select', include_blank: false }
-          - else
-            %p.text-muted.small.mb-2
-              Connect your Slack account in Slack Settings to get digest reminders.
-            = select_tag :digest_slack, options_for_select([['Off', 'off']], effective_slack), { class: 'form-select', disabled: true }
+      %h5.mb-3 Delivery mediums
+      .form-check.mb-2
+        = check_box_tag :digest_slack, 'on', effective_slack == 'on', class: 'form-check-input', disabled: !has_slack
+        = label_tag :digest_slack, 'Slack', class: 'form-check-label'
+      - unless has_slack
+        %p.text-muted.small.ms-4
+          Connect your Slack account in Slack Settings to enable Slack reminders.
 
-      .row.mb-4
-        .col-12.col-md-6
-          %h5.mb-2 Email
-          %p.text-muted.small.mb-2
-            Email delivery is not set up yet; you can choose a schedule for when we do.
-          = select_tag :digest_email, options_for_select([['Off', 'off'], ['Daily', 'daily'], ['Weekly', 'weekly']], effective_email), { class: 'form-select' }
+      .form-check.mb-2
+        = check_box_tag :digest_sms, 'on', effective_sms == 'on', class: 'form-check-input', disabled: !has_phone
+        = label_tag :digest_sms, 'SMS', class: 'form-check-label'
+      - unless has_phone
+        %p.text-muted.small.ms-4.mb-2
+          Add a phone number in your profile to enable SMS reminders.
+        .ms-4.mb-3
+          = link_to 'Add phone number in profile', about_me_organization_company_teammate_path(@organization, @teammate), class: 'small'
 
-      .row.mb-4
-        .col-12.col-md-6
-          %h5.mb-2 SMS
-          - if has_phone
-            %p.text-muted.small.mb-2
-              Receive the digest by SMS at your configured number.
-            = select_tag :digest_sms, options_for_select([['Off', 'off'], ['Daily', 'daily'], ['Weekly', 'weekly']], display_sms), { class: 'form-select' }
-          - else
-            %p.text-muted.small.mb-2
-              Add a phone number in your profile to enable SMS digest.
-            = link_to about_me_organization_company_teammate_path(@organization, @teammate), class: 'small' do
-              Add phone number in profile
-            %br
-            = select_tag :digest_sms, options_for_select([['Off', 'off']], effective_sms), { class: 'form-select', disabled: true }
+      .form-check.mb-3
+        = check_box_tag :digest_email, 'on', false, class: 'form-check-input', disabled: true
+        = label_tag :digest_email, 'Email (coming soon)', class: 'form-check-label text-muted'
 
-      - weekly_day_options = [['Monday', '1'], ['Tuesday', '2'], ['Wednesday', '3'], ['Thursday', '4'], ['Friday', '5'], ['Saturday', '6'], ['Sunday', '0']]
-      - effective_weekly = @user_preference.preference(:digest_weekly_day).presence || '1'
-      - any_weekly = effective_slack == 'weekly' || effective_email == 'weekly' || display_sms == 'weekly'
-      - if any_weekly
-        .row.mb-4
-          .col-12.col-md-6
-            %h5.mb-2 Weekly digest day
-            %p.text-muted.small.mb-2
-              For weekly digests, which day to send (8:00 AM your time).
-            = select_tag :digest_weekly_day, options_for_select(weekly_day_options, effective_weekly), { class: 'form-select' }
+      %hr.my-4
+      %h5.mb-3 About Me weekly 1:1 digest day
+      %p.text-muted.small
+        This digest sends at 8:00 AM in each employee's timezone to a group DM with the employee and their direct manager.
+      .table-responsive
+        %table.table.table-sm.align-middle
+          %thead
+            %tr
+              %th Employee
+              - [['Sun', '0'], ['Mon', '1'], ['Tue', '2'], ['Wed', '3'], ['Thu', '4'], ['Fri', '5'], ['Sat', '6'], ['No 1:1', 'off']].each do |label, _value|
+                %th.text-center= label
+          %tbody
+            - @about_me_teammates.each do |employee|
+              - pref = UserPreference.for_person(employee.person)
+              - selected_day = pref.preference(:about_me_weekly_day).presence || 'off'
+              - manager_name = employee.active_employment_tenure&.manager_teammate&.person&.casual_name
+              %tr
+                %td
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %div= employee.person.display_name
+                      - if manager_name.present?
+                        %div.small.text-muted
+                          = "... and #{manager_name} will be notified as well"
+                    = link_to organization_company_teammate_path(@organization, employee),
+                              target: '_blank',
+                              rel: 'noopener noreferrer',
+                              class: 'text-muted',
+                              title: "Open #{employee.person.display_name} profile in a new tab" do
+                      %i.bi.bi-box-arrow-up-right
+                - [['0'], ['1'], ['2'], ['3'], ['4'], ['5'], ['6'], ['off']].flatten.each do |value|
+                  %td.text-center
+                    = radio_button_tag "about_me_days[#{employee.id}]", value, selected_day.to_s == value.to_s, class: 'form-check-input'
 
       .d-flex.flex-wrap.gap-2.align-items-center.mt-4
         = f.submit "Save preferences", class: "btn btn-primary"
-        = f.submit "Save and Test By Sending Now", class: "btn btn-outline-primary ms-2"
         = link_to "Cancel", (@return_url.presence || about_me_organization_company_teammate_path(@organization, @teammate)), class: "btn btn-secondary"

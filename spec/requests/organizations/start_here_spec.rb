@@ -41,11 +41,12 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(response.body).to include('Add new widgets')
     end
 
-    it 'shows Other ways to customize section with navigation and digest controls' do
+    it 'shows Other ways to customize section with navigation and digest info alert' do
       get organization_start_here_path(company)
       expect(response.body).to include('Other ways to customize OurGruuv')
       expect(response.body).to include('Navigation style')
-      expect(response.body).to include('Send me the OG digest')
+      expect(response.body).to include('Digest timing and delivery preferences moved to Digest settings.')
+      expect(response.body).to include('Open digest settings')
       expect(response.body).to include('Clean/No Navigation')
     end
 

@@ -95,16 +95,41 @@ module Digest
     CHECK_IN_SECTION_KEYS = %i[aspirations_check_in assignments_check_in position_check_in].freeze
 
     def thread2_about_me
+      about_me_thread_payload
+    end
+
+    def about_me_main_payload
+      summary = about_me_summary_sentence
+      weekly_line = 'It is time for our weekly check-in.'
+      subject_name = slack_escape(@teammate.person.display_name)
+
+      header_block = {
+        type: 'section',
+        text: { type: 'mrkdwn', text: "*Weekly 1:1 check-in for #{subject_name}*" }
+      }
+      profile_image_url = @teammate.profile_image_url.to_s
+      if profile_image_url.present?
+        header_block[:accessory] = {
+          type: 'image',
+          image_url: profile_image_url,
+          alt_text: "#{subject_name} profile image"
+        }
+      end
+
+      main_text = "#{summary}\n#{weekly_line}"
+      blocks = [
+        header_block,
+        { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(main_text) } }
+      ]
+
+      { blocks: blocks, text: main_text }
+    end
+
+    def about_me_thread_payload
       lines = []
       red_sections = @about_me_sections.select { |s| s[:status] == :red }
       yellow_sections = @about_me_sections.select { |s| s[:status] == :yellow }
       green_sections = @about_me_sections.select { |s| s[:status] == :green }
-      summary_parts = []
-      summary_parts << "#{green_sections.size} #{'section'.pluralize(green_sections.size)} #{green_sections.size == 1 ? 'is' : 'are'} healthy" if green_sections.any?
-      summary_parts << "#{yellow_sections.size} #{'section'.pluralize(yellow_sections.size)} need some attention" if yellow_sections.any?
-      summary_parts << "#{red_sections.size} #{'section'.pluralize(red_sections.size)} need the most attention" if red_sections.any?
-      lines << summary_parts.join(', ') + '.' if summary_parts.any?
-      lines << ''
 
       if red_sections.any?
         lines << "*NEEDS MOST ATTENTION (#{red_sections.size} #{'section'.pluralize(red_sections.size)}):*"
@@ -125,6 +150,10 @@ module Digest
       text = truncate_for_slack_section(text)
       blocks = [{ type: 'section', text: { type: 'mrkdwn', text: text } }]
       { blocks: blocks, text: text }
+    end
+
+    def about_me_payload(include_summary: true)
+      include_summary ? about_me_main_payload : about_me_thread_payload
     end
 
     private
@@ -155,6 +184,13 @@ module Digest
       explanation = section[:explanation_sentence].to_s
       separator = CHECK_IN_SECTION_KEYS.include?(section[:key]) ? ': ' : '. '
       explanation.present? ? "#{link_part}#{separator}#{slack_escape(explanation)}" : link_part
+    end
+
+    def about_me_summary_sentence
+      red_sections = @about_me_sections.select { |s| s[:status] == :red }
+      yellow_sections = @about_me_sections.select { |s| s[:status] == :yellow }
+      green_sections = @about_me_sections.select { |s| s[:status] == :green }
+      "#{green_sections.size} sections are healthy, #{yellow_sections.size} sections need some attention, and #{red_sections.size} sections need the most attention."
     end
 
     # Returns [link_text, url] for the About Me section. URL is full URL for Slack mrkdwn links.

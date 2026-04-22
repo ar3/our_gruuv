@@ -103,4 +103,21 @@ module InsightsHelper
     return [] unless @teammate_visit_counts.is_a?(Array)
     @teammate_visit_counts.map { |h| h[:count] }
   end
+
+  def who_is_doing_what_gsd_medium_series
+    return [] if @gsd_digest_medium_combinations.values.sum.to_i.zero?
+
+    @gsd_digest_medium_combinations.map do |label, count|
+      { name: label, data: [count.to_i] }
+    end
+  end
+
+  def who_is_doing_what_about_me_day_series
+    return [] if @about_me_digest_day_distribution.values.sum.to_i.zero?
+
+    day_labels = { '0' => 'Sunday', '1' => 'Monday', '2' => 'Tuesday', '3' => 'Wednesday', '4' => 'Thursday', '5' => 'Friday', '6' => 'Saturday', 'off' => 'No 1:1s' }
+    @about_me_digest_day_distribution.map do |day, count|
+      { name: day_labels[day.to_s] || day.to_s, data: [count.to_i] }
+    end
+  end
 end

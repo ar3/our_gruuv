@@ -15,6 +15,7 @@ RSpec.describe Digest::ScheduleDigestsJob, type: :job do
 
   before do
     create(:teammate_identity, :slack, teammate: teammate, uid: 'U123')
+    allow_any_instance_of(GetShitDoneQueryService).to receive(:all_pending_items).and_return({ total_pending: 2 })
   end
 
   describe '#perform' do
@@ -25,49 +26,34 @@ RSpec.describe Digest::ScheduleDigestsJob, type: :job do
       end
     end
 
-    it 'enqueues SendDigestJob for teammate with digest_slack daily when it is 8am on a weekday in their timezone' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'daily')
+    it 'enqueues SendDigestJob for teammate with digest enabled when it is 8am in their timezone' do
+      UserPreference.for_person(person).update_preference('digest_slack', 'on')
       # Tuesday 8am Pacific = 2025-03-04 16:00 UTC
       travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
         expect { described_class.perform_now }.to have_enqueued_job(Digest::SendDigestJob).with(teammate.id)
       end
     end
 
-    it 'does not enqueue daily digest on Saturday 8am in their timezone' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'daily')
+    it 'does not enqueue digest on Saturday even when enabled and teammate has items' do
+      UserPreference.for_person(person).update_preference('digest_slack', 'on')
       # Saturday 8am Pacific: 2025-03-08 16:00 UTC
       travel_to Time.zone.parse('2025-03-08 16:00:00 UTC') do
         expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
       end
     end
 
-    it 'does not enqueue daily digest on Sunday 8am in their timezone' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'daily')
+    it 'does not enqueue when enabled but teammate has no GSD items' do
+      UserPreference.for_person(person).update_preference('digest_slack', 'on')
+      allow_any_instance_of(GetShitDoneQueryService).to receive(:all_pending_items).and_return({ total_pending: 0 })
       # Sunday 8am Pacific: 2025-03-09 16:00 UTC
       travel_to Time.zone.parse('2025-03-09 16:00:00 UTC') do
         expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
       end
     end
 
-    it 'enqueues SendDigestJob for teammate with digest_slack weekly when it is Monday 8am in their timezone' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'weekly')
-      # Monday 8am Pacific: 2025-03-03 16:00 UTC
-      travel_to Time.zone.parse('2025-03-03 16:00:00 UTC') do
-        expect { described_class.perform_now }.to have_enqueued_job(Digest::SendDigestJob).with(teammate.id)
-      end
-    end
-
-    it 'does not enqueue when digest_slack weekly but not Monday in their timezone' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'weekly')
-      # Tuesday 8am Pacific
-      travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
-        expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
-      end
-    end
-
     it 'skips teammate with blank timezone' do
       person.update!(timezone: nil)
-      UserPreference.for_person(person).update_preference('digest_slack', 'daily')
+      UserPreference.for_person(person).update_preference('digest_slack', 'on')
       travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
         expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
       end

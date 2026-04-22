@@ -38,51 +38,95 @@ RSpec.describe Organizations::DigestController, type: :controller do
   end
 
   describe 'PATCH #update' do
-    it 'updates digest preferences and redirects to return_url when present (Save preferences button)' do
+    it 'updates digest preferences and stays on digest page (Save preferences button)' do
       return_url = organization_get_shit_done_path(company)
       patch :update, params: {
         organization_id: company.to_param,
-        digest_slack: 'daily',
-        digest_email: 'weekly',
+        digest_slack: 'on',
+        digest_email: 'on',
         digest_sms: 'off',
         return_url: return_url,
         return_text: 'Back to list',
         commit: 'Save preferences'
       }
-      expect(response).to redirect_to(return_url)
+      expect(response).to redirect_to(edit_organization_digest_path(company, return_url: return_url, return_text: 'Back to list'))
       expect(flash[:notice]).to eq('Digest preferences saved.')
 
       pref = UserPreference.for_person(person).reload
-      expect(pref.preference(:digest_slack)).to eq('daily')
-      expect(pref.preference(:digest_email)).to eq('weekly')
+      expect(pref.preference(:digest_slack)).to eq('on')
+      expect(pref.preference(:digest_email)).to eq('on')
       expect(pref.preference(:digest_sms)).to eq('off')
     end
 
-    it 'redirects to about_me when return_url is not present' do
+    it 'redirects to digest page when return_url is not present' do
       patch :update, params: {
         organization_id: company.to_param,
+        digest_sms: 'on',
         digest_email: 'off',
         commit: 'Save preferences'
       }
-      expect(response).to redirect_to(about_me_organization_company_teammate_path(company, teammate))
+      expect(response).to redirect_to(edit_organization_digest_path(company))
       expect(flash[:notice]).to eq('Digest preferences saved.')
     end
 
-    it 'when commit is "Save and Test By Sending Now" saves preferences, enqueues job, and redirects to digest edit with queued flash' do
-      expect {
-        patch :update, params: {
-          organization_id: company.to_param,
-          digest_slack: 'weekly',
-          digest_email: 'off',
-          digest_sms: 'off',
-          return_url: organization_get_shit_done_path(company),
-          return_text: 'Back to list',
-          commit: 'Save and Test By Sending Now'
-        }
-      }.to have_enqueued_job(Digest::SendDigestJob).with(teammate.id)
+    it 'shows danger alert when both Slack and SMS are off' do
+      patch :update, params: {
+        organization_id: company.to_param,
+        digest_slack: 'off',
+        digest_sms: 'off',
+        digest_email: 'off',
+        commit: 'Save preferences'
+      }
 
-      expect(response).to redirect_to(edit_organization_digest_path(company, return_url: organization_get_shit_done_path(company), return_text: 'Back to list'))
-      expect(flash[:notice]).to eq('Digests have been queued to send and should be delivered in the next minute or so.')
+      expect(response).to redirect_to(edit_organization_digest_path(company))
+      expect(flash[:alert]).to eq('No notifications will be sent since no mediums are configured to send notifications to.')
+    end
+
+    it 'updates about me weekly day for a direct report when about_me_days is submitted' do
+      report_person = create(:person)
+      report = create(:company_teammate, organization: company, person: report_person)
+      create(:employment_tenure, teammate: report, company: company, manager_teammate: teammate, started_at: 1.year.ago, ended_at: nil)
+      report.update!(first_employed_at: 1.year.ago)
+
+      patch :update, params: {
+        organization_id: company.to_param,
+        digest_slack: 'on',
+        digest_email: 'off',
+        digest_sms: 'off',
+        about_me_days: { report.id.to_s => '4' },
+        commit: 'Save preferences'
+      }
+
+      expect(response).to redirect_to(edit_organization_digest_path(company))
+      expect(UserPreference.for_person(report_person).preference(:about_me_weekly_day)).to eq('4')
+    end
+  end
+
+  describe 'POST #send_gsd_test' do
+    it 'queues GSD send job and redirects to digest edit' do
+      allow_any_instance_of(GetShitDoneQueryService).to receive(:all_pending_items).and_return({ total_pending: 1 })
+      expect {
+        post :send_gsd_test, params: { organization_id: company.to_param }
+      }.to have_enqueued_job(Digest::SendDigestJob).with(teammate.id)
+      expect(response).to redirect_to(edit_organization_digest_path(company))
+    end
+
+    it 'does not queue test when user has no GSD items' do
+      allow_any_instance_of(GetShitDoneQueryService).to receive(:all_pending_items).and_return({ total_pending: 0 })
+      expect {
+        post :send_gsd_test, params: { organization_id: company.to_param }
+      }.not_to have_enqueued_job(Digest::SendDigestJob)
+      expect(response).to redirect_to(edit_organization_digest_path(company))
+      expect(flash[:alert]).to match(/No test sent/)
+    end
+  end
+
+  describe 'POST #send_about_me_test' do
+    it 'queues About Me send job for teammate and redirects to digest edit' do
+      expect {
+        post :send_about_me_test, params: { organization_id: company.to_param, teammate_id: teammate.id }
+      }.to have_enqueued_job(Digest::SendAboutMeJob).with(teammate.id)
+      expect(response).to redirect_to(edit_organization_digest_path(company))
     end
   end
 end

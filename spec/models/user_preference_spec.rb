@@ -85,12 +85,12 @@ RSpec.describe UserPreference, type: :model do
     end
 
     it 'updates digest preferences' do
-      preference.update_preference('digest_slack', 'weekly')
-      preference.update_preference('digest_email', 'daily')
+      preference.update_preference('digest_slack', 'on')
+      preference.update_preference('digest_email', 'on')
       preference.update_preference('digest_sms', 'off')
 
-      expect(preference.reload.preference(:digest_slack)).to eq('weekly')
-      expect(preference.preference(:digest_email)).to eq('daily')
+      expect(preference.reload.preference(:digest_slack)).to eq('on')
+      expect(preference.preference(:digest_email)).to eq('on')
       expect(preference.preference(:digest_sms)).to eq('off')
     end
 
@@ -98,7 +98,7 @@ RSpec.describe UserPreference, type: :model do
       let(:organization) { create(:organization) }
       let(:teammate) { create(:company_teammate, person: person, organization: organization) }
 
-      it 'returns off when no preference set (opt-in; scheduled digests only for explicit daily/weekly)' do
+      it 'returns off when no preference set' do
         create(:teammate_identity, :slack, teammate: teammate)
         expect(preference.effective_digest_slack(teammate)).to eq('off')
       end
@@ -108,9 +108,9 @@ RSpec.describe UserPreference, type: :model do
       end
 
       it 'returns stored value when set' do
-        preference.update_preference('digest_slack', 'daily')
+        preference.update_preference('digest_slack', 'on')
         create(:teammate_identity, :slack, teammate: teammate)
-        expect(preference.effective_digest_slack(teammate)).to eq('daily')
+        expect(preference.effective_digest_slack(teammate)).to eq('on')
       end
     end
 
@@ -120,13 +120,13 @@ RSpec.describe UserPreference, type: :model do
       end
 
       it 'returns stored value when set' do
-        preference.update_preference('digest_email', 'weekly')
-        expect(preference.effective_digest_email).to eq('weekly')
+        preference.update_preference('digest_email', 'on')
+        expect(preference.effective_digest_email).to eq('on')
       end
     end
 
     describe '#effective_digest_sms' do
-      it 'returns off when no preference set (opt-in; scheduled digests only for explicit daily/weekly)' do
+      it 'returns off when no preference set' do
         person.update!(unique_textable_phone_number: '+15551234567')
         expect(preference.effective_digest_sms(person)).to eq('off')
       end
@@ -137,9 +137,14 @@ RSpec.describe UserPreference, type: :model do
       end
 
       it 'returns stored value when set' do
-        preference.update_preference('digest_sms', 'daily')
+        preference.update_preference('digest_sms', 'on')
         person.update!(unique_textable_phone_number: '+15551234567')
-        expect(preference.effective_digest_sms(person)).to eq('daily')
+        expect(preference.effective_digest_sms(person)).to eq('on')
+      end
+
+      it 'treats legacy daily or weekly settings as enabled' do
+        preference.update_preference('digest_sms', 'daily')
+        expect(preference.effective_digest_sms(person)).to eq('on')
       end
     end
   end

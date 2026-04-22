@@ -269,6 +269,23 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
         unique_users: scope.distinct.count(:person_id)
       }
     end
+
+    prefs_by_person_id = UserPreference.where(person_id: teammate_person_ids).index_by(&:person_id)
+    combinations = Hash.new(0)
+    about_me_days = Hash.new(0)
+    active_teammates.each do |tm|
+      prefs = prefs_by_person_id[tm.person_id] || UserPreference.for_person(tm.person)
+      enabled = []
+      enabled << 'slack' if prefs.effective_digest_slack(tm) == 'on'
+      enabled << 'email' if prefs.effective_digest_email == 'on'
+      enabled << 'sms' if prefs.effective_digest_sms(tm.person) == 'on'
+      combinations[(enabled.any? ? enabled.join('+') : 'off')] += 1
+
+      day = prefs.preference(:about_me_weekly_day).presence || 'off'
+      about_me_days[day] += 1
+    end
+    @gsd_digest_medium_combinations = combinations
+    @about_me_digest_day_distribution = about_me_days
   end
 
   def check_ins_progress

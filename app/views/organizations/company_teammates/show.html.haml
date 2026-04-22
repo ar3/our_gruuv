@@ -32,11 +32,28 @@
             %i.bi.bi-bell.me-2
             Digest
         .card-body
-          %p.text-muted.mb-2
-            Get a daily or weekly reminder of your #{company_label_for('get_shit_done', 'Get Shit Done')} list and About Me health via Slack, email, or SMS.
-          = link_to edit_organization_digest_path(organization, return_url: organization_company_teammate_path(organization, @teammate), return_text: "Back to Profile"), class: "btn btn-outline-primary" do
-            %i.bi.bi-sliders.me-2
-            Configure digest
+          - about_me_day = UserPreference.for_person(@teammate.person).preference(:about_me_weekly_day).presence || 'off'
+          - digest_prefs = UserPreference.for_person(@teammate.person)
+          = form_with url: organization_digest_path(organization), method: :patch, local: true, class: "mt-2" do
+            .row.g-3
+              .col-12.col-lg-8
+                %p.text-muted.mb-2
+                  Get reminders for your #{company_label_for('get_shit_done', 'Get Shit Done')} list through your selected mediums.
+                .small.fw-semibold.mb-2 Weekly 1:1 check-in day
+                .d-flex.flex-wrap.gap-2
+                  - [['Sun', '0'], ['Mon', '1'], ['Tue', '2'], ['Wed', '3'], ['Thu', '4'], ['Fri', '5'], ['Sat', '6'], ['No 1:1', 'off']].each do |label, value|
+                    .form-check.form-check-inline
+                      = radio_button_tag "about_me_days[#{@teammate.id}]", value, about_me_day.to_s == value.to_s, class: 'form-check-input'
+                      = label_tag nil, label, class: 'form-check-label'
+              .col-12.col-lg-4
+                .d-grid.gap-2
+                  = link_to edit_organization_digest_path(organization, return_url: organization_company_teammate_path(organization, @teammate), return_text: "Back to Profile"), class: "btn btn-outline-primary" do
+                    %i.bi.bi-sliders.me-2
+                    Configure digest
+                  = submit_tag "Save 1:1 day", class: "btn btn-sm btn-outline-primary"
+            = hidden_field_tag :digest_slack, digest_prefs.effective_digest_slack(@teammate)
+            = hidden_field_tag :digest_sms, digest_prefs.effective_digest_sms(@teammate.person)
+            = hidden_field_tag :digest_email, 'off'
 
 / Security & Permissions Section
 .row

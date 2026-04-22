@@ -88,7 +88,6 @@
 
 - prefs = current_user_preferences
 - layout_cur = prefs.layout.to_s.presence || "vertical"
-- digest_mode = og_digest_unified_mode(prefs, current_company_teammate)
 
 %hr.my-4
 %a.start-here-customize-toggle.h5.fw-semibold.text-body.text-decoration-none.d-inline-flex.align-items-center.gap-2.mb-3.collapsed{href: "#start-here-other-customize", role: "button", data: { turbo: false, bs_toggle: "collapse", bs_target: "#start-here-other-customize" }, "aria-expanded": "false", "aria-controls": "start-here-other-customize"}
@@ -112,9 +111,6 @@
       = button_to "Clean/No Navigation", layout_user_preferences_path, method: :patch, params: { layout: "no_nav" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'no_nav' ? 'btn-primary' : 'btn-outline-secondary'}"
 
   .mb-5
-    %p.small.fw-semibold.text-muted.mb-2 Send me the OG digest
-    .d-flex.flex-wrap.gap-2.align-items-center
-      = button_to "Off", sync_all_mediums_organization_digest_path(current_organization), method: :post, params: { frequency: "off" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{digest_mode == 'off' ? 'btn-primary' : 'btn-outline-secondary'}"
-      = button_to "Weekly", sync_all_mediums_organization_digest_path(current_organization), method: :post, params: { frequency: "weekly" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{digest_mode == 'weekly' ? 'btn-primary' : 'btn-outline-secondary'}"
-      = button_to "Daily", sync_all_mediums_organization_digest_path(current_organization), method: :post, params: { frequency: "daily" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{digest_mode == 'daily' ? 'btn-primary' : 'btn-outline-secondary'}"
-      = link_to "Custom", edit_organization_digest_path(current_organization, return_url: organization_start_here_path(current_organization), return_text: "Back to Start Here"), class: "btn btn-sm #{digest_mode == 'custom' ? 'btn-primary' : 'btn-outline-secondary'}"
+    .alert.alert-info.mb-0
+      Digest timing and delivery preferences moved to Digest settings.
+      = link_to "Open digest settings", edit_organization_digest_path(current_organization, return_url: organization_start_here_path(current_organization), return_text: "Back to Start Here"), class: "alert-link ms-1"

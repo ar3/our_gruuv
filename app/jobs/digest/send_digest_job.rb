@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module Digest
-  # Sends the GSD + About Me digest to a teammate's configured channels (Slack now; SMS in Phase 4).
-  # Call with teammate_id. For "send now" we send to all channels they have configured (Slack if digest_slack on; SMS if phone + digest_sms on).
+  # Sends the GSD + About Me digest to a teammate's configured channels.
+  # Call with teammate_id. "On" means enabled medium.
   class SendDigestJob < ApplicationJob
     queue_as :default
 
@@ -23,8 +23,7 @@ module Digest
 
     def should_send_slack?(teammate, prefs)
       return false unless teammate.has_slack_identity? && teammate.slack_user_id.present?
-      freq = prefs.effective_digest_slack(teammate)
-      freq.present? && freq != 'off'
+      prefs.effective_digest_slack(teammate) == 'on'
     end
 
     # Digest bot name so the message appears in a DM between the user and ourgruuvbot
@@ -46,7 +45,6 @@ module Digest
       builder = SlackMessageBuilderService.new(teammate: teammate, organization: organization)
       main_payload = builder.main_message
       gsd_thread_payloads = builder.gsd_thread_payloads
-      about_me_payload = builder.thread2_about_me
 
       main_notification = Notification.create!(
         notifiable: teammate,
@@ -63,8 +61,7 @@ module Digest
         return
       end
 
-      thread_payloads = gsd_thread_payloads + [about_me_payload]
-      thread_payloads.each do |payload|
+      gsd_thread_payloads.each do |payload|
         thread_notification = Notification.create!(
           notifiable: teammate,
           notification_type: 'gsd_digest',
@@ -80,8 +77,7 @@ module Digest
 
     def should_send_sms?(person, prefs)
       return false if person.unique_textable_phone_number.blank?
-      freq = prefs.effective_digest_sms(person)
-      freq.present? && freq != 'off'
+      prefs.effective_digest_sms(person) == 'on'
     end
 
     def send_sms(teammate, organization, prefs)

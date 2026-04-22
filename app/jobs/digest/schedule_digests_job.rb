@@ -2,14 +2,12 @@
 
 module Digest
   # Runs every hour; finds teammates for whom it is 8:00 AM in their timezone and
-  # enqueues SendDigestJob for daily or weekly digest.
-  # - Daily: only on weekdays (Mon–Fri in recipient's timezone).
-  # - Weekly: only on their digest_weekly_day (default Monday).
+  # enqueues SendDigestJob for teammates who have at least one enabled medium and
+  # at least one GSD item.
   class ScheduleDigestsJob < ApplicationJob
     queue_as :default
 
     DIGEST_HOUR = 8
-    DEFAULT_WEEKLY_DAY = 1 # Monday (0=Sunday, 1=Monday, ... 6=Saturday)
 
     def perform
       now_utc = Time.current
@@ -22,18 +20,12 @@ module Digest
         next if tz.blank?
 
         prefs = UserPreference.for_person(person)
-        freq = digest_frequency(prefs, teammate)
-        next unless freq.in?(%w[daily weekly])
+        next unless digest_enabled_for_any_medium?(prefs)
 
         local_time = now_utc.in_time_zone(tz)
         next unless local_time.hour == DIGEST_HOUR
-
-        if freq == 'daily'
-          next unless weekday?(local_time)
-        elsif freq == 'weekly'
-          weekly_day = (prefs.preference('digest_weekly_day').presence || DEFAULT_WEEKLY_DAY).to_i
-          next unless local_time.wday == weekly_day
-        end
+        next unless weekday?(local_time)
+        next unless has_gsd_items?(teammate)
 
         SendDigestJob.perform_later(teammate.id)
       end
@@ -41,16 +33,16 @@ module Digest
 
     private
 
-    def weekday?(time)
-      # 0 = Sunday, 6 = Saturday; weekdays are 1-5
-      time.wday.between?(1, 5)
+    def digest_enabled_for_any_medium?(prefs)
+      [prefs.effective_digest_slack(nil), prefs.effective_digest_email, prefs.effective_digest_sms(nil)].include?('on')
     end
 
-    def digest_frequency(prefs, teammate)
-      slack_freq = prefs.effective_digest_slack(teammate)
-      email_freq = prefs.effective_digest_email
-      sms_freq = prefs.effective_digest_sms(teammate.person)
-      [slack_freq, email_freq, sms_freq].find { |f| f.in?(%w[daily weekly]) }
+    def weekday?(time)
+      time.wday.between?(1, 5) # Monday-Friday
+    end
+
+    def has_gsd_items?(teammate)
+      GetShitDoneQueryService.new(teammate: teammate).all_pending_items[:total_pending].to_i.positive?
     end
   end
 end

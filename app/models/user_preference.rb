@@ -9,7 +9,9 @@ class UserPreference < ApplicationRecord
     digest_slack: 'off',
     digest_email: 'off',
     digest_sms: 'off',
-    digest_weekly_day: nil
+    digest_weekly_day: nil,
+    about_me_weekly_day: 'off',
+    about_me_last_sent_week: nil
   }.freeze
   
   # Ensure preferences is always a hash with defaults
@@ -43,15 +45,15 @@ class UserPreference < ApplicationRecord
   # Digest preferences: stored value or 'off'. No automatic weekly default so scheduled digests
   # only go to people who have explicitly chosen daily/weekly (opt-in until we launch).
   def effective_digest_slack(teammate)
-    preferences['digest_slack'].presence || 'off'
+    normalized_digest_medium_value(preferences['digest_slack'])
   end
 
   def effective_digest_email
-    preferences['digest_email'].presence || 'off'
+    normalized_digest_medium_value(preferences['digest_email'])
   end
 
   def effective_digest_sms(person_or_nil = nil)
-    preferences['digest_sms'].presence || 'off'
+    normalized_digest_medium_value(preferences['digest_sms'])
   end
 
   # Find or create preferences for a person
@@ -62,6 +64,14 @@ class UserPreference < ApplicationRecord
   end
   
   private
+
+  def normalized_digest_medium_value(value)
+    raw = value.to_s
+    return 'on' if raw == 'on'
+    return 'on' if %w[daily weekly].include?(raw) # Backward compatibility for existing records
+
+    'off'
+  end
   
   def set_default_preferences
     self.preferences = DEFAULT_PREFERENCES.dup if preferences.nil? || preferences.empty?

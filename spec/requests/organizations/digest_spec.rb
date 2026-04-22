@@ -17,7 +17,7 @@ RSpec.describe 'Organizations::Digest', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Digest settings')
       expect(response.body).to include('Slack')
-      expect(response.body).to include('Save and Test By Sending Now')
+      expect(response.body).to include('Send test (Get Shit Done)')
     end
 
     it 'shows back link when return_url and return_text are provided' do
@@ -29,78 +29,104 @@ RSpec.describe 'Organizations::Digest', type: :request do
   end
 
   describe 'POST /organizations/:organization_id/digest/sync_all_mediums' do
-    it 'sets slack, email, and SMS digest to the same frequency and redirects to Start Here' do
+    it 'sets slack, email, and SMS digest to the same value and redirects to Start Here' do
       UserPreference.for_person(person).update_preference('digest_slack', 'off')
-      UserPreference.for_person(person).update_preference('digest_email', 'daily')
-      UserPreference.for_person(person).update_preference('digest_sms', 'weekly')
+      UserPreference.for_person(person).update_preference('digest_email', 'on')
+      UserPreference.for_person(person).update_preference('digest_sms', 'on')
 
-      post sync_all_mediums_organization_digest_path(company), params: { frequency: 'weekly' }
+      post sync_all_mediums_organization_digest_path(company), params: { value: 'on' }
 
       expect(response).to redirect_to(organization_start_here_path(company))
       pref = UserPreference.for_person(person).reload
-      expect(pref.preference(:digest_slack)).to eq('weekly')
-      expect(pref.preference(:digest_email)).to eq('weekly')
-      expect(pref.preference(:digest_sms)).to eq('weekly')
+      expect(pref.preference(:digest_slack)).to eq('on')
+      expect(pref.preference(:digest_email)).to eq('on')
+      expect(pref.preference(:digest_sms)).to eq('on')
     end
 
-    it 'rejects invalid frequency' do
-      post sync_all_mediums_organization_digest_path(company), params: { frequency: 'hourly' }
+    it 'rejects invalid value' do
+      post sync_all_mediums_organization_digest_path(company), params: { value: 'weekly' }
       expect(response).to redirect_to(organization_start_here_path(company))
       expect(flash[:alert]).to match(/Invalid digest schedule/)
     end
   end
 
   describe 'PATCH /organizations/:organization_id/digest' do
-    it 'updates preferences and redirects to return_url when given (Save preferences button)' do
+    it 'updates preferences and stays on digest page when saving' do
       return_url = organization_get_shit_done_path(company)
       patch organization_digest_path(company),
             params: {
               digest_slack: 'weekly',
+              digest_sms: 'on',
               digest_email: 'off',
-              digest_sms: 'weekly',
               return_url: return_url,
               return_text: 'Back to GSD',
               commit: 'Save preferences'
             }
-      expect(response).to redirect_to(return_url)
+      expect(response).to redirect_to(edit_organization_digest_path(company, return_url: return_url, return_text: 'Back to GSD'))
       expect(flash[:notice]).to eq('Digest preferences saved.')
 
       pref = UserPreference.for_person(person).reload
       expect(pref.preference(:digest_email)).to eq('off')
-      expect(pref.preference(:digest_sms)).to eq('weekly')
+      expect(pref.preference(:digest_sms)).to eq('on')
     end
 
-    it 'saves preferences, enqueues digest job, and stays on configuration page when "Save and Test By Sending Now" is clicked' do
-      expect {
-        patch organization_digest_path(company),
-              params: {
-                digest_slack: 'weekly',
-                digest_email: 'off',
-                digest_sms: 'off',
-                return_url: organization_get_shit_done_path(company),
-                return_text: 'Back to list',
-                commit: 'Save and Test By Sending Now'
-              }
-      }.to have_enqueued_job(Digest::SendDigestJob).with(teammate.id)
-
-      expect(response).to redirect_to(edit_organization_digest_path(company, return_url: organization_get_shit_done_path(company), return_text: 'Back to list'))
-      expect(flash[:notice]).to eq('Digests have been queued to send and should be delivered in the next minute or so.')
-
-      pref = UserPreference.for_person(person).reload
-      expect(pref.preference(:digest_slack)).to eq('weekly')
-    end
-
-    it 'Save and Test By Sending Now redirects back to digest edit with no return_url when opened directly' do
+    it 'shows danger alert when both Slack and SMS are off' do
       patch organization_digest_path(company),
             params: {
-              digest_slack: 'weekly',
+              digest_slack: 'off',
               digest_email: 'off',
               digest_sms: 'off',
-              commit: 'Save and Test By Sending Now'
+              commit: 'Save preferences'
+            }
+      expect(response).to redirect_to(edit_organization_digest_path(company))
+      expect(flash[:alert]).to eq('No notifications will be sent since no mediums are configured to send notifications to.')
+    end
+
+    it 'saves about me weekly day for a direct report from digest settings payload' do
+      report_person = create(:person)
+      report = create(:company_teammate, organization: company, person: report_person)
+      create(:employment_tenure, teammate: report, company: company, manager_teammate: teammate, started_at: 1.year.ago, ended_at: nil)
+      report.update!(first_employed_at: 1.year.ago)
+
+      patch organization_digest_path(company),
+            params: {
+              digest_slack: 'on',
+              digest_email: 'off',
+              digest_sms: 'off',
+              about_me_days: { report.id.to_s => '2' },
+              commit: 'Save preferences'
             }
 
       expect(response).to redirect_to(edit_organization_digest_path(company))
-      expect(flash[:notice]).to eq('Digests have been queued to send and should be delivered in the next minute or so.')
+      expect(UserPreference.for_person(report_person).preference(:about_me_weekly_day)).to eq('2')
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/digest/send_gsd_test' do
+    it 'queues GSD send test and redirects to digest page' do
+      allow_any_instance_of(GetShitDoneQueryService).to receive(:all_pending_items).and_return({ total_pending: 1 })
+      expect {
+        post send_gsd_test_organization_digest_path(company)
+      }.to have_enqueued_job(Digest::SendDigestJob).with(teammate.id)
+      expect(response).to redirect_to(edit_organization_digest_path(company))
+    end
+
+    it 'does not queue GSD test when no items exist' do
+      allow_any_instance_of(GetShitDoneQueryService).to receive(:all_pending_items).and_return({ total_pending: 0 })
+      expect {
+        post send_gsd_test_organization_digest_path(company)
+      }.not_to have_enqueued_job(Digest::SendDigestJob)
+      expect(response).to redirect_to(edit_organization_digest_path(company))
+      expect(flash[:alert]).to match(/No test sent/)
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/digest/send_about_me_test' do
+    it 'queues About Me send test and redirects to digest page' do
+      expect {
+        post send_about_me_test_organization_digest_path(company), params: { teammate_id: teammate.id }
+      }.to have_enqueued_job(Digest::SendAboutMeJob).with(teammate.id)
+      expect(response).to redirect_to(edit_organization_digest_path(company))
     end
   end
 
@@ -110,6 +136,22 @@ RSpec.describe 'Organizations::Digest', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Digest')
       expect(response.body).to include('Configure digest')
+    end
+
+    it 'saves 1:1 day from profile flow via digest update endpoint' do
+      patch organization_digest_path(company),
+            params: {
+              digest_slack: 'on',
+              digest_email: 'off',
+              digest_sms: 'off',
+              about_me_days: { teammate.id.to_s => '5' },
+              return_url: organization_company_teammate_path(company, teammate),
+              return_text: 'Back to Profile',
+              commit: 'Save 1:1 day'
+            }
+
+      expect(response).to redirect_to(organization_company_teammate_path(company, teammate))
+      expect(UserPreference.for_person(person).preference(:about_me_weekly_day)).to eq('5')
     end
   end
 end
