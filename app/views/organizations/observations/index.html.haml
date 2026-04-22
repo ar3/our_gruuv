@@ -109,18 +109,19 @@
             %small.text-muted
               %i.bi.bi-funnel.me-1
               Filters:
-              - if @involving_teammate.present?
-                %span.badge.rounded-pill.bg-primary.ms-1.me-1
-                  Observations involving #{@involving_teammate.person.casual_name}
+              - if @involving_teammates.present?
+                - @involving_teammates.each do |teammate|
+                  %span.badge.rounded-pill.bg-primary.ms-1.me-1
+                    Observations involving #{teammate.person.casual_name}
               - if @observee_teammate.present?
                 %span.badge.rounded-pill.bg-primary.ms-1.me-1
                   Observations about #{@observee_teammate.person.casual_name}
               - if @observer_teammate.present?
                 %span.badge.rounded-pill.bg-primary.ms-1.me-1
                   Observations by #{@observer_teammate.person.casual_name}
-              - special_filter_keys = [:involving_teammate_id, :observer_id, :observee_ids]
+              - special_filter_keys = [:involving_teammate_id, :involving_teammate_ids, :observer_id, :observee_ids]
               - other_filters = @current_filters.except(*special_filter_keys)
-              - any_special_pill = @involving_teammate.present? || @observee_teammate.present? || @observer_teammate.present?
+              - any_special_pill = @involving_teammates.present? || @observee_teammate.present? || @observer_teammate.present?
               - if other_filters.any?
                 - separator = any_special_pill ? '; ' : ''
                 = separator + other_filters.map { |k, v| "#{k}: #{Array(v).join(', ')}" }.join('; ')

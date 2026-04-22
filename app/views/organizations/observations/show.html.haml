@@ -24,6 +24,25 @@
     - elsif @observation.soft_deleted? && policy(@observation).restore?
       = button_to 'Restore', restore_organization_observation_path(@organization, @observation), method: :patch, class: 'btn btn-outline-success', data: { turbo: false }
     = render 'mode_switcher', organization: @organization, observation: @observation
+
+- if @observation.soft_deleted?
+  .row
+    .col-12
+      .alert.alert-warning.border.border-warning.border-3.py-4.mb-4
+        .d-flex.flex-column.flex-md-row.align-items-md-center.justify-content-between.gap-3
+          .me-md-3
+            %h4.alert-heading.mb-2
+              %i.bi.bi-archive-fill.me-2
+              This observation is archived
+            %p.mb-0
+              Archived observations are read-only until they are restored.
+          - if policy(@observation).restore?
+            = button_to 'Restore', restore_organization_observation_path(@organization, @observation), method: :patch, class: 'btn btn-lg btn-warning text-dark fw-semibold', data: { turbo: false }
+          - else
+            .d-flex.align-items-center.gap-2
+              %button.btn.btn-lg.btn-warning.text-dark.fw-semibold.disabled{ disabled: true }
+                Restore
+              %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You do not have permission to restore this observation"}
 / Draft nudge - shown when observation is draft and user can publish (observer)
 - if @observation.draft? && current_person == @observation.observer
   .row

@@ -888,6 +888,74 @@ RSpec.  describe 'organizations/observations/show', type: :view do
     end
   end
 
+  describe 'archived alert banner' do
+    let(:archived_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, deleted_at: Time.current)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      assign(:observation, archived_observation)
+      allow(view).to receive(:restore_organization_observation_path)
+        .and_return("/organizations/#{company.id}/observations/#{archived_observation.id}/restore")
+    end
+
+    context 'when user can restore the archived observation' do
+      before do
+        allow(view).to receive(:policy) do |obj|
+          if obj == archived_observation
+            double(
+              post_to_slack?: true,
+              publish?: false,
+              view_permalink?: false,
+              update?: false,
+              destroy?: false,
+              restore?: true
+            )
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+          end
+        end
+        render
+      end
+
+      it 'shows archived warning copy and a restore action' do
+        expect(rendered).to have_content('This observation is archived')
+        expect(rendered).to have_content('Archived observations are read-only until they are restored.')
+        expect(rendered).to have_button('Restore')
+      end
+    end
+
+    context 'when user cannot restore the archived observation' do
+      before do
+        allow(view).to receive(:policy) do |obj|
+          if obj == archived_observation
+            double(
+              post_to_slack?: false,
+              publish?: false,
+              view_permalink?: false,
+              update?: false,
+              destroy?: false,
+              restore?: false
+            )
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+          end
+        end
+        render
+      end
+
+      it 'shows disabled restore action with permission tooltip' do
+        expect(rendered).to have_content('This observation is archived')
+        expect(rendered).to have_css('button.btn.btn-lg.btn-warning.text-dark.fw-semibold.disabled[disabled]', text: 'Restore')
+        expect(rendered).to have_css('i.bi-exclamation-triangle.text-warning[data-bs-title="You do not have permission to restore this observation"]')
+      end
+    end
+  end
+
   describe 'actions card' do
     before do
       allow(view).to receive(:edit_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/edit")

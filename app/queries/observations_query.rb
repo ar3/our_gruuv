@@ -31,7 +31,12 @@ class ObservationsQuery
       filters[:timeframe_end_date] = params[:timeframe_end_date] if params[:timeframe_end_date].present?
     end
     filters[:include_soft_deleted] = params[:include_soft_deleted] if params[:include_soft_deleted].present?
-    filters[:involving_teammate_id] = params[:involving_teammate_id] if params[:involving_teammate_id].present?
+    involving_teammate_ids = Array(params[:involving_teammate_ids]).reject(&:blank?)
+    if involving_teammate_ids.any?
+      filters[:involving_teammate_ids] = involving_teammate_ids
+    elsif params[:involving_teammate_id].present?
+      filters[:involving_teammate_id] = params[:involving_teammate_id]
+    end
     filters[:rateable_type] = params[:rateable_type] if params[:rateable_type].present?
     filters[:rateable_id] = params[:rateable_id] if params[:rateable_id].present?
     filters[:observation_type] = params[:observation_type] if params[:observation_type].present?
@@ -143,13 +148,16 @@ class ObservationsQuery
   end
 
   def filter_by_involving_teammate(observations)
-    return observations unless params[:involving_teammate_id].present?
+    teammate_ids = Array(params[:involving_teammate_ids]).reject(&:blank?)
+    teammate_ids = [params[:involving_teammate_id]] if teammate_ids.empty? && params[:involving_teammate_id].present?
+    return observations if teammate_ids.empty?
 
-    teammate = CompanyTeammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
-    return observations unless teammate
+    teammates = CompanyTeammate.where(organization: organization, id: teammate_ids)
+    return observations if teammates.none?
 
-    observed_ids = Observee.where(teammate_id: teammate.id).select(:observation_id)
-    observations.where(observer_id: teammate.person_id).or(observations.where(id: observed_ids))
+    person_ids = teammates.select(:person_id)
+    observed_ids = Observee.where(teammate_id: teammates.select(:id)).select(:observation_id)
+    observations.where(observer_id: person_ids).or(observations.where(id: observed_ids)).distinct
   end
 
   def filter_by_observee_ids(observations)

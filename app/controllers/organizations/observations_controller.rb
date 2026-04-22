@@ -44,10 +44,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @current_view = query.current_view
     @current_spotlight = query.current_spotlight
 
-    # Load teammate for "involving" filter pill when that filter is active
-    @involving_teammate = if params[:involving_teammate_id].present?
-      CompanyTeammate.where(organization: organization).find_by(id: params[:involving_teammate_id])
+    # Load teammate(s) for "involving" filter pills when that filter is active
+    involving_teammate_ids = Array(params[:involving_teammate_ids]).reject(&:blank?)
+    involving_teammate_ids = [params[:involving_teammate_id]] if involving_teammate_ids.empty? && params[:involving_teammate_id].present?
+    @involving_teammates = if involving_teammate_ids.any?
+      CompanyTeammate.where(organization: organization, id: involving_teammate_ids).includes(:person)
+    else
+      CompanyTeammate.none
     end
+    @involving_teammate = @involving_teammates.one? ? @involving_teammates.first : nil
 
     # Load teammate for "observations by" / "observations about" filter pills
     @observer_teammate = if params[:observer_id].present?
@@ -89,6 +94,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @current_sort = query.current_sort
     @current_view = query.current_view
     @current_spotlight = query.current_spotlight
+    @available_involving_teammates = organization.teammates
+                                              .where(last_terminated_at: nil)
+                                              .includes(:person)
+                                              .sort_by { |teammate| teammate.person.casual_name.to_s.downcase }
     
     # Preserve current params for return URL
     return_params = params.except(:controller, :action, :page).permit!.to_h

@@ -72,6 +72,21 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/observations/customize_view' do
+    let!(:teammate_two_person) { create(:person, first_name: 'Taylor', last_name: 'Teammate') }
+    let!(:teammate_two) { create(:teammate, person: teammate_two_person, organization: organization) }
+
+    it 'shows involving teammate checkboxes with casual names' do
+      get customize_view_organization_observations_path(organization, involving_teammate_ids: [teammate.id, teammate_two.id])
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Involving teammate')
+      expect(response.body).to include('involving_teammate_ids[]')
+      expect(response.body).to include(person.casual_name)
+      expect(response.body).to include(teammate_two_person.casual_name)
+    end
+  end
+
   describe 'GET /organizations/:organization_id/observations/new_kudos' do
     it 'allows access to new_kudos page' do
       get new_kudos_organization_observations_path(organization)

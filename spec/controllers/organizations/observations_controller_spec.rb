@@ -247,6 +247,20 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(response.body).to include('only you, because draft')
       end
 
+      it 'shows archived on date for archived observations in status area' do
+        archived_obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, story: 'Archived story')
+        archived_obs.observees.build(teammate: observee_teammate)
+        archived_obs.save!
+        archived_obs.publish!
+        archived_obs.soft_delete!
+
+        get :index, params: { organization_id: company.id, view: 'large_list', include_soft_deleted: 'true' }
+
+        expect(response.body).to include('archived on')
+        expect(response.body).not_to include('published on')
+        expect(response.body).not_to include('draft created on')
+      end
+
       context 'with managers' do
         let(:direct_manager_person) { create(:person, first_name: 'Direct', last_name: 'Manager') }
         let(:direct_manager_teammate) { CompanyTeammate.create!(person: direct_manager_person, organization: company) }

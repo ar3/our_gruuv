@@ -24,7 +24,10 @@
 
       .mb-2
         %small.text-muted
-          - if observation.draft?
+          - if observation.soft_deleted?
+            %i.bi.bi-archive.text-secondary.me-1
+            archived on #{format_date_in_user_timezone(observation.deleted_at, format: '%m/%d/%y')}
+          - elsif observation.draft?
             %i.bi.bi-exclamation-triangle.text-danger.me-1
             %strong.text-danger draft
             %i.bi.bi-exclamation-triangle.text-danger.ms-1

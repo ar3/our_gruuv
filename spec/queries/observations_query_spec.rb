@@ -232,6 +232,24 @@ RSpec.describe ObservationsQuery, type: :query do
       end
     end
 
+    context 'by involving_teammate_ids' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+      let!(:other_observation) do
+        build(:observation, observer: other_person, company: company, privacy_level: :public_to_world, observed_at: 2.days.ago).tap do |obs|
+          obs.observees.build(teammate: observer_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+      let(:params) { { involving_teammate_ids: [observee_teammate.id, other_teammate.id] } }
+
+      it 'returns observations involving any selected teammate' do
+        results = query.call.to_a
+        expect(results).to include(observation1, observation3, draft_observation, other_observation)
+      end
+    end
+
     context 'by observer_id (shareable given: published, not journal)' do
       let(:params) { { observer_id: observer.id } }
 
@@ -391,6 +409,12 @@ RSpec.describe ObservationsQuery, type: :query do
       query = described_class.new(company, { involving_teammate_id: observee_teammate.id }, current_person: observer)
       expect(query.current_filters).to have_key(:involving_teammate_id)
       expect(query.current_filters[:involving_teammate_id]).to eq(observee_teammate.id)
+    end
+
+    it 'includes involving_teammate_ids when present' do
+      query = described_class.new(company, { involving_teammate_ids: [observee_teammate.id, observer_teammate.id] }, current_person: observer)
+      expect(query.current_filters).to have_key(:involving_teammate_ids)
+      expect(query.current_filters[:involving_teammate_ids]).to eq([observee_teammate.id, observer_teammate.id])
     end
   end
 
