@@ -776,6 +776,11 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   &.locked {
     transform: translateX(0);
   }
+
+  // When locked and temporarily closed for the current view, closed wins visually.
+  &.locked.closed {
+    transform: translateX(-100%);
+  }
   
   .vertical-nav-header {
     padding: 1rem;

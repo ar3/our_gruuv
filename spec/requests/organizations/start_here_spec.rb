@@ -45,6 +45,9 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       get organization_start_here_path(company)
       expect(response.body).to include('Other ways to customize OurGruuv')
       expect(response.body).to include('Navigation style')
+      expect(response.body).to include('Vertical nav behavior')
+      expect(response.body).to include('Lock the vertical nav bar open')
+      expect(response.body).to include('Keep the vertical nav bar closed unless I open it')
       expect(response.body).to include('Digest timing and delivery preferences moved to Digest settings.')
       expect(response.body).to include('Open digest settings')
       expect(response.body).to include('Clean/No Navigation')
@@ -171,6 +174,24 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       post organization_start_here_update_start_page_path(company), params: { start_page: 'not_a_real_page' }
       expect(response).to redirect_to(organization_start_here_path(company))
       expect(flash[:alert]).to match(/Invalid start page/)
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/start_here/update_vertical_nav_mode' do
+    it 'updates nav mode and syncs open/locked for closed_unless_opened' do
+      post organization_start_here_update_vertical_nav_mode_path(company), params: { mode: 'closed_unless_opened' }
+
+      expect(response).to redirect_to(organization_start_here_path(company))
+      prefs = UserPreference.for_person(person).reload
+      expect(prefs.vertical_nav_mode).to eq('closed_unless_opened')
+      expect(prefs.vertical_nav_locked?).to eq(false)
+      expect(prefs.vertical_nav_open?).to eq(false)
+    end
+
+    it 'rejects invalid vertical nav mode value' do
+      post organization_start_here_update_vertical_nav_mode_path(company), params: { mode: 'bad_mode' }
+      expect(response).to redirect_to(organization_start_here_path(company))
+      expect(flash[:alert]).to match(/Invalid vertical navigation behavior/)
     end
   end
 

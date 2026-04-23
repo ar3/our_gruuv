@@ -61,7 +61,6 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
   
   describe 'lock functionality' do
     before do
-      user_preference.update_preference(:vertical_nav_open, true)
       user_preference.update_preference(:vertical_nav_locked, false)
       visit dashboard_organization_path(organization)
     end
@@ -69,11 +68,11 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
     it 'locks navigation when lock button is clicked' do
       # Wait for page to be fully loaded
       expect(page).to have_css('.vertical-nav', wait: 2)
+      page.find('.floating-toggle.vertical-nav-toggle-btn', visible: true).click if page.has_css?('.floating-toggle.vertical-nav-toggle-btn', visible: true)
       
       # The lock button submits a form to update the preference
-      # Find the form and submit it directly to test server-side behavior
-      lock_form = page.find('form[action*="vertical_nav"]')
-      lock_form.click_button
+      lock_btn = page.find('.vertical-nav-lock-btn', visible: :all)
+      lock_btn.click
       
       # Dashboard may redirect to about_me; accept either path
       expect(page).to have_current_path(/organizations\/.+\/(dashboard|company_teammates\/\d+\/about_me)/, wait: 5)
@@ -95,7 +94,7 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
   
   describe 'current page highlighting' do
     before do
-      user_preference.update_preference(:vertical_nav_open, true)
+      user_preference.update_preference(:vertical_nav_locked, true)
       visit dashboard_organization_path(organization)
     end
     
@@ -113,29 +112,13 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
     end
     
     it 'switches to vertical layout from user menu' do
-      # Wait for page to load with horizontal layout
-      expect(page).to have_css('nav.navbar', wait: 2)
-      
-      # The navbar might be collapsed on smaller screens, so expand it if needed
-      if page.has_css?('.navbar-toggler', visible: true)
-        page.find('.navbar-toggler').click
-        expect(page).to have_css('.navbar-collapse.show', wait: 2)
-      end
-      
-      # Find the user menu dropdown toggle - it contains the person's name
-      # There might be multiple dropdown toggles, so find the one with the person's name
-      user_menu_toggle = page.all('a.nav-link.dropdown-toggle').find { |el| el.text.include?(person.full_name) }
-      expect(user_menu_toggle).to be_present, "Could not find user menu with #{person.full_name}"
-      user_menu_toggle.click
-      
-      # Wait for Bootstrap dropdown to open
-      expect(page).to have_css('.dropdown-menu.show', wait: 2)
-      
-      # Find and click the "Vertical Navigation" button (it's a form button created by button_to)
-      vertical_option = page.find('.dropdown-item', text: 'Vertical Navigation', wait: 2)
-      vertical_option.click
-      
-      # Wait for form submission and page reload with vertical layout
+      # Layout switching is now managed on Start Here under Navigation Settings
+      visit organization_start_here_path(organization)
+      expect(page).to have_link('Other ways to customize OurGruuv', wait: 5)
+      click_link 'Other ways to customize OurGruuv'
+      expect(page).to have_button('Vertical', wait: 5)
+
+      click_button 'Vertical'
       expect(page).to have_css('.vertical-nav', wait: 5)
       
       # Verify preference updated
@@ -146,7 +129,7 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
   
   describe 'header links' do
     before do
-      user_preference.update_preference(:vertical_nav_open, true)
+      user_preference.update_preference(:vertical_nav_locked, true)
       visit dashboard_organization_path(organization)
     end
     

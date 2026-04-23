@@ -24,14 +24,9 @@ export default class extends Controller {
     const lockedValue = navElement.dataset.locked
     this.locked = lockedValue === 'true' || lockedValue === true
     
-    // If locked, nav must be open. Otherwise read from data attribute
+    // Read open state from server-provided data attribute.
     const openValue = navElement.dataset.open
-    this.open = this.locked ? true : (openValue === 'true' || openValue === true)
-    
-    // Ensure locked nav is always open
-    if (this.locked) {
-      this.open = true
-    }
+    this.open = openValue === 'true' || openValue === true
     
     // Apply initial state
     this.updateNavState()
@@ -84,6 +79,11 @@ export default class extends Controller {
   
   toggle() {
     if (this.locked) {
+      if (this.open) {
+        this.close(false)
+      } else {
+        this.openNav(false)
+      }
       return
     }
     
@@ -94,20 +94,20 @@ export default class extends Controller {
     }
   }
   
-  openNav() {
+  openNav(persist = true) {
     this.open = true
     this.updateNavState()
-    this.saveState()
+    if (persist && !this.locked) {
+      this.saveState()
+    }
   }
   
-  close() {
-    if (this.locked) {
-      return
-    }
-    
+  close(persist = true) {
     this.open = false
     this.updateNavState()
-    this.saveState()
+    if (persist && !this.locked) {
+      this.saveState()
+    }
   }
   
   // Lock/unlock is now handled via form POST for reliability
@@ -124,36 +124,24 @@ export default class extends Controller {
     // The controller element IS the nav element
     const navElement = this.element
     
-    // If locked, nav must always be open
-    if (this.locked) {
-      this.open = true
-    }
-    
     if (this.open) {
       navElement.classList.add('open')
       navElement.classList.remove('closed')
+      navElement.style.transform = 'translateX(0)'
       if (this.hasBackdrop) {
         this.backdropElement.classList.add('show')
       }
     } else {
-      // Only allow closing if not locked
-      if (!this.locked) {
-        navElement.classList.remove('open')
-        navElement.classList.add('closed')
-        if (this.hasBackdrop) {
-          this.backdropElement.classList.remove('show')
-        }
+      navElement.classList.remove('open')
+      navElement.classList.add('closed')
+      navElement.style.transform = 'translateX(-100%)'
+      if (this.hasBackdrop) {
+        this.backdropElement.classList.remove('show')
       }
     }
     
     if (this.locked) {
       navElement.classList.add('locked')
-      // Ensure open class is present when locked
-      navElement.classList.add('open')
-      navElement.classList.remove('closed')
-      if (this.hasBackdrop) {
-        this.backdropElement.classList.add('show')
-      }
       if (this.hasLockBtnTarget) {
         const icon = this.lockBtnTarget.querySelector('i')
         if (icon) {
@@ -224,7 +212,6 @@ export default class extends Controller {
     const url = '/user_preferences/vertical_nav'
     const formData = new FormData()
     formData.append('open', this.open)
-    formData.append('locked', this.locked)
     
     try {
       const response = await fetch(url, {

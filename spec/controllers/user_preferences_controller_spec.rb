@@ -84,6 +84,39 @@ RSpec.describe UserPreferencesController, type: :controller do
       json = JSON.parse(response.body)
       expect(json['open']).to eq(true)
       expect(json['locked']).to eq(false)
+      expect(json['mode']).to eq('closed_unless_opened')
+    end
+
+    it 'does not change mode on open-only updates' do
+      user_preference.update_preference(:vertical_nav_mode, 'closed_unless_opened')
+      user_preference.update_preference(:vertical_nav_open, false)
+      user_preference.update_preference(:vertical_nav_locked, false)
+
+      patch :update_vertical_nav, params: { open: 'true' }, format: :json
+
+      expect(user_preference.reload.vertical_nav_open?).to eq(true)
+      expect(user_preference.vertical_nav_mode).to eq('closed_unless_opened')
+    end
+
+    it 'does not change mode when locked is submitted unchanged' do
+      user_preference.update_preference(:vertical_nav_mode, 'closed_unless_opened')
+      user_preference.update_preference(:vertical_nav_open, false)
+      user_preference.update_preference(:vertical_nav_locked, false)
+
+      patch :update_vertical_nav, params: { open: 'true', locked: 'false' }, format: :json
+
+      expect(user_preference.reload.vertical_nav_open?).to eq(true)
+      expect(user_preference.vertical_nav_mode).to eq('closed_unless_opened')
+    end
+  end
+
+  describe 'PATCH #update_vertical_nav_mode' do
+    it 'updates nav mode and syncs open/locked state' do
+      patch :update_vertical_nav_mode, params: { mode: 'closed_unless_opened' }, format: :json
+
+      expect(user_preference.reload.vertical_nav_mode).to eq('closed_unless_opened')
+      expect(user_preference.vertical_nav_locked?).to eq(false)
+      expect(user_preference.vertical_nav_open?).to eq(false)
     end
   end
   

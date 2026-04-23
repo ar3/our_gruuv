@@ -88,6 +88,7 @@
 
 - prefs = current_user_preferences
 - layout_cur = prefs.layout.to_s.presence || "vertical"
+- vertical_nav_mode = prefs.vertical_nav_mode.presence || (prefs.vertical_nav_locked? ? "locked_open" : "closed_unless_opened")
 
 %hr.my-4
 %a.start-here-customize-toggle.h5.fw-semibold.text-body.text-decoration-none.d-inline-flex.align-items-center.gap-2.mb-3.collapsed{href: "#start-here-other-customize", role: "button", data: { turbo: false, bs_toggle: "collapse", bs_target: "#start-here-other-customize" }, "aria-expanded": "false", "aria-controls": "start-here-other-customize"}
@@ -109,6 +110,18 @@
       = button_to "Vertical", layout_user_preferences_path, method: :patch, params: { layout: "vertical" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'vertical' ? 'btn-primary' : 'btn-outline-secondary'}"
       = button_to "Horizontal", layout_user_preferences_path, method: :patch, params: { layout: "horizontal" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'horizontal' ? 'btn-primary' : 'btn-outline-secondary'}"
       = button_to "Clean/No Navigation", layout_user_preferences_path, method: :patch, params: { layout: "no_nav" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'no_nav' ? 'btn-primary' : 'btn-outline-secondary'}"
+    - if layout_cur == "vertical"
+      .mt-3
+        %p.small.fw-semibold.text-muted.mb-2 Vertical nav behavior
+        = form_with url: organization_start_here_update_vertical_nav_mode_path(current_organization), method: :post, local: true, html: { data: { turbo: false }, class: "mb-0" } do
+          .form-check
+            = radio_button_tag :mode, "locked_open", vertical_nav_mode == "locked_open", id: "vertical_nav_mode_locked_open", class: "form-check-input", onchange: "this.form.submit()"
+            %label.form-check-label{for: "vertical_nav_mode_locked_open"}
+              Lock the vertical nav bar open
+          .form-check
+            = radio_button_tag :mode, "closed_unless_opened", vertical_nav_mode == "closed_unless_opened", id: "vertical_nav_mode_closed_unless_opened", class: "form-check-input", onchange: "this.form.submit()"
+            %label.form-check-label{for: "vertical_nav_mode_closed_unless_opened"}
+              Keep the vertical nav bar closed unless I open it
 
   .mb-5
     .alert.alert-info.mb-0

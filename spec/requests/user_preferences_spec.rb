@@ -135,6 +135,32 @@ RSpec.describe 'User Preferences', type: :request do
         expect(response).to have_http_status(:success)
         expect(user_preference.reload.vertical_nav_open?).to eq(false)
       end
+
+      it 'does not change mode when opening nav temporarily' do
+        user_preference.update_preference(:vertical_nav_mode, 'closed_unless_opened')
+        user_preference.update_preference(:vertical_nav_open, false)
+        user_preference.update_preference(:vertical_nav_locked, false)
+
+        patch vertical_nav_user_preferences_path, params: { open: 'true' }, headers: { 'Accept' => 'application/json' }
+
+        expect(response).to have_http_status(:success)
+        user_preference.reload
+        expect(user_preference.vertical_nav_open?).to eq(true)
+        expect(user_preference.vertical_nav_mode).to eq('closed_unless_opened')
+      end
+
+      it 'does not change mode when open update includes unchanged locked value' do
+        user_preference.update_preference(:vertical_nav_mode, 'closed_unless_opened')
+        user_preference.update_preference(:vertical_nav_open, false)
+        user_preference.update_preference(:vertical_nav_locked, false)
+
+        patch vertical_nav_user_preferences_path, params: { open: 'true', locked: 'false' }, headers: { 'Accept' => 'application/json' }
+
+        expect(response).to have_http_status(:success)
+        user_preference.reload
+        expect(user_preference.vertical_nav_open?).to eq(true)
+        expect(user_preference.vertical_nav_mode).to eq('closed_unless_opened')
+      end
     end
     
     context 'updating locked state' do
@@ -217,6 +243,7 @@ RSpec.describe 'User Preferences', type: :request do
         json = JSON.parse(response.body)
         expect(json['open']).to eq(true)
         expect(json['locked']).to eq(false)
+        expect(json['mode']).to eq('closed_unless_opened')
       end
     end
     
@@ -230,6 +257,24 @@ RSpec.describe 'User Preferences', type: :request do
         
         expect(response).to redirect_to(login_path)
       end
+    end
+  end
+
+  describe 'PATCH /user_preferences/vertical_nav_mode' do
+    it 'updates mode to locked_open and syncs open/locked' do
+      patch vertical_nav_mode_user_preferences_path, params: { mode: 'locked_open' }, headers: { 'Accept' => 'application/json' }
+
+      expect(response).to have_http_status(:success)
+      user_preference.reload
+      expect(user_preference.vertical_nav_mode).to eq('locked_open')
+      expect(user_preference.vertical_nav_locked?).to eq(true)
+      expect(user_preference.vertical_nav_open?).to eq(true)
+    end
+
+    it 'rejects invalid mode' do
+      patch vertical_nav_mode_user_preferences_path, params: { mode: 'not_real' }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/Invalid vertical navigation behavior/)
     end
   end
   
@@ -292,6 +337,35 @@ RSpec.describe 'User Preferences', type: :request do
       # Should default to vertical - verify by checking for vertical nav elements
       expect(response.body).to include('vertical-nav-top-bar')
       expect(response.body).to include('vertical-nav')
+    end
+  end
+
+  describe 'vertical nav state on redirects' do
+    before do
+      user_preference.update_preference(:layout, 'vertical')
+    end
+
+    it 'closes the vertical nav after redirect when mode is closed_unless_opened' do
+      user_preference.update_preference(:vertical_nav_open, true)
+      user_preference.update_preference(:vertical_nav_locked, false)
+      user_preference.update_preference(:vertical_nav_mode, 'closed_unless_opened')
+
+      get dashboard_organization_path(organization)
+
+      expect(response).to be_redirect
+      expect(user_preference.reload.vertical_nav_open?).to eq(false)
+    end
+
+    it 'keeps the vertical nav open after redirect when locked' do
+      user_preference.update_preference(:vertical_nav_open, true)
+      user_preference.update_preference(:vertical_nav_locked, true)
+      user_preference.update_preference(:vertical_nav_mode, 'locked_open')
+
+      get dashboard_organization_path(organization)
+
+      expect(response).to be_redirect
+      user_preference.reload
+      expect(user_preference.vertical_nav_open?).to eq(true)
     end
   end
 end

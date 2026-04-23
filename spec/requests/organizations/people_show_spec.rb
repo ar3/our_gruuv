@@ -149,6 +149,19 @@ RSpec.describe 'Organizations::People Show', type: :request do
           expect(flash[:alert]).to include('No Asana account connected')
         end
       end
+
+      context 'navigation settings' do
+        it 'renders dedicated navigation settings section on profile page' do
+          get organization_company_teammate_path(organization, person_teammate)
+
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('Navigation Settings')
+          expect(response.body).to include('Navigation style')
+          expect(response.body).to include('Vertical nav behavior')
+          expect(response.body).to include('Lock the vertical nav bar open')
+          expect(response.body).to include('Keep the vertical nav bar closed unless I open it')
+        end
+      end
     end
 
     context 'when user is not authorized' do

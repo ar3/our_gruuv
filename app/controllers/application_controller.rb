@@ -64,6 +64,7 @@ class ApplicationController < ActionController::Base
   
   # Track page visits for recently visited feature
   after_action :track_page_visit
+  after_action :close_unlocked_vertical_nav_on_redirect
   
   # Override Pundit's default user method to use current_company_teammate
   def pundit_user
@@ -477,5 +478,15 @@ class ApplicationController < ActionController::Base
     # Don't let tracking errors break the request
     Rails.logger.error "PageVisit tracking error: #{e.class} - #{e.message}"
     Rails.logger.error e.backtrace.first(5).join("\n")
+  end
+
+  # Close vertical nav after redirects unless it is locked open.
+  def close_unlocked_vertical_nav_on_redirect
+    return unless response.redirect?
+    return unless current_user_preferences
+    return if current_user_preferences.vertical_nav_locked?
+    return unless current_user_preferences.vertical_nav_open?
+
+    current_user_preferences.update_preference(:vertical_nav_open, false)
   end
 end

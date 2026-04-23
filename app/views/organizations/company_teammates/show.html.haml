@@ -54,6 +54,9 @@
             = hidden_field_tag :digest_slack, digest_prefs.effective_digest_slack(@teammate)
             = hidden_field_tag :digest_sms, digest_prefs.effective_digest_sms(@teammate.person)
             = hidden_field_tag :digest_email, 'off'
+  .row
+    .col-12
+      = render 'people/show/navigation_settings'
 
 / Security & Permissions Section
 .row

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Organizations::StartHereController < Organizations::OrganizationNamespaceBaseController
+  VERTICAL_NAV_MODES = %w[locked_open closed_unless_opened].freeze
+
   def show
     authorize current_organization, :show?
     ensure_start_here_when_no_nav_layout!
@@ -77,6 +79,29 @@ class Organizations::StartHereController < Organizations::OrganizationNamespaceB
     key = helpers.start_page_preference_key(current_organization)
     UserPreference.for_person(current_person).update_preference(key, value)
     redirect_to organization_start_here_path(current_organization), notice: "Start page updated."
+  end
+
+  def update_vertical_nav_mode
+    authorize current_organization, :show?
+    mode = params.require(:mode).to_s
+    unless VERTICAL_NAV_MODES.include?(mode)
+      redirect_to organization_start_here_path(current_organization), alert: "Invalid vertical navigation behavior."
+      return
+    end
+
+    prefs = UserPreference.for_person(current_person)
+    prefs.update_preference(:vertical_nav_mode, mode)
+
+    case mode
+    when "locked_open"
+      prefs.update_preference(:vertical_nav_locked, true)
+      prefs.update_preference(:vertical_nav_open, true)
+    when "closed_unless_opened"
+      prefs.update_preference(:vertical_nav_locked, false)
+      prefs.update_preference(:vertical_nav_open, false)
+    end
+
+    redirect_to organization_start_here_path(current_organization), notice: "Navigation preference updated."
   end
 
   private

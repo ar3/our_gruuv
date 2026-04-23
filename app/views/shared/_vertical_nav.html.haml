@@ -1,7 +1,7 @@
 - nav_structure = visible_navigation_structure
 - prefs = current_user_preferences
 - is_locked = prefs&.vertical_nav_locked? || false
-- is_open = is_locked ? true : (prefs&.vertical_nav_open? || false)
+- is_open = is_locked ? true : false
 
 / Backdrop for mobile overlay
 .vertical-nav-backdrop
@@ -19,9 +19,8 @@
           %i.bi.bi-pin-fill
         - else
           %i.bi.bi-pin
-      - unless is_locked
-        %button.btn.btn-sm.btn-link.vertical-nav-close-btn{type: "button", title: "Close navigation", data: { vertical_nav_target: "closeBtn", action: "click->vertical-nav#close" }}
-          %i.bi.bi-x-lg
+      %button.btn.btn-sm.btn-link.vertical-nav-close-btn{type: "button", title: "Close navigation", data: { vertical_nav_target: "closeBtn", action: "click->vertical-nav#close" }}
+        %i.bi.bi-x-lg
   
   .vertical-nav-body
     %nav.nav.flex-column

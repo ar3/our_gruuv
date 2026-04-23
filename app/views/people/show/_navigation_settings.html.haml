@@ -1,0 +1,31 @@
+- prefs = UserPreference.for_person(@teammate.person)
+- layout_cur = prefs.layout.to_s.presence || "vertical"
+- vertical_nav_mode = prefs.vertical_nav_mode.presence || (prefs.vertical_nav_locked? ? "locked_open" : "closed_unless_opened")
+
+.card.mb-4{role: "region", "aria-labelledby": "navigation-settings-section"}
+  .card-header
+    %h5.mb-0{id: "navigation-settings-section"}
+      %i.bi.bi-layout-sidebar-inset.me-2
+      Navigation Settings
+  .card-body
+    .mb-4
+      %p.small.fw-semibold.text-muted.mb-2 Navigation style
+      .d-flex.flex-wrap.gap-2
+        = button_to "Vertical", layout_user_preferences_path, method: :patch, params: { layout: "vertical" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'vertical' ? 'btn-primary' : 'btn-outline-secondary'}"
+        = button_to "Horizontal", layout_user_preferences_path, method: :patch, params: { layout: "horizontal" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'horizontal' ? 'btn-primary' : 'btn-outline-secondary'}"
+        = button_to "Clean/No Navigation", layout_user_preferences_path, method: :patch, params: { layout: "no_nav" }, form: { data: { turbo: false }, class: "d-inline" }, class: "btn btn-sm #{layout_cur == 'no_nav' ? 'btn-primary' : 'btn-outline-secondary'}"
+
+    - if layout_cur == "vertical"
+      .mb-2
+        %p.small.fw-semibold.text-muted.mb-2 Vertical nav behavior
+        = form_with url: vertical_nav_mode_user_preferences_path, method: :patch, local: true, html: { data: { turbo: false }, class: "mb-0" } do
+          .form-check
+            = radio_button_tag :mode, "locked_open", vertical_nav_mode == "locked_open", id: "profile_vertical_nav_mode_locked_open", class: "form-check-input", onchange: "this.form.submit()"
+            %label.form-check-label{for: "profile_vertical_nav_mode_locked_open"}
+              Lock the vertical nav bar open
+          .form-check
+            = radio_button_tag :mode, "closed_unless_opened", vertical_nav_mode == "closed_unless_opened", id: "profile_vertical_nav_mode_closed_unless_opened", class: "form-check-input", onchange: "this.form.submit()"
+            %label.form-check-label{for: "profile_vertical_nav_mode_closed_unless_opened"}
+              Keep the vertical nav bar closed unless I open it
+        %p.form-text.text-muted.small.mb-0.mt-2
+          Tip: if navigation is not locked, it starts closed on refresh and redirects.

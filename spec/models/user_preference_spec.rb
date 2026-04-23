@@ -14,12 +14,14 @@ RSpec.describe UserPreference, type: :model do
       expect(preference.preference(:layout)).to eq('vertical')
       expect(preference.preference(:vertical_nav_open)).to eq(false)
       expect(preference.preference(:vertical_nav_locked)).to eq(false)
+      expect(preference.preference(:vertical_nav_mode)).to eq('closed_unless_opened')
     end
     
     it 'provides convenience methods' do
       expect(preference.layout).to eq('vertical')
       expect(preference.vertical_nav_open?).to eq(false)
       expect(preference.vertical_nav_locked?).to eq(false)
+      expect(preference.vertical_nav_mode).to eq('closed_unless_opened')
     end
   end
   
@@ -71,7 +73,7 @@ RSpec.describe UserPreference, type: :model do
       preference.valid?
       
       expect(preference.preferences).to be_a(Hash)
-      expect(preference.preferences).to include('layout', 'vertical_nav_open', 'vertical_nav_locked')
+      expect(preference.preferences).to include('layout', 'vertical_nav_open', 'vertical_nav_locked', 'vertical_nav_mode')
     end
   end
 

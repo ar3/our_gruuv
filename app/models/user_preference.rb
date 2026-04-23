@@ -6,6 +6,7 @@ class UserPreference < ApplicationRecord
     layout: 'vertical',
     vertical_nav_open: false,
     vertical_nav_locked: false,
+    vertical_nav_mode: 'closed_unless_opened',
     digest_slack: 'off',
     digest_email: 'off',
     digest_sms: 'off',
@@ -40,6 +41,10 @@ class UserPreference < ApplicationRecord
   
   def vertical_nav_locked?
     preference(:vertical_nav_locked)
+  end
+
+  def vertical_nav_mode
+    preference(:vertical_nav_mode).to_s
   end
 
   # Digest preferences: stored value or 'off'. No automatic weekly default so scheduled digests
