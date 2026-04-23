@@ -85,7 +85,7 @@
               %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat management"}
       
       .d-grid.mt-3
-        = link_to "View Check-in Hub", 
-                  hub_organization_company_teammate_check_ins_path(organization, @teammate),
-                  class: "btn btn-outline-primary"
+        = link_to hub_organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-primary btn-lg fw-semibold" do
+          Go To All Check-ins
+          %i.bi.bi-box-arrow-up-right.ms-2.text-info
 

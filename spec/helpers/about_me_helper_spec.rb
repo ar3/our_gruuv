@@ -1163,5 +1163,94 @@ RSpec.describe AboutMeHelper, type: :helper do
       end
     end
   end
+
+  describe '#about_me_clarity_icon_details' do
+    let(:check_in) { instance_double('AssignmentCheckIn', official_check_in_completed_at: 10.days.ago) }
+
+    it 'returns crystal-clear icon details and no urgency warning text' do
+      allow(check_in).to receive(:clarity_level).and_return(:crystal_clear)
+
+      result = helper.about_me_clarity_icon_details(
+        latest_finalized_check_in: check_in,
+        casual_name: 'Taylor',
+        object_name: 'Assignment Alpha'
+      )
+
+      expect(result[:icon_class]).to eq('bi-check-circle-fill')
+      expect(result[:text_class]).to eq('text-success')
+      expect(result[:tooltip]).to include('Taylor is crystal clear on Assignment Alpha')
+      expect(result[:tooltip]).to include('however clarity will downgrade to clear')
+      expect(result[:tooltip]).not_to include('consider checking in soon')
+    end
+
+    it 'returns blurred icon details and urgency warning text' do
+      allow(check_in).to receive(:clarity_level).and_return(:blurred)
+
+      result = helper.about_me_clarity_icon_details(
+        latest_finalized_check_in: check_in,
+        casual_name: 'Taylor',
+        object_name: 'Assignment Alpha'
+      )
+
+      expect(result[:icon_class]).to eq('bi-exclamation-triangle-fill')
+      expect(result[:text_class]).to eq('text-warning')
+      expect(result[:tooltip]).to include('Taylor is blurred on Assignment Alpha')
+      expect(result[:tooltip]).to include('You should consider checking in soon')
+    end
+
+    it 'does not include next clarity text when already obscured' do
+      allow(check_in).to receive(:clarity_level).and_return(:obscured)
+
+      result = helper.about_me_clarity_icon_details(
+        latest_finalized_check_in: check_in,
+        casual_name: 'Taylor',
+        object_name: 'Assignment Alpha'
+      )
+
+      expect(result[:tooltip]).to eq('Taylor is obscured on Assignment Alpha. You should consider checking in soon.')
+      expect(result[:tooltip]).not_to include('clarity will downgrade to')
+    end
+  end
+
+  describe '#about_me_goal_icon_details' do
+    it 'returns green linked-goal icon when active goal exists' do
+      result = helper.about_me_goal_icon_details(
+        has_active_goal: true,
+        latest_rating: 'working_to_meet',
+        casual_name: 'Taylor',
+        object_name: 'Aspiration One'
+      )
+
+      expect(result[:icon_class]).to eq('bi-bullseye')
+      expect(result[:text_class]).to eq('text-success')
+      expect(result[:tooltip]).to include('active goal linked to Aspiration One')
+    end
+
+    it 'returns red missing-goal icon when rating is working_to_meet and no active goal exists' do
+      result = helper.about_me_goal_icon_details(
+        has_active_goal: false,
+        latest_rating: 'working_to_meet',
+        casual_name: 'Taylor',
+        object_name: 'Aspiration One'
+      )
+
+      expect(result[:icon_class]).to eq('bi-exclamation-diamond-fill')
+      expect(result[:text_class]).to eq('text-danger')
+      expect(result[:tooltip]).to include('working to meet on Aspiration One')
+    end
+
+    it 'returns gray no-goal-needed icon when no active goal exists and rating is not working_to_meet' do
+      result = helper.about_me_goal_icon_details(
+        has_active_goal: false,
+        latest_rating: 'meeting',
+        casual_name: 'Taylor',
+        object_name: 'Aspiration One'
+      )
+
+      expect(result[:icon_class]).to eq('bi-dash-circle')
+      expect(result[:text_class]).to eq('text-muted')
+      expect(result[:tooltip]).to include('no goal is currently needed')
+    end
+  end
 end
 

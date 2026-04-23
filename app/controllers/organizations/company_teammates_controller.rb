@@ -1872,9 +1872,18 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       .each { |ci| finalized_by_assignment[ci.assignment_id] ||= ci }
 
     cutoff_date = 90.days.ago
+    active_goal_counts_by_assignment_id = Goal
+      .active
+      .where(owner: @teammate)
+      .joins(:goal_associations)
+      .where(goal_associations: { associable_type: 'Assignment', associable_id: relevant_assignment_ids })
+      .group('goal_associations.associable_id')
+      .count
+
     @assignment_check_ins_data = relevant_assignments.map do |assignment|
       tenure = tenures_by_assignment[assignment.id]
       check_in = open_check_ins_by_assignment[assignment.id]
+      latest_finalized = finalized_by_assignment[assignment.id]
 
       if check_in.nil? && tenure
         check_in = AssignmentCheckIn.create!(
@@ -1890,7 +1899,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         position_assignment: required_assignments_map[assignment.id],
         assignment_tenure: active_tenures_map[assignment.id],
         check_in: check_in,
-        latest_finalized: finalized_by_assignment[assignment.id]
+        latest_finalized: latest_finalized,
+        latest_rating: about_me_latest_rating_for_check_in(latest_finalized),
+        has_active_goal: active_goal_counts_by_assignment_id[assignment.id].to_i.positive?
       }
     end
     
@@ -1905,6 +1916,15 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @company_name = organization.root_company&.name || organization.name
     
     cutoff_date = 90.days.ago
+    aspiration_ids = @company_aspirations.map(&:id)
+    active_goal_counts_by_aspiration_id = Goal
+      .active
+      .where(owner: @teammate)
+      .joins(:goal_associations)
+      .where(goal_associations: { associable_type: 'Aspiration', associable_id: aspiration_ids })
+      .group('goal_associations.associable_id')
+      .count
+
     @aspiration_check_ins_data = @company_aspirations.map do |aspiration|
       check_in = AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
       latest_finalized = AspirationCheckIn
@@ -1916,7 +1936,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       {
         aspiration: aspiration,
         check_in: check_in,
-        latest_finalized: latest_finalized
+        latest_finalized: latest_finalized,
+        latest_rating: about_me_latest_rating_for_check_in(latest_finalized),
+        has_active_goal: active_goal_counts_by_aspiration_id[aspiration.id].to_i.positive?
       }
     end
     
@@ -2045,6 +2067,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       @total_ability_milestones_count = 0
       @ability_milestones_met_count = 0
     end
+  end
+
+  def about_me_latest_rating_for_check_in(check_in)
+    return nil unless check_in
+
+    check_in.official_rating.presence || check_in.manager_rating.presence || check_in.employee_rating.presence
   end
 
 end

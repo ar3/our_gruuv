@@ -43,12 +43,15 @@
                 - check_in = data[:check_in]
                 - latest_finalized = data[:latest_finalized]
                 - clarity_level = latest_finalized&.clarity_level || :obscured
+                - clarity_icon = about_me_clarity_icon_details(latest_finalized_check_in: latest_finalized, casual_name: @teammate.person.casual_name, object_name: aspiration.name)
+                - goal_icon = about_me_goal_icon_details(has_active_goal: data[:has_active_goal], latest_rating: data[:latest_rating], casual_name: @teammate.person.casual_name, object_name: aspiration.name)
                 - neither_side_ready = check_in.present? && !check_in.employee_completed? && !check_in.manager_completed?
                 - show_clarity_merge_row = neither_side_ready && [:crystal_clear, :clear].include?(clarity_level)
                 %tr
                   %td
-                    - if clarity_level == :obscured
-                      %i.bi.bi-exclamation-triangle-fill.text-danger.me-1
+                    %i{class: "bi #{clarity_icon[:icon_class]} #{clarity_icon[:text_class]} me-1", "data-bs-toggle" => "tooltip", "data-bs-title" => clarity_icon[:tooltip]}
+                    - if goal_icon
+                      %i{class: "bi #{goal_icon[:icon_class]} #{goal_icon[:text_class]} me-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_icon[:tooltip]}
                     = link_to aspiration.name, organization_teammate_aspiration_path(organization, @teammate, aspiration), class: "text-decoration-none"
                   %td
                     - if latest_finalized
@@ -85,7 +88,7 @@
         %p.text-muted.mb-3 No company aspirational values found.
       
       .d-grid.mt-3
-        = link_to "View Check-in Hub", 
-                  hub_organization_company_teammate_check_ins_path(organization, @teammate),
-                  class: "btn btn-outline-primary"
+        = link_to hub_organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-primary btn-lg fw-semibold" do
+          Go To All Check-ins
+          %i.bi.bi-box-arrow-up-right.ms-2.text-info
 

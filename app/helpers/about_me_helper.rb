@@ -273,6 +273,59 @@ module AboutMeHelper
     end
   end
 
+  def about_me_clarity_icon_details(latest_finalized_check_in:, casual_name:, object_name:, reference_time: Time.current)
+    clarity_level = latest_finalized_check_in&.clarity_level(reference_time: reference_time) || :obscured
+    clarity_label = clarity_level.to_s.humanize.downcase
+    next_transition = about_me_next_clarity_transition(
+      latest_finalized_check_in: latest_finalized_check_in,
+      clarity_level: clarity_level,
+      reference_time: reference_time
+    )
+
+    tooltip = if clarity_level == :obscured
+      "#{casual_name} is #{clarity_label} on #{object_name}."
+    else
+      "#{casual_name} is #{clarity_label} on #{object_name}, however clarity will downgrade to #{next_transition[:next_level]} in #{next_transition[:time_until]}."
+    end
+    tooltip += " You should consider checking in soon." unless clarity_level == :crystal_clear
+
+    {
+      icon_class: about_me_clarity_icon_class(clarity_level),
+      text_class: about_me_clarity_text_class(clarity_level),
+      tooltip: tooltip
+    }
+  end
+
+  def about_me_goal_icon_details(has_active_goal:, latest_rating:, casual_name:, object_name:)
+    if has_active_goal
+      return {
+        icon_class: 'bi-bullseye',
+        text_class: 'text-success',
+        tooltip: "#{casual_name} has an active goal linked to #{object_name}, which supports improving or sustaining this area."
+      }
+    end
+
+    if latest_rating == 'working_to_meet'
+      return {
+        icon_class: 'bi-exclamation-diamond-fill',
+        text_class: 'text-danger',
+        tooltip: "#{casual_name} is working to meet on #{object_name}, but there is no active goal linked yet."
+      }
+    end
+
+    {
+      icon_class: 'bi-dash-circle',
+      text_class: 'text-muted',
+      tooltip: "#{casual_name} does not have an active goal linked to #{object_name}, and no goal is currently needed."
+    }
+  end
+
+  def about_me_latest_check_in_rating(check_in)
+    return nil unless check_in
+
+    check_in.official_rating.presence || check_in.manager_rating.presence || check_in.employee_rating.presence
+  end
+
   # Helper methods for displaying indicators
   def status_indicator_badge_class(status)
     case status
@@ -311,6 +364,56 @@ module AboutMeHelper
     else
       'alert-secondary'
     end
+  end
+
+  def about_me_clarity_icon_class(clarity_level)
+    case clarity_level
+    when :crystal_clear
+      'bi-check-circle-fill'
+    when :clear
+      'bi-info-circle-fill'
+    when :blurred
+      'bi-exclamation-triangle-fill'
+    else
+      'bi-x-octagon-fill'
+    end
+  end
+
+  def about_me_clarity_text_class(clarity_level)
+    case clarity_level
+    when :crystal_clear
+      'text-success'
+    when :clear
+      'text-info'
+    when :blurred
+      'text-warning'
+    else
+      'text-danger'
+    end
+  end
+
+  def about_me_next_clarity_transition(latest_finalized_check_in:, clarity_level:, reference_time:)
+    finalized_at = latest_finalized_check_in&.official_check_in_completed_at
+    return { next_level: 'obscured', time_until: 'less than a minute' } if finalized_at.blank?
+
+    transition_at, next_level = case clarity_level
+    when :crystal_clear
+      [finalized_at + (CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 1).days, 'clear']
+    when :clear
+      [finalized_at + (CheckInBehavior::CLARITY_CLEAR_DAYS + 1).days, 'blurred']
+    when :blurred
+      [finalized_at + (CheckInBehavior::CLARITY_BLURRED_DAYS + 1).days, 'obscured']
+    else
+      [reference_time, 'obscured']
+    end
+
+    time_until = if transition_at <= reference_time
+      'less than a minute'
+    else
+      distance_of_time_in_words(reference_time, transition_at)
+    end
+
+    { next_level: next_level, time_until: time_until }
   end
 
   # Returns HTML content for popover explaining status conditions for each section

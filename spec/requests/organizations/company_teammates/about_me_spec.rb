@@ -313,6 +313,15 @@ RSpec.describe 'About Me Page', type: :request do
       let(:position) { create(:position, title: title, position_level: position_level) }
       let(:assignment) { create(:assignment, company: organization, title: 'Clarity Assignment') }
       let(:aspiration) { create(:aspiration, company: organization, name: 'Clarity Aspiration') }
+      let!(:assignment_goal) do
+        create(:goal,
+               owner: teammate,
+               creator: teammate,
+               company: organization,
+               started_at: 1.day.ago,
+               completed_at: nil,
+               deleted_at: nil)
+      end
       let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
       let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
 
@@ -321,6 +330,7 @@ RSpec.describe 'About Me Page', type: :request do
         create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
         teammate.reload
         create(:position_assignment, position: teammate.active_employment_tenure.position, assignment: assignment, assignment_type: 'required')
+        create(:goal_association, goal: assignment_goal, associable: assignment)
 
         create(:assignment_check_in,
                teammate: teammate,
@@ -365,9 +375,40 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to match(/#{Regexp.escape(person.casual_name)} is (crystal clear|clear) and a new check-in should be considered in/i)
       end
 
-      it 'shows obscured warning icon for obscured check-ins' do
+      it 'shows clarity icons and tooltips in assignment/aspiration rows' do
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body).to include('bi-exclamation-triangle-fill')
+        expect(response.body).to include('bi-info-circle-fill')
+        expect(response.body).to include('bi-x-octagon-fill')
+        expect(response.body).to include("#{person.casual_name} is clear on #{assignment.title}")
+        expect(response.body).to include("#{person.casual_name} is obscured on #{aspiration.name}")
+        expect(response.body).to include('You should consider checking in soon')
+      end
+
+      it 'shows green goal icon when an active goal is linked' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('bi-bullseye')
+        expect(response.body).to include("has an active goal linked to #{assignment.title}")
+      end
+
+      it 'shows red missing-goal icon for working_to_meet without an active linked goal' do
+        create(:aspiration_check_in,
+               teammate: teammate,
+               aspiration: aspiration,
+               employee_completed_at: 80.days.ago,
+               manager_completed_at: 80.days.ago,
+               manager_completed_by_teammate: manager_completed_by,
+               official_check_in_completed_at: 80.days.ago,
+               finalized_by_teammate: finalized_by,
+               official_rating: :working_to_meet)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('bi-exclamation-diamond-fill')
+        expect(response.body).to include("is working to meet on #{aspiration.name}, but there is no active goal linked yet")
+      end
+
+      it 'uses the new check-in hub CTA wording in all three check-in sections' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body.scan('Go To All Check-ins').count).to eq(3)
       end
     end
   end

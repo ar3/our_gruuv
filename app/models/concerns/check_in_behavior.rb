@@ -5,11 +5,12 @@ module CheckInBehavior
   CLARITY_CLEAR_DAYS = 60
   CLARITY_BLURRED_DAYS = 90
 
-  # 1-by-1 next-item / dropdown urgency uses the same calendar-day windows as #clarity_level
-  # (finalized recency), collapsed to three UI buckets:
+  # 1-by-1 next-item / dropdown urgency uses the same calendar-day windows as #clarity_level.
+  # Returns a four-step recency color:
   # - :green  => crystal_clear (<= CLARITY_CRYSTAL_CLEAR_DAYS)
-  # - :yellow => clear (CLARITY_CRYSTAL_CLEAR_DAYS < days <= CLARITY_CLEAR_DAYS)
-  # - :red    => blurred + obscured (same bands as #clarity_level :blurred and :obscured) or no timestamp
+  # - :blue   => clear (CLARITY_CRYSTAL_CLEAR_DAYS < days <= CLARITY_CLEAR_DAYS)
+  # - :yellow => blurred (CLARITY_CLEAR_DAYS < days <= CLARITY_BLURRED_DAYS)
+  # - :red    => obscured (> CLARITY_BLURRED_DAYS) or no timestamp
   def self.recency_tricolor_bucket(last_activity_at, reference_time: Time.current)
     return :red if last_activity_at.blank?
 
@@ -17,6 +18,8 @@ module CheckInBehavior
     if days <= CLARITY_CRYSTAL_CLEAR_DAYS
       :green
     elsif days <= CLARITY_CLEAR_DAYS
+      :blue
+    elsif days <= CLARITY_BLURRED_DAYS
       :yellow
     else
       :red

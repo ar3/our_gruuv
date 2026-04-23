@@ -83,8 +83,10 @@ module CheckIns
       case CheckInBehavior.recency_tricolor_bucket(last_activity)
       when :green
         BUCKET_GREEN
-      when :yellow
+      when :blue
         BUCKET_YELLOW
+      when :yellow
+        BUCKET_RED
       else
         BUCKET_RED
       end
