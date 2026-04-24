@@ -136,6 +136,7 @@ RSpec.describe 'Organizations::Digest', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Digest')
       expect(response.body).to include('Configure digest')
+      expect(response.body).to include('Notification preferences')
     end
 
     it 'saves 1:1 day from profile flow via digest update endpoint' do
@@ -152,6 +153,56 @@ RSpec.describe 'Organizations::Digest', type: :request do
 
       expect(response).to redirect_to(organization_company_teammate_path(company, teammate))
       expect(UserPreference.for_person(person).preference(:about_me_weekly_day)).to eq('5')
+    end
+
+    it 'supports autosave from profile and returns to profile page' do
+      patch organization_digest_path(company),
+            params: {
+              digest_slack: 'on',
+              digest_email: 'off',
+              digest_sms: 'on',
+              about_me_days: { teammate.id.to_s => '3' },
+              return_url: organization_company_teammate_path(company, teammate),
+              return_text: 'Back to Profile'
+            }
+
+      expect(response).to redirect_to(organization_company_teammate_path(company, teammate))
+      expect(UserPreference.for_person(person).preference(:about_me_weekly_day)).to eq('3')
+      pref = UserPreference.for_person(person).reload
+      expect(pref.preference(:digest_slack)).to eq('on')
+      expect(pref.preference(:digest_sms)).to eq('on')
+    end
+
+    it 'shows configure digest copy with direct report count when viewer serves teammates' do
+      report_person = create(:person)
+      report = create(:company_teammate, organization: company, person: report_person)
+      create(:employment_tenure, teammate: report, company: company, manager_teammate: teammate, started_at: 1.year.ago, ended_at: nil)
+
+      get organization_company_teammate_path(company, teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Configure digest for you and your 1:1 cadence for the 1 teammates you serve')
+    end
+  end
+
+  describe 'Profile page digest section when viewing another teammate' do
+    let(:manager_person) { create(:person) }
+    let!(:manager_teammate) { create(:company_teammate, organization: company, person: manager_person) }
+
+    before do
+      create(:employment_tenure, teammate: manager_teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+      manager_teammate.update!(first_employed_at: 1.year.ago)
+      create(:employment_tenure, teammate: teammate, company: company, manager_teammate: manager_teammate, started_at: 1.year.ago, ended_at: nil)
+      teammate.update!(first_employed_at: 1.year.ago)
+      sign_in_as_teammate_for_request(manager_person, company)
+    end
+
+    it 'shows disabled configure digest affordance with explanation' do
+      get organization_company_teammate_path(company, teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Configure digest is disabled')
+      expect(response.body).to include('You can only configure digest settings from your own profile page.')
     end
   end
 end

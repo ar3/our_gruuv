@@ -46,6 +46,16 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
       return
     end
 
+    if params[:return_url].present? && params[:commit].blank?
+      if slack == 'off' && sms == 'off'
+        redirect_to params[:return_url],
+                    alert: 'No notifications will be sent since no mediums are configured to send notifications to.'
+      else
+        redirect_to params[:return_url], notice: 'Digest preferences saved.'
+      end
+      return
+    end
+
     if slack == 'off' && sms == 'off'
       redirect_to edit_organization_digest_path(@organization, return_url: params[:return_url], return_text: params[:return_text]),
                   alert: 'No notifications will be sent since no mediums are configured to send notifications to.'
