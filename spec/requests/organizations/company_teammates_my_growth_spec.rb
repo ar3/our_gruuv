@@ -205,9 +205,29 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           expect(response.body).to include('data-bs-toggle="popover"')
           expect(response.body).to include('Miles are a way to allow people to go after expertise')
           expect(response.body).to include('border-warning')
+          expect(response.body).to include("Need (M2) for #{current_position.display_name}")
           expect(response.body).to include('my-growth-abilities-mileage-totals-rule')
           expect(response.body).to include('Miles earned')
           expect(response.body).to include('Miles needed')
+        end
+
+        it 'shows target-threshold pill when current is met but target is not' do
+          create(:teammate_milestone, company_teammate: employee_teammate, ability: ability_direct, milestone_level: 2)
+
+          get my_growth_abilities_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include("Need (M3) for #{target_position.display_name}")
+          expect(response.body).to include('bg-info-subtle')
+        end
+
+        it 'shows combined threshold pill when current and target share the same unmet milestone' do
+          shared_ability = create(:ability, company: organization, name: 'SharedThresholdAbility')
+          create(:position_ability, position: current_position, ability: shared_ability, milestone_level: 4)
+          create(:position_ability, position: target_position, ability: shared_ability, milestone_level: 4)
+
+          get my_growth_abilities_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include("Need (M4) for #{current_position.display_name} + #{target_position.display_name}")
         end
 
         it 'shows no-target alert when next goal position is blank' do

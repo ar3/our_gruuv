@@ -125,6 +125,38 @@ module MyGrowthAbilitiesHelper
     end
   end
 
+  # Explains unmet milestone threshold for the first-column card.
+  # Returns nil when all applicable requirements are met.
+  def my_growth_ability_row_threshold_pill(earned_levels:, current_position:, target_position:, cur:, tar:)
+    highest = earned_levels.present? ? earned_levels.map(&:to_i).max : 0
+    current_req = cur.present? ? cur[:minimum_milestone_level].to_i : nil
+    target_req =
+      if target_position.present? && tar.present?
+        tar[:minimum_milestone_level].to_i
+      end
+
+    missing_current = current_req.present? && highest < current_req
+    missing_target = target_req.present? && highest < target_req
+    return nil unless missing_current || missing_target
+
+    if missing_current
+      shared_requirement = missing_target && current_req == target_req
+      current_position_name = current_position&.display_name.presence || 'current position'
+      target_position_name = target_position&.display_name.presence || 'target position'
+      position_label = shared_requirement ? "#{current_position_name} + #{target_position_name}" : current_position_name
+      {
+        text: "Need (M#{current_req}) for #{position_label}",
+        classes: 'badge rounded-pill bg-warning-subtle text-warning-emphasis'
+      }
+    else
+      target_position_name = target_position&.display_name.presence || 'target position'
+      {
+        text: "Need (M#{target_req}) for #{target_position_name}",
+        classes: 'badge rounded-pill bg-info-subtle text-info-emphasis'
+      }
+    end
+  end
+
   def my_growth_certifier_awards_popover_inner_html(certifier_rows)
     return nil if certifier_rows.blank?
 

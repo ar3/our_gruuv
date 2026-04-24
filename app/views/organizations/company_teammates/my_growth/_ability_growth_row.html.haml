@@ -11,6 +11,7 @@
 - earned_pts = my_growth_ability_earned_miles_total(earned_levels)
 - earned_pop_html = my_growth_milestone_mileage_popover_inner_html(my_growth_milestone_mileage_earned_breakdown_sentence(earned_levels))
 - earned_card_border = my_growth_ability_row_card_border_classes(earned_levels: earned_levels, target_position: target_position, cur: cur, tar: tar)
+- threshold_pill = my_growth_ability_row_threshold_pill(earned_levels: earned_levels, current_position: current_position, target_position: target_position, cur: cur, tar: tar)
 - blueprint_card_border = 'border border-2'
 
 .row.mb-3.align-items-stretch
@@ -29,6 +30,9 @@
                   (#{milestone_level_display(earned_levels.max)})
             - else
               %p.small.text-muted.mb-0 No milestones earned yet
+            - if threshold_pill.present?
+              .mt-2
+                %span{ class: threshold_pill[:classes] }= threshold_pill[:text]
           .col-1.d-flex.justify-content-end.align-items-start
             = my_growth_ability_miles_trigger_html(total_points: earned_pts, popover_inner_html: earned_pop_html, title: 'Milestone miles earned')
       - ability_counts = goal_counts_by_id[ability.id] || { open_associated_goals_count: 0 }

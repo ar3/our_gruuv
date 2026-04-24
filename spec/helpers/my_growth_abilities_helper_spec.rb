@@ -88,4 +88,60 @@ RSpec.describe MyGrowthAbilitiesHelper, type: :helper do
       expect(result).to include('border-success')
     end
   end
+
+  describe '#my_growth_ability_row_threshold_pill' do
+    let(:current_pos) { instance_double(Position, display_name: 'Current Position') }
+    let(:target_pos) { instance_double(Position, present?: true, display_name: 'Target Position') }
+
+    it 'returns warning copy for unmet current blueprint requirement' do
+      result = helper.my_growth_ability_row_threshold_pill(
+        earned_levels: [1],
+        current_position: current_pos,
+        target_position: target_pos,
+        cur: { minimum_milestone_level: 2 },
+        tar: { minimum_milestone_level: 4 }
+      )
+
+      expect(result[:text]).to eq('Need (M2) for Current Position')
+      expect(result[:classes]).to include('bg-warning-subtle')
+    end
+
+    it 'returns info copy for unmet target blueprint requirement after meeting current' do
+      result = helper.my_growth_ability_row_threshold_pill(
+        earned_levels: [2],
+        current_position: current_pos,
+        target_position: target_pos,
+        cur: { minimum_milestone_level: 2 },
+        tar: { minimum_milestone_level: 4 }
+      )
+
+      expect(result[:text]).to eq('Need (M4) for Target Position')
+      expect(result[:classes]).to include('bg-info-subtle')
+    end
+
+    it 'returns combined copy when current and target require the same unmet milestone' do
+      result = helper.my_growth_ability_row_threshold_pill(
+        earned_levels: [1],
+        current_position: current_pos,
+        target_position: target_pos,
+        cur: { minimum_milestone_level: 3 },
+        tar: { minimum_milestone_level: 3 }
+      )
+
+      expect(result[:text]).to eq('Need (M3) for Current Position + Target Position')
+      expect(result[:classes]).to include('bg-warning-subtle')
+    end
+
+    it 'returns nil when all applicable requirements are met' do
+      result = helper.my_growth_ability_row_threshold_pill(
+        earned_levels: [4],
+        current_position: current_pos,
+        target_position: target_pos,
+        cur: { minimum_milestone_level: 2 },
+        tar: { minimum_milestone_level: 4 }
+      )
+
+      expect(result).to be_nil
+    end
+  end
 end
