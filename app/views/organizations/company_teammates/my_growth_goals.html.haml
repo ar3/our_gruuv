@@ -20,10 +20,11 @@
     Setting goals — personal, professional, dream goals — these are an incredible way to track your progress to where you are wanting to go. Growth accountability!
 
 - my_growth_goals_casual = @teammate.person.casual_name.presence || @teammate.person.display_name
-.mb-4
-  = link_to organization_goals_path(organization, owner_id: "CompanyTeammate_#{@teammate.id}", view: 'hierarchical-collapsible'), class: "btn btn-outline-primary btn-lg w-100 py-3 px-4 fs-5 fw-semibold" do
-    %i.bi.bi-bullseye.me-2
-    View and check-in on all of #{my_growth_goals_casual}'s goals
+.row.mb-4
+  .offset-1.col-10
+    = link_to organization_goals_path(organization, owner_id: "CompanyTeammate_#{@teammate.id}", view: 'hierarchical-collapsible'), class: "btn btn-outline-primary btn-lg w-100 py-3 px-4 fs-5 fw-semibold" do
+      %i.bi.bi-box-arrow-up-right.me-2.text-info
+      View and check-in on all of #{my_growth_goals_casual}'s goals
 
 .mb-4
   .btn-group{role: "group"}
