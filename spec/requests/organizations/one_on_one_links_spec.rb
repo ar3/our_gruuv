@@ -38,6 +38,11 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include("1:1 Hub")
+      expect(response.body).to include("The One Thing")
+      expect(response.body).to include("Sync")
+      expect(response.body).to include("Execute")
+      expect(response.body).to include("Evolve")
+      expect(response.body).to include("One on One Hub (Active)")
     end
 
     it "shows existing one-on-one link" do
@@ -47,6 +52,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include('https://app.asana.com/0/123456/789')
+      expect(response.body).to include('Current Sync Link')
     end
 
     it "shows Asana link detection" do

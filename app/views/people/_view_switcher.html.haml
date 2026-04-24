@@ -95,6 +95,24 @@
           %i.bi.bi-chat-square-text.me-2
           My Check-ins
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
+
+    %li
+      - one_on_one_active = controller_name == 'one_on_one_links' && action_name == 'show'
+      - one_on_one_link = @teammate&.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
+      - if one_on_one_active
+        .dropdown-item.text-muted
+          %i.bi.bi-link-45deg.me-2
+          One on One Hub (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif @teammate && policy(one_on_one_link).show?
+        = link_to organization_company_teammate_one_on_one_link_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-link-45deg.me-2
+          One on One Hub
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-link-45deg.me-2
+          One on One Hub
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can open the 1:1 workspace for yourself, people in your managerial hierarchy, or if you have manage employment permission."}
       
     %li
       - viewing_own_kudos = @teammate && current_company_teammate == @teammate

@@ -43,6 +43,12 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('My Check-ins')
     end
 
+    it 'returns One on One Hub for one_on_one_links show action' do
+      allow(helper).to receive(:action_name).and_return('show')
+      allow(helper).to receive(:controller_name).and_return('one_on_one_links')
+      expect(helper.people_current_view_name).to eq('One on One Hub')
+    end
+
     it 'returns Public View for public action' do
       allow(helper).to receive(:action_name).and_return('public')
       allow(helper).to receive(:controller_name).and_return('people')

@@ -15,126 +15,346 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  - if params[:return_url].present? && params[:return_text].present?
-    = nav_return_back(url: params[:return_url], text: params[:return_text])
-  - else
-    = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: nil }])
 
 - casual_name = @teammate.person.casual_name
+:css
+  .one-on-one-hub-nav .nav-link.active {
+    background-color: #0d6efd !important;
+    color: white !important;
+    border-radius: 0.375rem;
+  }
+
+  .one-on-one-hub-nav .nav-link:hover {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+  }
+
+  .one-on-one-hub-nav .nav-link {
+    transition: all 0.2s ease-in-out;
+  }
+
+  section[id] {
+    scroll-margin-top: 2rem;
+  }
+
 - return_to_about_me_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
 - return_to_about_me_text = "Return to About #{casual_name}"
+- source = @one_on_one_link.external_project_source
+- cache = @one_on_one_link.external_project_cache_for(source) if source
+- viewing_user_has_identity = has_external_identity?(current_company_teammate, source) if source
+- latest_goal_check_in_dates = @active_goals.filter_map { |goal| goal.goal_check_ins.map(&:check_in_week_start).compact.max }
+- most_recent_goal_check_in = latest_goal_check_in_dates.max
 
 .mb-4
   = render 'organizations/employees/managers_view'
 
-- if @one_on_one_link.url.present?
-  -# Top section: 1:1 Link display
-  .card.mb-4
-    .card-header.d-flex.justify-content-between.align-items-center
-      %h5.mb-0
-        %i.bi.bi-link-45deg.me-2
-        1:1 Link
-      = link_to return_to_about_me_url, class: "btn btn-sm btn-outline-secondary" do
-        %i.bi.bi-arrow-left.me-2
-        = return_to_about_me_text
-    
-    .card-body
-      - if @one_on_one_link.url.present?
-        .mb-3
-          %strong Current Link:
-          = link_to @one_on_one_link.url, @one_on_one_link.url, target: '_blank', rel: 'noopener noreferrer', class: "ms-2"
-          - if @source
-            %span.badge.bg-info.ms-2= "#{source_display_name(@source)} Project Detected"
-      
-      - source = @one_on_one_link.external_project_source
-      - cache = @one_on_one_link.external_project_cache_for(source) if source
-      - viewing_user_has_identity = has_external_identity?(current_company_teammate, source) if source
-      
-      - if source == 'asana' && !viewing_user_has_identity
-        = render 'shared/external_project/associate_prompt',
-                  cacheable: @one_on_one_link,
-                  current_teammate: current_company_teammate,
-                  source: source,
-                  return_url: request.fullpath
+.container-fluid
+  .row
+    .col-md-3.col-lg-2.d-none.d-md-block
+      .position-sticky{style: "top: 2rem;"}
+        .card
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-compass.me-2
+              1:1 Hub
+          .card-body.p-0
+            %nav.nav.flex-column#oneOnOneHubNav.one-on-one-hub-nav
+              %a.nav-link{href: "#one-thing", data: { section: "one-thing" }}
+                %i.bi.bi-house.me-2
+              %a.nav-link{href: "#sync", data: { section: "sync" }}
+                %i.bi.bi-arrow-repeat.me-2
+                Sync
+              %a.nav-link{href: "#execute", data: { section: "execute" }}
+                %i.bi.bi-play-circle.me-2
+                Execute
+              %a.nav-link{href: "#evolve", data: { section: "evolve" }}
+                %i.bi.bi-graph-up.me-2
+                Evolve
 
-      - if source && cache
-        -# Show connect prompt if Asana link is confirmed but user doesn't have identity
-          .mb-3
-        -# Display cached project
-        = render 'shared/external_project/project_display',
-                 cache: cache,
-                 cacheable: @one_on_one_link,
-                 current_teammate: @teammate,
-                 source: source,
-                 return_url: request.fullpath
-      - elsif source && !cache && viewing_user_has_identity
-        -# Prompt to sync (viewing user has identity)
-        = render 'shared/external_project/sync_prompt',
-                 cacheable: @one_on_one_link,
-                 current_teammate: current_company_teammate,
-                 source: source,
-                 return_url: request.fullpath,
-                 has_project_access: @has_project_access
-      - else
-        -# Display iframe for non-integrated links
-        .mb-3
-          %iframe{src: @one_on_one_link.url, style: "width: 100%; height: 600px; border: 1px solid #dee2e6; border-radius: 0.25rem;"}
-  
-  -# Bottom section: Change the 1:1 link
-  .card
-    .card-header.d-flex.justify-content-between.align-items-center
-      %h5.mb-0 Change the 1:1 link
-      = link_to return_to_about_me_url, class: "btn btn-sm btn-outline-secondary" do
-        %i.bi.bi-arrow-left.me-2
-        = return_to_about_me_text
-    
-    .card-body
-      = form_with model: [@organization, @person, @one_on_one_link], url: organization_company_teammate_one_on_one_link_path(organization, @teammate), method: :patch, local: true do |f|
-        .mb-3
-          = f.label :url, "1:1 Link URL", class: "form-label"
-          = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789 or https://docs.google.com/..."
-          - if @one_on_one_link.errors[:url].any?
-            .invalid-feedback.d-block
-              = @one_on_one_link.errors[:url].join(', ')
-          %small.form-text.text-muted
-            Enter a link to your 1:1 document, project, or system. 
-            %br
-            Supported systems: Asana (with integration), Google Docs, Notion, etc.
-        
-        .d-flex.gap-2
-          = f.submit "Save 1:1 Link", class: "btn btn-primary"
-          - cancel_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
-          = link_to "Cancel", cancel_url, class: "btn btn-outline-secondary"
+    .col-md-9.col-lg-10
+      %section#one-thing.mb-5
+        .card.border-primary
+          .card-header.bg-primary.text-white.d-flex.justify-content-between.align-items-center
+            %h2.mb-0
+              %i.bi.bi-house.me-2
+              The One Thing
+            = link_to return_to_about_me_url, class: "btn btn-sm btn-light" do
+              %i.bi.bi-arrow-left.me-2
+              = return_to_about_me_text
+          .card-body
+            %p.mb-0.text-muted
+              We'll prioritize the single most important thing to discuss here soon.
 
-  %hr.my-4
-  = render "organizations/company_teammates/internal_views_navigation", organization: organization, teammate: @teammate, for_one_on_one_hub: true
+      %section#sync.mb-5
+        .card.border-success
+          .card-header.bg-success.text-white
+            %h3.mb-0
+              %i.bi.bi-arrow-repeat.me-2
+              Sync
+          .card-body
+            - if @one_on_one_link.url.present?
+              .mb-3
+                %strong Current Sync Link:
+                = link_to @one_on_one_link.url, @one_on_one_link.url, target: '_blank', rel: 'noopener noreferrer', class: "ms-2"
+                - if @source
+                  %span.badge.bg-info.ms-2= "#{source_display_name(@source)} Project Detected"
+            - else
+              .alert.alert-warning.mb-3
+                %i.bi.bi-exclamation-circle.me-2
+                No sync link set yet.
 
-- else
-  -# Single section when no link exists
-  .card
-    .card-header.d-flex.justify-content-between.align-items-center
-      %h5.mb-0 Set Up 1:1 Link
-      = link_to return_to_about_me_url, class: "btn btn-sm btn-outline-secondary" do
-        %i.bi.bi-arrow-left.me-2
-        = return_to_about_me_text
-    
-    .card-body
-      = form_with model: [@organization, @person, @one_on_one_link], url: organization_company_teammate_one_on_one_link_path(organization, @teammate), method: :post, local: true do |f|
-        .mb-3
-          = f.label :url, "1:1 Link URL", class: "form-label"
-          = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789 or https://docs.google.com/..."
-          - if @one_on_one_link.errors[:url].any?
-            .invalid-feedback.d-block
-              = @one_on_one_link.errors[:url].join(', ')
-          %small.form-text.text-muted
-            Enter a link to your 1:1 document, project, or system. 
-            %br
-            Supported systems: Asana (with integration), Google Docs, Notion, etc.
-        
-        .d-flex.gap-2
-          = f.submit "Save 1:1 Link", class: "btn btn-primary"
-          - cancel_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
-          = link_to "Cancel", cancel_url, class: "btn btn-outline-secondary"
+            - if source == 'asana' && !viewing_user_has_identity
+              = render 'shared/external_project/associate_prompt',
+                      cacheable: @one_on_one_link,
+                      current_teammate: current_company_teammate,
+                      source: source,
+                      return_url: request.fullpath
 
-  %hr.my-4
-  = render "organizations/company_teammates/internal_views_navigation", organization: organization, teammate: @teammate, for_one_on_one_hub: true
+            - if source && cache
+              = render 'shared/external_project/project_display',
+                      cache: cache,
+                      cacheable: @one_on_one_link,
+                      current_teammate: @teammate,
+                      source: source,
+                      return_url: request.fullpath
+            - elsif source && !cache && viewing_user_has_identity
+              = render 'shared/external_project/sync_prompt',
+                      cacheable: @one_on_one_link,
+                      current_teammate: current_company_teammate,
+                      source: source,
+                      return_url: request.fullpath,
+                      has_project_access: @has_project_access
+            - elsif @one_on_one_link.url.present?
+              .mb-4
+                %iframe{src: @one_on_one_link.url, style: "width: 100%; height: 500px; border: 1px solid #dee2e6; border-radius: 0.25rem;"}
+
+            - form_method = @one_on_one_link.persisted? ? :patch : :post
+            = form_with model: [@organization, @person, @one_on_one_link], url: organization_company_teammate_one_on_one_link_path(organization, @teammate), method: form_method, local: true do |f|
+              .mb-3
+                = f.label :url, "Sync Link URL", class: "form-label"
+                = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789 or https://docs.google.com/..."
+                - if @one_on_one_link.errors[:url].any?
+                  .invalid-feedback.d-block
+                    = @one_on_one_link.errors[:url].join(', ')
+                %small.form-text.text-muted
+                  This uses the same underlying 1:1 link.
+              .d-flex.gap-2
+                = f.submit "Save Sync Link", class: "btn btn-primary"
+                = link_to "Cancel", return_to_about_me_url, class: "btn btn-outline-secondary"
+
+      %section#execute.mb-5
+        .card.border-info
+          .card-header.bg-info.text-white
+            %h3.mb-0
+              %i.bi.bi-play-circle.me-2
+              Execute
+          .card-body
+            .row.g-3
+              .col-12.col-xl-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Goals Needed
+                  .card-body
+                    %h2.fw-bold.mb-1= @missing_goal_total_count
+                    %p.text-muted.mb-2 finalized gaps without active goals
+                    - if @assignment_missing_goal_items.any?
+                      %p.mb-1
+                        %strong Assignments:
+                        = @assignment_missing_goal_items.count
+                    - if @aspiration_missing_goal_items.any?
+                      %p.mb-1
+                        %strong Aspirations:
+                        = @aspiration_missing_goal_items.count
+                    - if @ability_missing_goal_items.any?
+                      %p.mb-0
+                        %strong Ability gaps:
+                        = @ability_missing_goal_items.count
+
+              .col-12.col-xl-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Draft / Unstarted Goals
+                  .card-body
+                    %h2.fw-bold.mb-1= @draft_goals_count
+                    %p.text-muted.mb-0 goals are drafted but not started
+
+              .col-12.col-xl-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Active Goals Summary
+                  .card-body
+                    %p.mb-1
+                      %strong Active goals:
+                      = @active_goals.count
+                    %p.mb-1
+                      %strong Need check-in:
+                      = @active_goals_needing_check_in_count
+                    %p.mb-0
+                      %strong Last check-in:
+                      = most_recent_goal_check_in ? most_recent_goal_check_in.strftime("%b %d, %Y") : "No check-ins yet"
+
+              .col-12.col-xl-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Completed Goal Outcomes
+                  .card-body
+                    %p.mb-1
+                      %strong Completed goals:
+                      = @completed_goals.count
+                    %p.mb-1
+                      %strong Last completed:
+                      = @last_goal_completed_at ? @last_goal_completed_at.strftime("%b %d, %Y") : "Never"
+                    %p.mb-1
+                      %strong On time:
+                      = "#{@goal_outcome_counts[:on_time]} (#{@goal_outcome_rates[:on_time]}%)"
+                    %p.mb-1
+                      %strong Late:
+                      = "#{@goal_outcome_counts[:late]} (#{@goal_outcome_rates[:late]}%)"
+                    %p.mb-0
+                      %strong Missed:
+                      = "#{@goal_outcome_counts[:missed]} (#{@goal_outcome_rates[:missed]}%)"
+
+            .card.mt-3
+              .card-header
+                %h5.mb-0 Goal Confidence (Last 90 Days)
+              .card-body
+                - if @goals_confidence_series.any?
+                  #oneOnOneGoalsConfidenceChart{style: "height: 320px;"}
+                - else
+                  %p.text-muted.mb-0 No goal confidence check-ins yet.
+
+      %section#evolve.mb-5
+        .card.border-warning
+          .card-header.bg-warning.text-dark
+            %h3.mb-0
+              %i.bi.bi-graph-up.me-2
+              Evolve
+          .card-body
+            .row.g-3
+              .col-12.col-lg-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Observations (30 Days)
+                  .card-body
+                    %p.mb-1
+                      %strong Given:
+                      = @observations_given_30d_count
+                    %p.mb-0
+                      %strong Received:
+                      = @observations_received_30d_count
+
+              .col-12.col-lg-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Upcoming Check-Ins
+                  .card-body
+                    - if @upcoming_check_ins.any?
+                      %ul.list-unstyled.mb-0
+                        - @upcoming_check_ins.first(8).each do |row|
+                          %li.mb-2
+                            %strong= "#{row[:type]}:"
+                            = " #{row[:name]} - "
+                            - if row[:due_on]
+                              - if row[:overdue]
+                                %span.text-danger= "Overdue since #{row[:due_on].strftime('%b %d, %Y')}"
+                              - else
+                                %span.text-success= "Due by #{row[:due_on].strftime('%b %d, %Y')}"
+                            - else
+                              %span.text-danger Due now (no finalized check-in yet)
+                    - else
+                      %p.text-muted.mb-0 No check-in schedule data yet.
+
+              .col-12
+                .card
+                  .card-header
+                    %h5.mb-0 Grow By Abilities
+                  .card-body
+                    - if @abilities_gap_rows.any?
+                      %p.mb-2= "#{@abilities_gap_rows.count} abilities are below needed milestone levels for the current position."
+                      .table-responsive
+                        %table.table.table-sm
+                          %thead
+                            %tr
+                              %th Ability
+                              %th Current
+                              %th Needed
+                          %tbody
+                            - @abilities_gap_rows.first(10).each do |row|
+                              %tr
+                                %td= row[:ability].name
+                                %td= row[:earned_level]
+                                %td= row[:required_level]
+                    - else
+                      %p.text-muted.mb-0 No current ability milestone gaps were found.
+
+      %hr.my-4
+      = render "organizations/company_teammates/internal_views_navigation", organization: organization, teammate: @teammate, for_one_on_one_hub: true
+
+:javascript
+  (function() {
+    function updateOneOnOneActiveSection() {
+      var navLinks = document.querySelectorAll('#oneOnOneHubNav .nav-link');
+      var sections = document.querySelectorAll('section[id]');
+      var scrollPosition = window.pageYOffset + 100;
+      var current = 'one-thing';
+
+      sections.forEach(function(section) {
+        var top = section.offsetTop;
+        var bottom = top + section.clientHeight;
+        if (scrollPosition >= top && scrollPosition < bottom) {
+          current = section.id;
+        }
+      });
+
+      navLinks.forEach(function(link) {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    }
+
+    function initializeOneOnOneHub() {
+      var navLinks = document.querySelectorAll('#oneOnOneHubNav .nav-link');
+      navLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          var target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+      window.addEventListener('scroll', updateOneOnOneActiveSection);
+      window.addEventListener('resize', updateOneOnOneActiveSection);
+      updateOneOnOneActiveSection();
+
+      var chartSeries = #{@goals_confidence_series.to_json};
+      var chartEl = document.getElementById('oneOnOneGoalsConfidenceChart');
+      if (typeof Highcharts !== 'undefined' && chartEl && chartSeries.length > 0) {
+        Highcharts.chart('oneOnOneGoalsConfidenceChart', {
+          title: { text: null },
+          xAxis: { type: 'datetime' },
+          yAxis: {
+            title: { text: 'Confidence %' },
+            min: 0,
+            max: 100
+          },
+          tooltip: {
+            shared: true,
+            xDateFormat: '%b %d, %Y',
+            valueSuffix: '%'
+          },
+          legend: { enabled: true },
+          series: chartSeries
+        });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeOneOnOneHub);
+    } else {
+      initializeOneOnOneHub();
+    }
+  })();

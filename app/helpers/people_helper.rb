@@ -132,6 +132,10 @@ module PeopleHelper
        (controller_name == 'employees' && action_name == 'audit')
       return 'My Check-ins'
     end
+
+    if controller_name == 'one_on_one_links' && action_name == 'show'
+      return 'One on One Hub'
+    end
     
     # Check for position controller
     if controller_name == 'position' && action_name == 'show'
