@@ -4,7 +4,11 @@
   - if params[:return_url].present? && params[:return_text].present?
     = nav_return_back(url: params[:return_url], text: params[:return_text])
   - else
-    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: nil }])
+    - breadcrumbs = []
+    - filter_crumb = goals_filter_breadcrumb_crumb
+    - breadcrumbs << filter_crumb if filter_crumb.present?
+    - breadcrumbs << { label: "Goals", url: nil }
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: breadcrumbs)
 
 - content_for :header do
   .d-flex.align-items-center

@@ -1016,6 +1016,43 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
   helper_method :primary_filter_select_value
 
+  def goals_filter_breadcrumb_crumb
+    owner_type = @current_filters[:owner_type]
+    owner_id = @current_filters[:owner_id]
+    return nil if owner_type.blank? || owner_id.blank?
+
+    case owner_type
+    when 'CompanyTeammate'
+      teammate = CompanyTeammate.includes(:person).find_by(id: owner_id)
+      return nil unless teammate
+
+      casual_name = teammate.person&.casual_name.presence || teammate.person&.display_name
+      return nil if casual_name.blank?
+
+      {
+        label: "#{casual_name} Grow by Goals",
+        url: my_growth_goals_organization_company_teammate_path(@organization, teammate)
+      }
+    when 'Department'
+      department = Department.find_by(id: owner_id)
+      return nil unless department
+
+      dept_name = department.display_name.presence || department.name
+      return nil if dept_name.blank?
+
+      { label: dept_name, url: organization_department_path(@organization, department) }
+    when 'Team'
+      team = Team.find_by(id: owner_id)
+      return nil unless team
+
+      team_name = team.display_name.presence || team.name
+      return nil if team_name.blank?
+
+      { label: team_name, url: organization_team_path(@organization, team) }
+    end
+  end
+  helper_method :goals_filter_breadcrumb_crumb
+
   # Grouped options for index primary filter: [ [ "Filter", [ [label, value], ... ] ], [ "Teammates", ... ], ... ]
   def available_goal_owners_grouped
     company = @organization.root_company || @organization
