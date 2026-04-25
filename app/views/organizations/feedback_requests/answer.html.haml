@@ -37,6 +37,8 @@
             %span.badge.bg-info.me-1= rateable.name
           - when 'Aspiration'
             %span.badge.bg-success.me-1= rateable.name
+          - when 'Position'
+            %span.badge.bg-dark.me-1= rateable.display_name
       - else
         %span.text-muted Generic
 
@@ -110,7 +112,6 @@
                 manager_casual_name: manager_casual_name
 
   - (@questions - questions_with_objects).each do |question|
-    - next if question.rateable.present? && question.rateable_type == 'Position'
     - existing_observation = @observation_by_question_id[question.id]
     - story_value = existing_observation&.story.to_s
     .card.mb-3

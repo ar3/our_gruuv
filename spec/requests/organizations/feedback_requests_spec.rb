@@ -510,6 +510,33 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response).to have_http_status(:redirect)
     end
 
+    context 'with a Position focus question (story-only, no assignment/ability/aspiration rating block)' do
+      let(:position_major_level) { create(:position_major_level) }
+      let(:position_level) { create(:position_level, position_major_level: position_major_level) }
+      let(:title) { create(:title, position_major_level: position_major_level, company: company) }
+      let(:position) { create(:position, title: title, position_level: position_level) }
+
+      before do
+        # Parent hook already created a question at position 1; add Position at position 2 so ordering
+        # constraints are satisfied regardless of hook run order with nested contexts.
+        create(
+          :feedback_request_question,
+          feedback_request: feedback_request,
+          question_text: 'Stories from working in this role?',
+          position: 2,
+          rateable: position
+        )
+      end
+
+      it 'renders a story textarea so the respondent can answer' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('textarea')
+        expect(response.body).to include('Stories from working in this role?')
+        expect(response.body).to include(position.display_name)
+      end
+    end
+
     context 'with assignment, aspiration, and ability questions' do
       let(:assignment) { create(:assignment, company: company) }
       let(:ability) { create(:ability, company: company) }
