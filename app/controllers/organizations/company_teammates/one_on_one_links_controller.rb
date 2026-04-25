@@ -144,6 +144,15 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     load_execute_metrics
     load_evolve_metrics
     load_goals_confidence_chart_data
+    load_one_thing_priority_carousel
+  end
+
+  def load_one_thing_priority_carousel
+    @priority_carousel = OneOnOne::PriorityCarouselBuilder.call(
+      organization: organization,
+      teammate: @teammate,
+      one_on_one_link: @one_on_one_link
+    )
   end
 
   def load_execute_metrics

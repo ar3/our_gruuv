@@ -83,8 +83,7 @@
               %i.bi.bi-arrow-left.me-2
               = return_to_about_me_text
           .card-body
-            %p.mb-3.text-muted
-              We'll surface the single most important thing to discuss here as we wire up the logic below.
+            = render "priority_carousel", priority_carousel: @priority_carousel
 
             %p.mb-2
               %a.d-flex.align-items-center.justify-content-between.text-decoration-none.p-3.border.rounded.bg-light.text-body{"data-bs-toggle" => "collapse", href: "#oneThingPriorityAlgorithm", role: "button", "aria-expanded" => "false", "aria-controls" => "oneThingPriorityAlgorithm"}
@@ -343,6 +342,24 @@
       window.addEventListener('scroll', updateOneOnOneActiveSection);
       window.addEventListener('resize', updateOneOnOneActiveSection);
       updateOneOnOneActiveSection();
+
+      var oneThingCarouselEl = document.getElementById('oneThingPriorityCarousel');
+      var oneThingCarouselCurrent = document.getElementById('oneThingPriorityCurrentIndicator');
+      if (oneThingCarouselEl && oneThingCarouselCurrent) {
+        var oneThingTotal = parseInt(oneThingCarouselCurrent.getAttribute('data-total-priorities'), 10) || 12;
+        var setOneThingCurrent = function(toIndex) {
+          var oneBased = (toIndex || 0) + 1;
+          oneThingCarouselCurrent.textContent = 'Viewing priority ' + oneBased + ' of ' + oneThingTotal;
+        };
+
+        oneThingCarouselEl.addEventListener('slid.bs.carousel', function(event) {
+          setOneThingCurrent(event.to);
+        });
+
+        var activeDot = oneThingCarouselEl.querySelector('.carousel-indicators .active');
+        var initialIndex = activeDot ? parseInt(activeDot.getAttribute('data-bs-slide-to'), 10) : 0;
+        setOneThingCurrent(isNaN(initialIndex) ? 0 : initialIndex);
+      }
 
       var chartSeries = #{@goals_confidence_series.to_json};
       var chartEl = document.getElementById('oneOnOneGoalsConfidenceChart');

@@ -1,0 +1,102 @@
+- priorities = priority_carousel[:priorities]
+- needs_attention_count = priority_carousel[:needs_attention_count]
+- total_count = priority_carousel[:total_count]
+- first_attention_index = priority_carousel[:first_attention_index]
+
+:css
+  #oneThingPriorityCarousel .carousel-inner {
+    padding: 0 2.75rem;
+  }
+  #oneThingPriorityCarousel .carousel-control-prev,
+  #oneThingPriorityCarousel .carousel-control-next {
+    width: 2.25rem;
+  }
+  #oneThingPriorityCarousel .priority-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    opacity: 1;
+    margin: 0 4px;
+  }
+  #oneThingPriorityCarousel .priority-dot-needs {
+    background-color: #ffc107;
+  }
+  #oneThingPriorityCarousel .priority-dot-healthy {
+    background-color: #198754;
+  }
+  #oneThingPriorityCarousel .priority-dot-na {
+    background-color: #6c757d;
+  }
+  #oneThingPriorityCarousel .carousel-indicators .active.priority-dot {
+    border-color: #212529;
+    transform: scale(1.25);
+  }
+
+.d-flex.align-items-center.justify-content-between.mb-2
+  %h6.mb-0 One Thing Priority Queue
+  %span.badge{class: needs_attention_count.positive? ? "bg-warning text-dark" : "bg-success"}
+    = "#{needs_attention_count} of #{total_count} need attention"
+
+#oneThingPriorityCarousel.carousel.slide.mb-3{"data-bs-ride" => "false", "data-bs-interval" => "false"}
+  .carousel-indicators.position-static.mb-3
+    - priorities.each_with_index do |priority, idx|
+      - dot_class = priority[:needs_attention] ? "priority-dot-needs" : (priority[:not_applicable] ? "priority-dot-na" : "priority-dot-healthy")
+      %button.priority-dot{type: "button", "data-bs-target" => "#oneThingPriorityCarousel", "data-bs-slide-to" => idx, class: "#{dot_class} #{idx == first_attention_index ? 'active' : nil}", "aria-current" => (idx == first_attention_index ? "true" : nil), "aria-label" => "Priority #{idx + 1}: #{priority[:title]}", title: "Priority #{idx + 1}: #{priority[:title]}"}
+
+  .d-flex.justify-content-end.mb-2
+    %span.small.text-muted#oneThingPriorityCurrentIndicator{"data-total-priorities" => total_count}= "Viewing priority #{first_attention_index + 1} of #{total_count}"
+
+  .carousel-inner
+    - priorities.each_with_index do |priority, idx|
+      .carousel-item{class: (idx == first_attention_index ? "active" : nil)}
+        .card{class: (priority[:needs_attention] ? "border-warning" : (priority[:not_applicable] ? "border-secondary" : "border-success"))}
+          .card-body
+            .d-flex.align-items-center.justify-content-between.mb-2
+              %span.badge.bg-secondary= "Priority #{priority[:position]} of #{priority[:total]}"
+              - if priority[:needs_attention]
+                %span.badge.bg-warning.text-dark Needs attention
+              - elsif priority[:not_applicable]
+                %span.badge.bg-secondary N/A
+              - else
+                %span.badge.bg-success All set
+
+            %h6.mb-2= priority[:title]
+            %p.mb-2{class: priority[:needs_attention] ? "text-dark" : "text-success"}= priority[:reason]
+
+            - if priority[:concrete_items].any?
+              %ul.mb-2.ps-3
+                - priority[:concrete_items].each do |item|
+                  %li= item
+            - if priority[:remaining_count].positive?
+              %p.small.text-muted.mb-2= "+#{priority[:remaining_count]} more"
+
+            - if priority[:cta_kind].present?
+              - cta_href = nil
+              - if priority[:cta_kind] == :sync_anchor
+                - cta_href = "#sync"
+              - elsif priority[:cta_kind] == :check_ins_page
+                - cta_href = organization_company_teammate_check_ins_path(organization, @teammate)
+              - elsif priority[:cta_kind] == :new_observation
+                - cta_href = new_organization_observation_path(organization, return_url: request.fullpath, return_text: "Back to 1:1 Hub")
+              - elsif priority[:cta_kind] == :new_feedback_request
+                - cta_href = new_organization_feedback_request_path(organization)
+              - elsif priority[:cta_kind] == :goals_index
+                - cta_href = organization_goals_path(organization, owner_id: "CompanyTeammate_#{@teammate.id}")
+              - elsif priority[:cta_kind] == :bulk_goals
+                - cta_href = bulk_new_organization_goals_path(organization, owner_id: "CompanyTeammate_#{@teammate.id}")
+              - elsif priority[:cta_kind] == :associable_goals && priority[:cta_associable].present?
+                - cta_href = associable_goals_choose_manage_path(organization, priority[:cta_associable], return_url: request.fullpath, return_text: "Back to 1:1 Hub", for_company_teammate_id: @teammate.id)
+              - if cta_href.present?
+                = link_to priority[:cta_label], cta_href, class: "btn btn-sm btn-primary"
+            - elsif !priority[:needs_attention]
+              %p.small.mb-0.text-muted
+                %i.bi.bi-stars.me-1
+                Nice work - this priority does not need action right now.
+
+  %button.carousel-control-prev{type: "button", "data-bs-target" => "#oneThingPriorityCarousel", "data-bs-slide" => "prev"}
+    %span.carousel-control-prev-icon.bg-dark.rounded-circle{"aria-hidden" => "true"}
+    %span.visually-hidden Previous
+  %button.carousel-control-next{type: "button", "data-bs-target" => "#oneThingPriorityCarousel", "data-bs-slide" => "next"}
+    %span.carousel-control-next-icon.bg-dark.rounded-circle{"aria-hidden" => "true"}
+    %span.visually-hidden Next
