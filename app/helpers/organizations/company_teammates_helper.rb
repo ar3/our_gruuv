@@ -183,4 +183,49 @@ module Organizations::CompanyTeammatesHelper
       complete_picture_unearned_milestone_popover_html(ability, level.to_i)
     end
   end
+
+  # HTML for 1:1 Hub "The One Thing" tie-break popover (hover on alert).
+  def one_thing_eisenhower_popover_content
+    content_tag(:div, class: "small text-start") do
+      content_tag(:strong, "Eisenhower-style ordering:") +
+        content_tag(:ol, class: "mb-0 mt-2 ps-3") do
+          safe_join(
+            [
+              content_tag(:li, "Important and urgent"),
+              content_tag(:li, "Urgent and unimportant"),
+              content_tag(:li, "Not urgent and important"),
+              content_tag(:li, "Not urgent and not important")
+            ]
+          )
+        end
+    end
+  end
+
+  # HTML for 1:1 Hub "The One Thing" tie-break popover (hover on alert).
+  def one_thing_tie_breaks_popover_content
+    content_tag(:div, class: "small text-start") do
+      content_tag(:ul, class: "mb-0 ps-3") do
+        safe_join(
+          [
+            content_tag(:li, class: "mb-2") do
+              ("If we see several check-ins tied at the same priority level " \
+               "-- then we need to order them by ").html_safe +
+                content_tag(:strong, "finalization date") +
+                " first, then ".html_safe +
+                content_tag(:strong, "alphabetically") +
+                ".".html_safe
+            end,
+            content_tag(:li, class: "mb-0") do
+              ("If we see the phrase ").html_safe +
+                content_tag(:strong, "“this week”") +
+                " for goal check-ins ".html_safe +
+                ("-- then we need to use the same Monday–Sunday window as weekly goal check-ins (the week whose ").html_safe +
+                content_tag(:strong, "check-in week start") +
+                " is that Monday, per the app’s goal check-in week start logic).".html_safe
+            end
+          ]
+        )
+      end
+    end
+  end
 end

@@ -1,0 +1,81 @@
+-# Documented priority order for "The One Thing" — keep in sync with the service once implemented.
+-# Use != "-- …" so HAML does not treat lines starting with "-" as Ruby.
+.mb-0
+  %h6.text-body.mb-2 Why this order
+  %p.small.text-muted.mb-3
+    One-on-ones are always about the employee: the time when they receive the most coaching.
+    They should feel more supported, clearer, and stronger after every conversation.
+    What you discuss is a matter of
+    %strong importance
+    and
+    %strong urgency
+    %span.ms-1.text-info{"data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => one_thing_eisenhower_popover_content, role: "note", style: "cursor: help;"}
+      %i.bi.bi-info-circle{"aria-hidden" => "true"}
+
+  %h6.text-body.mb-2 Priority stack (highest first)
+  %ol.small.mb-3
+    %li.mb-2
+      If we see tasks in the 1:1 Asana project that are past due or due in the next week
+      != "-- then we need to treat them as top priority."
+    %li.mb-2
+      If we see check-ins for required or active assignments, position, or aspirations that are blurred or obscure
+      != "-- then we need to follow up on those check-ins."
+    %li.mb-2
+      If we see required or active assignments last rated
+      %strong working to meet expectations
+      with
+      %strong no active goals
+      != "-- then we need to create or start goals."
+    %li.mb-2
+      If we see milestone gaps from required or active assignments for the
+      %strong current position
+      (or directly on the current position) with no active goals for those abilities
+      != "-- then we need to create or start those goals."
+    %li.mb-2
+      If we see that the teammate has not
+      %strong given
+      a published, non-journal observation to anyone other than themself in
+      %strong the last 30 days
+      != "-- then we need to create an observation."
+    %li.mb-2
+      If we see that the teammate has not
+      %strong received
+      any published, non-journal observation in
+      %strong the last 30 days
+      != "-- then we need to create a feedback request."
+    %li.mb-2
+      If we see that the teammate has not
+      %strong received
+      a published, non-journal observation on any working-to-meet assignment or aspiration in
+      %strong the last 30 days
+      != "-- then we need to create a feedback request."
+
+  %hr.my-3
+
+  %p.small.text-muted.mb-2
+    If we see that we have reached this point in the stack
+    != "-- then we need to treat the items above as addressed; what follows is lower priority."
+
+  %ol.small.mb-0{start: 8}
+    %li.mb-2
+      If we see
+      %strong active goals
+      without a check-in this week
+      != "-- then we need to create a check-in."
+    %li.mb-2
+      If we see other incomplete tasks in the linked Asana project
+      != "-- then we need to work toward completing them."
+    %li.mb-2
+      If we see that the teammate has
+      %strong no active goals
+      != "-- then we need to create or start one."
+    %li.mb-2
+      If we see gaps in required assignments
+      %strong unique to the target position
+      (not covered above) with no active goals
+      != "-- then we need to create or start goals."
+    %li.mb-2
+      If we see milestone gaps from required assignments unique to the
+      %strong target position
+      (or directly on the target position), not covered above, with no active goals for those abilities
+      != "-- then we need to create or start those goals."

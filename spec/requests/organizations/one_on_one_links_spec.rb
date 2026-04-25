@@ -39,10 +39,30 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("1:1 Hub")
       expect(response.body).to include("The One Thing")
+      expect(response.body).to include("How we choose the one thing")
       expect(response.body).to include("Sync")
       expect(response.body).to include("Execute")
       expect(response.body).to include("Evolve")
       expect(response.body).to include("One on One Hub (Active)")
+    end
+
+    it "renders the one thing section with the priority algorithm collapse" do
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="oneThingPriorityAlgorithm"')
+      expect(response.body).to include('href="#oneThingPriorityAlgorithm"')
+      expect(response.body).to include('data-bs-toggle="collapse"')
+      expect(response.body).to include("Why this order")
+      expect(response.body).to include("Eisenhower-style ordering:")
+      expect(response.body).to include("Urgent and unimportant")
+      expect(response.body).to include("How do we break ties")
+      expect(response.body).to include("Priority stack (highest first)")
+      expect(response.body).to include("If we see tasks in the 1:1 Asana project")
+      expect(response.body).to include("-- then we need to treat them as top priority.")
+      expect(response.body).to include("finalization date")
+      expect(response.body).to include("If we see that we have reached this point in the stack")
+      expect(response.body).to include("the last 30 days")
     end
 
     it "shows existing one-on-one link" do

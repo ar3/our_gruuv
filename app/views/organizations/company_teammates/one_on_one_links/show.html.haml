@@ -83,8 +83,22 @@
               %i.bi.bi-arrow-left.me-2
               = return_to_about_me_text
           .card-body
-            %p.mb-0.text-muted
-              We'll prioritize the single most important thing to discuss here soon.
+            %p.mb-3.text-muted
+              We'll surface the single most important thing to discuss here as we wire up the logic below.
+
+            %p.mb-2
+              %a.d-flex.align-items-center.justify-content-between.text-decoration-none.p-3.border.rounded.bg-light.text-body{"data-bs-toggle" => "collapse", href: "#oneThingPriorityAlgorithm", role: "button", "aria-expanded" => "false", "aria-controls" => "oneThingPriorityAlgorithm"}
+                %span.fw-semibold
+                  %i.bi.bi-diagram-3.me-2
+                  How we choose the one thing
+                %i.bi.bi-chevron-down.text-muted
+            .collapse#oneThingPriorityAlgorithm
+              .border.border-top-0.rounded-bottom.p-3.bg-white
+                = render "one_thing_priority_algorithm"
+                .d-flex.justify-content-end.mt-3
+                  %span.badge.rounded-pill.bg-info-subtle.text-info-emphasis.border{"data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => one_thing_tie_breaks_popover_content, role: "note", style: "cursor: help;"}
+                    %i.bi.bi-info-circle.me-1{"aria-hidden" => "true"}
+                    How do we break ties?
 
       %section#sync.mb-5
         .card.border-success
