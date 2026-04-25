@@ -93,19 +93,25 @@ module Digest
     end
 
     CHECK_IN_SECTION_KEYS = %i[aspirations_check_in assignments_check_in position_check_in].freeze
+    ASANA_URGENT_TASKS_TITLE = 'Asana urgent tasks'
 
     def thread2_about_me
       about_me_thread_payload
     end
 
     def about_me_main_payload
-      summary = about_me_summary_sentence
+      summary = about_me_summary_sentence_for_slack
+      top_line = top_one_thing_slack_line
       weekly_line = 'It is time for our weekly check-in.'
       subject_name = slack_escape(@teammate.person.display_name)
+      helpers = Rails.application.routes.url_helpers
+      one_on_one_hub_url = helpers.organization_company_teammate_one_on_one_link_url(@organization, @teammate)
+      weekly_linked = "<#{one_on_one_hub_url}|Weekly 1:1 check-in>"
 
+      header_text = "*#{weekly_linked} for #{subject_name}*\n\n#{top_line}"
       header_block = {
         type: 'section',
-        text: { type: 'mrkdwn', text: "*Weekly 1:1 check-in for #{subject_name}*" }
+        text: { type: 'mrkdwn', text: truncate_for_slack_section(header_text) }
       }
       profile_image_url = @teammate.profile_image_url.to_s
       if profile_image_url.present?
@@ -191,6 +197,39 @@ module Digest
       yellow_sections = @about_me_sections.select { |s| s[:status] == :yellow }
       green_sections = @about_me_sections.select { |s| s[:status] == :green }
       "#{green_sections.size} sections are healthy, #{yellow_sections.size} sections need some attention, and #{red_sections.size} sections need the most attention."
+    end
+
+    # Slack summary: "X <about|About Casual> sections are healthy, …"
+    def about_me_summary_sentence_for_slack
+      helpers = Rails.application.routes.url_helpers
+      about_url = helpers.about_me_organization_company_teammate_url(@organization, @teammate)
+      casual = slack_escape(@teammate.person.casual_name)
+      about_link = "<#{about_url}|About #{casual}>"
+      red_sections = @about_me_sections.select { |s| s[:status] == :red }
+      yellow_sections = @about_me_sections.select { |s| s[:status] == :yellow }
+      green_sections = @about_me_sections.select { |s| s[:status] == :green }
+      "#{green_sections.size} #{about_link} sections are healthy, #{yellow_sections.size} sections need some attention, and #{red_sections.size} sections need the most attention."
+    end
+
+    def top_one_thing_slack_line
+      one_on_one_link = @teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
+      data = OneOnOne::PriorityCarouselBuilder.call(
+        organization: @organization,
+        teammate: @teammate,
+        one_on_one_link: one_on_one_link
+      )
+      priority = data[:priorities].find { |row| row[:needs_attention] }
+      if priority
+        title_display =
+          if priority[:title] == ASANA_URGENT_TASKS_TITLE && one_on_one_link.url.present?
+            "<#{one_on_one_link.url}|#{slack_escape(ASANA_URGENT_TASKS_TITLE)}>"
+          else
+            slack_escape(priority[:title])
+          end
+        "*Top 1:1 focus:* #{title_display} — #{slack_escape(priority[:reason])}"
+      else
+        "*Top 1:1 focus:* All clear — nothing in the 12-priority queue needs action right now."
+      end
     end
 
     # Returns [link_text, url] for the About Me section. URL is full URL for Slack mrkdwn links.

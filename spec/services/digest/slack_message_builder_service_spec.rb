@@ -139,15 +139,61 @@ RSpec.describe Digest::SlackMessageBuilderService do
   end
 
   describe '#about_me_main_payload' do
-    it 'returns hash with header and short weekly summary only' do
+    it 'includes weekly header with top 1:1 focus beside image, then summary with About link (no second top focus)' do
+      allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
+        {
+          priorities: [
+            { needs_attention: true, title: 'Example priority', reason: 'Example reason.' }
+          ],
+          needs_attention_count: 1,
+          total_count: 12,
+          first_attention_index: 0
+        }
+      )
+
       builder = described_class.new(teammate: teammate, organization: organization)
       result = builder.about_me_main_payload
 
       expect(result).to have_key(:blocks)
       expect(result).to have_key(:text)
-      expect(result[:blocks].first.dig(:text, :text)).to include('Weekly 1:1 check-in for')
-      expect(result[:text]).to include('sections are healthy')
+      expect(result[:blocks].size).to eq(2)
+
+      header_text = result[:blocks].first.dig(:text, :text)
+      expect(header_text).to match(/\|Weekly 1:1 check-in> for /)
+      expect(header_text).to include('Top 1:1 focus')
+      expect(header_text).to include('Example priority')
+      expect(header_text).to include('Example reason.')
+
+      second_text = result[:blocks].second.dig(:text, :text)
+      expect(second_text).to include('healthy')
+      expect(second_text).to include('It is time for our weekly check-in.')
+      expect(second_text).not_to include('Top 1:1 focus')
+      expect(second_text).to match(
+        /\d+ <https?:\/\/[^|]+\|About #{Regexp.escape(person.casual_name)}> sections are healthy/
+      )
+
+      expect(result[:text]).to include('healthy')
       expect(result[:text]).to include('It is time for our weekly check-in.')
+      expect(result[:text]).not_to include('Top 1:1 focus')
+    end
+
+    it 'links Asana urgent tasks title to the teammate 1:1 Asana URL when that is the top focus' do
+      create(:one_on_one_link, teammate: teammate, url: 'https://app.asana.com/0/111/222')
+      allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
+        {
+          priorities: [
+            { needs_attention: true, title: 'Asana urgent tasks', reason: 'Sync first.' }
+          ],
+          needs_attention_count: 1,
+          total_count: 12,
+          first_attention_index: 0
+        }
+      )
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      header_text = builder.about_me_main_payload[:blocks].first.dig(:text, :text)
+
+      expect(header_text).to include('<https://app.asana.com/0/111/222|Asana urgent tasks>')
     end
   end
 
