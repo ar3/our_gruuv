@@ -208,6 +208,17 @@ RSpec.describe 'Organizations::Abilities', type: :request do
       expect(response.body).to include('btn-outline-secondary btn-sm w-100')
       expect(response.body).not_to include('Associated Goals')
     end
+
+    it 'renders description and milestone definitions as markdown HTML' do
+      ability.update!(
+        description: '**Bold** intro.',
+        milestone_2_description: 'Level two *emphasis*.'
+      )
+      get organization_ability_path(organization, ability)
+      expect(response.body).to include('class="markdown-content"')
+      expect(response.body).to match(%r{<strong>Bold</strong>})
+      expect(response.body).to match(%r{<em>emphasis</em>})
+    end
   end
 
   describe 'archiving' do

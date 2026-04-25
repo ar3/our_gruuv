@@ -73,6 +73,17 @@ RSpec.describe 'Organizations::PublicMaap::Abilities', type: :request do
       expect(response.body).to include(ability_company.company.display_name)
     end
 
+    it 'renders description and milestone copy as markdown with prose styling' do
+      ability_company.update!(
+        description: 'Summary with **bold**.',
+        milestone_1_description: 'First level with *italic*.'
+      )
+      get organization_public_maap_ability_path(company, ability_company)
+      expect(response.body).to include('class="markdown-content"')
+      expect(response.body).to match(%r{<strong>bold</strong>})
+      expect(response.body).to match(%r{<em>italic</em>})
+    end
+
     it 'displays public and published observations' do
       private_obs = create(:observation, observer: observer, company: company, privacy_level: :observer_only, published_at: Time.current)
       create(:observation_rating, observation: private_obs, rateable: ability_company, rating: :agree)
