@@ -182,7 +182,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
       allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
         {
           priorities: [
-            { needs_attention: true, title: 'Asana urgent tasks', reason: 'Sync first.' }
+            { needs_attention: true, title: 'Asana urgent tasks', reason: 'Sync first.', concrete_items: [], remaining_count: 0 }
           ],
           needs_attention_count: 1,
           total_count: 12,
@@ -194,6 +194,35 @@ RSpec.describe Digest::SlackMessageBuilderService do
       header_text = builder.about_me_main_payload[:blocks].first.dig(:text, :text)
 
       expect(header_text).to include('<https://app.asana.com/0/111/222|Asana urgent tasks>')
+    end
+
+    it 'links each listed Asana urgent task to its Asana URL in the top focus line' do
+      create(:one_on_one_link, teammate: teammate, url: 'https://app.asana.com/0/111/222')
+      asana_title = OneOnOne::PriorityCarouselBuilder::ASANA_URGENT_TASKS_TITLE
+      allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
+        {
+          priorities: [
+            {
+              needs_attention: true,
+              title: asana_title,
+              reason: 'There are tasks overdue or due in the next week.',
+              concrete_items: [
+                { label: 'Task A (due Jan 01)', url: 'https://app.asana.com/0/111/taskgid1' }
+              ],
+              remaining_count: 2
+            }
+          ],
+          needs_attention_count: 1,
+          total_count: 12,
+          first_attention_index: 0
+        }
+      )
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      header_text = builder.about_me_main_payload[:blocks].first.dig(:text, :text)
+
+      expect(header_text).to include('<https://app.asana.com/0/111/taskgid1|Task A (due Jan 01)>')
+      expect(header_text).to include('• _+2 more_')
     end
   end
 

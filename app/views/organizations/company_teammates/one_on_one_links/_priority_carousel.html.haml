@@ -67,7 +67,11 @@
             - if priority[:concrete_items].any?
               %ul.mb-2.ps-3
                 - priority[:concrete_items].each do |item|
-                  %li= item
+                  %li
+                    - if item.is_a?(Hash) && item[:url].present?
+                      = link_to item[:label], item[:url], target: "_blank", rel: "noopener noreferrer"
+                    - else
+                      = item
             - if priority[:remaining_count].positive?
               %p.small.text-muted.mb-2= "+#{priority[:remaining_count]} more"
 

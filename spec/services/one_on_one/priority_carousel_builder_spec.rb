@@ -38,5 +38,40 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(ninth[:title]).to eq("Remaining Asana tasks")
       expect(ninth[:not_applicable]).to eq(true)
     end
+
+    it "includes Asana task permalinks in urgent-task concrete items when tasks have gids" do
+      due = Date.current.strftime("%Y-%m-%d")
+      one_on_one_link = create(
+        :one_on_one_link,
+        teammate: teammate,
+        url: "https://app.asana.com/0/999888/777",
+        deep_integration_config: { "asana_project_id" => "999888" }
+      )
+      create(
+        :external_project_cache,
+        cacheable: one_on_one_link,
+        items_data: [
+          {
+            "gid" => "task-abc",
+            "name" => "Ship feature",
+            "completed" => false,
+            "due_on" => due
+          }
+        ]
+      )
+
+      result = described_class.call(
+        organization: organization,
+        teammate: teammate,
+        one_on_one_link: one_on_one_link
+      )
+
+      urgent = result[:priorities].find { |p| p[:title] == described_class::ASANA_URGENT_TASKS_TITLE }
+      expect(urgent[:needs_attention]).to eq(true)
+      item = urgent[:concrete_items].first
+      expect(item).to be_a(Hash)
+      expect(item[:url]).to eq("https://app.asana.com/0/999888/task-abc")
+      expect(item[:label]).to include("Ship feature")
+    end
   end
 end

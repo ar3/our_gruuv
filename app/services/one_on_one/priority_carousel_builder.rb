@@ -3,6 +3,8 @@ require "set"
 
 module OneOnOne
   class PriorityCarouselBuilder
+    ASANA_URGENT_TASKS_TITLE = "Asana urgent tasks"
+
     def self.call(...) = new(...).call
 
     def initialize(organization:, teammate:, one_on_one_link:)
@@ -51,11 +53,11 @@ module OneOnOne
 
     def priority_asana_urgent_tasks
       cache = asana_cache
-      return not_applicable_priority("Asana urgent tasks") unless asana_source?
+      return not_applicable_priority(ASANA_URGENT_TASKS_TITLE) unless asana_source?
 
       if cache.blank?
         return attention_priority(
-          "Asana urgent tasks",
+          ASANA_URGENT_TASKS_TITLE,
           "Asana is linked but project data is not synced yet.",
           ["Sync the Asana project first to evaluate urgent tasks."],
           cta_kind: :sync_anchor,
@@ -71,15 +73,15 @@ module OneOnOne
 
       if tasks.any?
         attention_priority(
-          "Asana urgent tasks",
+          ASANA_URGENT_TASKS_TITLE,
           "There are tasks overdue or due in the next week.",
-          tasks.map { |item| format_task_item(item) },
+          tasks.map { |item| format_task_link_item(item) },
           cta_kind: :sync_anchor,
           cta_label: "Open urgent Asana tasks"
         )
       else
         success_priority(
-          "Asana urgent tasks",
+          ASANA_URGENT_TASKS_TITLE,
           "No incomplete Asana tasks are overdue or due in the next week.",
           ["Everything urgent in Asana is already under control."]
         )
@@ -327,7 +329,7 @@ module OneOnOne
         attention_priority(
           "Remaining Asana tasks",
           "There are still incomplete tasks in the linked Asana project.",
-          remaining.map { |item| format_task_item(item) },
+          remaining.map { |item| format_task_link_item(item) },
           cta_kind: :sync_anchor,
           cta_label: "Open remaining tasks"
         )
@@ -557,6 +559,18 @@ module OneOnOne
       due_on = parse_due_on(item["due_on"])
       due_label = due_on ? " (due #{due_on.strftime('%b %d')})" : ""
       "#{item["name"]}#{due_label}"
+    end
+
+    def format_task_link_item(item)
+      label = format_task_item(item)
+      gid = item["gid"].presence
+      return label if gid.blank?
+
+      { label: label, url: AsanaService.task_url(gid, asana_project_id_for_links) }
+    end
+
+    def asana_project_id_for_links
+      @one_on_one_link.asana_project_id
     end
 
     def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil)

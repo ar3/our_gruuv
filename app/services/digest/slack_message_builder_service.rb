@@ -93,7 +93,6 @@ module Digest
     end
 
     CHECK_IN_SECTION_KEYS = %i[aspirations_check_in assignments_check_in position_check_in].freeze
-    ASANA_URGENT_TASKS_TITLE = 'Asana urgent tasks'
 
     def thread2_about_me
       about_me_thread_payload
@@ -220,15 +219,35 @@ module Digest
       )
       priority = data[:priorities].find { |row| row[:needs_attention] }
       if priority
+        asana_title = OneOnOne::PriorityCarouselBuilder::ASANA_URGENT_TASKS_TITLE
         title_display =
-          if priority[:title] == ASANA_URGENT_TASKS_TITLE && one_on_one_link.url.present?
-            "<#{one_on_one_link.url}|#{slack_escape(ASANA_URGENT_TASKS_TITLE)}>"
+          if priority[:title] == asana_title && one_on_one_link.url.present?
+            "<#{one_on_one_link.url}|#{slack_escape(asana_title)}>"
           else
             slack_escape(priority[:title])
           end
-        "*Top 1:1 focus:* #{title_display} — #{slack_escape(priority[:reason])}"
+        lines = ["*Top 1:1 focus:* #{title_display} — #{slack_escape(priority[:reason])}"]
+        if priority[:title] == asana_title && priority[:concrete_items].present?
+          priority[:concrete_items].each do |item|
+            lines << "• #{slack_priority_concrete_item(item)}"
+          end
+          rem = priority[:remaining_count].to_i
+          lines << "• _+#{rem} more_" if rem.positive?
+        end
+        truncate_for_slack_section(lines.join("\n"))
       else
         "*Top 1:1 focus:* All clear — nothing in the 12-priority queue needs action right now."
+      end
+    end
+
+    def slack_priority_concrete_item(item)
+      case item
+      when Hash
+        label = slack_escape(item[:label].to_s)
+        url = item[:url].to_s
+        url.present? ? "<#{url}|#{label}>" : label
+      else
+        slack_escape(item.to_s)
       end
     end
 
