@@ -21,7 +21,7 @@
         %div.card-body
           %h5.card-title= @aspiration.name
           - if @aspiration.description.present?
-            %p.card-text= @aspiration.description
+            .markdown-content.card-text.mb-0= render_markdown(@aspiration.description)
           - else
             %p.card-text.text-muted No description provided
           

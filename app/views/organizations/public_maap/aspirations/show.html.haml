@@ -22,7 +22,7 @@
           %dt.col-sm-3 Description:
           %dd.col-sm-9
             - if @aspiration.description.present?
-              = @aspiration.description
+              .markdown-content.mb-0= render_markdown(@aspiration.description)
             - else
               %em.text-muted No description provided
           %dt.col-sm-3 Department:
