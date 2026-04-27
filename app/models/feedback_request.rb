@@ -4,6 +4,7 @@ class FeedbackRequest < ApplicationRecord
   belongs_to :company, class_name: 'Organization'
   belongs_to :requestor_teammate, class_name: 'CompanyTeammate'
   belongs_to :subject_of_feedback_teammate, class_name: 'CompanyTeammate'
+  belongs_to :possible_observation_transcript, optional: true
   has_many :feedback_request_questions, dependent: :destroy
   has_many :feedback_request_responders, dependent: :destroy
   has_many :responders, through: :feedback_request_responders, source: :company_teammate

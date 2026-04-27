@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_26_161735) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -520,8 +520,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "subject_line"
+    t.bigint "possible_observation_transcript_id"
     t.index ["company_id"], name: "index_feedback_requests_on_company_id"
     t.index ["deleted_at"], name: "index_feedback_requests_on_deleted_at"
+    t.index ["possible_observation_transcript_id"], name: "index_feedback_requests_on_possible_observation_transcript_id"
     t.index ["requestor_teammate_id"], name: "index_feedback_requests_on_requestor_teammate_id"
     t.index ["subject_of_feedback_teammate_id"], name: "index_feedback_requests_on_subject_of_feedback_teammate_id"
   end
@@ -1113,6 +1115,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
     t.index ["title_id"], name: "index_positions_on_title_id"
   end
 
+  create_table "possible_observation_transcripts", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "creator_company_teammate_id", null: false
+    t.string "display_name", null: false
+    t.jsonb "extractions", default: {}, null: false
+    t.string "extraction_status", default: "pending", null: false
+    t.text "extraction_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_de1e07b9a2"
+    t.index ["extraction_status"], name: "index_possible_observation_transcripts_on_extraction_status"
+    t.index ["organization_id"], name: "index_possible_observation_transcripts_on_organization_id"
+  end
+
   create_table "prompt_answers", force: :cascade do |t|
     t.bigint "prompt_id", null: false
     t.bigint "prompt_question_id", null: false
@@ -1523,6 +1539,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
 
   add_foreign_key "abilities", "departments"
   add_foreign_key "abilities", "organizations", column: "company_id"
+  add_foreign_key "abilities", "organizations", column: "company_id"
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -1532,6 +1549,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
   add_foreign_key "aspiration_check_ins", "maap_snapshots"
   add_foreign_key "aspiration_check_ins", "teammates"
   add_foreign_key "aspirations", "departments"
+  add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "assignment_abilities", "abilities"
   add_foreign_key "assignment_abilities", "assignments"
@@ -1582,6 +1600,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
   add_foreign_key "feedback_request_responders", "feedback_requests"
   add_foreign_key "feedback_request_responders", "teammates"
   add_foreign_key "feedback_requests", "organizations", column: "company_id"
+  add_foreign_key "feedback_requests", "possible_observation_transcripts"
   add_foreign_key "feedback_requests", "teammates", column: "requestor_teammate_id"
   add_foreign_key "feedback_requests", "teammates", column: "subject_of_feedback_teammate_id"
   add_foreign_key "goal_associations", "goals"
@@ -1647,6 +1666,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
   add_foreign_key "positions", "position_eligibility_requirements"
   add_foreign_key "positions", "position_levels"
   add_foreign_key "positions", "titles"
+  add_foreign_key "possible_observation_transcripts", "organizations"
+  add_foreign_key "possible_observation_transcripts", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "prompt_answers", "prompt_questions"
   add_foreign_key "prompt_answers", "prompts"
   add_foreign_key "prompt_answers", "teammates", column: "updated_by_company_teammate_id"
@@ -1683,6 +1704,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_13_154528) do
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
   add_foreign_key "titles", "departments"
+  add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "position_major_levels"
   add_foreign_key "user_preferences", "people"

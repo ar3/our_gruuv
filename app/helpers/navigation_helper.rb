@@ -442,6 +442,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Meeting transcripts',
+            icon: 'bi-file-earmark-text',
+            path: organization_possible_observation_transcripts_path(current_organization),
+            policy_check: -> { policy(::PossibleObservationTranscript).index? },
+            coming_soon: false
+          },
+          {
             label: 'Daily / Weekly Digest',
             icon: 'bi-bell',
             path: edit_organization_digest_path(current_organization),

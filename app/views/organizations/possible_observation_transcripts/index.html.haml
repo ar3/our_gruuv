@@ -1,0 +1,44 @@
+- content_for :title, 'Meeting transcripts'
+
+- content_for :header do
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %i.bi.bi-file-earmark-text.me-2
+      Meeting transcripts
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+  %p.lead.text-muted.mb-0
+    Upload meeting transcripts to suggest feedback requests from kudos and constructive moments.
+
+.d-flex.flex-wrap.align-items-center.gap-2.mb-3
+  = link_to 'Upload transcript', new_organization_possible_observation_transcript_path(organization), class: 'btn btn-primary'
+  - customize_params = { mine: (@mine_only ? nil : '1') }.compact
+  = link_to organization_possible_observation_transcripts_path(organization, customize_params), class: 'btn btn-outline-secondary' do
+    %i.bi.bi-sliders.me-1
+    = @mine_only ? 'Show all' : 'My transcripts only'
+
+.table-responsive
+  %table.table.table-hover.align-middle
+    %thead
+      %tr
+        %th Name
+        %th Uploaded by
+        %th Status
+        %th Feedback requests
+        %th Uploaded
+        %th
+    %tbody
+      - @transcripts.each do |t|
+        %tr
+          %td= t.display_name
+          %td= t.creator_company_teammate&.person&.display_name
+          %td
+            %span.badge.text-bg-secondary= t.extraction_status
+          %td= t.feedback_requests_created_count
+          %td.text-muted= l(t.created_at, format: :short)
+          %td.text-end
+            - if policy(t).show?
+              = link_to 'Review', organization_possible_observation_transcript_path(organization, t), class: 'btn btn-sm btn-outline-primary'
+            - else
+              %span.text-muted Review (uploader only)

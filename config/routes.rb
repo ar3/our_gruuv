@@ -188,6 +188,14 @@ Rails.application.routes.draw do
         get :download_file
       end
     end
+
+    resources :possible_observation_transcripts, module: :organizations, only: [:index, :new, :create, :show, :update, :destroy] do
+      member do
+        get :review_feedback_requests
+        post :batch_create_feedback_requests
+        post :re_extract
+      end
+    end
     
     # Legacy upload_events routes for backward compatibility
     resources :upload_events, only: [:index, :show, :new, :create, :destroy], controller: 'bulk_sync_events' do

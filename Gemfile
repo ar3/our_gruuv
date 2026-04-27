@@ -121,6 +121,9 @@ gem "http", "~> 5.0"
 # AWS SDK for S3 storage
 gem "aws-sdk-s3", "~> 1.0"
 
+# Unified LLM API (Bedrock, OpenAI, …) for transcript moment extraction
+gem "ruby_llm", "~> 1.14"
+
 # Environment variables
 gem "dotenv-rails", "~> 3.1"
 

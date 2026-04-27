@@ -29,6 +29,11 @@ class CompanyTeammate < ApplicationRecord
   has_many :kudos_transactions, foreign_key: :company_teammate_id, dependent: :destroy
   has_many :kudos_redemptions, foreign_key: :company_teammate_id, dependent: :destroy
   has_many :bank_awards_given, class_name: 'BankAwardTransaction', foreign_key: :company_teammate_banker_id, dependent: :nullify
+  has_many :possible_observation_transcripts_created,
+           class_name: 'PossibleObservationTranscript',
+           foreign_key: :creator_company_teammate_id,
+           dependent: :destroy,
+           inverse_of: :creator_company_teammate
 
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }

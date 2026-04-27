@@ -1,5 +1,7 @@
 module FeedbackRequests
   class AnswerService
+    RATING_RATEABLE_TYPES = %w[Ability Assignment Aspiration].freeze
+
     def self.call(feedback_request:, answers:, responder_teammate:, privacy_level: 'observed_and_managers', complete: false)
       new(
         feedback_request: feedback_request,
@@ -42,7 +44,7 @@ module FeedbackRequests
               return Result.err(observation.errors.full_messages)
             end
 
-            if question.rateable.present?
+            if rating_supported_for_question?(question)
               obs_rating = observation.observation_ratings.find_by(rateable: question.rateable)
               if obs_rating
                 obs_rating.update!(rating: rating) unless obs_rating.rating == rating
@@ -79,7 +81,7 @@ module FeedbackRequests
               return Result.err(observation.errors.full_messages)
             end
 
-            if question.rateable.present?
+            if rating_supported_for_question?(question)
               observation.observation_ratings.build(
                 rateable: question.rateable,
                 rating: rating
@@ -153,6 +155,10 @@ module FeedbackRequests
 
       sentence = "My experience is that #{subject_name} has shown a #{rating_phrase} example of #{object_name}."
       question_text.present? ? "#{question_text} #{sentence}" : sentence
+    end
+
+    def rating_supported_for_question?(question)
+      question.rateable.present? && RATING_RATEABLE_TYPES.include?(question.rateable_type)
     end
   end
 end

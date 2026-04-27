@@ -686,7 +686,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       }.to change { Observation.count }.by(2)
     end
 
-    it 'redirects to show page on success' do
+    it 'redirects to observation show page on success' do
       feedback_request.reload # Ensure questions are loaded
       question = feedback_request.feedback_request_questions.first
       post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
@@ -699,7 +699,8 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         privacy_level: 'observed_and_managers',
         save_and_complete: 'Save and Complete'
       }
-      expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
+      observation = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
+      expect(response).to redirect_to(organization_observation_path(company, observation))
     end
 
     it 'sets completed_at when Save and Complete is clicked' do

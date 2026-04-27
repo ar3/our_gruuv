@@ -26,6 +26,7 @@ class Organization < ApplicationRecord
   has_many :bulk_downloads, foreign_key: 'company_id', dependent: :destroy
   has_many :assignment_flows, foreign_key: 'company_id', dependent: :destroy
   has_many :observations, foreign_key: :company_id, dependent: :destroy
+  has_many :possible_observation_transcripts, dependent: :destroy
 
   # Kudos associations
   has_many :kudos_points_ledgers, foreign_key: :organization_id, dependent: :destroy

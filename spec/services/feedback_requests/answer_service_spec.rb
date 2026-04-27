@@ -26,6 +26,15 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
     )
   end
 
+  let(:question_with_position_rateable) do
+    create(:feedback_request_question,
+      feedback_request: feedback_request,
+      question_text: 'How did they show up in role?',
+      position: 3,
+      rateable: create(:position, company: company)
+    )
+  end
+
   let(:question_without_rateable) do
     create(:feedback_request_question,
       feedback_request: feedback_request,
@@ -249,6 +258,33 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
         obs2 = Observation.find_by(feedback_request_question_id: question_without_rateable.id, observer_id: responder.person_id)
         expect(obs1.privacy_level).to eq('observed_only')
         expect(obs2.privacy_level).to eq('managers_only')
+      end
+    end
+
+    context 'when question rateable is a Position' do
+      it 'creates an observation but skips creating observation ratings' do
+        question_with_position_rateable
+        answers = {
+          question_with_position_rateable.id.to_s => {
+            story: '',
+            rating: 'agree',
+            privacy_level: 'observed_and_managers'
+          }
+        }
+
+        expect {
+          described_class.call(
+            feedback_request: feedback_request,
+            answers: answers,
+            responder_teammate: responder,
+            privacy_level: 'observed_and_managers',
+            complete: false
+          )
+        }.to change { Observation.count }.by(1)
+
+        obs = Observation.last
+        expect(obs.story).to include('My experience is that')
+        expect(obs.observation_ratings.count).to eq(0)
       end
     end
   end

@@ -1,0 +1,78 @@
+- content_for :title, "#{@transcript.display_name} - Create requests"
+
+- content_for :go_back_link do
+  = link_to '← Back to observation review', organization_possible_observation_transcript_path(organization, @transcript), class: 'text-decoration-none'
+
+- content_for :header do
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0
+      %i.bi.bi-send-check.me-2
+      Create feedback requests
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+  %p.lead.text-muted.mb-0
+    Step 2 of 2: choose which requests to create and whether to notify responders now.
+
+%ul.nav.nav-tabs.mb-3
+  %li.nav-item
+    = link_to 'Review observations', organization_possible_observation_transcript_path(organization, @transcript), class: 'nav-link'
+  %li.nav-item
+    %span.nav-link.active Create feedback requests
+
+- if @items.blank?
+  .alert.alert-warning.mb-0
+    No observations are available to create requests from.
+- else
+  = form_with url: batch_create_feedback_requests_organization_possible_observation_transcript_path(organization, @transcript), method: :post, local: true do
+    .table-responsive
+      %table.table.table-bordered.align-middle
+        %thead.table-light
+          %tr
+            %th Include
+            %th Request summary
+            %th Quote
+            %th Existing request
+        %tbody
+          - @items.each do |item|
+            - created = item[:feedback_request_id].present?
+            - missing_ids = item[:responder_company_teammate_id].blank? || item[:subject_company_teammate_id].blank?
+            - default_checked = ActiveModel::Type::Boolean.new.cast(item[:include]) && !created
+            - kind_label = (item[:kind].to_s == 'feedback' ? 'constructive feedback' : (item[:kind].to_s == 'quick_note' ? 'a quick note' : 'kudos'))
+            - responder_teammate = item[:responder_company_teammate_id].present? ? @teammates_by_id[item[:responder_company_teammate_id].to_i] : nil
+            - recipient_teammate = item[:subject_company_teammate_id].present? ? @teammates_by_id[item[:subject_company_teammate_id].to_i] : nil
+            - speaker_name = responder_teammate&.person&.casual_name.presence || item[:speaker_label].presence || 'the speaker'
+            - recipient_name = recipient_teammate&.person&.display_name.presence || item[:recipient_label].presence || 'the teammate'
+            - recipient_casual_name = recipient_teammate&.person&.casual_name.presence || recipient_name
+            - recipient_summary_name = recipient_teammate&.person&.casual_name.presence || item[:recipient_label].presence || 'the teammate'
+            - missing_fields = []
+            - missing_fields << 'responder_company_teammate_id' if item[:responder_company_teammate_id].blank?
+            - missing_fields << 'subject_company_teammate_id' if item[:subject_company_teammate_id].blank?
+            %tr
+              %td
+                - unless created
+                  = check_box_tag 'extraction_ids[]', item[:id], default_checked, class: 'form-check-input', id: "extraction_pick_#{item[:id]}"
+                - if created
+                  %span.text-success Already created
+                - elsif missing_ids
+                  .small.text-warning.mt-1
+                    Missing IDs: #{missing_fields.join(', ')}
+              %td
+                Asking #{speaker_name} to give/verify #{kind_label} about #{recipient_summary_name}.
+              %td{ style: 'min-width: 500px;' }
+                %strong From the #{@transcript.display_name} transcript you said:
+                %br/
+                %br/
+                = simple_format(h(item[:quote].to_s))
+                %br/
+                %br/
+                Copy and paste this below and hit send to ensure this feedback is associated with #{recipient_casual_name}.
+              %td
+                - if created
+                  = link_to "Open ##{item[:feedback_request_id]}", organization_feedback_request_path(organization, item[:feedback_request_id]), class: 'btn btn-sm btn-outline-primary'
+                - else
+                  %span.text-muted —
+
+    .d-flex.flex-wrap.gap-2.mt-3
+      = button_tag 'Create requests without sending notifications', type: 'submit', class: 'btn btn-outline-primary', name: 'send_notifications_now', value: '0'
+      = button_tag 'Create requests and send notifications now', type: 'submit', class: 'btn btn-success', name: 'send_notifications_now', value: '1'

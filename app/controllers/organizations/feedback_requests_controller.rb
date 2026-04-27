@@ -494,7 +494,14 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
         responder_record.update!(completed_at: complete ? Time.current : nil)
       end
 
-      redirect_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : organization_feedback_requests_path(organization)
+      saved_observation = Array(result.value).first
+      redirect_path = if saved_observation.present?
+        organization_observation_path(organization, saved_observation)
+      elsif policy(@feedback_request).show?
+        organization_feedback_request_path(organization, @feedback_request)
+      else
+        organization_feedback_requests_path(organization)
+      end
       notice = complete ? 'Your feedback has been submitted and marked complete.' : 'Your feedback has been saved and kept incomplete.'
       redirect_to redirect_path, notice: notice
     else
