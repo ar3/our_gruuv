@@ -29,7 +29,7 @@ module Llm
       @chunk_text = chunk_text.to_s
     end
 
-    # Returns { "items" => [ { "kind", "quote", "speaker_label", "recipient_label" }, ... ] } or raises / returns empty on stub.
+    # Returns { "items" => [ { "kind", "summary", "short_quote", "full_quote", "quote", "speaker_label", "recipient_label" }, ... ] }.
     def call
       return stub_response unless bedrock_configured?
 
@@ -66,9 +66,16 @@ module Llm
       <<~TXT.squish
         You extract moments from meeting transcripts where one speaker gives another person kudos (praise)
         or constructive feedback. Return ONLY valid JSON with shape:
-        {"items":[{"kind":"kudos"|"feedback","quote":"exact excerpt from transcript","speaker_label":"name as in transcript",
-        "recipient_label":"primary addressee name as in transcript"}]}.
-        Use short accurate quotes. If none, return {"items":[]}.
+        {"items":[{"kind":"kudos"|"feedback","summary":"This is a story about when <name of recipient> caused <outcome> by <action they took>. And this made me feel <impact it had on the speaker>.",
+        "short_quote":"short but accurate quote",
+        "full_quote":"complete verbatim quote from transcript",
+        "speaker_label":"name as in transcript","recipient_label":"primary addressee name as in transcript"}]}.
+        Rules:
+        - full_quote must be verbatim from transcript text.
+        - short_quote must be concise but still an exact quote from transcript.
+        - summary must follow the exact sentence pattern above and stay faithful to transcript facts.
+        - Never invent names or details not present in transcript.
+        If none, return {"items":[]}.
       TXT
     end
 
@@ -87,9 +94,28 @@ module Llm
       items = Array(data['items']).filter_map do |h|
         next unless h.is_a?(Hash)
 
+        full_quote = h['full_quote'].to_s.strip
+        short_quote = h['short_quote'].to_s.strip
+        summary = h['summary'].to_s.strip
+        legacy_quote = h['quote'].to_s.strip
+
+        full_quote = legacy_quote if full_quote.blank?
+        short_quote = legacy_quote if short_quote.blank?
+        summary = default_summary(
+          recipient_label: h['recipient_label'].to_s,
+          quote: short_quote.presence || full_quote.presence || legacy_quote
+        ) if summary.blank?
+
         {
           'kind' => (h['kind'].to_s == 'feedback' ? 'feedback' : 'kudos'),
-          'quote' => h['quote'].to_s.strip.truncate(5000),
+          'summary' => summary.truncate(2500),
+          'short_quote' => short_quote.truncate(2500),
+          'full_quote' => full_quote.truncate(10_000),
+          'quote' => compose_display_quote(
+            summary: summary,
+            short_quote: short_quote,
+            full_quote: full_quote
+          ).truncate(20_000),
           'speaker_label' => h['speaker_label'].to_s.strip,
           'recipient_label' => h['recipient_label'].to_s.strip
         }
@@ -106,6 +132,30 @@ module Llm
       else
         '{}'
       end
+    end
+
+    def compose_display_quote(summary:, short_quote:, full_quote:)
+      [
+        "Summary: #{summary.presence || '(none)'}",
+        '',
+        '',
+        '====================',
+        '',
+        '',
+        "Short quote: #{short_quote.presence || '(none)'}",
+        '',
+        '',
+        '====================',
+        '',
+        '',
+        "Full quote: #{full_quote.presence || '(none)'}"
+      ].join("\n")
+    end
+
+    def default_summary(recipient_label:, quote:)
+      name = recipient_label.presence || 'the recipient'
+      quote_text = quote.presence || 'what happened'
+      "This is a story about when #{name} caused an outcome by actions they took. And this made me feel impacted by \"#{quote_text}\"."
     end
   end
 end

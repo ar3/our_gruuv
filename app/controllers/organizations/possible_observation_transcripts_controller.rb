@@ -2,7 +2,7 @@
 
 module Organizations
   class PossibleObservationTranscriptsController < OrganizationNamespaceBaseController
-    before_action :set_transcript, only: [:show, :update, :destroy, :review_feedback_requests, :batch_create_feedback_requests, :re_extract]
+    before_action :set_transcript, only: [:show, :update, :destroy, :extraction_status, :review_feedback_requests, :batch_create_feedback_requests, :re_extract]
 
     after_action :verify_authorized
     after_action :verify_policy_scoped, only: [:index]
@@ -97,6 +97,33 @@ module Organizations
       @teammates_by_id = CompanyTeammate.includes(:person).where(id: teammate_ids).index_by(&:id)
     end
 
+    def extraction_status
+      authorize @transcript, :show?
+      status = @transcript.extraction_status.to_s
+      reference_time =
+        case status
+        when 'processing'
+          @transcript.updated_at || @transcript.created_at
+        when 'pending'
+          @transcript.created_at
+        else
+          @transcript.updated_at || @transcript.created_at
+        end
+      elapsed_seconds = [(Time.current - reference_time).to_i, 0].max
+      stale = status == 'processing' && elapsed_seconds > 120
+      slow = %w[pending processing].include?(status) && elapsed_seconds > 60
+
+      render json: {
+        id: @transcript.id,
+        status: status,
+        extraction_error: @transcript.extraction_error,
+        elapsed_seconds: elapsed_seconds,
+        stale: stale,
+        slow: slow,
+        updated_at: @transcript.updated_at
+      }
+    end
+
     def destroy
       authorize @transcript
       unless @transcript.deletable?
@@ -184,7 +211,7 @@ module Organizations
 
       list.map do |h|
         h = h.respond_to?(:permit) ? h.permit(
-          :id, :include, :quote, :kind, :speaker_label, :recipient_label,
+          :id, :include, :quote, :summary, :short_quote, :full_quote, :kind, :speaker_label, :recipient_label,
           :responder_company_teammate_id, :subject_company_teammate_id,
           :observer_unknown, :observee_unknown, :feedback_request_id
         ).to_h : h.stringify_keys

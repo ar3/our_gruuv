@@ -21,6 +21,7 @@ class PossibleObservationTranscriptExtractionJob < ApplicationJob
     chunk_errors = []
 
     chunks.each do |chunk|
+      transcript.heartbeat_processing!
       result = Llm::TranscriptMomentsExtractor.call(chunk_text: chunk)
       raw_by_chunk << (result['items'] || [])
       chunk_errors << result['error'] if result['error'].present?

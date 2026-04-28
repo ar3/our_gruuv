@@ -35,9 +35,33 @@
 
 - case @transcript.extraction_status
 - when 'pending', 'processing'
-  .alert.alert-secondary.mb-0
+  .alert.alert-secondary.mb-0#extraction-status-banner{ data: { status_url: extraction_status_organization_possible_observation_transcript_path(organization, @transcript) } }
     %i.bi.bi-hourglass-split.me-2
-    Extraction is #{@transcript.extraction_status}… Refresh this page in a moment.
+    %span#extraction-status-text
+      Extraction is #{@transcript.extraction_status}…
+    %span.ms-1.text-muted#extraction-elapsed
+    %span.ms-1.text-warning.d-none#extraction-slow-warning
+      Taking longer than expected.
+    .small.text-muted.mt-1#extraction-last-checked
+      Last checked: just now
+
+  .table-responsive.mt-3
+    %table.table.table-bordered.align-middle
+      %thead.table-light
+        %tr
+          %th Include
+          %th Kind
+          %th Quote
+          %th Speaker → subject
+          %th Status
+      %tbody
+        - 3.times do
+          %tr
+            %td{ colspan: 5 }
+              .start-here-dashboard-skeleton.placeholder-glow.py-1
+                .placeholder.col-12.mb-2.rounded{style: "height: 0.9rem;"}
+                .placeholder.col-10.mb-2.rounded{style: "height: 0.9rem;"}
+                .placeholder.col-11.rounded{style: "height: 0.9rem;"}
 - when 'failed'
   .alert.alert-danger
     Extraction failed. Try re-uploading or use a different export format.
@@ -104,11 +128,70 @@
                   = hidden_field_tag "items[#{idx}][feedback_request_id]", item[:feedback_request_id]
                   = hidden_field_tag "items[#{idx}][speaker_label]", item[:speaker_label]
                   = hidden_field_tag "items[#{idx}][recipient_label]", item[:recipient_label]
+                  = hidden_field_tag "items[#{idx}][summary]", item[:summary]
+                  = hidden_field_tag "items[#{idx}][short_quote]", item[:short_quote]
+                  = hidden_field_tag "items[#{idx}][full_quote]", item[:full_quote]
                 %td
                   - if item[:feedback_request_id].present?
                     %span.text-success Created (locked)
+                    .mt-1
+                      = link_to 'Open request', organization_feedback_request_path(organization, item[:feedback_request_id]), class: 'btn btn-sm btn-outline-primary'
                   - elsif !ready
                     %span.text-warning Needs IDs
                   - else
                     %span.text-muted Reviewing
       = submit_tag 'Save and continue to request creation', class: 'btn btn-primary mt-2'
+
+- if %w[pending processing].include?(@transcript.extraction_status)
+  :javascript
+    (() => {
+      const banner = document.getElementById('extraction-status-banner');
+      if (!banner) return;
+
+      const url = banner.dataset.statusUrl;
+      const statusText = document.getElementById('extraction-status-text');
+      const elapsedText = document.getElementById('extraction-elapsed');
+      const slowWarning = document.getElementById('extraction-slow-warning');
+      const lastChecked = document.getElementById('extraction-last-checked');
+      const fmt = (seconds) => {
+        const s = Math.max(parseInt(seconds || 0, 10), 0);
+        const mins = Math.floor(s / 60);
+        const rem = s % 60;
+        return mins > 0 ? `${mins}m ${rem}s` : `${rem}s`;
+      };
+      const fmtTime = (date) => {
+        const d = date || new Date();
+        return d.toLocaleString([], {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZoneName: 'short'
+        });
+      };
+
+      const poll = async () => {
+        try {
+          const res = await fetch(url, { headers: { Accept: 'application/json' } });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (statusText) statusText.textContent = `Extraction is ${data.status}...`;
+          if (elapsedText) elapsedText.textContent = `(${fmt(data.elapsed_seconds)})`;
+          if (slowWarning) {
+            slowWarning.classList.toggle('d-none', !data.slow);
+            if (data.stale) slowWarning.textContent = 'Possible stall detected. You can re-run extraction.';
+          }
+          if (lastChecked) lastChecked.textContent = `Last checked: ${fmtTime(new Date())}`;
+          if (data.status === 'completed' || data.status === 'failed') {
+            window.location.reload();
+          }
+        } catch (_) {
+          // Keep polling; transient failures are expected.
+        }
+      };
+
+      poll();
+      window.setInterval(poll, 3000);
+    })();

@@ -37,6 +37,10 @@ class PossibleObservationTranscript < ApplicationRecord
     update!(extraction_status: 'processing', extraction_error: nil)
   end
 
+  def heartbeat_processing!
+    touch if extraction_status == 'processing'
+  end
+
   def mark_completed!(items:, extraction_note: nil)
     update!(
       extractions: { 'version' => EXTRACTIONS_VERSION, 'items' => items },

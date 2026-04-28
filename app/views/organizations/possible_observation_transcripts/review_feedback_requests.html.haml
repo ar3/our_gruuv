@@ -69,7 +69,7 @@
                 Copy and paste this below and hit send to ensure this feedback is associated with #{recipient_casual_name}.
               %td
                 - if created
-                  = link_to "Open ##{item[:feedback_request_id]}", organization_feedback_request_path(organization, item[:feedback_request_id]), class: 'btn btn-sm btn-outline-primary'
+                  = link_to 'Open request', organization_feedback_request_path(organization, item[:feedback_request_id]), class: 'btn btn-sm btn-outline-primary'
                 - else
                   %span.text-muted —
 

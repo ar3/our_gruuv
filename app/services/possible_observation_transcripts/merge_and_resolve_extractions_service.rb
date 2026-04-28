@@ -34,7 +34,8 @@ module PossibleObservationTranscripts
     private
 
     def dedupe_key(raw)
-      q = raw['quote'].to_s.downcase.gsub(/\s+/, ' ').strip[0, 200]
+      q = raw['full_quote'].presence || raw['short_quote'].presence || raw['quote']
+      q = q.to_s.downcase.gsub(/\s+/, ' ').strip[0, 200]
       sp = raw['speaker_label'].to_s.downcase.strip
       rp = raw['recipient_label'].to_s.downcase.strip
       "#{sp}|#{rp}|#{q}"
@@ -49,6 +50,9 @@ module PossibleObservationTranscripts
         'id' => id,
         'kind' => raw['kind'],
         'quote' => raw['quote'].to_s,
+        'summary' => raw['summary'].to_s,
+        'short_quote' => raw['short_quote'].to_s,
+        'full_quote' => raw['full_quote'].to_s,
         'speaker_label' => raw['speaker_label'].to_s,
         'recipient_label' => raw['recipient_label'].to_s,
         'responder_company_teammate_id' => speaker[:company_teammate_id],

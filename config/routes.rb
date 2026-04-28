@@ -191,6 +191,7 @@ Rails.application.routes.draw do
 
     resources :possible_observation_transcripts, module: :organizations, only: [:index, :new, :create, :show, :update, :destroy] do
       member do
+        get :extraction_status
         get :review_feedback_requests
         post :batch_create_feedback_requests
         post :re_extract
