@@ -4,6 +4,7 @@ class RefreshSlackIdentitiesAutoSyncJob < ApplicationJob
   def perform(organization_id, creator_id = nil, initiator_id = nil, run_mode = 'daily')
     organization = Organization.find(organization_id)
     return false unless organization.slack_configured?
+    creator_id, initiator_id = resolve_actor_ids(creator_id, initiator_id)
 
     bulk_sync_event = organization.bulk_sync_events.create!(
       type: 'BulkSyncEvent::RefreshSlackSync',
@@ -54,5 +55,14 @@ class RefreshSlackIdentitiesAutoSyncJob < ApplicationJob
     Rails.logger.error "RefreshSlackIdentitiesAutoSyncJob failed for organization #{organization_id}: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
     false
+  end
+
+  private
+
+  def resolve_actor_ids(creator_id, initiator_id)
+    return [creator_id, initiator_id] if creator_id.present? && initiator_id.present?
+
+    system_person_id = SystemActor.person.id
+    [creator_id || system_person_id, initiator_id || system_person_id]
   end
 end
