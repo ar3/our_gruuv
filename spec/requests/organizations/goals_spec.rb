@@ -1321,6 +1321,53 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/goals status toggles' do
+    let!(:draft_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Status Draft Goal', started_at: nil) }
+    let!(:active_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Status Active Goal', started_at: 1.week.ago) }
+    let!(:completed_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Status Completed Goal', started_at: 1.week.ago, completed_at: 1.day.ago) }
+    let!(:archived_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Status Archived Goal', started_at: 1.week.ago, deleted_at: 1.day.ago) }
+
+    it 'defaults to showing draft and active while hiding completed and archived' do
+      get organization_goals_path(organization), params: {
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Status Draft Goal')
+      expect(response.body).to include('Status Active Goal')
+      expect(response.body).not_to include('Status Completed Goal')
+      expect(response.body).not_to include('Status Archived Goal')
+    end
+
+    it 'includes completed and archived when those status toggles are selected' do
+      get organization_goals_path(organization), params: {
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id,
+        status: %w[draft active completed archived]
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Status Draft Goal')
+      expect(response.body).to include('Status Active Goal')
+      expect(response.body).to include('Status Completed Goal')
+      expect(response.body).to include('Status Archived Goal')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/goals/customize_view status labels' do
+    it 'shows Archived label and does not show deleted wording' do
+      get customize_view_organization_goals_path(organization), params: {
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Archived')
+      expect(response.body).not_to include('Show deleted goals')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/goals/bulk_new' do
     it 'renders the bulk create form with owner dropdown' do
       get bulk_new_organization_goals_path(organization)

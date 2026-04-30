@@ -56,19 +56,17 @@
           .mb-3
             %label.form-label Status
             .form-check
-              = check_box_tag 'status[]', 'draft', @current_filters[:status]&.include?('draft'), class: 'form-check-input', id: 'status_draft'
+              = check_box_tag 'status[]', 'draft', (@current_filters[:status].blank? || @current_filters[:status].include?('draft')), class: 'form-check-input', id: 'status_draft'
               = label_tag 'status_draft', 'Draft', class: 'form-check-label'
             .form-check
-              = check_box_tag 'status[]', 'active', @current_filters[:status]&.include?('active'), class: 'form-check-input', id: 'status_active'
+              = check_box_tag 'status[]', 'active', (@current_filters[:status].blank? || @current_filters[:status].include?('active')), class: 'form-check-input', id: 'status_active'
               = label_tag 'status_active', 'Active', class: 'form-check-label'
-          
-          .mb-3
             .form-check
-              = check_box_tag 'show_completed', '1', @current_filters[:show_completed] == '1', class: 'form-check-input', id: 'show_completed'
-              = label_tag 'show_completed', 'Show completed goals', class: 'form-check-label'
+              = check_box_tag 'status[]', 'completed', @current_filters[:status]&.include?('completed'), class: 'form-check-input', id: 'status_completed'
+              = label_tag 'status_completed', 'Completed', class: 'form-check-label'
             .form-check
-              = check_box_tag 'show_deleted', '1', @current_filters[:show_deleted] == '1', class: 'form-check-input', id: 'show_deleted'
-              = label_tag 'show_deleted', 'Show deleted goals', class: 'form-check-label'
+              = check_box_tag 'status[]', 'archived', @current_filters[:status]&.include?('archived'), class: 'form-check-input', id: 'status_archived'
+              = label_tag 'status_archived', 'Archived', class: 'form-check-label'
   
   .row
     .col-md-4

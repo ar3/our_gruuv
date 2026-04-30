@@ -35,18 +35,19 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible].include?(@view_style)
         @goal_count = 0
         @show_performance_warning = false
+        selected_statuses = normalized_status_filters(params)
         @current_filters = {
           timeframe: params[:timeframe],
           goal_type: params[:goal_type],
-          status: params[:status],
+          status: selected_statuses,
           sort: params[:sort],
           direction: params[:direction],
           view: @view_style,
           spotlight: params[:spotlight],
           owner_type: params[:owner_type],
           owner_id: params[:owner_id],
-          show_deleted: params[:show_deleted],
-          show_completed: params[:show_completed],
+          show_deleted: selected_statuses.include?('archived') ? '1' : nil,
+          show_completed: selected_statuses.include?('completed') ? '1' : nil,
           prompt_id: params[:prompt_id].presence
         }
         return
@@ -55,9 +56,13 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Start with goals visible to the teammate (filtered by company_id via policy scope)
     @goals = policy_scope(Goal)
+    selected_statuses = normalized_status_filters(params)
+    show_deleted = selected_statuses.include?('archived')
+    show_completed = selected_statuses.include?('completed')
+
     @goals = Goals::FilterQuery.new(@goals).call(
-      show_deleted: params[:show_deleted] == '1',
-      show_completed: params[:show_completed] == '1'
+      show_deleted: show_deleted,
+      show_completed: show_completed
     )
 
     # Apply owner or special filter
@@ -108,8 +113,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         all_goals_for_filter = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
       end
       all_goals_for_filter = Goals::FilterQuery.new(all_goals_for_filter).call(
-        show_deleted: params[:show_deleted] == '1',
-        show_completed: params[:show_completed] == '1'
+        show_deleted: show_deleted,
+        show_completed: show_completed
       )
       @spotlight_stats = helpers.calculate_goals_overview_stats(all_goals_for_filter)
     end
@@ -117,7 +122,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Apply filters
     @goals = apply_timeframe_filter(@goals, params[:timeframe])
     @goals = apply_goal_type_filter(@goals, params[:goal_type])
-    @goals = apply_status_filter(@goals, params[:status])
+    @goals = apply_status_filter(@goals, selected_statuses)
     @goals = apply_spotlight_filter(@goals, spotlight_param)
 
     # Apply sorting
@@ -175,15 +180,15 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @current_filters = {
       timeframe: params[:timeframe],
       goal_type: params[:goal_type],
-      status: params[:status],
+      status: selected_statuses,
       sort: params[:sort] || 'smart_sort',
       direction: params[:direction],
       view: @view_style,
       spotlight: spotlight_param,
       owner_type: @everyone_in_company_filter ? nil : params[:owner_type],
       owner_id: @everyone_in_company_filter ? 'everyone_in_company' : params[:owner_id],
-      show_deleted: params[:show_deleted],
-      show_completed: params[:show_completed],
+      show_deleted: show_deleted ? '1' : nil,
+      show_completed: show_completed ? '1' : nil,
       prompt_id: params[:prompt_id].presence,
       return_url: params[:return_url].presence,
       return_text: params[:return_text].presence
@@ -635,18 +640,19 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
     
     # Load current state from params
+    selected_statuses = normalized_status_filters(params)
     @current_filters = {
       timeframe: params[:timeframe],
       goal_type: params[:goal_type],
-      status: params[:status],
+      status: selected_statuses,
       sort: params[:sort] || 'smart_sort',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'hierarchical-collapsible',
       spotlight: params[:spotlight] || 'goals_overview',
       owner_type: params[:owner_type],
       owner_id: params[:owner_id],
-      show_deleted: params[:show_deleted],
-      show_completed: params[:show_completed]
+      show_deleted: selected_statuses.include?('archived') ? '1' : nil,
+      show_completed: selected_statuses.include?('completed') ? '1' : nil
     }
     
     # Validate view style
@@ -868,6 +874,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
             scope = goals.draft
           when 'active'
             scope = goals.active
+          when 'completed'
+            scope = goals.where.not(completed_at: nil)
+          when 'archived'
+            scope = goals.where.not(deleted_at: nil)
           else
             next
           end
@@ -881,10 +891,34 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
           goals.draft
         when 'active'
           goals.active
+        when 'completed'
+          goals.where.not(completed_at: nil)
+        when 'archived'
+          goals.where.not(deleted_at: nil)
         else
           goals
         end
       end
+  end
+
+  def normalized_status_filters(source_params)
+    explicit_statuses = extract_status_filters(source_params[:status])
+    return explicit_statuses if explicit_statuses.present?
+
+    from_legacy = default_status_filters
+    from_legacy << 'completed' if source_params[:show_completed] == '1'
+    from_legacy << 'archived' if source_params[:show_deleted] == '1'
+    from_legacy.uniq
+  end
+
+  def extract_status_filters(raw_status)
+    raw_values = Array(raw_status).compact
+    filtered = raw_values.select { |value| %w[draft active completed archived].include?(value) }
+    filtered.uniq
+  end
+
+  def default_status_filters
+    %w[draft active]
   end
   
   def apply_spotlight_filter(goals, spotlight)
