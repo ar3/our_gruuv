@@ -9,14 +9,21 @@ module Digest
     def perform(teammate_id, week_key = nil)
       teammate = CompanyTeammate.find_by(id: teammate_id)
       return unless teammate&.organization
-      return unless teammate.has_slack_identity? && teammate.slack_user_id.present?
 
       manager_teammate = teammate.active_employment_tenure&.manager_teammate
-      user_ids = [teammate.slack_user_id]
+      employee_slack_enabled = UserPreference.for_person(teammate.person).effective_digest_slack(nil) == 'on'
+      manager_slack_enabled = manager_teammate.present? && UserPreference.for_person(manager_teammate.person).effective_digest_slack(nil) == 'on'
+      return unless employee_slack_enabled || manager_slack_enabled
+
+      user_ids = []
+      if teammate.has_slack_identity? && teammate.slack_user_id.present?
+        user_ids << teammate.slack_user_id
+      end
       if manager_teammate&.has_slack_identity? && manager_teammate.slack_user_id.present?
         user_ids << manager_teammate.slack_user_id
       end
       user_ids.uniq!
+      return if user_ids.empty?
 
       organization = teammate.organization
       return unless organization.calculated_slack_config&.configured?

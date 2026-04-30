@@ -17,7 +17,7 @@ module Digest
         weekly_day = prefs.preference(:about_me_weekly_day).to_s
         next if weekly_day == 'off' || weekly_day.blank?
         next unless weekly_day.match?(/\A[0-6]\z/)
-        next unless digest_enabled_for_any_medium?(prefs)
+        next unless slack_enabled_for_employee_or_manager?(teammate, prefs)
 
         local_time = now_utc.in_time_zone(person.timezone)
         next unless local_time.hour == DIGEST_HOUR
@@ -32,8 +32,14 @@ module Digest
 
     private
 
-    def digest_enabled_for_any_medium?(prefs)
-      [prefs.effective_digest_slack(nil), prefs.effective_digest_email, prefs.effective_digest_sms(nil)].include?('on')
+    def slack_enabled_for_employee_or_manager?(employee_teammate, employee_prefs)
+      return true if employee_prefs.effective_digest_slack(nil) == 'on'
+
+      manager = employee_teammate.active_employment_tenure&.manager_teammate
+      return false unless manager
+
+      manager_prefs = UserPreference.for_person(manager.person)
+      manager_prefs.effective_digest_slack(nil) == 'on'
     end
   end
 end
