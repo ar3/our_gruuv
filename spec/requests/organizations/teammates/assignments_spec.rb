@@ -29,7 +29,9 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
           assignment: assignment,
           check_in_started_on: Date.new(2026, 3, 15),
           employee_completed_at: nil,
-          manager_completed_at: nil)
+          manager_completed_at: nil,
+          manager_rating: nil,
+          manager_private_notes: nil)
         sign_in_as_teammate_for_request(employee_person, organization)
       end
 
@@ -67,7 +69,9 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
           assignment: assignment,
           check_in_started_on: Date.new(2026, 3, 15),
           employee_completed_at: nil,
-          manager_completed_at: nil)
+          manager_completed_at: nil,
+          manager_rating: nil,
+          manager_private_notes: nil)
         sign_in_as_teammate_for_request(employee_person, organization)
       end
 
@@ -191,6 +195,55 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
         expect(response.body).to include("View all of #{employee_person.casual_name}'s goals")
       end
+    end
+  end
+
+  describe "POST start_check_in" do
+    let(:start_path) do
+      start_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment)
+    end
+
+    before { sign_in_as_teammate_for_request(employee_person, organization) }
+
+    it "shows the empty check-ins alert with Start a check-in when none exist yet" do
+      get assignment_show_path
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("No Check-ins Found")
+      expect(response.body).to include("Start a check-in")
+      expect(response.body).to include(start_path)
+      expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment)).to be_empty
+    end
+
+    it "creates an open check-in and redirects back with notice when none exist yet" do
+      expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment)).to be_empty
+
+      post start_path
+
+      expect(response).to redirect_to(assignment_show_path)
+      expect(flash[:notice]).to eq("Check-in started.")
+      open = AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first
+      expect(open).to be_present
+
+      follow_redirect!
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Current Check-in")
+    end
+
+    it "is idempotent when an open check-in already exists" do
+      existing = create(:assignment_check_in,
+        teammate: employee_teammate,
+        assignment: assignment,
+        employee_completed_at: nil,
+        manager_completed_at: nil,
+        manager_rating: nil,
+        manager_private_notes: nil)
+
+      expect do
+        post start_path
+      end.not_to change { AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).count }
+
+      expect(response).to redirect_to(assignment_show_path)
+      expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first).to eq(existing)
     end
   end
 

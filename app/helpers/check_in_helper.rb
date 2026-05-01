@@ -298,10 +298,12 @@ module CheckInHelper
   end
 
   def single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)
-    return false if check_in.blank? || teammate.blank? || organization.blank?
+    return false if check_in.blank? || teammate.blank?
 
     case check_in
     when AssignmentCheckIn
+      return false if organization.blank?
+
       check_in.assignment.required_on_position_for_teammate?(teammate, organization)
     when AspirationCheckIn
       check_in.aspiration.company_level_aspirational_value?

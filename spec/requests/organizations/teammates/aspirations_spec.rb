@@ -40,6 +40,37 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
       end
     end
 
+    context "when there are no check-ins yet (department aspiration)" do
+      let(:aspiration) { create(:aspiration, :with_department, company: organization, name: "Dept Value") }
+      let(:start_path) do
+        start_check_in_organization_teammate_aspiration_path(organization, employee_teammate, aspiration)
+      end
+
+      before { sign_in_as_teammate_for_request(employee_person, organization) }
+
+      it "shows the empty check-ins alert with Start a check-in" do
+        get aspiration_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("No Check-ins Found")
+        expect(response.body).to include("Start a check-in")
+        expect(response.body).to include(start_path)
+        expect(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration)).to be_empty
+      end
+
+      it "creates an open check-in and redirects back with notice" do
+        post start_path
+
+        expect(response).to redirect_to(aspiration_show_path)
+        expect(flash[:notice]).to eq("Check-in started.")
+        open = AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).open.first
+        expect(open).to be_present
+
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Current Check-in")
+      end
+    end
+
     context "when there is an open check-in" do
       before do
         create(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration)

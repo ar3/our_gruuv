@@ -92,6 +92,13 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
     load_associable_goals_display!(@aspiration)
   end
 
+  def start_check_in
+    authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
+
+    AspirationCheckIn.find_or_create_open_for(@teammate, @aspiration)
+    redirect_to aspiration_show_path, notice: "Check-in started."
+  end
+
   def destroy_open_check_in
     authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
 

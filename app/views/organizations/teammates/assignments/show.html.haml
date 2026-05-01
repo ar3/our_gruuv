@@ -321,7 +321,8 @@
             %h6.mb-2
               %i.bi.bi-info-circle.me-2
               No Check-ins Found
-            %p.mb-0 No check-ins have been created for this assignment yet.
+            %p.mb-3 No check-ins have been created for this assignment yet.
+            = button_to "Start a check-in", start_check_in_organization_teammate_assignment_path(@organization, @teammate, @assignment), method: :post, class: "btn btn-primary btn-sm"
 
     / Research: Current period observations
     = render "shared/single_item_check_in/current_period_observations"

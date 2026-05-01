@@ -365,9 +365,11 @@ Rails.application.routes.draw do
         post :process_termination, on: :member
       end
       resources :assignments, only: [:show], controller: 'teammates/assignments' do
+        post :start_check_in, on: :member
         delete :destroy_open_check_in, on: :member
       end
       resources :aspirations, only: [:show], controller: 'teammates/aspirations' do
+        post :start_check_in, on: :member
         delete :destroy_open_check_in, on: :member
       end
       resources :abilities, only: [:show], controller: 'teammates/abilities'

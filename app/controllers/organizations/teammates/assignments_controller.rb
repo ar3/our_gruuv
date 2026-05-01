@@ -111,6 +111,13 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     load_associable_goals_display!(@assignment)
   end
 
+  def start_check_in
+    authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
+
+    AssignmentCheckIn.find_or_create_open_for(@teammate, @assignment)
+    redirect_to assignment_show_path, notice: "Check-in started."
+  end
+
   def destroy_open_check_in
     authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
 
