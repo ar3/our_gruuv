@@ -30,7 +30,11 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
       .includes(:manager_completed_by_teammate, :finalized_by_teammate, :maap_snapshot)
       .order(check_in_started_on: :desc)
 
-    @open_check_in = AspirationCheckIn.find_or_create_open_for(@teammate, @aspiration)
+    @open_check_in = if @aspiration.company_level_aspirational_value?
+      AspirationCheckIn.find_or_create_open_for(@teammate, @aspiration)
+    else
+      AspirationCheckIn.where(company_teammate: @teammate, aspiration: @aspiration).open.first
+    end
     @latest_finalized = AspirationCheckIn.latest_finalized_for(@teammate, @aspiration)
     @latest_finalized_for_pill = @latest_finalized
 
@@ -88,6 +92,30 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
     load_associable_goals_display!(@aspiration)
   end
 
+  def destroy_open_check_in
+    authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
+
+    open_check_in = AspirationCheckIn.where(company_teammate: @teammate, aspiration: @aspiration).open.first
+    return redirect_to aspiration_show_path, alert: "No open check-in found to delete." if open_check_in.blank?
+
+    viewer_role = current_person == @teammate.person ? :employee : :manager
+    if open_check_in.aspiration.company_level_aspirational_value?
+      return redirect_to aspiration_show_path,
+        alert: "This check-in can't be deleted because it's a company aspirational value."
+    end
+    unless open_check_in.deletable_by_viewer_role?(viewer_role)
+      return redirect_to aspiration_show_path,
+        alert: "This check-in cannot be deleted yet because the other person still has values entered."
+    end
+
+    if open_check_in.destroy
+      redirect_to aspiration_show_path, notice: "That open check-in was deleted."
+    else
+      redirect_to aspiration_show_path,
+        alert: "Could not delete this check-in. Please clear any dependent records first."
+    end
+  end
+
   private
 
   def set_teammate
@@ -96,6 +124,10 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
 
   def set_aspiration
     @aspiration = Aspiration.find(params[:id])
+  end
+
+  def aspiration_show_path
+    organization_teammate_aspiration_path(organization, @teammate, @aspiration)
   end
 end
 

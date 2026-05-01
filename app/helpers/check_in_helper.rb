@@ -285,6 +285,42 @@ module CheckInHelper
     end
   end
 
+  def single_item_check_in_delete_allowed?(check_in, teammate, current_person)
+    return false if check_in.blank? || teammate.blank? || current_person.blank?
+
+    view_mode = single_item_check_in_view_mode(teammate, current_person)
+    check_in.respond_to?(:deletable_by_viewer_role?) && check_in.deletable_by_viewer_role?(view_mode)
+  end
+
+  def single_item_check_in_delete_tooltip(check_in, teammate, current_person, current_url)
+    counterparty = single_item_check_in_counterparty_name(teammate, current_person)
+    "#{counterparty} has to remove the values they've put in for this check-in first. Send them this URL and have them clear their answers, then you'll be able to delete this check-in: #{current_url}"
+  end
+
+  def single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)
+    return false if check_in.blank? || teammate.blank? || organization.blank?
+
+    case check_in
+    when AssignmentCheckIn
+      check_in.assignment.required_on_position_for_teammate?(teammate, organization)
+    when AspirationCheckIn
+      check_in.aspiration.company_level_aspirational_value?
+    else
+      false
+    end
+  end
+
+  def single_item_check_in_delete_mandatory_tooltip(check_in)
+    case check_in
+    when AssignmentCheckIn
+      "Can't delete this check-in — it's a required assignment for this position."
+    when AspirationCheckIn
+      "Can't delete this check-in — it's a company aspirational value."
+    else
+      "Can't delete this check-in."
+    end
+  end
+
   def single_item_hide_fresh_open_check_in_form?(check_in, latest_finalized, teammate:, current_person:)
     hide_fresh_open_check_in_fields?(
       check_in,

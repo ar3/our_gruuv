@@ -172,6 +172,26 @@ class AssignmentCheckIn < ApplicationRecord
       actual_energy_percentage.present?
   end
 
+  def side_has_values?(side)
+    case side.to_sym
+    when :employee
+      employee_rating.present? ||
+        employee_private_notes.to_s.strip.present? ||
+        employee_personal_alignment.present? ||
+        (actual_energy_percentage.present? && actual_energy_percentage.to_i != 0)
+    when :manager
+      manager_rating.present? ||
+        manager_private_notes.to_s.strip.present?
+    else
+      false
+    end
+  end
+
+  def deletable_by_viewer_role?(viewer_role)
+    other_side = viewer_role.to_sym == :employee ? :manager : :employee
+    !side_has_values?(other_side)
+  end
+
   def finalize_check_in!(final_rating: nil, finalized_by: nil)
     update!(
       official_check_in_completed_at: Time.current,

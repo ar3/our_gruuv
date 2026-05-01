@@ -39,7 +39,11 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       .includes(:manager_completed_by_teammate, :finalized_by_teammate, :maap_snapshot)
       .order(check_in_started_on: :desc)
 
-    @open_check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, @assignment)
+    @open_check_in = if @assignment.required_on_position_for_teammate?(@teammate, organization)
+      AssignmentCheckIn.find_or_create_open_for(@teammate, @assignment)
+    else
+      AssignmentCheckIn.where(company_teammate: @teammate, assignment: @assignment).open.first
+    end
     @latest_finalized = AssignmentCheckIn.latest_finalized_for(@teammate, @assignment)
     @latest_finalized_for_pill = @latest_finalized
 
@@ -107,6 +111,30 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     load_associable_goals_display!(@assignment)
   end
 
+  def destroy_open_check_in
+    authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
+
+    open_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: @assignment).open.first
+    return redirect_to assignment_show_path, alert: "No open check-in found to delete." if open_check_in.blank?
+
+    viewer_role = current_person == @teammate.person ? :employee : :manager
+    if open_check_in.assignment.required_on_position_for_teammate?(@teammate, organization)
+      return redirect_to assignment_show_path,
+        alert: "This check-in can't be deleted because it's a required assignment for this position."
+    end
+    unless open_check_in.deletable_by_viewer_role?(viewer_role)
+      return redirect_to assignment_show_path,
+        alert: "This check-in cannot be deleted yet because the other person still has values entered."
+    end
+
+    if open_check_in.destroy
+      redirect_to assignment_show_path, notice: "That open check-in was deleted."
+    else
+      redirect_to assignment_show_path,
+        alert: "Could not delete this check-in. Please clear any dependent records first."
+    end
+  end
+
   private
 
   def set_teammate
@@ -115,6 +143,10 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
 
   def set_assignment
     @assignment = Assignment.find(params[:id])
+  end
+
+  def assignment_show_path
+    organization_teammate_assignment_path(organization, @teammate, @assignment)
   end
 end
 

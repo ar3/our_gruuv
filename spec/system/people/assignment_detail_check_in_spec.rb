@@ -28,6 +28,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
   end
   let!(:assignment) { create(:assignment, company: company, title: 'Test Assignment') }
   let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago) }
+  let!(:open_assignment_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
 
   describe 'Employee view' do
     before do
@@ -55,9 +56,8 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       expect(page).not_to have_content('Manager Rating')
       expect(page).not_to have_content('Manager Notes')
       
-      # Fill out employee check-in fields
-      check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
-      
+      check_in = open_assignment_check_in
+
       # Fill form with nested format
       select '75%', from: "check_ins[assignment_check_ins][#{check_in.id}][actual_energy_percentage]"
       select 'Love', from: "check_ins[assignment_check_ins][#{check_in.id}][employee_personal_alignment]"
@@ -112,9 +112,8 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       expect(page).not_to have_content('Select alignment')
       expect(page).not_to have_content('Private Notes')
       
-      # Fill out manager check-in fields
-      check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
-      
+      check_in = open_assignment_check_in
+
       # Fill form with nested format
       select '🔵 Meeting', from: "check_ins[assignment_check_ins][#{check_in.id}][manager_rating]"
       fill_in "check_ins[assignment_check_ins][#{check_in.id}][manager_private_notes]", with: 'Good work!'

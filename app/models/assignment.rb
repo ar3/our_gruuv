@@ -175,6 +175,14 @@ class Assignment < ApplicationRecord
     }
   
   multisearchable against: [:title, :tagline, :required_activities, :handbook]
+
+  # True when this assignment is marked required on the teammate's active position in +organization+.
+  def required_on_position_for_teammate?(teammate, organization)
+    active = teammate.employment_tenures.active.find_by(company: organization)
+    return false unless active&.position
+
+    active.position.required_assignments.pluck(:assignment_id).include?(id)
+  end
   
   private
   

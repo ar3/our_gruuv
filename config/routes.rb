@@ -364,8 +364,12 @@ Rails.application.routes.draw do
         get :confirm_termination, on: :member
         post :process_termination, on: :member
       end
-      resources :assignments, only: [:show], controller: 'teammates/assignments'
-      resources :aspirations, only: [:show], controller: 'teammates/aspirations'
+      resources :assignments, only: [:show], controller: 'teammates/assignments' do
+        delete :destroy_open_check_in, on: :member
+      end
+      resources :aspirations, only: [:show], controller: 'teammates/aspirations' do
+        delete :destroy_open_check_in, on: :member
+      end
       resources :abilities, only: [:show], controller: 'teammates/abilities'
     end
     

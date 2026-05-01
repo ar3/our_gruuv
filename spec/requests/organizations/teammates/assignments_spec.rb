@@ -43,6 +43,40 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("Your check-in on #{employee_person.casual_name} and #{assignment.title} is currently:")
         expect(response.body).to include("draft")
       end
+
+      it "shows an enabled delete link when other side is empty and assignment is not required" do
+        get assignment_show_path
+        expect(response.body).to include("... OR...")
+        expect(response.body).to include("[Delete this check-in]")
+        expect(response.body).not_to include("required assignment for this position")
+        expect(response.body).to include(destroy_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment))
+      end
+    end
+
+    context "when there is an open check-in and the assignment is required on the teammate's position" do
+      let(:position_major_level) { create(:position_major_level) }
+      let(:req_title) { create(:title, company: organization, position_major_level: position_major_level) }
+      let(:position_level) { create(:position_level, position_major_level: position_major_level) }
+      let(:req_position) { create(:position, title: req_title, position_level: position_level) }
+
+      before do
+        EmploymentTenure.find_by!(company_teammate: employee_teammate, company: organization).update!(position: req_position)
+        create(:position_assignment, position: req_position, assignment: assignment, assignment_type: "required")
+        create(:assignment_check_in,
+          teammate: employee_teammate,
+          assignment: assignment,
+          check_in_started_on: Date.new(2026, 3, 15),
+          employee_completed_at: nil,
+          manager_completed_at: nil)
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "shows disabled delete with required-assignment tooltip" do
+        get assignment_show_path
+        expect(response.body).to include("[Delete this check-in]")
+        expect(response.body).to include("required assignment for this position")
+        expect(response.body).not_to include(destroy_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment))
+      end
     end
 
     context "when latest finalized is crystal clear and the open check-in is fresh on the employee side" do
@@ -149,15 +183,81 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
 
       before { sign_in_as_teammate_for_request(employee_person, organization) }
 
-      it "lists the goal with show link, Update progress to weekly update, and View all goals for the teammate" do
+      it "lists the goal with show link and View all goals for the teammate" do
         get assignment_show_path
         expect(response).to have_http_status(:success)
         expect(response.body).to include(organization_goal_path(organization, associated_goal))
         expect(response.body).to include("Linked Sample Goal")
-        expect(response.body).to include("Update progress")
-        expect(response.body).to include(weekly_update_organization_goal_path(organization, associated_goal))
         expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
         expect(response.body).to include("View all of #{employee_person.casual_name}'s goals")
+      end
+    end
+  end
+
+  describe "DELETE destroy_open_check_in" do
+    let!(:open_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
+    let(:delete_path) do
+      destroy_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment)
+    end
+
+    context "when the other side has no values" do
+      before do
+        open_check_in.update!(
+          manager_rating: nil,
+          manager_private_notes: nil,
+          actual_energy_percentage: 0
+        )
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "deletes the current open check-in and redirects back to the same page" do
+        deleted_id = open_check_in.id
+        expect do
+          delete delete_path
+        end.to change { AssignmentCheckIn.where(id: deleted_id).count }.from(1).to(0)
+        expect(response).to redirect_to(assignment_show_path)
+        expect(flash[:notice]).to eq("That open check-in was deleted.")
+
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first).to be_nil
+      end
+    end
+
+    context "when the assignment is required on the teammate's position" do
+      let(:position_major_level) { create(:position_major_level) }
+      let(:req_title) { create(:title, company: organization, position_major_level: position_major_level) }
+      let(:position_level) { create(:position_level, position_major_level: position_major_level) }
+      let(:req_position) { create(:position, title: req_title, position_level: position_level) }
+
+      before do
+        EmploymentTenure.find_by!(company_teammate: employee_teammate, company: organization).update!(position: req_position)
+        create(:position_assignment, position: req_position, assignment: assignment, assignment_type: "required")
+        open_check_in.update!(manager_rating: nil, manager_private_notes: nil, actual_energy_percentage: 0)
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "does not delete" do
+        expect do
+          delete delete_path
+        end.not_to change { AssignmentCheckIn.where(id: open_check_in.id).count }
+        expect(response).to redirect_to(assignment_show_path)
+        expect(flash[:alert]).to include("required assignment")
+      end
+    end
+
+    context "when the other side has entered values" do
+      before do
+        open_check_in.update!(manager_private_notes: "Manager has input")
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "does not delete and shows a blocking alert" do
+        expect do
+          delete delete_path
+        end.not_to change { AssignmentCheckIn.where(id: open_check_in.id).count }
+        expect(response).to redirect_to(assignment_show_path)
+        expect(flash[:alert]).to include("cannot be deleted yet")
       end
     end
   end

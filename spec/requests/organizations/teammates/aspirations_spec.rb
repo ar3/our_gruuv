@@ -55,6 +55,14 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response.body).to include("Save as Draft and stay here")
       end
 
+      it "shows disabled delete for company aspirational values" do
+        get aspiration_show_path
+        expect(response.body).to include("... OR...")
+        expect(response.body).to include("[Delete this check-in]")
+        expect(response.body).to include("company aspirational value")
+        expect(response.body).not_to include(destroy_open_check_in_organization_teammate_aspiration_path(organization, employee_teammate, aspiration))
+      end
+
       it "shows the perspective context in a notes strip above the form" do
         get aspiration_show_path
         expect(response.body).to include('class="check-in-perspective-notes mb-3"')
@@ -64,6 +72,24 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response.body).to include('class="badge bg-warning text-dark rounded-pill me-1"')
         expect(response.body).to include("draft")
         expect(response.body).to include("click the blue button below to mark it ready for review")
+      end
+    end
+
+    context "when manager has values and employee views the page (department aspiration)" do
+      let(:aspiration) { create(:aspiration, :with_department, company: organization, name: "Dept Value") }
+
+      before do
+        create(:aspiration_check_in,
+          teammate: employee_teammate,
+          aspiration: aspiration,
+          manager_private_notes: "I entered notes")
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "renders a disabled delete control with tooltip guidance" do
+        get aspiration_show_path
+        expect(response.body).to include("[Delete this check-in]")
+        expect(response.body).to include("has to remove the values")
       end
     end
 
@@ -305,6 +331,75 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response).to have_http_status(:success)
         expect(response.body).to include(aspiration.name)
         expect(response.body).to include("Current Check-in")
+      end
+    end
+  end
+
+  describe "DELETE destroy_open_check_in" do
+    context "department aspiration when the other side has no values" do
+      let(:aspiration) { create(:aspiration, :with_department, company: organization, name: "Dept Value Delete") }
+      let!(:open_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
+      let(:delete_path) do
+        destroy_open_check_in_organization_teammate_aspiration_path(organization, employee_teammate, aspiration)
+      end
+
+      before do
+        open_check_in.update!(manager_rating: nil, manager_private_notes: nil)
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "deletes the current open check-in and redirects back to the same page" do
+        deleted_id = open_check_in.id
+        expect do
+          delete delete_path
+        end.to change { AspirationCheckIn.where(id: deleted_id).count }.from(1).to(0)
+        expect(response).to redirect_to(aspiration_show_path)
+        expect(flash[:notice]).to eq("That open check-in was deleted.")
+
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).open.first).to be_nil
+      end
+    end
+
+    context "department aspiration when the other side has entered values" do
+      let(:aspiration) { create(:aspiration, :with_department, company: organization, name: "Dept Value Blocked") }
+      let!(:open_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
+      let(:delete_path) do
+        destroy_open_check_in_organization_teammate_aspiration_path(organization, employee_teammate, aspiration)
+      end
+
+      before do
+        open_check_in.update!(manager_rating: "meeting")
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "does not delete and shows a blocking alert" do
+        expect do
+          delete delete_path
+        end.not_to change { AspirationCheckIn.where(id: open_check_in.id).count }
+        expect(response).to redirect_to(aspiration_show_path)
+        expect(flash[:alert]).to include("cannot be deleted yet")
+      end
+    end
+
+    context "company-level aspiration" do
+      let!(:open_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
+      let(:delete_path) do
+        destroy_open_check_in_organization_teammate_aspiration_path(organization, employee_teammate, aspiration)
+      end
+
+      before do
+        open_check_in.update!(manager_rating: nil, manager_private_notes: nil)
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "does not delete" do
+        expect do
+          delete delete_path
+        end.not_to change { AspirationCheckIn.where(id: open_check_in.id).count }
+        expect(response).to redirect_to(aspiration_show_path)
+        expect(flash[:alert]).to include("company aspirational value")
       end
     end
   end

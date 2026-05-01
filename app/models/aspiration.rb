@@ -55,6 +55,11 @@ class Aspiration < ApplicationRecord
     "#{id}-#{name.parameterize}"
   end
 
+  # Company-wide aspirational value (not scoped to a department).
+  def company_level_aspirational_value?
+    department_id.blank?
+  end
+
   private
 
   def department_must_belong_to_company

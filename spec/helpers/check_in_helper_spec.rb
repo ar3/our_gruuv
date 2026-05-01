@@ -416,4 +416,27 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(helper.get_shit_done_check_in_review_path(organization, check_in)).to eq(expected)
     end
   end
+
+  describe "#single_item_check_in_mandatory_delete_blocked?" do
+    let(:organization) { create(:organization) }
+    let(:teammate) { create(:company_teammate, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization) }
+    let(:aspiration) { create(:aspiration, company: organization) }
+    let(:dept_aspiration) { create(:aspiration, :with_department, company: organization) }
+
+    it "is true for company-level aspiration check-in" do
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: aspiration)
+      expect(helper.single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)).to eq(true)
+    end
+
+    it "is false for department aspiration check-in" do
+      check_in = build(:aspiration_check_in, teammate: teammate, aspiration: dept_aspiration)
+      expect(helper.single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)).to eq(false)
+    end
+
+    it "is false for assignment check-in when not required on position" do
+      check_in = build(:assignment_check_in, teammate: teammate, assignment: assignment)
+      expect(helper.single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)).to eq(false)
+    end
+  end
 end

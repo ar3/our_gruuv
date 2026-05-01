@@ -86,6 +86,24 @@ class AspirationCheckIn < ApplicationRecord
       .order(official_check_in_completed_at: :desc)
       .first
   end
+
+  def side_has_values?(side)
+    case side.to_sym
+    when :employee
+      employee_rating.present? ||
+        employee_private_notes.to_s.strip.present?
+    when :manager
+      manager_rating.present? ||
+        manager_private_notes.to_s.strip.present?
+    else
+      false
+    end
+  end
+
+  def deletable_by_viewer_role?(viewer_role)
+    other_side = viewer_role.to_sym == :employee ? :manager : :employee
+    !side_has_values?(other_side)
+  end
   
   private
   

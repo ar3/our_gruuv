@@ -6,6 +6,13 @@
 - primary_caption = single_item_check_in_primary_caption(is_complete: is_complete, counterparty_name: counterparty_name, completed_at: completed_at)
 - secondary_button_text = single_item_check_in_secondary_button_text(is_complete: is_complete)
 - secondary_caption = single_item_check_in_secondary_caption(is_complete: is_complete, counterparty_name: counterparty_name)
+- show_delete_action = check_in.is_a?(AssignmentCheckIn) || check_in.is_a?(AspirationCheckIn)
+- mandatory_delete_blocked = show_delete_action && single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)
+- counterparty_blocks_delete = show_delete_action && !single_item_check_in_delete_allowed?(check_in, teammate, current_person)
+- can_delete_check_in = show_delete_action && !mandatory_delete_blocked && !counterparty_blocks_delete
+- delete_check_in_path = check_in.is_a?(AssignmentCheckIn) ? destroy_open_check_in_organization_teammate_assignment_path(organization, teammate, check_in.assignment) : (check_in.is_a?(AspirationCheckIn) ? destroy_open_check_in_organization_teammate_aspiration_path(organization, teammate, check_in.aspiration) : nil)
+- delete_counterparty_tooltip = single_item_check_in_delete_tooltip(check_in, teammate, current_person, request.original_url)
+- delete_disabled_tooltip = mandatory_delete_blocked ? single_item_check_in_delete_mandatory_tooltip(check_in) : delete_counterparty_tooltip
 
 = fields_builder.hidden_field :status, value: status_value
 
@@ -22,6 +29,13 @@
             = form.submit "[Update and go to Bulk Check-in]", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
             %span |
           = form.submit "[Update and go to Review Check-ins]", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+        - if show_delete_action
+          .d-flex.flex-wrap.align-items-center.gap-2.ms-1.mt-1.small.text-muted
+            %span ... OR...
+            - if can_delete_check_in && delete_check_in_path.present?
+              = link_to "[Delete this check-in]", delete_check_in_path, data: { turbo_method: :delete }, class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+            - else
+              %span.btn.btn-sm.btn-link.text-secondary.text-decoration-none.p-0.disabled{"aria-disabled" => "true", title: delete_disabled_tooltip, data: { bs_toggle: "tooltip", bs_title: delete_disabled_tooltip }} [Delete this check-in]
     %div
       .d-flex.align-items-center.flex-wrap.gap-2
         = form.submit secondary_button_text, name: "save_and_draft_stay", class: "btn btn-outline-secondary"
@@ -33,6 +47,13 @@
             = form.submit "[Update and go to Bulk Check-in]", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
             %span |
           = form.submit "[Update and go to Review Check-ins]", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+        - if show_delete_action
+          .d-flex.flex-wrap.align-items-center.gap-2.ms-1.mt-1.small.text-muted
+            %span ... OR...
+            - if can_delete_check_in && delete_check_in_path.present?
+              = link_to "[Delete this check-in]", delete_check_in_path, data: { turbo_method: :delete }, class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+            - else
+              %span.btn.btn-sm.btn-link.text-secondary.text-decoration-none.p-0.disabled{"aria-disabled" => "true", title: delete_disabled_tooltip, data: { bs_toggle: "tooltip", bs_title: delete_disabled_tooltip }} [Delete this check-in]
 
   .d-flex.flex-wrap.gap-2.mt-3
     = link_to "Cancel", organization_company_teammate_check_ins_path(organization, teammate), class: "btn btn-outline-secondary"
