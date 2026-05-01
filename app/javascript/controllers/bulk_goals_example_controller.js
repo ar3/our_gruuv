@@ -12,7 +12,12 @@ export default class extends Controller {
     const ta = document.getElementById(this.textareaIdValue)
     if (!ta || !this.hasTemplateTarget) return
 
-    ta.value = this.templateTarget.textContent.replace(/\s+$/u, "")
+    const exampleText = this.templateTarget.textContent.replace(/\s+$/u, "")
+    if (!exampleText) return
+
+    const existingText = ta.value
+    const needsSeparator = existingText.length > 0 && !/\n$/u.test(existingText)
+    ta.value = `${existingText}${needsSeparator ? "\n" : ""}${exampleText}`
     ta.focus()
   }
 }
