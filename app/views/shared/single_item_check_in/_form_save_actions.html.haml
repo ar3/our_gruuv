@@ -35,7 +35,10 @@
             - if can_delete_check_in && delete_check_in_path.present?
               = link_to "[Delete this check-in]", delete_check_in_path, data: { turbo_method: :delete }, class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
             - else
-              %span.btn.btn-sm.btn-link.text-secondary.text-decoration-none.p-0.disabled{"aria-disabled" => "true", title: delete_disabled_tooltip, data: { bs_toggle: "tooltip", bs_title: delete_disabled_tooltip }} [Delete this check-in]
+              .d-inline-flex.align-items-center.gap-1
+                %span.btn.btn-sm.btn-link.text-secondary.text-decoration-none.p-0.disabled{"aria-disabled" => "true"} [Delete this check-in]
+                %span.d-inline-flex.align-items-center.text-warning.opacity-75.p-0.border-0.bg-transparent{role: "img", "aria-label" => delete_disabled_tooltip, title: delete_disabled_tooltip, data: { bs_toggle: "tooltip", bs_placement: "top", bs_title: delete_disabled_tooltip }, style: "cursor: help; line-height: 1;"}
+                  %i.bi.bi-exclamation-triangle.small{"aria-hidden" => "true"}
     %div
       .d-flex.align-items-center.flex-wrap.gap-2
         = form.submit secondary_button_text, name: "save_and_draft_stay", class: "btn btn-outline-secondary"
@@ -53,7 +56,10 @@
             - if can_delete_check_in && delete_check_in_path.present?
               = link_to "[Delete this check-in]", delete_check_in_path, data: { turbo_method: :delete }, class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
             - else
-              %span.btn.btn-sm.btn-link.text-secondary.text-decoration-none.p-0.disabled{"aria-disabled" => "true", title: delete_disabled_tooltip, data: { bs_toggle: "tooltip", bs_title: delete_disabled_tooltip }} [Delete this check-in]
+              .d-inline-flex.align-items-center.gap-1
+                %span.btn.btn-sm.btn-link.text-secondary.text-decoration-none.p-0.disabled{"aria-disabled" => "true"} [Delete this check-in]
+                %span.d-inline-flex.align-items-center.text-warning.opacity-75.p-0.border-0.bg-transparent{role: "img", "aria-label" => delete_disabled_tooltip, title: delete_disabled_tooltip, data: { bs_toggle: "tooltip", bs_placement: "top", bs_title: delete_disabled_tooltip }, style: "cursor: help; line-height: 1;"}
+                  %i.bi.bi-exclamation-triangle.small{"aria-hidden" => "true"}
 
   .d-flex.flex-wrap.gap-2.mt-3
     = link_to "Cancel", organization_company_teammate_check_ins_path(organization, teammate), class: "btn btn-outline-secondary"
