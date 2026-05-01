@@ -9,163 +9,229 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: organization_goals_path(@organization) }, { label: @goal.title, url: nil }])
 
-.row
-  .col-md-8
-    / Goal Details Card
-    .card.mb-4{ role: "region", "aria-labelledby": "goal-details" }
-      .card-header
-        %h5.mb-0{ id: "goal-details" }
-          %i.bi.bi-info-circle.me-2
-          Goal Details
-      .card-body
-        %dl.row
-          %dt.col-sm-4 Owner:
-          %dd.col-sm-8
-            - if @goal.owner_type == 'CompanyTeammate'
-              = @goal.owner.person.display_name
-            - elsif @goal.owner_type.in?(['Company', 'Department', 'Team'])
-              = @goal.owner.display_name
-            - else
-              = @goal.owner.display_name
-
-          %dt.col-sm-4 Title:
-          %dd.col-sm-8= @goal.title
-
-          %dt.col-sm-4 Description:
-          %dd.col-sm-8
-            - if @goal.description.present?
-              = simple_format(@goal.description)
-            - else
-              %em.text-muted No description provided
-
-
-          %dt.col-sm-4 Status:
-          %dd.col-sm-8
-            %span.badge{class: status_badge_class(@goal.status)}
-              = @goal.status.to_s.humanize
-          - if @goal.started_at.present?
-            %dt.col-sm-4 Started:
-            %dd.col-sm-8= format_time_in_user_timezone(@goal.started_at)
-          - if @goal.became_top_priority.present?
-            %dt.col-sm-4 Top Priority Since:
-            %dd.col-sm-8= format_time_in_user_timezone(@goal.became_top_priority)
-
-          %dt.col-sm-4 Target Dates:
-          %dd.col-sm-8
-            - if @goal.earliest_target_date.present? || @goal.most_likely_target_date.present? || @goal.latest_target_date.present?
-              - if @goal.earliest_target_date.present?
-                .mb-1
-                  %strong Earliest:
-                  = @goal.earliest_target_date.strftime("%B %d, %Y")
-              - if @goal.most_likely_target_date.present?
-                .mb-1
-                  %strong Most Likely:
-                  = @goal.most_likely_target_date.strftime("%B %d, %Y")
-              - if @goal.latest_target_date.present?
-                .mb-1
-                  %strong Latest:
-                  = @goal.latest_target_date.strftime("%B %d, %Y")
-            - else
-              %em.text-muted No target dates set
-          %dt.col-sm-4 Privacy Level:
-          %dd.col-sm-8
-            %span.badge.bg-secondary= @goal.privacy_level.humanize
-
-          - if @prompt_goals.any?
-            %dt.col-sm-4 Linked to prompt(s):
+.mb-4
+  .card
+    .card-header.py-3
+      %h5.mb-0= "#{@goal.title} - What Is This Goal?"
+  .row.mt-3
+    .col-md-8
+      .card.mb-4{ role: "region", "aria-labelledby": "goal-details" }
+        .card-header
+          %h5.mb-0{ id: "goal-details" }
+            %i.bi.bi-info-circle.me-2
+            Goal Details
+        .card-body
+          %dl.row.mb-0
+            %dt.col-sm-4 Subject / Owner
             %dd.col-sm-8
-              - @prompt_goals.each_with_index.each do |prompt_goal, idx|
-                - if idx > 0
-                  %span.text-muted= ", "
-                = link_to prompt_goal.prompt.prompt_template.title, edit_organization_prompt_path(@organization, prompt_goal.prompt), class: "text-decoration-none"
+              - owner_path = goal_owner_path(@organization, @goal)
+              - if owner_path.present?
+                = link_to owner_path, class: "text-decoration-none d-inline-flex align-items-center gap-2" do
+                  = goal_owner_image_content(@goal, size: 28)
+                  %span= goal_owner_display_name(@goal)
+              - else
+                = goal_owner_display_name(@goal)
 
-          - if @goal_associations.any?
-            %dt.col-sm-4 Linked to:
+            %dt.col-sm-4 Title
             %dd.col-sm-8
-              - first_assoc = true
-              - @goal_associations.each do |ga|
-                - next unless ga.associable
-                - unless first_assoc
-                  %span.text-muted= ", "
-                - first_assoc = false
+              .d-inline-flex.flex-wrap.align-items-center.column-gap-2.row-gap-1
+                %span= @goal.title
+                %span.badge{class: goal_badge_class(@goal.goal_type)}= goal_category_label(@goal)
+
+            %dt.col-sm-4 Description
+            %dd.col-sm-8
+              - if @goal.description.present?
+                = simple_format(@goal.description)
+              - else
+                %em.text-muted No description provided
+
+            %dt.col-sm-4 Status
+            %dd.col-sm-8
+              - if @goal.deleted_at.present?
+                %span.badge.me-1.bg-secondary Archived
+              - elsif goal_is_completed?(@goal)
+                %span.badge.me-1{class: status_badge_class(:completed)} Completed
+              - elsif @goal.started_at.present?
+                %span.badge.me-1.bg-success
+                  Started at #{format_time_in_user_timezone(@goal.started_at)}
+              - else
+                %span.badge.me-1{class: status_badge_class(:draft)} Draft
+              - if goal_active?(@goal)
+                - last_check_in_for_status = @goal.goal_check_ins.recent.first
+                - if last_check_in_for_status
+                  = render 'shared/on_track_pill', status: @goal.on_track_status_for_check_in(last_check_in_for_status)
+                %span.text-muted.small.ms-1= goal_last_check_in_recency_phrase(@goal)
+
+            %dt.col-sm-4 Privacy
+            %dd.col-sm-8
+              %span{title: goal_privacy_tooltip_text(@goal), "data-bs-toggle" => "tooltip"}= goal_privacy_rings_with_label(@goal)
+
+            %dt.col-sm-4 History
+            %dd.col-sm-8
+              %p.mb-0= goal_creator_and_last_updated_phrase(@goal, @organization)
+
+    .col-md-4
+      .card.mb-4
+        .card-header
+          %h6.mb-0
+            %i.bi.bi-gear.me-2
+            Actions
+        .card-body
+          - if @goal.deleted_at.present?
+            .alert.alert-warning.mb-3
+              %strong This goal has been archived.
+              = format_time_in_user_timezone(@goal.deleted_at)
+            - if policy(@goal).update?
+              .d-grid.gap-2.mb-3
+                = button_to undelete_organization_goal_path(@organization, @goal), method: :patch, class: "btn btn-success w-100" do
+                  %i.bi.bi-arrow-counterclockwise.me-2
+                  Unarchive Goal
+          - if @goal.started_at.nil? && !goal_is_completed?(@goal)
+            / Unstarted goal - show Start Now button
+            - can_edit = policy(@goal).update?
+            .d-grid.gap-2
+              - if can_edit
+                = button_to start_organization_goal_path(@organization, @goal), method: :patch, class: "btn btn-primary w-100" do
+                  %i.bi.bi-play-circle.me-2
+                  Start Now
+              - else
+                .d-flex.align-items-center.gap-2
+                  = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                    %i.bi.bi-play-circle.me-2
+                    Start Now
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+              - if can_edit
+                = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary" do
+                  %i.bi.bi-pencil.me-2
+                  Edit Goal
+              - else
+                .d-flex.align-items-center.gap-2
+                  = link_to "#", class: "btn btn-outline-secondary disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                    %i.bi.bi-pencil.me-2
+                    Edit Goal
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+              - if policy(@goal).destroy? && @goal.status != :deleted
+                = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger w-100", data: { confirm: "Are you sure you want to archive this goal?" } do
+                  %i.bi.bi-archive.me-2
+                  Archive Goal
+              - elsif @goal.status != :deleted
+                .d-flex.align-items-center.gap-2
+                  = link_to "#", class: "btn btn-outline-danger w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                    %i.bi.bi-archive.me-2
+                    Archive Goal
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+          - else
+            / Started goal - Actions card only: Edit, Archive
+            - can_edit = policy(@goal).update?
+            .d-grid.gap-2
+              - if can_edit
+                = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm" do
+                  %i.bi.bi-pencil.me-2
+                  Edit Goal
+              - else
+                .d-flex.align-items-center.gap-2
+                  = link_to "#", class: "btn btn-outline-secondary btn-sm disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                    %i.bi.bi-pencil.me-2
+                    Edit Goal
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+              - if policy(@goal).destroy? && @goal.status != :deleted
+                = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger btn-sm w-100", data: { confirm: "Are you sure you want to archive this goal?" } do
+                  %i.bi.bi-archive.me-2
+                  Archive Goal
+              - elsif @goal.status != :deleted
+                .d-flex.align-items-center.gap-2
+                  = link_to "#", class: "btn btn-outline-danger btn-sm w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                    %i.bi.bi-archive.me-2
+                    Archive Goal
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
+
+          - if @goal.goal_type != 'inspirational_objective' && @goal.most_likely_target_date.nil?
+            .mt-3.pt-3.border-top
+              %p.small.text-muted.mb-3
+                These types of goals should have due dates... what is your due date?
+              .btn-group-vertical.w-100{role: "group", "aria-label": "Timeframe selection"}
+                = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'near_term' }, class: "btn btn-outline-primary mb-2" do
+                  Near-Term (< 3 months)
+                = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'medium_term' }, class: "btn btn-outline-primary mb-2" do
+                  Medium-Term (< 3 quarters)
+                = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'long_term' }, class: "btn btn-outline-primary mb-2" do
+                  Long-Term (< 3 years)
+                = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'vision' }, class: "btn btn-outline-primary" do
+                  This is a vision, not a goal
+
+          - if policy(@goal).update?
+            %hr.my-3
+            .d-grid.gap-2
+              = link_to choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-secondary btn-sm w-100" do
+                %i.bi.bi-node-plus-fill.me-2
+                Create/associate new child goal
+
+.mb-4
+  .card
+    .card-header.py-3
+      %h5.mb-0= "#{@goal.title} - Parent and Child Relationships"
+  .row.mt-3
+    .col-md-4
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-diagram-3.me-2
+            Parents
+        .card-body
+          %h6 Linked To
+          - if @prompt_goals.any? || @goal_associations.any?
+            - @prompt_goals.each do |prompt_goal|
+              .mb-2
+                = link_to edit_organization_prompt_path(@organization, prompt_goal.prompt), class: "text-decoration-none d-inline-flex align-items-center gap-2" do
+                  %i.bi.bi-file-text
+                  %span= prompt_goal.prompt.prompt_template.title
+                %span.text-muted.small.ms-2 Reflection
+            - @goal_associations.each do |ga|
+              - next unless ga.associable
+              .mb-2
                 - case ga.associable
                 - when Assignment
-                  = link_to ga.associable.title, organization_assignment_path(@organization, ga.associable), class: "text-decoration-none"
-                  %span.text-muted.small (assignment)
+                  = link_to organization_assignment_path(@organization, ga.associable), class: "text-decoration-none d-inline-flex align-items-center gap-2" do
+                    %i.bi.bi-clipboard-check
+                    %span= ga.associable.title
                 - when Ability
-                  = link_to ga.associable.name, organization_ability_path(@organization, ga.associable), class: "text-decoration-none"
-                  %span.text-muted.small (ability)
+                  = link_to organization_ability_path(@organization, ga.associable), class: "text-decoration-none d-inline-flex align-items-center gap-2" do
+                    %i.bi.bi-lightning
+                    %span= ga.associable.name
                 - when Aspiration
-                  = link_to ga.associable.name, organization_aspiration_path(@organization, ga.associable), class: "text-decoration-none"
-                  %span.text-muted.small (aspiration)
+                  = link_to organization_aspiration_path(@organization, ga.associable), class: "text-decoration-none d-inline-flex align-items-center gap-2" do
+                    %i.bi.bi-stars
+                    %span= ga.associable.name
+          - else
+            %p.text-muted.mb-3 No linked records yet.
 
-          - if @goal.completed_at.present?
-            %dt.col-sm-4 Completed:
-            %dd.col-sm-8
-              - completion_badge = goal_completion_badge_text(@goal)
-              - if completion_badge
-                %span.badge{class: completion_badge == 'Missed' ? 'bg-danger' : completion_badge == 'Hit (Late)' ? 'bg-warning' : 'bg-success', style: "margin-right: 0.5rem;"}
-                  = completion_badge
-              = format_time_in_user_timezone(@goal.completed_at)
-              - last_check_in = @goal.goal_check_ins.recent.first
-              - if last_check_in && last_check_in.confidence_reason.present?
-                .mt-2
-                  %strong Learnings:
-                  = simple_format(last_check_in.confidence_reason)
-
-    / Associated with (prompts + MAAP)
-    - if @prompt_goals.any? || @goal_associations.any?
-      .card.mb-4{ role: "region", "aria-labelledby": "goal-external-attachments" }
-        .card-header
-          %h5.mb-0{ id: "goal-external-attachments" }
-            %i.bi.bi-link-45deg.me-2
-            Associated with
-        .card-body
-          - @prompt_goals.each do |prompt_goal|
-            .mb-4.pb-3.border-bottom
-              = link_to edit_organization_prompt_path(@organization, prompt_goal.prompt), class: "text-decoration-none" do
-                %h6.mb-1
-                  %i.bi.bi-file-text.me-2
-                  = prompt_goal.prompt.prompt_template.title
-              %small.text-muted
-                Reflection · associated #{format_time_in_user_timezone(prompt_goal.created_at)}
-          - @goal_associations.each do |ga|
-            - next unless ga.associable
-            .mb-4
-              - case ga.associable
-              - when Assignment
-                = link_to organization_assignment_path(@organization, ga.associable), class: "text-decoration-none" do
-                  %h6.mb-1
-                    %i.bi.bi-clipboard-check.me-2
-                    = ga.associable.title
-                %small.text-muted
-                  Assignment · associated #{format_time_in_user_timezone(ga.created_at)}
-              - when Ability
-                = link_to organization_ability_path(@organization, ga.associable), class: "text-decoration-none" do
-                  %h6.mb-1
-                    %i.bi.bi-lightning.me-2
-                    = ga.associable.name
-                %small.text-muted
-                  Ability · associated #{format_time_in_user_timezone(ga.created_at)}
-              - when Aspiration
-                = link_to organization_aspiration_path(@organization, ga.associable), class: "text-decoration-none" do
-                  %h6.mb-1
-                    %i.bi.bi-stars.me-2
-                    = ga.associable.name
-                %small.text-muted
-                  Aspiration · associated #{format_time_in_user_timezone(ga.created_at)}
-
-    / Outgoing Links Card
-    .card.mb-4{ role: "region", "aria-labelledby": "outgoing-links" }
-      .card-header
-        %h5.mb-0{ id: "outgoing-links" }
-          %i.bi.bi-arrow-right-circle.me-2
-          In pursuit of #{@goal.title}, here are some things that will help get there.
-      .card-body
-        - if policy(@goal).update?
-          .mb-3
-            %span.text-muted.mb-0 In order to achieve #{@goal.title}, we need to see
+          .border-top.pt-3.mt-3
+          .d-flex.justify-content-between.align-items-center.mb-2
+            %h6.mb-0 Parent Hierarchy
             - if policy(@goal).update?
+              = link_to choose_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-outline-primary" do
+                %i.bi.bi-plus.me-1
+                Add Parent
+          - if @parent_hierarchy_goals.any?
+            = render 'shared/goals/associated_goals_hierarchy_body',
+                organization: @organization,
+                linked_goals: @linked_goals,
+                linked_goal_check_ins: @linked_goal_check_ins,
+                non_archived_goals: @parent_hierarchy_goals,
+                link_goal_titles: true
+          - else
+            %em.text-muted No parent goals linked yet.
+
+    .col-md-8
+      .card.mb-4{ role: "region", "aria-labelledby": "outgoing-links" }
+        .card-header
+          %h5.mb-0{ id: "outgoing-links" }
+            %i.bi.bi-arrow-right-circle.me-2
+            Children
+        .card-body
+          - if policy(@goal).update?
+            .mb-3
+              %span.text-muted.mb-0 In order to achieve #{@goal.title}, we need to see
               .dropdown.d-inline.ms-1
                 %button.btn.btn-link.p-0.text-decoration-underline.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", style: "border: none; box-shadow: none; font-weight: inherit; color: inherit; vertical-align: baseline;"}
                   %i.bi.bi-node-plus-fill.text-success
@@ -176,217 +242,126 @@
                   %li= link_to "... this new sentiment outcome", choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
                   %li= link_to "... this new objective", choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
 
-        - non_archived_outgoing_links = @goal.outgoing_links.includes(:child).select { |link| link.child&.deleted_at.nil? }
-        - if non_archived_outgoing_links.any?
-          = render 'grouped_goal_list', 
-              links: non_archived_outgoing_links, 
-              linked_goals: @linked_goals, 
-              linked_goal_check_ins: @linked_goal_check_ins, 
-              organization: @organization, 
-              show_unlink: true,
-              parent_goal: @goal,
-              return_url: request.url,
-              return_text: 'Goal',
-              display_children_goal_hierarchy: true
-
-    / Advanced Settings
-    .card.mb-4
-      .card-header
-        %button.btn.btn-link.p-0.text-decoration-none.w-100.text-start{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#advancedSettings", "aria-expanded": "false", "aria-controls": "advancedSettings"}
-          %i.bi.bi-chevron-down.me-2
-          Advanced Settings
-      .collapse#advancedSettings
-        .card-body
-          %dl.row
-            %dt.col-sm-4 Goal Type:
-            %dd.col-sm-8
-              %span.badge{class: goal_badge_class(@goal.goal_type)}
-                = @goal.goal_type.humanize
-
-            %dt.col-sm-4 Creator:
-            %dd.col-sm-8= @goal.creator.person.display_name
-            %dt.col-sm-4 Created:
-            %dd.col-sm-8= format_time_in_user_timezone(@goal.created_at)
-            %dt.col-sm-4 Updated:
-            %dd.col-sm-8= format_time_in_user_timezone(@goal.updated_at)
-
-          / Incoming Links Section
-          .mt-4.pt-4.border-top
-            %h6.mb-3
-              %i.bi.bi-arrow-left-circle.me-2
-              Pursuing #{@goal.title}, is in part in service to the following goals/visions
-            - if policy(@goal).update?
-              .mb-3
-                = link_to choose_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-primary" do
-                  %i.bi.bi-plus.me-1
-                  Add Parent Goal
-            - if @goal.incoming_links.any?
-              = render 'grouped_goal_list', 
-                  links: @goal.incoming_links.includes(:parent), 
-                  linked_goals: @linked_goals, 
-                  linked_goal_check_ins: @linked_goal_check_ins, 
-                  organization: @organization, 
-                  show_unlink: true,
-                  parent_goal: @goal,
-                  return_url: request.url,
-                  return_text: 'Goal'
-            - else
-              %em.text-muted No Parent Goals linked to this goal yet.
-              - if policy(@goal).update?
-                = link_to choose_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "text-decoration-none" do
-                  Add a link to a parent goal
-
-  .col-md-4
-    / Actions Card
-    .card.mb-4
-      .card-header
-        %h6.mb-0
-          %i.bi.bi-gear.me-2
-          Actions
-      .card-body
-        - if @goal.deleted_at.present?
-          .alert.alert-warning.mb-3
-            %strong This goal has been archived.
-            = format_time_in_user_timezone(@goal.deleted_at)
-          - if policy(@goal).update?
-            .d-grid.gap-2.mb-3
-              = button_to undelete_organization_goal_path(@organization, @goal), method: :patch, class: "btn btn-success w-100" do
-                %i.bi.bi-arrow-counterclockwise.me-2
-                Unarchive Goal
-        - if @goal.started_at.nil? && !goal_is_completed?(@goal)
-          / Unstarted goal - show Start Now button
-          - can_edit = policy(@goal).update?
-          .d-grid.gap-2
-            - if can_edit
-              = button_to start_organization_goal_path(@organization, @goal), method: :patch, class: "btn btn-primary w-100" do
-                %i.bi.bi-play-circle.me-2
-                Start Now
-            - else
-              .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                  %i.bi.bi-play-circle.me-2
-                  Start Now
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
-            - if can_edit
-              = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary" do
-                %i.bi.bi-pencil.me-2
-                Edit Goal
-            - else
-              .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-outline-secondary disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                  %i.bi.bi-pencil.me-2
-                  Edit Goal
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
-            - if policy(@goal).destroy? && @goal.status != :deleted
-              = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger w-100", data: { confirm: "Are you sure you want to archive this goal?" } do
-                %i.bi.bi-archive.me-2
-                Archive Goal
-            - elsif @goal.status != :deleted
-              .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-outline-danger w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                  %i.bi.bi-archive.me-2
-                  Archive Goal
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
-        - else
-          / Started goal - Actions card only: Edit, Archive
-          - can_edit = policy(@goal).update?
-          .d-grid.gap-2
-            - if can_edit
-              = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm" do
-                %i.bi.bi-pencil.me-2
-                Edit Goal
-            - else
-              .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-outline-secondary btn-sm disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                  %i.bi.bi-pencil.me-2
-                  Edit Goal
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
-            - if policy(@goal).destroy? && @goal.status != :deleted
-              = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger btn-sm w-100", data: { confirm: "Are you sure you want to archive this goal?" } do
-                %i.bi.bi-archive.me-2
-                Archive Goal
-            - elsif @goal.status != :deleted
-              .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-outline-danger btn-sm w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                  %i.bi.bi-archive.me-2
-                  Archive Goal
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
-          
-        - if @goal.goal_type != 'inspirational_objective' && @goal.most_likely_target_date.nil?
-          .mt-3.pt-3.border-top
-            %p.small.text-muted.mb-3
-              These types of goals should have due dates... what is your due date?
-            .btn-group-vertical.w-100{role: "group", "aria-label": "Timeframe selection"}
-              = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'near_term' }, class: "btn btn-outline-primary mb-2" do
-                Near-Term (< 3 months)
-              = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'medium_term' }, class: "btn btn-outline-primary mb-2" do
-                Medium-Term (< 3 quarters)
-              = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'long_term' }, class: "btn btn-outline-primary mb-2" do
-                Long-Term (< 3 years)
-              = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'vision' }, class: "btn btn-outline-primary" do
-                This is a vision, not a goal
-
-        - if policy(@goal).update?
-          %hr.my-3
-          .d-grid.gap-2
-            = link_to choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-secondary btn-sm w-100" do
-              %i.bi.bi-node-plus-fill.me-2
-              Create/associate new child goal
-
-    / Progress Card (started goals only)
-    - if @goal.started_at.present?
-      .card.mb-4{ role: "region", "aria-labelledby": "goal-progress" }
-        .card-header
-          %h5.mb-0{ id: "goal-progress" }
-            %i.bi.bi-graph-up.me-2
-            Progress
-        .card-body
-          - can_edit = policy(@goal).update?
-          - can_add_check_in = policy(GoalCheckIn.new(goal: @goal)).create?
-          - return_url = request.url
-          - return_text = 'Goal'
-          - last_check_in = @goal.goal_check_ins.includes(:confidence_reporter).recent.first
-          - if last_check_in.present?
-            - check_in_date = format_date_in_user_timezone(last_check_in.created_at)
-            - teammate_name = last_check_in.confidence_reporter.display_name
-            - confidence = last_check_in.confidence_percentage
-            - calculated_due_date = @goal.calculated_target_date
-            %p.mb-3
-              = "#{teammate_name} checked in on #{check_in_date}, and we are #{confidence}% confident we'll accomplish this goal"
-              - if calculated_due_date.present?
-                = " by #{calculated_due_date.strftime('%B %d, %Y')}"
-              = "."
-              = render 'shared/on_track_pill', status: @goal.on_track_status_for_check_in(last_check_in)
+          - non_archived_outgoing_links = @goal.outgoing_links.includes(:child).select { |link| link.child&.deleted_at.nil? }
+          - if non_archived_outgoing_links.any?
+            = render 'grouped_goal_list',
+                links: non_archived_outgoing_links,
+                linked_goals: @linked_goals,
+                linked_goal_check_ins: @linked_goal_check_ins,
+                organization: @organization,
+                show_unlink: true,
+                parent_goal: @goal,
+                return_url: request.url,
+                return_text: 'Goal',
+                display_children_goal_hierarchy: true
           - else
-            .alert.alert-info.mb-3
-              %i.bi.bi-info-circle.me-2
-              Add first check-in
-          .d-grid.gap-2.mb-3
-            - if can_add_check_in && !goal_is_completed?(@goal)
-              = link_to weekly_update_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-primary w-100" do
-                %i.bi.bi-calendar-check.me-2
-                Add/Edit & View All Check-In
+            %em.text-muted No child goals linked yet.
+
+.mb-4#check-in
+  .card
+    .card-header.py-3
+      %h5.mb-0= "#{@goal.title} - Check-Ins"
+  .mt-3
+    .timeline-view
+      - if @goal.started_at.present?
+        .timeline-item.mb-4
+          .card.border-primary
+            .card-body
+              .d-flex.align-items-center
+                .timeline-marker.bg-primary.text-white.rounded-circle.d-flex.align-items-center.justify-content-center.me-3{style: "width: 40px; height: 40px; min-width: 40px;"}
+                  %i.bi.bi-play-circle
+                .flex-grow-1
+                  %h5.mb-1 Goal Started
+                  %p.mb-0.text-muted= format_time_in_user_timezone(@goal.started_at)
+
+      - if @all_check_ins.any?
+        .timeline-item.mb-4
+          %h5.mb-3 Check-In History
+          - @all_check_ins.each do |check_in|
+            .card.mb-3
+              .card-body
+                .d-flex.align-items-start
+                  .timeline-marker.bg-info.text-white.rounded-circle.d-flex.align-items-center.justify-content-center.me-3{style: "width: 40px; height: 40px; min-width: 40px;"}
+                    %i.bi.bi-calendar-check
+                  .flex-grow-1
+                    %h6.mb-2
+                      Week of #{check_in.check_in_week_start.strftime('%B %d')} - #{check_in.check_in_week_start.end_of_week(:sunday).strftime('%B %d, %Y')}
+                    %p.mb-1
+                      = render 'organizations/goals/goal_check_in_sentence', check_in: check_in, goal: @goal
+                      = render 'shared/on_track_pill', status: @goal.on_track_status_for_check_in(check_in)
+                    - if check_in.confidence_reason.present?
+                      %p.mb-1
+                        %strong Notes:
+                        = simple_format(check_in.confidence_reason)
+
+      .timeline-item.mb-4
+        .card.border-success
+          .card-header.bg-success.text-white
+            %h5.mb-0
+              %i.bi.bi-calendar-event.me-2
+              Current Week Check-In
+          .card-body
+            - if @goal.started_at.present? && !goal_is_completed?(@goal)
+              - current_week_start = @current_week_start || Date.current.beginning_of_week(:monday)
+              - current_week_end = current_week_start.end_of_week(:sunday)
+              %p.small.text-muted.mb-3
+                Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
+              = form_with url: check_in_organization_goal_path(@organization, @goal, return_url: organization_goal_path(@organization, @goal), return_text: 'Goal'), method: :post, local: true do |f|
+                .mb-3
+                  %p.mb-2
+                    As of
+                    %strong= current_week_start.strftime('%B %d, %Y')
+                    ,
+                    %strong= current_person.display_name
+                    reports a
+                    = f.select :confidence_percentage,
+                        options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
+                        { include_blank: 'Select confidence...' },
+                        { class: 'form-select d-inline-block w-auto mx-1', style: 'vertical-align: baseline;', required: true }
+                    confidence we will achieve
+                    %strong= @goal.title
+                    by
+                    = f.date_field :most_likely_target_date, value: @goal.most_likely_target_date, class: 'form-control d-inline-block w-auto mx-1', style: 'vertical-align: baseline;'
+                .mb-3
+                  = f.label :confidence_reason, "Notes", class: "form-label"
+                  = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...'
+                .d-grid
+                  = f.submit "Save Check-In", class: "btn btn-primary"
+            - elsif goal_is_completed?(@goal)
+              .alert.alert-info.mb-0 Goal is completed. Check-ins are read-only.
             - else
-              - check_in_disabled_tooltip = goal_is_completed?(@goal) ? 'Goal is completed' : goal_no_check_in_access_tooltip(@goal)
-              - check_in_disabled_label = goal_is_completed?(@goal) ? 'Add/Edit & View All Check-In' : 'Check-In'
-              .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_disabled_tooltip do
-                  %i.bi.bi-calendar-check.me-2
-                  = check_in_disabled_label
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => check_in_disabled_tooltip}
-          - if can_edit && !goal_is_completed?(@goal)
-            .d-grid.gap-2.mb-3
-              = link_to done_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-success w-100" do
-                %i.bi.bi-check-circle.me-2
-                Mark Completed
-          - elsif !goal_is_completed?(@goal)
-            .d-grid.gap-2.mb-3
-              .d-flex.align-items-center.gap-2
-                = link_to "#", class: "btn btn-success w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
-                  %i.bi.bi-check-circle.me-2
-                  Mark Completed
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
-          - if @progress_chart_data.present? && @goal.goal_check_ins.any?
-            .mt-3.pt-3.border-top
-              = render 'organizations/goals/progress_confidence_chart', progress_chart_data: @progress_chart_data, chart_dom_id: "goal-show-progress-confidence-chart"
+              .alert.alert-info.mb-0 Start this goal to add check-ins.
+
+      .timeline-item.mb-4
+        .card.border-secondary
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-calendar-range.me-2
+              Target Dates
+          .card-body
+            - calculated_date = @goal.calculated_target_date
+            %dl.row.mb-0
+              - if @goal.earliest_target_date.present?
+                %dt.col-sm-4 Earliest:
+                %dd.col-sm-8= @goal.earliest_target_date.strftime("%B %d, %Y")
+              - if @goal.most_likely_target_date.present?
+                %dt.col-sm-4 Most Likely:
+                %dd.col-sm-8= @goal.most_likely_target_date.strftime("%B %d, %Y")
+              - if @goal.latest_target_date.present?
+                %dt.col-sm-4 Latest:
+                %dd.col-sm-8= @goal.latest_target_date.strftime("%B %d, %Y")
+              - if calculated_date.nil?
+                %dt.col-sm-4 Calculated Target:
+                %dd.col-sm-8
+                  %em.text-muted No target date calculated (all dates are nil)
+
+      - if @progress_chart_data.present?
+        .timeline-item.mb-4
+          .card.border-secondary
+            .card-header
+              %h5.mb-0
+                %i.bi.bi-graph-up.me-2
+                Confidence vs. On-Track Thresholds
+            .card-body
+              = render 'organizations/goals/progress_confidence_chart', progress_chart_data: @progress_chart_data
 

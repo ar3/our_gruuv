@@ -225,9 +225,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Preload check-ins for linked goals (for displaying check-in info and status icons)
     # Load linked goals explicitly to include completed/deleted goals
     linked_goal_ids = (@goal.outgoing_links.pluck(:child_id) + @goal.incoming_links.pluck(:parent_id)).uniq
-    if linked_goal_ids.any?
+    parent_hierarchy_goal_ids = parent_hierarchy_ids_for(@goal)
+    hierarchy_goal_ids = (linked_goal_ids + parent_hierarchy_goal_ids).uniq
+    if hierarchy_goal_ids.any?
       # Load all linked goals including completed and deleted
-      @linked_goals = Goal.where(id: linked_goal_ids).index_by(&:id)
+      @linked_goals = Goal.where(id: hierarchy_goal_ids).index_by(&:id)
       
       # Preload check-ins for linked goals
       @goal.outgoing_links.includes(child: :goal_check_ins).load
@@ -242,7 +244,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       end
       
       @linked_goal_check_ins = GoalCheckIn
-        .where(goal_id: linked_goal_ids)
+        .where(goal_id: hierarchy_goal_ids)
         .includes(:confidence_reporter, :goal)
         .recent
         .group_by(&:goal_id)
@@ -251,6 +253,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       @linked_goals = {}
       @linked_goal_check_ins = {}
     end
+
+    @parent_hierarchy_goals = Goal.where(id: parent_hierarchy_goal_ids).where(deleted_at: nil)
     
     # Load prompt and MAAP associations for display
     @prompt_goals = @goal.prompt_goals.includes(:prompt, prompt: :prompt_template).order(created_at: :desc)
@@ -262,25 +266,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def weekly_update
     authorize @goal, :show?
-    
-    # Load all check-ins chronologically (oldest first) for display
-    @all_check_ins = @goal.goal_check_ins
-      .includes(:confidence_reporter)
-      .order(check_in_week_start: :asc)
-    
-    # Load check-in data for current week
-    @current_week_start = Date.current.beginning_of_week(:monday)
-    @current_check_in = @goal.goal_check_ins
-      .for_week(@current_week_start)
-      .includes(:confidence_reporter)
-      .first
-    
-    # Progress chart: thresholds + actual check-ins (only when goal has target dates and started_at)
-    @progress_chart_data = Goals::ProgressChartDataBuilder.call(goal: @goal)
-    
-    # Set return_url and return_text from params (for mode switcher navigation)
-    @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
-    @return_text = params[:return_text] || 'Back to Goal'
+
+    redirect_to organization_goal_path(@organization, @goal, anchor: 'check-in')
   end
   
   def new
@@ -341,8 +328,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     goal_params = params[:goal] || {}
     
     if @form.validate(goal_params) && @form.save
-      redirect_to weekly_update_organization_goal_path(@organization, @goal), 
-        return_text: 'Edit Goal / Add Child Goals',          
+      redirect_to organization_goal_path(@organization, @goal, anchor: 'check-in'),
+        return_text: 'Edit Goal / Add Child Goals',
         notice: 'Goal was successfully created.'
     else
       flash.now[:alert] = @form.errors.full_messages.join(', ')
@@ -530,8 +517,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       most_likely_target_date: params[:most_likely_target_date]
     )
     
-    return_url = params[:return_url] || organization_goal_path(@organization, @goal)
-    
+    return_url = goal_check_in_redirect_url(params[:return_url])
+
     if result.ok?
       notice = 'Check-in saved successfully.'
       notice += ' Target date updated.' if result.value[:target_date_updated]
@@ -833,6 +820,27 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   def set_goal
     # Load goal without scoping - policy will handle authorization checks
     @goal = Goal.find(params[:id])
+  end
+
+  # Always return to the goal check-in anchor after submitting a check-in.
+  def goal_check_in_redirect_url(return_url_param)
+    base = return_url_param.presence || organization_goal_path(@organization, @goal)
+    base.to_s.sub(/#.*/, '') + '#check-in'
+  end
+
+  def parent_hierarchy_ids_for(goal)
+    all_ids = []
+    frontier = goal.incoming_links.pluck(:parent_id).compact
+
+    while frontier.any?
+      batch_ids = frontier - all_ids
+      break if batch_ids.empty?
+
+      all_ids.concat(batch_ids)
+      frontier = GoalLink.where(child_id: batch_ids).pluck(:parent_id).compact
+    end
+
+    all_ids.uniq
   end
   
   def apply_timeframe_filter(goals, timeframe)

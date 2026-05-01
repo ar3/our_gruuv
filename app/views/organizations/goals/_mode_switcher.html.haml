@@ -41,9 +41,7 @@
           Check-in Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif goal.started_at.present? && policy(goal).show?
-        - return_url = local_assigns[:return_url] || organization_goal_path(organization, goal)
-        - return_text = local_assigns[:return_text] || 'Back to Goal'
-        = link_to weekly_update_organization_goal_path(organization, goal, return_url: return_url, return_text: return_text), class: 'dropdown-item' do
+        = link_to organization_goal_path(organization, goal, anchor: 'check-in'), class: 'dropdown-item' do
           %i.bi.bi-calendar-check.me-2
           Check-in Mode
       - else

@@ -42,7 +42,7 @@
                       %span.text-muted No check-in yet
                   %td
                     = link_to "Check In", 
-                              weekly_update_organization_goal_path(organization, goal),
+                              organization_goal_path(organization, goal, anchor: 'check-in'),
                               class: "btn btn-primary btn-sm"
       - else
         %p.text-muted.mb-0 All goals are up to date.

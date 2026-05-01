@@ -758,6 +758,107 @@ module GoalsHelper
   def goal_is_completed?(goal)
     goal.completed_at.present?
   end
+
+  def goal_active?(goal)
+    goal.started_at.present? && goal.completed_at.blank? && goal.deleted_at.blank?
+  end
+
+  def goal_teammate_casual_name(teammate)
+    return nil unless teammate&.person
+
+    teammate.person.casual_name.presence || teammate.person.display_name
+  end
+
+  # Resolves last editor from PaperTrail when available; if the record was never updated after create, returns creator.
+  def goal_last_updater_teammate(goal)
+    whodunnit = PaperTrail::Version
+      .where(item_type: 'Goal', item_id: goal.id)
+      .where.not(event: 'create')
+      .order(created_at: :desc)
+      .limit(1)
+      .pick(:whodunnit)
+    if whodunnit.present?
+      CompanyTeammate.find_by(id: whodunnit)
+    elsif (goal.updated_at - goal.created_at).abs < 2.seconds
+      goal.creator
+    else
+      nil
+    end
+  end
+
+  def goal_creator_and_last_updated_phrase(goal, organization)
+    creator = goal.creator
+    creator_label = goal_teammate_casual_name(creator)
+    creator_path = goal_teammate_path(organization, creator)
+    created_part = format_time_in_user_timezone(goal.created_at)
+
+    creator_html =
+      if creator_path.present?
+        link_to creator_label, creator_path, class: 'text-decoration-none'
+      else
+        creator_label
+      end
+
+    updater = goal_last_updater_teammate(goal)
+    updated_part = format_time_in_user_timezone(goal.updated_at)
+
+    if updater
+      updater_label = goal_teammate_casual_name(updater)
+      updater_path = goal_teammate_path(organization, updater)
+      updater_html =
+        if updater_path.present?
+          link_to updater_label, updater_path, class: 'text-decoration-none'
+        else
+          updater_label
+        end
+      safe_join(
+        [
+          creator_html,
+          " created on #{created_part}, and ",
+          updater_html,
+          " last updated on #{updated_part}."
+        ],
+        ''
+      )
+    else
+      safe_join(
+        [
+          creator_html,
+          " created on #{created_part}, and last updated on #{updated_part}."
+        ],
+        ''
+      )
+    end
+  end
+
+  def goal_last_check_in_recency_phrase(goal)
+    last = goal.goal_check_ins.recent.first
+    return 'Goal has no check-ins' if last.blank?
+
+    "Last check-in #{time_ago_in_words(last.created_at)} ago"
+  end
+
+  def goal_owner_path(organization, goal)
+    owner = goal.owner
+    return nil unless owner
+
+    case owner
+    when CompanyTeammate
+      about_me_organization_company_teammate_path(organization, owner)
+    when Department
+      organization_department_path(organization, owner)
+    when Team
+      organization_team_path(organization, owner)
+    when Organization
+      organization_path(owner)
+    end
+  end
+
+  def goal_teammate_path(organization, teammate)
+    return nil unless teammate
+
+    about_me_organization_company_teammate_path(organization, teammate)
+  end
   
   def goal_completion_outcome(goal)
     return nil unless goal_is_completed?(goal)

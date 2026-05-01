@@ -1,4 +1,6 @@
 class Goal < ApplicationRecord
+  has_paper_trail
+
   # Associations
   belongs_to :owner, polymorphic: true, optional: true # presence validated in owner_presence (avoids constantize when owner_type is Teammate)
   belongs_to :creator, class_name: 'CompanyTeammate'

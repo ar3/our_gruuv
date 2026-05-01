@@ -53,7 +53,7 @@
       - if policy(linked_goal).show? && linked_goal.started_at.present? && !goal_is_completed?(linked_goal)
         - return_url = local_assigns[:return_url] || (defined?(request) ? request.url : '#')
         - return_text = local_assigns[:return_text] || 'Goal'
-        = link_to weekly_update_organization_goal_path(organization, linked_goal, return_url: return_url, return_text: return_text), class: "btn btn-sm btn-outline-primary", target: "_blank", "data-bs-toggle" => "tooltip", "data-bs-title" => "add/update weekly goal check-in" do
+        = link_to organization_goal_path(organization, linked_goal, anchor: 'check-in', return_url: return_url, return_text: return_text), class: "btn btn-sm btn-outline-primary", target: "_blank", "data-bs-toggle" => "tooltip", "data-bs-title" => "add/update weekly goal check-in" do
           %i.bi.bi-calendar-check.me-1
       - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
         - return_url = local_assigns[:return_url] || (defined?(request) ? request.url : '#')
