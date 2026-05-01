@@ -24,7 +24,8 @@ class Organizations::PaperTrailController < Organizations::OrganizationNamespace
     'GoalCheckIn' => GoalCheckIn,
     'Observation' => Observation,
     'Organization' => Organization,
-    'Position' => Position
+    'Position' => Position,
+    'Title' => Title
   }.freeze
 
   def set_auditable_record
@@ -44,7 +45,7 @@ class Organizations::PaperTrailController < Organizations::OrganizationNamespace
     scope = case klass.name
             when 'Organization'
               klass.where(id: org.id)
-            when 'Assignment', 'Ability', 'Aspiration', 'Department', 'Goal'
+            when 'Assignment', 'Ability', 'Aspiration', 'Department', 'Goal', 'Title'
               klass.where(company_id: org.id)
             when 'Observation'
               klass.where(company_id: org.id)

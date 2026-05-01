@@ -1,0 +1,25 @@
+-# locals: title, organization, titles_by_department
+-# Same interaction pattern as shared/teammate_context/_title_dropdown (About Me, etc.)
+- switch_aria_label = local_assigns.fetch(:switch_aria_label) { "Switch title" }
+.dropdown.d-inline-flex.align-items-center
+  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label" => switch_aria_label}
+    %span
+      = title.external_title
+      %span.text-muted.fw-normal.fs-6.ms-1 (#{title.position_major_level})
+  %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+    - titles_by_department.each do |group_label, titles_in_group|
+      %li
+        %h6.dropdown-header.mb-0.mt-1= group_label
+      - titles_in_group.each do |t|
+        %li
+          - if t.id == title.id
+            .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+              %span.flex-grow-1
+                = t.external_title
+                %span.text-muted.small.ms-1 (#{t.position_major_level})
+              %i.bi.bi-check-circle.text-success
+          - else
+            = link_to organization_title_path(organization, t), class: "dropdown-item d-flex align-items-center gap-2" do
+              %span
+                = t.external_title
+                %span.text-muted.small.ms-1 (#{t.position_major_level})

@@ -94,6 +94,9 @@ module AssociableGoalsHelper
   end
 
   def organization_teammate_lens_catalog_href(organization, associable, viewing_person)
+    # Catalog teammate lens exists for assignments / abilities / aspirations only.
+    return if associable.is_a?(Title)
+
     teammate = organization.teammates.find_by(person_id: viewing_person.id)
     return if teammate.blank?
 

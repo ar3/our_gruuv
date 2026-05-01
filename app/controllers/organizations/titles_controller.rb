@@ -1,5 +1,8 @@
 class Organizations::TitlesController < Organizations::OrganizationNamespaceBaseController
+  include AssignsPublicKudosRateableCard
+
   before_action :set_title, only: [:show, :edit, :update, :destroy, :clone_positions]
+  before_action :load_titles_for_header_switcher, only: [:show, :edit, :update]
   after_action :verify_authorized
 
   def index
@@ -26,6 +29,13 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     # Preserve the order by sorting the grouped results by the original order
     grouped = all_tenures.to_a.group_by(&:teammate_id)
     @teammates_with_title = all_tenures.to_a.uniq(&:teammate_id)
+
+    assign_public_kudos_for_rateable_card!(
+      organization: @organization,
+      rateable_type: 'Title',
+      rateable_id: @title.id,
+      rateable_display_name: @title.display_name_with_major_level
+    )
   end
 
   def new
@@ -183,6 +193,29 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
   end
 
   private
+
+  def load_titles_for_header_switcher
+    @titles_by_department = titles_by_department_for_switcher(company)
+  end
+
+  def titles_by_department_for_switcher(org)
+    titles = org.titles
+      .includes(:department, :position_major_level)
+      .left_joins(:department)
+      .order(
+        Arel.sql('CASE WHEN titles.department_id IS NULL THEN 0 ELSE 1 END'),
+        'departments.name',
+        'titles.external_title'
+      )
+
+    groups = titles.group_by { |t| t.department&.display_name || 'Company-wide' }
+    result = {}
+    result['Company-wide'] = groups['Company-wide'] if groups['Company-wide'].present?
+    (groups.keys - ['Company-wide']).sort.each do |label|
+      result[label] = groups[label]
+    end
+    result
+  end
 
   def set_title
     @title = @organization.titles.find(params[:id])

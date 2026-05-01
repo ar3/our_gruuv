@@ -1,5 +1,6 @@
 class Title < ApplicationRecord
   include PgSearch::Model
+  has_paper_trail
 
   # Associations
   belongs_to :company, class_name: 'Organization'

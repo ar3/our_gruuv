@@ -144,6 +144,8 @@ module PaperTrailHelper
       organization_path(record)
     when Position
       organization_position_path(organization, record)
+    when Title
+      organization_title_path(organization, record)
     end
   end
 

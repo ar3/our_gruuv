@@ -1,186 +1,202 @@
 - content_for :title, @title.external_title
 
+- content_for :header do
+  %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+    = render 'title_switcher', title: @title, organization: @organization, titles_by_department: @titles_by_department
+
+- content_for :header_action do
+  = render 'mode_switcher'
+
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @title.external_title, url: nil }])
 
-.container.mt-4
-  .row.justify-content-center
-    .col-lg-10
-      .d-flex.justify-content-between.align-items-center.mb-4
-        = render 'mode_switcher'
-      
-      .card
-        .card-header.bg-primary.text-white
-          %h3.mb-0= @title.external_title
-          %p.mb-0.text-light= @title.position_summary
-        
-        .card-body
-          .row
-            .col-md-8.col-sm-12
-              %h5.mb-2
-                %i.bi.bi-building.me-2
-                Organization
-              %p= link_to @title.company.display_name, organization_path(@title.company), class: "text-decoration-none"
-            
-              %h5.mb-2
-                %i.bi.bi-star.me-2
-                Major Level
-              %p= @title.position_major_level.to_s
-            
-              - if @title.alternative_titles.present?
-                %h5.mb-2
-                  %i.bi.bi-tags.me-2
-                  Alternative Titles
-                %p= @title.alternative_titles
-            
-              - if @title.position_summary.present?
-                %h5.mb-2
-                  %i.bi.bi-file-text.me-2
-                  Summary
-                %p= @title.position_summary
+.row.justify-content-center
+  .col-12
+    .row.g-4.mb-4
+      .col-lg-8
+        .card.h-100
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-info-circle.me-2
+              Primary information
+          .card-body
+            .mb-3
+              %h6.text-muted.mb-1 Department
+              - if @title.department.present?
+                %p.mb-0
+                  = link_to @title.company.display_name, organization_path(@title.company), class: "text-decoration-none"
+                  %span.text-muted.mx-1
+                    %i.bi.bi-chevron-right
+                  = link_to @title.department.display_name, organization_department_path(@organization, @title.department), class: "text-decoration-none"
+              - else
+                %p.mb-0
+                  = link_to @title.company.display_name, organization_path(@title.company), class: "text-decoration-none"
+                  %span.text-muted.ms-1 (company-wide title)
 
-            .col-md-4.col-sm-12
+            .mb-3
+              %h6.text-muted.mb-1 Major level
+              %p.mb-0= @title.position_major_level
+
+            - if @title.alternative_titles.present?
+              .mb-3
+                %h6.text-muted.mb-1 Alternative titles
+                %p.mb-0= @title.alternative_titles
+
+            - if @title.position_summary.present?
+              .mb-3
+                %h6.text-muted.mb-1 Summary
+                %p.mb-0= @title.position_summary
+
+            .mb-3
+              %h6.text-muted.mb-1 Positions
               - if @title.positions.any?
-                %h5.mb-2
-                  %i.bi.bi-briefcase.me-2
-                  Positions
                 - @title.positions.each do |position|
                   .mb-2
                     = link_to position.display_name, organization_position_path(position.title.company, position), class: "text-decoration-none"
               - else
-                .alert.alert-info
-                  %h6.mb-2
-                    %i.bi.bi-info-circle.me-2
-                    No Positions Yet
-                  %p.mb-2 This title has no associated positions.
-                  = link_to "Create Position", new_organization_position_path(@title.company, title_id: @title.id), class: "btn btn-info btn-sm"
-              
-              - if @title.published_url.present? || @title.draft_url.present?
-                %h5.mb-2.mt-3
-                  %i.bi.bi-link-45deg.me-2
-                  External References
-                - if @title.published_url.present?
-                  .mb-2
-                    = link_to @title.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
-                      %i.bi.bi-file-earmark-text.me-1
-                      Published Version
-                - if @title.draft_url.present?
-                  .mb-2
-                    = link_to @title.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
-                      %i.bi.bi-file-earmark-text.me-1
-                      Draft Version
+                .alert.alert-info.mb-0.py-2
+                  %p.mb-2.small This title has no associated positions yet.
+                  = link_to "Create position", new_organization_position_path(@title.company, title_id: @title.id), class: "btn btn-sm btn-outline-primary"
 
+            .mb-0
+              %h6.text-muted.mb-1 Seats
               - active_seats = @title.seats.active.ordered
-              %h5.mb-2.mt-3
-                %i.bi.bi-person-badge.me-2
-                Seats
               - if active_seats.any?
                 - active_seats.each do |seat|
                   .mb-2
                     = link_to seat.display_name, organization_seat_path(@title.company, seat), class: "text-decoration-none"
               - else
-                .alert.alert-info
-                  %p.mb-0= "#{@title.external_title} is not currently available at #{@title.company.display_name}"
+                %p.text-muted.mb-0.small
+                  #{@title.external_title} is not currently available at #{@title.company.display_name}.
 
-      / Comments Section
-      = render 'shared/comment_summary', commentable: @title, organization: @organization
+            - if @title.published_url.present? || @title.draft_url.present?
+              .mt-3.pt-3.border-top
+                %h6.text-muted.mb-2 External references
+                - if @title.published_url.present?
+                  .mb-2
+                    = link_to @title.published_url, target: "_blank", rel: "noopener", class: "btn btn-outline-primary btn-sm" do
+                      %i.bi.bi-file-earmark-text.me-1
+                      Published version
+                - if @title.draft_url.present?
+                  .mb-2
+                    = link_to @title.draft_url, target: "_blank", rel: "noopener", class: "btn btn-outline-secondary btn-sm" do
+                      %i.bi.bi-file-earmark-text.me-1
+                      Draft version
 
-      / Teammates with this Title Section
-      .card.mt-4
-        .card-header.bg-secondary.text-white
-          %h5.mb-0
-            %i.bi.bi-people.me-2
-            Teammates with this Title
-        .card-body
-          - if @teammates_with_title&.any?
-            .table-responsive
-              %table.table.table-hover
-                %thead
+      .col-lg-4
+        = render 'actions_card'
+
+    = render 'shared/comment_summary', commentable: @title, organization: @organization
+
+    .card.mb-4
+      .card-header.bg-secondary.text-white
+        %h5.mb-0
+          %i.bi.bi-people.me-2
+          Teammates with this Title
+      .card-body
+        - if @teammates_with_title&.any?
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead
+                %tr
+                  %th Name
+                  %th Email
+                  %th Position
+                  %th Actions
+              %tbody
+                - @teammates_with_title.each do |tenure|
+                  - teammate = tenure.teammate
                   %tr
-                    %th Name
-                    %th Email
-                    %th Position
-                    %th Actions
-                %tbody
-                  - @teammates_with_title.each do |tenure|
-                    - teammate = tenure.teammate
-                    %tr
-                      %td
-                        = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
-                      %td
-                        %small.text-muted= teammate.person.email
-                      %td
-                        = tenure.position.display_name
-                      %td
-                        = link_to internal_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary btn-sm" do
-                          %i.bi.bi-eye.me-1
-                          View
-          - else
-            .alert.alert-info
-              %h6.mb-2
-                %i.bi.bi-info-circle.me-2
-                No Teammates Found
-              %p.mb-0 No teammates currently have an active employment tenure on any position with this title.
+                    %td
+                      = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                    %td
+                      %small.text-muted= teammate.person.email
+                    %td
+                      = tenure.position.display_name
+                    %td
+                      = link_to internal_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary btn-sm" do
+                        %i.bi.bi-eye.me-1
+                        View
+        - else
+          .alert.alert-info.mb-0
+            %h6.mb-2
+              %i.bi.bi-info-circle.me-2
+              No teammates found
+            %p.mb-0 No teammates currently have an active employment tenure on any position with this title.
 
-      - if @title.positions.any?
-        - available_levels = @title.position_major_level.position_levels
-        - existing_level_ids = @title.positions.map(&:position_level_id)
-        - missing_levels = available_levels.reject { |level| existing_level_ids.include?(level.id) }
-        
-        - if missing_levels.any?
-          .card.mt-4
-            .card-header.bg-warning.text-dark
-              %h5.mb-0
-                %i.bi.bi-exclamation-triangle.me-2
-                Missing Positions
-            .card-body
-              %p.mb-3 This title should have positions for all levels within the #{@title.position_major_level.set_name} major level.
-              
-              .row
-                .col-md-6
-                  %h6.text-success
-                    %i.bi.bi-check-circle.me-2
-                    Created Positions (#{@title.positions.count}/#{available_levels.count})
-                  - @title.positions.each do |position|
-                    .mb-1
-                      %i.bi.bi-check.me-2
-                      = position.position_level.level_name
-                
-                .col-md-6
-                  %h6.text-warning
-                    %i.bi.bi-exclamation-triangle.me-2
-                    Missing Positions (#{missing_levels.count})
-                  - missing_levels.each do |level|
-                    .mb-1
-                      %i.bi.bi-dash.me-2
-                      = level.level_name
-              
-              .mt-3
-                - if @title.positions.any?
-                  %p.mb-3 You can clone an existing position to create the missing ones with the same assignments and settings.
-                  - can_clone = policy(@title).clone_positions?
-                  = form_with url: clone_positions_organization_title_path(@organization, @title), method: :post, local: true do |form|
-                    .row
-                      .col-md-6
-                        = form.label :source_position_id, "Clone from position:", class: "form-label"
-                        = form.select :source_position_id, 
-                          options_from_collection_for_select(@title.positions, :id, :display_name), 
-                          { prompt: 'Select a position to clone from' }, 
-                          { class: "form-select", required: true, disabled: !can_clone }
-                      .col-md-6
-                        = form.label :target_level_ids, "Create for levels:", class: "form-label"
-                        = form.select :target_level_ids, 
-                          options_from_collection_for_select(missing_levels, :id, :level_name), 
-                          { prompt: 'Select levels to create' }, 
-                          { class: "form-select", required: true, multiple: true, disabled: !can_clone }
-                    .mt-3
-                      - if can_clone
-                        = form.submit "Clone Positions", class: "btn btn-warning"
-                      - else
-                        .d-flex.align-items-center.gap-2
-                          .flex-grow-1
-                            = form.submit "Clone Positions", class: "btn btn-outline-secondary w-100", disabled: true
-                          %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires MAAP management permission"}}
-                - else
-                  %p.mb-3 Create the first position manually, then you can clone it for the remaining levels.
-                  = link_to "Create First Position", new_organization_position_path(@title.company, title_id: @title.id), class: "btn btn-primary"
+    - if @title.positions.any?
+      - available_levels = @title.position_major_level.position_levels
+      - existing_level_ids = @title.positions.map(&:position_level_id)
+      - missing_levels = available_levels.reject { |level| existing_level_ids.include?(level.id) }
+
+      - if missing_levels.any?
+        .card.mb-4
+          .card-header.bg-warning.text-dark
+            %h5.mb-0
+              %i.bi.bi-exclamation-triangle.me-2
+              Missing Positions
+          .card-body
+            %p.mb-3 This title should have positions for all levels within the #{@title.position_major_level.set_name} major level.
+
+            .row
+              .col-md-6
+                %h6.text-success
+                  %i.bi.bi-check-circle.me-2
+                  Created Positions (#{@title.positions.count}/#{available_levels.count})
+                - @title.positions.each do |position|
+                  .mb-1
+                    %i.bi.bi-check.me-2
+                    = position.position_level.level_name
+
+              .col-md-6
+                %h6.text-warning
+                  %i.bi.bi-exclamation-triangle.me-2
+                  Missing Positions (#{missing_levels.count})
+                - missing_levels.each do |level|
+                  .mb-1
+                    %i.bi.bi-dash.me-2
+                    = level.level_name
+
+            .mt-3
+              - if @title.positions.any?
+                %p.mb-3 You can clone an existing position to create the missing ones with the same assignments and settings.
+                - can_clone = policy(@title).clone_positions?
+                = form_with url: clone_positions_organization_title_path(@organization, @title), method: :post, local: true do |form|
+                  .row
+                    .col-md-6
+                      = form.label :source_position_id, "Clone from position:", class: "form-label"
+                      = form.select :source_position_id,
+                        options_from_collection_for_select(@title.positions, :id, :display_name),
+                        { prompt: 'Select a position to clone from' },
+                        { class: "form-select", required: true, disabled: !can_clone }
+                    .col-md-6
+                      = form.label :target_level_ids, "Create for levels:", class: "form-label"
+                      = form.select :target_level_ids,
+                        options_from_collection_for_select(missing_levels, :id, :level_name),
+                        { prompt: 'Select levels to create' },
+                        { class: "form-select", required: true, multiple: true, disabled: !can_clone }
+                  .mt-3
+                    - if can_clone
+                      = form.submit "Clone Positions", class: "btn btn-warning"
+                    - else
+                      .d-flex.align-items-center.gap-2
+                        .flex-grow-1
+                          = form.submit "Clone Positions", class: "btn btn-outline-secondary w-100", disabled: true
+                        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "Requires MAAP management permission"}
+              - else
+                %p.mb-3 Create the first position manually, then you can clone it for the remaining levels.
+                = link_to "Create First Position", new_organization_position_path(@title.company, title_id: @title.id), class: "btn btn-primary"
+
+.row.mt-2
+  .col-12
+    = render "shared/public_kudos_for_rateable_card",
+      organization: @organization,
+      public_kudos: @public_kudos_for_rateable,
+      rateable_display_name: @public_kudos_rateable_display_name,
+      all_kudos_url: @public_kudos_all_kudos_observations_url,
+      all_types_url: @public_kudos_all_types_observations_url
+
+= render "organizations/shared/teammate_lens_catalog_cta",
+    organization: @organization,
+    associable: @title,
+    viewing_person: current_person

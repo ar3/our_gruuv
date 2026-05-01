@@ -1,0 +1,49 @@
+- org = @organization
+- t = @title
+- created_name, created_at = title_audit_created_meta(t)
+- updated_name, updated_at = title_audit_last_updated_meta(t)
+
+.card.border.h-100.d-flex.flex-column
+  .card-header
+    %h6.mb-0
+      %i.bi.bi-lightning-charge.me-2
+      Actions
+  .card-body.d-flex.flex-column.flex-grow-1
+    .d-flex.flex-column.gap-2
+      - if policy(t).update?
+        = link_to edit_organization_title_path(org, t), class: "btn btn-outline-primary btn-sm w-100" do
+          %i.bi.bi-pencil.me-2
+          Edit title
+      - else
+        .d-flex.align-items-center.gap-2
+          .flex-grow-1
+            %button.btn.btn-outline-secondary.btn-sm.w-100{type: "button", disabled: true}
+              %i.bi.bi-pencil.me-2
+              Edit title
+          %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions for this organization to edit titles"}
+
+      = link_to new_organization_position_path(t.company, title_id: t.id), class: "btn btn-outline-primary btn-sm w-100" do
+        %i.bi.bi-plus-circle.me-2
+        New position
+
+      - if policy(t).destroy?
+        = link_to organization_title_path(org, t), class: "btn btn-outline-danger btn-sm w-100", data: { turbo_method: :delete, turbo_confirm: "Delete this title? Positions and seats that use it may be affected." } do
+          %i.bi.bi-trash.me-2
+          Delete title
+      - else
+        .d-flex.align-items-center.gap-2
+          .flex-grow-1
+            %button.btn.btn-outline-secondary.btn-sm.w-100{type: "button", disabled: true}
+              %i.bi.bi-trash.me-2
+              Delete title
+          %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions to delete titles"}
+
+    %hr.mt-auto.pt-3.mb-2
+    %small.text-muted.d-block
+      Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
+      %br
+      Last updated by #{updated_name} on #{format_time_in_user_timezone(updated_at)}
+      %br
+      = link_to organization_paper_trail_path(org, item_type: 'Title', item_id: t.id), class: 'text-decoration-none' do
+        %i.bi.bi-clock-history.me-1
+        View full change history

@@ -50,6 +50,44 @@ RSpec.describe "Titles", type: :request do
     end
   end
 
+  describe "GET /show" do
+    let(:position_major_level) { create(:position_major_level) }
+    let(:title) { create(:title, company: organization, position_major_level: position_major_level, external_title: "Staff Engineer") }
+
+    it "returns success with primary information, switchers, actions card, and audit footer" do
+      get organization_title_path(organization, title)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Primary information")
+      expect(response.body).to include("Staff Engineer")
+      expect(response.body).to include("Teammates with this Title")
+      expect(response.body).to include("Actions")
+      expect(response.body).to include("View Mode")
+      expect(response.body).to include("Created by ")
+      expect(response.body).to include("Last updated by ")
+      expect(response.body).to include("View full change history")
+      expect(response.body).to include("item_type=Title")
+      expect(response.body).to include("item_id=#{title.id}")
+    end
+
+    it "renders public kudos card with Title rateable query params" do
+      get organization_title_path(organization, title)
+
+      expect(response.body).to include("Public Kudos")
+      expect(response.body).to include("rateable_type=Title")
+      expect(response.body).to include("rateable_id=#{title.id}")
+    end
+
+    it "lists other company-wide titles in the header switcher" do
+      other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Other Role")
+      get organization_title_path(organization, title)
+
+      expect(response.body).to include("Company-wide")
+      expect(response.body).to include("Other Role")
+      expect(response.body).to include(organization_title_path(organization, other))
+    end
+  end
+
   describe "PATCH /update" do
     let(:position_major_level) { create(:position_major_level) }
     let(:title) { create(:title, company: organization, position_major_level: position_major_level) }
