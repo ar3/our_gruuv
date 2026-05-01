@@ -406,6 +406,33 @@ RSpec.describe Assignment, type: :model do
     end
   end
 
+  describe '#record_version_for_outcome_changes!' do
+    before do
+      PaperTrail.enabled = true
+    end
+
+    after do
+      PaperTrail.enabled = false
+    end
+
+    it 'persists outcomes bundle on the assignment and stores it in PaperTrail object_changes' do
+      assignment = create(:assignment, company: organization, semantic_version: '1.0.0')
+      create(:assignment_outcome, assignment: assignment, description: 'One metric', outcome_type: 'quantitative')
+      assignment.reload.update_column(:outcomes_audit_snapshot, '(stale)')
+
+      assignment.record_version_for_outcome_changes!(change_context: 'Spec')
+
+      assignment.reload
+      expect(assignment.semantic_version).to eq('1.0.1')
+      expect(assignment.outcomes_audit_snapshot).to include('[quantitative]', 'One metric')
+
+      version = assignment.versions.order(:created_at).last
+      raw_changes = version.read_attribute(:object_changes).to_s
+      expect(raw_changes).to include('outcomes_audit_snapshot', '(stale)', 'One metric')
+      expect(raw_changes).to include('semantic_version', '1.0.1')
+    end
+  end
+
   describe '#create_outcomes_from_textarea' do
     it 'creates outcomes from textarea input' do
       text = "Increase customer satisfaction by 20%\nReduce response time to under 2 hours\nTeam agrees: We communicate clearly"

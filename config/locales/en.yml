@@ -29,3 +29,8 @@
 
 en:
   hello: "Hello world"
+
+  activerecord:
+    attributes:
+      assignment:
+        outcomes_audit_snapshot: "Outcomes"

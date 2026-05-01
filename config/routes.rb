@@ -101,6 +101,9 @@ Rails.application.routes.draw do
     # Get Shit Done Dashboard
     resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done'
 
+    # PaperTrail version history for auditable records (authorization uses each record's show? policy)
+    get 'paper_trail', to: 'organizations/paper_trail#show', as: :paper_trail
+
     # Digest (user digest preferences; per-organization URL, edits current user's preferences)
     resource :digest, only: [:edit, :update], controller: 'organizations/digest' do
       post :sync_all_mediums, on: :member

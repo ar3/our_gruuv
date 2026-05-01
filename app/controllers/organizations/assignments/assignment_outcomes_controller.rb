@@ -17,6 +17,7 @@ class Organizations::Assignments::AssignmentOutcomesController < Organizations::
     authorize @assignment_outcome
     
     if @assignment_outcome.update(assignment_outcome_params)
+      @assignment.reload.record_version_for_outcome_changes!(change_context: 'Single outcome edited')
       redirect_to organization_assignment_path(@organization, @assignment), notice: 'Outcome was successfully updated.'
     else
       # Set return URL and text for overlay

@@ -8,7 +8,6 @@
 - is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_edit_view && (@organization.present? || (@assignment && @assignment.company.present?))
 - created_name, created_at = assignment_audit_created_meta(@assignment)
 - updated_name, updated_at = assignment_audit_last_updated_meta(@assignment)
-- audit_popover_html = assignment_audit_history_popover_html(@assignment, @assignment_audit_versions)
 
 .card.border.h-100.d-flex.flex-column
   .card-header
@@ -167,7 +166,11 @@
               %i.bi.bi-exclamation-triangle
 
     %hr.mt-auto.pt-3.mb-2
-    %small.text-muted.d-block.assignment-audit-footer{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => audit_popover_html, tabindex: "0", role: "button", "aria-label" => "Assignment change history"}
+    %small.text-muted.d-block
       Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
       %br
       Last updated by #{updated_name} on #{format_time_in_user_timezone(updated_at)}
+      %br
+      = link_to organization_paper_trail_path(assignment_org, item_type: 'Assignment', item_id: @assignment.id), class: 'text-decoration-none' do
+        %i.bi.bi-clock-history.me-1
+        View full change history

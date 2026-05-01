@@ -17,6 +17,12 @@ class AssignmentOutcomesProcessor
     descriptions.each do |description|
       process_outcome(description)
     end
+
+    if @created_count.positive?
+      @assignment.reload.record_version_for_outcome_changes!(
+        change_context: "Outcomes added from text (#{@created_count} new)"
+      )
+    end
   end
 
   private

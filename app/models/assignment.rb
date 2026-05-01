@@ -161,6 +161,38 @@ class Assignment < ApplicationRecord
     processor = AssignmentOutcomesProcessor.new(self, text)
     processor.process
   end
+
+  # Serialized bundle of outcomes for PaperTrail (+object_changes+) — see "bundle child changes on parent version".
+  def computed_outcomes_audit_snapshot
+    reload
+    lines = assignment_outcomes.order(:id).map do |o|
+      "[#{o.outcome_type}] #{o.description.to_s.truncate(500, omission: '…')}"
+    end
+    lines.any? ? lines.join("\n") : "(no outcomes)"
+  end
+
+  # Persists the bundle text without creating a version (e.g. factories, scripts).
+  def refresh_outcomes_audit_snapshot_column!
+    update_column(:outcomes_audit_snapshot, computed_outcomes_audit_snapshot)
+  end
+
+  # Creates an Assignment PaperTrail version when outcomes change without other assignment column edits.
+  # Stores the outcomes bundle on +outcomes_audit_snapshot+ so +object_changes+ lists it like a normal attribute.
+  # Merges snapshot/context into PaperTrail request controller_info (version +meta+).
+  def record_version_for_outcome_changes!(change_context: 'Outcomes changed')
+    snapshot = computed_outcomes_audit_snapshot
+
+    ci = PaperTrail.request.controller_info || {}
+    PaperTrail.request.controller_info = ci.merge(
+      outcomes_snapshot: snapshot,
+      outcomes_change_context: change_context
+    )
+
+    update!(
+      outcomes_audit_snapshot: snapshot,
+      semantic_version: next_patch_version
+    )
+  end
   
   # pg_search configuration
   pg_search_scope :search_by_full_text,

@@ -769,20 +769,32 @@ module GoalsHelper
     teammate.person.casual_name.presence || teammate.person.display_name
   end
 
-  # Resolves last editor from PaperTrail when available; if the record was never updated after create, returns creator.
+  # Resolves last editor teammate for linking; uses PaperTrail meta (+current_teammate_id+) when present.
   def goal_last_updater_teammate(goal)
-    whodunnit = PaperTrail::Version
+    v = goal_last_update_version(goal)
+    teammate = goal_updater_teammate_from_version(v)
+    return teammate if teammate
+
+    if v.nil? && (goal.updated_at - goal.created_at).abs < 2.seconds
+      goal.creator
+    end
+  end
+
+  def goal_last_update_version(goal)
+    PaperTrail::Version
       .where(item_type: 'Goal', item_id: goal.id)
       .where.not(event: 'create')
       .order(created_at: :desc)
-      .limit(1)
-      .pick(:whodunnit)
-    if whodunnit.present?
-      CompanyTeammate.find_by(id: whodunnit)
-    elsif (goal.updated_at - goal.created_at).abs < 2.seconds
-      goal.creator
-    else
-      nil
+      .first
+  end
+
+  def goal_updater_teammate_from_version(version)
+    return nil if version.blank?
+
+    if version.respond_to?(:current_teammate_id) && version.current_teammate_id.present?
+      CompanyTeammate.find_by(id: version.current_teammate_id)
+    elsif version.whodunnit.present?
+      CompanyTeammate.find_by(id: version.whodunnit)
     end
   end
 
@@ -800,13 +812,20 @@ module GoalsHelper
       end
 
     updater = goal_last_updater_teammate(goal)
+    last_version = goal_last_update_version(goal)
     updated_part = format_time_in_user_timezone(goal.updated_at)
 
-    if updater
-      updater_label = goal_teammate_casual_name(updater)
-      updater_path = goal_teammate_path(organization, updater)
+    if updater || last_version.present?
+      updater_label = if last_version.present?
+        paper_trail_whodunnit_casual_name(last_version)
+      else
+        goal_teammate_casual_name(updater)
+      end
+      updater_path = updater.present? ? goal_teammate_path(organization, updater) : nil
+      impersonating = last_version.respond_to?(:impersonating_teammate_id) && last_version.impersonating_teammate_id.present?
+      link_ok = updater_path.present? && (last_version.blank? || !impersonating)
       updater_html =
-        if updater_path.present?
+        if link_ok
           link_to updater_label, updater_path, class: 'text-decoration-none'
         else
           updater_label

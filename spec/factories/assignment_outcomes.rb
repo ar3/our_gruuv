@@ -3,6 +3,10 @@ FactoryBot.define do
     description { "Users report 90% satisfaction with product features" }
     outcome_type { "quantitative" }
     association :assignment
+
+    after(:create) do |outcome|
+      outcome.assignment.refresh_outcomes_audit_snapshot_column!
+    end
     
     trait :sentiment do
       outcome_type { "sentiment" }

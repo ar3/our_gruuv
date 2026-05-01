@@ -1,0 +1,55 @@
+- subject = paper_trail_subject_label(@auditable)
+- parent_path = organization_auditable_show_path(@organization, @auditable)
+
+- content_for :title, "Change history — #{subject}"
+
+- content_for :header do
+  %h1.mb-0 Change history
+
+- content_for :go_back_link do
+  - crumbs = []
+  - if parent_path.present?
+    - crumbs << { label: subject, url: parent_path }
+  - else
+    - crumbs << { label: subject, url: nil }
+  - crumbs << { label: "Change history", url: nil }
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: crumbs)
+
+.row.justify-content-center
+  .col-12.col-xl-10
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-clock-history.me-2
+          %span.text-muted.font-monospace.small.me-2= @auditable.class.name
+          %span= subject
+          %span.text-muted.small.ms-2 (#{@versions.size} #{@versions.size == 1 ? 'version' : 'versions'})
+      .card-body
+        - if @versions.any?
+          .table-responsive
+            %table.table.table-sm.table-striped.align-middle
+              %thead
+                %tr
+                  %th When
+                  %th Event
+                  %th Who
+                  %th Fields
+              %tbody
+                - @versions.each do |v|
+                  - cs = paper_trail_effective_changeset(v, @auditable.class)
+                  - fields_popover = paper_trail_version_changes_popover_content(@auditable.class, v, changeset: cs)
+                  - fields_labels = paper_trail_version_changed_fields_labels(@auditable.class, v, changeset: cs)
+                  %tr
+                    %td.text-nowrap.small
+                      = format_time_in_user_timezone(v.created_at)
+                    %td
+                      %span.badge.bg-secondary= v.event
+                    %td= paper_trail_whodunnit_casual_name(v)
+                    %td.small
+                      - if cs.any?
+                        %span.d-inline-block.border-bottom.border-secondary.border-opacity-50{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "left", "data-bs-html" => "true", "data-bs-container" => "body", "data-bs-custom-class" => "paper-trail-version-popover-wrap", "data-bs-content" => fields_popover, tabindex: "0", role: "button", "aria-label" => "Before and after values for changed fields", style: "cursor: help"}
+                          = fields_labels
+                      - else
+                        %span.text-muted= fields_labels
+        - else
+          %p.text-muted.mb-0 No PaperTrail versions are recorded for this item.

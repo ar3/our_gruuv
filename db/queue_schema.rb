@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_26_161735) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_01_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -255,6 +255,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_26_161735) do
     t.bigint "department_id"
     t.string "semantic_version", default: "0.0.1", null: false
     t.datetime "deleted_at"
+    t.text "outcomes_audit_snapshot"
     t.index ["company_id"], name: "index_assignments_on_company_id"
     t.index ["deleted_at"], name: "index_assignments_on_deleted_at"
     t.index ["department_id"], name: "index_assignments_on_department_id"
@@ -1534,6 +1535,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_26_161735) do
     t.string "event", null: false
     t.text "object"
     t.jsonb "meta"
+    t.text "object_changes"
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 

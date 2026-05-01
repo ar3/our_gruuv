@@ -1412,6 +1412,16 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
+// Organizations PaperTrail: Field | Before | After table on Fields-column hover
+.popover.paper-trail-version-popover-wrap {
+  max-width: min(38rem, 92vw);
+
+  .popover-body {
+    max-height: min(75vh, 32rem);
+    overflow-y: auto;
+  }
+}
+
 // Internal teammate page: flush 3×3 navigation (no gaps between cells; generous padding inside)
 .internal-teammate-views-grid {
   border-collapse: collapse;

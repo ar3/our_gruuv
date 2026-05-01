@@ -44,7 +44,7 @@ class Organizations::PromptTemplates::PromptQuestionsController < Organizations:
     authorize @prompt_question
     @return_url = params[:return_url] || edit_organization_prompt_template_path(@organization, @prompt_template)
     @return_text = params[:return_text] || 'Back to Template'
-    @versions = @prompt_question.versions.order(created_at: :desc)
+    @versions = @prompt_question.versions.reorder(created_at: :desc, id: :desc)
     render layout: 'overlay'
   end
 
@@ -67,7 +67,7 @@ class Organizations::PromptTemplates::PromptQuestionsController < Organizations:
       @prompt_question.errors.merge!(result[:errors]) if result[:errors]
       @return_url = params[:return_url] || edit_organization_prompt_template_path(@organization, @prompt_template)
       @return_text = params[:return_text] || 'Back to Template'
-      @versions = @prompt_question.versions.order(created_at: :desc)
+      @versions = @prompt_question.versions.reorder(created_at: :desc, id: :desc)
       render :edit, layout: 'overlay', status: :unprocessable_entity
     end
   end

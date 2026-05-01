@@ -222,8 +222,6 @@ class Organizations::AssignmentsController < ApplicationController
       rateable_display_name: @assignment.title
     )
 
-    @assignment_audit_versions = @assignment.versions.order(created_at: :desc).load
-
     render layout: determine_layout
   end
 
@@ -477,12 +475,14 @@ class Organizations::AssignmentsController < ApplicationController
   end
 
   def handle_existing_outcomes(params)
+    changed = false
     @assignment.assignment_outcomes.each do |outcome|
       outcome_id = outcome.id.to_s
       
       # Check if this outcome is marked for deletion
       if params[:assignment]["outcome_delete_#{outcome_id}"] == "1"
         outcome.destroy
+        changed = true
       else
         # Update the outcome with new values
         description_param = params[:assignment]["outcome_description_#{outcome_id}"]
@@ -493,8 +493,15 @@ class Organizations::AssignmentsController < ApplicationController
             description: description_param.strip,
             outcome_type: type_param
           )
+          changed = true
         end
       end
+    end
+
+    if changed
+      @assignment.reload.record_version_for_outcome_changes!(
+        change_context: 'Outcomes updated on assignment form'
+      )
     end
   end
 end

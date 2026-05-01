@@ -147,4 +147,19 @@ RSpec.describe 'PaperTrail Integration', type: :request do
       }.not_to raise_error(ActiveModel::UnknownAttributeError)
     end
   end
+
+  describe 'PaperTrail::Version#changeset (YAML safe_load)' do
+    # Rails 8 defaults ActiveRecord.yaml_column_permitted_classes to [Symbol];
+    # PaperTrail YAML includes ActiveSupport::TimeWithZone for updated_at. Without
+    # expanding permitted classes, Psych fails and #changeset becomes {} — blank Fields column.
+    it 'deserializes object_changes so changeset is populated for an assignment update' do
+      assignment = create(:assignment, company: organization)
+      assignment.update!(tagline: "#{assignment.tagline} revised")
+
+      version = assignment.versions.order(:created_at).last
+      expect(version.event).to eq('update')
+      expect(version.changeset).not_to be_empty
+      expect(version.changeset.keys).to include('tagline')
+    end
+  end
 end
