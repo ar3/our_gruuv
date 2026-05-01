@@ -1,0 +1,173 @@
+- assignment_org = @organization || @assignment.company
+- is_public_view = request.path.include?('/public_maap/assignments/')
+- is_teammate_view = @teammate.present? && request.path.include?('/teammates/')
+- is_person_view = @person.present? && !@teammate.present? && request.path.include?('/people/')
+- is_ability_milestones_view = request.path.include?('/ability_milestones')
+- is_consumer_assignments_view = request.path.include?('/consumer_assignments')
+- is_edit_view = action_name == 'edit' && controller_name == 'assignments'
+- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_edit_view && (@organization.present? || (@assignment && @assignment.company.present?))
+- created_name, created_at = assignment_audit_created_meta(@assignment)
+- updated_name, updated_at = assignment_audit_last_updated_meta(@assignment)
+- audit_popover_html = assignment_audit_history_popover_html(@assignment, @assignment_audit_versions)
+
+.card.border.h-100.d-flex.flex-column
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-lightning-charge.me-2
+      Actions
+  .card-body.d-flex.flex-column.flex-grow-1
+    .d-flex.flex-column.gap-2
+      - if is_public_view
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-globe.me-2
+            Public View (Active)
+      - elsif @assignment && assignment_org
+        .d-flex.align-items-center.gap-2
+          = link_to organization_public_maap_assignment_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
+            %i.bi.bi-globe.me-2
+            Public View
+
+      - if is_organization_view
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-building.me-2
+            Organization View (Active)
+      - elsif @assignment && assignment_org && policy(@assignment).show?
+        .d-flex.align-items-center.gap-2
+          = link_to organization_assignment_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
+            %i.bi.bi-building.me-2
+            Organization View
+      - elsif @assignment && assignment_org
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-building.me-2
+            Organization View
+          %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be in the organization hierarchy to view the organization version", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+            %i.bi.bi-exclamation-triangle
+
+      - if is_teammate_view
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-people.me-2
+            Teammate View (Active)
+      - elsif @assignment && @teammate && assignment_org && policy(@teammate.person).view_check_ins?
+        .d-flex.align-items-center.gap-2
+          = link_to organization_teammate_assignment_path(assignment_org, @teammate, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
+            %i.bi.bi-people.me-2
+            Teammate View
+      - elsif @assignment && @teammate && assignment_org
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-people.me-2
+            Teammate View
+          %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access teammate view features", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+            %i.bi.bi-exclamation-triangle
+
+      - if is_person_view
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-person.me-2
+            Person View (Active)
+      - elsif @assignment && @person && (policy(@person).view_check_ins? || policy(@person).public?)
+        .d-flex.align-items-center.gap-2
+          = link_to person_assignment_path(@person, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
+            %i.bi.bi-person.me-2
+            Person View
+      - elsif @assignment && @person
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-person.me-2
+            Person View
+          %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access person view features", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+            %i.bi.bi-exclamation-triangle
+
+      %hr.my-1
+
+      - if is_ability_milestones_view
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-link-45deg.me-2
+            Manage Ability Milestones (Active)
+      - elsif @assignment && assignment_org && policy(@assignment).update?
+        .d-flex.align-items-center.gap-2
+          = link_to organization_assignment_ability_milestones_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
+            %i.bi.bi-link-45deg.me-2
+            Manage Ability Milestones
+      - else
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-link-45deg.me-2
+            Manage Ability Milestones
+          %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or admin access to manage ability milestones", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+            %i.bi.bi-exclamation-triangle
+
+      - if is_consumer_assignments_view
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-arrow-down-circle.me-2
+            Manage Consumer Assignments (Active)
+      - elsif @assignment && assignment_org && policy(@assignment).manage_consumer_assignments?
+        .d-flex.align-items-center.gap-2
+          = link_to organization_assignment_consumer_assignments_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
+            %i.bi.bi-arrow-down-circle.me-2
+            Manage Consumer Assignments
+      - else
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-arrow-down-circle.me-2
+            Manage Consumer Assignments
+          %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires manage MAAP permission", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+            %i.bi.bi-exclamation-triangle
+
+      - if is_edit_view
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-pencil.me-2
+            Edit Assignment (Active)
+      - elsif @assignment && assignment_org && policy(@assignment).update?
+        .d-flex.align-items-center.gap-2
+          = link_to edit_organization_assignment_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
+            %i.bi.bi-pencil.me-2
+            Edit Assignment
+      - else
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-pencil.me-2
+            Edit Assignment
+          %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or admin access to edit assignments", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+            %i.bi.bi-exclamation-triangle
+
+      - if @assignment && assignment_org
+        %hr.my-1
+        - if @assignment.archived?
+          - if policy(@assignment).restore?
+            .d-flex.align-items-center.gap-2
+              = link_to restore_organization_assignment_path(assignment_org, @assignment), class: 'btn btn-outline-success btn-sm text-start flex-grow-1', data: { turbo_method: :patch, turbo_confirm: 'Restore this assignment? It will appear in lists and selectors again.' } do
+                %i.bi.bi-arrow-counterclockwise.me-2
+                Restore assignment
+          - else
+            .d-flex.align-items-center.gap-2
+              %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+                %i.bi.bi-arrow-counterclockwise.me-2
+                Restore assignment
+              %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You do not have permission to restore", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+                %i.bi.bi-exclamation-triangle
+        - elsif policy(@assignment).archive?
+          .d-flex.align-items-center.gap-2
+            = link_to archive_organization_assignment_path(assignment_org, @assignment), class: 'btn btn-outline-warning btn-sm text-start flex-grow-1' do
+              %i.bi.bi-archive.me-2
+              Archive assignment
+        - else
+          .d-flex.align-items-center.gap-2
+            %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+              %i.bi.bi-archive.me-2
+              Archive assignment
+            %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You do not have permission to archive", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+              %i.bi.bi-exclamation-triangle
+
+    %hr.mt-auto.pt-3.mb-2
+    %small.text-muted.d-block.assignment-audit-footer{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => audit_popover_html, tabindex: "0", role: "button", "aria-label" => "Assignment change history"}
+      Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
+      %br
+      Last updated by #{updated_name} on #{format_time_in_user_timezone(updated_at)}

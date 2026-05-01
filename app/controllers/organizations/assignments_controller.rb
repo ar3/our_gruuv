@@ -222,6 +222,8 @@ class Organizations::AssignmentsController < ApplicationController
       rateable_display_name: @assignment.title
     )
 
+    @assignment_audit_versions = @assignment.versions.order(created_at: :desc).load
+
     render layout: determine_layout
   end
 

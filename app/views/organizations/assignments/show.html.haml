@@ -18,110 +18,113 @@
 
 .row.justify-content-center
   .col-12
-    .card.mb-4
-      .card-header
-        %h5.mb-0
-          %i.bi.bi-info-circle.me-2
-          Assignment Details
-      .card-body
-        .row
-          .col-md-8
-            - if @assignment.department.present?
-              .mb-3
-                %h6.text-muted Department
-                - if policy(@organization).show?
-                  = link_to @organization.name, organization_path(@organization), class: "text-decoration-none"
-                - else
-                  %span= @organization.name
+    .row.g-4.mb-4
+      .col-lg-8
+        .card.h-100
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-info-circle.me-2
+              Assignment Details
+          .card-body
+            .row
+              .col-12
                 - if @assignment.department.present?
-                  %span.text-muted.mx-1
-                    %i.bi.bi-chevron-right
-                  - if policy(@assignment.department).show?
-                    = link_to @assignment.department.name, organization_department_path(@organization, @assignment.department), class: "text-decoration-none"
-                  - else
-                    %span= @assignment.department.name
-            
-            - if @assignment.tagline.present?
-              .mb-3
-                %h6.text-muted Tagline
-                %p.mb-0= @assignment.tagline
-            
-            - if @assignment.assignment_outcomes.any?
-              .mb-3
-                %h6.text-muted
-                  = link_to "Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none"
-                - @assignment.assignment_outcomes.ordered.each do |outcome|
-                  .card.mb-2
-                    .card-body.py-2
-                      .d-flex.justify-content-between.align-items-start
-                        .flex-grow-1
-                          .markdown-content
-                            = render_markdown(outcome.description)
-                          - if outcome.progress_report_url.present? || outcome.management_relationship_filter.present? || outcome.team_relationship_filter.present? || outcome.consumer_assignment_filter.present?
-                            .mt-2.pt-2.border-top
-                              - if outcome.progress_report_url.present?
-                                .mb-1
-                                  %small.text-muted
-                                    %strong Progress Report:
-                                  %br
-                                  = link_to outcome.progress_report_url, outcome.progress_report_url, target: "_blank", class: "text-decoration-none"
-                              
-                              - if outcome.management_relationship_filter.present?
-                                .mb-1
-                                  %small.text-muted
-                                    %strong Who to Ask (Management):
-                                  %br
-                                  %small= assignment_outcome_management_relationship_label(outcome.management_relationship_filter)
-                              
-                              - if outcome.team_relationship_filter.present?
-                                .mb-1
-                                  %small.text-muted
-                                    %strong Who to Ask (Team):
-                                  %br
-                                  %small= assignment_outcome_team_relationship_label(outcome.team_relationship_filter)
-                              
-                              - if outcome.consumer_assignment_filter.present?
-                                .mb-1
-                                  %small.text-muted
-                                    %strong Who to Ask (Consumer Assignment):
-                                  %br
-                                  %small= assignment_outcome_consumer_assignment_label(outcome.consumer_assignment_filter, @assignment)
-                        .d-flex.flex-column.align-items-end.gap-1
-                          %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
-                            = outcome.outcome_type.titleize
-                          - if policy(outcome).edit?
-                            = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "badge text-decoration-none #{outcome.has_additional_configuration? ? 'bg-info' : 'bg-secondary'}" do
-                              = outcome.additional_configuration_badge_label
-            - else
-              .mb-3
-                .alert.alert-warning
-                  %h6.mb-2
-                    %i.bi.bi-exclamation-triangle.me-2
-                    No Outcomes Defined
-                  %p.mb-2 Outcomes help clarify what success looks like for this assignment.
-                  = link_to "Add Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "btn btn-warning btn-sm"
+                  .mb-3
+                    %h6.text-muted Department
+                    - if policy(@organization).show?
+                      = link_to @organization.name, organization_path(@organization), class: "text-decoration-none"
+                    - else
+                      %span= @organization.name
+                    - if @assignment.department.present?
+                      %span.text-muted.mx-1
+                        %i.bi.bi-chevron-right
+                      - if policy(@assignment.department).show?
+                        = link_to @assignment.department.name, organization_department_path(@organization, @assignment.department), class: "text-decoration-none"
+                      - else
+                        %span= @assignment.department.name
 
-          .col-md-4.border-start.border-secondary
-            .d-grid.gap-2
-              - if @assignment.required_activities.present?
-                .mb-3
-                  %h6.text-muted Required Activities
-                  .markdown-content.markdown-content--bordered
-                    = render_markdown(@assignment.required_activities)
+                - if @assignment.tagline.present?
+                  .mb-3
+                    %h6.text-muted Tagline
+                    %p.mb-0= @assignment.tagline
 
-              - if @assignment.published_url.present? || @assignment.draft_url.present?
-                .mb-3
-                  %h6.text-muted Source Documents
-                  - if @assignment.published_url.present?
-                    .mb-2
-                      = link_to @assignment.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm w-100" do
-                        %i.bi.bi-file-earmark-text.me-1
-                        Published Version
-                  - if @assignment.draft_url.present?
-                    .mb-2
-                      = link_to @assignment.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm w-100" do
-                        %i.bi.bi-file-earmark-text.me-1
-                        Draft Version
+                - if @assignment.assignment_outcomes.any?
+                  .mb-3
+                    %h6.text-muted
+                      = link_to "Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none"
+                    - @assignment.assignment_outcomes.ordered.each do |outcome|
+                      .card.mb-2
+                        .card-body.py-2
+                          .d-flex.justify-content-between.align-items-start
+                            .flex-grow-1
+                              .markdown-content
+                                = render_markdown(outcome.description)
+                              - if outcome.progress_report_url.present? || outcome.management_relationship_filter.present? || outcome.team_relationship_filter.present? || outcome.consumer_assignment_filter.present?
+                                .mt-2.pt-2.border-top
+                                  - if outcome.progress_report_url.present?
+                                    .mb-1
+                                      %small.text-muted
+                                        %strong Progress Report:
+                                      %br
+                                      = link_to outcome.progress_report_url, outcome.progress_report_url, target: "_blank", class: "text-decoration-none"
+
+                                  - if outcome.management_relationship_filter.present?
+                                    .mb-1
+                                      %small.text-muted
+                                        %strong Who to Ask (Management):
+                                      %br
+                                      %small= assignment_outcome_management_relationship_label(outcome.management_relationship_filter)
+
+                                  - if outcome.team_relationship_filter.present?
+                                    .mb-1
+                                      %small.text-muted
+                                        %strong Who to Ask (Team):
+                                      %br
+                                      %small= assignment_outcome_team_relationship_label(outcome.team_relationship_filter)
+
+                                  - if outcome.consumer_assignment_filter.present?
+                                    .mb-1
+                                      %small.text-muted
+                                        %strong Who to Ask (Consumer Assignment):
+                                      %br
+                                      %small= assignment_outcome_consumer_assignment_label(outcome.consumer_assignment_filter, @assignment)
+                            .d-flex.flex-column.align-items-end.gap-1
+                              %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
+                                = outcome.outcome_type.titleize
+                              - if policy(outcome).edit?
+                                = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "badge text-decoration-none #{outcome.has_additional_configuration? ? 'bg-info' : 'bg-secondary'}" do
+                                  = outcome.additional_configuration_badge_label
+                - else
+                  .mb-3
+                    .alert.alert-warning
+                      %h6.mb-2
+                        %i.bi.bi-exclamation-triangle.me-2
+                        No Outcomes Defined
+                      %p.mb-2 Outcomes help clarify what success looks like for this assignment.
+                      = link_to "Add Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "btn btn-warning btn-sm"
+
+                - if @assignment.required_activities.present?
+                  .mb-3
+                    %h6.text-muted Required Activities
+                    .markdown-content.markdown-content--bordered
+                      = render_markdown(@assignment.required_activities)
+
+                - if @assignment.published_url.present? || @assignment.draft_url.present?
+                  .mb-3
+                    %h6.text-muted Source Documents
+                    - if @assignment.published_url.present?
+                      .mb-2
+                        = link_to @assignment.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm w-100" do
+                          %i.bi.bi-file-earmark-text.me-1
+                          Published Version
+                    - if @assignment.draft_url.present?
+                      .mb-2
+                        = link_to @assignment.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm w-100" do
+                          %i.bi.bi-file-earmark-text.me-1
+                          Draft Version
+
+      .col-lg-4
+        = render "organizations/assignments/actions_card"
 
     - if @assignment.handbook.present?
       .card.mb-4
