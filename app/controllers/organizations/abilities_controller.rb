@@ -104,9 +104,6 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def show
     authorize @ability
-    versions = @ability.versions.order(:created_at).load
-    @paper_trail_create_version = versions.find { |v| v.event == 'create' } || versions.first
-    @paper_trail_latest_version = versions.last
 
     milestone_scope = @ability.teammate_milestones
       .joins(:company_teammate)

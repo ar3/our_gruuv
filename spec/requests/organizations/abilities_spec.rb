@@ -219,6 +219,16 @@ RSpec.describe 'Organizations::Abilities', type: :request do
       expect(response.body).to match(%r{<strong>Bold</strong>})
       expect(response.body).to match(%r{<em>emphasis</em>})
     end
+
+    it 'shows spotlight audit footer with PaperTrail change history link' do
+      get organization_ability_path(organization, ability)
+      expect(response.body).to include('Created by ')
+      expect(response.body).to include('Last updated by ')
+      expect(response.body).to include('View full change history')
+      expect(response.body).to include('/paper_trail')
+      expect(response.body).to include('item_type=Ability')
+      expect(response.body).to include("item_id=#{ability.id}")
+    end
   end
 
   describe 'archiving' do

@@ -61,6 +61,8 @@
           %em.text-muted No milestone descriptions provided
 
   .col-md-4
+    - created_name, created_at = ability_audit_created_meta(@ability)
+    - updated_name, updated_at = ability_audit_last_updated_meta(@ability)
     .card.mb-4
       .card-header
         %h6.mb-0
@@ -71,19 +73,7 @@
           .d-flex.justify-content-between
             %span Version:
             %strong= @ability.semantic_version
-          .d-flex.justify-content-between
-            %span Created:
-            %strong= format_time_in_user_timezone(@paper_trail_create_version&.created_at || @ability.created_at)
-          .d-flex.justify-content-between
-            %span Created by:
-            %strong= ability_spotlight_actor_link(@organization, @paper_trail_create_version, fallback_person: @ability.created_by)
-          .d-flex.justify-content-between
-            %span Updated:
-            %strong= format_time_in_user_timezone(@ability.updated_at)
-          .d-flex.justify-content-between
-            %span Updated by:
-            %strong= ability_spotlight_actor_link(@organization, @paper_trail_latest_version, fallback_person: @ability.updated_by)
-        
+
         .mb-3
           %h6.text-muted.small.mb-2 Interesting Tidbits
           - if @ability.description.present?
@@ -130,6 +120,16 @@
               - else
                 %i.bi.bi-person.text-muted.me-1
                 No milestone attainments yet
+
+        %hr.mt-3.mb-2
+        %small.text-muted.d-block
+          Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
+          %br
+          Last updated by #{updated_name} on #{format_time_in_user_timezone(updated_at)}
+          %br
+          = link_to organization_paper_trail_path(@organization, item_type: 'Ability', item_id: @ability.id), class: 'text-decoration-none' do
+            %i.bi.bi-clock-history.me-1
+            View full change history
 
     .card.mb-4
       .card-header
