@@ -1073,6 +1073,96 @@ RSpec.describe Goal, type: :model do
       end
     end
     
+    describe 'propagating most_likely_target_date to unstarted children' do
+      let(:parent_date) { Date.current + 90.days }
+      let(:new_date) { Date.current + 120.days }
+      let(:wide_earliest) { Date.current }
+      let(:wide_latest) { Date.current + 2.years }
+
+      it 'updates unstarted direct children to match parent most_likely_target_date' do
+        parent = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          earliest_target_date: wide_earliest, latest_target_date: wide_latest,
+          most_likely_target_date: parent_date, started_at: Time.current)
+        child = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          most_likely_target_date: parent_date, started_at: nil, earliest_target_date: nil, latest_target_date: nil)
+        create(:goal_link, parent: parent, child: child)
+
+        parent.update!(most_likely_target_date: new_date)
+        Goals::SchedulePropagateMostLikelyTargetDate.call(parent)
+
+        expect(child.reload.most_likely_target_date).to eq(new_date)
+      end
+
+      it 'does not change started child goals' do
+        parent = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          earliest_target_date: wide_earliest, latest_target_date: wide_latest,
+          most_likely_target_date: parent_date, started_at: Time.current)
+        child = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          most_likely_target_date: parent_date, started_at: 1.day.ago)
+        create(:goal_link, parent: parent, child: child)
+
+        parent.update!(most_likely_target_date: new_date)
+        Goals::SchedulePropagateMostLikelyTargetDate.call(parent)
+
+        expect(child.reload.most_likely_target_date).to eq(parent_date)
+      end
+
+      it 'propagates through the chain to unstarted descendants' do
+        root = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          earliest_target_date: wide_earliest, latest_target_date: wide_latest,
+          most_likely_target_date: parent_date, started_at: Time.current)
+        mid = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          most_likely_target_date: parent_date, started_at: nil, earliest_target_date: nil, latest_target_date: nil)
+        leaf = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          most_likely_target_date: parent_date, started_at: nil, earliest_target_date: nil, latest_target_date: nil)
+        create(:goal_link, parent: root, child: mid)
+        create(:goal_link, parent: mid, child: leaf)
+
+        root.update!(most_likely_target_date: new_date)
+        Goals::SchedulePropagateMostLikelyTargetDate.call(root)
+
+        expect(mid.reload.most_likely_target_date).to eq(new_date)
+        expect(leaf.reload.most_likely_target_date).to eq(new_date)
+      end
+
+      it 'adjusts earliest/latest on children when needed to stay valid' do
+        earlier = Date.current + 30.days
+        parent = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          earliest_target_date: wide_earliest, latest_target_date: wide_latest,
+          most_likely_target_date: parent_date, started_at: Time.current)
+        # Window where new parent date pulls most_likely earlier than child's former earliest bound
+        child = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          most_likely_target_date: parent_date, started_at: nil,
+          earliest_target_date: parent_date - 5.days,
+          latest_target_date: parent_date + 20.days)
+        create(:goal_link, parent: parent, child: child)
+
+        parent.update!(most_likely_target_date: earlier)
+        Goals::SchedulePropagateMostLikelyTargetDate.call(parent)
+
+        child.reload
+        expect(child.most_likely_target_date).to eq(earlier)
+        expect(child.earliest_target_date).to eq(earlier)
+        expect(child.latest_target_date).to eq(parent_date + 20.days)
+      end
+
+      it 'does not run propagation when Schedule is called after a non-date update' do
+        parent = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          earliest_target_date: wide_earliest, latest_target_date: wide_latest,
+          most_likely_target_date: parent_date, started_at: Time.current, title: 'Original')
+        child = create(:goal, :quantitative_key_result, creator: creator_teammate, owner: creator_teammate,
+          most_likely_target_date: parent_date - 5.days, started_at: nil, earliest_target_date: nil, latest_target_date: nil)
+        create(:goal_link, parent: parent, child: child)
+
+        expect(Goals::PropagateMostLikelyTargetDateJob).not_to receive(:perform_now)
+
+        parent.update!(title: 'Renamed')
+        Goals::SchedulePropagateMostLikelyTargetDate.call(parent)
+
+        expect(child.reload.most_likely_target_date).to eq(parent_date - 5.days)
+      end
+    end
+
     describe 'owner_type validation' do
       it 'rejects Teammate as invalid owner_type' do
         goal = build(:goal, creator: creator_teammate, owner: creator_teammate)

@@ -61,6 +61,7 @@ class GoalForm < Reform::Form
     
     # Save the model
     if model.save
+      Goals::SchedulePropagateMostLikelyTargetDate.call(model)
       true
     else
       # Copy model errors to form errors so they're displayed

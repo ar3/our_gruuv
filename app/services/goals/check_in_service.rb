@@ -25,17 +25,7 @@ module Goals
       # Handle target date update if provided
       target_date_updated = false
       if most_likely_target_date.present?
-        # Ensure earliest date is not after the new target date if earliest is set
-        if @goal.earliest_target_date.present? && @goal.earliest_target_date > most_likely_target_date
-          @goal.earliest_target_date = most_likely_target_date
-        end
-
-        # Ensure latest date is at least one day after the new target date if latest is set
-        if @goal.latest_target_date.present? && most_likely_target_date >= @goal.latest_target_date
-          @goal.latest_target_date = most_likely_target_date + 1.day
-        end
-
-        @goal.most_likely_target_date = most_likely_target_date
+        @goal.sync_most_likely_target_date!(most_likely_target_date)
         target_date_updated = true
       end
 
@@ -80,6 +70,8 @@ module Goals
         errors += @goal.errors.full_messages if target_date_updated && @goal.errors.any?
         return Result.err(errors.join(', '))
       end
+
+      Goals::SchedulePropagateMostLikelyTargetDate.call(@goal)
 
       # Start goal if it hasn't been started yet
       if @goal.started_at.nil?

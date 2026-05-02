@@ -329,6 +329,19 @@ class Goal < ApplicationRecord
     earliest_target_date.nil? && most_likely_target_date.nil? && latest_target_date.nil?
   end
 
+  # Aligns most_likely with earliest/latest bounds (same rules as Goals::CheckInService).
+  def sync_most_likely_target_date!(new_date)
+    if new_date.present?
+      if earliest_target_date.present? && earliest_target_date > new_date
+        self.earliest_target_date = new_date
+      end
+      if latest_target_date.present? && new_date >= latest_target_date
+        self.latest_target_date = new_date + 1.day
+      end
+    end
+    self.most_likely_target_date = new_date
+  end
+
   def calculated_target_date
     # Return nil if all three dates are nil
     return nil if earliest_target_date.nil? && most_likely_target_date.nil? && latest_target_date.nil?
@@ -432,5 +445,6 @@ class Goal < ApplicationRecord
     company = creator.organization.root_company || creator.organization
     self.company_id = company.id if company
   end
+
 end
 
