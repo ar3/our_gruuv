@@ -158,6 +158,8 @@ Rails.application.routes.draw do
     
     # Check-ins health dashboard
     get :check_ins_health, to: 'organizations/check_ins_health#index'
+    get :check_ins_acknowledgement_nudges, to: 'organizations/check_ins_acknowledgement_nudges#index'
+    post 'check_ins_acknowledgement_nudges/nudge', to: 'organizations/check_ins_acknowledgement_nudges#create'
     get :check_ins_health_by_manager, to: 'organizations/check_ins_health#by_manager'
     get :check_ins_health_export, to: 'organizations/check_ins_health#export'
     get :check_ins_health_employee_summary_export, to: 'organizations/check_ins_health#export_employee_summary'

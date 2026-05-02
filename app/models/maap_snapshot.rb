@@ -4,6 +4,8 @@ class MaapSnapshot < ApplicationRecord
   belongs_to :creator_company_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :company, class_name: 'Organization', optional: true
 
+  has_many :notifications, as: :notifiable, dependent: nil
+
   # Check-ins linked when this snapshot was created by check-in finalization
   has_one :position_check_in, dependent: nil
   has_many :assignment_check_ins, dependent: nil
@@ -123,6 +125,16 @@ class MaapSnapshot < ApplicationRecord
 
   def pending_acknowledgement?
     effective_date.present? && employee_acknowledged_at.nil?
+  end
+
+  # Most recent successful Slack nudge tied to this snapshot as anchor (see CheckIns::AcknowledgementNudgeService).
+  def last_delivered_acknowledgement_nudge
+    notifications
+      .check_in_acknowledgement_nudges
+      .successful
+      .where.not(message_id: nil)
+      .order(created_at: :desc)
+      .first
   end
   
   def self.pending_acknowledgement_for(teammate)

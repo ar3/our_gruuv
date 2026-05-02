@@ -267,6 +267,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Acknowledgement nudges',
+            icon: 'bi-bell',
+            path: organization_check_ins_acknowledgement_nudges_path(current_organization),
+            policy_check: -> { policy(current_organization).check_ins_health? },
+            coming_soon: false
+          },
+          {
             label: 'Check-ins Progress',
             icon: 'bi-bar-chart-steps',
             path: organization_insights_check_ins_progress_path(current_organization),

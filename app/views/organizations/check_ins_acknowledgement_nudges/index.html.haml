@@ -1,0 +1,137 @@
+- content_for :title, "Check-in acknowledgement nudges"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bell.me-2
+      Check-in acknowledgement nudges
+    .d-flex.align-items-center
+      %small.text-muted.ms-3
+        %i.bi.bi-info-circle.me-1
+        See who has unacknowledged finalized check-ins (MAAP snapshots) and nudge via Slack
+
+.mb-4
+  = content_for :go_back_link
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-in acknowledgement nudges", url: nil }])
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row.text-center
+          .col-md-4
+            .h3.text-primary= @spotlight_stats[:total_employees]
+            %small.text-muted Active employees (this view)
+          .col-md-4
+            .h3.text-warning= @spotlight_stats[:needing_acknowledgement]
+            %small.text-muted Need acknowledgement
+          .col-md-4
+            .h3.text-success= @spotlight_stats[:all_clear]
+            %small.text-muted No pending acknowledgements
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-building.me-1
+              Organization: #{@organization.display_name}
+          .col-md-6.text-end
+            %small.text-muted
+              Nudges open a Slack group DM with you, the teammate, and the OurGruuv bot.
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        = form_with url: organization_check_ins_acknowledgement_nudges_path(@organization), method: :get, local: true, id: "check-ins-ack-nudge-filter-form" do |f|
+          .row.align-items-end
+            .col-md-10
+              %label.form-label.fw-bold.fs-5.mb-2 Who to show
+              = select_tag :manager_id, options_for_select(@available_manager_filter_options, @current_manager_filter), class: "form-select form-select-lg", id: "check-ins-ack-nudge-manager-select", required: true
+              %small.form-text.text-muted Same scopes as Check-ins Health
+            .col-md-2
+              = f.submit "Go", class: "btn btn-primary btn-lg w-100"
+          - if params[:page].present?
+            = hidden_field_tag :page, params[:page]
+
+.row.justify-content-center.mb-3
+  .col-lg-12.d-flex.gap-2.flex-wrap.align-items-center
+    = link_to organization_check_ins_health_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
+      %i.bi.bi-heart-pulse.me-2
+      Check-ins Health
+    = link_to organization_insights_check_ins_progress_path(@organization), class: 'btn btn-outline-secondary' do
+      %i.bi.bi-bar-chart-steps.me-2
+      Check-ins Progress
+
+.row.justify-content-center.mb-2
+  .col-lg-12
+    .d-flex.justify-content-between.align-items-center
+      %small.text-muted= raw pagy_info(@pagy)
+
+.row.justify-content-center
+  .col-lg-12
+    - if @rows.any?
+      .table-responsive
+        %table.table.table-hover.table-layout-fixed
+          %colgroup
+            %col{style: "width: 28%"}
+            %col{style: "width: 18%"}
+            %col{style: "width: 54%"}
+          %thead
+            %tr
+              %th Employee
+              %th Unacknowledged
+              %th Nudge
+          %tbody
+            - @rows.each do |row|
+              - teammate = row[:teammate]
+              - person = row[:person]
+              - has_pending = row[:has_pending_ack]
+              - pending_count = row[:pending_count]
+              - anchor = row[:anchor_snapshot]
+              - last_nudge = row[:last_nudge_notification]
+              - manager_teammate = teammate.employment_tenures.active.where(company: @organization).first&.manager_teammate
+              - employee_slack_ok = teammate.slack_user_id.present?
+              - nudger_slack_ok = current_company_teammate&.slack_user_id.present?
+              - can_nudge = has_pending && employee_slack_ok && nudger_slack_ok
+              - nudge_tooltip = !has_pending ? nil : (!employee_slack_ok ? 'Teammate must connect Slack' : (!nudger_slack_ok ? 'Connect Slack to send nudges' : nil))
+              %tr
+                %td
+                  = link_to person.display_name, organization_company_teammate_check_ins_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                  %br
+                  - if manager_teammate
+                    %small.text-muted
+                      = link_to manager_teammate.person&.display_name, organization_check_ins_acknowledgement_nudges_path(@organization, manager_id: "CompanyTeammate_#{manager_teammate.id}"), class: "text-muted"
+                  - else
+                    %small.text-muted —
+                %td
+                  - if has_pending
+                    %span.badge.text-bg-warning Yes (#{pending_count})
+                  - else
+                    %span.badge.text-bg-success No
+                %td
+                  - if has_pending
+                    - if last_nudge.present?
+                      = button_to "Nudge again", organization_check_ins_acknowledgement_nudges_nudge_path(@organization), method: :post, params: { company_teammate_id: teammate.id, manager_id: @current_manager_filter }, class: "btn btn-sm btn-primary mb-1", disabled: !can_nudge, form: { data: { turbo: false } }, title: nudge_tooltip
+                      %div.small.text-muted
+                        Last
+                        - if last_nudge.slack_url.present?
+                          = link_to "nudge", last_nudge.slack_url, target: "_blank", rel: "noopener"
+                        - else
+                          nudge
+                        sent #{time_ago_in_words(last_nudge.created_at)} ago by #{last_nudge.nudger_company_teammate&.person&.casual_name || 'someone'}.
+                    - else
+                      = button_to "Nudge", organization_check_ins_acknowledgement_nudges_nudge_path(@organization), method: :post, params: { company_teammate_id: teammate.id, manager_id: @current_manager_filter }, class: "btn btn-sm btn-primary", disabled: !can_nudge, form: { data: { turbo: false } }, title: nudge_tooltip
+                  - else
+                    %span.text-muted —
+      .d-flex.justify-content-center.mt-4
+        - if @pagy.pages > 1
+          = raw pagy_nav(@pagy)
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No one in this view
+        %p.mb-0
+          Change the filter above or there are no active employees in the selected scope.

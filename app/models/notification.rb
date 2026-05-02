@@ -6,7 +6,7 @@ class Notification < ApplicationRecord
   has_many :thread_replies, class_name: 'Notification', foreign_key: 'main_thread_id'
   has_many :message_edits, class_name: 'Notification', foreign_key: 'original_message_id'
   
-  validates :notification_type, inclusion: { in: %w[huddle_announcement huddle_summary huddle_feedback observation_dm observation_channel comment_channel feedback_request test gsd_digest about_me_digest check_in_completion], allow_nil: true }
+  validates :notification_type, inclusion: { in: %w[huddle_announcement huddle_summary huddle_feedback observation_dm observation_channel comment_channel feedback_request test gsd_digest about_me_digest check_in_completion check_in_acknowledgement_nudge], allow_nil: true }
   validates :status, inclusion: { in: %w[preparing_to_send sent_successfully send_failed], allow_nil: true }
   
   scope :announcements, -> { where(notification_type: 'huddle_announcement') }
@@ -14,6 +14,7 @@ class Notification < ApplicationRecord
   scope :feedbacks, -> { where(notification_type: 'huddle_feedback') }
   scope :successful, -> { where(status: 'sent_successfully') }
   scope :failed, -> { where(status: 'send_failed') }
+  scope :check_in_acknowledgement_nudges, -> { where(notification_type: 'check_in_acknowledgement_nudge') }
   
   def slack_url
     return nil unless message_id.present? && metadata&.dig('channel').present?
@@ -48,5 +49,11 @@ class Notification < ApplicationRecord
   
   def is_edited_message?
     original_message_id.present?
+  end
+
+  # Stored in metadata for check_in_acknowledgement_nudge (organization-scoped teammate).
+  def nudger_company_teammate
+    id = metadata&.dig('nudger_company_teammate_id')
+    CompanyTeammate.find_by(id: id) if id.present?
   end
 end 
