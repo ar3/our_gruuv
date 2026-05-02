@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_02_202524) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_02_221443) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -737,6 +737,24 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_202524) do
     t.index ["organization_id"], name: "index_kudos_transactions_on_organization_id"
     t.index ["triggering_transaction_id"], name: "index_kudos_transactions_on_triggering_transaction_id"
     t.index ["type"], name: "index_kudos_transactions_on_type"
+  end
+
+  create_table "maap_agent_runs", force: :cascade do |t|
+    t.string "subject_type", null: false
+    t.bigint "subject_id", null: false
+    t.string "agent_kind", null: false
+    t.string "status", default: "pending", null: false
+    t.string "clarity_rating"
+    t.text "output_text"
+    t.text "error_message"
+    t.string "prompt_version"
+    t.string "model_id"
+    t.bigint "triggered_by_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_maap_agent_runs_on_status"
+    t.index ["subject_type", "subject_id", "agent_kind"], name: "index_maap_agent_runs_on_subject_and_agent_kind", unique: true
+    t.index ["triggered_by_teammate_id"], name: "index_maap_agent_runs_on_triggered_by_teammate_id"
   end
 
   create_table "maap_snapshots", force: :cascade do |t|
@@ -1630,6 +1648,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_202524) do
   add_foreign_key "kudos_transactions", "organizations"
   add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_banker_id"
   add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_id"
+  add_foreign_key "maap_agent_runs", "teammates", column: "triggered_by_teammate_id"
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
   add_foreign_key "maap_snapshots", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "maap_snapshots", "teammates", column: "employee_company_teammate_id"

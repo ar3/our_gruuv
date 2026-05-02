@@ -105,6 +105,8 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
   def show
     authorize @ability
 
+    @ability_clarity_run = @ability.ability_clarity_maap_agent_run
+
     milestone_scope = @ability.teammate_milestones
       .joins(:company_teammate)
       .where(teammates: { organization_id: @ability.company_id })

@@ -23,6 +23,10 @@ class AbilityPolicy < ApplicationPolicy
     update?
   end
 
+  def run_clarity?
+    update?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate

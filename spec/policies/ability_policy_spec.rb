@@ -113,6 +113,22 @@ RSpec.describe AbilityPolicy, type: :policy do
     end
   end
 
+  describe 'run_clarity?' do
+    context 'when user has MAAP permissions for the organization' do
+      it 'allows access' do
+        policy = AbilityPolicy.new(pundit_user_maap, ability)
+        expect(policy.run_clarity?).to be true
+      end
+    end
+
+    context 'when user lacks MAAP permissions' do
+      it 'denies access' do
+        policy = AbilityPolicy.new(pundit_user_person, ability)
+        expect(policy.run_clarity?).to be false
+      end
+    end
+  end
+
   describe 'restore?' do
     it 'delegates to update?' do
       policy = AbilityPolicy.new(pundit_user_maap, ability)

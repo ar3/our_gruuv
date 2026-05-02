@@ -4,7 +4,7 @@
     = abilities_current_view_name
   %ul.dropdown-menu
     %li
-      - if action_name == 'show'
+      - if action_name == 'show' && controller_path != 'organizations/abilities/maap_clarity'
         .dropdown-item.text-muted
           %i.bi.bi-eye.me-2
           View Mode (Active)
@@ -29,6 +29,21 @@
           %i.bi.bi-pencil.me-2
           Edit Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to edit abilities"}
+    %li
+      - if controller_path == 'organizations/abilities/maap_clarity' && action_name == 'show'
+        .dropdown-item.text-muted
+          %i.bi.bi-stars.me-2
+          Clarity review (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@ability).run_clarity?
+        = link_to maap_clarity_organization_ability_path(@organization, @ability), class: 'dropdown-item' do
+          %i.bi.bi-stars.me-2
+          Clarity review
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-stars.me-2
+          Clarity review
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to run clarity review"}
     %li
       = link_to organization_public_maap_ability_path(@organization, @ability), class: 'dropdown-item' do
         %i.bi.bi-globe.me-2
