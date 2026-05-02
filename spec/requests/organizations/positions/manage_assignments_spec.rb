@@ -71,19 +71,29 @@ RSpec.describe 'Position Assignments Management', type: :request do
 
   describe 'PATCH /organizations/:organization_id/positions/:id/update_assignments' do
     it 'creates PositionAssignment when max_estimated_energy > 0' do
-      patch update_assignments_organization_position_path(company, position), params: {
-        position_assignments: {
-          company_assignment.id => {
-            min_estimated_energy: '20',
-            max_estimated_energy: '40',
-            assignment_type: 'required'
+      expect do
+        patch update_assignments_organization_position_path(company, position), params: {
+          position_assignments: {
+            company_assignment.id => {
+              min_estimated_energy: '20',
+              max_estimated_energy: '40',
+              assignment_type: 'required'
+            }
           }
         }
-      }
-      
+      end.to change { position.reload.versions.count }.by(1)
+
       expect(response).to redirect_to(manage_assignments_organization_position_path(company, position))
       expect(flash[:notice]).to be_present
-      
+
+      version = position.versions.last
+      expect(version.event).to eq('update')
+      cs = version.changeset
+      changed = cs.keys.map(&:to_s)
+      expect(changed).to include('semantic_version', 'assignments_audit_snapshot')
+      snapshot_pair = cs['assignments_audit_snapshot'] || cs[:assignments_audit_snapshot]
+      expect(snapshot_pair&.last.to_s).to include(company_assignment.title)
+
       pa = PositionAssignment.find_by(position: position, assignment: company_assignment)
       expect(pa).to be_present
       expect(pa.min_estimated_energy).to eq(20)
@@ -183,16 +193,18 @@ RSpec.describe 'Position Assignments Management', type: :request do
     end
 
     it 'validates min <= max' do
-      patch update_assignments_organization_position_path(company, position), params: {
-        position_assignments: {
-          company_assignment.id => {
-            min_estimated_energy: '50',
-            max_estimated_energy: '30',
-            assignment_type: 'required'
+      expect do
+        patch update_assignments_organization_position_path(company, position), params: {
+          position_assignments: {
+            company_assignment.id => {
+              min_estimated_energy: '50',
+              max_estimated_energy: '30',
+              assignment_type: 'required'
+            }
           }
         }
-      }
-      
+      end.not_to change { position.reload.versions.count }
+
       expect(response).to redirect_to(manage_assignments_organization_position_path(company, position))
       expect(flash[:alert]).to be_present
       expect(flash[:alert]).to include('minimum energy')

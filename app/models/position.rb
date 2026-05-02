@@ -1,7 +1,7 @@
 class Position < ApplicationRecord
   include PgSearch::Model
   include ModelSemanticVersionable
-  
+
   # Associations
   belongs_to :title
   belongs_to :position_level
@@ -108,6 +108,42 @@ class Position < ApplicationRecord
     parts = [title&.position_summary, position_summary].compact_blank
     return nil if parts.empty?
     parts.join("\n\n")
+  end
+
+  # Serialized bundle of linked assignments for PaperTrail (+object_changes+) — same idea as
+  # Assignment#outcomes_audit_snapshot / +computed_outcomes_audit_snapshot+.
+  def computed_assignments_audit_snapshot
+    pas = position_assignments.includes(:assignment).to_a.sort_by do |pa|
+      [pa.assignment_type, pa.assignment&.title.to_s.downcase]
+    end
+    return '(no position assignments)' if pas.empty?
+
+    pas.map do |pa|
+      assignment_title = pa.assignment&.title.presence || "Assignment ##{pa.assignment_id}"
+      "#{pa.assignment_type} — #{assignment_title} — #{pa.energy_range_display}"
+    end.join("\n")
+  end
+
+  # Persists the bundle without creating a PaperTrail version (e.g. scripts, backfills).
+  def refresh_assignments_audit_snapshot_column!
+    update_column(:assignments_audit_snapshot, computed_assignments_audit_snapshot)
+  end
+
+  # Creates a PaperTrail version when position assignments are saved/deleted without editing position columns.
+  # Stores the assignments bundle on +assignments_audit_snapshot+ so +object_changes+ lists it like a normal attribute,
+  # and bumps patch semantic version (cf. Assignment#record_version_for_outcome_changes!).
+  def record_version_for_assignment_changes!(change_context: 'Position assignments updated')
+    snapshot = computed_assignments_audit_snapshot
+
+    ci = PaperTrail.request.controller_info || {}
+    PaperTrail.request.controller_info = ci.merge(
+      position_assignment_change_context: change_context
+    )
+
+    update!(
+      assignments_audit_snapshot: snapshot,
+      semantic_version: next_patch_version
+    )
   end
 
   # pg_search configuration

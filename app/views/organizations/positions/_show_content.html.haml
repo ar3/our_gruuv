@@ -54,7 +54,7 @@
 
     = render "shared/eligibility_requirements_summary",
       eligibility_requirements_sentences: @eligibility_requirements_sentences,
-      ability_milestone_requirements: [],
+      ability_milestone_requirements: @ability_milestone_requirements,
       source_caption_text: @eligibility_source_caption_text,
       source_link_text: @eligibility_source_link_text,
       source_link_path: @eligibility_source_link_path,
@@ -101,7 +101,7 @@
           Position Level
         = render "organizations/positions/position_level_display", position: @position
 
-
+        = render "position_spotlight_audit"
 
     / Actions Section
     .card.border

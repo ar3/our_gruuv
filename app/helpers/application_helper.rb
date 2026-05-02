@@ -304,60 +304,50 @@ module ApplicationHelper
   end
 
   # Array of { ability:, minimum_milestone_level: } from position direct + required assignments (max per ability).
+  # Uses MyGrowthAbilityMilestoneRows (same union as My Growth > Abilities).
   def ability_milestone_requirements_for_position(position)
-    return [] unless position
+    structured = MyGrowthAbilityMilestoneRows.structured_requirements_by_ability_id(position)
+    return [] if structured.blank?
 
-    levels_by_ability_id = {}
-    position.position_abilities.each do |pa|
-      levels_by_ability_id[pa.ability_id] = [levels_by_ability_id[pa.ability_id], pa.milestone_level].compact.max
-    end
-    position.position_assignments.select { |pa| pa.assignment_type == 'required' }.each do |pa|
-      pa.assignment.assignment_abilities.each do |aa|
-        levels_by_ability_id[aa.ability_id] = [levels_by_ability_id[aa.ability_id], aa.milestone_level].compact.max
-      end
-    end
-    return [] if levels_by_ability_id.empty?
+    abilities = Ability.where(id: structured.keys).index_by(&:id)
+    structured.keys.filter_map do |ability_id|
+      ability = abilities[ability_id]
+      next unless ability
 
-    abilities = Ability.where(id: levels_by_ability_id.keys).index_by(&:id)
-    levels_by_ability_id.keys.filter_map { |id| abilities[id] ? { ability: abilities[id], minimum_milestone_level: levels_by_ability_id[id] } : nil }.sort_by { |h| h[:ability].name }
+      {
+        ability: ability,
+        minimum_milestone_level: structured[ability_id][:minimum_milestone_level]
+      }
+    end.sort_by { |h| h[:ability].name }
   end
 
   # Combined milestone requirements for position show page:
   # one row per ability with the required max milestone plus all requirement sources.
   # Returns rows: { ability:, minimum_milestone_level:, sources: [ "Direct (M2)", "Assignment Name (M3)" ] }
+  # Uses MyGrowthAbilityMilestoneRows (same union as My Growth > Abilities).
   def all_milestone_requirement_rows_for_position(position)
-    return [] unless position
+    structured = MyGrowthAbilityMilestoneRows.structured_requirements_by_ability_id(position)
+    return [] if structured.blank?
 
-    grouped = Hash.new { |h, k| h[k] = { levels: [], sources: [] } }
-
-    position.position_abilities.each do |pa|
-      next unless pa.ability_id.present? && pa.milestone_level.present?
-      grouped[pa.ability_id][:levels] << pa.milestone_level.to_i
-      grouped[pa.ability_id][:sources] << "Direct (M#{pa.milestone_level.to_i})"
-    end
-
-    position.position_assignments.select { |pa| pa.assignment_type == 'required' }.each do |pa|
-      assignment = pa.assignment
-      assignment_label = assignment&.title.presence || "Assignment ##{assignment&.id}"
-      assignment&.assignment_abilities&.each do |aa|
-        next unless aa.ability_id.present? && aa.milestone_level.present?
-        level = aa.milestone_level.to_i
-        grouped[aa.ability_id][:levels] << level
-        grouped[aa.ability_id][:sources] << "#{assignment_label} (M#{level})"
-      end
-    end
-
-    return [] if grouped.empty?
-
-    abilities = Ability.where(id: grouped.keys).index_by(&:id)
-    grouped.keys.filter_map do |ability_id|
+    abilities = Ability.where(id: structured.keys).index_by(&:id)
+    structured.keys.filter_map do |ability_id|
       ability = abilities[ability_id]
       next unless ability
-      data = grouped[ability_id]
+
+      source_labels = structured[ability_id][:sources].map do |src|
+        case src[:kind]
+        when :direct
+          "Direct (M#{src[:level].to_i})"
+        when :assignment
+          assignment = src[:assignment]
+          label = assignment&.title.presence || "Assignment ##{assignment&.id}"
+          "#{label} (M#{src[:level].to_i})"
+        end
+      end
       {
         ability: ability,
-        minimum_milestone_level: data[:levels].max,
-        sources: data[:sources].uniq
+        minimum_milestone_level: structured[ability_id][:minimum_milestone_level],
+        sources: source_labels
       }
     end.sort_by { |row| row[:ability].name }
   end

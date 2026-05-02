@@ -1,0 +1,14 @@
+- org = @organization
+- pos = @position
+- created_name, created_at = position_audit_created_meta(pos)
+- updated_name, updated_at = position_audit_last_updated_meta(pos)
+
+%hr.mt-3.mb-2.pt-2.border-top
+%small.text-muted.d-block
+  Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
+  %br
+  Last updated by #{updated_name} on #{format_time_in_user_timezone(updated_at)}
+  %br
+  = link_to organization_paper_trail_path(org, item_type: 'Position', item_id: pos.id), class: 'text-decoration-none' do
+    %i.bi.bi-clock-history.me-1
+    View full change history

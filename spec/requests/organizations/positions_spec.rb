@@ -125,6 +125,37 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include("#{pml.major_level}.* = Major ladder description inline")
       expect(response.body).to include('*.2 = Established / solid experience')
     end
+
+    it 'renders header position switcher with display name (title - major.minor)' do
+      get organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(position.display_name)
+      expect(response.body).to include('Company-wide')
+      expect(response.body).to include('Switch position')
+    end
+
+    it 'shows Spotlight audit footer with PaperTrail link for Position' do
+      get organization_position_path(organization, position)
+
+      expect(response.body).to include('Created by ')
+      expect(response.body).to include('Last updated by ')
+      expect(response.body).to include('View full change history')
+      expect(response.body).to include('item_type=Position')
+      expect(response.body).to include("item_id=#{position.id}")
+    end
+
+    it 'lists another position in the header switcher when multiple exist' do
+      level_a = create(:position_level, position_major_level: title.position_major_level, level: '3.1')
+      level_b = create(:position_level, position_major_level: title.position_major_level, level: '3.2')
+      primary = create(:position, title: title, position_level: level_a)
+      other = create(:position, title: title, position_level: level_b)
+
+      get organization_position_path(organization, primary)
+
+      expect(response.body).to include(other.display_name)
+      expect(response.body).to include(organization_position_path(organization, other))
+    end
   end
 
   describe 'GET /organizations/:organization_id/positions/:id/job_description' do

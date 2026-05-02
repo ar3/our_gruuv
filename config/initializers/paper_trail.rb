@@ -39,7 +39,12 @@ Rails.application.config.after_initialize do
     def outcomes_change_context=(value)
       self.meta = (meta || {}).merge('outcomes_change_context' => value)
     end
-    
+
+    # Position assignment updates (see Position#record_version_for_assignment_changes!)
+    def position_assignment_change_context=(value)
+      self.meta = (meta || {}).merge('position_assignment_change_context' => value)
+    end
+
     # Add getters for these attributes to read from meta
     def current_teammate_id
       meta&.dig('current_teammate_id')
@@ -47,6 +52,10 @@ Rails.application.config.after_initialize do
     
     def impersonating_teammate_id
       meta&.dig('impersonating_teammate_id')
+    end
+
+    def position_assignment_change_context
+      meta&.dig('position_assignment_change_context')
     end
     end
   end

@@ -1,7 +1,8 @@
 - content_for :title, @position.display_name
 
 - content_for :header do
-  %h1.mb-0= @position.display_name
+  %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+    = render 'position_switcher', position: @position, organization: @organization, positions_by_department: @positions_by_department
 
 - content_for :header_action do
   = render 'view_switcher'

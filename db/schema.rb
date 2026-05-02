@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_01_160000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_02_202524) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1109,6 +1109,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_01_160000) do
     t.string "semantic_version", default: "0.0.1", null: false
     t.datetime "deleted_at"
     t.bigint "position_eligibility_requirement_id"
+    t.text "assignments_audit_snapshot"
     t.index ["deleted_at"], name: "index_positions_on_deleted_at"
     t.index ["position_eligibility_requirement_id"], name: "index_positions_on_position_eligibility_requirement_id"
     t.index ["position_level_id"], name: "index_positions_on_position_level_id"

@@ -22,6 +22,8 @@ RSpec.describe 'Organizations::PaperTrail', type: :request do
       expect(response.body).to include('Change history')
       expect(response.body).to include('Assignment')
       expect(response.body).to include(assignment.title)
+      expect(response.body).to include('Show details')
+      expect(response.body).not_to include('data-bs-toggle="popover"')
     end
 
     it 'returns not found for unknown item_type' do

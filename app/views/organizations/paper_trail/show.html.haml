@@ -24,10 +24,10 @@
           %span.text-muted.font-monospace.small.me-2= @auditable.class.name
           %span= subject
           %span.text-muted.small.ms-2 (#{@versions.size} #{@versions.size == 1 ? 'version' : 'versions'})
-      .card-body
+      .card-body.paper-trail-change-history
         - if @versions.any?
           .table-responsive
-            %table.table.table-sm.table-striped.align-middle
+            %table.table.table-sm.table-striped.align-middle.mb-0
               %thead
                 %tr
                   %th When
@@ -37,19 +37,35 @@
               %tbody
                 - @versions.each do |v|
                   - cs = paper_trail_effective_changeset(v, @auditable.class)
-                  - fields_popover = paper_trail_version_changes_popover_content(@auditable.class, v, changeset: cs)
                   - fields_labels = paper_trail_version_changed_fields_labels(@auditable.class, v, changeset: cs)
-                  %tr
-                    %td.text-nowrap.small
-                      = format_time_in_user_timezone(v.created_at)
-                    %td
-                      %span.badge.bg-secondary= v.event
-                    %td= paper_trail_whodunnit_casual_name(v)
-                    %td.small
-                      - if cs.any?
-                        %span.d-inline-block.border-bottom.border-secondary.border-opacity-50{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "left", "data-bs-html" => "true", "data-bs-container" => "body", "data-bs-custom-class" => "paper-trail-version-popover-wrap", "data-bs-content" => fields_popover, tabindex: "0", role: "button", "aria-label" => "Before and after values for changed fields", style: "cursor: help"}
-                          = fields_labels
-                      - else
+                  - detail_dom_id = "paper-trail-version-#{v.id}-detail"
+                  - if cs.any?
+                    %tr.align-middle
+                      %td.text-nowrap.small= format_time_in_user_timezone(v.created_at)
+                      %td
+                        %span.badge.bg-secondary= v.event
+                      %td= paper_trail_whodunnit_casual_name(v)
+                      %td.small
+                        .d-flex.justify-content-between.align-items-start.gap-2.flex-wrap
+                          %span.text-muted.small.text-break.fields-summary.flex-grow-1.min-w-0= fields_labels
+                          %button.btn.btn-link.btn-sm.p-0.text-decoration-none.d-inline-flex.align-items-center.gap-1.flex-shrink-0.collapsed{type: "button", data: {bs_toggle: "collapse", bs_target: "##{detail_dom_id}"}, aria: {expanded: false, controls: detail_dom_id}}
+                            %i.bi.bi-chevron-down.flex-shrink-0.paper-trail-detail-chevron
+                            %span Show details
+                    %tr.paper-trail-detail-expand-row{rowspan:2}
+                      %td.p-0.bg-light.border-top.border-secondary.border-opacity-25{colspan:4}
+                        .collapse{id: detail_dom_id}
+                          .paper-trail-version-detail-shell.p-3
+                            = paper_trail_version_changes_detail_panel(@auditable.class, v, changeset: cs)
+                    %tr
+                      %td.p-0.bg-light.border-top.border-secondary.border-opacity-25{colspan:4}
+                  - else
+                    %tr.align-middle
+                      %td.text-nowrap.small
+                        = format_time_in_user_timezone(v.created_at)
+                      %td
+                        %span.badge.bg-secondary= v.event
+                      %td= paper_trail_whodunnit_casual_name(v)
+                      %td.small
                         %span.text-muted= fields_labels
         - else
           %p.text-muted.mb-0 No PaperTrail versions are recorded for this item.

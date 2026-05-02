@@ -1,6 +1,7 @@
 class Organizations::PositionsController < ApplicationController
   before_action :set_organization
   before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy, :archive, :execute_archive, :restore, :manage_assignments, :update_assignments, :manage_eligibility, :update_eligibility]
+  before_action :load_positions_for_header_switcher, only: [:show]
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
@@ -387,6 +388,8 @@ class Organizations::PositionsController < ApplicationController
     if errors.any?
       redirect_to manage_assignments_organization_position_path(@organization, @position), alert: "Some assignments could not be saved: #{errors.join('; ')}"
     else
+      @position.reload
+      @position.record_version_for_assignment_changes!
       redirect_to manage_assignments_organization_position_path(@organization, @position), notice: 'Assignments updated successfully.'
     end
   end
@@ -426,6 +429,30 @@ class Organizations::PositionsController < ApplicationController
 
   private
 
+  def load_positions_for_header_switcher
+    @positions_by_department = positions_by_department_for_switcher(@organization)
+  end
+
+  def positions_by_department_for_switcher(org)
+    positions = Position.for_company(org).unarchived
+      .includes(:position_level, title: [:department, :position_major_level])
+      .left_joins(title: :department)
+      .order(
+        Arel.sql('CASE WHEN titles.department_id IS NULL THEN 0 ELSE 1 END'),
+        'departments.name',
+        'titles.external_title',
+        'position_levels.level'
+      )
+
+    groups = positions.group_by { |p| p.title.department&.display_name || 'Company-wide' }
+    result = {}
+    result['Company-wide'] = groups['Company-wide'] if groups['Company-wide'].present?
+    (groups.keys - ['Company-wide']).sort.each do |label|
+      result[label] = groups[label]
+    end
+    result
+  end
+
   def set_organization
     @organization = Organization.find(params[:organization_id])
   end
@@ -434,7 +461,7 @@ class Organizations::PositionsController < ApplicationController
     @position = @organization.positions.includes(
       :position_eligibility_requirement,
       position_abilities: :ability,
-      position_assignments: { assignment: :assignment_abilities }
+      position_assignments: { assignment: { assignment_abilities: :ability } }
     ).find(params[:id])
   end
 

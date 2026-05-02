@@ -1412,13 +1412,33 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
-// Organizations PaperTrail: Field | Before | After table on Fields-column hover
+// Organizations PaperTrail: legacy popover wrapper (if reused elsewhere)
 .popover.paper-trail-version-popover-wrap {
   max-width: min(38rem, 92vw);
 
   .popover-body {
     max-height: min(75vh, 32rem);
     overflow-y: auto;
+  }
+}
+
+// Organizations PaperTrail: expandable Field | Before | After under each version row
+.paper-trail-change-history {
+  .paper-trail-version-detail-shell {
+    max-height: min(75vh, 32rem);
+    overflow: auto;
+  }
+
+  .paper-trail-version-changes-detail .table {
+    min-width: min(100%, 36rem);
+  }
+
+  [data-bs-toggle='collapse']:not(.collapsed) .paper-trail-detail-chevron {
+    transform: rotate(180deg);
+  }
+
+  [data-bs-toggle='collapse'] .paper-trail-detail-chevron {
+    transition: transform 0.15s ease;
   }
 }
 

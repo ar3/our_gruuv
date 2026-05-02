@@ -1,4 +1,23 @@
 module PositionsHelper
+  # PaperTrail actor + timestamps for position Spotlight card (same pattern as titles / abilities).
+  def position_audit_created_meta(position)
+    first_version = position.versions.reorder(created_at: :asc, id: :asc).first
+    [
+      paper_trail_whodunnit_casual_name(first_version),
+      position.created_at
+    ]
+  end
+
+  def position_audit_last_updated_meta(position)
+    last_update = position.versions.where(event: 'update').reorder(created_at: :desc, id: :desc).first
+    if last_update
+      [paper_trail_whodunnit_casual_name(last_update), last_update.created_at]
+    else
+      first_version = position.versions.reorder(created_at: :asc, id: :asc).first
+      [paper_trail_whodunnit_casual_name(first_version), position.updated_at]
+    end
+  end
+
   # Same grouping as shared/forms/_position_field (seat management).
   def positions_grouped_options_for_select(positions_by_department, selected_id)
     return '' if positions_by_department.blank?

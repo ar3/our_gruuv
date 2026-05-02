@@ -61,8 +61,8 @@ module PaperTrailHelper
     cs.keys.map { |attr| model_class.human_attribute_name(attr) }.join(', ')
   end
 
-  # Bootstrap popover HTML: table of Field | Before | After for changed attributes.
-  def paper_trail_version_changes_popover_content(model_class, version, changeset: nil)
+  # Field | Before | After table (change history inline panel and legacy popover HTML).
+  def paper_trail_version_changes_detail_panel(model_class, version, changeset: nil)
     return ''.html_safe if version.blank?
 
     cs = changeset || paper_trail_effective_changeset(version, model_class)
@@ -104,11 +104,14 @@ module PaperTrailHelper
       )
     end
 
-    content_tag(:div, class: 'paper-trail-version-popover text-start', style: 'max-width: min(90vw, 36rem);') do
+    content_tag(:div, class: 'paper-trail-version-changes-detail text-start') do
       content_tag(:table, safe_join([thead, tbody]),
                   class: 'table table-sm table-bordered mb-0 align-middle')
     end
   end
+
+  # @deprecated Prefer {#paper_trail_version_changes_detail_panel}; kept for callers/tests.
+  alias_method :paper_trail_version_changes_popover_content, :paper_trail_version_changes_detail_panel
 
   def paper_trail_subject_label(record)
     return record.display_name if record.respond_to?(:display_name) && record.display_name.present?
