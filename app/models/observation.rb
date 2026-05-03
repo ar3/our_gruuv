@@ -6,6 +6,7 @@ class Observation < ApplicationRecord
   
   belongs_to :observer, class_name: 'Person'
   belongs_to :company, class_name: 'Organization'
+  belongs_to :goal, optional: true
   belongs_to :observation_trigger, optional: true
   belongs_to :observable_moment, optional: true
   belongs_to :feedback_request_question, optional: true
@@ -49,6 +50,7 @@ class Observation < ApplicationRecord
   validates :secondary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true
   
   validate :observer_and_observees_in_same_company
+  validate :goal_belongs_to_same_company_as_observation
   
   scope :recent, -> { order(observed_at: :desc) }
   scope :journal, -> { where(privacy_level: :observer_only) }
@@ -184,7 +186,18 @@ class Observation < ApplicationRecord
       end
     end
   end
-  
+
+  def goal_belongs_to_same_company_as_observation
+    return if goal_id.blank?
+    return unless goal && company
+
+    obs_root = company.root_company || company
+    goal_co = goal.company
+    goal_root = goal_co&.root_company || goal_co
+    return if goal_root && obs_root && goal_root.id == obs_root.id
+
+    errors.add(:goal, 'must belong to the same company as the observation')
+  end
 
   def update_slack_notifications_if_needed
     return unless published?

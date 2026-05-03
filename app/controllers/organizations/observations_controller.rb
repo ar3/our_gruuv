@@ -443,10 +443,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       observation_id = params[:draft_id].presence || params[:id]
       @observation = Observation.find(observation_id)
       authorize @observation, :edit?
-      
+
+      assign_goal_from_params_to_observation(@observation) if @observation.goal_id.blank?
+
       # Don't reload - it wipes out fresh data. Just reload associations
       @observation.observation_ratings.reload if @observation.observation_ratings.loaded?
-      
+
       Rails.logger.info "Loading existing observation #{@observation.id} (draft: #{@observation.draft?}), story: #{@observation.story.inspect}"
     else
       # Create new draft
@@ -494,16 +496,18 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           rating.rateable = aspiration
         end
       end
+
+      assign_goal_from_params_to_observation(@observation)
     end
-    
+
     # Ensure observation_ratings are loaded for associations
     @observation.observation_ratings.load if @observation.observation_ratings.loaded?
-    
+
     # Load available rateables
     @assignments = organization.assignments.unarchived.ordered
     @aspirations = organization.aspirations
     @abilities = organization.abilities.unarchived.order(:name)
-    
+
     # Store return context - default to show page if editing existing observation, otherwise index or dashboard
     if @observation.persisted?
       @return_url = params[:return_url] || organization_observation_path(organization, @observation)
@@ -1794,10 +1798,36 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     observations = query.filter_by_observer(observations)
     observations = query.filter_by_involving_teammate(observations)
     observations = query.filter_by_observee_ids(observations)
+    observations = query.filter_by_goal(observations)
     observations = query.filter_by_rateable(observations)
     observations = query.filter_by_observation_type(observations)
     observations = query.filter_by_soft_deleted_status(observations)
     observations
+  end
+
+  def assign_goal_from_params_to_observation(observation)
+    gid = goal_id_from_request
+    return if gid.blank?
+
+    goal = Goal.find_by(id: gid)
+    return unless goal
+    return unless goal_matches_observation_company_tree?(goal, observation)
+
+    observation.goal_id = goal.id
+  end
+
+  def goal_id_from_request
+    params[:goal_id].presence || params.dig(:observation, :goal_id)
+  end
+
+  def goal_matches_observation_company_tree?(goal, observation)
+    obs_company = observation.company.presence || organization
+    return false unless obs_company
+
+    obs_root = obs_company.root_company || obs_company
+    goal_co = goal.company
+    goal_root = goal_co&.root_company || goal_co
+    obs_root.present? && goal_root.present? && obs_root.id == goal_root.id
   end
 
   def setup_typed_observation(type, default_privacy)
@@ -1807,7 +1837,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       observation_id = params[:draft_id].presence || params[:id]
       @observation = Observation.find(observation_id)
       authorize @observation, :edit?
-      
+
+      assign_goal_from_params_to_observation(@observation) if @observation.goal_id.blank?
+
       # Don't reload - it wipes out fresh data. Just reload associations
       @observation.observation_ratings.reload if @observation.observation_ratings.loaded?
     else
@@ -1845,8 +1877,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           rating.rateable = aspiration
         end
       end
+
+      assign_goal_from_params_to_observation(@observation)
     end
-    
+
     # Ensure observation_ratings are loaded for associations
     @observation.observation_ratings.load if @observation.observation_ratings.loaded?
     
@@ -2226,9 +2260,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def observation_params
     if params[:observation].present?
       params.require(:observation).permit(
-        :story, :privacy_level, :primary_feeling, :secondary_feeling, 
+        :story, :privacy_level, :primary_feeling, :secondary_feeling,
         :observed_at, :custom_slug, :send_notifications, :publishing,
-        :observation_type, :created_as_type, :observable_moment_id,
+        :observation_type, :created_as_type, :observable_moment_id, :goal_id,
         teammate_ids: [], notify_teammate_ids: [],
         observees_attributes: [:id, :teammate_id, :_destroy],
         observation_ratings_attributes: {},
@@ -2405,7 +2439,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     return {} unless params[:observation].present?
     permitted = params.require(:observation).permit(
       :story, :primary_feeling, :secondary_feeling, :privacy_level,
-      :observation_type, :created_as_type, :observable_moment_id,
+      :observation_type, :created_as_type, :observable_moment_id, :goal_id,
       observation_ratings_attributes: {},
       story_extras: { gif_urls: [] }
     )
@@ -2435,7 +2469,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     # Convert empty strings to nil for optional fields
     permitted[:secondary_feeling] = nil if permitted[:secondary_feeling].blank?
     permitted[:primary_feeling] = nil if permitted[:primary_feeling].blank?
-    
+    if permitted.key?(:goal_id)
+      permitted[:goal_id] = permitted[:goal_id].presence&.to_i
+      permitted[:goal_id] = nil unless permitted[:goal_id]&.positive?
+    end
+
     permitted
   end
 
@@ -2445,6 +2483,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     }
     path_options[:return_url] = options[:return_url] if options[:return_url].present?
     path_options[:return_text] = options[:return_text] if options[:return_text].present?
+    path_options[:goal_id] = observation.goal_id if observation.goal_id.present?
     
     case observation.observation_type
     when 'kudos'

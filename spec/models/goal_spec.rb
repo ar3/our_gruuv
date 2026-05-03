@@ -9,12 +9,35 @@ RSpec.describe Goal, type: :model do
   describe 'associations' do
     it { should belong_to(:owner).optional(false) }
     it { should belong_to(:creator).class_name('CompanyTeammate') }
+    it { should have_many(:observations).dependent(:nullify) }
     it { should have_many(:outgoing_links).class_name('GoalLink').with_foreign_key('parent_id').dependent(:destroy) }
     it { should have_many(:linked_goals).through(:outgoing_links).source(:child) }
     it { should have_many(:incoming_links).class_name('GoalLink').with_foreign_key('child_id').dependent(:destroy) }
     it { should have_many(:linking_goals).through(:incoming_links).source(:parent) }
   end
-  
+
+  describe '#observee_teammate_ids_for_observation' do
+    it 'returns the owner teammate id when owner is a teammate' do
+      g = create(:goal, creator: creator_teammate, owner: creator_teammate, company: company)
+      expect(g.observee_teammate_ids_for_observation).to eq([creator_teammate.id])
+    end
+
+    it 'returns all team member teammate ids when owner is a team' do
+      team = create(:team, company: company)
+      tm1 = create(:teammate, organization: company)
+      tm2 = create(:teammate, organization: company)
+      create(:team_member, team: team, company_teammate: tm1)
+      create(:team_member, team: team, company_teammate: tm2)
+      g = create(:goal, creator: creator_teammate, owner: team, company: company)
+      expect(g.observee_teammate_ids_for_observation).to match_array([tm1.id, tm2.id])
+    end
+
+    it 'returns empty array when owner is the organization' do
+      g = create(:goal, creator: creator_teammate, owner: company, company: company)
+      expect(g.observee_teammate_ids_for_observation).to eq([])
+    end
+  end
+
   describe 'enums' do
     it 'defines goal_type enum' do
       expect(Goal.goal_types).to eq({

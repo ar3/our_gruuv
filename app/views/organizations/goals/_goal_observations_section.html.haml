@@ -1,0 +1,40 @@
+- return unless @show_goal_observations_section
+
+.mb-4#goal-observations
+  .card
+    .card-header.py-3
+      .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+        %h5.mb-0
+          Observations
+          %i.bi.bi-info-circle.text-primary.ms-1{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", title: "Use observations for informal commentary on how you or others are doing toward this goal—alongside check-ins. Managers and teammates can leave quick notes here."}
+        .d-flex.flex-wrap.align-items-center.gap-2
+          - if policy(company).view_observations?
+            = link_to organization_observations_path(@organization, goal_id: @goal.id, view: 'large_list', return_url: organization_goal_url(@organization, @goal), return_text: 'Goal'), class: "btn btn-sm btn-outline-secondary" do
+              %i.bi.bi-box-arrow-up-right.me-1
+              Open in Observations
+          - if policy(Observation).create?
+            - new_observation_params = { privacy_level: 'observed_and_managers', return_url: organization_goal_url(@organization, @goal), return_text: 'Goal', goal_id: @goal.id, observee_ids: @goal.observee_teammate_ids_for_observation }
+            = link_to new_quick_note_organization_observations_path(@organization, new_observation_params), class: "btn btn-sm btn-primary" do
+              %i.bi.bi-plus-lg.me-1
+              New observation
+    .card-body
+      - if policy(company).view_observations? && @goal_observations.any?
+        = render 'organizations/observations/large_list_view', observations: @goal_observations, organization: @organization
+        - if @goal_observations_pagy&.pages.to_i > 1
+          .d-flex.justify-content-center.mt-3
+            = raw pagy_nav(@goal_observations_pagy, pagy_id: 'goal_observations_pagy', param_name: :goal_observations_page)
+      - elsif policy(company).view_observations?
+        .alert.alert-light.border.mb-0
+          %p.mb-2 No observations are linked to this goal yet.
+          - if policy(Observation).create?
+            - new_observation_params = { privacy_level: 'observed_and_managers', return_url: organization_goal_url(@organization, @goal), return_text: 'Goal', goal_id: @goal.id, observee_ids: @goal.observee_teammate_ids_for_observation }
+            = link_to new_quick_note_organization_observations_path(@organization, new_observation_params), class: "btn btn-primary btn-sm" do
+              %i.bi.bi-plus-lg.me-1
+              New observation
+      - elsif policy(Observation).create?
+        .alert.alert-light.border.mb-0
+          %p.mb-2 You can add an observation linked to this goal.
+          - new_observation_params = { privacy_level: 'observed_and_managers', return_url: organization_goal_url(@organization, @goal), return_text: 'Goal', goal_id: @goal.id, observee_ids: @goal.observee_teammate_ids_for_observation }
+          = link_to new_quick_note_organization_observations_path(@organization, new_observation_params), class: "btn btn-primary btn-sm" do
+            %i.bi.bi-plus-lg.me-1
+            New observation

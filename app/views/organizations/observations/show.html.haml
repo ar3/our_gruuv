@@ -484,6 +484,19 @@
         %p
           %strong Total Ratings: 
           = @observation.observation_ratings.count
+        - if (spotlight_goal = @observation.goal).present?
+          %p.mb-2
+            %strong Goal
+            %br
+            - if policy(spotlight_goal).show?
+              = link_to organization_goal_path(@organization, spotlight_goal), class: 'text-decoration-none d-inline-block' do
+                %span= spotlight_goal.title
+                %span.text-muted.small
+                  (#{goal_owner_display_name(spotlight_goal)})
+            - else
+              %span= spotlight_goal.title
+              %span.text-muted.small
+                (#{goal_owner_display_name(spotlight_goal)})
         - if @observation.observation_ratings.positive.any?
           %p
             %strong Positive Ratings: 

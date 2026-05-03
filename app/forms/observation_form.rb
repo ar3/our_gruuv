@@ -39,7 +39,9 @@ class ObservationForm < Reform::Form
   
   # Virtual property for observable moment association
   property :observable_moment_id, virtual: true
-  
+
+  property :goal_id
+
   validates :story, presence: true, if: :publishing?
   validates :privacy_level, presence: true, unless: -> { observable_moment_id.present? }
   validates :primary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true, allow_blank: true
@@ -146,14 +148,16 @@ class ObservationForm < Reform::Form
     # Sync other form data to model (story, feelings, etc.)
     # Don't let Reform sync observation_ratings since we handled it manually above
     # Note: story_extras is handled separately above, so don't include it here
-    model.assign_attributes(
+    attrs = {
       story: story,
       privacy_level: privacy_level,
       primary_feeling: primary_feeling,
       secondary_feeling: secondary_feeling,
       observed_at: observed_at,
       custom_slug: custom_slug
-    )
+    }
+    attrs[:goal_id] = goal_id if goal_id.present?
+    model.assign_attributes(attrs)
     
     # Save model with other attributes
     model.save!

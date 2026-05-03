@@ -148,6 +148,18 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('After you save this note, to return to the check-in, close this page')
     end
+
+    it 'assigns goal_id and seeds aspiration ratings when goal_id is passed' do
+      create(:aspiration, company: organization, department: nil, name: 'Root aspiration for goal link test')
+      goal = create(:goal, creator: teammate, owner: teammate, company: organization, started_at: 1.week.ago, title: 'Goal From Link Test')
+      get new_quick_note_organization_observations_path(organization, goal_id: goal.id)
+      expect(response).to have_http_status(:success)
+      obs = assigns(:observation)
+      expect(obs.goal_id).to eq(goal.id)
+      expect(obs.observation_ratings.map(&:rateable_type)).to include('Aspiration')
+      expect(response.body).to include('Goal From Link Test')
+      expect(response.body).to include(person.display_name)
+    end
   end
 
   describe 'PATCH /organizations/:organization_id/observations/:id/convert_to_generic' do
@@ -466,6 +478,21 @@ RSpec.describe 'Organizations::Observations', type: :request do
         expect(observation.observation_type).to eq('quick_note')
         expect(observation.created_as_type).to eq('quick_note')
         expect(response).to redirect_to(organization_observation_path(organization, observation))
+      end
+
+      it 'persists goal_id when submitted with new quick note draft' do
+        goal = create(:goal, creator: teammate, owner: teammate, company: organization, started_at: 1.week.ago)
+        patch update_draft_organization_observation_path(organization, 'new'), params: {
+          observation: {
+            observation_type: 'quick_note',
+            privacy_level: 'observed_only',
+            goal_id: goal.id
+          },
+          observee_ids: [observee_teammate.id]
+        }
+
+        observation = Observation.last
+        expect(observation.goal_id).to eq(goal.id)
       end
     end
 
@@ -996,6 +1023,30 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response.body).to include('system')
       expect(response.body).to include('bi-exclamation-triangle')
       expect(response.body).to include('data-bs-toggle="tooltip"')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/observations/:id (show) with linked goal' do
+    let(:goal) { create(:goal, creator: teammate, owner: teammate, company: organization, started_at: 1.week.ago, title: 'Linked Goal Spotlight Title') }
+    let(:observee_for_goal_obs) { create(:teammate, person: create(:person), organization: organization) }
+    let(:observation_with_goal) do
+      obs = build(:observation, observer: person, company: organization, privacy_level: :observed_only, goal: goal)
+      obs.observees.build(teammate: observee_for_goal_obs)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    it 'shows goal name and link under Total Ratings in Spotlight' do
+      get organization_observation_path(organization, observation_with_goal)
+      expect(response).to have_http_status(:success)
+      body = response.body
+      idx_ratings = body.index('Total Ratings')
+      idx_goal = body.index('Linked Goal Spotlight Title')
+      expect(idx_ratings).not_to be_nil
+      expect(idx_goal).not_to be_nil
+      expect(idx_goal).to be > idx_ratings
+      expect(body).to include(organization_goal_path(organization, goal))
     end
   end
 

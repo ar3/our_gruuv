@@ -262,6 +262,25 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
     # Progress chart data for Progress card (only when started and has target date; chart shown only when also has check-in)
     @progress_chart_data = Goals::ProgressChartDataBuilder.call(goal: @goal) if @goal.started_at.present? && (@goal.earliest_target_date.present? || @goal.most_likely_target_date.present? || @goal.latest_target_date.present?)
+
+    @show_goal_observations_section = false
+    @goal_observations = []
+    @goal_observations_pagy = nil
+    if policy(company).view_observations? || policy(Observation).create?
+      @show_goal_observations_section = true
+      if policy(company).view_observations?
+        goal_obs_params = { goal_id: @goal.id.to_s, sort: 'observed_at_desc' }
+        obs_query = ObservationsQuery.new(@organization, goal_obs_params, current_person: current_person)
+        relation = obs_query.call
+        total = relation.count
+        @goal_observations_pagy = Pagy.new(count: total, page: params[:goal_observations_page] || 1, items: 25)
+        @goal_observations = relation
+          .includes(:observer, { observed_teammates: :person }, :observation_ratings, :notifications)
+          .limit(@goal_observations_pagy.items)
+          .offset(@goal_observations_pagy.offset)
+        preload_rateables_for_observations(@goal_observations)
+      end
+    end
   end
   
   def weekly_update

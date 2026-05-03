@@ -1,3 +1,4 @@
+- observations = local_assigns[:observations] || @observations
 .list-group
-  - @observations.each do |observation|
-    = render 'organizations/observations/observation_large_list_item', observation: observation, organization: @organization
+  - observations.each do |observation|
+    = render 'organizations/observations/observation_large_list_item', observation: observation, organization: local_assigns[:organization] || @organization

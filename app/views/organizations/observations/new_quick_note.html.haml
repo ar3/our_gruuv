@@ -20,6 +20,22 @@
       .alert.alert-info.mb-3{role: "alert"}
         %i.bi.bi-info-circle.me-2
         After you save this note, to return to the check-in, close this page.
+    - elsif @observation.goal_id.present?
+      - goal_ctx = @observation.goal
+      .alert.alert-info.mb-3{role: "alert"}
+        .d-flex.gap-2
+          %i.bi.bi-info-circle.flex-shrink-0.mt-1
+          %div
+            - if goal_ctx
+              %p.mb-0
+                This note is linked to the goal
+                %strong= goal_ctx.title
+                — owner:
+                %strong= goal_owner_display_name(goal_ctx)
+                \. After you save, use your browser back control or the return link to get back to the goal.
+            - else
+              %p.mb-0
+                This note is linked to a goal. After you save, use your browser back control or the return link to get back to the goal.
     - form_url = @observation.persisted? ? update_draft_organization_observation_path(organization, @observation) : update_draft_organization_observation_path(organization, :new)
     = form_with model: @observation, url: form_url, method: :post, local: true, data: { turbo: false, turbo_method: false }, html: { id: 'observation_form' } do |form|
       / Add _method field only for buttons that need PATCH (Add Assignments and default form submission)
@@ -41,7 +57,9 @@
       -# Preserve observee_ids through form submissions
       - @observation.observees.each do |observee|
         = hidden_field_tag "observee_ids[]", observee.teammate_id
-      
+      - if @observation.goal_id.present?
+        = form.hidden_field :goal_id
+
       .container-fluid
         = render 'organizations/observations/form_sections/observees_section', form: form, observation: @observation
         = render 'organizations/observations/form_sections/story_field', form: form, observation: @observation, show_gifs: @show_gifs, organization: organization

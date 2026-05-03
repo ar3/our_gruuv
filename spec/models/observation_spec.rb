@@ -28,6 +28,7 @@ RSpec.describe Observation, type: :model do
   describe 'associations' do
     it { should belong_to(:observer).class_name('Person') }
     it { should belong_to(:company).class_name('Organization') }
+    it { should belong_to(:goal).optional }
     it { should belong_to(:observation_trigger).optional }
     it { should belong_to(:observable_moment).optional }
     it { should have_many(:observees).dependent(:destroy) }
@@ -66,7 +67,16 @@ RSpec.describe Observation, type: :model do
       expect(published.errors[:story]).to include("can't be blank")
     end
     it { should validate_presence_of(:privacy_level) }
-    
+
+    it 'rejects a goal from a different company' do
+      other_company = create(:organization, :company)
+      other_goal = create(:goal, company: other_company)
+      obs = build(:observation, observer: observer, company: company, goal: other_goal, privacy_level: :observed_only)
+      obs.observees.build(teammate: teammate1)
+      expect(obs).not_to be_valid
+      expect(obs.errors[:goal]).to include('must belong to the same company as the observation')
+    end
+
     it 'validates primary_feeling inclusion when present' do
       observation.primary_feeling = 'invalid_feeling'
       expect(observation).not_to be_valid

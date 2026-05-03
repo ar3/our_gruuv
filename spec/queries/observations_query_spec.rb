@@ -543,6 +543,35 @@ RSpec.describe ObservationsQuery, type: :query do
       end
     end
   end
+
+  describe 'goal_id filter' do
+    let(:goal) { create(:goal, creator: observer_teammate, owner: observer_teammate, company: company, started_at: 1.week.ago) }
+    let!(:obs_with_goal) do
+      build(:observation, observer: observer, company: company, goal: goal, privacy_level: :observer_only).tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+      end
+    end
+
+    it 'returns only observations linked to that goal' do
+      query = described_class.new(company, { goal_id: goal.id.to_s }, current_person: observer)
+      results = query.call.to_a
+      expect(results).to include(obs_with_goal)
+      expect(results).not_to include(observation1)
+    end
+
+    it 'returns only observations linked to that goal when params use string keys' do
+      query = described_class.new(company, { 'goal_id' => goal.id.to_s }, current_person: observer)
+      results = query.call.to_a
+      expect(results).to include(obs_with_goal)
+      expect(results).not_to include(observation1)
+    end
+
+    it 'exposes goal_id in current_filters' do
+      query = described_class.new(company, { goal_id: goal.id.to_s }, current_person: observer)
+      expect(query.current_filters[:goal_id]).to eq(goal.id.to_s)
+    end
+  end
 end
 
 

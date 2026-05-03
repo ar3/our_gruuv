@@ -903,11 +903,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_221443) do
     t.bigint "observation_trigger_id"
     t.bigint "observable_moment_id"
     t.bigint "feedback_request_question_id"
+    t.bigint "goal_id"
+    t.index ["company_id", "goal_id"], name: "index_observations_on_company_id_and_goal_id"
     t.index ["company_id"], name: "index_observations_on_company_id"
     t.index ["created_as_type"], name: "index_observations_on_created_as_type"
     t.index ["custom_slug"], name: "index_observations_on_custom_slug", unique: true
     t.index ["deleted_at"], name: "index_observations_on_deleted_at"
     t.index ["feedback_request_question_id"], name: "index_observations_on_feedback_request_question_id"
+    t.index ["goal_id"], name: "index_observations_on_goal_id"
     t.index ["observable_moment_id"], name: "index_observations_on_observable_moment_id"
     t.index ["observation_trigger_id"], name: "index_observations_on_observation_trigger_id"
     t.index ["observation_type"], name: "index_observations_on_observation_type"
@@ -1662,6 +1665,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_221443) do
   add_foreign_key "observable_moments", "teammates", column: "processed_by_teammate_id"
   add_foreign_key "observation_ratings", "observations"
   add_foreign_key "observations", "feedback_request_questions"
+  add_foreign_key "observations", "goals", on_delete: :nullify
   add_foreign_key "observations", "observable_moments"
   add_foreign_key "observations", "observation_triggers"
   add_foreign_key "observations", "organizations", column: "company_id"

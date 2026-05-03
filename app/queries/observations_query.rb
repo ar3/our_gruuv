@@ -3,7 +3,13 @@ class ObservationsQuery
 
   def initialize(organization, params = {}, current_person: nil)
     @organization = organization
-    @params = params
+    raw = params.nil? ? {} : params
+    @params =
+      if raw.is_a?(ActionController::Parameters)
+        raw.to_unsafe_h.with_indifferent_access
+      else
+        raw.with_indifferent_access
+      end
     @current_person = current_person
   end
 
@@ -15,6 +21,7 @@ class ObservationsQuery
     observations = filter_by_observer(observations)
     observations = filter_by_involving_teammate(observations)
     observations = filter_by_observee_ids(observations)
+    observations = filter_by_goal(observations)
     observations = filter_by_rateable(observations)
     observations = filter_by_observation_type(observations)
     observations = filter_by_soft_deleted_status(observations)
@@ -39,6 +46,7 @@ class ObservationsQuery
     end
     filters[:rateable_type] = params[:rateable_type] if params[:rateable_type].present?
     filters[:rateable_id] = params[:rateable_id] if params[:rateable_id].present?
+    filters[:goal_id] = params[:goal_id] if params[:goal_id].present?
     filters[:observation_type] = params[:observation_type] if params[:observation_type].present?
     filters
   end
@@ -167,6 +175,13 @@ class ObservationsQuery
     observations = observations.joins(:observees).where(observees: { teammate_id: observee_ids }).distinct
     observations = observations.merge(Observation.published).merge(Observation.not_journal)
     observations
+  end
+
+  def filter_by_goal(observations)
+    goal_id = params[:goal_id].to_s.presence
+    return observations unless goal_id
+
+    observations.where(goal_id: goal_id)
   end
 
   def filter_by_rateable(observations)

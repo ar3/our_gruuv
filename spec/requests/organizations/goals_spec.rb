@@ -297,19 +297,29 @@ RSpec.describe 'Organizations::Goals', type: :request do
       get organization_goal_path(organization, goal)
       
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('goal-external-attachments')
-      expect(response.body).to include('Associated with')
+      expect(response.body).to include('Linked To')
       expect(response.body).to include(template.title)
-      expect(response.body).to include('Reflection · associated')
+      expect(response.body).to include('Reflection')
     end
-    
+
     it 'does not display prompt attachments section when goal has no prompts' do
       get organization_goal_path(organization, goal)
-      
+
       expect(response).to have_http_status(:success)
-      expect(response.body).not_to include('goal-external-attachments')
+      expect(response.body).to include('No linked records yet.')
     end
-    
+
+    it 'shows Observations section with goal-linked navigation' do
+      get organization_goal_path(organization, goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('goal-observations')
+      expect(response.body).to include('Observations')
+      expect(response.body).to include(new_quick_note_organization_observations_path(organization, goal_id: goal.id))
+      expect(response.body).to include("goal_id=#{goal.id}")
+      expect(response.body).to include('view=large_list')
+    end
+
     it 'can access show page for completed goal' do
       completed_goal = create(:goal, creator: teammate, owner: teammate, title: 'Completed Goal', started_at: 1.week.ago, completed_at: 1.day.ago)
       
@@ -357,31 +367,25 @@ RSpec.describe 'Organizations::Goals', type: :request do
       
       it 'displays check-in button for users who can edit' do
         get organization_goal_path(organization, started_goal)
-        
+
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Check-In')
-        expect(response.body).to include(weekly_update_organization_goal_path(organization, started_goal))
-        # Check that the button is a link (not disabled)
+        expect(response.body).to include('Check-Ins')
+        expect(response.body).to include(organization_goal_path(organization, started_goal, anchor: 'check-in'))
         expect(response.body).to include('btn-primary')
         expect(response.body).not_to include('aria-disabled="true"')
       end
       
-      it 'displays disabled check-in button with warning icon for users who cannot edit' do
+      it 'shows check-in section for a company-visible goal the viewer does not own' do
         other_person = create(:person)
         other_teammate = create(:company_teammate, person: other_person, organization: organization)
-        # Create a goal that the current user can view but not edit
-        # Use 'everyone_in_company' privacy level which allows viewing by everyone in company
-        # but editing only by creator/owner
         other_goal = create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'everyone_in_company')
-        
+
         get organization_goal_path(organization, other_goal)
-        
+
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Check-In')
-        expect(response.body).to include('disabled')
-        expect(response.body).to include('aria-disabled="true"')
-        expect(response.body).to include('bi-exclamation-triangle')
-        expect(response.body).to include('Only the goal creator or owner can add check-ins to this goal.')
+        expect(response.body).to include('Check-Ins')
+        expect(response.body).to include('Other Goal')
+        expect(response.body).to include('Current Week Check-In')
       end
       
       it 'displays last check-in in sentence form when present' do
@@ -395,18 +399,18 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, started_goal)
         
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('checked in on')
+        expect(response.body).to include('reports a')
         expect(response.body).to include(person.display_name)
         expect(response.body).to include('75%')
-        expect(response.body).to match(/confident we.*ll accomplish this goal/)
+        expect(response.body).to include('confidence we will achieve')
       end
       
       it 'displays alert when no check-ins exist' do
         get organization_goal_path(organization, started_goal)
-        
+
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Add first check-in')
-        expect(response.body).to include('alert-info')
+        expect(response.body).not_to include('Check-In History')
+        expect(response.body).to include('Current Week Check-In')
       end
 
       it 'displays Progress card with chart when goal has check-ins and target date' do
@@ -416,30 +420,40 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, started_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('goal-progress')
-        expect(response.body).to include('Progress')
-        expect(response.body).to include('goal-show-progress-confidence-chart')
+        expect(response.body).to include('goal-progress-confidence-chart')
+        expect(response.body).to include('Confidence vs. On-Track Thresholds')
       end
 
-      it 'does not display progress chart when goal has no check-ins' do
-        started_goal.update!(most_likely_target_date: 1.month.from_now)
+      it 'does not display progress chart when goal has no target dates' do
+        started_goal.update!(
+          most_likely_target_date: nil,
+          earliest_target_date: nil,
+          latest_target_date: nil
+        )
 
         get organization_goal_path(organization, started_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Progress')
-        expect(response.body).not_to include('goal-show-progress-confidence-chart')
+        expect(response.body).to include('Target Dates')
+        expect(response.body).not_to include('goal-progress-confidence-chart')
+        expect(response.body).not_to include('Confidence vs. On-Track Thresholds')
       end
     end
   end
   
   describe 'GET /organizations/:organization_id/goals/:id/weekly_update' do
-    it 'renders the weekly update page' do
-      get weekly_update_organization_goal_path(organization, goal)
-      
+    # weekly_update action redirects to goal show (#check-in); follow for body assertions.
+    def follow_weekly_update_redirect!(org = organization, g = goal)
+      expect(response).to redirect_to(organization_goal_path(org, g, anchor: 'check-in'))
+      follow_redirect!
       expect(response).to have_http_status(:success)
+    end
+
+    it 'redirects to goal show check-in anchor (merged weekly update UI)' do
+      get weekly_update_organization_goal_path(organization, goal)
+
+      follow_weekly_update_redirect!
       expect(response.body).to include(goal.title)
-      expect(response.body).to include('Weekly Update')
       expect(response.body).to include('Current Week Check-In')
     end
     
@@ -449,8 +463,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       check_in3 = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 80, confidence_reporter: person)
       
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('60%')
       expect(response.body).to include('70%')
       expect(response.body).to include('80%')
@@ -461,8 +474,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       current_check_in = create(:goal_check_in, goal: goal, check_in_week_start: current_week_start, confidence_percentage: 75, confidence_reporter: person)
       
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('75%')
     end
     
@@ -471,8 +483,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       recent_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 80, confidence_reporter: person)
 
       get weekly_update_organization_goal_path(organization, goal)
-
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('Check-In History')
       expect(response.body).to include('60%')
       expect(response.body).to include('80%')
@@ -495,8 +506,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       )
       
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('Target Dates')
       expect(response.body).to include('Earliest')
       expect(response.body).to include('Most Likely')
@@ -511,8 +521,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       )
       
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('Calculated Target')
       expect(response.body).to include('No target date calculated')
     end
@@ -521,8 +530,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       goal.update(started_at: 2.weeks.ago)
       
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('Goal Started')
     end
 
@@ -534,7 +542,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         latest_target_date: 10.weeks.from_now.to_date
       )
       get weekly_update_organization_goal_path(organization, goal)
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('goal-progress-confidence-chart')
       expect(response.body).to include('Confidence vs. On-Track Thresholds')
     end
@@ -542,7 +550,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
     it 'does not include progress chart when goal has no target dates' do
       goal.update!(earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
       get weekly_update_organization_goal_path(organization, goal)
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).not_to include('goal-progress-confidence-chart')
     end
     
@@ -554,9 +562,9 @@ RSpec.describe 'Organizations::Goals', type: :request do
         return_url: return_url,
         return_text: return_text
       }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include(return_text)
+
+      follow_weekly_update_redirect!
+      expect(response.body).to include(goal.title)
     end
     
     it 'displays check-in sentence format correctly' do
@@ -564,8 +572,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       goal.update(most_likely_target_date: Date.today + 60.days)
       
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       # Verify the sentence is rendered, not literal HAML code
       expect(response.body).to include('As of')
       expect(response.body).to include(person.display_name)
@@ -585,8 +592,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       goal.update(most_likely_target_date: nil, earliest_target_date: nil, latest_target_date: nil)
       
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('As of')
       expect(response.body).to include(person.display_name)
       expect(response.body).to include('50%')
@@ -602,8 +608,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       goal.update(most_likely_target_date: target_date)
       
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('As of')
       expect(response.body).to include(person.display_name)
       expect(response.body).to include('80%')
@@ -614,8 +619,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
     
     it 'displays form with confidence dropdown and target date field' do
       get weekly_update_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
+      follow_weekly_update_redirect!
       expect(response.body).to include('confidence_percentage')
       expect(response.body).to include('most_likely_target_date')
       expect(response.body).to include('form-select')

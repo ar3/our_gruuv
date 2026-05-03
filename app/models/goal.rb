@@ -18,7 +18,8 @@ class Goal < ApplicationRecord
   has_many :prompts, through: :prompt_goals
 
   has_many :goal_associations, dependent: :destroy
-  
+  has_many :observations, dependent: :nullify
+
   # Callbacks
   before_validation :set_company_id
   before_validation :set_explicit_owner_type
@@ -239,7 +240,19 @@ class Goal < ApplicationRecord
     # Now that we have company_id cached, we can just return it
     company
   end
-  
+
+  # CompanyTeammate ids to pre-fill observees when starting an observation from this goal's page.
+  def observee_teammate_ids_for_observation
+    case owner_type
+    when 'CompanyTeammate'
+      owner_id.present? ? [owner_id] : []
+    when 'Team'
+      owner&.company_teammates&.ids.to_a
+    else
+      []
+    end
+  end
+
   def managers
     return [] unless owner_type == 'CompanyTeammate'
     
