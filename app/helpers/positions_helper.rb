@@ -68,6 +68,10 @@ module PositionsHelper
   end
 
   def current_view_name
+    if controller_path == 'organizations/positions/maap_clarity'
+      return 'Clarity review'
+    end
+
     case action_name
     when 'show'
       'Management View'

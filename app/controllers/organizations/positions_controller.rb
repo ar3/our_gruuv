@@ -130,6 +130,7 @@ class Organizations::PositionsController < ApplicationController
     @eligibility_requirements_sentences = helpers.eligibility_requirements_sentences_from_config(@position)
     @ability_milestone_requirements = helpers.ability_milestone_requirements_for_position(@position)
     set_eligibility_source_context_for_show
+    @position_clarity_run = @position.position_clarity_maap_agent_run
     render layout: determine_layout
   end
 

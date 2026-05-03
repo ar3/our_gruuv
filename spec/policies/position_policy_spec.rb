@@ -111,6 +111,29 @@ RSpec.describe PositionPolicy, type: :policy do
     end
   end
 
+  describe '#run_clarity?' do
+    context 'with can_manage_maap permission' do
+      before do
+        company_teammate.update(can_manage_maap: true)
+      end
+
+      it 'matches update?' do
+        expect(subject.run_clarity?).to eq(subject.update?)
+        expect(subject.run_clarity?).to be true
+      end
+    end
+
+    context 'without can_manage_maap permission' do
+      before do
+        company_teammate.update(can_manage_maap: false)
+      end
+
+      it 'denies' do
+        expect(subject.run_clarity?).to be false
+      end
+    end
+  end
+
   describe '#destroy?' do
     context 'as admin' do
       let(:admin_person) { create(:person, :admin) }

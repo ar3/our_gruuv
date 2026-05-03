@@ -63,6 +63,10 @@ class PositionPolicy < ApplicationPolicy
     viewing_teammate.person.admin? || can_manage_maap_for_position_company?
   end
 
+  def run_clarity?
+    update?
+  end
+
   private
 
   def can_manage_maap_for_position_company?

@@ -394,6 +394,9 @@ Rails.application.routes.draw do
         get :position_levels
       end
       member do
+        get 'maap_clarity', to: 'positions/maap_clarity#show', as: :maap_clarity
+        post 'maap_clarity/run', to: 'positions/maap_clarity#run', as: :run_maap_clarity
+        get 'maap_clarity/status', to: 'positions/maap_clarity#status', as: :maap_clarity_status
         get :archive
         patch :execute_archive
         patch :restore

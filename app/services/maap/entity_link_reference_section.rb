@@ -4,7 +4,7 @@ module Maap
   # Appends a payload section listing markdown `[Label](path)` snippets for abilities, assignments,
   # and positions so MAAP agents can cite entities with working links in Current | Proposed and prose.
   #
-  # Call {append_to_sections!} from any +Maap::*PayloadBuilder+ (ability, assignment, and future e.g. position clarity).
+  # Call {append_to_sections!} from any +Maap::*PayloadBuilder+ (ability, assignment, position clarity, etc.).
   class EntityLinkReferenceSection
     class << self
       def append_to_sections!(sections, organization:, abilities: [], assignments: [], positions: [])
