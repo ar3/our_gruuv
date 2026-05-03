@@ -1,0 +1,20 @@
+- review_path = local_assigns.fetch(:review_path)
+- run = local_assigns.fetch(:run)
+- can_run = local_assigns.fetch(:can_run)
+- extra_classes = local_assigns.fetch(:extra_classes, '')
+- disabled_tooltip = local_assigns.fetch(:disabled_tooltip, nil)
+- small = local_assigns.fetch(:small, false)
+- wrapper_class = local_assigns.fetch(:wrapper_class, nil)
+- classes = [maap_clarity_review_button_class(run), extra_classes].reject(&:blank?).join(' ')
+- if can_run
+  = link_to review_path, class: classes do
+    %i.bi.bi-stars.me-2
+    Consult OG
+- else
+  .d-flex.align-items-center.gap-2{class: wrapper_class}
+    .flex-grow-1
+      %button{class: ['btn', 'btn-outline-secondary', 'w-100', ('btn-sm' if small)].compact.join(' '), type: 'button', disabled: true}
+        %i.bi.bi-stars.me-2
+        Consult OG
+    - if disabled_tooltip.present?
+      %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: 'tooltip', bs_title: disabled_tooltip}}

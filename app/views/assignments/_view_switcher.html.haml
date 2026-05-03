@@ -128,17 +128,17 @@
         - if is_maap_clarity_view
           .dropdown-item.text-muted
             %i.bi.bi-stars.me-2
-            Clarity review (Active)
+            Consult OG (Active)
             %i.bi.bi-check-circle.text-success.ms-2
         - elsif @assignment && assignment_org && policy(@assignment).run_clarity?
           = link_to maap_clarity_organization_assignment_path(assignment_org, @assignment), class: 'dropdown-item' do
             %i.bi.bi-stars.me-2
-            Clarity review
+            Consult OG
         - else
           .dropdown-item.text-muted.disabled
             %i.bi.bi-stars.me-2
-            Clarity review
-            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions to run clarity review"}
+            Consult OG
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions to consult OG"}
 
       - if @assignment && assignment_org
         %li

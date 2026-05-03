@@ -24,7 +24,7 @@ module AbilitiesHelper
     case action_name
     when 'show'
       if controller_path == 'organizations/abilities/maap_clarity'
-        'Clarity review'
+        'Consult OG'
       else
         'View Mode'
       end

@@ -3,7 +3,7 @@ module AssignmentsHelper
     return 'Assignment View' unless action_name
 
     if controller_path == 'organizations/assignments/maap_clarity'
-      return 'Clarity review'
+      return 'Consult OG'
     end
     
     # Check if we're in public view

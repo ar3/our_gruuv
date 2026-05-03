@@ -1,16 +1,16 @@
-- content_for :title, "Clarity review — #{@position.display_name}"
+- content_for :title, "Consult OG — #{@position.display_name}"
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
     %h1.mb-0
       %i.bi.bi-stars.me-2
-      MAAP clarity review
+      Consult OG
     %span.badge.text-bg-warning
       %i.bi.bi-flask.me-1
       Beta
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @position.title.display_name, url: organization_title_path(@organization, @position.title) }, { label: @position.display_name, url: organization_position_path(@organization, @position) }, { label: "Clarity review", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @position.title.display_name, url: organization_title_path(@organization, @position.title) }, { label: @position.display_name, url: organization_position_path(@organization, @position) }, { label: "Consult OG", url: nil }])
 
 - content_for :header_action do
   = render 'organizations/positions/view_switcher'
@@ -18,16 +18,16 @@
 .row.justify-content-center
   .col-lg-10
     %p.lead.text-muted
-      Uses the Position Clarity agent (Bedrock) to review how this position bundles assignments, ability milestones, and narrative summary against the MAAP chain (Title → Position → Assignments → Abilities).
+      Consult OG uses the Position Clarity agent (Bedrock) to review how this position bundles assignments, ability milestones, and narrative summary against the MAAP chain (Title → Position → Assignments → Abilities).
       Results are saved as the latest run for this position.
 
     .d-flex.flex-wrap.gap-2.mb-3
       = button_to run_maap_clarity_organization_position_path(@organization, @position), method: :post, class: 'btn btn-primary' do
         %i.bi.bi-play-fill.me-2
         - if @run&.persisted?
-          Re-run clarity review
+          Consult OG again
         - else
-          Run clarity review
+          Consult OG
 
     - if @run&.error_message.present? && @run.status == 'failed'
       .alert.alert-danger.mb-3
@@ -38,7 +38,7 @@
       .alert.alert-secondary.mb-3#maap-clarity-status-banner{ data: { status_url: maap_clarity_status_organization_position_path(@organization, @position) } }
         %i.bi.bi-hourglass-split.me-2
         %span#maap-clarity-status-text
-          Review is #{@run.status}…
+          Consultation is #{@run.status}…
         %span.ms-1.text-muted#maap-clarity-elapsed
         %span.ms-1.text-warning.d-none#maap-clarity-slow-warning
           Taking longer than expected.
@@ -73,7 +73,7 @@
 
     - elsif (@run.nil? || (@run.status == 'completed' && @run.output_text.blank?)) && @run&.status != 'failed'
       .alert.alert-info.mb-0
-        No completed review yet. Click “Run clarity review” to generate one.
+        No completed consultation yet. Click “Consult OG” to generate one.
 
 - if @run && %w[pending processing].include?(@run.status)
   :javascript
@@ -110,7 +110,7 @@
           const res = await fetch(url, { headers: { Accept: 'application/json' } });
           if (!res.ok) return;
           const data = await res.json();
-          if (statusText) statusText.textContent = `Review is ${data.status}...`;
+          if (statusText) statusText.textContent = `Consultation is ${data.status}...`;
           if (elapsedText) elapsedText.textContent = `(${fmt(data.elapsed_seconds)})`;
           if (slowWarning) {
             slowWarning.classList.toggle('d-none', !data.slow);

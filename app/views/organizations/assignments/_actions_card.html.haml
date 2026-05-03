@@ -32,7 +32,7 @@
         .d-flex.align-items-center.gap-2
           %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
             %i.bi.bi-stars.me-2
-            Clarity review (Active)
+            Consult OG (Active)
         - if @assignment && assignment_org && policy(@assignment).show?
           .d-flex.align-items-center.gap-2
             = link_to organization_assignment_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
@@ -147,20 +147,6 @@
             Edit Assignment
           %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or admin access to edit assignments", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
             %i.bi.bi-exclamation-triangle
-
-      - unless is_maap_clarity_view
-        - if @assignment && assignment_org && policy(@assignment).run_clarity?
-          .d-flex.align-items-center.gap-2
-            = link_to maap_clarity_organization_assignment_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
-              %i.bi.bi-stars.me-2
-              Clarity review
-        - else
-          .d-flex.align-items-center.gap-2
-            %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
-              %i.bi.bi-stars.me-2
-              Clarity review
-            %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions to run clarity review", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
-              %i.bi.bi-exclamation-triangle
 
       - if @assignment && assignment_org
         %hr.my-1

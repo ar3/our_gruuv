@@ -121,53 +121,6 @@
                 %i.bi.bi-person.text-muted.me-1
                 No milestone attainments yet
 
-        .mb-3
-          %h6.text-muted.small.mb-2 MAAP clarity signal
-          - run = @ability_clarity_run
-          - if run.blank?
-            %p.small.mb-0.text-muted
-              %i.bi.bi-dash-circle.me-1
-              No clarity review yet.
-              - if policy(@ability).run_clarity?
-                = link_to 'Run review', maap_clarity_organization_ability_path(@organization, @ability), class: 'ms-1 text-decoration-none'
-          - elsif run.status.in?(%w[pending processing])
-            %p.small.mb-0
-              %span.badge.text-bg-secondary.me-1
-                %i.bi.bi-hourglass-split.me-1
-                In progress
-              %span.text-muted Review running…
-              = link_to 'Open', maap_clarity_organization_ability_path(@organization, @ability), class: 'ms-1 small text-decoration-none'
-          - elsif run.status == 'failed'
-            %p.small.mb-0
-              %span.badge.text-bg-danger.me-1 Failed
-              %span.text-muted.truncate.d-inline-block.align-bottom{ style: 'max-width: 12rem;', title: run.error_message }= run.error_message.presence || 'Error'
-              = link_to 'Details', maap_clarity_organization_ability_path(@organization, @ability), class: 'ms-1 small text-decoration-none'
-          - else
-            - case run.clarity_rating
-            - when 'green'
-              %p.small.mb-0
-                %span.badge.text-bg-success Green
-                %span.text-muted — strongest clarity
-            - when 'yellow'
-              %p.small.mb-0
-                %span.badge.text-bg-warning.text-dark Yellow
-                %span.text-muted — needs attention
-            - when 'red'
-              %p.small.mb-0
-                %span.badge.text-bg-danger Red
-                %span.text-muted — weakest clarity
-            - else
-              %p.small.mb-0
-                %span.badge.text-bg-secondary Unknown
-                %span.text-muted — no parsed signal
-            - if run.updated_at
-              %p.small.text-muted.mb-0.mt-1
-                As of #{l(run.updated_at, format: :short)}
-            %p.small.mb-0
-              = link_to maap_clarity_organization_ability_path(@organization, @ability), class: 'text-decoration-none' do
-                %i.bi.bi-stars.me-1
-                View full clarity review
-
         %hr.mt-3.mb-2
         %small.text-muted.d-block
           Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
@@ -203,18 +156,15 @@
           %i.bi.bi-globe.me-2
           Public version
 
-        / MAAP clarity review (LLM)
-        - if policy(@ability).run_clarity?
-          = link_to maap_clarity_organization_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
-            %i.bi.bi-stars.me-2
-            Clarity review
-        - else
-          .d-flex.align-items-center.gap-2.mb-2
-            .flex-grow-1
-              %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
-                %i.bi.bi-stars.me-2
-                Clarity review
-            %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to run clarity review"}}
+        / Consult OG (LLM)
+        = render 'organizations/shared/maap_clarity_review_button',
+                   review_path: maap_clarity_organization_ability_path(@organization, @ability),
+                   run: @ability_clarity_run,
+                   can_run: policy(@ability).run_clarity?,
+                   extra_classes: 'btn-sm w-100 mb-2',
+                   small: true,
+                   wrapper_class: 'mb-2',
+                   disabled_tooltip: 'You need MAAP management permissions to consult OG'
 
         / Manage assignment milestones
         - if policy(@ability).update?

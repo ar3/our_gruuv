@@ -201,18 +201,6 @@
                   Archive Position
               %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need can_manage_maap permission on your company teammate record for this position's company to archive positions"}}
 
-          - if policy(@position).run_clarity?
-            = link_to maap_clarity_organization_position_path(@organization, @position), class: 'btn btn-outline-primary w-100' do
-              %i.bi.bi-stars.me-2
-              Clarity review
-          - else
-            .d-flex.align-items-center.gap-2
-              .flex-grow-1
-                %span.btn.btn-outline-secondary.w-100.disabled
-                  %i.bi.bi-stars.me-2
-                  Clarity review
-              %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need can_manage_maap permission to run clarity review"}}
-
     = render 'organizations/positions/maap_clarity_spotlight'
 
 .row 

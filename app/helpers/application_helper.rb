@@ -39,6 +39,26 @@ module ApplicationHelper
     HuddleConstants::FEEDBACK_COLORS[type.to_s.downcase] || 'info'
   end
 
+  # Consult OG entry on entity show pages: solid primary when never run; outline reflects terminal signal when run.
+  def maap_clarity_review_button_class(run)
+    if run.blank?
+      'btn btn-primary'
+    elsif run.status.in?(%w[pending processing])
+      'btn btn-outline-secondary'
+    elsif run.status == 'failed'
+      'btn btn-outline-danger'
+    elsif run.status == 'completed'
+      case run.clarity_rating
+      when 'green' then 'btn btn-outline-success'
+      when 'yellow' then 'btn btn-outline-warning'
+      when 'red' then 'btn btn-outline-danger'
+      else 'btn btn-outline-secondary'
+      end
+    else
+      'btn btn-outline-secondary'
+    end
+  end
+
   def conflict_style_color(style)
     HuddleConstants::CONFLICT_STYLE_COLORS[style] || 'secondary'
   end

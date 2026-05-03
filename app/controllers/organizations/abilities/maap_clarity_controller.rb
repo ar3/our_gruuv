@@ -32,7 +32,7 @@ module Organizations
         record.save!
         AbilityClarityJob.perform_later(@ability.id, record.id)
         redirect_to maap_clarity_organization_ability_path(@organization, @ability),
-                    notice: 'Clarity review started. This page will update when processing finishes.'
+                    notice: 'Consult OG started. This page will update when processing finishes.'
       end
 
       def status
