@@ -612,6 +612,11 @@ module GoalsHelper
     end
   end
 
+  # Hierarchical-collapsible goals tree (see Goal#show_quick_note_cta_in_hierarchical_tree?).
+  def show_hierarchical_collapsible_goal_quick_note_cta?(goal)
+    goal.show_quick_note_cta_in_hierarchical_tree?(current_company_teammate)
+  end
+
   # Returns a short phrase when the goal is associated to one or more prompts (e.g. "In reflection: Weekly Check-in"), or nil.
   def goal_prompt_association_display(goal)
     return nil if goal.prompt_goals.blank?

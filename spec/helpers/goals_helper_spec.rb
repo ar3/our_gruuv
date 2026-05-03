@@ -408,5 +408,6 @@ RSpec.describe GoalsHelper, type: :helper do
       expect(result[:goals].length).to be >= 30
     end
   end
+
 end
 

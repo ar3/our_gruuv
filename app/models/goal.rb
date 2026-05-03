@@ -253,6 +253,19 @@ class Goal < ApplicationRecord
     end
   end
 
+  # Hierarchical-collapsible goals tree: show "quick note" CTA instead of inline check-in when the owner
+  # is a teammate and the viewer is a different teammate who cannot update this goal (not creator/owner path).
+  def show_quick_note_cta_in_hierarchical_tree?(viewer_teammate)
+    return false unless owner_type == 'CompanyTeammate' && owner_id.present?
+    return false unless viewer_teammate
+    return false if owner_id == viewer_teammate.id
+
+    pundit_user = OpenStruct.new(user: viewer_teammate, impersonating_teammate: nil)
+    return false if GoalPolicy.new(pundit_user, self).update?
+
+    true
+  end
+
   def managers
     return [] unless owner_type == 'CompanyTeammate'
     

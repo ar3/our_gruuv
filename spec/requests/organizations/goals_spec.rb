@@ -919,6 +919,44 @@ RSpec.describe 'Organizations::Goals', type: :request do
       # Check for profile image container classes
       expect(response.body).to include('rounded-circle')
     end
+
+    context 'when viewer is not the teammate owner' do
+      let(:other_person) { create(:person) }
+      let!(:other_teammate) do
+        other_person.company_teammates.find_or_create_by!(organization: organization) do |t|
+          t.first_employed_at = nil
+          t.last_terminated_at = nil
+        end
+      end
+      let!(:shared_teammate_owned_goal) do
+        create(:goal,
+          creator: teammate,
+          owner: teammate,
+          title: 'Teammate Owned KR For Others',
+          goal_type: 'quantitative_key_result',
+          privacy_level: 'everyone_in_company',
+          started_at: 1.week.ago,
+          most_likely_target_date: Date.today + 30.days)
+      end
+
+      before do
+        sign_in_as_teammate_for_request(other_person, organization)
+      end
+
+      it 'shows full-width quick note link instead of disabled check-in for teammate-owned key result' do
+        get organization_goals_path(organization), params: {
+          view: 'hierarchical-collapsible',
+          owner_id: 'everyone_in_company'
+        }
+        expect(response).to have_http_status(:success)
+        idx = response.body.index('Teammate Owned KR For Others')
+        expect(idx).not_to be_nil
+        window = response.body[idx, 4000]
+        expect(window).to include('Add a note/win/challenge about this goal')
+        expect(window).to include("goal_id=#{shared_teammate_owned_goal.id}")
+        expect(window).not_to include("goal_check_in_disabled_#{shared_teammate_owned_goal.id}")
+      end
+    end
   end
 
   describe 'POST /organizations/:organization_id/goals/:id/complete' do

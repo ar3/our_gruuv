@@ -38,6 +38,54 @@ RSpec.describe Goal, type: :model do
     end
   end
 
+  describe '#show_quick_note_cta_in_hierarchical_tree?' do
+    let(:owner_tm) { creator_teammate }
+    let(:other_tm) { create(:teammate, organization: company) }
+    let(:other_company_tm) { CompanyTeammate.find(other_tm.id) }
+    let(:teammate_owned_goal) do
+      create(:goal,
+             creator: owner_tm,
+             owner: owner_tm,
+             company: company,
+             goal_type: 'quantitative_key_result',
+             most_likely_target_date: Date.today + 30.days,
+             started_at: 1.week.ago,
+             privacy_level: 'everyone_in_company')
+    end
+
+    it 'returns false when owner is not a CompanyTeammate' do
+      goal = create(:goal,
+                      creator: creator_teammate,
+                      owner: company,
+                      company: company,
+                      goal_type: 'quantitative_key_result',
+                      most_likely_target_date: Date.today + 30.days,
+                      started_at: 1.week.ago,
+                      privacy_level: 'everyone_in_company')
+      expect(goal.show_quick_note_cta_in_hierarchical_tree?(other_company_tm)).to eq(false)
+    end
+
+    it 'returns false when viewer is the teammate owner' do
+      expect(teammate_owned_goal.show_quick_note_cta_in_hierarchical_tree?(owner_tm)).to eq(false)
+    end
+
+    it 'returns false when viewer is creator with update rights but not the owner teammate' do
+      created = create(:goal,
+                       creator: other_company_tm,
+                       owner: owner_tm,
+                       company: company,
+                       goal_type: 'quantitative_key_result',
+                       most_likely_target_date: Date.today + 30.days,
+                       started_at: 1.week.ago,
+                       privacy_level: 'everyone_in_company')
+      expect(created.show_quick_note_cta_in_hierarchical_tree?(other_company_tm)).to eq(false)
+    end
+
+    it 'returns true when teammate-owned and viewer cannot update the goal' do
+      expect(teammate_owned_goal.show_quick_note_cta_in_hierarchical_tree?(other_company_tm)).to eq(true)
+    end
+  end
+
   describe 'enums' do
     it 'defines goal_type enum' do
       expect(Goal.goal_types).to eq({
