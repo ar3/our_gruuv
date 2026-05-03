@@ -1,0 +1,18 @@
+-# locals: organization, position, positions_by_department — links to Consult OG for each position (same styling as _position_switcher).
+- switch_aria_label = local_assigns.fetch(:switch_aria_label, 'Switch position for Consult OG')
+.dropdown.d-inline-flex.align-items-center
+  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label" => switch_aria_label}
+    %span{title: position.display_name}= position.display_name
+  %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+    - positions_by_department.each do |group_label, positions_in_group|
+      %li
+        %h6.dropdown-header.mb-0.mt-1= group_label
+      - positions_in_group.each do |p|
+        %li
+          - if p.id == position.id
+            .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+              %span.flex-grow-1.text-truncate{title: p.display_name}= p.display_name
+              %i.bi.bi-check-circle.text-success.flex-shrink-0
+          - else
+            = link_to maap_clarity_organization_position_path(organization, p), class: 'dropdown-item d-flex align-items-center gap-2' do
+              %span.text-truncate{title: p.display_name}= p.display_name

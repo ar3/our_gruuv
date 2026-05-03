@@ -2,9 +2,13 @@
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
-    %h1.mb-0
-      %i.bi.bi-stars.me-2
-      Consult OG
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %i.bi.bi-stars.me-2.fs-1
+      %span.fs-1.fw-medium Consult OG about
+      = render 'position_switcher',
+               organization: @organization,
+               position: @position,
+               positions_by_department: @positions_by_department_for_maap_switcher
     %span.badge.text-bg-warning
       %i.bi.bi-flask.me-1
       Beta
@@ -18,7 +22,7 @@
 .row.justify-content-center
   .col-lg-10
     %p.lead.text-muted
-      Consult OG uses the Position Clarity agent (Bedrock) to review how this position bundles assignments, ability milestones, and narrative summary against the MAAP chain (Title → Position → Assignments → Abilities).
+      Consult OG reviews how this position bundles assignments, ability milestones, and narrative summary against the MAAP chain (Title → Position → Assignments → Abilities).
       Results are saved as the latest run for this position.
 
     .d-flex.flex-wrap.gap-2.mb-3

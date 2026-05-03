@@ -49,6 +49,13 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('One on One Hub')
     end
 
+    it 'returns Consult OG for maap_teammate_growth show action' do
+      allow(helper).to receive(:action_name).and_return('show')
+      allow(helper).to receive(:controller_name).and_return('maap_teammate_growth')
+      allow(helper).to receive(:controller_path).and_return('organizations/company_teammates/maap_teammate_growth')
+      expect(helper.people_current_view_name).to eq('Consult OG')
+    end
+
     it 'returns Public View for public action' do
       allow(helper).to receive(:action_name).and_return('public')
       allow(helper).to receive(:controller_name).and_return('people')

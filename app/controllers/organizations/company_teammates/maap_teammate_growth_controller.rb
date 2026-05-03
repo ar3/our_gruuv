@@ -5,6 +5,7 @@ module Organizations
     class MaapTeammateGrowthController < Organizations::CompanyTeammatesController
       def show
         authorize @teammate, :run_teammate_growth?, policy_class: CompanyTeammatePolicy
+        assign_teammates_for_maap_growth_switcher
         @run = MaapAgentRun.find_by(
           subject: @teammate,
           agent_kind: MaapAgentRun::AGENT_KIND_TEAMMATE_GROWTH
@@ -29,7 +30,7 @@ module Organizations
         record.save!
         TeammateGrowthJob.perform_later(@teammate.id, organization.id, record.id)
         redirect_to maap_teammate_growth_organization_company_teammate_path(organization, @teammate),
-                    notice: 'Teammate growth review started. This page will update when processing finishes.'
+                    notice: 'Consult OG started. This page will update when processing finishes.'
       end
 
       def status
@@ -46,6 +47,18 @@ module Organizations
       end
 
       private
+
+      def assign_teammates_for_maap_growth_switcher
+        assign_viewable_teammates_context!(selected_teammate: @teammate)
+        filtered = {}
+        @viewable_teammate_groups.each do |dept_name, teammates|
+          allowed = teammates.select do |tm|
+            CompanyTeammatePolicy.new(pundit_user, tm).run_teammate_growth?
+          end
+          filtered[dept_name] = allowed if allowed.any?
+        end
+        @viewable_teammate_groups = filtered
+      end
 
       def status_json_for(run)
         status = run.status.to_s

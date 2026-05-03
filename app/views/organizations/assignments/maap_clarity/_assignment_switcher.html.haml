@@ -1,0 +1,18 @@
+-# locals: organization, assignment, assignments_by_department
+- switch_aria_label = local_assigns.fetch(:switch_aria_label, 'Switch assignment for Consult OG')
+.dropdown.d-inline-flex.align-items-center
+  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label" => switch_aria_label}
+    %span{title: assignment.title}= assignment.title
+  %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+    - assignments_by_department.each do |dept, assignments_in_group|
+      %li
+        %h6.dropdown-header.mb-0.mt-1= dept&.display_name || 'No department'
+      - assignments_in_group.each do |asg|
+        %li
+          - if asg.id == assignment.id
+            .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+              %span.flex-grow-1.text-truncate{title: asg.title}= asg.title
+              %i.bi.bi-check-circle.text-success.flex-shrink-0
+          - else
+            = link_to maap_clarity_organization_assignment_path(organization, asg), class: 'dropdown-item d-flex align-items-center gap-2' do
+              %span.text-truncate{title: asg.title}= asg.title

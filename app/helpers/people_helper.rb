@@ -136,7 +136,11 @@ module PeopleHelper
     if controller_name == 'one_on_one_links' && action_name == 'show'
       return 'One on One Hub'
     end
-    
+
+    if controller_path == 'organizations/company_teammates/maap_teammate_growth' && action_name == 'show'
+      return 'Consult OG'
+    end
+
     # Check for position controller
     if controller_name == 'position' && action_name == 'show'
       return 'Seat Management Mode'

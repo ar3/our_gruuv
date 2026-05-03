@@ -28,7 +28,8 @@ RSpec.describe 'Organizations::CompanyTeammates::MaapTeammateGrowth', type: :req
     it 'loads the teammate growth page for authorized users' do
       get maap_teammate_growth_organization_company_teammate_path(organization, subject_teammate)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Teammate growth review')
+      expect(response.body).to include('Consult OG about')
+      expect(response.body).to include(subject_teammate.person.display_name)
     end
   end
 

@@ -5,6 +5,7 @@ module Organizations
     class MaapClarityController < Organizations::AbilitiesController
       skip_before_action :set_ability
       before_action :set_maap_ability
+      before_action :assign_abilities_for_maap_clarity_switcher, only: :show
 
       def show
         authorize @ability, :run_clarity?
@@ -52,6 +53,17 @@ module Organizations
 
       def set_maap_ability
         @ability = policy_scope(Ability).where(company: @organization).find(params[:id])
+      end
+
+      def assign_abilities_for_maap_clarity_switcher
+        scope = policy_scope(Ability).where(company: @organization).unarchived.includes(:department)
+        abilities_array = scope.left_joins(:department).order(
+          Arel.sql("COALESCE(departments.name, '')"),
+          'abilities.name'
+        ).to_a
+        grouped = abilities_array.group_by(&:department)
+        @abilities_by_department_for_maap_switcher = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
+        @abilities_by_department_for_maap_switcher.transform_values! { |list| list.sort_by(&:name) }
       end
 
       def status_json_for(run)

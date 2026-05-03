@@ -24,7 +24,8 @@ RSpec.describe 'Organizations::Abilities::MaapClarity', type: :request do
     it 'loads the clarity page for MAAP users' do
       get maap_clarity_organization_ability_path(organization, ability)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Consult OG')
+      expect(response.body).to include('Consult OG about')
+      expect(response.body).to include(ability.name)
     end
   end
 

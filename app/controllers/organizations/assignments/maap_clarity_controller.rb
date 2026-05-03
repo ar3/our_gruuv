@@ -8,6 +8,7 @@ module Organizations
 
       def show
         authorize @assignment, :run_clarity?
+        assign_assignments_for_maap_clarity_switcher
         @run = MaapAgentRun.find_by(
           subject: @assignment,
           agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY
@@ -52,6 +53,17 @@ module Organizations
 
       def set_maap_assignment
         @assignment = policy_scope(Assignment).where(company: @organization).find(params[:id])
+      end
+
+      def assign_assignments_for_maap_clarity_switcher
+        scope = policy_scope(Assignment).where(company: @organization).unarchived.includes(:department)
+        assignments_array = scope.left_joins(:department).order(
+          Arel.sql("COALESCE(departments.name, '')"),
+          'assignments.title'
+        ).to_a
+        grouped = assignments_array.group_by(&:department)
+        @assignments_by_department_for_maap_switcher = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
+        @assignments_by_department_for_maap_switcher.transform_values! { |list| list.sort_by { |a| a.title.to_s.downcase } }
       end
 
       def status_json_for(run)

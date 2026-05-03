@@ -8,6 +8,7 @@ module Organizations
 
       def show
         authorize @position, :run_clarity?
+        assign_positions_for_maap_clarity_switcher
         @run = MaapAgentRun.find_by(
           subject: @position,
           agent_kind: MaapAgentRun::AGENT_KIND_POSITION_CLARITY
@@ -52,6 +53,24 @@ module Organizations
 
       def set_maap_position
         @position = policy_scope(Position).find(params[:id])
+      end
+
+      def assign_positions_for_maap_clarity_switcher
+        positions = policy_scope(Position).unarchived
+          .includes(:position_level, title: [:department, :position_major_level])
+          .left_joins(title: :department)
+          .order(
+            Arel.sql('CASE WHEN titles.department_id IS NULL THEN 0 ELSE 1 END'),
+            'departments.name',
+            'titles.external_title',
+            'position_levels.level'
+          )
+        groups = positions.group_by { |p| p.title.department&.display_name || 'Company-wide' }
+        @positions_by_department_for_maap_switcher = {}
+        @positions_by_department_for_maap_switcher['Company-wide'] = groups['Company-wide'] if groups['Company-wide'].present?
+        (groups.keys - ['Company-wide']).sort.each do |label|
+          @positions_by_department_for_maap_switcher[label] = groups[label]
+        end
       end
 
       def status_json_for(run)
