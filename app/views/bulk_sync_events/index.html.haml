@@ -20,6 +20,8 @@
                 = link_to "Upload Assignments and Abilities", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::UploadAssignmentsAndAbilities'}), class: 'dropdown-item'
               %li
                 = link_to "Upload Assignments (Bulk)", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::UploadAssignmentsBulk'}), class: 'dropdown-item'
+              %li
+                = link_to "HR abilities CSV (review)", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::UploadAbilitiesHrReview'}), class: 'dropdown-item'
             %li
               %hr.dropdown-divider
             %li.dropdown-header Syncs
@@ -77,7 +79,8 @@
                   - else
                     %span.text-muted.small= bulk_sync_event.source_info
                 %td
-                  %span{class: "badge bg-#{bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentCheckins' ? 'primary' : bulk_sync_event.type == 'BulkSyncEvent::UploadEmployees' ? 'success' : bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsAndAbilities' ? 'info' : bulk_sync_event.type == 'BulkSyncEvent::RefreshNamesSync' ? 'info' : bulk_sync_event.type == 'BulkSyncEvent::EnsureAssignmentTenuresSync' ? 'info' : 'warning'}"}
+                  - type_badge = if bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentCheckins' then 'primary' elsif bulk_sync_event.type == 'BulkSyncEvent::UploadEmployees' then 'success' elsif bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsAndAbilities' then 'info' elsif bulk_sync_event.type == 'BulkSyncEvent::UploadAbilitiesHrReview' then 'dark' elsif bulk_sync_event.type == 'BulkSyncEvent::RefreshNamesSync' then 'info' elsif bulk_sync_event.type == 'BulkSyncEvent::EnsureAssignmentTenuresSync' then 'info' else 'warning' end
+                  %span{class: "badge bg-#{type_badge}"}
                     = bulk_sync_event.display_name
                 %td
                   %span{class: "badge bg-#{bulk_sync_event.status == 'completed' ? 'success' : bulk_sync_event.status == 'failed' ? 'danger' : bulk_sync_event.status == 'processing' ? 'warning' : 'secondary'}"}
@@ -133,7 +136,7 @@
                     = label_tag "status_#{status_value}", status_label, class: 'form-check-label'
               .mb-3
                 %label.form-label.fw-bold Sync Type
-                - [['BulkSyncEvent::UploadAssignmentCheckins', 'Upload Assignment Check-Ins'], ['BulkSyncEvent::UploadEmployees', 'Upload Employee Positions'], ['BulkSyncEvent::UploadAssignmentsAndAbilities', 'Upload Assignments and Abilities'], ['BulkSyncEvent::UploadAssignmentsBulk', 'Upload Assignments (Bulk)'], ['BulkSyncEvent::RefreshNamesSync', 'Refresh People Names'], ['BulkSyncEvent::RefreshSlackSync', 'Refresh Slack Identities'], ['BulkSyncEvent::EnsureAssignmentTenuresSync', 'Ensure Assignment Tenures']].each do |type_value, type_label|
+                - [['BulkSyncEvent::UploadAssignmentCheckins', 'Upload Assignment Check-Ins'], ['BulkSyncEvent::UploadEmployees', 'Upload Employee Positions'], ['BulkSyncEvent::UploadAssignmentsAndAbilities', 'Upload Assignments and Abilities'], ['BulkSyncEvent::UploadAssignmentsBulk', 'Upload Assignments (Bulk)'], ['BulkSyncEvent::UploadAbilitiesHrReview', 'HR abilities CSV (review)'], ['BulkSyncEvent::RefreshNamesSync', 'Refresh People Names'], ['BulkSyncEvent::RefreshSlackSync', 'Refresh Slack Identities'], ['BulkSyncEvent::EnsureAssignmentTenuresSync', 'Ensure Assignment Tenures']].each do |type_value, type_label|
                   .form-check
                     = check_box_tag 'sync_types[]', type_value, @selected_sync_types.include?(type_value), class: 'form-check-input', id: "sync_type_#{type_value.parameterize}"
                     = label_tag "sync_type_#{type_value.parameterize}", type_label, class: 'form-check-label'

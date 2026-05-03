@@ -60,6 +60,33 @@
                         %p.mb-0
                           %strong Optional columns:
                           check_in_date, energy_percentage, manager_rating, employee_rating, official_rating, manager_private_notes, employee_private_notes
+                      - elsif @bulk_sync_event.type == 'BulkSyncEvent::UploadEmployees'
+                        %p.mb-1
+                          %strong Required columns:
+                          %code Name
+                          ,
+                          %code Email
+                          , and
+                          %code Start Date
+                        %p.mb-0
+                          %strong Optional columns:
+                          Department, Manager, Location, Country, Employment Type, Job Title, Job Title Level
+                      - elsif @bulk_sync_event.type == 'BulkSyncEvent::UploadAbilitiesHrReview'
+                        %p.mb-1
+                          %strong Required columns:
+                          %code Assignment
+                          ,
+                          %code Ability
+                          (or Name),
+                          %code Description
+                          ,
+                          %code Milestone 1
+                          through
+                          %code Milestone 5
+                        %p.mb-0
+                          %strong Optional:
+                          %code Ability milestone
+                          (1–5). One row per assignment title; ability rows below until a blank row.
                       - else
                         %p.mb-1
                           %strong Required columns:

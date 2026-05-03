@@ -38,6 +38,16 @@ FactoryBot.define do
       results { { successes: [], failures: [] } }
       status { 'preview' }
     end
+
+    factory :upload_abilities_hr_review, class: 'BulkSyncEvent::UploadAbilitiesHrReview' do
+      type { 'BulkSyncEvent::UploadAbilitiesHrReview' }
+      filename { 'abilities.csv' }
+      source_contents { 'Assignment,Ability' }
+      source_data { { type: 'file_upload', filename: 'abilities.csv', file_size: 10, uploaded_at: Time.current } }
+      preview_actions { { 'rows' => [], 'parse_ok' => true, 'version' => 1 } }
+      results { { 'successes' => [], 'failures' => [] } }
+      status { 'preview' }
+    end
     
     trait :processing do
       status { 'processing' }

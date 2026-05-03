@@ -14,6 +14,7 @@ class BulkSyncEventForm
     BulkSyncEvent::UploadEmployees
     BulkSyncEvent::UploadAssignmentsAndAbilities
     BulkSyncEvent::UploadAssignmentsBulk
+    BulkSyncEvent::UploadAbilitiesHrReview
     BulkSyncEvent::RefreshNamesSync
     BulkSyncEvent::RefreshSlackSync
     BulkSyncEvent::EnsureAssignmentTenuresSync
@@ -107,7 +108,7 @@ class BulkSyncEventForm
   end
 
   def is_upload_type?
-    type.in?(['BulkSyncEvent::UploadAssignmentCheckins', 'BulkSyncEvent::UploadEmployees', 'BulkSyncEvent::UploadAssignmentsAndAbilities', 'BulkSyncEvent::UploadAssignmentsBulk'])
+    type.in?(['BulkSyncEvent::UploadAssignmentCheckins', 'BulkSyncEvent::UploadEmployees', 'BulkSyncEvent::UploadAssignmentsAndAbilities', 'BulkSyncEvent::UploadAssignmentsBulk', 'BulkSyncEvent::UploadAbilitiesHrReview'])
   end
 
   def is_sync_type?

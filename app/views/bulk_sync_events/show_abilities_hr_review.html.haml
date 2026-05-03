@@ -1,0 +1,120 @@
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Bulk sync events", url: organization_bulk_sync_events_path(organization) }, { label: "Event ##{@bulk_sync_event.id}", url: nil }])
+
+- preview = @bulk_sync_event.preview_actions.is_a?(Hash) ? @bulk_sync_event.preview_actions.stringify_keys : {}
+- parse_ok = preview['parse_ok'] != false
+- parse_errors = Array(preview['parse_errors'])
+- rows = Array(preview['rows'])
+- assignments_scope = policy_scope(Assignment).where(company_id: organization.id).order(:title)
+- needs_enrichment_poll = @bulk_sync_event.preview? && parse_ok && rows.any? { |r| r['state'].to_s == 'pending' && r['enrichment_status'].to_s == 'pending' }
+
+.container-fluid
+  .d-flex.justify-content-between.align-items-center.mb-4
+    %h1.mb-0 HR abilities import
+    .d-flex.gap-2
+      = link_to 'Back to uploads', organization_bulk_sync_events_path(organization), class: 'btn btn-outline-secondary'
+      - if @bulk_sync_event.can_destroy?
+        = link_to 'Delete', organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-outline-danger'
+
+  .card.mb-3
+    .card-body
+      %dl.row.mb-0
+        %dt.col-sm-3 Status
+        %dd.col-sm-9
+          %span{class: "badge bg-#{@bulk_sync_event.status == 'completed' ? 'success' : @bulk_sync_event.status == 'failed' ? 'danger' : 'secondary'}"}
+            = @bulk_sync_event.status.humanize
+        %dt.col-sm-3 Filename
+        %dd.col-sm-9
+          %code= @bulk_sync_event.filename
+        %dt.col-sm-3 Created
+        %dd.col-sm-9= format_time_in_user_timezone(@bulk_sync_event.created_at)
+
+  - unless parse_ok
+    .alert.alert-danger
+      %h6.alert-heading CSV could not be fully parsed
+      %ul.mb-0
+        - parse_errors.each do |msg|
+          %li= msg
+
+  - if parse_ok && needs_enrichment_poll
+    .alert.alert-info.d-flex.align-items-center.justify-content-between
+      %span
+        %strong Preparing suggestions…
+        Refresh this page in a few seconds if rows stay empty of AI proposals.
+      = link_to 'Refresh', organization_bulk_sync_event_path(organization, @bulk_sync_event), class: 'btn btn-sm btn-outline-primary'
+
+  - if parse_ok && rows.any?
+    - rows.each do |row|
+      - rid = row['id']
+      - next if rid.blank?
+      - st = row['state'].to_s
+      - desc = (row['description'] || {}).stringify_keys
+      - desc_value = desc['proposed'].presence || desc['normalized'].presence || desc['raw'].presence || ''
+      - join = (row['join_milestone'] || {}).stringify_keys
+      - join_level = join['level'].presence || 1
+      - milestones = (row['milestones'] || {}).stringify_keys
+      .card.mb-4.border-start.border-4{class: st == 'applied' ? 'border-success' : st == 'skipped' ? 'border-secondary' : 'border-primary'}
+        .card-header.d-flex.justify-content-between.align-items-center
+          %div
+            %strong= row['ability_name'].presence || '(unnamed)'
+            %span.text-muted.ms-2
+              Assignment context:
+              %code= row['assignment_raw']
+            - mk = row['assignment_match_kind'].to_s
+            - if mk.present?
+              %span.badge.bg-secondary.ms-1= "Match: #{mk}"
+          - if st == 'applied' && row['applied_ability_id'].present?
+            = link_to 'Open ability', organization_ability_path(organization, row['applied_ability_id']), class: 'btn btn-sm btn-outline-primary'
+          - elsif st == 'skipped'
+            %span.badge.bg-secondary Skipped
+        .card-body
+          - if st == 'pending'
+            = form_with url: approve_abilities_hr_row_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, local: true do
+              = hidden_field_tag :row_id, rid
+              .row.mb-3
+                .col-md-6
+                  %label.form-label Assignment
+                  = select_tag :resolved_assignment_id, options_from_collection_for_select(assignments_scope, :id, :title, row['resolved_assignment_id']), class: 'form-select', name: 'resolved_assignment_id'
+                  - alts = Array(row['assignment_alternatives'])
+                  - if alts.size > 1
+                    %small.text-muted.d-block.mt-1 Search alternatives: #{alts.map { |a| a['title'] }.join('; ')}
+                .col-md-3
+                  %label.form-label Join milestone (1–5)
+                  = number_field_tag :join_milestone_level, join_level, class: 'form-control', min: 1, max: 5, name: 'join_milestone_level'
+                  - if join['rationale'].present?
+                    %small.text-muted.d-block.mt-1= join['rationale']
+                .col-md-3
+                  %label.form-label Ability name
+                  = text_field_tag :ability_name, row['ability_name'], class: 'form-control', name: 'ability_name'
+              .row.mb-3
+                .col-12
+                  %label.form-label Description (editable)
+                  = text_area_tag :description, desc_value, class: 'form-control', rows: 6, name: 'description'
+              .mb-2
+                %button.btn.btn-sm.btn-outline-secondary{type: 'button', 'data-bs-toggle' => 'collapse', 'data-bs-target' => "#milestone-fields-#{rid}"}
+                  Milestone 1–5 text
+              .collapse{id: "milestone-fields-#{rid}"}
+                .row
+                  - (1..5).each do |n|
+                    - mh = milestones[n.to_s].is_a?(Hash) ? milestones[n.to_s].stringify_keys : {}
+                    - mv = mh['proposed'].presence || mh['normalized'].presence || mh['raw'].presence || ''
+                    .col-12.mb-2
+                      %label.form-label= "Milestone #{n}"
+                      = text_area_tag "milestone_#{n}_description", mv, class: 'form-control font-monospace small', rows: 4, name: "milestone_#{n}_description"
+              .d-flex.gap-2.mt-3
+                = submit_tag 'Approve row', class: 'btn btn-primary'
+            = button_to 'Skip row', skip_abilities_hr_row_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, params: { row_id: rid }, class: 'btn btn-outline-secondary mt-2'
+          - elsif st == 'applied'
+            %p.text-success.mb-0 Applied to database.
+          - else
+            %p.text-muted.mb-0 Row was skipped.
+
+  - elsif parse_ok
+    .alert.alert-warning No ability rows were parsed.
+
+  - results_h = @bulk_sync_event.results.is_a?(Hash) ? @bulk_sync_event.results.stringify_keys : {}
+  - if @bulk_sync_event.completed? && results_h['summary'].is_a?(Hash)
+    - s = results_h['summary'].stringify_keys
+    .alert.alert-success.mt-3
+      %strong Done.
+      Applied: #{s['applied']}, skipped: #{s['skipped']}, failed: #{s['failed']}.

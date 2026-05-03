@@ -1,6 +1,6 @@
 class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_login
-  before_action :set_bulk_sync_event, only: [:show, :destroy, :process_sync]
+  before_action :set_bulk_sync_event, only: [:show, :destroy, :process_sync, :approve_abilities_hr_row, :skip_abilities_hr_row]
   before_action :authorize_bulk_sync_events, only: [:new, :create, :run_auto_refresh_slack]
 
   def index
@@ -95,7 +95,45 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
 
   def show
     authorize @bulk_sync_event, :show?
+    return render(:show_abilities_hr_review) if @bulk_sync_event.is_a?(BulkSyncEvent::UploadAbilitiesHrReview)
+
     # Show page displays sync details, preview actions, and results
+  end
+
+  def approve_abilities_hr_row
+    authorize @bulk_sync_event, :process_sync?
+
+    result = AbilitiesHrReview::ApproveRow.call(
+      bulk_sync_event: @bulk_sync_event,
+      row_id: params.require(:row_id),
+      person: current_person,
+      overrides: abilities_hr_review_override_params
+    )
+
+    if result.ok?
+      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
+                  notice: 'Ability created and linked to assignment.'
+    else
+      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
+                  alert: result.error
+    end
+  end
+
+  def skip_abilities_hr_row
+    authorize @bulk_sync_event, :process_sync?
+
+    result = AbilitiesHrReview::SkipRow.call(
+      bulk_sync_event: @bulk_sync_event,
+      row_id: params.require(:row_id)
+    )
+
+    if result.ok?
+      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
+                  notice: 'Row skipped.'
+    else
+      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
+                  alert: result.error
+    end
   end
 
   def new
@@ -166,7 +204,13 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
 
   def process_sync
     authorize @bulk_sync_event, :process_sync?
-    
+
+    if @bulk_sync_event.is_a?(BulkSyncEvent::UploadAbilitiesHrReview)
+      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
+                  alert: 'This import is applied row-by-row from the review screen. Use Approve on each row.'
+      return
+    end
+
     unless @bulk_sync_event.can_process?
       redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event), alert: 'This sync cannot be processed.'
       return
@@ -286,6 +330,21 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
 
   def bulk_sync_event_params
     params.require(:bulk_sync_event).permit()
+  end
+
+  def abilities_hr_review_override_params
+    params.permit(
+      :resolved_assignment_id,
+      :ability_name,
+      :join_milestone_level,
+      :department_id,
+      :description,
+      :milestone_1_description,
+      :milestone_2_description,
+      :milestone_3_description,
+      :milestone_4_description,
+      :milestone_5_description
+    ).to_h
   end
 
   def authorize_bulk_sync_events

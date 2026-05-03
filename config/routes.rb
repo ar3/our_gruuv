@@ -181,6 +181,8 @@ Rails.application.routes.draw do
       end
       member do
         post :process_sync
+        post :approve_abilities_hr_row
+        post :skip_abilities_hr_row
       end
     end
     
@@ -207,6 +209,8 @@ Rails.application.routes.draw do
     resources :upload_events, only: [:index, :show, :new, :create, :destroy], controller: 'bulk_sync_events' do
       member do
         post :process_upload, to: 'bulk_sync_events#process_sync'
+        post :approve_abilities_hr_row, to: 'bulk_sync_events#approve_abilities_hr_row'
+        post :skip_abilities_hr_row, to: 'bulk_sync_events#skip_abilities_hr_row'
       end
     end
     

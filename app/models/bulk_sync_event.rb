@@ -17,6 +17,8 @@ class BulkSyncEvent < ApplicationRecord
       BulkSyncEvent::UploadEmployees
     when 'UploadAssignmentsAndAbilities', 'BulkSyncEvent::UploadAssignmentsAndAbilities'
       BulkSyncEvent::UploadAssignmentsAndAbilities
+    when 'UploadAbilitiesHrReview', 'BulkSyncEvent::UploadAbilitiesHrReview'
+      BulkSyncEvent::UploadAbilitiesHrReview
     when 'UploadEvent::UploadAssignmentCheckins'
       BulkSyncEvent::UploadAssignmentCheckins
     when 'UploadEvent::UploadEmployees'

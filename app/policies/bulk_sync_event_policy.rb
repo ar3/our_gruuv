@@ -60,6 +60,7 @@ class BulkSyncEventPolicy < ApplicationPolicy
   private
 
   def requires_maap_permission?(record)
-    record.is_a?(BulkSyncEvent::UploadAssignmentsAndAbilities)
+    record.is_a?(BulkSyncEvent::UploadAssignmentsAndAbilities) ||
+      record.is_a?(BulkSyncEvent::UploadAbilitiesHrReview)
   end
 end
