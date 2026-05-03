@@ -319,6 +319,9 @@ Rails.application.routes.draw do
         patch :update_assignment_tenure_check_in_bypass
         post :set_default_assignments
         get :kudos_points
+        get 'maap_teammate_growth', to: 'company_teammates/maap_teammate_growth#show', as: :maap_teammate_growth
+        post 'maap_teammate_growth/run', to: 'company_teammates/maap_teammate_growth#run', as: :run_maap_teammate_growth
+        get 'maap_teammate_growth/status', to: 'company_teammates/maap_teammate_growth#status', as: :maap_teammate_growth_status
         get 'my_growth/experiences', action: :my_growth_experiences, as: :my_growth_experiences
         get 'my_growth/abilities', action: :my_growth_abilities, as: :my_growth_abilities
         get 'my_growth/goals', action: :my_growth_goals, as: :my_growth_goals

@@ -143,8 +143,19 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   def load_one_on_one_hub_data
     load_execute_metrics
     load_evolve_metrics
+    load_teammate_growth_for_one_on_one_hub
     load_goals_confidence_chart_data
     load_one_thing_priority_carousel
+  end
+
+  def load_teammate_growth_for_one_on_one_hub
+    @can_run_teammate_growth = CompanyTeammatePolicy.new(pundit_user, @teammate).run_teammate_growth?
+    return unless @can_run_teammate_growth
+
+    @teammate_growth_maap_run = MaapAgentRun.find_by(
+      subject: @teammate,
+      agent_kind: MaapAgentRun::AGENT_KIND_TEAMMATE_GROWTH
+    )
   end
 
   def load_one_thing_priority_carousel

@@ -1,0 +1,48 @@
+.col-12
+  .card.border-primary.border-opacity-25
+    .card-header.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+      %h5.mb-0 Teammate growth
+      %span.badge.text-bg-warning
+        %i.bi.bi-flask.me-1
+        Beta
+    .card-body
+      .d-flex.flex-wrap.align-items-center.gap-2.mb-2
+        = link_to maap_teammate_growth_organization_company_teammate_path(organization, teammate), class: 'btn btn-outline-primary btn-sm' do
+          %i.bi.bi-box-arrow-up-right.me-1
+          Open full review
+        = button_to run_maap_teammate_growth_organization_company_teammate_path(organization, teammate), method: :post, class: 'btn btn-primary btn-sm' do
+          %i.bi.bi-play-fill.me-1
+          - if run&.persisted? && run.status == 'completed'
+            Re-run review
+          - else
+            Run review
+      - run = local_assigns.fetch(:run, nil)
+      - if run&.status.in?(%w[pending processing])
+        %p.text-muted.mb-2.mb-0
+          %i.bi.bi-hourglass-split.me-1
+          Growth review is #{run.status}…
+          %span.text-muted (refresh this page for updates)
+      - elsif run&.status == 'failed'
+        %p.text-danger.mb-2.mb-0
+          %strong Last run failed.
+          = run.error_message.to_s.truncate(120)
+      - elsif run&.status == 'completed' && run.output_text.present?
+        - rating = run.clarity_rating
+        .d-flex.flex-wrap.align-items-center.gap-2.mb-2
+          %small.text-muted Last run:
+          - case rating
+          - when 'green'
+            %span.badge.text-bg-success Green
+          - when 'yellow'
+            %span.badge.text-bg-warning Yellow
+          - when 'red'
+            %span.badge.text-bg-danger Red
+          - else
+            %span.badge.text-bg-secondary —
+          - if run.updated_at
+            %small.text-muted= l(run.updated_at, format: :short)
+        %p.small.text-muted.mb-0
+          = Maap::TeammateGrowthHubSummary.excerpt_for_hub(run)
+      - else
+        %p.text-muted.small.mb-0
+          Run a review to see manager-ready growth notes grounded in this teammate’s MAAP data.

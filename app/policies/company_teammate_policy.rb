@@ -100,6 +100,18 @@ class CompanyTeammatePolicy < ApplicationPolicy
     false
   end
 
+  # MAAP Teammate Growth agent (1:1 Hub + full-page review); mirrors who can open the teammate's 1:1 hub.
+  def run_teammate_growth?
+    return true if admin_bypass?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    return false unless record.person
+    return true if viewing_teammate.person == record.person
+    return true if viewing_teammate.can_manage_employment?
+    return true if viewing_teammate.in_managerial_hierarchy_of?(record)
+    false
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       # Users can only see their own teammate record

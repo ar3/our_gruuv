@@ -1,0 +1,127 @@
+- content_for :title, "Teammate growth — #{@teammate.person.display_name}"
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+    %h1.mb-0
+      %i.bi.bi-stars.me-2
+      Teammate growth review
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@organization) }, { label: "1:1 Hub", url: organization_company_teammate_one_on_one_link_path(@organization, @teammate) }, { label: "Teammate growth", url: nil }])
+
+.row.justify-content-center
+  .col-lg-10
+    %p.lead.text-muted
+      Uses the Teammate Growth agent (Bedrock) to synthesize this person’s MAAP picture — position, assignments, milestones,
+      stated goals, and light ritual signals — into manager-ready coaching notes. Results are saved as the latest run for this teammate.
+
+    .d-flex.flex-wrap.gap-2.mb-3
+      = button_to run_maap_teammate_growth_organization_company_teammate_path(@organization, @teammate), method: :post, class: 'btn btn-primary' do
+        %i.bi.bi-play-fill.me-2
+        - if @run&.persisted?
+          Re-run growth review
+        - else
+          Run growth review
+
+    - if @run&.error_message.present? && @run.status == 'failed'
+      .alert.alert-danger.mb-3
+        %strong Something went wrong.
+        = @run.error_message
+
+    - if @run&.status.in?(%w[pending processing])
+      .alert.alert-secondary.mb-3#maap-teammate-growth-status-banner{ data: { status_url: maap_teammate_growth_status_organization_company_teammate_path(@organization, @teammate) } }
+        %i.bi.bi-hourglass-split.me-2
+        %span#maap-teammate-growth-status-text
+          Review is #{@run.status}…
+        %span.ms-1.text-muted#maap-teammate-growth-elapsed
+        %span.ms-1.text-warning.d-none#maap-teammate-growth-slow-warning
+          Taking longer than expected.
+        .small.text-muted.mt-1#maap-teammate-growth-last-checked
+          Last checked: just now
+
+      .card.mb-4.border-0.bg-light
+        .card-body.placeholder-glow.py-4
+          - 4.times do
+            .placeholder.col-12.mb-2.rounded{ style: "height: 0.9rem;" }
+            .placeholder.col-10.mb-2.rounded{ style: "height: 0.9rem;" }
+
+    - elsif @run&.status == 'completed' && @run.output_text.present?
+      - rating = @run.clarity_rating
+      .d-flex.align-items-center.flex-wrap.gap-2.mb-3
+        %span.text-muted Latest growth signal:
+        - case rating
+        - when 'green'
+          %span.badge.text-bg-success Green — strongest clarity
+        - when 'yellow'
+          %span.badge.text-bg-warning Yellow — needs attention
+        - when 'red'
+          %span.badge.text-bg-danger Red — weakest clarity
+        - else
+          %span.badge.text-bg-secondary Unknown
+        - if @run.updated_at
+          %small.text-muted.ms-2 Updated #{l(@run.updated_at, format: :long)}
+      - parsed = Maap::ClaritySignalParser.call(@run.output_text)
+      .card.mb-0
+        .card-body.markdown-content
+          = render_markdown(parsed.body)
+
+    - elsif (@run.nil? || (@run.status == 'completed' && @run.output_text.blank?)) && @run&.status != 'failed'
+      .alert.alert-info.mb-0
+        No completed review yet. Click “Run growth review” to generate one.
+
+- if @run && %w[pending processing].include?(@run.status)
+  :javascript
+    (() => {
+      const banner = document.getElementById('maap-teammate-growth-status-banner');
+      if (!banner) return;
+
+      const url = banner.dataset.statusUrl;
+      const statusText = document.getElementById('maap-teammate-growth-status-text');
+      const elapsedText = document.getElementById('maap-teammate-growth-elapsed');
+      const slowWarning = document.getElementById('maap-teammate-growth-slow-warning');
+      const lastChecked = document.getElementById('maap-teammate-growth-last-checked');
+      const fmt = (seconds) => {
+        const s = Math.max(parseInt(seconds || 0, 10), 0);
+        const mins = Math.floor(s / 60);
+        const rem = s % 60;
+        return mins > 0 ? `${mins}m ${rem}s` : `${rem}s`;
+      };
+      const fmtTime = (date) => {
+        const d = date || new Date();
+        return d.toLocaleString([], {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZoneName: 'short'
+        });
+      };
+
+      const poll = async () => {
+        try {
+          const res = await fetch(url, { headers: { Accept: 'application/json' } });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (statusText) statusText.textContent = `Review is ${data.status}...`;
+          if (elapsedText) elapsedText.textContent = `(${fmt(data.elapsed_seconds)})`;
+          if (slowWarning) {
+            slowWarning.classList.toggle('d-none', !data.slow);
+            if (data.stale) slowWarning.textContent = 'Possible stall detected. Try refreshing or re-run.';
+          }
+          if (lastChecked) lastChecked.textContent = `Last checked: ${fmtTime(new Date())}`;
+          if (data.status === 'completed' || data.status === 'failed') {
+            window.location.reload();
+          }
+        } catch (_) {
+          // Keep polling; transient failures are expected.
+        }
+      };
+
+      poll();
+      window.setInterval(poll, 3000);
+    })();

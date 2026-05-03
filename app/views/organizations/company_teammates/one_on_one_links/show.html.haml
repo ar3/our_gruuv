@@ -301,6 +301,12 @@
                     - else
                       %p.text-muted.mb-0 No current ability milestone gaps were found.
 
+              - if @can_run_teammate_growth
+                = render 'organizations/company_teammates/one_on_one_links/teammate_growth_evolve',
+                         organization: organization,
+                         teammate: @teammate,
+                         run: @teammate_growth_maap_run
+
       %hr.my-4
       = render "organizations/company_teammates/internal_views_navigation", organization: organization, teammate: @teammate, for_one_on_one_hub: true
 

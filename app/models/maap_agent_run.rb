@@ -4,6 +4,7 @@ class MaapAgentRun < ApplicationRecord
   AGENT_KIND_ABILITY_CLARITY = 'ability_clarity'
   AGENT_KIND_ASSIGNMENT_CLARITY = 'assignment_clarity'
   AGENT_KIND_POSITION_CLARITY = 'position_clarity'
+  AGENT_KIND_TEAMMATE_GROWTH = 'teammate_growth'
 
   STATUSES = %w[pending processing completed failed].freeze
   CLARITY_RATINGS = %w[green yellow red].freeze
@@ -18,6 +19,7 @@ class MaapAgentRun < ApplicationRecord
   scope :ability_clarity, -> { where(agent_kind: AGENT_KIND_ABILITY_CLARITY) }
   scope :assignment_clarity, -> { where(agent_kind: AGENT_KIND_ASSIGNMENT_CLARITY) }
   scope :position_clarity, -> { where(agent_kind: AGENT_KIND_POSITION_CLARITY) }
+  scope :teammate_growth, -> { where(agent_kind: AGENT_KIND_TEAMMATE_GROWTH) }
 
   def terminal?
     status.in?(%w[completed failed])
