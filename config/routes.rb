@@ -273,6 +273,9 @@ Rails.application.routes.draw do
         patch :update_view
       end
       member do
+        get 'maap_clarity', to: 'assignments/maap_clarity#show', as: :maap_clarity
+        post 'maap_clarity/run', to: 'assignments/maap_clarity#run', as: :run_maap_clarity
+        get 'maap_clarity/status', to: 'assignments/maap_clarity#status', as: :maap_clarity_status
         get :archive
         patch :execute_archive
         patch :restore

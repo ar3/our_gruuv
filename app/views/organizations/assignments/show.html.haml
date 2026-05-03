@@ -18,9 +18,9 @@
 
 .row.justify-content-center
   .col-12
-    .row.g-4.mb-4
+    .row.g-4.mb-4.align-items-start
       .col-lg-8
-        .card.h-100
+        .card
           .card-header
             %h5.mb-0
               %i.bi.bi-info-circle.me-2
@@ -123,8 +123,9 @@
                           %i.bi.bi-file-earmark-text.me-1
                           Draft Version
 
-      .col-lg-4
+      .col-lg-4.d-flex.flex-column.gap-4
         = render "organizations/assignments/actions_card"
+        = render "organizations/assignments/maap_clarity_spotlight"
 
     - if @assignment.handbook.present?
       .card.mb-4

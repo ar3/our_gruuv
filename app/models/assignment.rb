@@ -28,6 +28,12 @@ class Assignment < ApplicationRecord
   has_many :goal_associations, as: :associable, dependent: :destroy
   has_many :goals, through: :goal_associations
 
+  has_many :maap_agent_runs, as: :subject, dependent: :destroy
+  has_one :assignment_clarity_maap_agent_run,
+          -> { where(agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY) },
+          class_name: 'MaapAgentRun',
+          as: :subject
+
   # Validations
   validates :title, presence: true, uniqueness: { scope: :company_id }
   validates :tagline, presence: true

@@ -1,6 +1,10 @@
 module AssignmentsHelper
   def assignments_current_view_name
     return 'Assignment View' unless action_name
+
+    if controller_path == 'organizations/assignments/maap_clarity'
+      return 'Clarity review'
+    end
     
     # Check if we're in public view
     if request.path.include?('/public_maap/assignments/')

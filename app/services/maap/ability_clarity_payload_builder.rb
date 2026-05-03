@@ -38,6 +38,16 @@ module Maap
         'body' => position_sections
       }
 
+      assignment_records = @ability.assignment_abilities.includes(:assignment).map(&:assignment)
+      position_records = @ability.position_abilities.includes(:position).map(&:position)
+      EntityLinkReferenceSection.append_to_sections!(
+        sections,
+        organization: company,
+        abilities: [@ability] + siblings.to_a,
+        assignments: assignment_records,
+        positions: position_records
+      )
+
       { 'sections' => sections }
     end
 

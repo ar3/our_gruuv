@@ -215,6 +215,8 @@ class Organizations::AssignmentsController < ApplicationController
       .joins(position: [:title, :position_level])
       .order('position_assignments.assignment_type, titles.external_title, position_levels.level')
 
+    @assignment_clarity_run = @assignment.assignment_clarity_maap_agent_run
+
     assign_public_kudos_for_rateable_card!(
       organization: @organization,
       rateable_type: "Assignment",

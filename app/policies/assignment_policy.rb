@@ -46,6 +46,10 @@ class AssignmentPolicy < ApplicationPolicy
     update?
   end
 
+  def run_clarity?
+    update?
+  end
+
   private
 
   def user_has_maap_permission?

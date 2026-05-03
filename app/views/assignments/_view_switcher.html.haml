@@ -3,8 +3,9 @@
 - is_person_view = @person.present? && !@teammate.present? && request.path.include?('/people/')
 - is_ability_milestones_view = request.path.include?('/ability_milestones')
 - is_consumer_assignments_view = request.path.include?('/consumer_assignments')
+- is_maap_clarity_view = controller_path == 'organizations/assignments/maap_clarity'
 - is_edit_view = action_name == 'edit' && controller_name == 'assignments'
-- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_edit_view && (@organization.present? || (@assignment && @assignment.company.present?))
+- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_edit_view && !is_maap_clarity_view && (@organization.present? || (@assignment && @assignment.company.present?))
 - assignment_org = @organization || (@assignment&.company)
 
 .dropdown
@@ -122,6 +123,22 @@
             %i.bi.bi-pencil.me-2
             Edit Assignment
             %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or admin access to edit assignments"}
+
+      %li
+        - if is_maap_clarity_view
+          .dropdown-item.text-muted
+            %i.bi.bi-stars.me-2
+            Clarity review (Active)
+            %i.bi.bi-check-circle.text-success.ms-2
+        - elsif @assignment && assignment_org && policy(@assignment).run_clarity?
+          = link_to maap_clarity_organization_assignment_path(assignment_org, @assignment), class: 'dropdown-item' do
+            %i.bi.bi-stars.me-2
+            Clarity review
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-stars.me-2
+            Clarity review
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions to run clarity review"}
 
       - if @assignment && assignment_org
         %li

@@ -2,6 +2,7 @@
 
 class MaapAgentRun < ApplicationRecord
   AGENT_KIND_ABILITY_CLARITY = 'ability_clarity'
+  AGENT_KIND_ASSIGNMENT_CLARITY = 'assignment_clarity'
 
   STATUSES = %w[pending processing completed failed].freeze
   CLARITY_RATINGS = %w[green yellow red].freeze
@@ -14,6 +15,7 @@ class MaapAgentRun < ApplicationRecord
   validates :clarity_rating, inclusion: { in: CLARITY_RATINGS }, allow_nil: true
 
   scope :ability_clarity, -> { where(agent_kind: AGENT_KIND_ABILITY_CLARITY) }
+  scope :assignment_clarity, -> { where(agent_kind: AGENT_KIND_ASSIGNMENT_CLARITY) }
 
   def terminal?
     status.in?(%w[completed failed])

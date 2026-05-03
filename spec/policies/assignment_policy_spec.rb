@@ -99,6 +99,19 @@ RSpec.describe AssignmentPolicy, type: :policy do
     end
   end
 
+  describe 'run_clarity?' do
+    it 'matches update? — MAAP user allowed' do
+      policy = AssignmentPolicy.new(pundit_user_maap, assignment)
+      expect(policy.run_clarity?).to eq(policy.update?)
+      expect(policy.run_clarity?).to be true
+    end
+
+    it 'denies when update is denied' do
+      policy = AssignmentPolicy.new(pundit_user_person, assignment)
+      expect(policy.run_clarity?).to be false
+    end
+  end
+
   describe 'destroy?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do
