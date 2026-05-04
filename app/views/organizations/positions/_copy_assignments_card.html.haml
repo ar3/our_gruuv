@@ -1,0 +1,76 @@
+-# locals: sibling_positions, assignment_diffs, page_position
+%p.text-muted.small.mb-3
+  Other positions in this title. Differences are computed against this page's position.
+  Copy actions save your current edits first, then overwrite the chosen side's position assignments.
+
+- if sibling_positions.empty?
+  .alert.alert-info.mb-0
+    %p.mb-0 No other positions in this title to copy from.
+- else
+  .table-responsive
+    %table.table.table-sm.align-middle
+      %thead.table-light
+        %tr
+          %th Position
+          %th Differences vs. this page
+          %th Copy to
+          %th Copy from
+      %tbody
+        - sibling_positions.each do |sp|
+          - diff = assignment_diffs[sp]
+          %tr
+            %td
+              %strong= "L#{sp.position_level.level}"
+              %br
+              %small.text-muted= sp.display_name
+              = link_to organization_position_path(sp.title.company, sp), target: "_blank", rel: "noopener noreferrer", class: "ms-1", title: "View position" do
+                %i.bi.bi-box-arrow-up-right
+            %td
+              - if diff.empty?
+                %span.text-muted.fst-italic Identical configuration
+              - else
+                %ul.list-unstyled.mb-0.small
+                  - diff.added.each do |pa|
+                    %li
+                      %span.text-success.fw-bold +
+                      %strong= pa.assignment.title
+                      %span.text-muted= " (#{pa.assignment_type}, #{pa.energy_range_display})"
+                      %span.text-muted.small  — only on L#{sp.position_level.level}
+                  - diff.removed.each do |pa|
+                    %li
+                      %span.text-danger.fw-bold &minus;
+                      %strong= pa.assignment.title
+                      %span.text-muted= " (#{pa.assignment_type}, #{pa.energy_range_display})"
+                      %span.text-muted.small  — only on this page
+                  - diff.changed.each do |entry|
+                    - src_pa = entry[:source]
+                    - dst_pa = entry[:destination]
+                    %li
+                      %span.text-warning.fw-bold ~
+                      %strong= src_pa.assignment.title
+                      %span.text-muted
+                        = ": this page = #{dst_pa.assignment_type} #{dst_pa.energy_range_display}"
+                        →
+                        = "L#{sp.position_level.level} = #{src_pa.assignment_type} #{src_pa.energy_range_display}"
+            %td
+              - to_label = "Overwrite #{sp.display_name}'s position assignments and use #{page_position.display_name}'s configuration instead"
+              - to_confirm = "This will replace L#{sp.position_level.level}'s position assignments with this page's configuration. Continue?"
+              = button_tag to_label,
+                  type: "submit",
+                  name: "copy_action",
+                  value: "to:#{sp.id}",
+                  class: "btn btn-sm btn-outline-warning #{'disabled' if diff.empty?}",
+                  disabled: diff.empty?,
+                  title: diff.empty? ? "No changes to copy" : nil,
+                  data: { confirm: to_confirm }
+            %td
+              - from_label = "Overwrite #{page_position.display_name}'s position assignments and use #{sp.display_name}'s configuration instead"
+              - from_confirm = "This will replace this page position's assignments with L#{sp.position_level.level}'s configuration. Continue?"
+              = button_tag from_label,
+                  type: "submit",
+                  name: "copy_action",
+                  value: "from:#{sp.id}",
+                  class: "btn btn-sm btn-outline-warning #{'disabled' if diff.empty?}",
+                  disabled: diff.empty?,
+                  title: diff.empty? ? "No changes to copy" : nil,
+                  data: { confirm: from_confirm }

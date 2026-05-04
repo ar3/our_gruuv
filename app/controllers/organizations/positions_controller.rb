@@ -343,6 +343,18 @@ class Organizations::PositionsController < ApplicationController
       anticipated: suggested_pas.sum { |pa| pa.anticipated_energy_percentage || 0 }
     }
     
+    # Sibling positions in the same title (different position_level), used by the
+    # "Copy Position Assignments" card to compare and copy configurations.
+    @sibling_positions = @position.title.positions
+                                  .unarchived
+                                  .where.not(id: @position.id)
+                                  .includes(:position_level, position_assignments: :assignment)
+                                  .joins(:position_level)
+                                  .order('position_levels.level')
+    @assignment_diffs = @sibling_positions.index_with do |sp|
+      PositionAssignments::Diff.call(source: sp, destination: @position)
+    end
+
     # Set return URL
     @return_url = organization_position_path(@organization, @position)
     @return_text = "Back to Position"
@@ -388,9 +400,15 @@ class Organizations::PositionsController < ApplicationController
     
     if errors.any?
       redirect_to manage_assignments_organization_position_path(@organization, @position), alert: "Some assignments could not be saved: #{errors.join('; ')}"
+      return
+    end
+
+    @position.reload
+    @position.record_version_for_assignment_changes!
+
+    if params[:copy_action].present?
+      perform_copy_action!(params[:copy_action])
     else
-      @position.reload
-      @position.record_version_for_assignment_changes!
       redirect_to manage_assignments_organization_position_path(@organization, @position), notice: 'Assignments updated successfully.'
     end
   end
@@ -508,6 +526,52 @@ class Organizations::PositionsController < ApplicationController
 
   def position_params
     params.require(:position).permit(:title_id, :position_level_id, :external_title, :position_summary, :version_type)
+  end
+
+  # Handles a "copy_action" param of the form "to:<sibling_id>" or "from:<sibling_id>"
+  # submitted from the Copy Position Assignments card on manage_assignments.
+  # Saves on the page have already happened by the time this is called.
+  def perform_copy_action!(raw_action)
+    direction, sibling_id_str = raw_action.to_s.split(':', 2)
+    sibling_id = sibling_id_str.to_i
+
+    unless %w[to from].include?(direction) && sibling_id.positive?
+      redirect_to manage_assignments_organization_position_path(@organization, @position),
+                  alert: 'Invalid copy action.'
+      return
+    end
+
+    sibling = @position.title.positions.unarchived.where.not(id: @position.id).find_by(id: sibling_id)
+    unless sibling
+      redirect_to manage_assignments_organization_position_path(@organization, @position),
+                  alert: 'Could not find a sibling position with that id for this title.'
+      return
+    end
+
+    if direction == 'to'
+      source = @position
+      destination = sibling
+      change_context = "Copied position assignments from #{@position.display_name} via manage_assignments page"
+    else
+      source = sibling
+      destination = @position
+      change_context = "Copied position assignments from #{sibling.display_name} via manage_assignments page"
+    end
+
+    PositionAssignments::CopyConfiguration.call(
+      source: source,
+      destination: destination,
+      change_context: change_context
+    )
+
+    notice = "Saved current configuration and copied assignments from #{source.display_name} into #{destination.display_name}."
+    redirect_to manage_assignments_organization_position_path(@organization, @position), notice: notice
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to manage_assignments_organization_position_path(@organization, @position),
+                alert: "Copy failed: #{e.record.errors.full_messages.join('; ')}"
+  rescue ArgumentError => e
+    redirect_to manage_assignments_organization_position_path(@organization, @position),
+                alert: "Copy failed: #{e.message}"
   end
 
   def calculate_minimum_mileage_from_assignments
