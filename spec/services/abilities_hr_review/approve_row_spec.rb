@@ -29,7 +29,11 @@ RSpec.describe AbilitiesHrReview::ApproveRow do
               '4' => { 'raw' => '', 'normalized' => '', 'proposed' => nil },
               '5' => { 'raw' => '', 'normalized' => '', 'proposed' => nil }
             },
-            'join_milestone' => { 'level' => 2, 'proposed_level' => nil, 'rationale' => nil }
+            'join_milestone' => { 'level' => 2, 'proposed_level' => nil, 'rationale' => nil },
+            'ability_intent' => 'create',
+            'form_ability_name' => 'Knife work',
+            'ability_match_kind' => 'none',
+            'default_department_label' => 'None'
           }
         ]
       }
@@ -53,5 +57,29 @@ RSpec.describe AbilitiesHrReview::ApproveRow do
     row = event.preview_actions['rows'].first
     expect(row['state']).to eq('applied')
     expect(row['applied_ability_id']).to eq(ability.id)
+  end
+
+  context 'when an ability with the same name already exists' do
+    let!(:existing_ability) do
+      create(:ability,
+             company: organization,
+             name: 'Knife work',
+             description: 'Old body',
+             created_by: person,
+             updated_by: person)
+    end
+
+    it 'updates the ability and links assignment_ability' do
+      result = described_class.call(bulk_sync_event: event, row_id: 'row1', person: person, overrides: {})
+      expect(result.ok?).to be true
+
+      existing_ability.reload
+      expect(existing_ability.description).to eq('Body')
+      expect(existing_ability.milestone_1_description).to eq('M1')
+
+      aa = AssignmentAbility.find_by(assignment_id: assignment.id, ability_id: existing_ability.id)
+      expect(aa).to be_present
+      expect(aa.milestone_level).to eq(2)
+    end
   end
 end

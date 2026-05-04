@@ -45,36 +45,49 @@ module AbilitiesHrReview
       join_level = (@overrides['join_milestone_level'].presence || row.dig('join_milestone', 'level')).to_i
       join_level = 1 unless (1..5).cover?(join_level)
 
+      existing = Ability.find_by(company_id: @event.organization_id, name: name)
+      ability_action = existing ? 'updated' : 'created'
+
       ability = nil
       ApplicationRecord.transaction do
-        ability = Ability.new(
-          company_id: @event.organization_id,
-          name: name,
-          description: description,
-          created_by: @person,
-          updated_by: @person,
-          department_id: (@overrides['department_id'].presence || assignment.department_id)
-        )
-        milestone_attrs.each { |attr, val| ability[attr] = val }
+        if existing
+          existing.assign_attributes(
+            description: description,
+            updated_by: @person,
+            department_id: resolve_department_id_for_save(existing, assignment)
+          )
+          milestone_attrs.each { |attr, val| existing[attr] = val }
+          existing.save!
+          ability = existing
+        else
+          ability = Ability.new(
+            company_id: @event.organization_id,
+            name: name,
+            description: description,
+            created_by: @person,
+            updated_by: @person,
+            department_id: resolve_department_id_for_save(nil, assignment)
+          )
+          milestone_attrs.each { |attr, val| ability[attr] = val }
+          ability.save!
+        end
 
-        ability.save!
-        AssignmentAbility.create!(
-          assignment: assignment,
-          ability: ability,
-          milestone_level: join_level
-        )
+        aa = AssignmentAbility.find_or_initialize_by(assignment: assignment, ability: ability)
+        aa.milestone_level = join_level
+        aa.save!
       end
 
       row = row.merge(
         'state' => 'applied',
         'applied_ability_id' => ability.id,
+        'ability_intent' => (existing ? 'update' : 'create'),
         'apply_error' => nil,
         'resolved_assignment_id' => assignment.id,
         'join_milestone' => (row['join_milestone'] || {}).stringify_keys.merge('level' => join_level)
       )
       rows[idx] = row
       merged_preview = @event.preview_actions.merge('rows' => rows)
-      results = append_result_success(ability, assignment, join_level)
+      results = append_result_success(ability, assignment, join_level, ability_action)
       @event.update!(preview_actions: merged_preview, results: results)
 
       BulkSyncEvent::UploadAbilitiesHrReview.mark_completed_if_done!(@event)
@@ -107,7 +120,21 @@ module AbilitiesHrReview
       h['proposed'].presence || h['normalized'].presence || h['raw'].presence || ''
     end
 
-    def append_result_success(ability, assignment, join_level)
+    def resolve_department_id_for_save(existing_ability, assignment)
+      override = @overrides['department_id'].presence&.to_i
+      return override if override&.positive?
+
+      if existing_ability
+        return existing_ability.department_id if existing_ability.department_id.present?
+        return assignment.department_id if assignment.department_id.present?
+
+        nil
+      else
+        assignment.department_id
+      end
+    end
+
+    def append_result_success(ability, assignment, join_level, ability_action)
       @event.reload
       results = @event.results.is_a?(Hash) ? @event.results.deep_stringify_keys : { 'successes' => [], 'failures' => [] }
       results['successes'] ||= []
@@ -117,7 +144,8 @@ module AbilitiesHrReview
         'assignment_id' => assignment.id,
         'ability_name' => ability.name,
         'assignment_title' => assignment.title,
-        'milestone_level' => join_level
+        'milestone_level' => join_level,
+        'ability_action' => ability_action
       }
       results
     end

@@ -50,6 +50,8 @@ module AbilitiesHrReview
         ability_milestone_cell: raw['ability_milestone_raw']
       )
 
+      match = ability_match_for(raw['ability_name'].to_s.strip, assignment)
+
       {
         'id' => id,
         'state' => 'pending',
@@ -60,6 +62,12 @@ module AbilitiesHrReview
         'assignment_match_kind' => resolved['match_kind'],
         'assignment_alternatives' => resolved['alternatives'],
         'ability_name' => raw['ability_name'],
+        'form_ability_name' => match['form_ability_name'],
+        'ability_intent' => match['ability_intent'],
+        'matched_ability_id' => match['matched_ability_id'],
+        'ability_match_kind' => match['ability_match_kind'],
+        'ability_alternatives' => match['ability_alternatives'],
+        'default_department_label' => match['default_department_label'],
         'description' => {
           'raw' => raw['description_raw'],
           'normalized' => desc_norm,
@@ -81,6 +89,49 @@ module AbilitiesHrReview
         'applied_ability_id' => nil,
         'apply_error' => nil
       }.stringify_keys
+    end
+
+    # Exact → flexible → full-text search on Ability#name (see AbilityResolver).
+    # form_ability_name: canonical DB name when matched (for the text field); otherwise the CSV string.
+    def ability_match_for(name_stripped, assignment)
+      if name_stripped.blank?
+        return {
+          'ability_intent' => 'create',
+          'matched_ability_id' => nil,
+          'ability_match_kind' => 'none',
+          'ability_alternatives' => [],
+          'default_department_label' => department_label(assignment&.department),
+          'form_ability_name' => name_stripped
+        }
+      end
+
+      ares = AbilityResolver.call(organization: @organization, name: name_stripped)
+      if ares['ability_id'].present?
+        matched = Ability.find_by(id: ares['ability_id'], company_id: @organization.id)
+        {
+          'ability_intent' => 'update',
+          'matched_ability_id' => ares['ability_id'],
+          'ability_match_kind' => ares['match_kind'],
+          'ability_alternatives' => ares['alternatives'],
+          'default_department_label' => department_label(matched&.department),
+          'form_ability_name' => ares['canonical_name'] || name_stripped
+        }
+      else
+        {
+          'ability_intent' => 'create',
+          'matched_ability_id' => nil,
+          'ability_match_kind' => 'none',
+          'ability_alternatives' => [],
+          'default_department_label' => department_label(assignment&.department),
+          'form_ability_name' => name_stripped
+        }
+      end
+    end
+
+    def department_label(dept)
+      return 'None' if dept.blank?
+
+      dept.respond_to?(:display_name) ? dept.display_name : dept.name.to_s
     end
   end
 end

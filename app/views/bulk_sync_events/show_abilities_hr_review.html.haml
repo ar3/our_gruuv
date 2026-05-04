@@ -78,14 +78,40 @@
                   - alts = Array(row['assignment_alternatives'])
                   - if alts.size > 1
                     %small.text-muted.d-block.mt-1 Search alternatives: #{alts.map { |a| a['title'] }.join('; ')}
-                .col-md-3
+                .col-md-6
                   %label.form-label Join milestone (1–5)
                   = number_field_tag :join_milestone_level, join_level, class: 'form-control', min: 1, max: 5, name: 'join_milestone_level'
                   - if join['rationale'].present?
                     %small.text-muted.d-block.mt-1= join['rationale']
-                .col-md-3
+              .row.mb-3.align-items-end
+                .col-md-5
                   %label.form-label Ability name
-                  = text_field_tag :ability_name, row['ability_name'], class: 'form-control', name: 'ability_name'
+                  = text_field_tag :ability_name, (row['form_ability_name'].presence || row['ability_name']), class: 'form-control', name: 'ability_name'
+                  - amk = row['ability_match_kind'].to_s
+                  - if amk.present? && amk != 'none'
+                    %small.text-muted.d-block.mt-1
+                      Matched
+                      %span.badge.bg-secondary= amk
+                  - if row['ability_intent'].to_s == 'update' && row['ability_name'].to_s.strip != (row['form_ability_name'].presence || row['ability_name']).to_s.strip
+                    %small.text-muted.d-block.mt-1
+                      Name in file:
+                      %code= row['ability_name']
+                  - aalts = Array(row['ability_alternatives'])
+                  - if aalts.any?
+                    %small.text-muted.d-block.mt-1
+                      Other matches:
+                      = aalts.map { |a| a['name'] }.join('; ')
+                .col-md-4
+                  %label.form-label.text-muted.small Outcome
+                  %div
+                    - if row['ability_intent'].to_s == 'update'
+                      %span.badge.bg-warning.text-dark Will update existing ability
+                    - else
+                      %span.badge.bg-success Will create new ability
+                .col-md-3
+                  %label.form-label.text-muted.small Department (default)
+                  %div.fw-normal.text-body
+                    = row['default_department_label'].presence || 'None'
               .row.mb-3
                 .col-12
                   %label.form-label Description (editable)
@@ -100,7 +126,7 @@
                     - mv = mh['proposed'].presence || mh['normalized'].presence || mh['raw'].presence || ''
                     .col-12.mb-2
                       %label.form-label= "Milestone #{n}"
-                      = text_area_tag "milestone_#{n}_description", mv, class: 'form-control font-monospace small', rows: 4, name: "milestone_#{n}_description"
+                      = text_area_tag "milestone_#{n}_description", mv, class: 'form-control small', rows: 4, name: "milestone_#{n}_description"
               .d-flex.gap-2.mt-3
                 = submit_tag 'Approve row', class: 'btn btn-primary'
             = button_to 'Skip row', skip_abilities_hr_row_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, params: { row_id: rid }, class: 'btn btn-outline-secondary mt-2'
