@@ -11,78 +11,87 @@
     = nav_hierarchy_with_previous(organization: @organization, crumbs: breadcrumbs)
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      Goals
-    .d-flex.align-items-center.ms-2
-      - if policy(Goal).create?
-        - owner_param = (@current_filters[:owner_type].present? && @current_filters[:owner_id].present?) ? "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}" : nil
-        - new_goal_path_opts = owner_param ? { owner_id: owner_param } : {}
-        - bulk_new_path_opts = owner_param ? { owner_id: owner_param } : {}
-        .dropdown
-          %button.btn.btn-primary.dropdown-toggle{"aria-expanded" => "false", "data-bs-toggle" => "dropdown", type: "button"}
+  - selected_value = @current_filters[:owner_id] == 'everyone_in_company' ? 'everyone_in_company' : (@current_filters[:owner_id] == 'created_by_me' ? 'created_by_me' : primary_filter_select_value)
+  - grouped_owner_options = available_goal_owners_grouped
+  - current_filter_label = grouped_owner_options.flat_map { |_group, options| options }.find { |_label, value| value == selected_value }&.first || 'Select owner'
+  .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+    .d-flex.align-items-center.gap-2
+      = form_with url: organization_goals_path(@organization), method: :get, local: true, id: "goals-header-owner-switcher-form", class: "mb-0" do |_f|
+        %label.visually-hidden{for: "goals-header-owner-select"} Goals primary filter
+        .dropdown.d-inline-flex.align-items-center
+          %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label" => "Switch goals primary filter"}
+            %span
+              Goals for #{current_filter_label}
+          %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+            - grouped_owner_options.each do |group_label, group_options|
+              %li
+                %h6.dropdown-header.mb-0.mt-1= group_label
+              - group_options.each do |label, value|
+                %li
+                  - if value == selected_value
+                    .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+                      %span.flex-grow-1.text-truncate{title: label}= label
+                      %i.bi.bi-check-circle.text-success.flex-shrink-0
+                  - else
+                    = link_to organization_goals_path(@organization, request.query_parameters.merge(owner_id: value, owner_type: nil)), class: "dropdown-item d-flex align-items-center gap-2" do
+                      %span.text-truncate{title: label}= label
+        / Fallback control for non-JS clients and accessibility tooling.
+        = render 'goal_owner_select',
+          grouped_options: grouped_owner_options,
+          selected_value: selected_value,
+          name: 'owner_id',
+          id: 'goals-header-owner-select',
+          select_class: 'visually-hidden',
+          required: true,
+          html_options: { onchange: 'this.form.submit();' }
+        / Preserve other filter parameters
+        - if @current_filters[:timeframe].present?
+          = hidden_field_tag :timeframe, @current_filters[:timeframe]
+        - if @current_filters[:goal_type].present?
+          - Array(@current_filters[:goal_type]).each do |gt|
+            = hidden_field_tag "goal_type[]", gt
+        - if @current_filters[:status].present?
+          - Array(@current_filters[:status]).each do |s|
+            = hidden_field_tag "status[]", s
+        - if @current_filters[:sort].present?
+          = hidden_field_tag :sort, @current_filters[:sort]
+        - if @current_filters[:direction].present?
+          = hidden_field_tag :direction, @current_filters[:direction]
+        - if @current_filters[:view].present?
+          = hidden_field_tag :view, @current_filters[:view]
+        - if @current_filters[:spotlight].present?
+          = hidden_field_tag :spotlight, @current_filters[:spotlight]
+        - if @current_filters[:prompt_id].present?
+          = hidden_field_tag :prompt_id, @current_filters[:prompt_id]
+        - if params[:return_url].present?
+          = hidden_field_tag :return_url, params[:return_url]
+        - if params[:return_text].present?
+          = hidden_field_tag :return_text, params[:return_text]
+      .d-flex.align-items-center
+        - if policy(Goal).create?
+          - owner_param = (@current_filters[:owner_type].present? && @current_filters[:owner_id].present?) ? "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}" : nil
+          - new_goal_path_opts = owner_param ? { owner_id: owner_param } : {}
+          - bulk_new_path_opts = owner_param ? { owner_id: owner_param } : {}
+          .dropdown
+            %button.btn.btn-primary.dropdown-toggle{"aria-expanded" => "false", "data-bs-toggle" => "dropdown", type: "button"}
+              %i.bi.bi-plus
+            %ul.dropdown-menu
+              %li
+                = link_to new_organization_goal_path(@organization, new_goal_path_opts), class: "dropdown-item" do
+                  Create single goal
+              %li
+                = link_to bulk_new_organization_goals_path(@organization, bulk_new_path_opts), class: "dropdown-item" do
+                  Bulk create goals
+        - else
+          .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
             %i.bi.bi-plus
-          %ul.dropdown-menu
-            %li
-              = link_to new_organization_goal_path(@organization, new_goal_path_opts), class: "dropdown-item" do
-                Create single goal
-            %li
-              = link_to bulk_new_organization_goals_path(@organization, bulk_new_path_opts), class: "dropdown-item" do
-                Bulk create goals
-      - else
-        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-          %i.bi.bi-plus
-        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be a teammate to create goals"}
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be a teammate to create goals"}
 
 - content_for :header_action do
   - customize_params = params.except(:controller, :action, :page).permit!.to_h
   = link_to customize_view_organization_goals_path(@organization, customize_params), class: "btn btn-outline-secondary" do
     %i.bi.bi-sliders.me-2
     Customize View
-
-/ Owner Selection Section
-.row.justify-content-center.mb-4
-  .col-lg-12
-    .card.border-0.shadow-sm
-      .card-body
-        = form_with url: organization_goals_path(@organization), method: :get, local: true, id: "owner-selection-form" do |f|
-          .row.align-items-end
-            .col-md-10
-              %label.form-label.fw-bold.fs-5.mb-2 Primary filter
-              - selected_value = @current_filters[:owner_id] == 'everyone_in_company' ? 'everyone_in_company' : (@current_filters[:owner_id] == 'created_by_me' ? 'created_by_me' : primary_filter_select_value)
-              = render 'goal_owner_select',
-                grouped_options: available_goal_owners_grouped,
-                selected_value: selected_value,
-                name: 'owner_id',
-                id: 'owner-select',
-                select_class: 'form-select form-select-lg',
-                required: true
-              %small.form-text.text-muted Choose who owns the goals you want to view, or see all company-wide visible goals
-            .col-md-2
-              = f.submit "Go", class: "btn btn-primary btn-lg w-100"
-          / Preserve other filter parameters
-          - if @current_filters[:timeframe].present?
-            = hidden_field_tag :timeframe, @current_filters[:timeframe]
-          - if @current_filters[:goal_type].present?
-            - Array(@current_filters[:goal_type]).each do |gt|
-              = hidden_field_tag "goal_type[]", gt
-          - if @current_filters[:status].present?
-            - Array(@current_filters[:status]).each do |s|
-              = hidden_field_tag "status[]", s
-          - if @current_filters[:sort].present?
-            = hidden_field_tag :sort, @current_filters[:sort]
-          - if @current_filters[:direction].present?
-            = hidden_field_tag :direction, @current_filters[:direction]
-          - if @current_filters[:view].present?
-            = hidden_field_tag :view, @current_filters[:view]
-          - if @current_filters[:spotlight].present?
-            = hidden_field_tag :spotlight, @current_filters[:spotlight]
-          - if @current_filters[:prompt_id].present?
-            = hidden_field_tag :prompt_id, @current_filters[:prompt_id]
-          - if params[:return_url].present?
-            = hidden_field_tag :return_url, params[:return_url]
-          - if params[:return_text].present?
-            = hidden_field_tag :return_text, params[:return_text]
 
 / Spotlight Section (always shown)
 .row.justify-content-center.mb-4

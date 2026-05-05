@@ -1352,11 +1352,11 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Company Goal')
     end
 
-    it 'index page shows Primary filter label and optgroups' do
+    it 'index page shows goals header switcher and optgroups' do
       get organization_goals_path(organization)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Primary filter')
+      expect(response.body).to include('Goals for')
       expect(response.body).to include('<optgroup label="Filter">')
       expect(response.body).to include('<optgroup label="Teammates">')
       expect(response.body).to include('<optgroup label="Company">')
