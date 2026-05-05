@@ -24,7 +24,7 @@
             - if has_children
               .d-flex.align-items-center.mb-2
                 %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
-                  %i.bi.bi-chevron-down.toggle-icon
+                  %i.bi.bi-chevron-up.toggle-icon
                 %span.badge.bg-light.text-dark.small
                   - if direct_children_count == total_descendants_count
                     #{pluralize(direct_children_count, 'sub-goal')}
