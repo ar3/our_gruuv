@@ -37,10 +37,13 @@
 
 :javascript
   // Handle collapse/expand icon toggle for individual nodes
-  document.addEventListener('DOMContentLoaded', function() {
+  function initializeGoalsHierarchyControls() {
     const toggleButtons = document.querySelectorAll('.toggle-children');
     
     toggleButtons.forEach(function(button) {
+      if (button.dataset.goalsHierarchyBound === 'true') {
+        return;
+      }
       const targetId = button.getAttribute('data-bs-target');
       const target = document.querySelector(targetId);
       const icon = button.querySelector('.toggle-icon');
@@ -66,11 +69,12 @@
           icon.classList.add('bi-chevron-up');
         });
       }
+      button.dataset.goalsHierarchyBound = 'true';
     });
     
     // Expand All button - toggle class directly without Bootstrap JS
     const expandAllBtn = document.getElementById('expand-all-goals');
-    if (expandAllBtn) {
+    if (expandAllBtn && expandAllBtn.dataset.goalsHierarchyBound !== 'true') {
       expandAllBtn.addEventListener('click', function() {
         document.querySelectorAll('.tree-visualization .collapse').forEach(function(el) {
           el.classList.add('show');
@@ -85,11 +89,12 @@
           }
         });
       });
+      expandAllBtn.dataset.goalsHierarchyBound = 'true';
     }
     
     // Collapse All button - toggle class directly without Bootstrap JS
     const collapseAllBtn = document.getElementById('collapse-all-goals');
-    if (collapseAllBtn) {
+    if (collapseAllBtn && collapseAllBtn.dataset.goalsHierarchyBound !== 'true') {
       collapseAllBtn.addEventListener('click', function() {
         document.querySelectorAll('.tree-visualization .collapse.show').forEach(function(el) {
           el.classList.remove('show');
@@ -104,5 +109,9 @@
           }
         });
       });
+      collapseAllBtn.dataset.goalsHierarchyBound = 'true';
     }
-  });
+  }
+
+  document.addEventListener('DOMContentLoaded', initializeGoalsHierarchyControls);
+  document.addEventListener('turbo:load', initializeGoalsHierarchyControls);
