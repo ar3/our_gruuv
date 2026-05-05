@@ -133,6 +133,14 @@
                     %i.bi.bi-chevron-down.position-comparison-chevron
                 .collapse{ id: collapse_id, class: collapse_group_class, "data-position-comparison-group-body" => "assignment-#{row_index}" }
                   .card-body
+                    .d-flex.flex-wrap.align-items-center.gap-3.mb-2
+                      %span.small
+                        %strong Expected energy allocation:
+                        = " #{data.energy_range_display}"
+                      = link_to organization_assignment_path(@organization, assignment), class: "small text-decoration-none d-inline-flex align-items-center gap-1" do
+                        %i.bi.bi-link-45deg
+                        %span View assignment
+
                     - if assignment.tagline.present?
                       %p.mb-2
                         %strong Tagline:
@@ -152,7 +160,7 @@
                       %ul.mb-0
                         - milestone_pairs.each do |ability, milestone_level|
                           %li
-                            = ability.name
+                            = link_to ability.name, organization_ability_path(@organization, ability), class: "text-decoration-none"
                             = ": Milestone #{milestone_level} (#{milestone_level_display(milestone_level)})"
                     - else
                       %p.text-muted.mb-0 No ability milestones listed.
@@ -199,7 +207,7 @@
                   %ul.mb-0
                     - side[:ability_requirements].each do |ability_row|
                       %li
-                        = ability_row[:ability].name
+                        = link_to ability_row[:ability].name, organization_ability_path(@organization, ability_row[:ability]), class: "text-decoration-none"
                         = ": Milestone #{ability_row[:minimum_milestone_level]} (#{milestone_level_display(ability_row[:minimum_milestone_level])})"
                 - else
                   %p.text-muted.mb-0 No ability milestone requirements configured.

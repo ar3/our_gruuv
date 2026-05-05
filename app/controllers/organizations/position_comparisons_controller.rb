@@ -42,15 +42,24 @@ class Organizations::PositionComparisonsController < Organizations::Organization
 
     assignments_by_id = Assignment.where(id: assignment_ids).index_by(&:id)
 
-    assignment_ids
-      .sort_by { |assignment_id| assignments_by_id[assignment_id]&.title.to_s.downcase }
-      .map do |assignment_id|
-        {
-          assignment: assignments_by_id[assignment_id],
-          left: left_assignments[assignment_id],
-          right: right_assignments[assignment_id]
-        }
-      end
+    rows = assignment_ids.map do |assignment_id|
+      {
+        assignment: assignments_by_id[assignment_id],
+        left: left_assignments[assignment_id],
+        right: right_assignments[assignment_id]
+      }
+    end
+
+    rows.sort_by do |row|
+      left = row[:left]
+      right = row[:right]
+      [
+        assignment_type_bucket(left, right),
+        left.present? ? 0 : 1,
+        -max_energy_for_row(left, right),
+        row[:assignment]&.title.to_s.downcase
+      ]
+    end
   end
 
   def assignments_by_id_for(position)
@@ -59,6 +68,18 @@ class Organizations::PositionComparisonsController < Organizations::Organization
     position.position_assignments
       .includes(assignment: [:assignment_outcomes, { assignment_abilities: :ability }])
       .index_by(&:assignment_id)
+  end
+
+  def assignment_type_bucket(left, right)
+    types = [left&.assignment_type, right&.assignment_type].compact
+    return 0 if types.include?('required')
+    return 1 if types.include?('suggested')
+
+    2
+  end
+
+  def max_energy_for_row(left, right)
+    [left&.max_estimated_energy, right&.max_estimated_energy].compact.max.to_i
   end
 
   def seat_snapshot_for(position)
