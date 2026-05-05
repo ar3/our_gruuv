@@ -1,7 +1,7 @@
 -# locals: sibling_positions, assignment_diffs, page_position
+- current_level_label = "L#{page_position.position_level.level} (this position)"
 %p.text-muted.small.mb-3
-  Other positions in this title. Differences are computed against this page's position.
-  Copy actions save your current edits first, then overwrite the chosen side's position assignments.
+  Other positions in this title. Copy actions save your current edits first, then overwrite the chosen side's position assignments.
 
 - if sibling_positions.empty?
   .alert.alert-info.mb-0
@@ -12,49 +12,22 @@
       %thead.table-light
         %tr
           %th Position
-          %th Differences vs. this page
           %th Copy to
           %th Copy from
       %tbody
         - sibling_positions.each do |sp|
           - diff = assignment_diffs[sp]
+          - sibling_level_label = "L#{sp.position_level.level}"
           %tr
             %td
-              %strong= "L#{sp.position_level.level}"
+              %strong= sibling_level_label
               %br
               %small.text-muted= sp.display_name
               = link_to organization_position_path(sp.title.company, sp), target: "_blank", rel: "noopener noreferrer", class: "ms-1", title: "View position" do
                 %i.bi.bi-box-arrow-up-right
             %td
-              - if diff.empty?
-                %span.text-muted.fst-italic Identical configuration
-              - else
-                %ul.list-unstyled.mb-0.small
-                  - diff.added.each do |pa|
-                    %li
-                      %span.text-success.fw-bold +
-                      %strong= pa.assignment.title
-                      %span.text-muted= " (#{pa.assignment_type}, #{pa.energy_range_display})"
-                      %span.text-muted.small  — only on L#{sp.position_level.level}
-                  - diff.removed.each do |pa|
-                    %li
-                      %span.text-danger.fw-bold &minus;
-                      %strong= pa.assignment.title
-                      %span.text-muted= " (#{pa.assignment_type}, #{pa.energy_range_display})"
-                      %span.text-muted.small  — only on this page
-                  - diff.changed.each do |entry|
-                    - src_pa = entry[:source]
-                    - dst_pa = entry[:destination]
-                    %li
-                      %span.text-warning.fw-bold ~
-                      %strong= src_pa.assignment.title
-                      %span.text-muted
-                        = ": this page = #{dst_pa.assignment_type} #{dst_pa.energy_range_display}"
-                        →
-                        = "L#{sp.position_level.level} = #{src_pa.assignment_type} #{src_pa.energy_range_display}"
-            %td
               - to_label = "Overwrite #{sp.display_name}'s position assignments and use #{page_position.display_name}'s configuration instead"
-              - to_confirm = "This will replace L#{sp.position_level.level}'s position assignments with this page's configuration. Continue?"
+              - to_confirm = "This will replace #{sibling_level_label}'s position assignments with #{current_level_label}'s configuration. Continue?"
               = button_tag to_label,
                   type: "submit",
                   name: "copy_action",
@@ -63,9 +36,33 @@
                   disabled: diff.empty?,
                   title: diff.empty? ? "No changes to copy" : nil,
                   data: { confirm: to_confirm }
+              .small.mt-2
+                - if diff.empty?
+                  %span.text-muted.fst-italic No changes would be made.
+                - else
+                  %ul.list-unstyled.mb-0
+                    - diff.added.each do |pa|
+                      %li
+                        %span.text-danger.fw-bold &minus;
+                        %strong= pa.assignment.title
+                        %span.text-muted= " (#{pa.assignment_type}, #{pa.energy_range_display})"
+                        %span.text-muted= " — removed from #{sibling_level_label}"
+                    - diff.removed.each do |pa|
+                      %li
+                        %span.text-success.fw-bold +
+                        %strong= pa.assignment.title
+                        %span.text-muted= " (#{pa.assignment_type}, #{pa.energy_range_display})"
+                        %span.text-muted= " — added to #{sibling_level_label}"
+                    - diff.changed.each do |entry|
+                      - src_pa = entry[:source]
+                      - dst_pa = entry[:destination]
+                      %li
+                        %span.text-warning.fw-bold ~
+                        %strong= src_pa.assignment.title
+                        %span.text-muted= ": #{sibling_level_label} from #{dst_pa.assignment_type} #{dst_pa.energy_range_display} to #{src_pa.assignment_type} #{src_pa.energy_range_display}"
             %td
               - from_label = "Overwrite #{page_position.display_name}'s position assignments and use #{sp.display_name}'s configuration instead"
-              - from_confirm = "This will replace this page position's assignments with L#{sp.position_level.level}'s configuration. Continue?"
+              - from_confirm = "This will replace #{current_level_label}'s assignments with #{sibling_level_label}'s configuration. Continue?"
               = button_tag from_label,
                   type: "submit",
                   name: "copy_action",
@@ -74,3 +71,27 @@
                   disabled: diff.empty?,
                   title: diff.empty? ? "No changes to copy" : nil,
                   data: { confirm: from_confirm }
+              .small.mt-2
+                - if diff.empty?
+                  %span.text-muted.fst-italic No changes would be made.
+                - else
+                  %ul.list-unstyled.mb-0
+                    - diff.added.each do |pa|
+                      %li
+                        %span.text-success.fw-bold +
+                        %strong= pa.assignment.title
+                        %span.text-muted= " (#{pa.assignment_type}, #{pa.energy_range_display})"
+                        %span.text-muted= " — added to #{current_level_label}"
+                    - diff.removed.each do |pa|
+                      %li
+                        %span.text-danger.fw-bold &minus;
+                        %strong= pa.assignment.title
+                        %span.text-muted= " (#{pa.assignment_type}, #{pa.energy_range_display})"
+                        %span.text-muted= " — removed from #{current_level_label}"
+                    - diff.changed.each do |entry|
+                      - src_pa = entry[:source]
+                      - dst_pa = entry[:destination]
+                      %li
+                        %span.text-warning.fw-bold ~
+                        %strong= src_pa.assignment.title
+                        %span.text-muted= ": #{current_level_label} from #{dst_pa.assignment_type} #{dst_pa.energy_range_display} to #{src_pa.assignment_type} #{src_pa.energy_range_display}"
