@@ -1,0 +1,286 @@
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0 Position Comparison
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+%style
+  :plain
+    .position-comparison-empty-state {
+      position: relative;
+      border: 1px dashed #ced4da;
+      border-radius: 0.5rem;
+      min-height: 100px;
+      background: #f8f9fa;
+      overflow: hidden;
+    }
+
+    .position-comparison-empty-state::before,
+    .position-comparison-empty-state::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 150%;
+      border-top: 2px solid rgba(108, 117, 125, 0.18);
+      transform-origin: center;
+      pointer-events: none;
+    }
+
+    .position-comparison-empty-state::before { transform: translate(-50%, -50%) rotate(24deg); }
+    .position-comparison-empty-state::after { transform: translate(-50%, -50%) rotate(-24deg); }
+
+    .position-comparison-empty-state__content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1rem;
+      color: #6c757d;
+    }
+
+    .position-comparison-toggle .position-comparison-chevron {
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .position-comparison-toggle[aria-expanded="true"] .position-comparison-chevron {
+      transform: rotate(180deg);
+    }
+
+.row.mb-4
+  .col-12
+    .card
+      .card-body
+        = form_with url: organization_position_comparison_path(@organization), method: :get, local: true do |form|
+          .row.g-3.align-items-end
+            .col-12.col-lg-5
+              = form.label :left_position_id, "Position A", class: "form-label"
+              - left_options = @positions.map { |position| [position.display_name, position.id] }
+              = form.select :left_position_id,
+                options_for_select(left_options, @left_position&.id),
+                { include_blank: "Select a position" },
+                class: "form-select"
+            .col-12.col-lg-5
+              = form.label :right_position_id, "Position B", class: "form-label"
+              - right_options = @positions.map { |position| [position.display_name, position.id] }
+              = form.select :right_position_id,
+                options_for_select(right_options, @right_position&.id),
+                { include_blank: "Select a position" },
+                class: "form-select"
+            .col-12.col-lg-2
+              = form.submit "Compare", class: "btn btn-primary w-100"
+
+- if @left_position.blank? && @right_position.blank?
+  .alert.alert-info
+    Choose two positions to compare assignments and eligibility requirements.
+- else
+  .row.mb-3
+    .col-12
+      %h2.h4.mb-0 Position + Title Description
+      %p.text-muted.mb-0 Compare the combined markdown description (title summary + position summary).
+
+  .row.mb-4
+    - description_sides = [{ key: :left, position: @left_position, description: @left_combined_description }, { key: :right, position: @right_position, description: @right_combined_description }]
+    - description_sides.each do |side|
+      - collapse_id = "position-comparison-description-#{side[:key]}"
+      - collapse_group_class = "position-comparison-description-group"
+      .col-12.col-lg-6
+        .card.h-100
+          .card-header.d-flex.justify-content-between.align-items-center.position-comparison-toggle{"data-bs-toggle" => "collapse", "data-bs-target" => ".#{collapse_group_class}", "data-position-comparison-group" => "description", role: "button", tabindex: "0", style: "cursor: pointer;", "aria-expanded" => "false"}
+            .d-flex.flex-column
+              %strong= side[:position]&.display_name || "No position selected"
+              %span.small.text-muted Combined position + title markdown
+            %i.bi.bi-chevron-down.position-comparison-chevron
+          .collapse{ id: collapse_id, class: collapse_group_class, "data-position-comparison-group-body" => "description" }
+            .card-body
+              - if side[:position].blank?
+                %p.text-muted.mb-0 Not required or suggested
+              - elsif side[:description].present?
+                .markdown-content= render_markdown(side[:description])
+              - else
+                %p.text-muted.mb-0 No combined description is configured.
+
+  .row.mb-3
+    .col-12
+      %h2.h4.mb-0 Assignments
+      %p.text-muted.mb-0 Side-by-side comparison using collapsed cards (expand as needed).
+
+  - if @assignment_rows.blank?
+    .row.mb-4
+      .col-12
+        .alert.alert-secondary.mb-0 No assignments are configured for the selected positions.
+  - else
+    - @assignment_rows.each_with_index do |row, row_index|
+      .row.mb-3
+        - [{ key: :left, position: @left_position }, { key: :right, position: @right_position }].each do |side|
+          - data = row[side[:key]]
+          - assignment = row[:assignment]
+          - collapse_id = "position-comparison-assignment-#{row_index}-#{side[:key]}"
+          - collapse_group_class = "position-comparison-assignment-group-#{row_index}"
+          .col-12.col-lg-6
+            - if data.present? && assignment.present?
+              .card.h-100
+                .card-header.d-flex.justify-content-between.align-items-center.position-comparison-toggle{"data-bs-toggle" => "collapse", "data-bs-target" => ".#{collapse_group_class}", "data-position-comparison-group" => "assignment-#{row_index}", role: "button", tabindex: "0", style: "cursor: pointer;", "aria-expanded" => "false"}
+                  .d-flex.flex-column
+                    %strong= assignment.title
+                    %span.small.text-muted= side[:position]&.display_name || "Selected position"
+                  .d-flex.align-items-center.gap-2
+                    %span.badge{class: data.assignment_type == 'required' ? 'text-bg-primary' : 'text-bg-info'}= data.assignment_type.titleize
+                    %i.bi.bi-chevron-down.position-comparison-chevron
+                .collapse{ id: collapse_id, class: collapse_group_class, "data-position-comparison-group-body" => "assignment-#{row_index}" }
+                  .card-body
+                    - if assignment.tagline.present?
+                      %p.mb-2
+                        %strong Tagline:
+                        = " #{assignment.tagline}"
+
+                    %h6.mb-1 Outcomes
+                    - if assignment.outcomes.any?
+                      %ul.mb-3
+                        - assignment.outcomes.each do |outcome|
+                          %li= outcome.description
+                    - else
+                      %p.text-muted.mb-3 No outcomes listed.
+
+                    %h6.mb-1 Ability milestones
+                    - milestone_pairs = assignment.assignment_abilities.group_by(&:ability).map { |ability, rows| [ability, rows.map(&:milestone_level).max] }.sort_by { |ability, _| ability.name.downcase }
+                    - if milestone_pairs.any?
+                      %ul.mb-0
+                        - milestone_pairs.each do |ability, milestone_level|
+                          %li
+                            = ability.name
+                            = ": Milestone #{milestone_level} (#{milestone_level_display(milestone_level)})"
+                    - else
+                      %p.text-muted.mb-0 No ability milestones listed.
+            - else
+              - assignment_name = assignment&.title || "This assignment"
+              - position_name = side[:position]&.display_name || "this position"
+              .position-comparison-empty-state.h-100
+                .position-comparison-empty-state__content
+                  %p.mb-0
+                    = "#{assignment_name} is not required or suggested for the position #{position_name}."
+
+  .row.mt-5.mb-3
+    .col-12
+      %h2.h4.mb-0 Eligibility Requirements
+      %p.text-muted.mb-0 Compare requirement summaries and required ability milestones.
+
+  .row.mb-3
+    - [{ key: :left, position: @left_position, sentences: @left_eligibility_sentences, ability_requirements: @left_ability_requirements },
+      { key: :right, position: @right_position, sentences: @right_eligibility_sentences, ability_requirements: @right_ability_requirements }].each do |side|
+      - collapse_id = "position-comparison-eligibility-#{side[:key]}"
+      - collapse_group_class = "position-comparison-eligibility-group"
+      .col-12.col-lg-6
+        .card.h-100
+          .card-header.d-flex.justify-content-between.align-items-center.position-comparison-toggle{"data-bs-toggle" => "collapse", "data-bs-target" => ".#{collapse_group_class}", "data-position-comparison-group" => "eligibility", role: "button", tabindex: "0", style: "cursor: pointer;", "aria-expanded" => "false"}
+            .d-flex.flex-column
+              %strong= side[:position]&.display_name || "No position selected"
+              %span.small.text-muted Eligibility summary
+            %i.bi.bi-chevron-down.position-comparison-chevron
+          .collapse{ id: collapse_id, class: collapse_group_class, "data-position-comparison-group-body" => "eligibility" }
+            .card-body
+              - if side[:position].blank?
+                %p.text-muted.mb-0 Not required or suggested
+              - else
+                %h6.mb-1 Rule summary
+                - if side[:sentences].any?
+                  %ul.mb-3
+                    - side[:sentences].each do |sentence|
+                      %li= sentence
+                - else
+                  %p.text-muted.mb-3 No eligibility requirements configured.
+
+                %h6.mb-1 Ability milestone requirements
+                - if side[:ability_requirements].any?
+                  %ul.mb-0
+                    - side[:ability_requirements].each do |ability_row|
+                      %li
+                        = ability_row[:ability].name
+                        = ": Milestone #{ability_row[:minimum_milestone_level]} (#{milestone_level_display(ability_row[:minimum_milestone_level])})"
+                - else
+                  %p.text-muted.mb-0 No ability milestone requirements configured.
+
+  .row.mt-5.mb-3
+    .col-12
+      %h2.h4.mb-0 Seats By Title
+      %p.text-muted.mb-0 Compare open and filled seats for each position's title.
+
+  .row.mb-3
+    - seat_sides = [{ key: :left, position: @left_position, seat_snapshot: @left_seat_snapshot }, { key: :right, position: @right_position, seat_snapshot: @right_seat_snapshot }]
+    - seat_sides.each do |side|
+      - collapse_id = "position-comparison-seats-#{side[:key]}"
+      - collapse_group_class = "position-comparison-seats-group"
+      .col-12.col-lg-6
+        .card.h-100
+          .card-header.d-flex.justify-content-between.align-items-center.position-comparison-toggle{"data-bs-toggle" => "collapse", "data-bs-target" => ".#{collapse_group_class}", "data-position-comparison-group" => "seats", role: "button", tabindex: "0", style: "cursor: pointer;", "aria-expanded" => "false"}
+            .d-flex.flex-column
+              %strong= side[:position]&.display_name || "No position selected"
+              %span.small.text-muted Seats for title: #{side[:position]&.title&.external_title || "N/A"}
+            %i.bi.bi-chevron-down.position-comparison-chevron
+          .collapse{ id: collapse_id, class: collapse_group_class, "data-position-comparison-group-body" => "seats" }
+            .card-body
+              - if side[:position].blank?
+                %p.text-muted.mb-0 Not required or suggested
+              - elsif side[:seat_snapshot].blank?
+                %p.text-muted.mb-0 No seats are configured.
+              - else
+                .d-flex.gap-2.flex-wrap.mb-3
+                  %span.badge.text-bg-success Open: #{side[:seat_snapshot][:open_seats].size}
+                  %span.badge.text-bg-secondary Filled: #{side[:seat_snapshot][:filled_seats].size}
+                - if side[:seat_snapshot][:seats].any?
+                  .list-group
+                    - side[:seat_snapshot][:seats].each do |seat|
+                      - tenure = side[:seat_snapshot][:occupant_by_seat_id][seat.id]
+                      - occupant_name = tenure&.company_teammate&.person&.display_name
+                      .list-group-item
+                        .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2
+                          %div
+                            %div.fw-semibold
+                              - status_class = seat.open? ? "text-bg-success" : "text-bg-secondary"
+                              %span.badge.me-2{ class: status_class }= seat.state.titleize
+                              Seat needed by:
+                              = link_to seat.seat_needed_by.strftime("%B %d, %Y"), organization_seat_path(@organization, seat), class: "text-decoration-none"
+                            %div.text-muted.small.mt-1= seat.display_name
+                          - if occupant_name.present?
+                            %span.small.text-muted Occupant: #{occupant_name}
+                        .mt-2
+                          %div.small
+                            %strong Why do we need this role?
+                            = " #{seat.why_needed.presence || 'Not provided.'}"
+                          %div.small.mt-1
+                            %strong Why is now the time to hire?
+                            = " #{seat.why_now.presence || 'Not provided.'}"
+                          %div.small.mt-1
+                            %strong What are the costs/risks associated?
+                            = " #{seat.costs_risks.presence || 'Not provided.'}"
+                - else
+                  %p.text-muted.mb-0 No active (open/filled) seats for this title.
+
+- content_for :javascript do
+  :javascript
+    (() => {
+      const syncGroupState = (group, expanded) => {
+        const triggers = document.querySelectorAll(`[data-position-comparison-group="${group}"]`);
+        triggers.forEach((trigger) => {
+          trigger.setAttribute("aria-expanded", expanded ? "true" : "false");
+        });
+      };
+
+      document.querySelectorAll("[data-position-comparison-group-body]").forEach((body) => {
+        body.addEventListener("shown.bs.collapse", (event) => {
+          const group = event.currentTarget.dataset.positionComparisonGroupBody;
+          if (!group) return;
+          syncGroupState(group, true);
+        });
+
+        body.addEventListener("hidden.bs.collapse", (event) => {
+          const group = event.currentTarget.dataset.positionComparisonGroupBody;
+          if (!group) return;
+          syncGroupState(group, false);
+        });
+      });
+    })();

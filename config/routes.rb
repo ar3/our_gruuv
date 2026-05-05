@@ -135,6 +135,7 @@ Rails.application.routes.draw do
     end
 
     resources :eligibility_requirements, module: :organizations, only: [:index, :show]
+    resource :position_comparison, module: :organizations, only: [:show]
 
     resource :position_eligibility_defaults, only: [:show], module: :organizations, controller: 'position_eligibility_defaults' do
       get 'minors/:minor/edit', action: :edit_minor, as: :edit_minor

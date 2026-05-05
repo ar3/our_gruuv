@@ -470,6 +470,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Position Comparison',
+            icon: 'bi-layout-split',
+            path: organization_position_comparison_path(current_organization),
+            policy_check: -> { policy(:eligibility_requirement).index? },
+            coming_soon: false
+          },
+          {
             label: 'My Growth',
             icon: 'bi-flask',
             path: my_growth_experiences_organization_company_teammate_path(current_organization, current_company_teammate),
