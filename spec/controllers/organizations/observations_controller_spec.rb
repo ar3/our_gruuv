@@ -606,6 +606,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         obs.publish!
         obs
       end
+      let(:upper_manager_person) { create(:person) }
+      let(:upper_manager_teammate) { create(:teammate, person: upper_manager_person, organization: company) }
 
       let(:slack_channel) { create(:third_party_object, third_party_source: 'slack', third_party_object_type: 'channel', organization: company) }
       let!(:kudos_channel_association) do
@@ -616,6 +618,11 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       end
 
       before do
+        # Extend hierarchy: observee -> manager -> upper manager
+        create(:employment_tenure, teammate: upper_manager_teammate, company: company)
+        manager_tenure = EmploymentTenure.find_by(teammate_id: manager_teammate.id, company_id: company.id, ended_at: nil)
+        manager_tenure&.update!(manager_teammate: upper_manager_teammate)
+
         # Ensure observation has no notifications
         public_observation.notifications.destroy_all
         # Create page visits for both show page and public permalink page
@@ -644,12 +651,15 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         create(:teammate_identity, teammate: observer_teammate, provider: 'slack', uid: 'U123456')
         create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: 'U789012')
         create(:teammate_identity, teammate: manager_teammate, provider: 'slack', uid: 'U345678') if manager_teammate
+        create(:teammate_identity, teammate: upper_manager_teammate, provider: 'slack', uid: 'U901234')
 
         get :show, params: { organization_id: company.id, id: public_observation.id }
         expect(assigns(:available_teammates_for_notification)).to be_an(Array)
-        # List shows only observees (excluding observer) and direct managers, not observer or managers-of-managers
+        # List should include observees and the full managerial hierarchy (excluding observer)
         teammate_ids = assigns(:available_teammates_for_notification).map { |t| t[:teammate].id }
         expect(teammate_ids).to include(observee_teammate.id)
+        expect(teammate_ids).to include(manager_teammate.id)
+        expect(teammate_ids).to include(upper_manager_teammate.id)
         expect(teammate_ids).not_to include(observer_teammate.id)
         expect(assigns(:available_teammates_for_notification).length).to be >= 1
       end
@@ -679,12 +689,44 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         it 'sets @available_teammates_for_notification using private list' do
           # Ensure teammates have Slack identities for them to be included
           create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: 'U789012')
+          create(:teammate_identity, teammate: manager_teammate, provider: 'slack', uid: 'U345678')
+          create(:teammate_identity, teammate: upper_manager_teammate, provider: 'slack', uid: 'U901234')
           
           get :show, params: { organization_id: company.id, id: private_observation.id }
           expect(assigns(:available_teammates_for_notification)).to be_an(Array)
           # For observed_only, should only include observees (not observer)
           teammate_ids = assigns(:available_teammates_for_notification).map { |t| t[:teammate].id }
           expect(teammate_ids).to include(observee_teammate.id)
+          expect(teammate_ids).not_to include(observer_teammate.id)
+          expect(teammate_ids).not_to include(manager_teammate.id)
+          expect(teammate_ids).not_to include(upper_manager_teammate.id)
+        end
+      end
+
+      context 'when observation privacy is observed_and_managers' do
+        let(:stakeholders_observation) do
+          obs = build(:observation, observer: observer, company: company, privacy_level: :observed_and_managers)
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+          obs
+        end
+
+        before do
+          stakeholders_observation.notifications.destroy_all
+        end
+
+        it 'includes observees and the full managerial hierarchy in private notifications' do
+          create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: 'U789012')
+          create(:teammate_identity, teammate: manager_teammate, provider: 'slack', uid: 'U345678')
+          create(:teammate_identity, teammate: upper_manager_teammate, provider: 'slack', uid: 'U901234')
+
+          get :show, params: { organization_id: company.id, id: stakeholders_observation.id }
+
+          teammate_ids = assigns(:available_teammates_for_notification).map { |t| t[:teammate].id }
+          expect(teammate_ids).to include(observee_teammate.id)
+          expect(teammate_ids).to include(manager_teammate.id)
+          expect(teammate_ids).to include(upper_manager_teammate.id)
           expect(teammate_ids).not_to include(observer_teammate.id)
         end
       end

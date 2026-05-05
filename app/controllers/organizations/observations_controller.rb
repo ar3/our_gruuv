@@ -300,7 +300,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       # Determine which teammates should be available for notification based on privacy level
       @available_teammates_for_notification = case @observation.privacy_level
       when 'public_to_company', 'public_to_world'
-        # Public: show all observees and their managers
+        # Public: show all observees and their full managerial hierarchy
         build_public_observation_teammates_list
       when 'observed_only'
         # Only observees (excluding observer if they are also an observee)
@@ -336,37 +336,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         end
         teammates
       when 'observed_and_managers'
-        # Observees (excluding observer) + direct managers only
-        teammates = []
-        # Add observees (excluding observer if they are also an observee)
-        @observation.observed_teammates.reject { |t| t.person_id == @observation.observer_id }.each do |teammate|
-          teammates << {
-            teammate: teammate,
-            role: "Observed",
-            person: teammate.person
-          }
-        end
-        # Add direct managers (level 0)
-        @observation.observed_teammates.each do |teammate|
-          managers = ManagerialHierarchyQuery.new(
-            person: teammate.person, 
-            organization: company
-          ).call
-          
-          managers.select { |m| m[:level] == 0 }.each do |manager_info|
-            manager_teammate = company.teammates.find_by(person_id: manager_info[:person_id])
-            next unless manager_teammate
-            
-            unless teammates.any? { |t| t[:teammate].id == manager_teammate.id }
-              teammates << {
-                teammate: manager_teammate,
-                role: "Manager of #{teammate.person.casual_name}",
-                person: manager_teammate.person
-              }
-            end
-          end
-        end
-        teammates
+        # Stakeholders: show observees and their full managerial hierarchy
+        build_public_observation_teammates_list
       else
         []
       end
@@ -1346,14 +1317,14 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       }
     end
 
-    # Add direct managers only (level 0), not managers of managers
+    # Add all managers in the hierarchy for each observee
     @observation.observed_teammates.each do |teammate|
       managers = ManagerialHierarchyQuery.new(
         person: teammate.person,
         organization: @observation.company
       ).call
 
-      managers.select { |m| m[:level] == 0 }.each do |manager_info|
+      managers.each do |manager_info|
         manager_teammate = @observation.company.teammates.find_by(person_id: manager_info[:person_id])
         next unless manager_teammate
 
