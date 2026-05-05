@@ -94,6 +94,10 @@ class UpdateEmploymentTenureService
         updated_tenure = @current_tenure
       end
       
+      # Keep teammate-level employment summary fields in sync with tenure state.
+      sync_result = EmploymentStateConsistencyService.call(teammate: teammate)
+      raise StandardError, sync_result.error unless sync_result.ok?
+
       # Create maap_snapshot if needed (only for CompanyTeammates)
       if needs_snapshot && teammate.is_a?(CompanyTeammate)
         create_maap_snapshot(updated_tenure)

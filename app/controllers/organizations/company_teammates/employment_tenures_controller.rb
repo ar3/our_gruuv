@@ -73,6 +73,9 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
         
         # Save the new tenure
         @employment_tenure.save!
+
+        sync_result = EmploymentStateConsistencyService.call(teammate: target_teammate)
+        raise StandardError, sync_result.error unless sync_result.ok?
         
         # Create observable moment for seat change
         ObservableMoments::CreateSeatChangeMomentService.call(
@@ -88,6 +91,9 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     else
       # Simple new employment creation
       if @employment_tenure.save
+        sync_result = EmploymentStateConsistencyService.call(teammate: target_teammate)
+        raise StandardError, sync_result.error unless sync_result.ok?
+
         # Create observable moment for new hire
         ObservableMoments::CreateNewHireMomentService.call(
           employment_tenure: @employment_tenure,
@@ -129,6 +135,12 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   def update
     authorize @employment_tenure
     if @employment_tenure.update(employment_tenure_params)
+      sync_result = EmploymentStateConsistencyService.call(teammate: @employment_tenure.company_teammate)
+      unless sync_result.ok?
+        redirect_to organization_company_teammate_path(@employment_tenure.company, @employment_tenure.company_teammate), alert: sync_result.error
+        return
+      end
+
       redirect_to organization_company_teammate_path(@employment_tenure.company, @employment_tenure.company_teammate), notice: 'Employment tenure was successfully updated.'
     else
       @company = @employment_tenure.company
@@ -144,6 +156,12 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     company = @employment_tenure.company
     teammate = @employment_tenure.company_teammate
     @employment_tenure.destroy
+    sync_result = EmploymentStateConsistencyService.call(teammate: teammate)
+    unless sync_result.ok?
+      redirect_to organization_company_teammate_path(company, teammate), alert: sync_result.error
+      return
+    end
+
     redirect_to organization_company_teammate_path(company, teammate), notice: 'Employment tenure was successfully deleted.'
   end
 

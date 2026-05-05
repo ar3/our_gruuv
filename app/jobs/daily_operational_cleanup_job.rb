@@ -7,5 +7,6 @@ class DailyOperationalCleanupJob < ApplicationJob
     ObserveBirthdaysJob.perform_and_get_result
     ObserveWorkAnniversariesJob.perform_and_get_result
     CheckIns::ReconcileOpenPositionCheckInsJob.perform_and_get_result
+    EmploymentStateReconciliationJob.perform_and_get_result
   end
 end

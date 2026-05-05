@@ -22,9 +22,9 @@ class TerminateEmploymentService
       # Update employment tenure's ended_at
       @current_tenure.update!(ended_at: ended_at_time)
       
-      # Update company teammate's last_terminated_at (use Date, not Time)
-      termination_date_value = parsed_date.is_a?(Date) ? parsed_date : parsed_date.to_date
-      @teammate.update!(last_terminated_at: termination_date_value)
+      # Keep teammate-level employment summary fields in sync with tenure state.
+      sync_result = EmploymentStateConsistencyService.call(teammate: @teammate)
+      raise StandardError, sync_result.error unless sync_result.ok?
       
       # Create MAAP snapshot (only for CompanyTeammates)
       create_maap_snapshot(parsed_date) if @teammate.is_a?(CompanyTeammate)

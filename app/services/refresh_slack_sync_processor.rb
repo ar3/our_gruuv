@@ -226,7 +226,20 @@ class RefreshSlackSyncProcessor
       return
     end
 
-    if teammate.update(last_terminated_at: suggested_date)
+    termination_date = suggested_date.to_date
+    ended_at_time = termination_date.to_time
+
+    ActiveRecord::Base.transaction do
+      EmploymentTenure.where(company_teammate: teammate, company: organization, ended_at: nil).find_each do |tenure|
+        tenure.update!(ended_at: ended_at_time)
+      end
+
+      teammate.update!(last_terminated_at: termination_date)
+      sync_result = EmploymentStateConsistencyService.call(teammate: teammate)
+      raise StandardError, sync_result.error unless sync_result.ok?
+    end
+
+    if teammate.reload.last_terminated_at.present?
       results[:successes] << {
         type: 'suggest_termination',
         teammate_id: teammate.id,

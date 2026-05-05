@@ -301,6 +301,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
 
         expect(result.ok?).to be true
         expect(current_tenure.reload.ended_at).to eq(termination_date.to_time)
+        expect(teammate.reload.last_terminated_at).to eq(termination_date)
         expect(EmploymentTenure.where(company_teammate: teammate, company: company).count).to eq(1)
       end
 

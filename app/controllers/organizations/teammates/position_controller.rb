@@ -256,6 +256,12 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     )
     
     if @employment_tenure.save
+      sync_result = EmploymentStateConsistencyService.call(teammate: @teammate)
+      unless sync_result.ok?
+        @employment_tenure.destroy
+        raise StandardError, sync_result.error
+      end
+
       redirect_to organization_teammate_position_path(organization, @teammate),
                   notice: 'Employment was successfully started.'
     else
