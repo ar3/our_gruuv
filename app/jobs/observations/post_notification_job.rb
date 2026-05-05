@@ -432,7 +432,7 @@ class Observations::PostNotificationJob < ApplicationJob
     end
     
     # Build intro text: "New <story_url|story> about <slack mentions of observed> as told by <slack mention of observer>"
-    story_url = observation.decorate.permalink_url
+    story_url = observation_story_url(observation)
     intro_text = "New <#{story_url}|story> about #{observed_mentions.join(', ')} as told by #{observer_mention}"
     intro_text = truncate_slack_text(intro_text)
     
@@ -474,7 +474,7 @@ class Observations::PostNotificationJob < ApplicationJob
     observer_casual_name = observation.observer.casual_name
     observer_public_url = Rails.application.routes.url_helpers.public_person_url(observation.observer)
     feelings_sentence = observation.feelings_display
-    permalink_url = observation.decorate.permalink_url
+    permalink_url = observation_story_url(observation)
     
     blocks = []
     
@@ -556,7 +556,7 @@ class Observations::PostNotificationJob < ApplicationJob
     end
     
     # Get permalink URL for the observation
-    permalink_url = observation.decorate.permalink_url
+    permalink_url = observation_story_url(observation)
     
     # Append view more link
     "#{truncated}\n\n_View the rest of this story in <#{permalink_url}|OurGruuv>_"
@@ -575,6 +575,10 @@ class Observations::PostNotificationJob < ApplicationJob
     end
     
     "#{truncated}..."
+  end
+
+  def observation_story_url(observation)
+    Rails.application.routes.url_helpers.organization_observation_url(observation.company, observation)
   end
 
   def build_channel_fallback_text(observation, organization)

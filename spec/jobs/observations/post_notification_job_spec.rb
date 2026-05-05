@@ -347,9 +347,11 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         intro_block = rich_message.find { |block| block['type'] == 'context' }
         expect(intro_block).to be_present
         intro_text = intro_block.dig('elements', 0, 'text')
+        observation_url = Rails.application.routes.url_helpers.organization_observation_url(company, observation)
         expect(intro_text).to include('New')
         expect(intro_text).to include('story')
         expect(intro_text).to match(/<[^|]+\|story>/)
+        expect(intro_text).to include("<#{observation_url}|story>")
         expect(intro_text).not_to include('awesome')
         story_text = rich_message.find { |block| block['type'] == 'section' && block.dig('text', 'text')&.include?(observation.story) }&.dig('text', 'text')
         expect(story_text).to include(observation.story)
@@ -374,9 +376,11 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         intro_block = rich_message.find { |block| block['type'] == 'context' }
         expect(intro_block).to be_present
         intro_text = intro_block.dig('elements', 0, 'text')
+        observation_url = Rails.application.routes.url_helpers.organization_observation_url(company, observation)
         expect(intro_text).to include('New')
         expect(intro_text).to include('story')
         expect(intro_text).to match(/<[^|]+\|story>/)
+        expect(intro_text).to include("<#{observation_url}|story>")
         expect(intro_text).not_to include('awesome')
         story_text = rich_message.find { |block| block['type'] == 'section' && block.dig('text', 'text')&.include?(observation.story) }&.dig('text', 'text')
         expect(story_text).to include(observation.story)
@@ -580,8 +584,8 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         expect(story_text).to include('View the rest of this story')
         expect(story_text).to include('OurGruuv')
         # Should include a link to the observation
-        permalink_url = observation_with_long_story.decorate.permalink_url
-        expect(story_text).to include(permalink_url)
+        observation_url = Rails.application.routes.url_helpers.organization_observation_url(company, observation_with_long_story)
+        expect(story_text).to include(observation_url)
       end
 
       it 'does not raise invalid_blocks error when posting to Slack' do
