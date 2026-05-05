@@ -26,12 +26,18 @@ development:
   cache:
     <<: *primary_development
     migrations_paths: db/cache_migrate
+    schema_dump: false
+    database_tasks: false
   queue:
     <<: *primary_development
     migrations_paths: db/queue_migrate
+    schema_dump: false
+    database_tasks: false
   cable:
     <<: *primary_development
     migrations_paths: db/cable_migrate
+    schema_dump: false
+    database_tasks: false
 
 test:
   primary: &primary_test
@@ -40,12 +46,18 @@ test:
   cache:
     <<: *primary_test
     migrations_paths: db/cache_migrate
+    schema_dump: false
+    database_tasks: false
   queue:
     <<: *primary_test
     migrations_paths: db/queue_migrate
+    schema_dump: false
+    database_tasks: false
   cable:
     <<: *primary_test
     migrations_paths: db/cable_migrate
+    schema_dump: false
+    database_tasks: false
 
 production:
   primary: &primary_production
@@ -54,9 +66,15 @@ production:
   cache:
     <<: *primary_production
     migrations_paths: db/cache_migrate
+    schema_dump: false
+    database_tasks: false
   queue:
     <<: *primary_production
     migrations_paths: db/queue_migrate
+    schema_dump: false
+    database_tasks: false
   cable:
     <<: *primary_production
     migrations_paths: db/cable_migrate
+    schema_dump: false
+    database_tasks: false

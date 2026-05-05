@@ -11,6 +11,13 @@ class MaapAgentRun < ApplicationRecord
 
   belongs_to :subject, polymorphic: true
   belongs_to :triggered_by_teammate, class_name: 'CompanyTeammate', optional: true
+  has_paper_trail meta: {
+    completed_event: ->(record) { record.completed_event_marker? },
+    completed_triggered_by_teammate_id: ->(record) {
+      record.completed_event_marker? ? record.triggered_by_teammate_id : nil
+    },
+    agent_kind: ->(record) { record.agent_kind }
+  }
 
   validates :agent_kind, presence: true
   validates :status, presence: true, inclusion: { in: STATUSES }
@@ -23,5 +30,9 @@ class MaapAgentRun < ApplicationRecord
 
   def terminal?
     status.in?(%w[completed failed])
+  end
+
+  def completed_event_marker?
+    status == 'completed' && saved_change_to_status?
   end
 end

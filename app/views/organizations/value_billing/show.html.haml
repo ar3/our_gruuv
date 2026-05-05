@@ -25,7 +25,7 @@
         - company_name = organization.display_name
         .d-grid.gap-2
           - @value_billing_outcome_rows.each do |row|
-            - hover_copy = case row[:key]; when :stories then "The foundation of clarity is communication. We help teams communicate with radical candor and nonviolent communication by capturing observation-based stories. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :stand then "The only thing worse than being surprised in a performance review is vague and unactionable feedback in that review. We help people get specific feedback they can act on. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :growth then "Being clear about the behaviors, skills, and knowledge needed to exceed expectations drives continuous and predictable greatness. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :goals then "Goals you set and forget create the illusion of alignment. We help teams stay clear about why confidence is rising or falling so communication leads to real change. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; end
+            - hover_copy = case row[:key]; when :stories then "The foundation of clarity is communication. We help teams communicate with radical candor and nonviolent communication by capturing observation-based stories. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :stand then "The only thing worse than being surprised in a performance review is vague and unactionable feedback in that review. We help people get specific feedback they can act on. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :growth then "Being clear about the behaviors, skills, and knowledge needed to exceed expectations drives continuous and predictable greatness. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :goals then "Goals you set and forget create the illusion of alignment. We help teams stay clear about why confidence is rising or falling so communication leads to real change. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :consultations then "Consult OG takes years of servant leadership, MAAP coaching, and organizational design expertise and delivers it to you using AI agents trained on this experience, delivering focused clarity reviews. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} completed consultations in this timeframe."; end
             .py-2{ class: ('border-top border-primary-subtle' unless row == @value_billing_outcome_rows.first) }
               .mb-1
                 - if row[:key] == :stories
@@ -49,6 +49,11 @@
                   %strong= " #{number_with_delimiter(row[:teammate_count])} teammates"
                   %span Communicate Real Progress across
                   %strong= " #{number_with_delimiter(row[:activity_count])} Goal Check-ins"
+                - elsif row[:key] == :consultations
+                  %span OG provided
+                  %strong= " #{number_with_delimiter(row[:teammate_count])} teammates"
+                  %span with
+                  %strong= " #{number_with_delimiter(row[:activity_count])} completed Consult OG #{'consultation'.pluralize(row[:activity_count])}"
               %small.text-muted.d-flex.align-items-center.gap-1
                 %span Which is valued at #{number_to_currency(row[:value_sum])}
                 %button.btn.btn-link.btn-sm.p-0.text-muted{type: "button", "aria-label" => "More details for #{row[:heading]}", "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", title: hover_copy}
@@ -60,6 +65,7 @@
             %li Every person named as an observee in a published observation is worth $0.50
             %li Every completed aspiration, assignment, or position check-in is worth $0.50
             %li Every goal check-in made is worth $0.25
+            %li Every completed Consult OG consultation is worth $1.00
 
 .row.mb-4
   .col-12
@@ -118,6 +124,12 @@
         %h5.mb-0 Goals Progressed
       .card-body
         #value-billing-goal-check-ins-chart{style: "height: 280px;"}
+  .col-12.col-xl-6
+    .card.border-0.shadow-sm.h-100
+      .card-header.bg-light
+        %h5.mb-0 OG Consultations
+      .card-body
+        #value-billing-consultations-chart{style: "height: 280px;"}
 
 :javascript
   (function() {
@@ -203,6 +215,14 @@
         'Count',
         false,
         0.25
+      );
+      renderChart(
+        'value-billing-consultations-chart',
+        'OG Consultations',
+        chartData.consultations,
+        'Count',
+        false,
+        1.0
       );
     }
 

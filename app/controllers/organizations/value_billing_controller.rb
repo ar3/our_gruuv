@@ -5,6 +5,7 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
   WEEKLY_OBSERVEE_VALUE = 0.5
   WEEKLY_CHECK_IN_VALUE = 0.5
   WEEKLY_GOAL_CHECK_IN_VALUE = 0.25
+  WEEKLY_CONSULTATION_VALUE = 1.0
 
   def show
     authorize organization, :show?
@@ -21,13 +22,15 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
     observee_counts = weekly_observee_counts(chart_range)
     completed_check_in_counts = weekly_completed_check_in_counts(teammate_ids_scope, chart_range)
     goal_check_in_counts = weekly_goal_check_in_counts(chart_range)
+    consultation_counts = weekly_consultation_counts(chart_range)
 
     @value_billing_chart_data = build_chart_data(
       week_dates,
       milestone_counts,
       observee_counts,
       completed_check_in_counts,
-      goal_check_in_counts
+      goal_check_in_counts,
+      consultation_counts
     )
 
     assign_per_employee_value_metrics
@@ -92,18 +95,27 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
       .count
   end
 
-  def build_chart_data(week_dates, milestone_counts, observee_counts, completed_check_in_counts, goal_check_in_counts)
+  def build_chart_data(
+    week_dates,
+    milestone_counts,
+    observee_counts,
+    completed_check_in_counts,
+    goal_check_in_counts,
+    consultation_counts
+  )
     categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
     milestone_data = week_dates.map { |wd| milestone_counts[wd] || 0 }
     observee_data = week_dates.map { |wd| observee_counts[wd] || 0 }
     completed_check_in_data = week_dates.map { |wd| completed_check_in_counts[wd] || 0 }
     goal_check_in_data = week_dates.map { |wd| goal_check_in_counts[wd] || 0 }
+    consultation_data = week_dates.map { |wd| consultation_counts[wd] || 0 }
 
     total_value_data = week_dates.each_with_index.map do |_wd, idx|
       (milestone_data[idx] * WEEKLY_MILESTONE_VALUE) +
         (observee_data[idx] * WEEKLY_OBSERVEE_VALUE) +
         (completed_check_in_data[idx] * WEEKLY_CHECK_IN_VALUE) +
-        (goal_check_in_data[idx] * WEEKLY_GOAL_CHECK_IN_VALUE)
+        (goal_check_in_data[idx] * WEEKLY_GOAL_CHECK_IN_VALUE) +
+        (consultation_data[idx] * WEEKLY_CONSULTATION_VALUE)
     end
 
     {
@@ -112,7 +124,8 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
       milestones: milestone_data,
       observees: observee_data,
       completed_check_ins: completed_check_in_data,
-      goal_check_ins: goal_check_in_data
+      goal_check_ins: goal_check_in_data,
+      consultations: consultation_data
     }
   end
 
@@ -138,6 +151,7 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
     stand_activity_count, stand_teammate_count = stand_counts(chart_range)
     growth_activity_count, growth_teammate_count = growth_counts(chart_range)
     goals_activity_count, goals_teammate_count = goal_progress_counts(chart_range)
+    consultation_activity_count, consultation_teammate_count = consultation_counts(chart_range)
 
     @value_billing_outcome_rows = [
       {
@@ -167,8 +181,61 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
         value_sum: goals_activity_count * WEEKLY_GOAL_CHECK_IN_VALUE,
         teammate_count: goals_teammate_count,
         activity_count: goals_activity_count
+      },
+      {
+        key: :consultations,
+        heading: "OG Consultations",
+        value_sum: consultation_activity_count * WEEKLY_CONSULTATION_VALUE,
+        teammate_count: consultation_teammate_count,
+        activity_count: consultation_activity_count
       }
     ]
+  end
+
+  def weekly_consultation_counts(chart_range)
+    completed_consultation_versions(chart_range)
+      .group(Arel.sql("date_trunc('week', versions.created_at)::date"))
+      .count
+  end
+
+  def consultation_counts(chart_range)
+    scope = completed_consultation_versions(chart_range)
+    activity_count = scope.count
+    teammate_count = scope.where("meta ? 'completed_triggered_by_teammate_id'")
+                          .distinct
+                          .count(Arel.sql("meta->>'completed_triggered_by_teammate_id'"))
+    [activity_count, teammate_count]
+  end
+
+  def completed_consultation_versions(chart_range)
+    PaperTrail::Version
+      .where(item_type: 'MaapAgentRun', item_id: organization_maap_agent_run_ids)
+      .where("meta @> ?", { completed_event: true }.to_json)
+      .where(created_at: chart_range)
+  end
+
+  def organization_maap_agent_run_ids
+    return @organization_maap_agent_run_ids if defined?(@organization_maap_agent_run_ids)
+
+    ability_scope = MaapAgentRun.where(
+      subject_type: 'Ability',
+      subject_id: Ability.where(company_id: company.id).select(:id)
+    )
+    assignment_scope = MaapAgentRun.where(
+      subject_type: 'Assignment',
+      subject_id: Assignment.where(company_id: company.id).select(:id)
+    )
+    position_scope = MaapAgentRun.where(
+      subject_type: 'Position',
+      subject_id: Position.joins(:title).where(titles: { company_id: company.id }).select('positions.id')
+    )
+    teammate_scope = MaapAgentRun.where(
+      subject_type: 'CompanyTeammate',
+      subject_id: CompanyTeammate.for_organization_hierarchy(company).select(:id)
+    )
+
+    @organization_maap_agent_run_ids =
+      (ability_scope.pluck(:id) + assignment_scope.pluck(:id) + position_scope.pluck(:id) + teammate_scope.pluck(:id)).uniq
   end
 
   def stories_counts(chart_range)

@@ -45,6 +45,19 @@ Rails.application.config.after_initialize do
       self.meta = (meta || {}).merge('position_assignment_change_context' => value)
     end
 
+    # MaapAgentRun completion markers (used by Value/Billing OG consultations)
+    def completed_event=(value)
+      self.meta = (meta || {}).merge('completed_event' => value)
+    end
+
+    def completed_triggered_by_teammate_id=(value)
+      self.meta = (meta || {}).merge('completed_triggered_by_teammate_id' => value)
+    end
+
+    def agent_kind=(value)
+      self.meta = (meta || {}).merge('agent_kind' => value)
+    end
+
     # Add getters for these attributes to read from meta
     def current_teammate_id
       meta&.dig('current_teammate_id')
@@ -56,6 +69,18 @@ Rails.application.config.after_initialize do
 
     def position_assignment_change_context
       meta&.dig('position_assignment_change_context')
+    end
+
+    def completed_event
+      meta&.dig('completed_event')
+    end
+
+    def completed_triggered_by_teammate_id
+      meta&.dig('completed_triggered_by_teammate_id')
+    end
+
+    def agent_kind
+      meta&.dig('agent_kind')
     end
     end
   end

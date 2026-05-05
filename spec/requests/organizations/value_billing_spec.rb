@@ -37,6 +37,9 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
       expect(response.body).to include('value-billing-observees-chart')
       expect(response.body).to include('value-billing-check-ins-chart')
       expect(response.body).to include('value-billing-goal-check-ins-chart')
+      expect(response.body).to include('OG Consultations')
+      expect(response.body).to include('value-billing-consultations-chart')
+      expect(response.body).to include('Every completed Consult OG consultation is worth $1.00')
     end
 
     it 'accepts timeframe param like Insights' do
@@ -48,6 +51,28 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
     it 'shows per-employee value or no-teammates message when there are no active teammates' do
       get organization_value_billing_path(organization)
       expect(response.body).to match(/weekly clarity value per active teammate|No active teammates/)
+    end
+
+    it 'counts multiple completed OG consultations from version history' do
+      teammate = create(:company_teammate, :assigned_employee, organization: organization)
+      ability = create(:ability, company: organization)
+      run = MaapAgentRun.create!(
+        subject: ability,
+        agent_kind: MaapAgentRun::AGENT_KIND_ABILITY_CLARITY,
+        status: 'pending',
+        triggered_by_teammate: teammate,
+        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION
+      )
+
+      run.update!(status: 'processing')
+      run.update!(status: 'completed')
+      run.update!(status: 'pending')
+      run.update!(status: 'completed')
+
+      get organization_value_billing_path(organization, timeframe: 'year')
+
+      expect(response.body).to include('2 completed Consult OG consultations')
+      expect(response.body).to include('Which is valued at $2.00')
     end
   end
 end
