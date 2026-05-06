@@ -31,11 +31,12 @@ module Maap
       response = chat.ask("#{user_markdown}#{footer}")
       raw = response.content.to_s
 
-      parsed = ClaritySignalParser.call(raw)
+      parsed = AssignmentClarityOutputParser.call(raw)
       @run.update!(
         status: 'completed',
         output_text: raw.strip,
         clarity_rating: parsed.rating,
+        clarity_score: parsed.score,
         model_id: model_id,
         prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
         error_message: nil
@@ -54,6 +55,7 @@ module Maap
         status: 'failed',
         error_message: message.to_s.truncate(10_000),
         clarity_rating: nil,
+        clarity_score: nil,
         output_text: nil,
         model_id: ENV.fetch('MAAP_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id },
         prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION

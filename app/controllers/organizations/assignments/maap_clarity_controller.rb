@@ -25,6 +25,7 @@ module Organizations
         record.assign_attributes(
           status: 'pending',
           clarity_rating: nil,
+          clarity_score: nil,
           output_text: nil,
           error_message: nil,
           prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
@@ -85,6 +86,7 @@ module Organizations
           id: run.id,
           status: status,
           clarity_rating: run.clarity_rating,
+          clarity_score: run.clarity_score,
           error_message: run.error_message,
           elapsed_seconds: elapsed_seconds,
           stale: stale,

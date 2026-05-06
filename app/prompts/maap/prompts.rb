@@ -2,7 +2,7 @@
 
 module Maap
   module Prompts
-    MAAP_PROMPTS_VERSION = "2026-05-10".freeze
+    MAAP_PROMPTS_VERSION = "2026-05-11".freeze
 
     PREAMBLE = <<~PROMPT.freeze
       You operate inside ourgruuv, a system built on the MAAP philosophy.
@@ -209,6 +209,24 @@ module Maap
       G. **OUTCOME SET SIZE IS READABLE.** Flag **more than ~5** outcomes as likely unclear; recommend merges, leading-vs-lagging cleanup, and moving **leading indicators** to the **handbook** when appropriate.
       H. **PARTIAL DATA IS NORMAL.** Note gaps, but still give the most useful review you can.
 
+      ## Consult OG rubric — how to score (100 points total)
+
+      Score **each row** independently; **points earned per row must be integers** from **0** to that row’s **Max**. The **sum** of all rows is **CLARITY_SCORE_TOTAL** (0–100).
+
+      | Criterion | Max |
+      |-----------|----:|
+      | **Outcomes as outcomes** — results not activity lists; quantitative vs sentiment **type matches**; outcomes plausibly rateable; no silent overlap with sibling assignments when data exists | **30** |
+      | **Outcome set shape** — readable size (~3 strong default); if **>5**, merges / handbook for leading indicators / leading vs lagging discipline | **15** |
+      | **Required activities** — observable, outcome-aligned, not a shadow outcome list | **5** |
+      | **Tagline & framing** — informative and motivating; scope clear | **10** |
+      | **Neighbors (siblings)** — disambiguation vs in-scope siblings; overlaps named with fixes | **10** |
+      | **Consumer / supplier flow** — upstream/downstream links and handoffs | **10** |
+      | **Ability alignment** — milestones match scope; poorly defined abilities penalized here | **20** |
+
+      **Required activities row (5 pt max):** If the payload’s **Required activities** field is **absent, empty, or “(none)”**, award **full 5/5** by default (outcomes-only is OK). **Unless** you detect **misplaced outcome-shaped work** smuggled elsewhere (e.g. disguised as activities, duplicate outcome language) — then score **0–4** and explain in **Notes**.
+
+      **Total band (derive the signal from the total — authoritative):** **GREEN** if total **80–100**; **YELLOW** if **60–79**; **RED** if **0–59**. If data is insufficient for a confident score, still assign your best-effort total and prefer **YELLOW** when evaluation is mostly blocked.
+
       ## Your task — output order (required)
 
       **1. Verdict** — one sentence first: Clear / Mostly clear, needs revision / Unclear / Insufficient data to evaluate.
@@ -237,19 +255,26 @@ module Maap
 
       **6. Data gaps** — what you needed but did not have.
 
+      **7. Rubric scores** — a markdown **table** with exactly four columns: **Criterion** | **Points earned** | **Max** | **Notes**.
+
+      - Use **exactly these seven rows** (same criterion order as the rubric above): Outcomes as outcomes; Outcome set shape; Required activities; Tagline & framing; Neighbors (siblings); Consumer / supplier flow; Ability alignment.
+      - **Points earned** must be whole numbers; **Max** must match the rubric (30, 15, 5, 10, 10, 10, 20).
+      - The **sum** of **Points earned** must equal **CLARITY_SCORE_TOTAL** in the machine-readable footer.
+
       Be direct. Cite exact text you critique.
 
-      ## Machine-readable clarity signal (required)
+      ## Machine-readable score and signal (required)
 
-      After all prose, output exactly one final line by itself (no bold, no quotes):
+      After all prose (including the rubric table), output **exactly two lines** at the end, in this **order**, each line by itself (no bold, no quotes, no extra blank lines after the last line):
 
-      CLARITY_SIGNAL: GREEN
+      CLARITY_SCORE_TOTAL: 73
+      CLARITY_SIGNAL: YELLOW
 
-      Use GREEN if outcomes and positioning are fit for purpose.
-      Use YELLOW if Mostly clear / needs revision OR Insufficient data to evaluate.
-      Use RED if Unclear or materially broken.
+      Rules:
 
-      Do not add any text after that line.
+      - **CLARITY_SCORE_TOTAL** is an integer from **0** to **100** (sum of the seven rubric rows).
+      - **CLARITY_SIGNAL** must **match** the total: **GREEN** if total is **80–100**; **YELLOW** if **60–79**; **RED** if **0–59**.
+      - Do not add any text after the **CLARITY_SIGNAL** line.
     PROMPT
 
     POSITION_CLARITY_AGENT = PREAMBLE + <<~PROMPT.freeze

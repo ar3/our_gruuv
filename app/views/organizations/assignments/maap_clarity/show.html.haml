@@ -56,21 +56,26 @@
             .placeholder.col-10.mb-2.rounded{ style: "height: 0.9rem;" }
 
     - elsif @run&.status == 'completed' && @run.output_text.present?
-      - rating = @run.clarity_rating
+      - parsed = Maap::AssignmentClarityOutputParser.call(@run.output_text)
+      - rating = parsed.rating.presence || @run.clarity_rating
+      - score = @run.clarity_score.nil? ? parsed.score : @run.clarity_score
       .d-flex.align-items-center.flex-wrap.gap-2.mb-3
-        %span.text-muted Latest clarity signal:
+        - unless score.nil?
+          %span.text-muted Consult OG score:
+          %span.fw-semibold #{score}/100
+          %span.text-muted ·
+        %span.text-muted Clarity signal:
         - case rating
         - when 'green'
-          %span.badge.text-bg-success Green — strongest clarity
+          %span.badge.text-bg-success Green (80–100)
         - when 'yellow'
-          %span.badge.text-bg-warning Yellow — needs attention
+          %span.badge.text-bg-warning Yellow (60–79)
         - when 'red'
-          %span.badge.text-bg-danger Red — weakest clarity
+          %span.badge.text-bg-danger Red (0–59)
         - else
           %span.badge.text-bg-secondary Unknown
         - if @run.updated_at
           %small.text-muted.ms-2 Updated #{l(@run.updated_at, format: :long)}
-      - parsed = Maap::ClaritySignalParser.call(@run.output_text)
       .card.mb-0
         .card-body.markdown-content
           = render_markdown(parsed.body)

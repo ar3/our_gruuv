@@ -752,6 +752,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_221443) do
     t.bigint "triggered_by_teammate_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "clarity_score"
     t.index ["status"], name: "index_maap_agent_runs_on_status"
     t.index ["subject_type", "subject_id", "agent_kind"], name: "index_maap_agent_runs_on_subject_and_agent_kind", unique: true
     t.index ["triggered_by_teammate_id"], name: "index_maap_agent_runs_on_triggered_by_teammate_id"

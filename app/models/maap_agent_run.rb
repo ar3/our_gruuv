@@ -22,6 +22,9 @@ class MaapAgentRun < ApplicationRecord
   validates :agent_kind, presence: true
   validates :status, presence: true, inclusion: { in: STATUSES }
   validates :clarity_rating, inclusion: { in: CLARITY_RATINGS }, allow_nil: true
+  validates :clarity_score,
+            numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
+            allow_nil: true
 
   scope :ability_clarity, -> { where(agent_kind: AGENT_KIND_ABILITY_CLARITY) }
   scope :assignment_clarity, -> { where(agent_kind: AGENT_KIND_ASSIGNMENT_CLARITY) }
