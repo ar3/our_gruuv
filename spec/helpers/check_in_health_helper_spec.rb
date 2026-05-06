@@ -84,4 +84,43 @@ RSpec.describe CheckInHealthHelper, type: :helper do
       end
     end
   end
+
+  describe 'required-check-in helpers' do
+    let(:required_payload) do
+      {
+        'position' => [ { 'type' => 'position', 'item_id' => 1, 'name' => 'Support Lead', 'clarity_level' => 'clear', 'latest_finalized_rating' => 'meeting' } ],
+        'assignments' => [ { 'type' => 'assignment', 'item_id' => 2, 'name' => 'Onboarding', 'clarity_level' => 'obscured', 'latest_finalized_rating' => 'working_to_meet' } ],
+        'aspirations' => [ { 'type' => 'aspiration', 'item_id' => 3, 'name' => 'Ownership', 'clarity_level' => 'blurred', 'latest_finalized_rating' => 'meeting' } ]
+      }
+    end
+
+    let(:cache) do
+      instance_double(CheckInHealthCache, payload_required_check_ins: required_payload)
+    end
+
+    it 'builds required clarity counts' do
+      counts = helper.required_check_in_category_counts(required_payload['assignments'] + required_payload['aspirations'])
+      expect(counts['obscured']).to eq(1)
+      expect(counts['blurred']).to eq(1)
+      expect(counts['clear']).to eq(0)
+      expect(counts['crystal_clear']).to eq(0)
+    end
+
+    it 'prioritizes obscured items first for urgency' do
+      urgent = helper.required_check_ins_most_urgent(cache)
+      expect(urgent['type']).to eq('assignment')
+      expect(urgent['name']).to eq('Onboarding')
+    end
+
+    it 'returns alert data with item link when not all clear' do
+      organization = create(:organization, :company)
+      teammate = create(:teammate, organization: organization)
+      allow(helper).to receive(:organization_teammate_assignment_path).and_return('/assignment_path')
+
+      alert_data = helper.required_check_in_alert_data(cache: cache, organization: organization, teammate: teammate)
+      expect(alert_data[:all_clear]).to be(false)
+      expect(alert_data[:url]).to eq('/assignment_path')
+      expect(alert_data[:message]).to include('Most urgent check-in')
+    end
+  end
 end

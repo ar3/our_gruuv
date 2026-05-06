@@ -75,6 +75,30 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     @sort_by = apply_by_manager_sort
   end
 
+  def refresh
+    authorize @organization, :check_ins_health?
+
+    teammate = @organization.teammates.find_by(id: params[:teammate_id])
+    unless teammate
+      redirect_back fallback_location: organization_check_ins_health_path(@organization), alert: 'Could not refresh: teammate not found.'
+      return
+    end
+
+    CheckInHealthCacheRefreshJob.perform_later(teammate.id)
+    redirect_back fallback_location: organization_check_ins_health_path(@organization), notice: "Refresh queued for #{teammate.person.display_name}."
+  end
+
+  def refresh_all
+    authorize @organization, :check_ins_health?
+    apply_filter_default_if_needed
+
+    teammate_ids = filtered_teammates_for_check_ins_health.pluck(:id)
+    teammate_ids.each { |teammate_id| CheckInHealthCacheRefreshJob.perform_later(teammate_id) }
+
+    redirect_to organization_check_ins_health_path(@organization, manager_id: params[:manager_id]),
+                notice: "Refresh queued for #{teammate_ids.size} teammate#{'s' if teammate_ids.size != 1}."
+  end
+
   private
 
   def apply_by_manager_sort

@@ -110,7 +110,17 @@
             %col{style: "width: 15%"}
           %thead
             %tr
-              %th Employee
+              %th
+                .d-flex.align-items-center.justify-content-between.gap-2
+                  %span Employee
+                  = button_to organization_check_ins_health_refresh_all_path(@organization),
+                              method: :post,
+                              params: { manager_id: @current_manager_filter },
+                              class: "btn btn-link btn-sm p-0 text-muted",
+                              form: { class: "d-inline" },
+                              title: "Refresh all in current filter" do
+                    %i.bi.bi-arrow-repeat.me-1
+                    Refresh all
               %th Aspirations
               %th Assignments
               %th Position
@@ -122,8 +132,12 @@
               - cache = data[:cache]
               - manager_teammate = teammate.employment_tenures.active.where(company: @organization).first&.manager_teammate
               %tr
-                %td{style: "width: 20%"}
-                  = link_to person.display_name, organization_company_teammate_check_ins_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                %td{style: "width: 20%", rowspan: 2}
+                  .d-flex.align-items-center.gap-2
+                    = link_to person.display_name, organization_company_teammate_check_ins_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                    - refreshed_tooltip = cache&.refreshed_at ? "Last refreshed #{time_ago_in_words(cache.refreshed_at)} ago" : "Cache has not been refreshed yet"
+                    = button_to organization_check_ins_health_refresh_path(@organization, teammate_id: teammate.id), method: :post, class: "btn btn-link btn-sm p-0 text-muted", title: refreshed_tooltip, form: { class: "d-inline" } do
+                      %i.bi.bi-arrow-clockwise
                   %br
                   - if manager_teammate
                     %small.text-muted
@@ -141,6 +155,13 @@
                           .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "aspirations")}
                     - else
                       %span.text-muted No aspirations
+                    - required_items = required_check_in_items_for(cache, :aspirations)
+                    - required_segments = required_check_in_stacked_bar_segments(required_check_in_category_counts(required_items))
+                    - if required_segments.any?
+                      - total_required = required_segments.sum { |s| s[:count] }
+                      .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 8px; min-width: 80px; opacity: 0.85;"}
+                        - required_segments.each do |seg|
+                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => required_check_in_segment_tooltip(seg, total_required, "aspirations")}
                   - else
                     %span.text-muted Pending
                 
@@ -154,6 +175,13 @@
                           .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "assignments")}
                     - else
                       %span.text-muted No assignments
+                    - required_items = required_check_in_items_for(cache, :assignments)
+                    - required_segments = required_check_in_stacked_bar_segments(required_check_in_category_counts(required_items))
+                    - if required_segments.any?
+                      - total_required = required_segments.sum { |s| s[:count] }
+                      .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 8px; min-width: 80px; opacity: 0.85;"}
+                        - required_segments.each do |seg|
+                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => required_check_in_segment_tooltip(seg, total_required, "assignments")}
                   - else
                     %span.text-muted Pending
                 
@@ -167,6 +195,13 @@
                           .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "position")}
                     - else
                       %span.text-muted —
+                    - required_items = required_check_in_items_for(cache, :position)
+                    - required_segments = required_check_in_stacked_bar_segments(required_check_in_category_counts(required_items))
+                    - if required_segments.any?
+                      - total_required = required_segments.sum { |s| s[:count] }
+                      .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 8px; min-width: 60px; opacity: 0.85;"}
+                        - required_segments.each do |seg|
+                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => required_check_in_segment_tooltip(seg, total_required, "position")}
                   - else
                     %span.text-muted Pending
                 
@@ -183,6 +218,26 @@
                       %span.text-muted No milestones
                   - else
                     %span.text-muted Pending
+              %tr
+                %td{colspan: 3}
+                  - if cache
+                    - alert_data = required_check_in_alert_data(cache: cache, organization: @organization, teammate: teammate)
+                    - if alert_data[:all_clear]
+                      .alert.alert-success.py-2.mb-0.small
+                        %i.bi.bi-check-circle-fill.me-1
+                        = alert_data[:message]
+                    - else
+                      .alert.alert-warning.py-2.mb-0.small
+                        %i.bi.bi-exclamation-triangle-fill.me-1
+                        - if alert_data[:url].present?
+                          = link_to alert_data[:message], alert_data[:url], class: "alert-link text-decoration-none"
+                        - else
+                          = alert_data[:message]
+                  - else
+                    .alert.alert-secondary.py-2.mb-0.small
+                      %i.bi.bi-hourglass-split.me-1
+                      Waiting for check-in health cache refresh.
+                %td
       
       .d-flex.justify-content-center.mt-4
         - if @pagy.pages > 1

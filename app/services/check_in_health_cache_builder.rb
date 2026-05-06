@@ -17,7 +17,8 @@ class CheckInHealthCacheBuilder
       'position' => build_position,
       'assignments' => build_assignments,
       'aspirations' => build_aspirations,
-      'milestones' => build_milestones
+      'milestones' => build_milestones,
+      'required_check_ins' => build_required_check_ins
     }
   end
 
@@ -159,6 +160,103 @@ class CheckInHealthCacheBuilder
     {
       'total_required' => required_milestones.size,
       'earned_count' => earned_count
+    }
+  end
+
+  def build_required_check_ins
+    {
+      'position' => build_required_position,
+      'assignments' => build_required_assignments,
+      'aspirations' => build_required_aspirations
+    }
+  end
+
+  def build_required_position
+    active_tenure = teammate.active_employment_tenure
+    return [] unless active_tenure&.position
+
+    latest_finalized = PositionCheckIn.where(company_teammate: teammate)
+      .closed
+      .order(official_check_in_completed_at: :desc)
+      .first
+
+    [required_check_in_item_payload(
+      type: 'position',
+      item_id: active_tenure.position.id,
+      name: active_tenure.position.display_name,
+      latest_finalized: latest_finalized
+    )]
+  end
+
+  def build_required_assignments
+    active_tenure = teammate.active_employment_tenure
+    required_position_assignment_ids = if active_tenure&.position
+      active_tenure.position.required_assignments.pluck(:assignment_id)
+    else
+      []
+    end
+
+    active_assignment_ids = teammate.assignment_tenures
+      .active
+      .joins(:assignment)
+      .where(assignments: { company: organization.self_and_descendants })
+      .distinct
+      .pluck(:assignment_id)
+
+    assignment_ids = (required_position_assignment_ids + active_assignment_ids).uniq
+    return [] if assignment_ids.empty?
+
+    assignments_by_id = Assignment.where(id: assignment_ids).index_by(&:id)
+    latest_by_assignment_id = AssignmentCheckIn
+      .where(company_teammate: teammate, assignment_id: assignment_ids)
+      .closed
+      .order(assignment_id: :asc, official_check_in_completed_at: :desc)
+      .group_by(&:assignment_id)
+      .transform_values(&:first)
+
+    assignment_ids.filter_map do |assignment_id|
+      assignment = assignments_by_id[assignment_id]
+      next unless assignment
+
+      required_check_in_item_payload(
+        type: 'assignment',
+        item_id: assignment.id,
+        name: assignment.title,
+        latest_finalized: latest_by_assignment_id[assignment_id]
+      )
+    end
+  end
+
+  def build_required_aspirations
+    aspirations = Aspiration.within_hierarchy(organization).to_a
+    return [] if aspirations.empty?
+
+    aspiration_ids = aspirations.map(&:id)
+    latest_by_aspiration_id = AspirationCheckIn
+      .where(company_teammate: teammate, aspiration_id: aspiration_ids)
+      .closed
+      .order(aspiration_id: :asc, official_check_in_completed_at: :desc)
+      .group_by(&:aspiration_id)
+      .transform_values(&:first)
+
+    aspirations.map do |aspiration|
+      required_check_in_item_payload(
+        type: 'aspiration',
+        item_id: aspiration.id,
+        name: aspiration.name,
+        latest_finalized: latest_by_aspiration_id[aspiration.id]
+      )
+    end
+  end
+
+  def required_check_in_item_payload(type:, item_id:, name:, latest_finalized:)
+    {
+      'type' => type,
+      'item_id' => item_id,
+      'name' => name,
+      'clarity_level' => latest_finalized&.clarity_level&.to_s || 'obscured',
+      'latest_finalized_rating' => latest_finalized&.official_rating,
+      'last_finalized_at' => latest_finalized&.official_check_in_completed_at&.iso8601
     }
   end
 end

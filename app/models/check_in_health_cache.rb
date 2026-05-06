@@ -30,6 +30,10 @@ class CheckInHealthCache < ApplicationRecord
     payload['milestones'] || {}
   end
 
+  def payload_required_check_ins
+    payload['required_check_ins'] || {}
+  end
+
   # Completion score 0-4 per item; returns hash with :position, :assignments, :aspirations (each sum of points), :milestones (earned/total)
   def completion_points
     points = { position: category_to_points(payload_position['category']),

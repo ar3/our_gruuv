@@ -314,6 +314,19 @@ module CheckInHealthHelper
   # Left-to-right order for stacked bars: red → neon green
   CHECK_IN_HEALTH_BAR_ORDER = %w[red orange light_blue light_purple light_green green neon_green].freeze
 
+  REQUIRED_CLARITY_BAR_ORDER = %w[obscured blurred clear crystal_clear].freeze
+  REQUIRED_CLARITY_CSS = {
+    'obscured' => 'bg-danger',
+    'blurred' => 'bg-warning',
+    'clear' => 'bg-success',
+    'crystal_clear' => 'check-in-health-neon-green'
+  }.freeze
+  REQUIRED_TYPE_PRIORITY = {
+    'aspiration' => 0,
+    'assignment' => 1,
+    'position' => 2
+  }.freeze
+
   # Render horizontal stacked bar from segment hash (category => count). Total = sum of counts.
   # Segments are always ordered red (left) → neon green (right).
   def check_in_health_stacked_bar_segments(segment_counts)
@@ -324,6 +337,128 @@ module CheckInHealthHelper
       next if count.zero?
       pct = (count / total * 100).round(1)
       { category: category, pct: pct, count: count, css: check_in_health_category_css(category) }
+    end
+  end
+
+  def required_check_in_category_css(clarity_level)
+    REQUIRED_CLARITY_CSS[clarity_level.to_s] || 'bg-danger'
+  end
+
+  def required_check_in_category_counts(items)
+    counts = { 'obscured' => 0, 'blurred' => 0, 'clear' => 0, 'crystal_clear' => 0 }
+    Array(items).each do |item|
+      level = item['clarity_level'].to_s
+      normalized = counts.key?(level) ? level : 'obscured'
+      counts[normalized] += 1
+    end
+    counts
+  end
+
+  def required_check_in_stacked_bar_segments(segment_counts)
+    total = segment_counts.values.sum.to_f
+    return [] if total.zero?
+
+    REQUIRED_CLARITY_BAR_ORDER.filter_map do |clarity_level|
+      count = segment_counts[clarity_level].to_i
+      next if count.zero?
+
+      pct = (count / total * 100).round(1)
+      {
+        category: clarity_level,
+        pct: pct,
+        count: count,
+        css: required_check_in_category_css(clarity_level)
+      }
+    end
+  end
+
+  def required_check_in_segment_tooltip(segment, total, object_name)
+    label = segment[:category].to_s.humanize.downcase
+    meaning = required_check_in_clarity_meaning(segment[:category])
+    count = segment[:count].to_i
+    "#{count} of #{total} required #{object_name} are #{label}, meaning #{meaning}"
+  end
+
+  def required_check_in_items_for(cache, type)
+    required = cache&.payload_required_check_ins || {}
+    Array(required[type.to_s])
+  end
+
+  def required_check_ins_all_clear?(cache)
+    required = cache&.payload_required_check_ins || {}
+    items = Array(required['position']) + Array(required['assignments']) + Array(required['aspirations'])
+    return true if items.empty?
+
+    items.all? { |item| %w[clear crystal_clear].include?(item['clarity_level'].to_s) }
+  end
+
+  def required_check_ins_most_urgent(cache)
+    required = cache&.payload_required_check_ins || {}
+    items = Array(required['position']) + Array(required['assignments']) + Array(required['aspirations'])
+    return nil if items.empty?
+
+    items.min_by do |item|
+      clarity_level = item['clarity_level'].to_s
+      severity_rank = case clarity_level
+      when 'obscured' then 0
+      when 'blurred' then 1
+      when 'clear' then 2
+      when 'crystal_clear' then 3
+      else 0
+      end
+      rating_rank = item['latest_finalized_rating'].to_s == 'working_to_meet' ? 0 : 1
+      type_rank = REQUIRED_TYPE_PRIORITY[item['type'].to_s] || 99
+      [severity_rank, rating_rank, type_rank, item['name'].to_s]
+    end
+  end
+
+  def required_check_in_alert_data(cache:, organization:, teammate:)
+    return { all_clear: true, message: 'continuous clarity achieved', url: nil } if required_check_ins_all_clear?(cache)
+
+    urgent = required_check_ins_most_urgent(cache)
+    return { all_clear: true, message: 'continuous clarity achieved', url: nil } if urgent.blank?
+
+    item_type = urgent['type'].to_s
+    item_name = urgent['name'].presence || item_type.humanize.downcase
+    clarity_level = urgent['clarity_level'].to_s
+    clarity_label = clarity_level.humanize.downcase
+    clarity_meaning = required_check_in_clarity_meaning(clarity_level)
+    message = "Consider checking in on: #{item_name} (#{clarity_label}, meaning #{clarity_meaning})"
+    {
+      all_clear: false,
+      message: message,
+      url: required_check_in_item_url(
+        organization: organization,
+        teammate: teammate,
+        item_type: item_type,
+        item_id: urgent['item_id']
+      )
+    }
+  end
+
+  def required_check_in_item_url(organization:, teammate:, item_type:, item_id:)
+    case item_type.to_s
+    when 'aspiration'
+      organization_teammate_aspiration_path(organization, teammate, item_id)
+    when 'assignment'
+      organization_teammate_assignment_path(organization, teammate, item_id)
+    when 'position'
+      position_check_in_organization_teammate_path(organization, teammate)
+    else
+      organization_company_teammate_check_ins_path(organization, teammate)
+    end
+  end
+
+  def required_check_in_clarity_meaning(clarity_level)
+    case clarity_level.to_s
+    when 'crystal_clear'
+      "check-ins were completed within #{CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS} days"
+    when 'clear'
+      "check-ins were completed between #{CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 1}-#{CheckInBehavior::CLARITY_CLEAR_DAYS} days ago"
+    when 'blurred'
+      "check-ins were completed between #{CheckInBehavior::CLARITY_CLEAR_DAYS + 1}-#{CheckInBehavior::CLARITY_BLURRED_DAYS} days ago"
+    else
+      "no check-ins were completed in the last #{CheckInBehavior::CLARITY_BLURRED_DAYS} days"
     end
   end
 

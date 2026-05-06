@@ -44,6 +44,31 @@ RSpec.describe 'Check-ins Health', type: :request do
       get organization_check_ins_health_path(company), params: { manager_id: 'just_me' }
       expect(response).to have_http_status(:success)
     end
+
+    it 'shows secondary required clarity and refresh control when cache exists' do
+      create(
+        :check_in_health_cache,
+        teammate: teammate,
+        organization: company,
+        refreshed_at: 1.hour.ago,
+        payload: {
+          'position' => { 'category' => 'green' },
+          'assignments' => [],
+          'aspirations' => [],
+          'milestones' => { 'total_required' => 0, 'earned_count' => 0 },
+          'required_check_ins' => {
+            'position' => [ { 'type' => 'position', 'item_id' => 123, 'name' => 'Role', 'clarity_level' => 'clear', 'latest_finalized_rating' => 'meeting' } ],
+            'assignments' => [ { 'type' => 'assignment', 'item_id' => 456, 'name' => 'Task', 'clarity_level' => 'obscured', 'latest_finalized_rating' => 'working_to_meet' } ],
+            'aspirations' => []
+          }
+        }
+      )
+
+      get organization_check_ins_health_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Consider checking in on:')
+      expect(response.body).to include('bi-arrow-clockwise')
+    end
   end
 
   describe 'GET /organizations/:organization_id/check_ins_health_export' do
@@ -91,6 +116,32 @@ RSpec.describe 'Check-ins Health', type: :request do
         expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(organization_check_ins_health_path(company))
       end
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/check_ins_health_refresh' do
+    include ActiveJob::TestHelper
+
+    it 'enqueues a refresh job for the teammate' do
+      expect do
+        post organization_check_ins_health_refresh_path(company), params: { teammate_id: teammate.id }
+      end.to have_enqueued_job(CheckInHealthCacheRefreshJob).with(teammate.id)
+
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(organization_check_ins_health_path(company))
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/check_ins_health_refresh_all' do
+    include ActiveJob::TestHelper
+
+    it 'enqueues refresh jobs for the current filtered teammates' do
+      expect do
+        post organization_check_ins_health_refresh_all_path(company), params: { manager_id: 'just_me' }
+      end.to have_enqueued_job(CheckInHealthCacheRefreshJob).with(teammate.id)
+
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(organization_check_ins_health_path(company, manager_id: 'just_me'))
     end
   end
 end

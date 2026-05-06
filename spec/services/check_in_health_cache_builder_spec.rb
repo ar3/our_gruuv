@@ -13,6 +13,7 @@ RSpec.describe CheckInHealthCacheBuilder do
       expect(result).to have_key('assignments')
       expect(result).to have_key('aspirations')
       expect(result).to have_key('milestones')
+      expect(result).to have_key('required_check_ins')
     end
 
     it 'position has category and date keys' do
@@ -36,6 +37,14 @@ RSpec.describe CheckInHealthCacheBuilder do
       expect(result['milestones']).to include('total_required', 'earned_count')
       expect(result['milestones']['total_required']).to be_a(Integer)
       expect(result['milestones']['earned_count']).to be_a(Integer)
+    end
+
+    it 'required_check_ins has position, assignments, and aspirations arrays' do
+      result = described_class.call(teammate, organization)
+      expect(result['required_check_ins']).to include('position', 'assignments', 'aspirations')
+      expect(result['required_check_ins']['position']).to be_an(Array)
+      expect(result['required_check_ins']['assignments']).to be_an(Array)
+      expect(result['required_check_ins']['aspirations']).to be_an(Array)
     end
   end
 
