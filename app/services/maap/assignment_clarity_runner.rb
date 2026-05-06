@@ -37,6 +37,7 @@ module Maap
         output_text: raw.strip,
         clarity_rating: parsed.rating,
         clarity_score: parsed.score,
+        clarity_recommendations: parsed.recommendations,
         model_id: model_id,
         prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
         error_message: nil
@@ -56,6 +57,7 @@ module Maap
         error_message: message.to_s.truncate(10_000),
         clarity_rating: nil,
         clarity_score: nil,
+        clarity_recommendations: [],
         output_text: nil,
         model_id: ENV.fetch('MAAP_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id },
         prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION

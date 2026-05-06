@@ -9,10 +9,12 @@ module Organizations
       def show
         authorize @assignment, :run_clarity?
         assign_assignments_for_maap_clarity_switcher
-        @run = MaapAgentRun.find_by(
+        @run = MaapAgentRun.includes(:maap_recommendation_acceptances).find_by(
           subject: @assignment,
           agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY
         )
+        @accepted_maap_recommendation_ids =
+          @run ? @run.maap_recommendation_acceptances.pluck(:recommendation_id) : []
         render layout: determine_layout
       end
 
@@ -22,10 +24,12 @@ module Organizations
           subject: @assignment,
           agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY
         )
+        record.maap_recommendation_acceptances.destroy_all if record.persisted?
         record.assign_attributes(
           status: 'pending',
           clarity_rating: nil,
           clarity_score: nil,
+          clarity_recommendations: [],
           output_text: nil,
           error_message: nil,
           prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
@@ -48,6 +52,39 @@ module Organizations
         end
 
         render json: status_json_for(run)
+      end
+
+      def accept_recommendation
+        authorize @assignment, :accept_clarity_recommendation?
+        run = MaapAgentRun.find_by!(
+          subject: @assignment,
+          agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY
+        )
+        unless run.status == 'completed' && run.output_text.present?
+          redirect_to maap_clarity_organization_assignment_path(@organization, @assignment),
+                      alert: 'Accept is only available after a completed Consult OG run.'
+          return
+        end
+
+        rid = params.require(:recommendation_id).to_s
+        valid_ids = Array(run.clarity_recommendations).map { |h| h.stringify_keys['id'] }.compact
+        unless valid_ids.include?(rid)
+          redirect_to maap_clarity_organization_assignment_path(@organization, @assignment),
+                      alert: 'That recommendation is not part of the latest Consult OG run.'
+          return
+        end
+
+        acceptance = MaapRecommendationAcceptance.find_or_initialize_by(
+          maap_agent_run: run,
+          recommendation_id: rid
+        )
+        if acceptance.new_record?
+          acceptance.teammate = current_company_teammate
+          acceptance.save!
+        end
+
+        redirect_to maap_clarity_organization_assignment_path(@organization, @assignment),
+                    notice: 'Recommendation marked as accepted.'
       end
 
       private

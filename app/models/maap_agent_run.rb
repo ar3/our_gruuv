@@ -11,6 +11,7 @@ class MaapAgentRun < ApplicationRecord
 
   belongs_to :subject, polymorphic: true
   belongs_to :triggered_by_teammate, class_name: 'CompanyTeammate', optional: true
+  has_many :maap_recommendation_acceptances, dependent: :destroy
   has_paper_trail meta: {
     completed_event: ->(record) { record.completed_event_marker? },
     completed_triggered_by_teammate_id: ->(record) {

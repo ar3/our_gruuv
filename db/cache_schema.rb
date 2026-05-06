@@ -753,9 +753,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_221443) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "clarity_score"
+    t.jsonb "clarity_recommendations", default: [], null: false
     t.index ["status"], name: "index_maap_agent_runs_on_status"
     t.index ["subject_type", "subject_id", "agent_kind"], name: "index_maap_agent_runs_on_subject_and_agent_kind", unique: true
     t.index ["triggered_by_teammate_id"], name: "index_maap_agent_runs_on_triggered_by_teammate_id"
+  end
+
+  create_table "maap_recommendation_acceptances", force: :cascade do |t|
+    t.bigint "maap_agent_run_id", null: false
+    t.string "recommendation_id", null: false
+    t.bigint "teammate_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["maap_agent_run_id", "recommendation_id"], name: "index_maap_rec_acceptances_on_run_and_rec_id", unique: true
+    t.index ["maap_agent_run_id"], name: "index_maap_recommendation_acceptances_on_maap_agent_run_id"
+    t.index ["teammate_id"], name: "index_maap_recommendation_acceptances_on_teammate_id"
   end
 
   create_table "maap_snapshots", force: :cascade do |t|
@@ -1653,6 +1665,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_221443) do
   add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_banker_id"
   add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_id"
   add_foreign_key "maap_agent_runs", "teammates", column: "triggered_by_teammate_id"
+  add_foreign_key "maap_recommendation_acceptances", "maap_agent_runs"
+  add_foreign_key "maap_recommendation_acceptances", "teammates"
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
   add_foreign_key "maap_snapshots", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "maap_snapshots", "teammates", column: "employee_company_teammate_id"

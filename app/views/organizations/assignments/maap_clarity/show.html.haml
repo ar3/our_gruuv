@@ -76,6 +76,32 @@
           %span.badge.text-bg-secondary Unknown
         - if @run.updated_at
           %small.text-muted.ms-2 Updated #{l(@run.updated_at, format: :long)}
+      - recs = Array(@run.clarity_recommendations).map(&:stringify_keys)
+      - if recs.any?
+        .card.mb-3.border-primary.border-opacity-25
+          .card-header.bg-light
+            %strong High-confidence recommendations
+            %span.text-muted.small.ms-2 (quick accept — apply actions coming later)
+          %ul.list-group.list-group-flush
+            - recs.each do |rec|
+              %li.list-group-item.d-flex.flex-wrap.align-items-start.justify-content-between.gap-2
+                .flex-grow-1
+                  %div.fw-semibold= rec['title']
+                  %div.small.text-muted.mt-1= rec['rationale']
+                  %div.small.mt-1
+                    %span.badge.text-bg-secondary.text-uppercase= rec['kind']
+                .flex-shrink-0
+                  - if @accepted_maap_recommendation_ids.include?(rec['id'])
+                    %span.badge.text-bg-success
+                      %i.bi.bi-check-lg.me-1
+                      Accepted
+                  - else
+                    = button_to accept_maap_clarity_recommendation_organization_assignment_path(@organization, @assignment),
+                                params: { recommendation_id: rec['id'] },
+                                method: :post,
+                                class: 'btn btn-sm btn-outline-primary',
+                                form: { data: { turbo: false } } do
+                      Quick accept
       .card.mb-0
         .card-body.markdown-content
           = render_markdown(parsed.body)

@@ -282,6 +282,8 @@ Rails.application.routes.draw do
       member do
         get 'maap_clarity', to: 'assignments/maap_clarity#show', as: :maap_clarity
         post 'maap_clarity/run', to: 'assignments/maap_clarity#run', as: :run_maap_clarity
+        post 'maap_clarity/recommendations/accept', to: 'assignments/maap_clarity#accept_recommendation',
+                                                     as: :accept_maap_clarity_recommendation
         get 'maap_clarity/status', to: 'assignments/maap_clarity#status', as: :maap_clarity_status
         get :archive
         patch :execute_archive

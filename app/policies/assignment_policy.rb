@@ -50,6 +50,10 @@ class AssignmentPolicy < ApplicationPolicy
     update?
   end
 
+  def accept_clarity_recommendation?
+    run_clarity?
+  end
+
   private
 
   def user_has_maap_permission?

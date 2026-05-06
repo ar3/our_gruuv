@@ -59,4 +59,57 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
       expect(json['status']).to eq('processing')
     end
   end
+
+  describe 'POST .../maap_clarity/recommendations/accept' do
+    let!(:run) do
+      MaapAgentRun.create!(
+        subject: assignment,
+        agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY,
+        status: 'completed',
+        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
+        output_text: 'ok',
+        clarity_recommendations: [
+          {
+            'id' => 'rec_test',
+            'confidence' => 'high',
+            'kind' => 'edit_tagline',
+            'title' => 'Fix tagline',
+            'rationale' => 'Clearer scope.',
+            'payload' => {}
+          }
+        ]
+      )
+    end
+
+    it 'records a quick accept for a valid recommendation id' do
+      expect do
+        post accept_maap_clarity_recommendation_organization_assignment_path(organization, assignment),
+             params: { recommendation_id: 'rec_test' }
+      end.to change(MaapRecommendationAcceptance, :count).by(1)
+
+      expect(response).to redirect_to(maap_clarity_organization_assignment_path(organization, assignment))
+      acc = MaapRecommendationAcceptance.last
+      expect(acc.maap_agent_run_id).to eq(run.id)
+      expect(acc.recommendation_id).to eq('rec_test')
+      expect(acc.teammate_id).to eq(maap_teammate.id)
+    end
+
+    it 'rejects unknown recommendation ids' do
+      post accept_maap_clarity_recommendation_organization_assignment_path(organization, assignment),
+           params: { recommendation_id: 'nope' }
+
+      expect(response).to redirect_to(maap_clarity_organization_assignment_path(organization, assignment))
+      expect(flash[:alert]).to be_present
+      expect(MaapRecommendationAcceptance.count).to eq(0)
+    end
+
+    it 'is idempotent when accepting twice' do
+      post accept_maap_clarity_recommendation_organization_assignment_path(organization, assignment),
+           params: { recommendation_id: 'rec_test' }
+      expect do
+        post accept_maap_clarity_recommendation_organization_assignment_path(organization, assignment),
+             params: { recommendation_id: 'rec_test' }
+      end.not_to change(MaapRecommendationAcceptance, :count)
+    end
+  end
 end

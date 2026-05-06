@@ -16,6 +16,7 @@ RSpec.describe Maap::AssignmentClarityOutputParser do
       expect(result.score).to eq(72)
       expect(result.rating).to eq('yellow') # strict: total drives signal, not model line
       expect(result.body).not_to match(/CLARITY_SCORE_TOTAL|CLARITY_SIGNAL/)
+      expect(result.recommendations).to eq([])
     end
 
     it 'clamps score to 0–100' do
@@ -37,6 +38,27 @@ RSpec.describe Maap::AssignmentClarityOutputParser do
       expect(result.score).to be_nil
       expect(result.rating).to eq('green')
       expect(result.body).not_to match(/CLARITY_SIGNAL/)
+      expect(result.recommendations).to eq([])
+    end
+
+    it 'strips BEGIN/END recommendations block and parses array before score lines' do
+      raw = <<~TEXT.strip
+        Summary here.
+
+        BEGIN_MAAP_RECOMMENDATIONS
+        [{"id":"rec1","confidence":"high","kind":"edit_tagline","title":"T","rationale":"R","payload":{}}]
+        END_MAAP_RECOMMENDATIONS
+
+        CLARITY_SCORE_TOTAL: 85
+        CLARITY_SIGNAL: RED
+      TEXT
+
+      result = described_class.call(raw)
+      expect(result.score).to eq(85)
+      expect(result.rating).to eq('green')
+      expect(result.recommendations.size).to eq(1)
+      expect(result.recommendations.first['id']).to eq('rec1')
+      expect(result.body).not_to match(/BEGIN_MAAP_RECOMMENDATIONS|CLARITY_SCORE_TOTAL/)
     end
   end
 
