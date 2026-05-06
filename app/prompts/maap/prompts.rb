@@ -2,7 +2,7 @@
 
 module Maap
   module Prompts
-    MAAP_PROMPTS_VERSION = "2026-05-13".freeze
+    MAAP_PROMPTS_VERSION = "2026-05-14".freeze
 
     PREAMBLE = <<~PROMPT.freeze
       You operate inside ourgruuv, a system built on the MAAP philosophy.
@@ -234,9 +234,13 @@ module Maap
 
       **1. Verdict** — one sentence first: Clear / Mostly clear, needs revision / Unclear / Insufficient data to evaluate.
 
-      **2. Current vs proposed (side by side — immediately after the verdict)**
+      **2. Rubric scores** — immediately after the verdict, output a markdown **table** with exactly four columns: **Criterion** | **Points earned** | **Max** | **Notes**.
 
-      Next, a markdown **table** with exactly two columns: **Current** | **Proposed**.
+      - Use **exactly these seven rows** (same criterion order as the rubric above): Outcomes as outcomes; Outcome set shape; Required activities; Tagline & framing; Neighbors (siblings); Consumer / supplier flow; Ability alignment.
+      - **Points earned** must be whole numbers; **Max** must match the rubric (30, 15, 5, 10, 10, 10, 20).
+      - The **sum** of **Points earned** must equal **CLARITY_SCORE_TOTAL** in the machine-readable footer at the very end.
+
+      **3. Current vs proposed (actual vs proposed)** — immediately after the rubric table, a markdown **table** with exactly two columns: **Current** | **Proposed**.
 
       - Rows: tagline (when change is warranted); **required activities** (when they should be more observable, outcome-aligned, or trimmed);
          **outcome count / merges / handbook moves** (especially when there are more than five outcomes or leading-indicator clutter); **each outcome**
@@ -247,28 +251,9 @@ module Maap
       - In **Proposed**, give replacement language or a crisp summary of the rewrite (for outcome type rows, state the new type explicitly).
       - Whenever you name an **ability**, **assignment**, or **position** that appears in the user message appendix **Markdown links for named entities**, paste the **exact** `[label](path)` line from that appendix in **Current**, **Proposed**, and later sections (including inside table cells). Use the same link text as the label. Do not invent URLs. (Future MAAP agents that add more link types to that appendix should follow the same rule.)
 
-      The table comes **right after** the verdict so readers see the headline judgment, then the concrete diff.
+      Readers should see: headline verdict → numeric rubric → concrete Current \| Proposed diff → quick actions (below).
 
-      **3. Rubric scores** — immediately after the Current \| Proposed table, output a markdown **table** with exactly four columns: **Criterion** | **Points earned** | **Max** | **Notes**.
-
-      - Use **exactly these seven rows** (same criterion order as the rubric above): Outcomes as outcomes; Outcome set shape; Required activities; Tagline & framing; Neighbors (siblings); Consumer / supplier flow; Ability alignment.
-      - **Points earned** must be whole numbers; **Max** must match the rubric (30, 15, 5, 10, 10, 10, 20).
-      - The **sum** of **Points earned** must equal **CLARITY_SCORE_TOTAL** in the machine-readable footer.
-
-      **4. Outcome review** — overall: whether **~3 outcomes** is a reasonable target for this assignment and whether **>5** hurts clarity (merges, leading vs lagging, handbook for leading indicators). Per outcome: **type fit** (quantitative vs sentiment; apply the **Likert rule** from B when labeled sentiment), strength of the statement, Likert/sentiment readiness
-         (can teammates plausibly rate this?), and missing instrumentation if any.
-
-      **5. Neighbor & flow findings** — overlap with sibling assignments; **upstream (supplier) and downstream (consumer)** clarity and proposed links.
-
-      **6. Ability alignment** — required milestones vs. the described assignment; **poorly defined abilities** called out by name.
-
-      **7. Data gaps** — what you needed but did not have.
-
-      Be direct. Cite exact text you critique.
-
-      ## Machine-readable high-confidence recommendations (required)
-
-      After section **7 (Data gaps)** (and all prose above), output a **JSON array** of **high-confidence** actionable recommendations, wrapped **exactly** in these markers (include the markers even if the array is empty):
+      **4. Quick actions / accept candidates (high-confidence recommendations)** — immediately after the Current \| Proposed table, output the machine-readable JSON array for items the product can surface as **Quick accept** / future one-click fixes. Wrap **exactly** in these markers (include the markers even if the array is empty):
 
       BEGIN_MAAP_RECOMMENDATIONS
       [
@@ -290,9 +275,20 @@ module Maap
       - Each object **must** include: **id** (stable slug), **confidence**, **kind** (machine-oriented label such as `edit_tagline`, `merge_outcomes`, `link_consumer_assignment`), **title**, **rationale**, **payload** (JSON object; use `{}` when nothing structured).
       - Do **not** invent database IDs; only reference entities that appear in the provided payload / appendix.
 
+      **5. Outcome review** — overall: whether **~3 outcomes** is a reasonable target for this assignment and whether **>5** hurts clarity (merges, leading vs lagging, handbook for leading indicators). Per outcome: **type fit** (quantitative vs sentiment; apply the **Likert rule** from B when labeled sentiment), strength of the statement, Likert/sentiment readiness
+         (can teammates plausibly rate this?), and missing instrumentation if any.
+
+      **6. Neighbor & flow findings** — overlap with sibling assignments; **upstream (supplier) and downstream (consumer)** clarity and proposed links.
+
+      **7. Ability alignment** — required milestones vs. the described assignment; **poorly defined abilities** called out by name.
+
+      **8. Data gaps** — what you needed but did not have.
+
+      Be direct. Cite exact text you critique.
+
       ## Machine-readable score and signal (required)
 
-      After the recommendations block (which follows Data gaps), output **exactly two lines** at the end, in this **order**, each line by itself (no bold, no quotes, no extra blank lines after the last line):
+      After section **8 (Data gaps)** — and **after** the BEGIN_MAAP_RECOMMENDATIONS block already placed in section 4 — output **exactly two lines** at the end, in this **order**, each line by itself (no bold, no quotes, no extra blank lines after the last line):
 
       CLARITY_SCORE_TOTAL: 73
       CLARITY_SIGNAL: YELLOW
