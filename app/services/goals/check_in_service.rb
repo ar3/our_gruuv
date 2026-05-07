@@ -79,6 +79,10 @@ module Goals
       end
 
       start_unstarted_parent_objectives_with_due_date
+      create_missing_parent_check_ins(
+        source_goal: @goal,
+        source_check_in: check_in
+      )
 
       # Auto-complete goal if confidence is 0% or 100%
       if @confidence_percentage.present? && (@confidence_percentage == 0 || @confidence_percentage == 100) && @goal.completed_at.nil?
@@ -114,6 +118,53 @@ module Goals
 
         parent.update(started_at: Time.current)
       end
+    end
+
+    def create_missing_parent_check_ins(source_goal:, source_check_in:)
+      parent_goals = parent_goals_for_auto_check_in(source_goal).to_a
+
+      parent_goals.each do |parent_goal|
+        existing_parent_check_in = parent_goal.goal_check_ins.find_by(check_in_week_start: @week_start)
+        parent_has_weekly_check_in = existing_parent_check_in.present?
+        next if parent_has_weekly_check_in
+
+        parent_goal.goal_check_ins.create!(
+          check_in_week_start: @week_start,
+          confidence_percentage: source_check_in.confidence_percentage,
+          confidence_reason: inherited_parent_confidence_reason(source_goal, source_check_in),
+          confidence_reporter: @current_person
+        )
+
+        if parent_goal.objective? && parent_goal.started_at.nil? && parent_goal.deleted_at.nil? && parent_goal.completed_at.nil?
+          parent_goal.update!(started_at: Time.current)
+        end
+      end
+    end
+
+    def parent_goals_for_auto_check_in(source_goal)
+      parent_ids = []
+      visited_ids = {}
+      queue = source_goal.linking_goals.to_a
+
+      while queue.any?
+        parent_goal = queue.shift
+        next if parent_goal.nil?
+        next if parent_goal.company_id != source_goal.company_id
+        next if visited_ids[parent_goal.id]
+
+        visited_ids[parent_goal.id] = true
+        parent_ids << parent_goal.id if parent_goal.most_likely_target_date.present?
+        queue.concat(parent_goal.linking_goals)
+      end
+
+      Goal.where(id: parent_ids)
+    end
+
+    def inherited_parent_confidence_reason(source_goal, source_check_in)
+      reporter_name = @current_person.preferred_first_then_last_display_name
+      source_due_date = source_goal.most_likely_target_date.strftime('%B %-d, %Y')
+
+      "#{reporter_name} checked in on #{source_goal.title} and was #{source_check_in.confidence_percentage}% confident that would be complete by #{source_due_date}... so we are assuming this goal should have that same confidence level."
     end
   end
 end

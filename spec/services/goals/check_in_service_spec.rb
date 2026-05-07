@@ -208,6 +208,82 @@ RSpec.describe Goals::CheckInService, type: :service do
       end
     end
 
+    context 'when goal has parent hierarchy with due dates' do
+      let(:parent_goal) do
+        create(:goal,
+          :inspirational_objective,
+          creator: teammate,
+          owner: teammate,
+          company: organization,
+          most_likely_target_date: Date.today + 2.months
+        )
+      end
+      let(:grandparent_goal) do
+        create(:goal,
+          :inspirational_objective,
+          creator: teammate,
+          owner: teammate,
+          company: organization,
+          most_likely_target_date: Date.today + 4.months
+        )
+      end
+
+      before do
+        create(:goal_link, parent: parent_goal, child: goal)
+        create(:goal_link, parent: grandparent_goal, child: parent_goal)
+      end
+
+      it 'creates check-ins for each parent without one this week' do
+        result = described_class.call(
+          goal: goal,
+          current_person: person,
+          confidence_percentage: 75
+        )
+
+        expect(result.ok?).to be true
+        [parent_goal, grandparent_goal].each do |ancestor_goal|
+          ancestor_check_in = ancestor_goal.goal_check_ins.find_by(check_in_week_start: week_start)
+          expect(ancestor_check_in).to be_present
+          expect(ancestor_check_in.confidence_percentage).to eq(75)
+          expect(ancestor_check_in.confidence_reporter).to eq(person)
+        end
+      end
+
+      it 'does not create a parent check-in when that parent already has one this week' do
+        create(:goal_check_in,
+          goal: parent_goal,
+          check_in_week_start: week_start,
+          confidence_percentage: 50,
+          confidence_reason: 'Existing parent check-in',
+          confidence_reporter: person
+        )
+
+        result = described_class.call(
+          goal: goal,
+          current_person: person,
+          confidence_percentage: 80
+        )
+
+        expect(result.ok?).to be true
+        expect(parent_goal.goal_check_ins.where(check_in_week_start: week_start).count).to eq(1)
+        expect(grandparent_goal.goal_check_ins.where(check_in_week_start: week_start).count).to eq(1)
+      end
+
+      it 'uses inherited brief update text for parent check-ins' do
+        result = described_class.call(
+          goal: goal,
+          current_person: person,
+          confidence_percentage: 65
+        )
+
+        expect(result.ok?).to be true
+        parent_check_in = parent_goal.goal_check_ins.find_by(check_in_week_start: week_start)
+        expected_due_date = goal.most_likely_target_date.strftime('%B %-d, %Y')
+        expected_reason = "#{person.preferred_first_then_last_display_name} checked in on #{goal.title} and was 65% confident that would be complete by #{expected_due_date}... so we are assuming this goal should have that same confidence level."
+        expect(parent_check_in.confidence_reason).to eq(expected_reason)
+      end
+    end
+
     context 'when goal has already been started' do
       let(:started_goal) do
         create(:goal,
