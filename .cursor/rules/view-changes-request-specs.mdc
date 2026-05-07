@@ -21,4 +21,8 @@ When you make changes to a view (templates, partials, or view-related helpers):
    - If any fail, fix the view or spec as appropriate.
    - If there are no request specs for that view, consider noting it; do not block the change.
 
+4. **Apply page-help UX pattern when relevant**
+   - For page-level views that need user guidance, follow `.cursor/rules/page-help-ux-pattern.mdc`.
+   - Keep the pattern consistent (info icon + hover tooltip + click-expand help), but adapt examples/legends/content to the current page.
+
 Example: after editing `app/views/organizations/teams/_form.html.haml`, run `spec/requests/organizations_spec.rb` and any `spec/requests/**/teams*` or `spec/requests/**/slack/channels*` that might render the teams or Slack channel UI.

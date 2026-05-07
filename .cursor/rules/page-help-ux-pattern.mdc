@@ -1,0 +1,30 @@
+---
+description: Standard page-help UX (icon, hover, click-expand explainer)
+globs: app/views/**/*.haml
+alwaysApply: false
+---
+
+# Page Help UX Pattern
+
+When editing page-level views, use this pattern by default:
+
+- Place an info icon directly to the right of the page header text.
+- Use an outline-style info icon unless product direction says otherwise.
+- Icon supports both:
+  - hover tooltip with a very brief sentence and "click for details" cue
+  - click to expand/collapse a hidden full-width help alert below the header
+- Keep helper text concise, practical, and adapted to the current page.
+
+## Expanded Help Content
+
+- Start with the page's **ultimate goal** in one sentence.
+- Include a concrete **example** of page content (table row/card/etc.).
+- Explain how to read the page's primary UI signals (status bars, badges, states).
+- Include state legends with visual color markers (small dots/chips) matching real UI colors.
+- If refresh/recompute controls exist, state when users should (and should not) use them.
+
+## Style Guidance
+
+- Keep the expanded help skimmable: short paragraphs + bullets + mini sections.
+- Prefer examples and "how to interpret this" over abstract descriptions.
+- Keep behavior accessible: tooltip + clickable control + explicit aria attributes.
