@@ -9,6 +9,8 @@
 
 -# Summary view (shown when collapsed)
 - all_goals = @now_goals + @next_goals + @later_goals
+- active_goals_count = all_goals.count
+- all_goals_count = active_goals_count + @draft_goals_count
 - goals_for_table = @about_me_goals_ordered || all_goals
 - goal_child_ids = @about_me_goal_child_ids || Set.new
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(goals_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#goalsSection", "aria-expanded" => "false", "aria-controls" => "goalsSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:goals), style: "cursor: pointer;"}
@@ -29,14 +31,6 @@
 .collapse#goalsSection
   .card.mb-4
     .card-body
-      - if @draft_goals_count > 0
-        .d-grid.mb-3
-          = link_to "Start or Archive your #{pluralize(@draft_goals_count, 'draft goal')}",
-                    organization_goals_path(organization,
-                      owner_type: 'CompanyTeammate',
-                      owner_id: @teammate.id,
-                      status: 'draft'),
-                    class: "btn btn-outline-secondary"
       - if all_goals.any?
         .table-responsive
           %table.table.table-hover
@@ -75,12 +69,34 @@
       - else
         %p.text-muted.mb-3 No active goals found.
       
-      .d-grid.mt-3
-        = link_to "Manage Goals & Confidence Ratings",
-                  organization_goals_path(organization,
+      .row.g-2.mt-3
+        .col-md-4.col-12
+          = link_to organization_goals_path(organization,
                     owner_id: "CompanyTeammate_#{@teammate.id}",
                     view: 'hierarchical-collapsible',
                     return_url: about_me_organization_company_teammate_path(organization, @teammate),
                     return_text: "Back to About Me"),
-                  class: "btn btn-outline-primary"
+                  class: "btn btn-outline-info w-100" do
+            %i.bi.bi-box-arrow-up-right.me-2
+            = "Go review your #{pluralize(all_goals_count, 'goal')} (draft + active)"
+        .col-md-4.col-12
+          = link_to organization_goals_path(organization,
+                    owner_id: "CompanyTeammate_#{@teammate.id}",
+                    status: 'active',
+                    view: 'hierarchical-collapsible',
+                    return_url: about_me_organization_company_teammate_path(organization, @teammate),
+                    return_text: "Back to About Me"),
+                  class: "btn btn-outline-success w-100" do
+            %i.bi.bi-box-arrow-up-right.me-2
+            = "Go check-in on your #{pluralize(active_goals_count, 'active goal')}"
+        .col-md-4.col-12
+          = link_to organization_goals_path(organization,
+                    owner_id: "CompanyTeammate_#{@teammate.id}",
+                    status: 'draft',
+                    view: 'hierarchical-collapsible',
+                    return_url: about_me_organization_company_teammate_path(organization, @teammate),
+                    return_text: "Back to About Me"),
+                  class: "btn btn-outline-secondary w-100" do
+            %i.bi.bi-box-arrow-up-right.me-2
+            = "Go review your #{pluralize(@draft_goals_count, 'draft goal')}"
 
