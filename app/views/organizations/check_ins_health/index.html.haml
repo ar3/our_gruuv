@@ -5,13 +5,95 @@
     %h1.mb-0.me-2
       %i.bi.bi-clipboard-check.me-2
       Check-ins Health Dashboard
-    .d-flex.align-items-center
-      %small.text-muted.ms-3
-        %i.bi.bi-info-circle.me-1
-        Track check-in status for all active employees (last 90 days)
+      %span.d-inline-flex.align-items-center.ms-2{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "Quickly monitor who needs clarity support. Click for a full breakdown of this page."}
+        %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#checkInsHealthPageInfo", "aria-expanded" => "false", "aria-controls" => "checkInsHealthPageInfo", "aria-label" => "Show page explanation"}
+          %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
 
 .mb-4
   = content_for :go_back_link
+
+.collapse.mb-4#checkInsHealthPageInfo
+  .alert.alert-info.mb-0
+    %h5.fw-semibold.mb-2 Ultimate goal
+    %p.mb-3 Give a manager a quick view at where they should focus in order to keep their folks 100% clear.
+    %p.mb-2
+      %strong How to read each row:
+      the top bar shows what state you and your employees are in for current check-ins; the bottom bar shows how long ago the last check-in was completed.
+    %p.mb-3 Use refresh controls only when you believe the data is out-of-date and want to queue a background refresh.
+
+    .card.mb-3
+      .card-header.py-2
+        %strong Example employee row
+      .card-body.py-2
+        .table-responsive
+          %table.table.table-sm.mb-2
+            %thead
+              %tr
+                %th Employee
+                %th Aspirations
+                %th Assignments
+                %th Position
+                %th Milestones
+            %tbody
+              %tr
+                %td
+                  Alex Rivera
+                  %br
+                  %small.text-muted Casey Manager
+                %td
+                  .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
+                    .flex-grow-0.bg-warning{style: "width: 100%;"}
+                  .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
+                    .flex-grow-0.bg-danger{style: "width: 100%;"}
+                %td
+                  .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
+                    .flex-grow-0.bg-success{style: "width: 55%;"}
+                    .flex-grow-0.bg-warning{style: "width: 45%;"}
+                  .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
+                    .flex-grow-0.bg-success{style: "width: 50%;"}
+                    .flex-grow-0.bg-warning{style: "width: 50%;"}
+                %td
+                  .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 60px;"}
+                    .flex-grow-0.bg-success{style: "width: 100%;"}
+                  .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 60px;"}
+                    .flex-grow-0.check-in-health-neon-green{style: "width: 100%;"}
+                %td
+                  .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 60px;"}
+                    .flex-grow-0.bg-success{style: "width: 70%;"}
+                    .flex-grow-0.bg-danger{style: "width: 30%;"}
+        .row.g-2.small
+          .col-12.col-lg-6
+            %div
+              %i.bi.bi-arrow-up-right.me-1
+              Top bars (taller bars) explain current check-in workflow status.
+            %div
+              %i.bi.bi-arrow-up-right.me-1
+              Bottom bars (shorter bars) explain recency of completed check-ins.
+          .col-12.col-lg-6
+            %div
+              %i.bi.bi-arrow-up-right.me-1
+              Row alert text points to the most urgent thing to check in on next.
+            %div
+              %i.bi.bi-arrow-up-right.me-1
+              Refresh controls should be used only when data seems stale/incorrect.
+
+    .row
+      .col-12.col-lg-6
+        %h6.fw-semibold.mb-2 Top bar states (check-in workflow state)
+        %ul.mb-0
+          - CheckInHealthHelper::CHECK_IN_HEALTH_BAR_ORDER.each do |category|
+            %li
+              %span.d-inline-block.rounded-circle.me-2.align-middle{class: check_in_health_category_css(category), style: "width: 10px; height: 10px;"}
+              %strong= category.humanize
+              = " - #{check_in_health_category_meaning(category)}"
+      .col-12.col-lg-6
+        %h6.fw-semibold.mb-2 Bottom bar states (last completed recency)
+        %ul.mb-0
+          - %w[crystal_clear clear blurred obscured].each do |clarity_level|
+            %li
+              %span.d-inline-block.rounded-circle.me-2.align-middle{class: required_check_in_category_css(clarity_level), style: "width: 10px; height: 10px;"}
+              %strong= clarity_level.humanize
+              = " - #{required_check_in_clarity_meaning(clarity_level)}"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-ins Health Dashboard", url: nil }])
@@ -132,13 +214,12 @@
               - cache = data[:cache]
               - manager_teammate = teammate.employment_tenures.active.where(company: @organization).first&.manager_teammate
               %tr
-                %td{style: "width: 20%", rowspan: 2}
+                %td.align-top{style: "width: 20%", rowspan: 2}
                   .d-flex.align-items-center.gap-2
                     = link_to person.display_name, organization_company_teammate_check_ins_path(@organization, teammate), class: "text-decoration-none fw-bold"
                     - refreshed_tooltip = cache&.refreshed_at ? "Last refreshed #{time_ago_in_words(cache.refreshed_at)} ago" : "Cache has not been refreshed yet"
                     = button_to organization_check_ins_health_refresh_path(@organization, teammate_id: teammate.id), method: :post, class: "btn btn-link btn-sm p-0 text-muted", title: refreshed_tooltip, form: { class: "d-inline" } do
                       %i.bi.bi-arrow-clockwise
-                  %br
                   - if manager_teammate
                     %small.text-muted
                       = link_to manager_teammate.person&.display_name, organization_check_ins_health_path(@organization, manager_id: "CompanyTeammate_#{manager_teammate.id}"), class: "text-muted"
@@ -223,18 +304,18 @@
                   - if cache
                     - alert_data = required_check_in_alert_data(cache: cache, organization: @organization, teammate: teammate)
                     - if alert_data[:all_clear]
-                      .alert.alert-success.py-2.mb-0.small
+                      .alert.alert-success.py-1.mb-0.small
                         %i.bi.bi-check-circle-fill.me-1
                         = alert_data[:message]
                     - else
-                      .alert.alert-warning.py-2.mb-0.small
+                      .alert.alert-warning.py-1.mb-0.small
                         %i.bi.bi-exclamation-triangle-fill.me-1
                         - if alert_data[:url].present?
                           = link_to alert_data[:message], alert_data[:url], class: "alert-link text-decoration-none"
                         - else
                           = alert_data[:message]
                   - else
-                    .alert.alert-secondary.py-2.mb-0.small
+                    .alert.alert-secondary.py-1.mb-0.small
                       %i.bi.bi-hourglass-split.me-1
                       Waiting for check-in health cache refresh.
                 %td
