@@ -369,7 +369,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, started_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Check-Ins')
+        expect(response.body).to include('Observations and Goal Check-ins')
         expect(response.body).to include(organization_goal_path(organization, started_goal, anchor: 'check-in'))
         expect(response.body).to include('btn-primary')
         expect(response.body).not_to include('aria-disabled="true"')
@@ -383,7 +383,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, other_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Check-Ins')
+        expect(response.body).to include('Observations and Goal Check-ins')
         expect(response.body).to include('Other Goal')
         expect(response.body).to include('Current Week Check-In')
       end
