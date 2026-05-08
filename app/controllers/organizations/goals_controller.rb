@@ -181,7 +181,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       timeframe: params[:timeframe],
       goal_type: params[:goal_type],
       status: selected_statuses,
-      sort: params[:sort] || 'smart_sort',
+      sort: params[:sort] || 'most_likely_target_date',
       direction: params[:direction],
       view: @view_style,
       spotlight: spotlight_param,
@@ -651,7 +651,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       timeframe: params[:timeframe],
       goal_type: params[:goal_type],
       status: selected_statuses,
-      sort: params[:sort] || 'smart_sort',
+      sort: params[:sort] || 'most_likely_target_date',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'hierarchical-collapsible',
       spotlight: params[:spotlight] || 'goals_overview',
@@ -1000,7 +1000,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         Goal.none
       end
     when 'most_likely_target_date'
-      goals.order(most_likely_target_date: direction)
+      goals.order(most_likely_target_date: direction, title: :asc)
     when 'earliest_target_date'
       goals.order(earliest_target_date: direction)
     when 'latest_target_date'
@@ -1010,8 +1010,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     when 'title'
       goals.order(title: direction)
     else
-      # Default to smart_sort if sort is nil or unknown
-      apply_sorting(goals, 'smart_sort', direction)
+      # Default to most_likely_target_date if sort is nil or unknown
+      apply_sorting(goals, 'most_likely_target_date', direction)
     end
   end
   
