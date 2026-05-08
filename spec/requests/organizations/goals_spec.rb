@@ -1200,6 +1200,52 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
+  describe 'goal owner options include full managerial hierarchy' do
+    let(:direct_report_person) { create(:person, first_name: 'Direct', last_name: 'Report') }
+    let(:indirect_report_person) { create(:person, first_name: 'Indirect', last_name: 'Report') }
+    let(:direct_report_teammate) do
+      direct_report_person.company_teammates.find_or_create_by!(organization: organization) do |t|
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+    end
+    let(:indirect_report_teammate) do
+      indirect_report_person.company_teammates.find_or_create_by!(organization: organization) do |t|
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+    end
+
+    before do
+      create(:employment_tenure, company: organization, company_teammate: direct_report_teammate, manager_teammate: teammate, ended_at: nil)
+      create(:employment_tenure, company: organization, company_teammate: indirect_report_teammate, manager_teammate: direct_report_teammate, ended_at: nil)
+    end
+
+    it 'shows indirect reports in the index owner filter switcher' do
+      get organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(direct_report_person.display_name)
+      expect(response.body).to include(indirect_report_person.display_name)
+    end
+
+    it 'shows indirect reports in the single create owner dropdown' do
+      get new_organization_goal_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Teammate: #{direct_report_person.display_name}")
+      expect(response.body).to include("Teammate: #{indirect_report_person.display_name}")
+    end
+
+    it 'shows indirect reports in the bulk create owner dropdown' do
+      get bulk_new_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Teammate: #{direct_report_person.display_name}")
+      expect(response.body).to include("Teammate: #{indirect_report_person.display_name}")
+    end
+  end
+
   describe 'GET /organizations/:organization_id/goals index by owner/filter type' do
     it 'loads the index with default (current teammate) and shows only that teammate\'s goals' do
       my_goal = create(:goal, creator: teammate, owner: teammate, title: 'My Teammate Goal', started_at: 1.week.ago)
@@ -1433,7 +1479,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       get bulk_new_organization_goals_path(organization)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Teammate: #{person.display_name}")
+      expect(response.body).to include(person.display_name)
       expect(response.body).to include("CompanyTeammate_#{teammate.id}")
     end
 
@@ -1491,11 +1537,11 @@ RSpec.describe 'Organizations::Goals', type: :request do
       company_pos = body.index("Company: #{organization.display_name}")
       expect(teammate_pos).to be < company_pos
       # Departments appear in hierarchical order: AAA, then BBB, then BBB > Sub-B1 (HTML-escaped >)
-      expect(body).to include('Department: AAA')
-      expect(body).to include('Department: BBB')
+      expect(body).to include('AAA')
+      expect(body).to include('BBB')
       expect(body).to include('Sub-B1')
-      pos_aaa = body.index('Department: AAA')
-      pos_bbb = body.index('Department: BBB')
+      pos_aaa = body.index('AAA')
+      pos_bbb = body.index('BBB')
       pos_sub = body.index('Sub-B1')
       expect(pos_aaa).to be < pos_bbb
       expect(pos_bbb).to be < pos_sub

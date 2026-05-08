@@ -1031,20 +1031,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       options << ["Teammate: #{current_person.display_name}", "CompanyTeammate_#{current_teammate.id}"]
     end
 
-    # 2) Other teammates alphabetically
-    current_manager_teammate = current_person.teammates
-                                             .where(organization_id: company.id)
-                                             .first
-    managed_teammates = if current_manager_teammate
-      CompanyTeammate.joins(:employment_tenures)
-                     .where(employment_tenures: { company: company, manager_teammate_id: current_manager_teammate.id, ended_at: nil })
-                     .where.not(id: current_teammate&.id)
-                     .includes(:person)
-                     .distinct
-                     .order('people.last_name', 'people.first_name')
-    else
-      CompanyTeammate.none
-    end
+    # 2) Other teammates in the viewing manager's full hierarchy (alphabetically)
+    managed_teammates = managed_teammates_in_hierarchy(company, current_teammate)
     managed_teammates.each do |teammate|
       next unless teammate.person&.display_name.present? && teammate.id.present?
       options << ["Teammate: #{teammate.person.display_name}", "CompanyTeammate_#{teammate.id}"]
@@ -1127,22 +1115,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     teammate_opts = []
     current_teammate = current_company_teammate
     if current_teammate && current_person&.display_name.present?
-      teammate_opts << ["Teammate: #{current_person.display_name}", "CompanyTeammate_#{current_teammate.id}"]
+      teammate_opts << [current_person.display_name, "CompanyTeammate_#{current_teammate.id}"]
     end
-    current_manager_teammate = current_person.teammates.where(organization_id: company.id).first
-    managed_teammates = if current_manager_teammate
-      CompanyTeammate.joins(:employment_tenures)
-                     .where(employment_tenures: { company: company, manager_teammate_id: current_manager_teammate.id, ended_at: nil })
-                     .where.not(id: current_teammate&.id)
-                     .includes(:person)
-                     .distinct
-                     .order('people.last_name', 'people.first_name')
-    else
-      CompanyTeammate.none
-    end
+    managed_teammates = managed_teammates_in_hierarchy(company, current_teammate)
     managed_teammates.each do |teammate|
       next unless teammate.person&.display_name.present? && teammate.id.present?
-      teammate_opts << ["Teammate: #{teammate.person.display_name}", "CompanyTeammate_#{teammate.id}"]
+      teammate_opts << [teammate.person.display_name, "CompanyTeammate_#{teammate.id}"]
     end
     groups << ["Teammates", teammate_opts] if teammate_opts.any?
 
@@ -1150,12 +1128,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     company_opts << ["Company: #{company.display_name}", "Company_#{company.id}"] if company.display_name.present? && company.id.present?
     groups << ["Company", company_opts] if company_opts.any?
 
-    dept_opts = department_goal_owner_options(company)
+    dept_opts = department_goal_owner_options(company).map { |label, value| [label.sub(/\ADepartment:\s*/, ''), value] }
     groups << ["Departments", dept_opts] if dept_opts.any?
 
     team_opts = Team.where(company: company).ordered.filter_map do |t|
       next unless t.display_name.present? && t.id.present?
-      ["Team: #{t.display_name}", "Team_#{t.id}"]
+      [t.display_name, "Team_#{t.id}"]
     end
     groups << ["Teams", team_opts] if team_opts.any?
 
@@ -1176,6 +1154,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     else
       'only_creator_owner_and_managers'
     end
+  end
+
+  def managed_teammates_in_hierarchy(company, current_teammate)
+    return [] unless current_teammate
+
+    CompanyTeammate
+      .self_and_reporting_hierarchy(current_teammate, company)
+      .includes(:person)
+      .where.not(id: current_teammate.id)
+      .to_a
+      .sort_by { |teammate| [teammate.person&.last_name.to_s.downcase, teammate.person&.first_name.to_s.downcase] }
   end
 end
 

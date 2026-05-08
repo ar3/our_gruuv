@@ -9,6 +9,9 @@
 - current_week_check_in = node[:current_week_check_in]
 - can_check_in = node[:can_check_in]
 - current_week_start = Date.current.beginning_of_week(:monday)
+- teammate_owned_goal = goal.owner_type == 'CompanyTeammate' && goal.owner_id.present?
+- viewer_is_goal_owner = current_company_teammate.present? && goal.owner_id == current_company_teammate.id
+- show_note_win_cta_for_viewer = teammate_owned_goal && !viewer_is_goal_owner
 
 .tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
   .d-flex.align-items-start
@@ -55,29 +58,21 @@
                 = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
                 = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
             
-            / Inline check-in form OR quick-note CTA (teammate-owned goals for non–owner/creator viewers)
+            / Inline check-in form OR note/win CTA (teammate-owned goals for non-owner viewers)
             - if goal.most_likely_target_date.present? && goal.completed_at.nil?
-              - if show_hierarchical_collapsible_goal_quick_note_cta?(goal) && policy(Observation).create?
+              - if show_note_win_cta_for_viewer && policy(Observation).create?
                 .mt-1
                   - quick_note_params = { privacy_level: 'observed_and_managers', return_url: request.fullpath, return_text: 'Goals', goal_id: goal.id, observee_ids: goal.observee_teammate_ids_for_observation }
                   = link_to new_quick_note_organization_observations_path(@organization, quick_note_params), class: 'btn btn-outline-primary w-100', target: '_blank', rel: 'noopener noreferrer' do
                     %i.bi.bi-sticky.me-2
                     Add a note/win/challenge about this goal
-              - elsif show_hierarchical_collapsible_goal_quick_note_cta?(goal)
-                .check-in-inline.mt-1.p-1.bg-light.rounded.opacity-75
-                  .goal-check-in-inline-layout
-                    .goal-check-in-inline-layout__main.d-flex.flex-column.gap-1
-                      .d-flex.flex-wrap.align-items-center.gap-2
-                        %span.small I'm
-                        = select_tag "goal_check_in_disabled_#{goal.id}", options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm', style: 'width: auto; min-width: 80px;', disabled: true }
-                        %span.small confident this'll be hit by
-                        %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
-                        %span.small .
-                        %span.btn.btn-primary.btn-sm.disabled
-                          %i.bi.bi-check-lg.me-1
-                          Check In
-                        %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(goal)}
-                      = text_field_tag "goal_check_in_reason_disabled_#{goal.id}", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm goal-check-in-inline-layout__reason', placeholder: 'Brief update (optional)...', disabled: true
+              - elsif show_note_win_cta_for_viewer
+                .d-flex.align-items-center.gap-2.mt-1
+                  .flex-grow-1
+                    %button.btn.btn-outline-secondary.w-100{type: "button", disabled: true}
+                      %i.bi.bi-sticky.me-2
+                      Add a note/win/challenge about this goal
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You don't have permission to add a note/win/challenge about this goal.", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
               - elsif can_check_in
                 - can_update_goal = policy(goal).update?
                 .check-in-inline.mt-1.p-1.bg-light.rounded
