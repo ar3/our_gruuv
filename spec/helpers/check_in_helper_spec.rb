@@ -307,6 +307,62 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
+  describe '#single_item_check_in_primary_caption' do
+    let(:organization) { create(:organization) }
+    let(:employee_person) { create(:person, first_name: 'Jamie', last_name: 'Emp') }
+    let(:manager_person) { create(:person, first_name: 'Morgan', last_name: 'Mgr') }
+    let(:employee_teammate) { create(:company_teammate, person: employee_person, organization: organization) }
+    let(:aspiration) { create(:aspiration, company: organization) }
+
+    before do
+      allow(employee_teammate).to receive(:current_manager).and_return(manager_person)
+    end
+
+    it 'when complete and other side incomplete, states they cannot see the response yet' do
+      completed_at = 2.days.ago
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        employee_completed_at: completed_at, manager_completed_at: nil)
+
+      allow(helper).to receive(:time_ago_in_words).with(completed_at).and_return('2 days')
+
+      expect(
+        helper.single_item_check_in_primary_caption(
+          is_complete: true,
+          counterparty_name: manager_person.casual_name,
+          completed_at: completed_at,
+          check_in: check_in,
+          teammate: employee_teammate,
+          current_person: employee_person
+        )
+      ).to eq(
+        "You completed your individual check-in 2 days ago. #{manager_person.casual_name} has not completed their side of the check-in and therefore cannot see your response yet."
+      )
+    end
+
+    it 'when complete and both sides complete, states visible-since based on earlier completion' do
+      your_completed_at = 1.day.ago
+      manager_completed_at = 3.days.ago
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        employee_completed_at: your_completed_at, manager_completed_at: manager_completed_at)
+
+      allow(helper).to receive(:time_ago_in_words).with(your_completed_at).and_return('1 day')
+      allow(helper).to receive(:time_ago_in_words).with(manager_completed_at).and_return('3 days')
+
+      expect(
+        helper.single_item_check_in_primary_caption(
+          is_complete: true,
+          counterparty_name: manager_person.casual_name,
+          completed_at: your_completed_at,
+          check_in: check_in,
+          teammate: employee_teammate,
+          current_person: employee_person
+        )
+      ).to eq(
+        "You completed your individual check-in 1 day ago. #{manager_person.casual_name} completed their individual check-in 3 days ago, and has been able to see your response since 3 days ago, and you are ready to have your review together."
+      )
+    end
+  end
+
   describe '#single_item_check_in_make_changes_needs_attention?' do
     let(:organization) { create(:organization) }
     let(:person) { create(:person, first_name: 'Jane', last_name: 'Doe') }

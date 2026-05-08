@@ -260,10 +260,43 @@ module CheckInHelper
     end
   end
 
-  def single_item_check_in_primary_caption(is_complete:, counterparty_name:, completed_at:)
+  def single_item_check_in_primary_caption(is_complete:, counterparty_name:, completed_at:, check_in:, teammate:, current_person:)
     if is_complete
-      recency = completed_at.present? ? "#{time_ago_in_words(completed_at)} ago" : "earlier"
-      "#{counterparty_name} has been able to see your response since #{recency}"
+      your_completion_recency =
+        if completed_at.present?
+          "#{time_ago_in_words(completed_at)} ago"
+        else
+          "recently"
+        end
+
+      mode = single_item_check_in_view_mode(teammate, current_person)
+      other_done, other_completed_at =
+        if mode == :employee
+          [check_in.manager_completed?, check_in.manager_completed_at]
+        else
+          [check_in.employee_completed?, check_in.employee_completed_at]
+        end
+
+      if other_done
+        other_completion_recency =
+          if other_completed_at.present?
+            "#{time_ago_in_words(other_completed_at)} ago"
+          else
+            "recently"
+          end
+
+        visible_since_time = [completed_at, other_completed_at].compact.min
+        visible_since_recency =
+          if visible_since_time.present?
+            "#{time_ago_in_words(visible_since_time)} ago"
+          else
+            "recently"
+          end
+
+        "You completed your individual check-in #{your_completion_recency}. #{counterparty_name} completed their individual check-in #{other_completion_recency}, and has been able to see your response since #{visible_since_recency}, and you are ready to have your review together."
+      else
+        "You completed your individual check-in #{your_completion_recency}. #{counterparty_name} has not completed their side of the check-in and therefore cannot see your response yet."
+      end
     else
       "#{counterparty_name} will be able to see your response"
     end
