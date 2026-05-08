@@ -105,12 +105,12 @@
                     Start Now
                   %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
               - if can_edit
-                = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary" do
+                = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary w-100" do
                   %i.bi.bi-pencil.me-2
                   Edit Goal
               - else
                 .d-flex.align-items-center.gap-2
-                  = link_to "#", class: "btn btn-outline-secondary disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                  = link_to "#", class: "btn btn-outline-secondary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
                     %i.bi.bi-pencil.me-2
                     Edit Goal
                   %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
@@ -129,12 +129,12 @@
             - can_edit = policy(@goal).update?
             .d-grid.gap-2
               - if can_edit
-                = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm" do
+                = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm w-100" do
                   %i.bi.bi-pencil.me-2
                   Edit Goal
               - else
                 .d-flex.align-items-center.gap-2
-                  = link_to "#", class: "btn btn-outline-secondary btn-sm disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
+                  = link_to "#", class: "btn btn-outline-secondary btn-sm w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal) do
                     %i.bi.bi-pencil.me-2
                     Edit Goal
                   %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(@goal)}
