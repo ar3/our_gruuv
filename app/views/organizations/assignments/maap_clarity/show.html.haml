@@ -25,13 +25,20 @@
       Consult OG reviews outcomes, neighbor assignments, consumer/supplier links, position fit, and ability alignment.
       Results are saved as the latest run for this assignment.
 
-    .d-flex.flex-wrap.gap-2.mb-3
-      = button_to run_maap_clarity_organization_assignment_path(@organization, @assignment), method: :post, class: 'btn btn-primary' do
-        %i.bi.bi-play-fill.me-2
-        - if @run&.persisted?
-          Consult OG again
-        - else
-          Consult OG
+    - consult_focus_value = @run&.consult_focus.presence || params[:consult_focus].presence
+    = form_with url: run_maap_clarity_organization_assignment_path(@organization, @assignment), method: :post, local: true, data: { turbo: false }, class: 'mb-4' do
+      .mb-3
+        %label.form-label{ for: 'consult_focus' } What do you want help with?
+        = text_area_tag :consult_focus, consult_focus_value, id: 'consult_focus', class: 'form-control', rows: 4, maxlength: 8000, placeholder: 'Leave blank for a standard review — or add context, e.g. “Are outcomes 2–3 too overlapping?” or “Should this link to another assignment?”'
+        .form-text.text-muted
+          You can leave this blank; Consult OG works just fine without it. Use this when you have extra context you want to give OG before the analysis.
+      .d-flex.flex-wrap.gap-2
+        %button.btn.btn-primary{ type: 'submit' }
+          %i.bi.bi-play-fill.me-2
+          - if @run&.persisted?
+            Consult OG again
+          - else
+            Consult OG
 
     - if @run&.error_message.present? && @run.status == 'failed'
       .alert.alert-danger.mb-3
@@ -59,6 +66,12 @@
       - parsed = Maap::AssignmentClarityOutputParser.call(@run.output_text)
       - rating = parsed.rating.presence || @run.clarity_rating
       - score = @run.clarity_score.nil? ? parsed.score : @run.clarity_score
+      - recs = Array(@run.clarity_recommendations).map(&:stringify_keys)
+      - if @run.consult_focus.present?
+        .card.mb-3.border-0.bg-light
+          .card-body.py-3
+            %div.small.text-muted.mb-1 Your focus for this run
+            .small{ style: 'white-space: pre-wrap; word-break: break-word;' }= @run.consult_focus
       .d-flex.align-items-center.flex-wrap.gap-2.mb-3
         - unless score.nil?
           %span.text-muted Consult OG score:
@@ -76,9 +89,11 @@
           %span.badge.text-bg-secondary Unknown
         - if @run.updated_at
           %small.text-muted.ms-2 Updated #{l(@run.updated_at, format: :long)}
-      - recs = Array(@run.clarity_recommendations).map(&:stringify_keys)
+      .card.mb-0
+        .card-body.markdown-content
+          = render_markdown(parsed.body)
       - if recs.any?
-        .card.mb-3.border-primary.border-opacity-25
+        .card.mt-3.mb-0.border-primary.border-opacity-25
           .card-header.bg-light
             %strong High-confidence recommendations
             %span.text-muted.small.ms-2 (quick accept — apply actions coming later)
@@ -102,9 +117,6 @@
                                 class: 'btn btn-sm btn-outline-primary',
                                 form: { data: { turbo: false } } do
                       Quick accept
-      .card.mb-0
-        .card-body.markdown-content
-          = render_markdown(parsed.body)
 
     - elsif (@run.nil? || (@run.status == 'completed' && @run.output_text.blank?)) && @run&.status != 'failed'
       .alert.alert-info.mb-0

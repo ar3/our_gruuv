@@ -19,6 +19,7 @@ module Maap
 
       payload = AssignmentClarityPayloadBuilder.call(assignment: @assignment)
       user_markdown = PayloadRenderer.new(payload).to_markdown
+      user_markdown += consult_focus_markdown_append(@run.consult_focus)
       footer = <<~MD
 
         ---
@@ -67,6 +68,20 @@ module Maap
     def bedrock_configured?
       cfg = RubyLLM.config
       cfg.bedrock_api_key.present? && cfg.bedrock_secret_key.present? && cfg.bedrock_region.present?
+    end
+
+    def consult_focus_markdown_append(text)
+      focus = text.to_s.strip
+      return '' if focus.blank?
+
+      <<~MD
+
+        ---
+
+        ## User request (focus for this consultation)
+
+        #{focus}
+      MD
     end
   end
 end

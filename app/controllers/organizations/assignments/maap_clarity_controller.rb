@@ -30,6 +30,7 @@ module Organizations
           clarity_rating: nil,
           clarity_score: nil,
           clarity_recommendations: [],
+          consult_focus: sanitized_consult_focus_param,
           output_text: nil,
           error_message: nil,
           prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
@@ -102,6 +103,13 @@ module Organizations
         grouped = assignments_array.group_by(&:department)
         @assignments_by_department_for_maap_switcher = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
         @assignments_by_department_for_maap_switcher.transform_values! { |list| list.sort_by { |a| a.title.to_s.downcase } }
+      end
+
+      def sanitized_consult_focus_param
+        raw = params[:consult_focus].to_s.strip
+        return nil if raw.blank?
+
+        raw.truncate(8_000, omission: '…')
       end
 
       def status_json_for(run)

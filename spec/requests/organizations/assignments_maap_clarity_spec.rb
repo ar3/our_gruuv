@@ -38,6 +38,14 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
       expect(run).to be_present
       expect(run.status).to eq('pending')
     end
+
+    it 'stores consult_focus when provided' do
+      post run_maap_clarity_organization_assignment_path(organization, assignment),
+           params: { consult_focus: '  Are outcomes clear enough?  ' }
+
+      run = MaapAgentRun.find_by(subject: assignment, agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY)
+      expect(run.consult_focus).to eq('Are outcomes clear enough?')
+    end
   end
 
   describe 'GET /organizations/:organization_id/assignments/:id/maap_clarity/status' do

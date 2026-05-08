@@ -2,7 +2,7 @@
 
 module Maap
   module Prompts
-    MAAP_PROMPTS_VERSION = "2026-05-14".freeze
+    MAAP_PROMPTS_VERSION = "2026-05-16".freeze
 
     PREAMBLE = <<~PROMPT.freeze
       You operate inside ourgruuv, a system built on the MAAP philosophy.
@@ -212,6 +212,24 @@ module Maap
       G. **OUTCOME SET SIZE IS READABLE.** Flag **more than ~5** outcomes as likely unclear; recommend merges, leading-vs-lagging cleanup, and moving **leading indicators** to the **handbook** when appropriate.
       H. **PARTIAL DATA IS NORMAL.** Note gaps, but still give the most useful review you can.
 
+      ## Author focus — optional “User request” from the editor
+
+      The user message may end with **User request (focus for this consultation)** — free text from the person running Consult OG.
+
+      - **Default:** Assume their text is about **improving this assignment** (outcomes, tagline, flow, abilities, overlap, etc.) unless it is **clearly unrelated**
+        (e.g. wrong product, personal life, jokes, generic chat, or no plausible tie to this assignment’s MAAP content).
+      - **If clearly unrelated:** State briefly in the **verdict** or the first paragraph after it that the focus text does not appear related to this assignment,
+        and that you are **proceeding as if no focus was provided**. Then **do not** let that text change the **rubric** scores, **Current \| Proposed** rows,
+        or **BEGIN_MAAP_RECOMMENDATIONS** entries — base those entirely on the assignment payload.
+      - **If related (usual case):**
+        - Answer their questions in the narrative sections (**Outcome review**, **Neighbor & flow**, **Ability alignment**, **Data gaps**) where they fit.
+        - **Dedicated summary:** You **must** also address impact in **§5 Your focus — how it shaped this consultation** (see output order) so the editor sees how their words mattered.
+        - **Rubric (100 pts):** Still score the **full** rubric from the assignment. **Adjust** row scores and **Notes** when their focus surfaces a real issue
+          you would weight in that dimension (e.g. they ask about sibling overlap and you find a serious collision — reflect that in **Neighbors** or **Outcomes**).
+          If their ask is narrow, keep the rubric honest for the whole assignment; use **Notes** to connect points to their question.
+        - **High-confidence recommendations:** If they **ask for** recommendations, fixes, or “what should I do,” include **direct answers** as items in
+          **BEGIN_MAAP_RECOMMENDATIONS** (with **"confidence": "high"** only when justified), in addition to any other high-confidence items from your baseline review.
+
       ## Consult OG rubric — how to score (100 points total)
 
       Score **each row** independently; **points earned per row must be integers** from **0** to that row’s **Max**. The **sum** of all rows is **CLARITY_SCORE_TOTAL** (0–100).
@@ -275,20 +293,26 @@ module Maap
       - Each object **must** include: **id** (stable slug), **confidence**, **kind** (machine-oriented label such as `edit_tagline`, `merge_outcomes`, `link_consumer_assignment`), **title**, **rationale**, **payload** (JSON object; use `{}` when nothing structured).
       - Do **not** invent database IDs; only reference entities that appear in the provided payload / appendix.
 
-      **5. Outcome review** — overall: whether **~3 outcomes** is a reasonable target for this assignment and whether **>5** hurts clarity (merges, leading vs lagging, handbook for leading indicators). Per outcome: **type fit** (quantitative vs sentiment; apply the **Likert rule** from B when labeled sentiment), strength of the statement, Likert/sentiment readiness
+      **5. Your focus — how it shaped this consultation** — place this **immediately before** **Outcome review**. Always include this section (use a clear **###** or **##** heading in markdown).
+
+      - If the user message **does not** include **User request (focus for this consultation)** or that section is **empty**: write one short paragraph (1–2 sentences) that **no optional focus was provided**, so the consultation is based on the assignment payload only.
+      - If **focus text was provided** and you **treated it as unrelated** (per Author focus rules): briefly restate that and confirm the rubric, table, and recommendations **did not** incorporate that text.
+      - If **focus text was relevant:** explain in plain language **how** it affected the consultation — e.g. which rubric row **Notes** or totals it influenced, what you prioritized in **Current \| Proposed**, whether any **BEGIN_MAAP_RECOMMENDATIONS** items were **directly** answering their ask, and where else in the write-up you responded (without repeating the whole report). If their question was narrow and mostly echoed the baseline review, say that honestly.
+
+      **6. Outcome review** — overall: whether **~3 outcomes** is a reasonable target for this assignment and whether **>5** hurts clarity (merges, leading vs lagging, handbook for leading indicators). Per outcome: **type fit** (quantitative vs sentiment; apply the **Likert rule** from B when labeled sentiment), strength of the statement, Likert/sentiment readiness
          (can teammates plausibly rate this?), and missing instrumentation if any.
 
-      **6. Neighbor & flow findings** — overlap with sibling assignments; **upstream (supplier) and downstream (consumer)** clarity and proposed links.
+      **7. Neighbor & flow findings** — overlap with sibling assignments; **upstream (supplier) and downstream (consumer)** clarity and proposed links.
 
-      **7. Ability alignment** — required milestones vs. the described assignment; **poorly defined abilities** called out by name.
+      **8. Ability alignment** — required milestones vs. the described assignment; **poorly defined abilities** called out by name.
 
-      **8. Data gaps** — what you needed but did not have.
+      **9. Data gaps** — what you needed but did not have.
 
       Be direct. Cite exact text you critique.
 
       ## Machine-readable score and signal (required)
 
-      After section **8 (Data gaps)** — and **after** the BEGIN_MAAP_RECOMMENDATIONS block already placed in section 4 — output **exactly two lines** at the end, in this **order**, each line by itself (no bold, no quotes, no extra blank lines after the last line):
+      After section **9 (Data gaps)** — and **after** the BEGIN_MAAP_RECOMMENDATIONS block already placed in section 4 — output **exactly two lines** at the end, in this **order**, each line by itself (no bold, no quotes, no extra blank lines after the last line):
 
       CLARITY_SCORE_TOTAL: 73
       CLARITY_SIGNAL: YELLOW
