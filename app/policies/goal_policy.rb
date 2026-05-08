@@ -21,7 +21,10 @@ class GoalPolicy < ApplicationPolicy
   end
 
   def update?
-    admin_bypass? || user_is_creator_or_owner?
+    return true if admin_bypass?
+    return show? if record.edit_check_in_permission_anyone_who_can_view?
+
+    user_is_creator_or_owner?
   end
 
   def destroy?

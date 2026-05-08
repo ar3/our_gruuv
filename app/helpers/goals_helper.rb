@@ -803,6 +803,22 @@ module GoalsHelper
     end
   end
 
+  # PaperTrail actor + timestamps for goal history footer.
+  def goal_audit_created_meta(goal)
+    first_version = goal.versions.reorder(created_at: :asc, id: :asc).first
+    [paper_trail_whodunnit_casual_name(first_version), goal.created_at]
+  end
+
+  def goal_audit_last_updated_meta(goal)
+    last_update = goal.versions.where(event: 'update').reorder(created_at: :desc, id: :desc).first
+    if last_update
+      [paper_trail_whodunnit_casual_name(last_update), last_update.created_at]
+    else
+      first_version = goal.versions.reorder(created_at: :asc, id: :asc).first
+      [paper_trail_whodunnit_casual_name(first_version), goal.updated_at]
+    end
+  end
+
   def goal_creator_and_last_updated_phrase(goal, organization)
     creator = goal.creator
     creator_label = goal_teammate_casual_name(creator)

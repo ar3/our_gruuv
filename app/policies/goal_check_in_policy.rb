@@ -29,6 +29,8 @@ class GoalCheckInPolicy < ApplicationPolicy
   # Team/department/company goals: if you can see the goal, you can add a check-in.
   def can_add_check_in?
     goal = record.goal
+    return goal_policy.show? if goal.edit_check_in_permission_anyone_who_can_view?
+
     if goal.owner_type == 'CompanyTeammate'
       goal_policy.update?
     else

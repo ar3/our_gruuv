@@ -81,6 +81,20 @@
             .alert.alert-info.mb-4
               %i.bi.bi-info-circle.me-2
               You can customize privacy settings and target dates after creating the goal.
+
+            .mb-4
+              = form.label :edit_check_in_permission, 'Who can edit/check-in on this goal?', class: 'form-label fw-semibold'
+              - edit_check_in_permission_value = @form.edit_check_in_permission.presence || 'anyone_who_can_view'
+              .form-check
+                = form.radio_button :edit_check_in_permission, 'anyone_who_can_view', class: 'form-check-input', id: 'goal_edit_check_in_permission_anyone_who_can_view', checked: (edit_check_in_permission_value == 'anyone_who_can_view')
+                = form.label :edit_check_in_permission, nil, value: 'anyone_who_can_view', class: 'form-check-label', for: 'goal_edit_check_in_permission_anyone_who_can_view' do
+                  %strong Anyone who can view
+                  %small.text-muted.d-block.ms-4 If someone can view this goal, they can edit and submit check-ins.
+              .form-check
+                = form.radio_button :edit_check_in_permission, 'only_creator_and_owner', class: 'form-check-input', id: 'goal_edit_check_in_permission_only_creator_and_owner', checked: (edit_check_in_permission_value == 'only_creator_and_owner')
+                = form.label :edit_check_in_permission, nil, value: 'only_creator_and_owner', class: 'form-check-label', for: 'goal_edit_check_in_permission_only_creator_and_owner' do
+                  %strong Only creator and owner
+                  %small.text-muted.d-block.ms-4 Use the existing creator/owner edit and check-in permission behavior.
             
             .d-flex
               = form.submit 'Create Goal', class: 'btn btn-primary'

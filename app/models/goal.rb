@@ -39,6 +39,11 @@ class Goal < ApplicationRecord
     everyone_in_company: 'everyone_in_company'
   }
 
+  enum :edit_check_in_permission, {
+    anyone_who_can_view: 'anyone_who_can_view',
+    only_creator_and_owner: 'only_creator_and_owner'
+  }, prefix: true
+
   enum :initial_confidence, {
     commit: 'commit',
     stretch: 'stretch',
@@ -47,7 +52,7 @@ class Goal < ApplicationRecord
 
   # Validations (owner_type_valid before presence so invalid owner_type doesn't constantize removed Teammate)
   validate :owner_type_valid
-  validates :title, :goal_type, :privacy_level, :creator, presence: true
+  validates :title, :goal_type, :privacy_level, :creator, :edit_check_in_permission, presence: true
   validate :owner_presence
   validates :title, exclusion: { in: [nil, ''], message: "can't be blank" }
   # Target dates are optional - they can be set via timeframe selection or explicitly

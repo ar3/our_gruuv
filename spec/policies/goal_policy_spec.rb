@@ -213,6 +213,21 @@ RSpec.describe GoalPolicy, type: :policy do
         expect(policy.update?).to be false
       end
     end
+
+    context 'when edit/check-in permission is anyone_who_can_view' do
+      let(:viewable_goal) do
+        create(:goal,
+          creator: creator_teammate,
+          owner: owner_teammate,
+          privacy_level: 'everyone_in_company',
+          edit_check_in_permission: 'anyone_who_can_view')
+      end
+
+      it 'allows a viewer who is not creator/owner to update' do
+        policy = GoalPolicy.new(pundit_user_other, viewable_goal)
+        expect(policy.update?).to be true
+      end
+    end
     
     context 'when user is admin' do
       it 'allows admin to update' do

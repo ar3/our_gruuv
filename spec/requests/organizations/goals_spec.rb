@@ -353,7 +353,13 @@ RSpec.describe 'Organizations::Goals', type: :request do
     it 'does not display Create/associate new child goal button when user cannot update goal' do
       other_person = create(:person)
       other_teammate = create(:company_teammate, person: other_person, organization: organization)
-      other_goal = create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'everyone_in_company')
+      other_goal = create(:goal,
+        creator: other_teammate,
+        owner: other_teammate,
+        title: 'Other Goal',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company',
+        edit_check_in_permission: 'only_creator_and_owner')
 
       get organization_goal_path(organization, other_goal)
 
@@ -935,6 +941,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
           title: 'Teammate Owned KR For Others',
           goal_type: 'quantitative_key_result',
           privacy_level: 'everyone_in_company',
+          edit_check_in_permission: 'only_creator_and_owner',
           started_at: 1.week.ago,
           most_likely_target_date: Date.today + 30.days)
       end

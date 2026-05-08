@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_07_100001) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_08_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -584,11 +584,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_07_100001) do
     t.datetime "updated_at", null: false
     t.bigint "company_id", null: false
     t.string "initial_confidence", default: "stretch"
+    t.string "edit_check_in_permission", default: "anyone_who_can_view", null: false
     t.index ["company_id"], name: "index_goals_on_company_id"
     t.index ["completed_at"], name: "index_goals_on_completed_at"
     t.index ["creator_id"], name: "index_goals_on_creator_id"
     t.index ["deleted_at"], name: "index_goals_on_deleted_at"
     t.index ["earliest_target_date"], name: "index_goals_on_earliest_target_date"
+    t.index ["edit_check_in_permission"], name: "index_goals_on_edit_check_in_permission"
     t.index ["goal_type"], name: "index_goals_on_goal_type"
     t.index ["initial_confidence"], name: "index_goals_on_initial_confidence"
     t.index ["latest_target_date"], name: "index_goals_on_latest_target_date"

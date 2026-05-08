@@ -7,6 +7,7 @@ class GoalForm < Reform::Form
   property :latest_target_date
   property :most_likely_target_date
   property :privacy_level
+  property :edit_check_in_permission
   property :initial_confidence
   property :owner_type
   property :owner_id
@@ -29,6 +30,7 @@ class GoalForm < Reform::Form
   validate :privacy_level_for_owner_type
   validate :goal_type_inclusion
   validate :privacy_level_inclusion
+  validate :edit_check_in_permission_inclusion
   validate :initial_confidence_inclusion
   validate :current_teammate_present_for_new_goals
   
@@ -203,6 +205,14 @@ class GoalForm < Reform::Form
 
     unless Goal.initial_confidences.key?(initial_confidence)
       errors.add(:initial_confidence, 'is not included in the list')
+    end
+  end
+
+  def edit_check_in_permission_inclusion
+    return if edit_check_in_permission.blank?
+
+    unless Goal.edit_check_in_permissions.key?(edit_check_in_permission)
+      errors.add(:edit_check_in_permission, 'is not included in the list')
     end
   end
 

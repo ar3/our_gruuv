@@ -73,7 +73,16 @@
 
           %dt.col-sm-4 History
           %dd.col-sm-8
-            %p.mb-0= goal_creator_and_last_updated_phrase(@goal, @organization)
+            - created_name, created_at = goal_audit_created_meta(@goal)
+            - updated_name, updated_at = goal_audit_last_updated_meta(@goal)
+            %small.text-muted.d-block
+              Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
+              %br
+              Last updated by #{updated_name} on #{format_time_in_user_timezone(updated_at)}
+              %br
+              = link_to organization_paper_trail_path(@organization, item_type: 'Goal', item_id: @goal.id), class: 'text-decoration-none' do
+                %i.bi.bi-clock-history.me-1
+                View full change history
 
   .col-md-4
     .card.mb-4
@@ -317,6 +326,7 @@
               %p.small.text-muted.mb-3
                 Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
               = form_with url: check_in_organization_goal_path(@organization, @goal, return_url: organization_goal_path(@organization, @goal), return_text: 'Goal'), method: :post, local: true do |f|
+                - can_save_check_in = policy(GoalCheckIn.new(goal: @goal)).create?
                 .mb-3
                   %p.mb-2
                     As of
@@ -335,8 +345,15 @@
                 .mb-3
                   = f.label :confidence_reason, "Notes", class: "form-label"
                   = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...'
-                .d-grid
-                  = f.submit "Save Check-In", class: "btn btn-primary"
+                - if can_save_check_in
+                  .d-grid
+                    = f.submit "Save Check-In", class: "btn btn-primary"
+                - else
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100{type: "button", disabled: true}
+                        Save Check-In
+                    %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal), tabindex: "0", role: "img", "aria-label" => "Permission notice"}
             - elsif goal_is_completed?(@goal)
               .alert.alert-info.mb-0 Goal is completed. Check-ins are read-only.
             - else

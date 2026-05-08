@@ -35,16 +35,24 @@ RSpec.describe GoalCheckInPolicy, type: :policy do
         expect(policy.update?).to be true
       end
 
-      it 'denies other teammate who can view but is not creator or owner' do
+      it 'allows other teammate who can view when permission is anyone_who_can_view' do
         policy = GoalCheckInPolicy.new(pundit_user_other, goal_check_in)
-        expect(policy.create?).to be false
-        expect(policy.update?).to be false
+        expect(policy.create?).to be true
+        expect(policy.update?).to be true
       end
 
       it 'allows admin to add check-in' do
         policy = GoalCheckInPolicy.new(pundit_user_admin, goal_check_in)
         expect(policy.create?).to be true
         expect(policy.update?).to be true
+      end
+
+      it 'preserves legacy behavior when permission is only_creator_and_owner' do
+        goal.update!(edit_check_in_permission: 'only_creator_and_owner')
+
+        policy = GoalCheckInPolicy.new(pundit_user_other, goal_check_in)
+        expect(policy.create?).to be false
+        expect(policy.update?).to be false
       end
     end
 
