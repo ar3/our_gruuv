@@ -19,6 +19,15 @@
   custom_to: @insights_custom_to,
   wrapper_class: 'mb-4'
 
+.row.justify-content-center.mb-3
+  .col-lg-12.d-flex.gap-2.flex-wrap.align-items-center
+    = link_to organization_goals_path(@organization), class: "btn btn-outline-primary" do
+      %i.bi.bi-bullseye.me-2
+      My goals
+    = link_to organization_goals_health_path(@organization), class: "btn btn-outline-secondary" do
+      %i.bi.bi-activity.me-2
+      Goals Health Dashboard
+
 - charts_after_first = [{ dom_id: 'goals-lifecycle-chart', card_heading: "Goals lifecycle by week (#{chart_title_period})", chart_title: "Goals lifecycle by week (#{chart_title_period})", y_axis_title: 'Number of goals', header_class: 'bg-info text-white', header_icon: 'bi-calendar-week', chart_data: @goals_lifecycle_chart_data }]
 - charts_after_second = [{ dom_id: 'goals-association-chart', card_heading: "Goals by association & status (#{chart_title_period})", chart_title: "Goals by association and status (#{chart_title_period})", y_axis_title: 'Number of goals', header_class: 'bg-dark text-white', header_icon: 'bi-link-45deg', chart_data: @goals_association_chart_data }]
 = render 'shared/goals_weekly_charts',
