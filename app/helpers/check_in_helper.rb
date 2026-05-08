@@ -261,20 +261,20 @@ module CheckInHelper
   end
 
   def single_item_check_in_primary_caption(is_complete:, counterparty_name:, completed_at:, check_in:, teammate:, current_person:)
+    mode = single_item_check_in_view_mode(teammate, current_person)
+    other_done, other_completed_at =
+      if mode == :employee
+        [check_in.manager_completed?, check_in.manager_completed_at]
+      else
+        [check_in.employee_completed?, check_in.employee_completed_at]
+      end
+
     if is_complete
       your_completion_recency =
         if completed_at.present?
           "#{time_ago_in_words(completed_at)} ago"
         else
           "recently"
-        end
-
-      mode = single_item_check_in_view_mode(teammate, current_person)
-      other_done, other_completed_at =
-        if mode == :employee
-          [check_in.manager_completed?, check_in.manager_completed_at]
-        else
-          [check_in.employee_completed?, check_in.employee_completed_at]
         end
 
       if other_done
@@ -298,7 +298,11 @@ module CheckInHelper
         "You completed your individual check-in #{your_completion_recency}. #{counterparty_name} has not completed their side of the check-in and therefore cannot see your response yet."
       end
     else
-      "#{counterparty_name} will be able to see your response"
+      if other_done
+        "#{counterparty_name} has completed their individual check-in and you will be able to see their response and they will be able to see your response when you click this button."
+      else
+        "#{counterparty_name} has not completed their individual check-in on this yet, and will not see your response immediately... they will only after they complete their side first."
+      end
     end
   end
 

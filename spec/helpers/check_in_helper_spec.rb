@@ -361,6 +361,43 @@ RSpec.describe CheckInHelper, type: :helper do
         "You completed your individual check-in 1 day ago. #{manager_person.casual_name} completed their individual check-in 3 days ago, and has been able to see your response since 3 days ago, and you are ready to have your review together."
       )
     end
+
+    it 'when draft and other side incomplete, says they will not see response immediately' do
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        employee_completed_at: nil, manager_completed_at: nil)
+
+      expect(
+        helper.single_item_check_in_primary_caption(
+          is_complete: false,
+          counterparty_name: manager_person.casual_name,
+          completed_at: nil,
+          check_in: check_in,
+          teammate: employee_teammate,
+          current_person: employee_person
+        )
+      ).to eq(
+        "#{manager_person.casual_name} has not completed their individual check-in on this yet, and will not see your response immediately... they will only after they complete their side first."
+      )
+    end
+
+    it 'when draft and other side complete, says both responses become visible on click' do
+      manager_completed_at = 3.days.ago
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        employee_completed_at: nil, manager_completed_at: manager_completed_at)
+
+      expect(
+        helper.single_item_check_in_primary_caption(
+          is_complete: false,
+          counterparty_name: manager_person.casual_name,
+          completed_at: nil,
+          check_in: check_in,
+          teammate: employee_teammate,
+          current_person: employee_person
+        )
+      ).to eq(
+        "#{manager_person.casual_name} has completed their individual check-in and you will be able to see their response and they will be able to see your response when you click this button."
+      )
+    end
   end
 
   describe '#single_item_check_in_make_changes_needs_attention?' do
