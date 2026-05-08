@@ -115,21 +115,21 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can open the 1:1 workspace for yourself, people in your managerial hierarchy, or if you have manage employment permission."}
 
     %li
-      - maap_teammate_growth_active = controller_path == 'organizations/company_teammates/maap_teammate_growth' && action_name == 'show'
-      - if maap_teammate_growth_active
+      - my_goals_active = controller_name == 'company_teammates' && action_name == 'my_growth_goals'
+      - if my_goals_active
         .dropdown-item.text-muted
-          %i.bi.bi-stars.me-2
-          Consult OG (Active)
+          %i.bi.bi-bullseye.me-2
+          My Goals (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif @teammate && policy(@teammate).run_teammate_growth?
-        = link_to maap_teammate_growth_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
-          %i.bi.bi-stars.me-2
-          Consult OG
+      - elsif @teammate && policy(@teammate).complete_picture?
+        = link_to my_growth_goals_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-bullseye.me-2
+          My Goals
       - else
         .dropdown-item.text-muted.disabled
-          %i.bi.bi-stars.me-2
-          Consult OG
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to consult OG for this teammate."}
+          %i.bi.bi-bullseye.me-2
+          My Goals
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to view this teammate's goals."}
 
     %li
       - viewing_own_kudos = @teammate && current_company_teammate == @teammate

@@ -56,7 +56,7 @@
                 = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
             
             / Inline check-in form OR quick-note CTA (teammate-owned goals for non–owner/creator viewers)
-            - if goal.check_in_eligible? && goal.completed_at.nil?
+            - if goal.most_likely_target_date.present? && goal.completed_at.nil?
               - if show_hierarchical_collapsible_goal_quick_note_cta?(goal) && policy(Observation).create?
                 .mt-1
                   - quick_note_params = { privacy_level: 'observed_and_managers', return_url: request.fullpath, return_text: 'Goals', goal_id: goal.id, observee_ids: goal.observee_teammate_ids_for_observation }
