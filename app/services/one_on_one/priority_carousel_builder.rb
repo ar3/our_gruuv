@@ -7,13 +7,15 @@ module OneOnOne
 
     ASANA_URGENT_TASKS_TITLE = "Are there overdue or due-soon Asana tasks?".freeze
     REMAINING_ASANA_TASKS_TITLE = "Are there incomplete tasks remaining in the linked Asana project?".freeze
+    OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT = 5
 
     def self.call(...) = new(...).call
 
-    def initialize(organization:, teammate:, one_on_one_link:)
+    def initialize(organization:, teammate:, one_on_one_link:, viewing_company_teammate: nil)
       @organization = organization
       @teammate = teammate
       @one_on_one_link = one_on_one_link
+      @viewing_company_teammate = viewing_company_teammate
       @today = Date.current
       @week_start = Date.current.beginning_of_week(:monday)
       @thirty_days_ago = 30.days.ago
@@ -416,12 +418,28 @@ module OneOnOne
 
       title = "Has #{teammate_casual_name} given a published observation to someone else in the last 30 days?"
       if given_count.zero?
+        suggestions = observation_given_feedback_suggestion_bullets
+        concrete =
+          if suggestions.any?
+            suggestions
+          else
+            ["Give one concrete observation to support someone else this week."]
+          end
+        total_count = concrete.size
+        viewer_is_subject = @viewing_company_teammate.present? && @viewing_company_teammate.id == @teammate.id
         attention_priority(
           title,
           "No published non-journal observation was given to someone else in the last 30 days.",
-          ["Give one concrete observation to support someone else this week."],
-          cta_kind: :new_observation,
-          cta_label: "Start an observation"
+          concrete,
+          total_item_count: total_count,
+          display_item_limit: 5,
+          cta_kind: viewer_is_subject ? :new_observation : :new_feedback_request,
+          cta_label:
+            if viewer_is_subject
+              "Start an observation"
+            else
+              "Request feedback from #{teammate_casual_name} to someone else"
+            end
         )
       else
         success_priority(
@@ -724,6 +742,71 @@ module OneOnOne
         .to_a
     end
 
+    def observation_given_feedback_suggestion_bullets
+      focus_casual = teammate_casual_name
+      opportunities = []
+
+      active_tenures = AssignmentTenure
+        .active
+        .where(teammate_id: @teammate.id)
+        .joins(:assignment)
+        .merge(Assignment.unarchived)
+        .includes(assignment: :supplier_assignments)
+
+      active_tenures.each do |tenure|
+        consumer_assignment = tenure.assignment
+        energy = tenure.anticipated_energy_percentage.to_i
+        consumer_assignment.supplier_assignments.each do |supplier_assignment|
+          next if supplier_assignment.deleted_at.present?
+
+          other_active_tenures_for_assignment(supplier_assignment.id).each do |other_tenure|
+            other_tm = other_tenure.company_teammate
+            next if other_tm.blank?
+
+            other_casual = other_tm.person.casual_name
+            opportunities << {
+              sort_energy: energy,
+              text: "Since #{consumer_assignment.title} relies on #{supplier_assignment.title}, #{focus_casual} " \
+                    "(taking on #{consumer_assignment.title}) could give feedback to #{other_casual} " \
+                    "(taking on #{supplier_assignment.title})."
+            }
+          end
+        end
+      end
+
+      active_tenures.each do |tenure|
+        assignment = tenure.assignment
+        energy = tenure.anticipated_energy_percentage.to_i
+        other_active_tenures_for_assignment(assignment.id).each do |other_tenure|
+          other_tm = other_tenure.company_teammate
+          next if other_tm.blank?
+
+          other_casual = other_tm.person.casual_name
+          opportunities << {
+            sort_energy: energy,
+            text: "#{focus_casual} could give feedback to #{other_casual}, since they are both taking on #{assignment.title}."
+          }
+        end
+      end
+
+      opportunities
+        .sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
+        .first(OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT)
+        .pluck(:text)
+    end
+
+    def other_active_tenures_for_assignment(assignment_id)
+      AssignmentTenure
+        .active
+        .where.not(teammate_id: @teammate.id)
+        .where(assignment_id: assignment_id)
+        .joins(:assignment)
+        .merge(Assignment.unarchived)
+        .joins(:company_teammate)
+        .where(teammates: { organization_id: @organization.id })
+        .includes(company_teammate: :person)
+    end
+
     def build_active_goal_lookup
       GoalAssociation
         .joins(:goal)
@@ -765,16 +848,17 @@ module OneOnOne
       @one_on_one_link.asana_project_id
     end
 
-    def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil, total_item_count: nil, cta_path: nil)
+    def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil, total_item_count: nil, cta_path: nil, display_item_limit: nil)
       items = concrete_items.compact
       total = total_item_count.presence || items.count
+      limit = display_item_limit.presence || 3
       {
         title: title,
         needs_attention: true,
         not_applicable: false,
         reason: reason,
-        concrete_items: items.first(3),
-        remaining_count: [total - 3, 0].max,
+        concrete_items: items.first(limit),
+        remaining_count: [total - limit, 0].max,
         cta_kind: cta_kind,
         cta_label: cta_label,
         cta_associable: cta_associable,

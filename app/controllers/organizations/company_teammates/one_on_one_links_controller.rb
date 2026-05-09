@@ -162,7 +162,8 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     @priority_carousel = OneOnOne::PriorityCarouselBuilder.call(
       organization: organization,
       teammate: @teammate,
-      one_on_one_link: @one_on_one_link
+      one_on_one_link: @one_on_one_link,
+      viewing_company_teammate: current_company_teammate
     )
   end
 
