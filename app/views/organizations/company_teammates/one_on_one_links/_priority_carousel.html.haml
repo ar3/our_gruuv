@@ -84,21 +84,23 @@
             - if priority[:remaining_count].positive?
               %p.small.text-muted.mb-2= "+#{priority[:remaining_count]} more"
 
-            - if priority[:cta_kind].present?
-              - cta_href = nil
-              - if priority[:cta_kind] == :sync_anchor
+            - if priority[:cta_kind].present? || priority[:cta_path].present?
+              - cta_href = priority[:cta_path].presence
+              - if cta_href.blank? && priority[:cta_kind] == :sync_anchor
                 - cta_href = "#sync"
-              - elsif priority[:cta_kind] == :check_ins_page
-                - cta_href = organization_company_teammate_check_ins_path(organization, @teammate)
-              - elsif priority[:cta_kind] == :new_observation
+              - elsif cta_href.blank? && priority[:cta_kind] == :check_ins_review_most_recent
+                - cta_href = review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate)
+              - elsif cta_href.blank? && priority[:cta_kind] == :my_growth_abilities
+                - cta_href = my_growth_abilities_organization_company_teammate_path(organization, @teammate)
+              - elsif cta_href.blank? && priority[:cta_kind] == :new_observation
                 - cta_href = new_organization_observation_path(organization, return_url: request.fullpath, return_text: "Back to 1:1 Hub")
-              - elsif priority[:cta_kind] == :new_feedback_request
+              - elsif cta_href.blank? && priority[:cta_kind] == :new_feedback_request
                 - cta_href = new_organization_feedback_request_path(organization)
-              - elsif priority[:cta_kind] == :goals_index
+              - elsif cta_href.blank? && priority[:cta_kind] == :goals_index
                 - cta_href = organization_goals_path(organization, owner_id: "CompanyTeammate_#{@teammate.id}")
-              - elsif priority[:cta_kind] == :bulk_goals
+              - elsif cta_href.blank? && priority[:cta_kind] == :bulk_goals
                 - cta_href = bulk_new_organization_goals_path(organization, owner_id: "CompanyTeammate_#{@teammate.id}")
-              - elsif priority[:cta_kind] == :associable_goals && priority[:cta_associable].present?
+              - elsif cta_href.blank? && priority[:cta_kind] == :associable_goals && priority[:cta_associable].present?
                 - cta_href = associable_goals_choose_manage_path(organization, priority[:cta_associable], return_url: request.fullpath, return_text: "Back to 1:1 Hub", for_company_teammate_id: @teammate.id)
               - if cta_href.present?
                 = link_to priority[:cta_label], cta_href, class: "btn btn-sm btn-primary"

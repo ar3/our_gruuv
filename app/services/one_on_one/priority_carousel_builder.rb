@@ -119,13 +119,16 @@ module OneOnOne
 
       title = "Are any position, assignment, or aspiration check-ins blurred or obscured?"
       if rows.any?
+        top_check_in_path = blurred_or_obscured_check_in_path(rows.first)
+        top_check_in_path ||= review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
         attention_priority(
           title,
           nil,
           concrete_items,
           total_item_count: rows.count,
-          cta_kind: :check_ins_page,
-          cta_label: "Open teammate check-ins"
+          cta_kind: :open_top_prioritized_check_in,
+          cta_label: "Open top check-in",
+          cta_path: top_check_in_path
         )
       else
         success_priority(
@@ -268,14 +271,13 @@ module OneOnOne
 
       title = "Are any working-to-meet assignments or aspirational values missing active goals?"
       if rows.any?
-        first = rows.first[:associable]
         attention_priority(
           title,
           "Whenever we are working to meet expectations, we should have goals that help give clarity as to what has to be done in order to be meeting expectations",
           rows.map { |row| wtm_gap_without_goals_item(row[:associable]) },
-          cta_kind: first.present? ? :associable_goals : :bulk_goals,
-          cta_label: first.present? ? "Create goal for top item" : "Create goals in bulk",
-          cta_associable: first
+          cta_kind: :check_ins_review_most_recent,
+          cta_label: "Check-in status",
+          cta_associable: nil
         )
       else
         success_priority(
@@ -352,18 +354,45 @@ module OneOnOne
       organization_company_teammate_one_on_one_link_path(@organization, @teammate)
     end
 
+    def current_position_milestone_gap_item(row)
+      ability = row[:ability]
+      required = row[:required_level]
+      earned = row[:earned_level]
+      label = "Ability: #{ability.name} (need M#{required}, earned M#{earned})"
+      lens_url = organization_teammate_ability_path(@organization, @teammate, ability)
+      initials = @teammate.person.max_two_initials.presence || "?"
+      add_goal_label = "Add goal for #{initials} + this ability"
+      add_goal_url = choose_manage_goals_organization_ability_path(
+        @organization,
+        ability,
+        return_url: one_on_one_hub_return_path,
+        return_text: "Back to 1:1 Hub",
+        for_company_teammate_id: @teammate.id
+      )
+
+      {
+        label: label,
+        url: lens_url,
+        add_goal_url: add_goal_url,
+        add_goal_label: add_goal_label
+      }
+    end
+
     def priority_current_position_milestone_gaps_without_goals
       rows = current_position_ability_gaps_without_goals
+      rows.sort_by! do |row|
+        gap = row[:required_level].to_i - row[:earned_level].to_i
+        [-gap, row[:ability].name.downcase]
+      end
       title = "Are any #{current_position_title} ability milestones below target missing active goals?"
       if rows.any?
-        first = rows.first[:ability]
         attention_priority(
           title,
-          "Current-position ability milestone gaps exist without active goals.",
-          rows.map { |row| "Ability: #{row[:ability].name} (need M#{row[:required_level]}, earned M#{row[:earned_level]})" },
-          cta_kind: first.present? ? :associable_goals : :bulk_goals,
-          cta_label: first.present? ? "Create goal for top ability" : "Create goals in bulk",
-          cta_associable: first
+          "Whenever we are below the milestone target for an ability required by the current position, we should have goals that make the path to the required level concrete.",
+          rows.map { |row| current_position_milestone_gap_item(row) },
+          cta_kind: :my_growth_abilities,
+          cta_label: "View all Ability Milestone Requirements",
+          cta_associable: nil
         )
       else
         success_priority(
@@ -736,7 +765,7 @@ module OneOnOne
       @one_on_one_link.asana_project_id
     end
 
-    def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil, total_item_count: nil)
+    def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil, total_item_count: nil, cta_path: nil)
       items = concrete_items.compact
       total = total_item_count.presence || items.count
       {
@@ -748,7 +777,8 @@ module OneOnOne
         remaining_count: [total - 3, 0].max,
         cta_kind: cta_kind,
         cta_label: cta_label,
-        cta_associable: cta_associable
+        cta_associable: cta_associable,
+        cta_path: cta_path
       }
     end
 
