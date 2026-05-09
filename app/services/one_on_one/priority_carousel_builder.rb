@@ -249,7 +249,9 @@ module OneOnOne
         next if @active_goal_lookup[["Assignment", assignment_id]]
 
         assignment = Assignment.find_by(id: assignment_id)
-        rows << { label: "Assignment: #{assignment&.title || "Assignment ##{assignment_id}"}", associable: assignment }
+        next if assignment.blank?
+
+        rows << { associable: assignment }
       end
 
       latest_aspiration_check_ins.values.each do |check_in|
@@ -257,18 +259,20 @@ module OneOnOne
         next if @active_goal_lookup[["Aspiration", check_in.aspiration_id]]
 
         aspiration = Aspiration.find_by(id: check_in.aspiration_id)
-        rows << { label: "Aspiration: #{aspiration&.name || "Aspiration ##{check_in.aspiration_id}"}", associable: aspiration }
+        next if aspiration.blank?
+
+        rows << { associable: aspiration }
       end
 
-      rows.sort_by! { |row| row[:label].downcase }
+      rows.sort_by! { |row| wtm_gap_without_goals_sort_key(row[:associable]) }
 
       title = "Are any working-to-meet assignments or aspirational values missing active goals?"
       if rows.any?
         first = rows.first[:associable]
         attention_priority(
           title,
-          "Working-to-meet areas exist without active goals.",
-          rows.map { |row| row[:label] },
+          "Whenever we are working to meet expectations, we should have goals that help give clarity as to what has to be done in order to be meeting expectations",
+          rows.map { |row| wtm_gap_without_goals_item(row[:associable]) },
           cta_kind: first.present? ? :associable_goals : :bulk_goals,
           cta_label: first.present? ? "Create goal for top item" : "Create goals in bulk",
           cta_associable: first
@@ -280,6 +284,72 @@ module OneOnOne
           ["No uncovered WTM assignment or aspiration gaps were found."]
         )
       end
+    end
+
+    def wtm_gap_without_goals_sort_key(associable)
+      case associable
+      when Assignment
+        "assignment:#{associable.title}"
+      when Aspiration
+        "aspiration:#{associable.name}"
+      else
+        ""
+      end.downcase
+    end
+
+    def wtm_gap_without_goals_item(associable)
+      label =
+        case associable
+        when Assignment
+          "Assignment: #{associable.title}"
+        when Aspiration
+          "Aspiration: #{associable.name}"
+        else
+          raise ArgumentError, "Unsupported associable for WTM gap item: #{associable.class.name}"
+        end
+
+      lens_url =
+        case associable
+        when Assignment
+          organization_teammate_assignment_path(@organization, @teammate, associable)
+        when Aspiration
+          organization_teammate_aspiration_path(@organization, @teammate, associable)
+        end
+
+      initials = @teammate.person.max_two_initials.presence || "?"
+      kind_phrase = associable.is_a?(Assignment) ? "assignment" : "aspirational value"
+      add_goal_label = "Add goal for #{initials} + this #{kind_phrase}"
+
+      add_goal_url =
+        case associable
+        when Assignment
+          choose_manage_goals_organization_assignment_path(
+            @organization,
+            associable,
+            return_url: one_on_one_hub_return_path,
+            return_text: "Back to 1:1 Hub",
+            for_company_teammate_id: @teammate.id
+          )
+        when Aspiration
+          choose_manage_goals_organization_aspiration_path(
+            @organization,
+            associable,
+            return_url: one_on_one_hub_return_path,
+            return_text: "Back to 1:1 Hub",
+            for_company_teammate_id: @teammate.id
+          )
+        end
+
+      {
+        label: label,
+        url: lens_url,
+        add_goal_url: add_goal_url,
+        add_goal_label: add_goal_label
+      }
+    end
+
+    def one_on_one_hub_return_path
+      organization_company_teammate_one_on_one_link_path(@organization, @teammate)
     end
 
     def priority_current_position_milestone_gaps_without_goals

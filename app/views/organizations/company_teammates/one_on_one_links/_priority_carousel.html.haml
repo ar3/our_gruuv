@@ -71,7 +71,14 @@
                 - priority[:concrete_items].each do |item|
                   %li
                     - if item.is_a?(Hash) && item[:url].present?
-                      = link_to item[:label], item[:url], target: "_blank", rel: "noopener noreferrer"
+                      - link_opts = {}
+                      - if item[:url].to_s.start_with?("http")
+                        - link_opts[:target] = "_blank"
+                        - link_opts[:rel] = "noopener noreferrer"
+                      .d-flex.flex-wrap.align-items-center.column-gap-2.row-gap-1
+                        = link_to item[:label], item[:url], **link_opts
+                        - if item[:add_goal_url].present? && item[:add_goal_label].present?
+                          = link_to item[:add_goal_label], item[:add_goal_url], class: "btn btn-sm btn-outline-secondary"
                     - else
                       = item
             - if priority[:remaining_count].positive?

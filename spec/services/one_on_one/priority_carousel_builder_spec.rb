@@ -75,5 +75,62 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(item[:url]).to eq("https://app.asana.com/0/999888/task-abc")
       expect(item[:label]).to include("Ship feature")
     end
+
+    it "priority 3 (WTM without goals) explains why goals matter, links each row to the teammate lens, and adds a compact goal CTA" do
+      employee_person = create(:person, first_name: "Jamie", last_name: "Taylor")
+      wtm_teammate = create(:teammate, organization: organization, person: employee_person)
+      one_on_one_link = create(:one_on_one_link, teammate: wtm_teammate, url: "https://example.com/hub")
+
+      assignment = create(:assignment, company: organization, title: "Ship Widgets")
+      create(:assignment_tenure, teammate: wtm_teammate, assignment: assignment)
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: wtm_teammate, assignment: assignment)
+
+      aspiration = create(:aspiration, company: organization, name: "Customer Love")
+      create(:aspiration_check_in, :finalized, teammate: wtm_teammate, aspiration: aspiration,
+        employee_rating: "working_to_meet", manager_rating: "working_to_meet", official_rating: "working_to_meet")
+
+      result = described_class.call(
+        organization: organization,
+        teammate: wtm_teammate,
+        one_on_one_link: one_on_one_link
+      )
+
+      wtm_priority = result[:priorities].find do |p|
+        p[:title] == "Are any working-to-meet assignments or aspirational values missing active goals?"
+      end
+
+      expect(wtm_priority[:needs_attention]).to eq(true)
+      expect(wtm_priority[:reason]).to eq(
+        "Whenever we are working to meet expectations, we should have goals that help give clarity as to what has to be done in order to be meeting expectations"
+      )
+
+      assignment_item = wtm_priority[:concrete_items].find { |i| i[:label].start_with?("Assignment:") }
+      aspiration_item = wtm_priority[:concrete_items].find { |i| i[:label].start_with?("Aspiration:") }
+
+      routes = Rails.application.routes.url_helpers
+      expect(assignment_item[:url]).to eq(routes.organization_teammate_assignment_path(organization, wtm_teammate, assignment))
+      expect(assignment_item[:add_goal_label]).to eq("Add goal for JT + this assignment")
+      expect(assignment_item[:add_goal_url]).to eq(
+        routes.choose_manage_goals_organization_assignment_path(
+          organization,
+          assignment,
+          return_url: routes.organization_company_teammate_one_on_one_link_path(organization, wtm_teammate),
+          return_text: "Back to 1:1 Hub",
+          for_company_teammate_id: wtm_teammate.id
+        )
+      )
+
+      expect(aspiration_item[:url]).to eq(routes.organization_teammate_aspiration_path(organization, wtm_teammate, aspiration))
+      expect(aspiration_item[:add_goal_label]).to eq("Add goal for JT + this aspirational value")
+      expect(aspiration_item[:add_goal_url]).to eq(
+        routes.choose_manage_goals_organization_aspiration_path(
+          organization,
+          aspiration,
+          return_url: routes.organization_company_teammate_one_on_one_link_path(organization, wtm_teammate),
+          return_text: "Back to 1:1 Hub",
+          for_company_teammate_id: wtm_teammate.id
+        )
+      )
+    end
   end
 end
