@@ -454,12 +454,27 @@ module OneOnOne
       recent_received = recent_received_non_journal_observations
       title = "Has #{teammate_casual_name} received a published observation in the last 30 days?"
       if recent_received.empty?
+        suggestions = observation_received_feedback_suggestion_bullets
+        concrete =
+          if suggestions.any?
+            suggestions
+          else
+            ["Request fresh feedback to keep clarity high."]
+          end
+        total_count = concrete.size
+        feedback_new_path = new_organization_feedback_request_path(
+          @organization,
+          subject_of_feedback_teammate_id: @teammate.id
+        )
         attention_priority(
           title,
           "No published non-journal observation was received in the last 30 days.",
-          ["Request fresh feedback to keep clarity high."],
+          concrete,
+          total_item_count: total_count,
+          display_item_limit: 5,
           cta_kind: :new_feedback_request,
-          cta_label: "Create feedback request"
+          cta_label: "Request feedback about #{teammate_casual_name}",
+          cta_path: feedback_new_path
         )
       else
         labels = recent_received.first(3).map { |obs| "From #{obs.observer.display_name} on #{obs.observed_at.to_date.strftime('%b %d')}" }
@@ -765,6 +780,7 @@ module OneOnOne
 
             other_casual = other_tm.person.casual_name
             opportunities << {
+              other_teammate_id: other_tm.id,
               sort_energy: energy,
               text: "Since #{consumer_assignment.title} relies on #{supplier_assignment.title}, #{focus_casual} " \
                     "(taking on #{consumer_assignment.title}) could give feedback to #{other_casual} " \
@@ -783,16 +799,15 @@ module OneOnOne
 
           other_casual = other_tm.person.casual_name
           opportunities << {
+            other_teammate_id: other_tm.id,
             sort_energy: energy,
             text: "#{focus_casual} could give feedback to #{other_casual}, since they are both taking on #{assignment.title}."
           }
         end
       end
 
-      opportunities
-        .sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
-        .first(OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT)
-        .pluck(:text)
+      ordered = opportunities.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
+      pick_feedback_opportunity_lines_with_distinct_others(ordered)
     end
 
     def other_active_tenures_for_assignment(assignment_id)
@@ -805,6 +820,104 @@ module OneOnOne
         .joins(:company_teammate)
         .where(teammates: { organization_id: @organization.id })
         .includes(company_teammate: :person)
+    end
+
+    def observation_received_feedback_suggestion_bullets
+      consumer_ops = observation_received_consumer_chain_opportunities
+      shared_ops = observation_received_shared_assignment_opportunities
+
+      primary_sorted = consumer_ops.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
+      secondary_sorted = shared_ops.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
+      ordered = primary_sorted + secondary_sorted
+      pick_feedback_opportunity_lines_with_distinct_others(ordered)
+    end
+
+    def observation_received_consumer_chain_opportunities
+      focus_casual = teammate_casual_name
+      opportunities = []
+
+      active_tenures = AssignmentTenure
+        .active
+        .where(teammate_id: @teammate.id)
+        .joins(:assignment)
+        .merge(Assignment.unarchived)
+        .includes(assignment: :consumer_assignments)
+
+      active_tenures.each do |tenure|
+        supplier_assignment = tenure.assignment
+        energy = tenure.anticipated_energy_percentage.to_i
+        supplier_assignment.consumer_assignments.each do |consumer_assignment|
+          next if consumer_assignment.deleted_at.present?
+
+          other_active_tenures_for_assignment(consumer_assignment.id).each do |other_tenure|
+            other_tm = other_tenure.company_teammate
+            next if other_tm.blank?
+
+            other_casual = other_tm.person.casual_name
+            opportunities << {
+              other_teammate_id: other_tm.id,
+              sort_energy: energy,
+              text: "#{other_casual} (taking on #{consumer_assignment.title}) could give feedback to #{focus_casual} " \
+                    "(taking on #{supplier_assignment.title}), since #{consumer_assignment.title} relies on #{supplier_assignment.title}."
+            }
+          end
+        end
+      end
+
+      opportunities
+    end
+
+    def observation_received_shared_assignment_opportunities
+      focus_casual = teammate_casual_name
+      opportunities = []
+
+      active_tenures = AssignmentTenure
+        .active
+        .where(teammate_id: @teammate.id)
+        .joins(:assignment)
+        .merge(Assignment.unarchived)
+
+      active_tenures.each do |tenure|
+        assignment = tenure.assignment
+        energy = tenure.anticipated_energy_percentage.to_i
+        other_active_tenures_for_assignment(assignment.id).each do |other_tenure|
+          other_tm = other_tenure.company_teammate
+          next if other_tm.blank?
+
+          other_casual = other_tm.person.casual_name
+          opportunities << {
+            other_teammate_id: other_tm.id,
+            sort_energy: energy,
+            text: "#{other_casual} could give feedback to #{focus_casual}, since they are both taking on #{assignment.title}."
+          }
+        end
+      end
+
+      opportunities
+    end
+
+    def pick_feedback_opportunity_lines_with_distinct_others(ordered_rows, limit: OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT)
+      chosen = []
+      seen_other_ids = Set.new
+
+      ordered_rows.each do |row|
+        break if chosen.size >= limit
+
+        oid = row[:other_teammate_id]
+        next if seen_other_ids.include?(oid)
+
+        seen_other_ids.add(oid)
+        chosen << row
+      end
+
+      ordered_rows.each do |row|
+        break if chosen.size >= limit
+        next if chosen.any? { |c| c[:text] == row[:text] }
+
+        chosen << row
+      end
+
+      chosen.pluck(:text)
     end
 
     def build_active_goal_lookup

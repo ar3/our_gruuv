@@ -70,8 +70,14 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
   def new
     @feedback_request = FeedbackRequest.new(company: company)
+    if params[:subject_of_feedback_teammate_id].present?
+      tid = params[:subject_of_feedback_teammate_id].to_i
+      if tid.positive? && eligible_subjects_for_feedback_request.where(id: tid).exists?
+        @feedback_request.subject_of_feedback_teammate_id = tid
+      end
+    end
     authorize @feedback_request
-    
+
     # Load eligible teammates for subject selection (with department for optgroups)
     @teammates = eligible_subjects_for_feedback_request
                   .includes(:person, employment_tenures: { seat: { title: :department } })
