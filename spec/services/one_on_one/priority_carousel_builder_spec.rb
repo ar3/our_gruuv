@@ -15,7 +15,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       )
 
       expect(result[:priorities].size).to eq(12)
-      expect(result[:priorities].first[:title]).to eq("Asana urgent tasks")
+      expect(result[:priorities].first[:title]).to eq(described_class::ASANA_URGENT_TASKS_TITLE)
       expect(result[:priorities].first[:needs_attention]).to eq(true)
       expect(result[:first_attention_index]).to eq(0)
     end
@@ -30,13 +30,15 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       )
 
       first = result[:priorities][0]
-      ninth = result[:priorities][8]
+      eighth = result[:priorities][8]
+      tenth = result[:priorities][9]
 
-      expect(first[:title]).to eq("Asana urgent tasks")
+      expect(first[:title]).to eq(described_class::ASANA_URGENT_TASKS_TITLE)
       expect(first[:not_applicable]).to eq(true)
       expect(first[:needs_attention]).to eq(false)
-      expect(ninth[:title]).to eq("Remaining Asana tasks")
-      expect(ninth[:not_applicable]).to eq(true)
+      expect(eighth[:title]).to eq("Does #{teammate.person.casual_name} have at least one active goal?")
+      expect(tenth[:title]).to eq(described_class::REMAINING_ASANA_TASKS_TITLE)
+      expect(tenth[:not_applicable]).to eq(true)
     end
 
     it "includes Asana task permalinks in urgent-task concrete items when tasks have gids" do

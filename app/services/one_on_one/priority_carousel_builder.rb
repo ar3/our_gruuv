@@ -3,7 +3,8 @@ require "set"
 
 module OneOnOne
   class PriorityCarouselBuilder
-    ASANA_URGENT_TASKS_TITLE = "Asana urgent tasks"
+    ASANA_URGENT_TASKS_TITLE = "Are there overdue or due-soon Asana tasks?".freeze
+    REMAINING_ASANA_TASKS_TITLE = "Are there incomplete tasks remaining in the linked Asana project?".freeze
 
     def self.call(...) = new(...).call
 
@@ -42,13 +43,25 @@ module OneOnOne
         priority_no_observation_received_30d,
         priority_no_wtm_observation_received_30d,
         priority_active_goals_without_check_in_this_week,
-        priority_remaining_asana_tasks,
         priority_no_active_goals,
+        priority_remaining_asana_tasks,
         priority_target_unique_required_assignments_without_goals,
         priority_target_unique_milestone_gaps_without_goals
       ].each_with_index.map do |row, idx|
         row.merge(position: idx + 1, total: 12)
       end
+    end
+
+    def teammate_casual_name
+      @teammate.person.casual_name
+    end
+
+    def current_position_title
+      @teammate.active_employment_tenure&.position&.display_name.presence || "current position"
+    end
+
+    def target_position_title
+      @teammate.next_goal_position&.display_name.presence || "undefined target position"
     end
 
     def priority_asana_urgent_tasks
@@ -131,9 +144,10 @@ module OneOnOne
 
       rows.sort_by! { |row| [row[:finalized_at] || Time.at(0), row[:label].downcase] }
 
+      title = "Are any position, assignment, or aspiration check-ins blurred or obscured?"
       if rows.any?
         attention_priority(
-          "Blurred or obscured check-ins",
+          title,
           "At least one required check-in is blurred or obscured.",
           rows.map { |row| row[:label] },
           cta_kind: :check_ins_page,
@@ -141,7 +155,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "Blurred or obscured check-ins",
+          title,
           "Required check-ins are clear or crystal clear.",
           ["No blurred or obscured assignment, aspiration, or position check-ins were found."]
         )
@@ -178,10 +192,11 @@ module OneOnOne
 
       rows.sort_by! { |row| row[:label].downcase }
 
+      title = "Are any working-to-meet assignments or aspirational values missing active goals?"
       if rows.any?
         first = rows.first[:associable]
         attention_priority(
-          "WTM assignment/aspiration gaps without goals",
+          title,
           "Working-to-meet areas exist without active goals.",
           rows.map { |row| row[:label] },
           cta_kind: first.present? ? :associable_goals : :bulk_goals,
@@ -190,7 +205,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "WTM assignment/aspiration gaps without goals",
+          title,
           "Working-to-meet assignment/aspiration gaps already have active goals.",
           ["No uncovered WTM assignment or aspiration gaps were found."]
         )
@@ -199,10 +214,11 @@ module OneOnOne
 
     def priority_current_position_milestone_gaps_without_goals
       rows = current_position_ability_gaps_without_goals
+      title = "Are any #{current_position_title} ability milestones below target missing active goals?"
       if rows.any?
         first = rows.first[:ability]
         attention_priority(
-          "Current-position milestone gaps without goals",
+          title,
           "Current-position ability milestone gaps exist without active goals.",
           rows.map { |row| "Ability: #{row[:ability].name} (need M#{row[:required_level]}, earned M#{row[:earned_level]})" },
           cta_kind: first.present? ? :associable_goals : :bulk_goals,
@@ -211,7 +227,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "Current-position milestone gaps without goals",
+          title,
           "Current-position ability gaps are already covered by active goals.",
           ["No uncovered current-position ability milestone gaps were found."]
         )
@@ -229,9 +245,10 @@ module OneOnOne
         .distinct
         .count
 
+      title = "Has #{teammate_casual_name} given a published observation to someone else in the last 30 days?"
       if given_count.zero?
         attention_priority(
-          "No observation given in last 30 days",
+          title,
           "No published non-journal observation was given to someone else in the last 30 days.",
           ["Give one concrete observation to support someone else this week."],
           cta_kind: :new_observation,
@@ -239,7 +256,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "No observation given in last 30 days",
+          title,
           "Published non-journal observations were given in the last 30 days.",
           ["Great momentum: #{given_count} published observation(s) given in the last 30 days."]
         )
@@ -248,9 +265,10 @@ module OneOnOne
 
     def priority_no_observation_received_30d
       recent_received = recent_received_non_journal_observations
+      title = "Has #{teammate_casual_name} received a published observation in the last 30 days?"
       if recent_received.empty?
         attention_priority(
-          "No observation received in last 30 days",
+          title,
           "No published non-journal observation was received in the last 30 days.",
           ["Request fresh feedback to keep clarity high."],
           cta_kind: :new_feedback_request,
@@ -259,7 +277,7 @@ module OneOnOne
       else
         labels = recent_received.first(3).map { |obs| "From #{obs.observer.display_name} on #{obs.observed_at.to_date.strftime('%b %d')}" }
         success_priority(
-          "No observation received in last 30 days",
+          title,
           "Published non-journal observations were received in the last 30 days.",
           labels
         )
@@ -268,9 +286,10 @@ module OneOnOne
 
     def priority_no_wtm_observation_received_30d
       rows = wtm_items_without_received_observations
+      title = "Have all working-to-meet assignments and aspirational values received an observation in the last 30 days?"
       if rows.any?
         attention_priority(
-          "No WTM observation received in last 30 days",
+          title,
           "At least one working-to-meet assignment/aspiration has no published non-journal observation in the last 30 days.",
           rows.map { |row| row[:label] },
           cta_kind: :new_feedback_request,
@@ -278,7 +297,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "No WTM observation received in last 30 days",
+          title,
           "Working-to-meet assignment/aspiration areas have recent published observations.",
           ["No WTM assignment/aspiration is missing received observation coverage in the last 30 days."]
         )
@@ -293,9 +312,10 @@ module OneOnOne
       end
       stale.sort_by!(&:title)
 
+      title = "Do all active goals have a check-in for this week?"
       if stale.any?
         attention_priority(
-          "Active goals without check-in this week",
+          title,
           "At least one active goal does not have a check-in for this week.",
           stale.map { |goal| goal.title },
           cta_kind: :goals_index,
@@ -303,7 +323,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "Active goals without check-in this week",
+          title,
           "All active goals already have a check-in this week.",
           ["All active goals are up to date for the current week."]
         )
@@ -312,11 +332,11 @@ module OneOnOne
 
     def priority_remaining_asana_tasks
       cache = asana_cache
-      return not_applicable_priority("Remaining Asana tasks") unless asana_source?
+      return not_applicable_priority(REMAINING_ASANA_TASKS_TITLE) unless asana_source?
 
       if cache.blank?
         return attention_priority(
-          "Remaining Asana tasks",
+          REMAINING_ASANA_TASKS_TITLE,
           "Asana is linked but project data is not synced yet.",
           ["Sync the Asana project first to evaluate remaining tasks."],
           cta_kind: :sync_anchor,
@@ -327,7 +347,7 @@ module OneOnOne
       remaining = cache.incomplete_items.sort_by { |item| [(item["name"] || "").downcase] }
       if remaining.any?
         attention_priority(
-          "Remaining Asana tasks",
+          REMAINING_ASANA_TASKS_TITLE,
           "There are still incomplete tasks in the linked Asana project.",
           remaining.map { |item| format_task_link_item(item) },
           cta_kind: :sync_anchor,
@@ -335,7 +355,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "Remaining Asana tasks",
+          REMAINING_ASANA_TASKS_TITLE,
           "No incomplete tasks remain in the linked Asana project.",
           ["Nice work: the linked Asana task list is clear."]
         )
@@ -344,9 +364,10 @@ module OneOnOne
 
     def priority_no_active_goals
       active_goal_count = Goal.active.where(owner: @teammate, deleted_at: nil).count
+      title = "Does #{teammate_casual_name} have at least one active goal?"
       if active_goal_count.zero?
         attention_priority(
-          "No active goals",
+          title,
           "The teammate currently has no active goals.",
           ["Start at least one active goal to keep growth moving."],
           cta_kind: :bulk_goals,
@@ -354,7 +375,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "No active goals",
+          title,
           "There is at least one active goal in progress.",
           ["#{active_goal_count} active goal(s) are currently in motion."]
         )
@@ -363,10 +384,11 @@ module OneOnOne
 
     def priority_target_unique_required_assignments_without_goals
       rows = target_unique_required_assignment_rows
+      title = "Are required assignments unique to #{target_position_title} still missing active goals?"
       if rows.any?
         first = rows.first[:assignment]
         attention_priority(
-          "Target-position unique required assignments without goals",
+          title,
           "Target-position required assignments unique to that position have no active goals.",
           rows.map { |row| "Assignment: #{row[:assignment].title}" },
           cta_kind: first.present? ? :associable_goals : :bulk_goals,
@@ -375,7 +397,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "Target-position unique required assignments without goals",
+          title,
           "Target-position unique required assignments are already covered by active goals.",
           ["No uncovered target-only required assignments were found."]
         )
@@ -384,10 +406,11 @@ module OneOnOne
 
     def priority_target_unique_milestone_gaps_without_goals
       rows = target_unique_ability_gap_rows
+      title = "Are ability milestones unique to #{target_position_title} below target still missing active goals?"
       if rows.any?
         first = rows.first[:ability]
         attention_priority(
-          "Target-position unique milestone gaps without goals",
+          title,
           "Target-position unique ability milestone gaps exist without active goals.",
           rows.map { |row| "Ability: #{row[:ability].name} (need M#{row[:required_level]}, earned M#{row[:earned_level]})" },
           cta_kind: first.present? ? :associable_goals : :bulk_goals,
@@ -396,7 +419,7 @@ module OneOnOne
         )
       else
         success_priority(
-          "Target-position unique milestone gaps without goals",
+          title,
           "Target-position unique ability milestone gaps are already covered by active goals.",
           ["No uncovered target-only ability milestone gaps were found."]
         )

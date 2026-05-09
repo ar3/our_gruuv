@@ -61,7 +61,8 @@
               - else
                 %span.badge.bg-success All set
 
-            %h6.mb-2= priority[:title]
+            .mb-2.p-3.rounded.bg-light.border-start.border-5.border-secondary
+              %h6.mb-0.fw-semibold= priority[:title]
             %p.mb-2{class: priority[:needs_attention] ? "text-dark" : "text-success"}= priority[:reason]
 
             - if priority[:concrete_items].any?

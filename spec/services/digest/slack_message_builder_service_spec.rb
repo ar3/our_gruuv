@@ -179,10 +179,11 @@ RSpec.describe Digest::SlackMessageBuilderService do
 
     it 'links Asana urgent tasks title to the teammate 1:1 Asana URL when that is the top focus' do
       create(:one_on_one_link, teammate: teammate, url: 'https://app.asana.com/0/111/222')
+      asana_title = OneOnOne::PriorityCarouselBuilder::ASANA_URGENT_TASKS_TITLE
       allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
         {
           priorities: [
-            { needs_attention: true, title: 'Asana urgent tasks', reason: 'Sync first.', concrete_items: [], remaining_count: 0 }
+            { needs_attention: true, title: asana_title, reason: 'Sync first.', concrete_items: [], remaining_count: 0 }
           ],
           needs_attention_count: 1,
           total_count: 12,
@@ -193,7 +194,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
       builder = described_class.new(teammate: teammate, organization: organization)
       header_text = builder.about_me_main_payload[:blocks].first.dig(:text, :text)
 
-      expect(header_text).to include('<https://app.asana.com/0/111/222|Asana urgent tasks>')
+      expect(header_text).to include("<https://app.asana.com/0/111/222|#{asana_title}>")
     end
 
     it 'links each listed Asana urgent task to its Asana URL in the top focus line' do
