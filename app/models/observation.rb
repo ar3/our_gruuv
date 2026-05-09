@@ -76,6 +76,8 @@ class Observation < ApplicationRecord
   scope :not_soft_deleted, -> { where(deleted_at: nil) }
   # No Notification rows (matches show-page nudge: share reminders when nothing was sent yet)
   scope :without_notifications, -> { where.missing(:notifications) }
+  # Observer chose not to nag on Get Shit Done / digest while still having sent no notification
+  scope :without_gsd_notification_skip, -> { where(gsd_notification_skipped_at: nil) }
 
   before_validation :set_observed_at_default
   after_update :update_slack_notifications_if_needed

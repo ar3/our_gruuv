@@ -92,6 +92,20 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
       expect(assigns(:silent_observations)).to include(silent)
       expect(assigns(:silent_observations)).not_to include(with_notif)
     end
+
+    it 'excludes silent observations when GSD notify was skipped' do
+      skipped = create(:observation,
+                       observer: person,
+                       company: company,
+                       published_at: Time.current,
+                       privacy_level: :observed_only,
+                       story: "Skipped silent #{SecureRandom.hex(4)}",
+                       gsd_notification_skipped_at: Time.current)
+
+      get :show, params: { organization_id: company.id }
+
+      expect(assigns(:silent_observations)).not_to include(skipped)
+    end
     
     it 'loads goals needing check-in' do
       # Ensure teammate is a CompanyTeammate

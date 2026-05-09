@@ -38,6 +38,7 @@ class GetShitDoneQueryService
                .not_journal
                .not_soft_deleted
                .without_notifications
+               .without_gsd_notification_skip
                .recent
   end
 

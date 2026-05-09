@@ -103,6 +103,10 @@ class ObservationPolicy < ApplicationPolicy
     viewing_teammate.person == record.observer
   end
 
+  def skip_gsd_notification?
+    post_to_slack?
+  end
+
   def award_kudos?
     return false unless viewing_teammate.present?
     return false unless viewing_teammate.person == record.observer

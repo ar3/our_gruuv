@@ -22,7 +22,7 @@
               %tr
                 %th Preview
                 %th Published
-                %th{style: "width: 280px;"} Actions
+                %th{style: "min-width: 380px;"} Actions
             %tbody
               - @silent_observations.each do |observation|
                 %tr
@@ -37,6 +37,8 @@
                   %td
                     %small= observation.published_at&.strftime('%b %d, %Y')
                   %td
+                    - casual_names_list = observation.observees.any? ? observation.observed_teammates.map { |t| t.person.casual_name }.join(', ') : '--no observees--'
+                    - confirm_skip = "Observations that folks aren't aware of lose a lot of their value... are you sure you don't want to notify #{casual_names_list}?"
                     .btn-group.btn-group-sm{role: "group"}
                       = link_to "Edit",
                                 edit_organization_observation_path(organization, observation),
@@ -44,5 +46,9 @@
                       = link_to "Send Notification",
                                 organization_observation_path(organization, observation),
                                 class: "btn btn-outline-primary btn-sm"
+                      = link_to "skip notification",
+                                skip_gsd_notification_organization_observation_path(organization, observation),
+                                class: "btn btn-outline-secondary btn-sm",
+                                data: { turbo_method: :post, turbo_confirm: confirm_skip }
       - else
         %p.text-muted.mb-0 No silent observations.

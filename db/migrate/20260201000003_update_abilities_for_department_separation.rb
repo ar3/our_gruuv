@@ -38,9 +38,12 @@ class UpdateAbilitiesForDepartmentSeparation < ActiveRecord::Migration[8.0]
     # For abilities that belonged to Companies (not Departments), company_id stays the same
     # No update needed for those
 
-    # Column rename preserves the original FK; normalize so exactly one FK exists.
-    remove_foreign_key :abilities, column: :company_id if foreign_key_exists?(:abilities, column: :company_id)
-    add_foreign_key :abilities, :organizations, column: :company_id unless foreign_key_exists?(:abilities, :organizations, column: :company_id)
+    # Column rename preserves the original FK. `remove_foreign_key(:column)` only removes *one*
+    # matching constraint; strip every company_id -> organizations FK, then add exactly one.
+    foreign_keys(:abilities).select do |fk|
+      fk.to_table == "organizations" && Array(fk.column).map(&:to_s) == %w[company_id]
+    end.each { |fk| remove_foreign_key :abilities, name: fk.name }
+    add_foreign_key :abilities, :organizations, column: :company_id
   end
 
   def down

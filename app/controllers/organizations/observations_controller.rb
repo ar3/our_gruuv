@@ -1,5 +1,5 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :share_publicly, :share_privately, :award_kudos, :award_celebratory_kudos]
+  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :skip_gsd_notification, :share_publicly, :share_privately, :award_kudos, :award_celebratory_kudos]
   
 
   def index
@@ -1010,6 +1010,29 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     redirect_to organization_observation_path(organization, @observation), 
                 notice: 'Notifications sent successfully'
+  end
+
+  # GSD list only: hide published/no-notification observations from Get Shit Done / digest without sending Slack/DM.
+  def skip_gsd_notification
+    authorize @observation, :skip_gsd_notification?
+
+    unless @observation.company_id == organization.id
+      redirect_to organization_get_shit_done_path(organization), alert: 'Observation not found.'
+      return
+    end
+
+    unless @observation.published? &&
+           @observation.privacy_level != 'observer_only' &&
+           @observation.notifications.none?
+      redirect_to organization_get_shit_done_path(organization),
+                  alert: 'This observation cannot be removed from Silent Observations.'
+      return
+    end
+
+    @observation.update!(gsd_notification_skipped_at: Time.current)
+
+    redirect_to organization_get_shit_done_path(organization),
+                notice: 'This observation will no longer appear under Silent Observations on your list. You can still send notifications from the observation page.'
   end
 
   def award_kudos

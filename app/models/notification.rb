@@ -56,4 +56,4 @@ class Notification < ApplicationRecord
     id = metadata&.dig('nudger_company_teammate_id')
     CompanyTeammate.find_by(id: id) if id.present?
   end
-end 
+end

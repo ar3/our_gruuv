@@ -333,11 +333,58 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include('Silent Observations')
       expect(response.body).to include(silent_story)
       expect(response.body).to include('Send Notification')
+      expect(response.body).to include('skip notification')
       expect(response.body).not_to include(with_notification.story)
       expect(response.body).not_to include(journal_pub.story)
       expect(response.body).not_to include(other_pub.story)
       show_path = Rails.application.routes.url_helpers.organization_observation_path(company, silent)
       expect(response.body).to include(show_path)
+    end
+
+    it 'does not list silent observations when the observer skipped the GSD reminder' do
+      skipped_story = "Skipped body #{SecureRandom.hex(4)}"
+      create(:observation,
+             observer: person,
+             company: company,
+             published_at: Time.current,
+             privacy_level: :observed_only,
+             story: skipped_story,
+             gsd_notification_skipped_at: Time.current)
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response.body).not_to include(skipped_story)
+    end
+
+    it 'embeds observee casual names and fallback copy in the skip confirmation prompt' do
+      observee_person = create(:person, preferred_name: 'Jordan')
+      observee_tm = create(:teammate, person: observee_person, organization: company)
+      silent = create(:observation,
+                      observer: person,
+                      company: company,
+                      published_at: Time.current,
+                      privacy_level: :observed_only,
+                      story: "Prompt test #{SecureRandom.hex(4)}")
+      silent.observees.destroy_all
+      silent.observees.create!(teammate: observee_tm)
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response.body).to include('want to notify Jordan')
+    end
+
+    it 'embeds --no observees-- in the skip confirmation when there are no observees' do
+      silent = create(:observation,
+                      observer: person,
+                      company: company,
+                      published_at: Time.current,
+                      privacy_level: :observed_only,
+                      story: "No observees #{SecureRandom.hex(4)}")
+      silent.observees.destroy_all
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response.body).to include('--no observees--')
     end
 
     it 'includes a link to configure digest' do
@@ -352,6 +399,37 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       get "/organizations/#{company.to_param}/get_shit_done"
       
       expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/observations/:id/skip_gsd_notification' do
+    it 'sets GSD skip and redirects back to Get Shit Done' do
+      silent = create(:observation,
+                      observer: person,
+                      company: company,
+                      published_at: Time.current,
+                      privacy_level: :observed_only,
+                      story: "Skip me #{SecureRandom.hex(4)}")
+
+      post "/organizations/#{company.to_param}/observations/#{silent.id}/skip_gsd_notification"
+
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(silent.reload.gsd_notification_skipped_at).to be_present
+    end
+
+    it 'returns not found when the observation belongs to another organization id' do
+      other_org = create(:organization)
+      silent = create(:observation,
+                      observer: person,
+                      company: other_org,
+                      published_at: Time.current,
+                      privacy_level: :observed_only,
+                      story: "Wrong org #{SecureRandom.hex(4)}")
+
+      post "/organizations/#{company.to_param}/observations/#{silent.id}/skip_gsd_notification"
+
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(flash[:alert]).to eq('Observation not found.')
     end
   end
 end

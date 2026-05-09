@@ -325,6 +325,18 @@ RSpec.describe GetShitDoneQueryService do
     it 'returns empty relation when teammate is nil' do
       expect(described_class.new(teammate: nil).silent_observations).to be_empty
     end
+
+    it 'excludes observations where the observer skipped the GSD silent reminder' do
+      skipped = create(:observation,
+                       observer: person,
+                       company: company,
+                       published_at: Time.current,
+                       privacy_level: :observed_only,
+                       story: "Skipped #{SecureRandom.hex(4)}",
+                       gsd_notification_skipped_at: Time.current)
+
+      expect(service.silent_observations).not_to include(skipped)
+    end
   end
 
   describe '#all_pending_items' do

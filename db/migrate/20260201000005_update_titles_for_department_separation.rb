@@ -60,9 +60,11 @@ class UpdateTitlesForDepartmentSeparation < ActiveRecord::Migration[8.0]
     end
     add_foreign_key :titles, :departments, column: :department_id
 
-    # Column rename preserves the original FK; normalize so exactly one FK exists.
-    remove_foreign_key :titles, column: :company_id if foreign_key_exists?(:titles, column: :company_id)
-    add_foreign_key :titles, :organizations, column: :company_id unless foreign_key_exists?(:titles, :organizations, column: :company_id)
+    # Same pattern as abilities/aspirations: drop all company_id -> organizations FKs, then add one.
+    foreign_keys(:titles).select do |fk|
+      fk.to_table == "organizations" && Array(fk.column).map(&:to_s) == %w[company_id]
+    end.each { |fk| remove_foreign_key :titles, name: fk.name }
+    add_foreign_key :titles, :organizations, column: :company_id
   end
 
   def down

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_08_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_09_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -920,6 +920,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_120000) do
     t.bigint "observable_moment_id"
     t.bigint "feedback_request_question_id"
     t.bigint "goal_id"
+    t.datetime "gsd_notification_skipped_at"
     t.index ["company_id", "goal_id"], name: "index_observations_on_company_id_and_goal_id"
     t.index ["company_id"], name: "index_observations_on_company_id"
     t.index ["created_as_type"], name: "index_observations_on_created_as_type"
@@ -1579,7 +1580,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_120000) do
 
   add_foreign_key "abilities", "departments"
   add_foreign_key "abilities", "organizations", column: "company_id"
-  add_foreign_key "abilities", "organizations", column: "company_id"
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -1589,7 +1589,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_120000) do
   add_foreign_key "aspiration_check_ins", "maap_snapshots"
   add_foreign_key "aspiration_check_ins", "teammates"
   add_foreign_key "aspirations", "departments"
-  add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "assignment_abilities", "abilities"
   add_foreign_key "assignment_abilities", "assignments"
@@ -1748,7 +1747,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_120000) do
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
   add_foreign_key "titles", "departments"
-  add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "position_major_levels"
   add_foreign_key "user_preferences", "people"

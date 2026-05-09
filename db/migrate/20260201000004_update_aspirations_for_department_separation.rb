@@ -33,9 +33,12 @@ class UpdateAspirationsForDepartmentSeparation < ActiveRecord::Migration[8.0]
       WHERE d.migrate_from_organization_id = aspirations.company_id
     SQL
 
-    # Column rename preserves the original FK; normalize so exactly one FK exists.
-    remove_foreign_key :aspirations, column: :company_id if foreign_key_exists?(:aspirations, column: :company_id)
-    add_foreign_key :aspirations, :organizations, column: :company_id unless foreign_key_exists?(:aspirations, :organizations, column: :company_id)
+    # Same as abilities: remove every company_id -> organizations FK (rename can leave redundant
+    # constraints; a single remove_foreign_key(:column) only drops one).
+    foreign_keys(:aspirations).select do |fk|
+      fk.to_table == "organizations" && Array(fk.column).map(&:to_s) == %w[company_id]
+    end.each { |fk| remove_foreign_key :aspirations, name: fk.name }
+    add_foreign_key :aspirations, :organizations, column: :company_id
   end
 
   def down

@@ -497,6 +497,7 @@ Rails.application.routes.draw do
         get :share_publicly
         get :share_privately
         post :post_to_slack, action: :post_to_slack
+        post :skip_gsd_notification
         post :award_kudos, action: :award_kudos
         post :award_celebratory_kudos, action: :award_celebratory_kudos
         get :add_assignments  # Add assignments to draft observation
