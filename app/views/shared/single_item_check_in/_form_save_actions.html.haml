@@ -3,7 +3,7 @@
 - counterparty_name = single_item_check_in_counterparty_name(teammate, current_person)
 - completed_at = single_item_check_in_completed_at_for_view(check_in, teammate, current_person)
 - primary_button_text = single_item_check_in_primary_button_text(is_complete: is_complete, next_requires_check_in: next_requires_check_in, next_item: next_item, show_check_in_status_done: show_check_in_status_done)
-- primary_caption = single_item_check_in_primary_caption(is_complete: is_complete, counterparty_name: counterparty_name, completed_at: completed_at, check_in: check_in, teammate: teammate, current_person: current_person)
+- primary_caption = single_item_check_in_primary_caption(is_complete: is_complete, counterparty_name: counterparty_name, completed_at: completed_at, check_in: check_in, teammate: teammate, current_person: current_person, organization: organization)
 - secondary_button_text = single_item_check_in_secondary_button_text(is_complete: is_complete)
 - secondary_caption = single_item_check_in_secondary_caption(is_complete: is_complete, counterparty_name: counterparty_name)
 - show_delete_action = check_in.is_a?(AssignmentCheckIn) || check_in.is_a?(AspirationCheckIn)

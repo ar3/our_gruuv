@@ -3,6 +3,8 @@ require "set"
 
 module OneOnOne
   class PriorityCarouselBuilder
+    include Rails.application.routes.url_helpers
+
     ASANA_URGENT_TASKS_TITLE = "Are there overdue or due-soon Asana tasks?".freeze
     REMAINING_ASANA_TASKS_TITLE = "Are there incomplete tasks remaining in the linked Asana project?".freeze
 
@@ -102,6 +104,39 @@ module OneOnOne
     end
 
     def priority_blurred_or_obscured_check_ins
+      rows = blurred_or_obscured_check_in_rows
+
+      rows.sort_by! do |row|
+        CheckIns::RequiredCheckInUrgencySort.sort_tuple(
+          row[:clarity],
+          row[:kind],
+          row[:finalized_at],
+          row[:rating]
+        )
+      end
+
+      concrete_items = rows.first(3).map { |row| blurred_or_obscured_row_to_link_item(row) }
+
+      title = "Are any position, assignment, or aspiration check-ins blurred or obscured?"
+      if rows.any?
+        attention_priority(
+          title,
+          nil,
+          concrete_items,
+          total_item_count: rows.count,
+          cta_kind: :check_ins_page,
+          cta_label: "Open teammate check-ins"
+        )
+      else
+        success_priority(
+          title,
+          "Required check-ins are clear or crystal clear.",
+          ["No blurred or obscured assignment, aspiration, or position check-ins were found."]
+        )
+      end
+    end
+
+    def blurred_or_obscured_check_in_rows
       rows = []
 
       position = @teammate.active_employment_tenure&.position
@@ -109,8 +144,12 @@ module OneOnOne
       pos_clarity = pos_check_in&.clarity_level || :obscured
       if %i[blurred obscured].include?(pos_clarity)
         rows << {
-          label: "Position: #{position&.display_name || 'Current position'} (#{pos_clarity.to_s.humanize.downcase})",
-          finalized_at: pos_check_in&.official_check_in_completed_at
+          kind: :position,
+          clarity: pos_clarity,
+          finalized_at: pos_check_in&.official_check_in_completed_at,
+          rating: pos_check_in&.official_rating,
+          record_id: position&.id,
+          display_title: position&.display_name || "Current position"
         }
       end
 
@@ -126,8 +165,12 @@ module OneOnOne
         next unless %i[blurred obscured].include?(clarity)
 
         rows << {
-          label: "Assignment: #{assignment.title} (#{clarity.to_s.humanize.downcase})",
-          finalized_at: latest&.official_check_in_completed_at
+          kind: :assignment,
+          clarity: clarity,
+          finalized_at: latest&.official_check_in_completed_at,
+          rating: latest&.official_rating,
+          record_id: assignment.id,
+          display_title: assignment.title
         }
       end
 
@@ -137,28 +180,55 @@ module OneOnOne
         next unless %i[blurred obscured].include?(clarity)
 
         rows << {
-          label: "Aspiration: #{aspiration.name} (#{clarity.to_s.humanize.downcase})",
-          finalized_at: latest&.official_check_in_completed_at
+          kind: :aspiration,
+          clarity: clarity,
+          finalized_at: latest&.official_check_in_completed_at,
+          rating: latest&.official_rating,
+          record_id: aspiration.id,
+          display_title: aspiration.name
         }
       end
 
-      rows.sort_by! { |row| [row[:finalized_at] || Time.at(0), row[:label].downcase] }
+      rows
+    end
 
-      title = "Are any position, assignment, or aspiration check-ins blurred or obscured?"
-      if rows.any?
-        attention_priority(
-          title,
-          "At least one required check-in is blurred or obscured.",
-          rows.map { |row| row[:label] },
-          cta_kind: :check_ins_page,
-          cta_label: "Open teammate check-ins"
-        )
-      else
-        success_priority(
-          title,
-          "Required check-ins are clear or crystal clear.",
-          ["No blurred or obscured assignment, aspiration, or position check-ins were found."]
-        )
+    def blurred_or_obscured_row_to_link_item(row)
+      label_parts = [
+        blurred_or_obscured_kind_prefix(row[:kind]),
+        row[:display_title],
+        "(Last check-in: #{blurred_or_obscured_last_check_in_words(row[:finalized_at])})"
+      ].join(" ")
+
+      {
+        label: label_parts,
+        url: blurred_or_obscured_check_in_path(row)
+      }
+    end
+
+    def blurred_or_obscured_kind_prefix(kind)
+      case kind
+      when :aspiration then "Aspiration:"
+      when :assignment then "Assignment:"
+      when :position then "Position:"
+      else "Check-in:"
+      end
+    end
+
+    def blurred_or_obscured_last_check_in_words(completed_at)
+      return "never" if completed_at.blank?
+
+      h = ApplicationController.helpers
+      "#{h.time_ago_in_words(completed_at)} ago"
+    end
+
+    def blurred_or_obscured_check_in_path(row)
+      case row[:kind]
+      when :aspiration
+        organization_teammate_aspiration_path(@organization, @teammate, row[:record_id])
+      when :assignment
+        organization_teammate_assignment_path(@organization, @teammate, row[:record_id])
+      when :position
+        position_check_in_organization_teammate_path(@organization, @teammate)
       end
     end
 
@@ -596,15 +666,16 @@ module OneOnOne
       @one_on_one_link.asana_project_id
     end
 
-    def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil)
+    def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil, total_item_count: nil)
       items = concrete_items.compact
+      total = total_item_count.presence || items.count
       {
         title: title,
         needs_attention: true,
         not_applicable: false,
         reason: reason,
         concrete_items: items.first(3),
-        remaining_count: [items.count - 3, 0].max,
+        remaining_count: [total - 3, 0].max,
         cta_kind: cta_kind,
         cta_label: cta_label,
         cta_associable: cta_associable

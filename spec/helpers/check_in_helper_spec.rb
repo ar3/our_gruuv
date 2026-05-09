@@ -339,7 +339,7 @@ RSpec.describe CheckInHelper, type: :helper do
       )
     end
 
-    it 'when complete and both sides complete, states visible-since based on earlier completion' do
+    it 'when complete and both sides complete, states visible-since based on earlier completion and links review together to finalization' do
       your_completed_at = 1.day.ago
       manager_completed_at = 3.days.ago
       check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
@@ -348,18 +348,49 @@ RSpec.describe CheckInHelper, type: :helper do
       allow(helper).to receive(:time_ago_in_words).with(your_completed_at).and_return('1 day')
       allow(helper).to receive(:time_ago_in_words).with(manager_completed_at).and_return('3 days')
 
-      expect(
-        helper.single_item_check_in_primary_caption(
-          is_complete: true,
-          counterparty_name: manager_person.casual_name,
-          completed_at: your_completed_at,
-          check_in: check_in,
-          teammate: employee_teammate,
-          current_person: employee_person
-        )
-      ).to eq(
-        "You completed your individual check-in 1 day ago. #{manager_person.casual_name} completed their individual check-in 3 days ago, and has been able to see your response since 3 days ago, and you are ready to have your review together."
+      finalization_path = helper.organization_company_teammate_finalization_path(organization, employee_teammate)
+      result = helper.single_item_check_in_primary_caption(
+        is_complete: true,
+        counterparty_name: manager_person.casual_name,
+        completed_at: your_completed_at,
+        check_in: check_in,
+        teammate: employee_teammate,
+        current_person: employee_person,
+        organization: organization
       )
+
+      expect(result).to be_html_safe
+      expect(result).to include(finalization_path)
+      expect(result).to include('>review together</a>')
+      expect(result).to include('You completed your individual check-in 1 day ago.')
+      expect(result).to include('and you are ready to have your ')
+    end
+
+    it 'when complete and both sides complete as manager, links review together to the employee teammate finalization page' do
+      your_completed_at = 1.day.ago
+      manager_completed_at = 3.days.ago
+      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
+        employee_completed_at: your_completed_at, manager_completed_at: manager_completed_at)
+
+      allow(helper).to receive(:time_ago_in_words).with(your_completed_at).and_return('1 day')
+      allow(helper).to receive(:time_ago_in_words).with(manager_completed_at).and_return('3 days')
+
+      finalization_path = helper.organization_company_teammate_finalization_path(organization, employee_teammate)
+      result = helper.single_item_check_in_primary_caption(
+        is_complete: true,
+        counterparty_name: employee_person.casual_name,
+        completed_at: manager_completed_at,
+        check_in: check_in,
+        teammate: employee_teammate,
+        current_person: manager_person,
+        organization: organization
+      )
+
+      expect(result).to be_html_safe
+      expect(result).to include(finalization_path)
+      expect(result).to include('>review together</a>')
+      expect(result).to include('You completed your individual check-in 3 days ago.')
+      expect(result).to include("#{employee_person.casual_name} completed their individual check-in 1 day ago")
     end
 
     it 'when draft and other side incomplete, says they will not see response immediately' do

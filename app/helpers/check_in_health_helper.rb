@@ -321,12 +321,6 @@ module CheckInHealthHelper
     'clear' => 'bg-success',
     'crystal_clear' => 'check-in-health-neon-green'
   }.freeze
-  REQUIRED_TYPE_PRIORITY = {
-    'aspiration' => 0,
-    'assignment' => 1,
-    'position' => 2
-  }.freeze
-
   # Render horizontal stacked bar from segment hash (category => count). Total = sum of counts.
   # Segments are always ordered red (left) → neon green (right).
   def check_in_health_stacked_bar_segments(segment_counts)
@@ -398,17 +392,13 @@ module CheckInHealthHelper
     return nil if items.empty?
 
     items.min_by do |item|
-      clarity_level = item['clarity_level'].to_s
-      severity_rank = case clarity_level
-      when 'obscured' then 0
-      when 'blurred' then 1
-      when 'clear' then 2
-      when 'crystal_clear' then 3
-      else 0
-      end
-      rating_rank = item['latest_finalized_rating'].to_s == 'working_to_meet' ? 0 : 1
-      type_rank = REQUIRED_TYPE_PRIORITY[item['type'].to_s] || 99
-      [severity_rank, rating_rank, type_rank, item['name'].to_s]
+      finalized = CheckIns::RequiredCheckInUrgencySort.parse_iso8601(item['last_finalized_at'])
+      CheckIns::RequiredCheckInUrgencySort.sort_tuple(
+        item['clarity_level'].to_s,
+        item['type'].to_s,
+        finalized,
+        item['latest_finalized_rating']
+      )
     end
   end
 

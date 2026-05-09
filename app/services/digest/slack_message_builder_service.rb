@@ -226,7 +226,13 @@ module Digest
           else
             slack_escape(priority[:title])
           end
-        lines = ["*Top 1:1 focus:* #{title_display} — #{slack_escape(priority[:reason])}"]
+        reason_suffix =
+          if priority[:reason].present?
+            " — #{slack_escape(priority[:reason])}"
+          else
+            ""
+          end
+        lines = ["*Top 1:1 focus:* #{title_display}#{reason_suffix}"]
         if priority[:title] == asana_title && priority[:concrete_items].present?
           priority[:concrete_items].each do |item|
             lines << "• #{slack_priority_concrete_item(item)}"

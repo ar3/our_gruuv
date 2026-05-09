@@ -260,7 +260,7 @@ module CheckInHelper
     end
   end
 
-  def single_item_check_in_primary_caption(is_complete:, counterparty_name:, completed_at:, check_in:, teammate:, current_person:)
+  def single_item_check_in_primary_caption(is_complete:, counterparty_name:, completed_at:, check_in:, teammate:, current_person:, organization: nil)
     mode = single_item_check_in_view_mode(teammate, current_person)
     other_done, other_completed_at =
       if mode == :employee
@@ -293,7 +293,13 @@ module CheckInHelper
             "recently"
           end
 
-        "You completed your individual check-in #{your_completion_recency}. #{counterparty_name} completed their individual check-in #{other_completion_recency}, and has been able to see your response since #{visible_since_recency}, and you are ready to have your review together."
+        caption_prefix =
+          "You completed your individual check-in #{your_completion_recency}. #{counterparty_name} completed their individual check-in #{other_completion_recency}, and has been able to see your response since #{visible_since_recency}, and you are ready to have your "
+        if organization.present? && teammate.present?
+          (h(caption_prefix) + link_to("review together", organization_company_teammate_finalization_path(organization, teammate), class: "link-secondary") + ".").html_safe
+        else
+          "#{caption_prefix}review together."
+        end
       else
         "You completed your individual check-in #{your_completion_recency}. #{counterparty_name} has not completed their side of the check-in and therefore cannot see your response yet."
       end

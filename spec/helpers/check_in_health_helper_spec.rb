@@ -120,7 +120,7 @@ RSpec.describe CheckInHealthHelper, type: :helper do
       alert_data = helper.required_check_in_alert_data(cache: cache, organization: organization, teammate: teammate)
       expect(alert_data[:all_clear]).to be(false)
       expect(alert_data[:url]).to eq('/assignment_path')
-      expect(alert_data[:message]).to include('Most urgent check-in')
+      expect(alert_data[:message]).to include('Consider checking in on:')
     end
   end
 end
