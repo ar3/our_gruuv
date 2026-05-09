@@ -1114,13 +1114,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
     teammate_opts = []
     current_teammate = current_company_teammate
-    if current_teammate && current_person&.display_name.present?
-      teammate_opts << [current_person.display_name, "CompanyTeammate_#{current_teammate.id}"]
+    if current_teammate && current_person
+      label = current_person.casual_name.presence || current_person.display_name
+      teammate_opts << [label, "CompanyTeammate_#{current_teammate.id}"] if label.present?
     end
     managed_teammates = managed_teammates_in_hierarchy(company, current_teammate)
     managed_teammates.each do |teammate|
-      next unless teammate.person&.display_name.present? && teammate.id.present?
-      teammate_opts << [teammate.person.display_name, "CompanyTeammate_#{teammate.id}"]
+      next unless teammate.person && teammate.id.present?
+      person = teammate.person
+      label = person.casual_name.presence || person.display_name
+      next if label.blank?
+      teammate_opts << [label, "CompanyTeammate_#{teammate.id}"]
     end
     groups << ["Teammates", teammate_opts] if teammate_opts.any?
 

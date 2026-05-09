@@ -612,6 +612,39 @@ module GoalsHelper
     end
   end
 
+  # Goals index — "Add goals for …" uses teammate initials when owner param is CompanyTeammate_*.
+  def goals_index_add_goals_button_initials_for(owner_param)
+    m = owner_param.to_s.match(/\ACompanyTeammate_(\d+)\z/)
+    return nil unless m
+
+    teammate = CompanyTeammate.includes(:person).find_by(id: m[1])
+    person = teammate&.person
+    return nil unless person
+
+    person.max_two_initials.presence || person.email.to_s.first.to_s.upcase || '?'
+  end
+
+  # Owner param for new/bulk goal links — use URL filter when present (even if teammate is not in switcher list).
+  def goals_index_add_goal_owner_value(goal_special_owner_filter:, filter_owner_is_entity:, filter_owner_param:, selected_filter_is_owner:, selected_owner_value:, fallback_owner_value:)
+    return fallback_owner_value if goal_special_owner_filter
+    return filter_owner_param if filter_owner_is_entity
+    return selected_owner_value if selected_filter_is_owner && selected_owner_value.present?
+
+    fallback_owner_value
+  end
+
+  # Fallback text when initials are not shown (non-teammate owners).
+  def goals_index_add_goal_owner_label(selected_owner_label:, filter_owner_param:, current_person:)
+    if selected_owner_label.present?
+      selected_owner_label.to_s.sub(/\A(?:Teammate|Company|Department|Team):\s*/, '')
+    elsif (m = filter_owner_param.to_s.match(/\ACompanyTeammate_(\d+)\z/))
+      teammate = CompanyTeammate.includes(:person).find_by(id: m[1])
+      teammate&.person&.casual_name.presence || teammate&.person&.display_name.presence || 'myself'
+    else
+      current_person&.display_name.presence || 'myself'
+    end
+  end
+
   # Hierarchical-collapsible goals tree (see Goal#show_quick_note_cta_in_hierarchical_tree?).
   def show_hierarchical_collapsible_goal_quick_note_cta?(goal)
     goal.show_quick_note_cta_in_hierarchical_tree?(current_company_teammate)

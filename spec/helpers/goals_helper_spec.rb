@@ -409,5 +409,16 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
 
+  describe '#goals_index_add_goals_button_initials_for' do
+    it 'returns max_two_initials for CompanyTeammate_* owner param' do
+      expect(helper.goals_index_add_goals_button_initials_for("CompanyTeammate_#{creator_teammate.id}"))
+        .to eq(person.max_two_initials)
+    end
+
+    it 'returns nil for non-teammate owner params' do
+      expect(helper.goals_index_add_goals_button_initials_for("Company_#{company.id}")).to be_nil
+    end
+  end
+
 end
 

@@ -1225,8 +1225,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
       get organization_goals_path(organization)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(direct_report_person.display_name)
-      expect(response.body).to include(indirect_report_person.display_name)
+      expect(response.body).to include(direct_report_person.casual_name)
+      expect(response.body).to include(indirect_report_person.casual_name)
     end
 
     it 'shows indirect reports in the single create owner dropdown' do
@@ -1271,6 +1271,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Other Teammate Goal')
       expect(response.body).not_to include('My Teammate Goal')
+      expect(response.body).to include("Add goals for #{other_person.max_two_initials}")
     end
 
     it 'loads the index for Organization (Company) owner and shows only company-owned goals' do
