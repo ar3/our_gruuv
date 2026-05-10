@@ -523,12 +523,17 @@ module OneOnOne
 
       title = "Do all active goals have a check-in for this week?"
       if stale.any?
+        concrete = stale.map do |goal|
+          { label: goal.title, url: organization_goal_path(@organization, goal) }
+        end
         attention_priority(
           title,
-          "At least one active goal does not have a check-in for this week.",
-          stale.map { |goal| goal.title },
-          cta_kind: :goals_index,
-          cta_label: "Open goals check-ins"
+          "Goals can drift to the background if we don't check in on them. Let's take the time to state how confident we are in hitting these goals:",
+          concrete,
+          total_item_count: stale.size,
+          display_item_limit: 5,
+          cta_kind: :my_growth_goals,
+          cta_label: "Grow by goals"
         )
       else
         success_priority(
