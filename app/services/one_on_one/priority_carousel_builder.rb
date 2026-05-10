@@ -490,12 +490,19 @@ module OneOnOne
       rows = wtm_items_without_received_observations
       title = "Have all working-to-meet assignments and aspirational values received an observation in the last 30 days?"
       if rows.any?
+        feedback_new_path = new_organization_feedback_request_path(
+          @organization,
+          subject_of_feedback_teammate_id: @teammate.id
+        )
         attention_priority(
           title,
           "At least one working-to-meet assignment/aspiration has no published non-journal observation in the last 30 days.",
-          rows.map { |row| row[:label] },
+          rows,
+          total_item_count: rows.size,
+          display_item_limit: 5,
           cta_kind: :new_feedback_request,
-          cta_label: "Create feedback request"
+          cta_label: "Request feedback about #{teammate_casual_name}",
+          cta_path: feedback_new_path
         )
       else
         success_priority(
@@ -700,6 +707,12 @@ module OneOnOne
       end.sort_by { |row| row[:ability].name.downcase }
     end
 
+    def wtm_missing_observation_list_item(label, url)
+      return label if url.blank?
+
+      { label: label, url: url }
+    end
+
     def wtm_items_without_received_observations
       latest_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:assignment_id)
       latest_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:aspiration_id)
@@ -731,14 +744,18 @@ module OneOnOne
         next unless check_in.official_rating == "working_to_meet"
         next if recent_assignment_ids.include?(check_in.assignment_id)
         assignment = Assignment.find_by(id: check_in.assignment_id)
-        rows << { label: "Assignment: #{assignment&.title || "Assignment ##{check_in.assignment_id}"}" }
+        label = "Assignment: #{assignment&.title || "Assignment ##{check_in.assignment_id}"}"
+        url = assignment.present? ? organization_teammate_assignment_path(@organization, @teammate, assignment) : nil
+        rows << wtm_missing_observation_list_item(label, url)
       end
 
       latest_aspiration_check_ins.each_value do |check_in|
         next unless check_in.official_rating == "working_to_meet"
         next if recent_aspiration_ids.include?(check_in.aspiration_id)
         aspiration = Aspiration.find_by(id: check_in.aspiration_id)
-        rows << { label: "Aspiration: #{aspiration&.name || "Aspiration ##{check_in.aspiration_id}"}" }
+        label = "Aspiration: #{aspiration&.name || "Aspiration ##{check_in.aspiration_id}"}"
+        url = aspiration.present? ? organization_teammate_aspiration_path(@organization, @teammate, aspiration) : nil
+        rows << wtm_missing_observation_list_item(label, url)
       end
 
       rows.sort_by { |row| row[:label].downcase }
