@@ -42,7 +42,8 @@
   .carousel-indicators.position-static.mb-3
     - priorities.each_with_index do |priority, idx|
       - dot_class = priority[:needs_attention] ? "priority-dot-needs" : (priority[:not_applicable] ? "priority-dot-na" : "priority-dot-healthy")
-      %button.priority-dot{type: "button", "data-bs-target" => "#oneThingPriorityCarousel", "data-bs-slide-to" => idx, class: "#{dot_class} #{idx == first_attention_index ? 'active' : nil}", "aria-current" => (idx == first_attention_index ? "true" : nil), "aria-label" => "Priority #{idx + 1}: #{priority[:title]}", title: "Priority #{idx + 1}: #{priority[:title]}"}
+      - dot_label = "Priority #{idx + 1}: #{priority[:title]}"
+      %button.priority-dot{type: "button", "data-bs-target" => "#oneThingPriorityCarousel", "data-bs-slide-to" => idx, class: "#{dot_class} #{idx == first_attention_index ? 'active' : nil}", "aria-current" => (idx == first_attention_index ? "true" : nil), "aria-label" => dot_label, title: dot_label, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-container" => "body"}
 
   .d-flex.justify-content-end.mb-2
     %span.small.text-muted#oneThingPriorityCurrentIndicator{"data-total-priorities" => total_count}= "Viewing priority #{first_attention_index + 1} of #{total_count}"
