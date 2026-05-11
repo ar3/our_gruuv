@@ -498,15 +498,8 @@ module OneOnOne
     end
 
     def priority_no_observation_given_30d
-      given_count = Observation
-        .where(company: @organization, observer: @teammate.person, deleted_at: nil)
-        .published
-        .not_journal
-        .where("observed_at >= ?", @thirty_days_ago)
-        .joins(:observees)
-        .where.not(observees: { teammate_id: @teammate.id })
-        .distinct
-        .count
+      given_relation = observations_given_to_others_last_30d_relation
+      given_count = given_relation.count
 
       title = "Has #{teammate_casual_name} given a published observation to someone else in the last 30 days?"
       if given_count.zero?
@@ -534,11 +527,147 @@ module OneOnOne
             end
         )
       else
+        reason_html, reason_plain = observation_given_green_reason_html_and_plain(
+          given_relation: given_relation,
+          given_count: given_count
+        )
         success_priority(
           title,
-          "Published non-journal observations were given in the last 30 days.",
-          ["Great momentum: #{given_count} published observation(s) given in the last 30 days."]
+          nil,
+          [],
+          reason_html: reason_html,
+          reason_plain: reason_plain
         )
+      end
+    end
+
+    def observations_given_to_others_last_30d_relation
+      Observation
+        .where(company: @organization, observer: @teammate.person, deleted_at: nil)
+        .published
+        .not_journal
+        .where("observations.observed_at >= ?", @thirty_days_ago)
+        .joins(:observees)
+        .where.not(observees: { teammate_id: @teammate.id })
+        .distinct
+    end
+
+    def observation_given_green_reason_html_and_plain(given_relation:, given_count:)
+      h = ApplicationController.helpers
+      casual = teammate_casual_name
+      obs_ids = given_relation.unscope(:order).distinct.pluck(:id)
+      observee_teammate_ids = Observee
+        .where(observation_id: obs_ids)
+        .where.not(teammate_id: @teammate.id)
+        .distinct
+        .pluck(:teammate_id)
+      observee_teammates = CompanyTeammate
+        .where(id: observee_teammate_ids, organization_id: @organization.id)
+        .includes(:person)
+        .to_a
+        .sort_by { |tm| tm.person.casual_name.to_s.downcase }
+
+      rating_pairs = ObservationRating
+        .where(observation_id: obs_ids)
+        .distinct
+        .pluck(:rateable_type, :rateable_id)
+      rateables = rating_pairs.filter_map do |type, id|
+        next if type.blank? || id.blank?
+
+        record = type.constantize.find_by(id: id)
+        next unless record.is_a?(Assignment) || record.is_a?(Aspiration) || record.is_a?(Ability)
+
+        record
+      end
+      rateables.uniq! { |r| [r.class.name, r.id] }
+      type_rank = { "Assignment" => 0, "Aspiration" => 1, "Ability" => 2 }.freeze
+      rateables.sort_by! do |r|
+        [type_rank[r.class.name] || 99, observation_given_rateable_sort_key(r)]
+      end
+
+      involving_url = organization_observations_path(@organization, involving_teammate_id: @teammate.id)
+      casual_link = h.link_to(casual, involving_url)
+
+      observee_links = observee_teammates.map do |tm|
+        h.link_to(tm.person.casual_name, internal_organization_company_teammate_path(@organization, tm))
+      end
+      rateable_links = rateables.map do |rateable|
+        h.link_to(observation_given_rateable_label(rateable), organization_rateable_path_for_priority(rateable))
+      end
+
+      ogos_phrase = h.pluralize(given_count, "published OGO")
+      observees_fragment = join_html_fragments_sentence(observee_links)
+      rateables_fragment = join_html_fragments_sentence(rateable_links)
+
+      reason_html =
+        casual_link +
+          " has given #{ogos_phrase}, to ".html_safe +
+          observees_fragment +
+          (rateable_links.any? ? ", about ".html_safe + rateables_fragment : "".html_safe) +
+          " in the last 30 days!!".html_safe
+
+      observee_names = observee_teammates.map { |tm| tm.person.casual_name }
+      rateable_names = rateables.map { |r| observation_given_rateable_label(r) }
+      reason_plain = +"#{casual} has given #{ogos_phrase}, to #{observee_names.to_sentence}"
+      reason_plain << ", about #{rateable_names.to_sentence}" if rateable_names.any?
+      reason_plain << " in the last 30 days!!"
+
+      [reason_html, reason_plain]
+    end
+
+    def observation_given_rateable_sort_key(rateable)
+      case rateable
+      when Assignment
+        rateable.title.to_s.downcase
+      when Aspiration, Ability
+        rateable.name.to_s.downcase
+      else
+        ""
+      end
+    end
+
+    def observation_given_rateable_label(rateable)
+      case rateable
+      when Assignment
+        rateable.title.presence || "Assignment"
+      when Aspiration
+        rateable.name.presence || "Aspiration"
+      when Ability
+        rateable.name.presence || "Ability"
+      else
+        rateable.class.name
+      end
+    end
+
+    def organization_rateable_path_for_priority(rateable)
+      organization_rateable_path_for_org(@organization, rateable)
+    end
+
+    def organization_rateable_path_for_org(org, rateable)
+      case rateable
+      when Assignment
+        organization_assignment_path(org, rateable)
+      when Aspiration
+        organization_aspiration_path(org, rateable)
+      when Ability
+        organization_ability_path(org, rateable)
+      else
+        raise ArgumentError, "Unsupported rateable: #{rateable.class.name}"
+      end
+    end
+
+    def join_html_fragments_sentence(fragments)
+      frags = fragments.compact
+      return "".html_safe if frags.empty?
+
+      h = ApplicationController.helpers
+      case frags.size
+      when 1
+        frags.first
+      when 2
+        frags[0] + " and ".html_safe + frags[1]
+      else
+        h.safe_join(frags[0..-2], ", ".html_safe) + ", and ".html_safe + frags.last
       end
     end
 
@@ -569,13 +698,57 @@ module OneOnOne
           cta_path: feedback_new_path
         )
       else
-        labels = recent_received.first(3).map { |obs| "From #{obs.observer.display_name} on #{obs.observed_at.to_date.strftime('%b %d')}" }
+        total = recent_received.size
+        display_limit = 5
+        concrete = recent_received.first(display_limit).map do |obs|
+          { label_html: observation_received_success_line_html(obs) }
+        end
         success_priority(
           title,
-          "Published non-journal observations were received in the last 30 days.",
-          labels
+          "#{total} Published non-journal observations were received in the last 30 days.",
+          concrete,
+          display_item_limit: display_limit,
+          total_item_count: total
         )
       end
+    end
+
+    def observation_received_success_line_html(observation)
+      h = ApplicationController.helpers
+      org = observation.company
+      observer = observation.observer
+      casual = observer.casual_name
+      observer_teammate = CompanyTeammate.find_by(organization_id: org.id, person_id: observer.id)
+      observer_fragment =
+        if observer_teammate
+          involving_href = organization_observations_path(org, involving_teammate_id: observer_teammate.id)
+          h.link_to(casual, involving_href)
+        else
+          ERB::Util.html_escape(casual)
+        end
+
+      date_str = observation.observed_at.to_date.strftime("%b %d")
+      observation_show_href = organization_observation_path(org, observation)
+      date_link = h.link_to(date_str, observation_show_href)
+
+      rateables = observation.observation_ratings.filter_map(&:rateable).select do |r|
+        r.is_a?(Assignment) || r.is_a?(Aspiration) || r.is_a?(Ability)
+      end
+      rateables.uniq! { |r| [r.class.name, r.id] }
+      type_rank = { "Assignment" => 0, "Aspiration" => 1, "Ability" => 2 }.freeze
+      rateables.sort_by! { |r| [type_rank[r.class.name] || 99, observation_given_rateable_sort_key(r)] }
+
+      about_suffix =
+        if rateables.any?
+          links = rateables.map do |rateable|
+            h.link_to(observation_given_rateable_label(rateable), organization_rateable_path_for_org(org, rateable))
+          end
+          " about: ".html_safe + join_html_fragments_sentence(links)
+        else
+          "".html_safe
+        end
+
+      observer_fragment + " on ".html_safe + date_link + about_suffix
     end
 
     def priority_no_wtm_observation_received_30d
@@ -863,9 +1036,9 @@ module OneOnOne
         .where(company: @organization, deleted_at: nil)
         .published
         .not_journal
-        .where("observed_at >= ?", @thirty_days_ago)
+        .where("observations.observed_at >= ?", @thirty_days_ago)
         .where(observees: { teammate_id: @teammate.id })
-        .includes(:observer)
+        .includes(:observer, observation_ratings: :rateable)
         .order(observed_at: :desc)
         .distinct
         .to_a
@@ -1093,11 +1266,11 @@ module OneOnOne
       }
     end
 
-    def success_priority(title, reason, concrete_items, display_item_limit: nil, total_item_count: nil, cta_kind: nil, cta_label: nil, cta_path: nil, cta_associable: nil)
+    def success_priority(title, reason, concrete_items, display_item_limit: nil, total_item_count: nil, cta_kind: nil, cta_label: nil, cta_path: nil, cta_associable: nil, reason_html: nil, reason_plain: nil)
       items = concrete_items.compact
       limit = display_item_limit.presence || 3
       total = total_item_count.presence || items.count
-      {
+      row = {
         title: title,
         needs_attention: false,
         not_applicable: false,
@@ -1109,6 +1282,9 @@ module OneOnOne
         cta_associable: cta_associable,
         cta_path: cta_path
       }
+      row[:reason_html] = reason_html if reason_html.present?
+      row[:reason_plain] = reason_plain if reason_plain.present?
+      row
     end
 
     def not_applicable_priority(title)

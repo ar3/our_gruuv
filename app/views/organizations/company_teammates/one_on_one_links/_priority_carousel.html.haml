@@ -63,9 +63,11 @@
 
             .mb-2.p-3.rounded.bg-light.border-start.border-5.border-secondary
               %h6.mb-0.fw-semibold= priority[:title]
-            - if priority[:reason].present?
+            - if priority[:reason_html].present? || priority[:reason].present?
               - reason_class = priority[:needs_attention] ? "text-dark" : "text-success"
-              - if priority[:reason].is_a?(Array)
+              - if priority[:reason_html].present?
+                %p.mb-2{class: reason_class}!= priority[:reason_html]
+              - elsif priority[:reason].is_a?(Array)
                 %ul.mb-2.ps-3{class: reason_class}
                   - priority[:reason].each do |line|
                     %li.mb-1= line
@@ -76,7 +78,9 @@
               %ul.mb-2.ps-3
                 - priority[:concrete_items].each do |item|
                   %li
-                    - if item.is_a?(Hash) && item[:url].present?
+                    - if item.is_a?(Hash) && item[:label_html].present?
+                      != item[:label_html]
+                    - elsif item.is_a?(Hash) && item[:url].present?
                       - link_opts = {}
                       - if item[:url].to_s.start_with?("http")
                         - link_opts[:target] = "_blank"

@@ -217,5 +217,106 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
         ]
       )
     end
+
+    it "priority 5 when published OGOs were given uses linked summary with observees and rateables" do
+      routes = Rails.application.routes.url_helpers
+      observer_person = create(:person, first_name: "Pat", last_name: "Lee")
+      hub_tm = create(:teammate, organization: organization, person: observer_person)
+      observee_person = create(:person, first_name: "Quinn", last_name: "River")
+      observee_tm = create(:teammate, organization: organization, person: observee_person)
+      one_on_one_link = create(:one_on_one_link, teammate: hub_tm, url: "https://example.com/hub")
+
+      assignment = create(:assignment, company: organization, title: "Revenue goal")
+      aspiration = create(:aspiration, company: organization, name: "Customer focus")
+      ability = create(:ability, company: organization, name: "Facilitation")
+
+      obs = create(
+        :observation,
+        observer: observer_person,
+        company: organization,
+        published_at: Time.current,
+        observed_at: Time.current,
+        privacy_level: :observed_only,
+        story: "Great collaboration today!"
+      )
+      obs.observees.destroy_all
+      create(:observee, observation: obs, teammate: observee_tm)
+      create(:observation_rating, observation: obs, rateable: assignment, rating: :agree)
+      create(:observation_rating, observation: obs, rateable: aspiration, rating: :agree)
+      create(:observation_rating, observation: obs, rateable: ability, rating: :agree)
+
+      result = described_class.call(
+        organization: organization,
+        teammate: hub_tm,
+        one_on_one_link: one_on_one_link
+      )
+      p5 = result[:priorities][4]
+
+      expect(p5[:title]).to include("given a published observation")
+      expect(p5[:needs_attention]).to eq(false)
+      expect(p5[:reason]).to be_nil
+      expect(p5[:concrete_items]).to eq([])
+      expect(p5[:reason_plain]).to include("published OGO")
+      expect(p5[:reason_plain]).to include(observee_person.casual_name)
+      expect(p5[:reason_plain]).to include("Revenue goal")
+      expect(p5[:reason_plain]).to include("Customer focus")
+      expect(p5[:reason_plain]).to include("Facilitation")
+      expect(p5[:reason_plain]).to end_with("in the last 30 days!!")
+
+      html = p5[:reason_html].to_s
+      expect(html).to include(routes.organization_observations_path(organization, involving_teammate_id: hub_tm.id))
+      expect(html).to include(routes.internal_organization_company_teammate_path(organization, observee_tm))
+      expect(html).to include(routes.organization_assignment_path(organization, assignment))
+      expect(html).to include(routes.organization_aspiration_path(organization, aspiration))
+      expect(html).to include(routes.organization_ability_path(organization, ability))
+    end
+
+    it "priority 6 when observations were received shows count sentence and linked observer/date/about lines" do
+      routes = Rails.application.routes.url_helpers
+      observer_person = create(:person, first_name: "Morgan", last_name: "Lee")
+      observer_tm = create(:teammate, organization: organization, person: observer_person)
+      hub_person = create(:person, first_name: "Riley", last_name: "Kim")
+      hub_tm = create(:teammate, organization: organization, person: hub_person)
+      one_on_one_link = create(:one_on_one_link, teammate: hub_tm, url: "https://example.com/hub")
+
+      assignment = create(:assignment, company: organization, title: "Launch v2")
+      ability = create(:ability, company: organization, name: "Writing")
+
+      obs = create(
+        :observation,
+        observer: observer_person,
+        company: organization,
+        published_at: Time.current,
+        observed_at: Time.current,
+        privacy_level: :observed_only,
+        story: "Strong progress on the launch."
+      )
+      obs.observees.destroy_all
+      create(:observee, observation: obs, teammate: hub_tm)
+      create(:observation_rating, observation: obs, rateable: assignment, rating: :agree)
+      create(:observation_rating, observation: obs, rateable: ability, rating: :agree)
+
+      result = described_class.call(
+        organization: organization,
+        teammate: hub_tm,
+        one_on_one_link: one_on_one_link
+      )
+      p6 = result[:priorities][5]
+
+      expect(p6[:title]).to include("received a published observation")
+      expect(p6[:needs_attention]).to eq(false)
+      expect(p6[:reason]).to eq("1 Published non-journal observations were received in the last 30 days.")
+      expect(p6[:concrete_items].size).to eq(1)
+      line = p6[:concrete_items].first[:label_html].to_s
+      involving_href = routes.organization_observations_path(organization, involving_teammate_id: observer_tm.id)
+      show_href = routes.organization_observation_path(organization, obs)
+      expect(line).to include(" on ")
+      anchors = Nokogiri::HTML::DocumentFragment.parse(line).css("a")
+      expect(anchors[0]["href"]).to eq(involving_href)
+      expect(anchors[1]["href"]).to eq(show_href)
+      expect(line).to include("about:")
+      expect(line).to include(routes.organization_assignment_path(organization, assignment))
+      expect(line).to include(routes.organization_ability_path(organization, ability))
+    end
   end
 end

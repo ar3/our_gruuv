@@ -226,7 +226,7 @@ module Digest
           else
             slack_escape(priority[:title])
           end
-        reason_plain = slack_priority_reason_plain(priority[:reason])
+        reason_plain = priority[:reason_plain].presence || slack_priority_reason_plain(priority[:reason])
         reason_suffix =
           if reason_plain.present?
             " — #{slack_escape(reason_plain)}"
