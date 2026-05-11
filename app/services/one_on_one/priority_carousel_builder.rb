@@ -1013,14 +1013,13 @@ module OneOnOne
       rows = target_unique_required_assignment_rows
       title = "Are required assignments unique to #{target_position_title} still missing active goals?"
       if rows.any?
-        first = rows.first[:assignment]
         attention_priority(
           title,
-          "Target-position required assignments unique to that position have no active goals.",
-          rows.map { |row| "Assignment: #{row[:assignment].title}" },
-          cta_kind: first.present? ? :associable_goals : :bulk_goals,
-          cta_label: first.present? ? "Create goal for top assignment" : "Create goals in bulk",
-          cta_associable: first
+          "Whenever a required assignment is unique to the target position and still has no active goal, we should have goals that make the path to meeting expectations in that assignment concrete.",
+          rows.map { |row| wtm_gap_without_goals_item(row[:assignment]) },
+          cta_kind: :my_growth_experiences,
+          cta_label: "Grow by experiences",
+          cta_associable: nil
         )
       else
         success_priority(

@@ -102,6 +102,8 @@
                 - cta_href = review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate)
               - elsif cta_href.blank? && priority[:cta_kind] == :my_growth_abilities
                 - cta_href = my_growth_abilities_organization_company_teammate_path(organization, @teammate)
+              - elsif cta_href.blank? && priority[:cta_kind] == :my_growth_experiences
+                - cta_href = my_growth_experiences_organization_company_teammate_path(organization, @teammate)
               - elsif cta_href.blank? && priority[:cta_kind] == :my_growth_goals
                 - cta_href = my_growth_goals_organization_company_teammate_path(organization, @teammate)
               - elsif cta_href.blank? && priority[:cta_kind] == :new_observation
