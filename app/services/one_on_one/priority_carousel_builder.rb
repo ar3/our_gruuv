@@ -1033,16 +1033,19 @@ module OneOnOne
 
     def priority_target_unique_milestone_gaps_without_goals
       rows = target_unique_ability_gap_rows
+      rows.sort_by! do |row|
+        gap = row[:required_level].to_i - row[:earned_level].to_i
+        [-gap, row[:ability].name.downcase]
+      end
       title = "Are ability milestones unique to #{target_position_title} below target still missing active goals?"
       if rows.any?
-        first = rows.first[:ability]
         attention_priority(
           title,
-          "Target-position unique ability milestone gaps exist without active goals.",
-          rows.map { |row| "Ability: #{row[:ability].name} (need M#{row[:required_level]}, earned M#{row[:earned_level]})" },
-          cta_kind: first.present? ? :associable_goals : :bulk_goals,
-          cta_label: first.present? ? "Create goal for top ability" : "Create goals in bulk",
-          cta_associable: first
+          "Whenever we are below the milestone target for an ability unique to the target position, we should have goals that make the path to the required level concrete.",
+          rows.map { |row| current_position_milestone_gap_item(row) },
+          cta_kind: :my_growth_abilities,
+          cta_label: "View all Ability Milestone Requirements",
+          cta_associable: nil
         )
       else
         success_priority(
