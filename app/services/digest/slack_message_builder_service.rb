@@ -226,9 +226,10 @@ module Digest
           else
             slack_escape(priority[:title])
           end
+        reason_plain = slack_priority_reason_plain(priority[:reason])
         reason_suffix =
-          if priority[:reason].present?
-            " — #{slack_escape(priority[:reason])}"
+          if reason_plain.present?
+            " — #{slack_escape(reason_plain)}"
           else
             ""
           end
@@ -243,6 +244,17 @@ module Digest
         truncate_for_slack_section(lines.join("\n"))
       else
         "*Top 1:1 focus:* All clear — nothing in the 12-priority queue needs action right now."
+      end
+    end
+
+    def slack_priority_reason_plain(reason)
+      case reason
+      when Array
+        reason.compact.map(&:to_s).reject(&:blank?).join(" ")
+      when String
+        reason
+      else
+        ""
       end
     end
 

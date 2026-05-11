@@ -247,47 +247,139 @@ module OneOnOne
       assignment_ids.concat(@teammate.assignment_tenures.active.pluck(:assignment_id))
       assignment_ids.uniq!
 
-      rows = []
+      gaps = []
+      all_wtm = []
+
       assignment_ids.each do |assignment_id|
         check_in = latest_assignment_check_ins[assignment_id]
         next unless check_in&.official_rating == "working_to_meet"
-        next if @active_goal_lookup[["Assignment", assignment_id]]
 
         assignment = Assignment.find_by(id: assignment_id)
         next if assignment.blank?
 
-        rows << { associable: assignment }
+        all_wtm << { associable: assignment }
+        next if @active_goal_lookup[["Assignment", assignment_id]]
+
+        gaps << { associable: assignment }
       end
 
       latest_aspiration_check_ins.values.each do |check_in|
         next unless check_in.official_rating == "working_to_meet"
-        next if @active_goal_lookup[["Aspiration", check_in.aspiration_id]]
 
         aspiration = Aspiration.find_by(id: check_in.aspiration_id)
         next if aspiration.blank?
 
-        rows << { associable: aspiration }
+        all_wtm << { associable: aspiration }
+        next if @active_goal_lookup[["Aspiration", check_in.aspiration_id]]
+
+        gaps << { associable: aspiration }
       end
 
-      rows.sort_by! { |row| wtm_gap_without_goals_sort_key(row[:associable]) }
+      gaps.sort_by! { |row| wtm_gap_without_goals_sort_key(row[:associable]) }
+      all_wtm.sort_by! { |row| wtm_gap_without_goals_sort_key(row[:associable]) }
 
       title = "Are any working-to-meet assignments or aspirational values missing active goals?"
-      if rows.any?
+      if gaps.any?
         attention_priority(
           title,
           "Whenever we are working to meet expectations, we should have goals that help give clarity as to what has to be done in order to be meeting expectations",
-          rows.map { |row| wtm_gap_without_goals_item(row[:associable]) },
+          gaps.map { |row| wtm_gap_without_goals_item(row[:associable]) },
           cta_kind: :check_ins_review_most_recent,
           cta_label: "Check-in status",
           cta_associable: nil
         )
-      else
+      elsif all_wtm.any?
+        concrete = all_wtm.map { |row| wtm_working_to_meet_with_goals_item(row[:associable]) }
         success_priority(
           title,
-          "Working-to-meet assignment/aspiration gaps already have active goals.",
-          ["No uncovered WTM assignment or aspiration gaps were found."]
+          nil,
+          concrete,
+          display_item_limit: 5,
+          total_item_count: concrete.size
+        )
+      else
+        reason_lines = wtm_all_clear_reason_lines(
+          assignment_ids: assignment_ids,
+          latest_assignment_check_ins: latest_assignment_check_ins,
+          latest_aspiration_check_ins: latest_aspiration_check_ins
+        )
+        review_path = review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
+        success_priority(
+          title,
+          reason_lines,
+          [],
+          cta_kind: :check_ins_review_most_recent,
+          cta_label: "More details",
+          cta_path: review_path
         )
       end
+    end
+
+    def active_goal_count_for_teammate_associable(associable)
+      GoalAssociation
+        .joins(:goal)
+        .where(associable: associable)
+        .where(goals: { owner_type: "CompanyTeammate", owner_id: @teammate.id, completed_at: nil, deleted_at: nil })
+        .distinct
+        .count(:goal_id)
+    end
+
+    def wtm_working_to_meet_with_goals_item(associable)
+      n = active_goal_count_for_teammate_associable(associable)
+      h = ApplicationController.helpers
+      goal_phrase = h.pluralize(n, "active goal")
+      label =
+        case associable
+        when Assignment
+          "Assignment: #{associable.title} (#{goal_phrase})"
+        when Aspiration
+          "Aspiration: #{associable.name} (#{goal_phrase})"
+        else
+          raise ArgumentError, "Unsupported associable for WTM with goals item: #{associable.class.name}"
+        end
+
+      url =
+        case associable
+        when Assignment
+          organization_teammate_assignment_path(@organization, @teammate, associable)
+        when Aspiration
+          organization_teammate_aspiration_path(@organization, @teammate, associable)
+        end
+
+      { label: label, url: url }
+    end
+
+    def wtm_all_clear_reason_lines(assignment_ids:, latest_assignment_check_ins:, latest_aspiration_check_ins:)
+      casual = teammate_casual_name
+      h = ApplicationController.helpers
+      x = assignment_ids.count { |aid| check_in_official_meeting_or_exceeding?(latest_assignment_check_ins[aid]) }
+      aspiration_ids = Aspiration.within_hierarchy(@organization).pluck(:id)
+      y = aspiration_ids.count { |aid| check_in_official_meeting_or_exceeding?(latest_aspiration_check_ins[aid]) }
+
+      expectations_line =
+        "#{casual} is meeting or exceeding expectations for #{h.pluralize(x, 'required and active assignment')} " \
+          "and #{h.pluralize(y, 'aspirational value')}."
+
+      assignments_missing = assignment_ids.count { |aid| latest_assignment_check_ins[aid].blank? }
+      aspirations_missing = aspiration_ids.count { |aid| latest_aspiration_check_ins[aid].blank? }
+
+      check_ins_line =
+        if assignments_missing.zero? && aspirations_missing.zero?
+          "#{casual} has had all relevant check-ins."
+        elsif assignments_missing.positive? && aspirations_missing.positive?
+          "#{casual} has not had a check-in on #{h.pluralize(assignments_missing, 'required or active assignment')} " \
+            "and #{h.pluralize(aspirations_missing, 'aspirational value')}."
+        elsif assignments_missing.positive?
+          "#{casual} has not had a check-in on #{h.pluralize(assignments_missing, 'required or active assignment')}."
+        else
+          "#{casual} has not had a check-in on #{h.pluralize(aspirations_missing, 'aspirational value')}."
+        end
+
+      [expectations_line, check_ins_line]
+    end
+
+    def check_in_official_meeting_or_exceeding?(check_in)
+      check_in.present? && %w[meeting exceeding].include?(check_in.official_rating)
     end
 
     def wtm_gap_without_goals_sort_key(associable)
@@ -1001,18 +1093,21 @@ module OneOnOne
       }
     end
 
-    def success_priority(title, reason, concrete_items)
+    def success_priority(title, reason, concrete_items, display_item_limit: nil, total_item_count: nil, cta_kind: nil, cta_label: nil, cta_path: nil, cta_associable: nil)
       items = concrete_items.compact
+      limit = display_item_limit.presence || 3
+      total = total_item_count.presence || items.count
       {
         title: title,
         needs_attention: false,
         not_applicable: false,
         reason: reason,
-        concrete_items: items.first(3),
-        remaining_count: [items.count - 3, 0].max,
-        cta_kind: nil,
-        cta_label: nil,
-        cta_associable: nil
+        concrete_items: items.first(limit),
+        remaining_count: [total - limit, 0].max,
+        cta_kind: cta_kind,
+        cta_label: cta_label,
+        cta_associable: cta_associable,
+        cta_path: cta_path
       }
     end
 

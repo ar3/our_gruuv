@@ -64,7 +64,13 @@
             .mb-2.p-3.rounded.bg-light.border-start.border-5.border-secondary
               %h6.mb-0.fw-semibold= priority[:title]
             - if priority[:reason].present?
-              %p.mb-2{class: priority[:needs_attention] ? "text-dark" : "text-success"}= priority[:reason]
+              - reason_class = priority[:needs_attention] ? "text-dark" : "text-success"
+              - if priority[:reason].is_a?(Array)
+                %ul.mb-2.ps-3{class: reason_class}
+                  - priority[:reason].each do |line|
+                    %li.mb-1= line
+              - else
+                %p.mb-2{class: reason_class}= priority[:reason]
 
             - if priority[:concrete_items].any?
               %ul.mb-2.ps-3

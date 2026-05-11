@@ -132,5 +132,90 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
         )
       )
     end
+
+    it "priority 3 when WTM areas have active goals lists each with goal counts and teammate lens links" do
+      employee_person = create(:person, first_name: "Rae", last_name: "Lee")
+      tm = create(:teammate, organization: organization, person: employee_person)
+      one_on_one_link = create(:one_on_one_link, teammate: tm, url: "https://example.com/hub")
+
+      assignment = create(:assignment, company: organization, title: "Build API")
+      create(:assignment_tenure, teammate: tm, assignment: assignment)
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: tm, assignment: assignment)
+
+      goal = create(:goal, owner: tm, creator: tm, company_id: organization.id)
+      create(:goal_association, goal: goal, associable: assignment)
+      create(:goal_association, goal: create(:goal, owner: tm, creator: tm, company_id: organization.id), associable: assignment)
+
+      aspiration = create(:aspiration, company: organization, name: "Team First")
+      create(:aspiration_check_in, :finalized, teammate: tm, aspiration: aspiration,
+        employee_rating: "working_to_meet", manager_rating: "working_to_meet", official_rating: "working_to_meet")
+      goal2 = create(:goal, owner: tm, creator: tm, company_id: organization.id)
+      create(:goal_association, goal: goal2, associable: aspiration)
+      create(:goal_association, goal: create(:goal, owner: tm, creator: tm, company_id: organization.id), associable: aspiration)
+
+      result = described_class.call(organization: organization, teammate: tm, one_on_one_link: one_on_one_link)
+      wtm_priority = result[:priorities].find { |p| p[:title].include?("working-to-meet assignments") }
+
+      expect(wtm_priority[:needs_attention]).to eq(false)
+      expect(wtm_priority[:reason]).to be_nil
+      routes = Rails.application.routes.url_helpers
+      expect(wtm_priority[:concrete_items].size).to eq(2)
+      api_item = wtm_priority[:concrete_items].find { |i| i[:label].include?("Build API") }
+      expect(api_item[:label]).to include("2 active goals")
+      expect(api_item[:url]).to eq(routes.organization_teammate_assignment_path(organization, tm, assignment))
+      asp_item = wtm_priority[:concrete_items].find { |i| i[:label].include?("Team First") }
+      expect(asp_item[:label]).to include("2 active goals")
+      expect(asp_item[:url]).to eq(routes.organization_teammate_aspiration_path(organization, tm, aspiration))
+    end
+
+    it "priority 3 when no WTM surfaces two reason lines and more details link to review_most_recent" do
+      employee_person = create(:person, first_name: "Sam", last_name: "Pat")
+      tm = create(:teammate, organization: organization, person: employee_person)
+      one_on_one_link = create(:one_on_one_link, teammate: tm, url: "https://example.com/hub")
+
+      assignment = create(:assignment, company: organization, title: "Ops")
+      create(:assignment_tenure, teammate: tm, assignment: assignment)
+      create(:assignment_check_in, :finalized, teammate: tm, assignment: assignment)
+
+      aspiration = create(:aspiration, company: organization, name: "Growth")
+      create(:aspiration_check_in, :finalized, teammate: tm, aspiration: aspiration)
+
+      result = described_class.call(organization: organization, teammate: tm, one_on_one_link: one_on_one_link)
+      wtm_priority = result[:priorities].find { |p| p[:title].include?("working-to-meet assignments") }
+
+      expect(wtm_priority[:needs_attention]).to eq(false)
+      expect(wtm_priority[:reason]).to eq(
+        [
+          "#{tm.person.casual_name} is meeting or exceeding expectations for 1 required and active assignment and 1 aspirational value.",
+          "#{tm.person.casual_name} has had all relevant check-ins."
+        ]
+      )
+      expect(wtm_priority[:concrete_items]).to eq([])
+      routes = Rails.application.routes.url_helpers
+      expect(wtm_priority[:cta_label]).to eq("More details")
+      expect(wtm_priority[:cta_path]).to eq(routes.review_most_recent_organization_company_teammate_check_ins_path(organization, tm))
+    end
+
+    it "priority 3 when no WTM and an aspiration lacks a check-in, second line calls out missing aspirational check-ins" do
+      employee_person = create(:person, first_name: "Alex", last_name: "Kim")
+      tm = create(:teammate, organization: organization, person: employee_person)
+      one_on_one_link = create(:one_on_one_link, teammate: tm, url: "https://example.com/hub")
+
+      assignment = create(:assignment, company: organization, title: "Ops")
+      create(:assignment_tenure, teammate: tm, assignment: assignment)
+      create(:assignment_check_in, :finalized, teammate: tm, assignment: assignment)
+
+      create(:aspiration, company: organization, name: "Growth")
+
+      result = described_class.call(organization: organization, teammate: tm, one_on_one_link: one_on_one_link)
+      wtm_priority = result[:priorities].find { |p| p[:title].include?("working-to-meet assignments") }
+
+      expect(wtm_priority[:reason]).to eq(
+        [
+          "#{tm.person.casual_name} is meeting or exceeding expectations for 1 required and active assignment and 0 aspirational values.",
+          "#{tm.person.casual_name} has not had a check-in on 1 aspirational value."
+        ]
+      )
+    end
   end
 end
