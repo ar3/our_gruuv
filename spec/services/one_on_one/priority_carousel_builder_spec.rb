@@ -31,14 +31,14 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
 
       first = result[:priorities][0]
       eighth = result[:priorities][8]
-      tenth = result[:priorities][9]
+      remaining_asana = result[:priorities][10]
 
       expect(first[:title]).to eq(described_class::ASANA_URGENT_TASKS_TITLE)
       expect(first[:not_applicable]).to eq(true)
       expect(first[:needs_attention]).to eq(false)
       expect(eighth[:title]).to eq("Does #{teammate.person.casual_name} have at least one active goal?")
-      expect(tenth[:title]).to eq(described_class::REMAINING_ASANA_TASKS_TITLE)
-      expect(tenth[:not_applicable]).to eq(true)
+      expect(remaining_asana[:title]).to eq(described_class::REMAINING_ASANA_TASKS_TITLE)
+      expect(remaining_asana[:not_applicable]).to eq(true)
     end
 
     it "includes Asana task permalinks in urgent-task concrete items when tasks have gids" do
@@ -375,6 +375,38 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       obs_hrefs = anchors.map { |a| a["href"] }
       expect(obs_hrefs).to include(routes.organization_observation_path(organization, obs_a))
       expect(obs_hrefs).to include(routes.organization_observation_path(organization, obs_b))
+    end
+
+    it "priority 9 when teammate has active goals shows linked count in reason only, no bullet list" do
+      routes = Rails.application.routes.url_helpers
+      hub_tm = create(:teammate, organization: organization)
+      one_on_one_link = create(:one_on_one_link, teammate: hub_tm, url: "https://example.com/hub")
+      3.times do
+        create(
+          :goal,
+          owner: hub_tm,
+          creator: hub_tm,
+          company_id: organization.id,
+          started_at: 1.day.ago,
+          completed_at: nil,
+          deleted_at: nil
+        )
+      end
+
+      result = described_class.call(
+        organization: organization,
+        teammate: hub_tm,
+        one_on_one_link: one_on_one_link
+      )
+      p9 = result[:priorities][8]
+
+      expect(p9[:title]).to include("at least one active goal")
+      expect(p9[:needs_attention]).to eq(false)
+      expect(p9[:reason]).to be_nil
+      expect(p9[:concrete_items]).to eq([])
+      expect(p9[:reason_plain]).to eq("There are 3 active goals in progress.")
+      expect(p9[:reason_html].to_s).to include(routes.my_growth_goals_organization_company_teammate_path(organization, hub_tm))
+      expect(p9[:reason_html].to_s).to include("3 active goals")
     end
   end
 end

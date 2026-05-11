@@ -48,9 +48,9 @@ module OneOnOne
         priority_no_wtm_observation_received_30d,
         priority_active_goals_without_check_in_this_week,
         priority_no_active_goals,
+        priority_target_unique_milestone_gaps_without_goals,
         priority_remaining_asana_tasks,
-        priority_target_unique_required_assignments_without_goals,
-        priority_target_unique_milestone_gaps_without_goals
+        priority_target_unique_required_assignments_without_goals
       ].each_with_index.map do |row, idx|
         row.merge(position: idx + 1, total: 12)
       end
@@ -979,10 +979,32 @@ module OneOnOne
           cta_label: "Create goals"
         )
       else
+        h = ApplicationController.helpers
+        goals_href = my_growth_goals_organization_company_teammate_path(@organization, @teammate)
+        link_label =
+          if active_goal_count == 1
+            "1 active goal"
+          else
+            "#{active_goal_count} active goals"
+          end
+        reason_html =
+          if active_goal_count == 1
+            "There is ".html_safe + h.link_to(link_label, goals_href) + " in progress.".html_safe
+          else
+            "There are ".html_safe + h.link_to(link_label, goals_href) + " in progress.".html_safe
+          end
+        reason_plain =
+          if active_goal_count == 1
+            "There is 1 active goal in progress."
+          else
+            "There are #{active_goal_count} active goals in progress."
+          end
         success_priority(
           title,
-          "There is at least one active goal in progress.",
-          ["#{active_goal_count} active goal(s) are currently in motion."]
+          nil,
+          [],
+          reason_html: reason_html,
+          reason_plain: reason_plain
         )
       end
     end
