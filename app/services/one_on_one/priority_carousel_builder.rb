@@ -770,12 +770,138 @@ module OneOnOne
           cta_path: feedback_new_path
         )
       else
+        associables = wtm_all_working_to_meet_associables
+        area_rows = associables.map do |associable|
+          { associable: associable, observations: wtm_covering_observations_for_associable(associable) }
+        end
+        covering_ids = area_rows.each_with_object(Set.new) do |row, memo|
+          row[:observations].each { |o| memo.add(o.id) }
+        end
+        x = associables.size
+        y = covering_ids.size
+        involving_href = organization_observations_path(@organization, involving_teammate_id: @teammate.id)
+        reason_html, reason_plain = wtm_received_success_opening_reason_html_and_plain(
+          x: x,
+          y: y,
+          involving_href: involving_href
+        )
+        display_limit = 5
+        concrete = area_rows.first(display_limit).map do |row|
+          { label_html: wtm_received_success_area_line_html(row[:associable], row[:observations]) }
+        end
         success_priority(
           title,
-          "Working-to-meet assignment/aspiration areas have recent published observations.",
-          ["No WTM assignment/aspiration is missing received observation coverage in the last 30 days."]
+          nil,
+          concrete,
+          display_item_limit: display_limit,
+          total_item_count: area_rows.size,
+          reason_html: reason_html,
+          reason_plain: reason_plain
         )
       end
+    end
+
+    def wtm_all_working_to_meet_associables
+      latest_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:assignment_id)
+      latest_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:aspiration_id)
+      out = []
+      latest_assignment_check_ins.each_value do |check_in|
+        next unless check_in.official_rating == "working_to_meet"
+
+        assignment = Assignment.find_by(id: check_in.assignment_id)
+        out << assignment if assignment.present?
+      end
+      latest_aspiration_check_ins.each_value do |check_in|
+        next unless check_in.official_rating == "working_to_meet"
+
+        aspiration = Aspiration.find_by(id: check_in.aspiration_id)
+        out << aspiration if aspiration.present?
+      end
+      out.uniq.sort_by { |associable| wtm_gap_without_goals_sort_key(associable) }
+    end
+
+    def wtm_covering_observations_for_associable(associable)
+      scope = Observation.joins(:observees, :observation_ratings)
+        .where(company: @organization, deleted_at: nil)
+        .published
+        .not_journal
+        .where("observations.observed_at >= ?", @thirty_days_ago)
+        .where(observees: { teammate_id: @teammate.id })
+      scope =
+        case associable
+        when Assignment
+          scope.where(observation_ratings: { rateable_type: "Assignment", rateable_id: associable.id })
+        when Aspiration
+          scope.where(observation_ratings: { rateable_type: "Aspiration", rateable_id: associable.id })
+        else
+          return []
+        end
+      scope.distinct.order(observed_at: :desc).includes(:observer).to_a
+    end
+
+    def wtm_received_success_opening_reason_html_and_plain(x:, y:, involving_href:)
+      h = ApplicationController.helpers
+      lead =
+        if x == 1
+          "1 Working-to-meet assignment/aspiration area has #{y} recent published "
+        else
+          "#{x} Working-to-meet assignment/aspiration areas have #{y} recent published "
+        end
+      reason_html = lead.html_safe + h.link_to("observations", involving_href) + ".".html_safe
+      reason_plain =
+        if x == 1
+          "1 Working-to-meet assignment/aspiration area has #{y} recent published observations."
+        else
+          "#{x} Working-to-meet assignment/aspiration areas have #{y} recent published observations."
+        end
+      [reason_html, reason_plain]
+    end
+
+    def wtm_received_success_area_line_html(associable, observations)
+      h = ApplicationController.helpers
+      org = @organization
+      lens_url =
+        case associable
+        when Assignment
+          organization_teammate_assignment_path(org, @teammate, associable)
+        when Aspiration
+          organization_teammate_aspiration_path(org, @teammate, associable)
+        else
+          return "".html_safe
+        end
+
+      name_fragment =
+        case associable
+        when Assignment
+          "Assignment: ".html_safe + h.link_to(associable.title, lens_url)
+        when Aspiration
+          "Aspiration: ".html_safe + h.link_to(associable.name, lens_url)
+        else
+          "".html_safe
+        end
+
+      return name_fragment if observations.blank?
+
+      by_observer = observations.group_by(&:observer_id)
+      observer_ids = by_observer.keys.sort_by do |pid|
+        by_observer[pid].first.observer.casual_name.to_s.downcase
+      end
+
+      observer_segments = observer_ids.filter_map do |pid|
+        obs_for_person = by_observer[pid]
+        person = obs_for_person.first.observer
+        next if person.blank?
+
+        casual = person.casual_name
+        ordered = obs_for_person.sort_by(&:observed_at)
+        number_links = ordered.each_with_index.map do |obs, idx|
+          h.link_to("[#{idx + 1}]", organization_observation_path(org, obs))
+        end
+        ERB::Util.html_escape("#{casual} ") + h.safe_join(number_links, ", ".html_safe)
+      end
+
+      observers_fragment = h.safe_join(observer_segments, "; ".html_safe)
+      name_fragment + " — ".html_safe + observers_fragment
     end
 
     def priority_active_goals_without_check_in_this_week

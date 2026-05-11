@@ -318,5 +318,63 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(line).to include(routes.organization_assignment_path(organization, assignment))
       expect(line).to include(routes.organization_ability_path(organization, ability))
     end
+
+    it "priority 7 when all WTM areas have observations shows summary with linked observations word and per-area observer links" do
+      routes = Rails.application.routes.url_helpers
+      hub_person = create(:person, first_name: "Casey", last_name: "Ng")
+      hub_tm = create(:teammate, organization: organization, person: hub_person)
+      observer_person = create(:person, first_name: "Dana", last_name: "Fox")
+      create(:teammate, organization: organization, person: observer_person)
+      one_on_one_link = create(:one_on_one_link, teammate: hub_tm, url: "https://example.com/hub")
+
+      assignment = create(:assignment, company: organization, title: "Ship MVP")
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: hub_tm, assignment: assignment)
+
+      obs_a = create(
+        :observation,
+        observer: observer_person,
+        company: organization,
+        published_at: 2.days.ago,
+        observed_at: 2.days.ago,
+        privacy_level: :observed_only,
+        story: "First note on WTM area."
+      )
+      obs_a.observees.destroy_all
+      create(:observee, observation: obs_a, teammate: hub_tm)
+      create(:observation_rating, observation: obs_a, rateable: assignment, rating: :agree)
+
+      obs_b = create(
+        :observation,
+        observer: observer_person,
+        company: organization,
+        published_at: 1.day.ago,
+        observed_at: 1.day.ago,
+        privacy_level: :observed_only,
+        story: "Second note on WTM area."
+      )
+      obs_b.observees.destroy_all
+      create(:observee, observation: obs_b, teammate: hub_tm)
+      create(:observation_rating, observation: obs_b, rateable: assignment, rating: :agree)
+
+      result = described_class.call(
+        organization: organization,
+        teammate: hub_tm,
+        one_on_one_link: one_on_one_link
+      )
+      p7 = result[:priorities].find { |p| p[:title].include?("working-to-meet assignments and aspirational values") }
+
+      expect(p7[:needs_attention]).to eq(false)
+      involving = routes.organization_observations_path(organization, involving_teammate_id: hub_tm.id)
+      expect(p7[:reason_html].to_s).to include(involving)
+      expect(p7[:reason_plain]).to eq("1 Working-to-meet assignment/aspiration area has 2 recent published observations.")
+      expect(p7[:reason_html].to_s).to include("1 Working-to-meet assignment/aspiration area has 2 recent published")
+
+      line = p7[:concrete_items].first[:label_html].to_s
+      expect(line).to include(routes.organization_teammate_assignment_path(organization, hub_tm, assignment))
+      anchors = Nokogiri::HTML::DocumentFragment.parse(line).css("a")
+      obs_hrefs = anchors.map { |a| a["href"] }
+      expect(obs_hrefs).to include(routes.organization_observation_path(organization, obs_a))
+      expect(obs_hrefs).to include(routes.organization_observation_path(organization, obs_b))
+    end
   end
 end
