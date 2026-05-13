@@ -8,6 +8,17 @@ module ApplicationHelper
   include GoalsHelper
   include AssociableGoalsHelper
 
+  # For +*_organization_company_teammate_path(organization, teammate)+ — pass this as the teammate
+  # segment so links to your own hub use +/company_teammates/me/+ (portable when sharing with yourself).
+  def teammate_route_param(teammate)
+    return teammate if teammate.blank?
+    if current_company_teammate.present? && teammate.respond_to?(:id) && teammate.id == current_company_teammate.id
+      "me"
+    else
+      teammate
+    end
+  end
+
   # Color helper methods for consistent UI
   def rating_color(rating)
     return 'secondary' unless rating

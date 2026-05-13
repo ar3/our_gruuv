@@ -7,7 +7,7 @@
                organization: organization,
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: ->(tm) { organization_company_teammate_one_on_one_link_path(organization, tm) },
+               path_for_teammate: ->(tm) { organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
                switch_aria_label: "Switch teammate for 1:1 Hub"
       %span= " - 1:1 Hub"
 
@@ -38,7 +38,7 @@
     scroll-margin-top: 2rem;
   }
 
-- return_to_about_me_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
+- return_to_about_me_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, teammate_route_param(@teammate))
 - return_to_about_me_text = "Return to About #{casual_name}"
 - source = @one_on_one_link.external_project_source
 - cache = @one_on_one_link.external_project_cache_for(source) if source

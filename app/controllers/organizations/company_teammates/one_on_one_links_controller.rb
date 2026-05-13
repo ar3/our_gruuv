@@ -393,11 +393,7 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   end
 
   def set_teammate
-    @teammate = organization.teammates.find(params[:company_teammate_id])
-    unless @teammate
-      redirect_to organization_company_teammate_path(organization, @teammate), 
-                  alert: 'Teammate not found for this organization.'
-    end
+    @teammate = find_organization_teammate!(params[:company_teammate_id])
   end
 
   def extract_asana_project_id(url)

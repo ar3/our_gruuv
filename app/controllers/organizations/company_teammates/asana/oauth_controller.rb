@@ -1,4 +1,6 @@
 class Organizations::CompanyTeammates::Asana::OauthController < ApplicationController
+  include Organizations::ResolvesMeTeammateParam
+
   before_action :require_authentication
   before_action :set_organization, except: [:callback]
   before_action :set_organization_from_state, only: [:callback]
@@ -159,16 +161,16 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
 
   private
 
+  def organization
+    @organization
+  end
+
   def set_organization
     @organization = Organization.find(params[:organization_id])
   end
 
   def set_teammate
-    @teammate = @organization.teammates.find(params[:company_teammate_id])
-    unless @teammate
-      redirect_to organization_company_teammate_path(@organization, @teammate), 
-                  alert: 'Teammate not found for this organization.'
-    end
+    @teammate = find_organization_teammate!(params[:company_teammate_id])
   end
 
   def set_organization_from_state

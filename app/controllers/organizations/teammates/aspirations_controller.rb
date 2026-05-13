@@ -126,7 +126,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
   private
 
   def set_teammate
-    @teammate = organization.teammates.find(params[:teammate_id])
+    @teammate = find_organization_teammate!(params[:teammate_id])
   end
 
   def set_aspiration

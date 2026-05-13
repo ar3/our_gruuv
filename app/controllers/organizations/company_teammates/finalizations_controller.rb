@@ -81,7 +81,7 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
   private
   
   def set_teammate
-    @teammate = organization.teammates.find(params[:company_teammate_id])
+    @teammate = find_organization_teammate!(params[:company_teammate_id])
   rescue ActiveRecord::RecordNotFound
     redirect_to organization_path(organization),
                 alert: "Unable to find teammate record in #{organization.name}"

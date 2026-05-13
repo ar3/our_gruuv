@@ -127,13 +127,13 @@
               - if cta_href.blank? && priority[:cta_kind] == :sync_anchor
                 - cta_href = "#sync"
               - elsif cta_href.blank? && priority[:cta_kind] == :check_ins_review_most_recent
-                - cta_href = review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate)
+                - cta_href = review_most_recent_organization_company_teammate_check_ins_path(organization, teammate_route_param(@teammate))
               - elsif cta_href.blank? && priority[:cta_kind] == :my_growth_abilities
-                - cta_href = my_growth_abilities_organization_company_teammate_path(organization, @teammate)
+                - cta_href = my_growth_abilities_organization_company_teammate_path(organization, teammate_route_param(@teammate))
               - elsif cta_href.blank? && priority[:cta_kind] == :my_growth_experiences
-                - cta_href = my_growth_experiences_organization_company_teammate_path(organization, @teammate)
+                - cta_href = my_growth_experiences_organization_company_teammate_path(organization, teammate_route_param(@teammate))
               - elsif cta_href.blank? && priority[:cta_kind] == :my_growth_goals
-                - cta_href = my_growth_goals_organization_company_teammate_path(organization, @teammate)
+                - cta_href = my_growth_goals_organization_company_teammate_path(organization, teammate_route_param(@teammate))
               - elsif cta_href.blank? && priority[:cta_kind] == :new_observation
                 - cta_href = new_organization_observation_path(organization, return_url: request.fullpath, return_text: "Back to 1:1 Hub")
               - elsif cta_href.blank? && priority[:cta_kind] == :new_feedback_request

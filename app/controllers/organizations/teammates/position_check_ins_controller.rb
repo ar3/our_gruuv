@@ -86,6 +86,6 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
   private
 
   def set_teammate
-    @teammate = organization.teammates.find(params[:id])
+    @teammate = find_organization_teammate!(params[:id])
   end
 end

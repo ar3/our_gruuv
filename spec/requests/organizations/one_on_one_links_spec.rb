@@ -46,6 +46,18 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).to include("One on One Hub (Active)")
     end
 
+    it "resolves company_teammate_id 'me' (and legacy 'my') to the signed-in teammate" do
+      sign_in_as_teammate_for_request(employee_person, organization)
+      create(:one_on_one_link, teammate: employee_teammate, url: "https://example.com/hub")
+
+      get organization_company_teammate_one_on_one_link_path(organization, "me")
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("1:1 Hub")
+
+      get organization_company_teammate_one_on_one_link_path(organization, "my")
+      expect(response).to have_http_status(:success)
+    end
+
     it "renders the one thing section with the priority algorithm collapse" do
       get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
 

@@ -34,7 +34,7 @@ class Organizations::Slack::TeammatesController < Organizations::OrganizationNam
   end
   
   def update
-    teammate = @organization.teammates.find(params[:teammate_id])
+    teammate = find_organization_teammate!(params[:teammate_id])
     slack_user_id = params[:slack_user_id]
     
     if slack_user_id.present?

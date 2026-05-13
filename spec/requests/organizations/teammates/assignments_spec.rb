@@ -35,6 +35,14 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         sign_in_as_teammate_for_request(employee_person, organization)
       end
 
+      it "accepts teammate_id me (and legacy my) for the signed-in teammate" do
+        get organization_teammate_assignment_path(organization, "me", assignment)
+        expect(response).to have_http_status(:success)
+
+        get organization_teammate_assignment_path(organization, "my", assignment)
+        expect(response).to have_http_status(:success)
+      end
+
       it "shows the perspective context with assignment title" do
         get assignment_show_path
         expect(response).to have_http_status(:success)

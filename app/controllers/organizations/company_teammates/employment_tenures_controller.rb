@@ -185,7 +185,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   private
 
   def set_teammate
-    @teammate = organization.teammates.find(params[:company_teammate_id])
+    @teammate = find_organization_teammate!(params[:company_teammate_id])
   end
 
   def set_employment_tenure

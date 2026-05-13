@@ -73,7 +73,8 @@ class Organizations::CompanyTeammates::BulkMilestoneAwardsController < Organizat
   private
 
   def set_teammate
-    @teammate = organization.teammates.find_by(id: params[:id])
+    resolved_id = resolve_teammate_route_id(params[:id])
+    @teammate = organization.teammates.find_by(id: resolved_id)
     return if @teammate
 
     redirect_to organization_path(organization),

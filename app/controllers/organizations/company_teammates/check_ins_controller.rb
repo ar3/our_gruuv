@@ -174,8 +174,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   private
   
   def set_teammate
-    teammate_id = params[:company_teammate_id].to_s == 'my' ? current_company_teammate&.id : params[:company_teammate_id]
-    @teammate = organization.teammates.includes(:person).find(teammate_id)
+    @teammate = find_organization_teammate!(params[:company_teammate_id], scope: organization.teammates.includes(:person))
   end
   
   def determine_view_mode

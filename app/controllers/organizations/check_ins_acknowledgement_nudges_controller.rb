@@ -50,7 +50,7 @@ class Organizations::CheckInsAcknowledgementNudgesController < Organizations::Or
   def create
     authorize @organization, :check_ins_health?
     apply_filter_default_if_needed
-    teammate = filtered_teammates_for_check_ins_health.find_by(id: params[:company_teammate_id])
+    teammate = filtered_teammates_for_check_ins_health.find_by(id: resolve_teammate_route_id(params[:company_teammate_id]))
     unless teammate
       redirect_to redirect_index_path, alert: 'Teammate not found or not in this view.'
       return

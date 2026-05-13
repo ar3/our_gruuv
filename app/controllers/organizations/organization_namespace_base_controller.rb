@@ -1,4 +1,7 @@
 class Organizations::OrganizationNamespaceBaseController < ApplicationController
+  include PreloadsObservationRateables
+  include Organizations::ResolvesMeTeammateParam
+
   before_action :ensure_teammate_matches_organization, unless: :skip_organization_setup?
   before_action :set_organization, unless: :skip_organization_setup?
   helper_method :organization
@@ -60,6 +63,4 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
   def skip_organization_setup?
     false
   end
-
-  include PreloadsObservationRateables
 end
