@@ -477,28 +477,38 @@ module OneOnOne
       recent_received = recent_received_non_journal_observations
       title = "Has #{teammate_casual_name} received a published observation in the last 30 days?"
       if recent_received.empty?
-        suggestions = observation_received_feedback_suggestion_bullets
-        concrete =
-          if suggestions.any?
-            suggestions
-          else
-            ["Request fresh feedback to keep clarity high."]
-          end
-        total_count = concrete.size
+        suggestion_rows = pick_feedback_opportunity_rows_with_distinct_others(
+          observation_received_feedback_opportunity_rows
+        )
         feedback_new_path = new_organization_feedback_request_path(
           @organization,
           subject_of_feedback_teammate_id: @teammate.id
         )
-        attention_priority(
-          title,
-          "No published non-journal observation was received in the last 30 days.",
-          concrete,
-          total_item_count: total_count,
-          display_item_limit: 5,
-          cta_kind: :new_feedback_request,
-          cta_label: "Request feedback about #{teammate_casual_name}",
-          cta_path: feedback_new_path
-        )
+        if suggestion_rows.any?
+          attention_priority(
+            title,
+            "No published non-journal observation was received in the last 30 days.",
+            [],
+            total_item_count: suggestion_rows.size,
+            display_item_limit: 5,
+            cta_kind: :new_feedback_request,
+            cta_label: "Request feedback about #{teammate_casual_name}",
+            cta_path: feedback_new_path,
+            data_kind: :observation_received_attention,
+            items: suggestion_rows
+          )
+        else
+          attention_priority(
+            title,
+            "No published non-journal observation was received in the last 30 days.",
+            ["Request fresh feedback to keep clarity high."],
+            total_item_count: 1,
+            display_item_limit: 5,
+            cta_kind: :new_feedback_request,
+            cta_label: "Request feedback about #{teammate_casual_name}",
+            cta_path: feedback_new_path
+          )
+        end
       else
         total = recent_received.size
         display_limit = 5

@@ -504,5 +504,37 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(html).to include(routes.organization_assignment_path(organization, consumer))
       expect(html).to include(routes.organization_assignment_path(organization, supplier))
     end
+
+    it "priority 6 when no OGOs received links would-be observer and subject to internal teammate views and assignments to show pages" do
+      routes = Rails.application.routes.url_helpers
+      hub_person = create(:person, first_name: "Rae", last_name: "Recv")
+      hub_tm = create(:teammate, organization: organization, person: hub_person)
+      peer_person = create(:person, first_name: "Pat", last_name: "Giver")
+      peer_tm = create(:teammate, organization: organization, person: peer_person)
+      one_on_one_link = create(:one_on_one_link, teammate: hub_tm, url: "https://example.com/hub")
+
+      supplier = create(:assignment, company: organization, title: "Upstream Task")
+      consumer = create(:assignment, company: organization, title: "Downstream Task")
+      create(:assignment_supply_relationship, supplier_assignment: supplier, consumer_assignment: consumer, company: organization)
+
+      create(:assignment_tenure, teammate: hub_tm, assignment: supplier)
+      create(:assignment_tenure, teammate: peer_tm, assignment: consumer)
+
+      result = described_class.call(organization: organization, teammate: hub_tm, one_on_one_link: one_on_one_link)
+      p6 = result[:priorities][5]
+
+      expect(p6[:title]).to include("received a published observation")
+      expect(p6[:needs_attention]).to eq(true)
+      expect(p6[:data_kind]).to eq(:observation_received_attention)
+      expect(p6[:items]).to be_present
+
+      item = p6[:items].first
+      renderer = OneOnOne::PriorityRenderer.new(priority: p6, organization: organization, teammate: hub_tm)
+      html = renderer.item_html(item).to_s
+      expect(html).to include(routes.internal_organization_company_teammate_path(organization, peer_tm))
+      expect(html).to include(routes.internal_organization_company_teammate_path(organization, hub_tm))
+      expect(html).to include(routes.organization_assignment_path(organization, consumer))
+      expect(html).to include(routes.organization_assignment_path(organization, supplier))
+    end
   end
 end
