@@ -473,5 +473,36 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(renderer.reason_html.to_s).to include(routes.my_growth_goals_organization_company_teammate_path(organization, hub_tm))
       expect(renderer.reason_html.to_s).to include("3 active goals")
     end
+
+    it "priority 5 when no OGOs given links peer name to internal teammate view and assignment titles to assignment show pages" do
+      routes = Rails.application.routes.url_helpers
+      hub_person = create(:person, first_name: "Hub", last_name: "User")
+      hub_tm = create(:teammate, organization: organization, person: hub_person)
+      peer_person = create(:person, first_name: "Peer", last_name: "Pal")
+      peer_tm = create(:teammate, organization: organization, person: peer_person)
+      one_on_one_link = create(:one_on_one_link, teammate: hub_tm, url: "https://example.com/hub")
+
+      supplier = create(:assignment, company: organization, title: "Upstream Task")
+      consumer = create(:assignment, company: organization, title: "Downstream Task")
+      create(:assignment_supply_relationship, supplier_assignment: supplier, consumer_assignment: consumer, company: organization)
+
+      create(:assignment_tenure, teammate: hub_tm, assignment: consumer)
+      create(:assignment_tenure, teammate: peer_tm, assignment: supplier)
+
+      result = described_class.call(organization: organization, teammate: hub_tm, one_on_one_link: one_on_one_link)
+      p5 = result[:priorities][4]
+
+      expect(p5[:title]).to include("given a published observation")
+      expect(p5[:needs_attention]).to eq(true)
+      expect(p5[:data_kind]).to eq(:observation_given_attention)
+      expect(p5[:items]).to be_present
+
+      item = p5[:items].first
+      renderer = OneOnOne::PriorityRenderer.new(priority: p5, organization: organization, teammate: hub_tm)
+      html = renderer.item_html(item).to_s
+      expect(html).to include(routes.internal_organization_company_teammate_path(organization, peer_tm))
+      expect(html).to include(routes.organization_assignment_path(organization, consumer))
+      expect(html).to include(routes.organization_assignment_path(organization, supplier))
+    end
   end
 end

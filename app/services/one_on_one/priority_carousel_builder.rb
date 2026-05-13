@@ -384,29 +384,43 @@ module OneOnOne
 
       title = "Has #{teammate_casual_name} given a published observation to someone else in the last 30 days?"
       if given_count.zero?
-        suggestions = observation_given_feedback_suggestion_bullets
-        concrete =
-          if suggestions.any?
-            suggestions
-          else
-            ["Give one concrete observation to support someone else this week."]
-          end
-        total_count = concrete.size
-        viewer_is_subject = @viewing_company_teammate.present? && @viewing_company_teammate.id == @teammate.id
-        attention_priority(
-          title,
-          "No published non-journal observation was given to someone else in the last 30 days.",
-          concrete,
-          total_item_count: total_count,
-          display_item_limit: 5,
-          cta_kind: viewer_is_subject ? :new_observation : :new_feedback_request,
-          cta_label:
-            if viewer_is_subject
-              "Start an observation"
-            else
-              "Request feedback from #{teammate_casual_name} to someone else"
-            end
+        suggestion_rows = pick_feedback_opportunity_rows_with_distinct_others(
+          observation_given_feedback_opportunity_rows.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
         )
+        viewer_is_subject = @viewing_company_teammate.present? && @viewing_company_teammate.id == @teammate.id
+        if suggestion_rows.any?
+          attention_priority(
+            title,
+            "No published non-journal observation was given to someone else in the last 30 days.",
+            [],
+            total_item_count: suggestion_rows.size,
+            display_item_limit: 5,
+            cta_kind: viewer_is_subject ? :new_observation : :new_feedback_request,
+            cta_label:
+              if viewer_is_subject
+                "Start an observation"
+              else
+                "Request feedback from #{teammate_casual_name} to someone else"
+              end,
+            data_kind: :observation_given_attention,
+            items: suggestion_rows
+          )
+        else
+          attention_priority(
+            title,
+            "No published non-journal observation was given to someone else in the last 30 days.",
+            ["Give one concrete observation to support someone else this week."],
+            total_item_count: 1,
+            display_item_limit: 5,
+            cta_kind: viewer_is_subject ? :new_observation : :new_feedback_request,
+            cta_label:
+              if viewer_is_subject
+                "Start an observation"
+              else
+                "Request feedback from #{teammate_casual_name} to someone else"
+              end
+          )
+        end
       else
         data = observation_given_success_data(given_relation: given_relation, given_count: given_count)
         success_priority(
@@ -891,6 +905,11 @@ module OneOnOne
     end
 
     def observation_given_feedback_suggestion_bullets
+      ordered = observation_given_feedback_opportunity_rows.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
+      pick_feedback_opportunity_lines_with_distinct_others(ordered)
+    end
+
+    def observation_given_feedback_opportunity_rows
       focus_casual = teammate_casual_name
       opportunities = []
 
@@ -914,7 +933,11 @@ module OneOnOne
             other_casual = other_tm.person.casual_name
             opportunities << {
               other_teammate_id: other_tm.id,
+              other_teammate: other_tm,
               sort_energy: energy,
+              scenario: :given_supplier_chain,
+              consumer_assignment: consumer_assignment,
+              supplier_assignment: supplier_assignment,
               text: "Since #{consumer_assignment.title} relies on #{supplier_assignment.title}, #{focus_casual} " \
                     "(taking on #{consumer_assignment.title}) could give feedback to #{other_casual} " \
                     "(taking on #{supplier_assignment.title})."
@@ -933,14 +956,16 @@ module OneOnOne
           other_casual = other_tm.person.casual_name
           opportunities << {
             other_teammate_id: other_tm.id,
+            other_teammate: other_tm,
             sort_energy: energy,
+            scenario: :given_shared_assignment,
+            assignment: assignment,
             text: "#{focus_casual} could give feedback to #{other_casual}, since they are both taking on #{assignment.title}."
           }
         end
       end
 
-      ordered = opportunities.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
-      pick_feedback_opportunity_lines_with_distinct_others(ordered)
+      opportunities
     end
 
     def other_active_tenures_for_assignment(assignment_id)
@@ -956,13 +981,16 @@ module OneOnOne
     end
 
     def observation_received_feedback_suggestion_bullets
+      pick_feedback_opportunity_lines_with_distinct_others(observation_received_feedback_opportunity_rows)
+    end
+
+    def observation_received_feedback_opportunity_rows
       consumer_ops = observation_received_consumer_chain_opportunities
       shared_ops = observation_received_shared_assignment_opportunities
 
       primary_sorted = consumer_ops.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
       secondary_sorted = shared_ops.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
-      ordered = primary_sorted + secondary_sorted
-      pick_feedback_opportunity_lines_with_distinct_others(ordered)
+      primary_sorted + secondary_sorted
     end
 
     def observation_received_consumer_chain_opportunities
@@ -989,7 +1017,11 @@ module OneOnOne
             other_casual = other_tm.person.casual_name
             opportunities << {
               other_teammate_id: other_tm.id,
+              other_teammate: other_tm,
               sort_energy: energy,
+              scenario: :received_consumer_chain,
+              consumer_assignment: consumer_assignment,
+              supplier_assignment: supplier_assignment,
               text: "#{other_casual} (taking on #{consumer_assignment.title}) could give feedback to #{focus_casual} " \
                     "(taking on #{supplier_assignment.title}), since #{consumer_assignment.title} relies on #{supplier_assignment.title}."
             }
@@ -1020,7 +1052,10 @@ module OneOnOne
           other_casual = other_tm.person.casual_name
           opportunities << {
             other_teammate_id: other_tm.id,
+            other_teammate: other_tm,
             sort_energy: energy,
+            scenario: :received_shared_assignment,
+            assignment: assignment,
             text: "#{other_casual} could give feedback to #{focus_casual}, since they are both taking on #{assignment.title}."
           }
         end
@@ -1029,7 +1064,7 @@ module OneOnOne
       opportunities
     end
 
-    def pick_feedback_opportunity_lines_with_distinct_others(ordered_rows, limit: OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT)
+    def pick_feedback_opportunity_rows_with_distinct_others(ordered_rows, limit: OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT)
       chosen = []
       seen_other_ids = Set.new
 
@@ -1050,7 +1085,11 @@ module OneOnOne
         chosen << row
       end
 
-      chosen.pluck(:text)
+      chosen
+    end
+
+    def pick_feedback_opportunity_lines_with_distinct_others(ordered_rows, limit: OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT)
+      pick_feedback_opportunity_rows_with_distinct_others(ordered_rows, limit: limit).map { |r| r[:text] }
     end
 
     def build_active_goal_lookup

@@ -68,7 +68,7 @@ module OneOnOne
     # :html -> use item_html, :link -> use item_label_url, else nil (legacy concrete_items path)
     def items_render_mode
       case priority[:data_kind]
-      when :observation_received_success, :wtm_received_success
+      when :observation_received_success, :wtm_received_success, :observation_given_attention
         :html
       when :blurred_or_obscured_attention,
            :wtm_with_goals_success,
@@ -87,6 +87,8 @@ module OneOnOne
         observation_received_item_html(item)
       when :wtm_received_success
         wtm_received_item_html(item)
+      when :observation_given_attention
+        observation_given_attention_item_html(item)
       end
     end
 
@@ -115,6 +117,8 @@ module OneOnOne
         observation_received_item_plain(item)
       when :wtm_received_success
         wtm_received_item_plain(item)
+      when :observation_given_attention
+        item[:text].to_s
       else
         attrs = item_label_url(item)
         case attrs
@@ -171,6 +175,46 @@ module OneOnOne
       line << ", about #{rateable_names.to_sentence}" if rateable_names.any?
       line << " in the last 30 days!!"
       line
+    end
+
+    # ---------- Priority 5: observation given (needs attention — suggestion bullets) ----------
+
+    def observation_given_attention_item_html(item)
+      case item[:scenario]
+      when :given_supplier_chain
+        observation_given_attention_supplier_chain_html(item)
+      when :given_shared_assignment
+        observation_given_attention_shared_assignment_html(item)
+      else
+        ERB::Util.html_escape(item[:text].to_s)
+      end
+    end
+
+    def observation_given_attention_supplier_chain_html(item)
+      other_tm = item[:other_teammate]
+      consumer = item[:consumer_assignment]
+      supplier = item[:supplier_assignment]
+      return ERB::Util.html_escape(item[:text].to_s) if other_tm.blank? || consumer.blank? || supplier.blank?
+
+      consumer_link = h.link_to(consumer.title, organization_assignment_path(organization, consumer))
+      supplier_link = h.link_to(supplier.title, organization_assignment_path(organization, supplier))
+      other_link = h.link_to(other_tm.person.casual_name, internal_teammate_path(other_tm))
+
+      "Since ".html_safe + consumer_link + " relies on ".html_safe + supplier_link + ", ".html_safe +
+        ERB::Util.html_escape(casual_name) + " (taking on ".html_safe + consumer_link +
+        ") could give feedback to ".html_safe + other_link + " (taking on ".html_safe + supplier_link + ").".html_safe
+    end
+
+    def observation_given_attention_shared_assignment_html(item)
+      other_tm = item[:other_teammate]
+      assignment = item[:assignment]
+      return ERB::Util.html_escape(item[:text].to_s) if other_tm.blank? || assignment.blank?
+
+      other_link = h.link_to(other_tm.person.casual_name, internal_teammate_path(other_tm))
+      assignment_link = h.link_to(assignment.title, organization_assignment_path(organization, assignment))
+
+      ERB::Util.html_escape(casual_name) + " could give feedback to ".html_safe + other_link +
+        ", since they are both taking on ".html_safe + assignment_link + ".".html_safe
     end
 
     # ---------- Priority 6: observation received (success) ----------
