@@ -70,10 +70,16 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
 
       urgent = result[:priorities].find { |p| p[:title] == described_class::ASANA_URGENT_TASKS_TITLE }
       expect(urgent[:needs_attention]).to eq(true)
-      item = urgent[:concrete_items].first
-      expect(item).to be_a(Hash)
-      expect(item[:url]).to eq("https://app.asana.com/0/999888/task-abc")
-      expect(item[:label]).to include("Ship feature")
+      expect(urgent[:data_kind]).to eq(:asana_tasks_attention)
+      task_item = urgent[:items].first
+      expect(task_item[:task]["gid"]).to eq("task-abc")
+      expect(task_item[:project_id]).to eq("999888")
+
+      renderer = OneOnOne::PriorityRenderer.new(priority: urgent, organization: organization, teammate: teammate)
+      attrs = renderer.item_label_url(task_item)
+      expect(attrs).to be_a(Hash)
+      expect(attrs[:url]).to eq("https://app.asana.com/0/999888/task-abc")
+      expect(attrs[:label]).to include("Ship feature")
     end
 
     it "priority 3 (WTM without goals) explains why goals matter, links each row to the teammate lens, and adds a compact goal CTA" do
@@ -103,14 +109,19 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(wtm_priority[:reason]).to eq(
         "Whenever we are working to meet expectations, we should have goals that help give clarity as to what has to be done in order to be meeting expectations"
       )
-
-      assignment_item = wtm_priority[:concrete_items].find { |i| i[:label].start_with?("Assignment:") }
-      aspiration_item = wtm_priority[:concrete_items].find { |i| i[:label].start_with?("Aspiration:") }
+      expect(wtm_priority[:data_kind]).to eq(:wtm_gap_without_goals_attention)
+      expect(wtm_priority[:concrete_items]).to eq([])
+      expect(wtm_priority[:items].map { |i| i[:associable] }).to contain_exactly(assignment, aspiration)
 
       routes = Rails.application.routes.url_helpers
-      expect(assignment_item[:url]).to eq(routes.organization_teammate_assignment_path(organization, wtm_teammate, assignment))
-      expect(assignment_item[:add_goal_label]).to eq("Add goal for JT + this assignment")
-      expect(assignment_item[:add_goal_url]).to eq(
+      renderer = OneOnOne::PriorityRenderer.new(priority: wtm_priority, organization: organization, teammate: wtm_teammate)
+      assignment_attrs = renderer.item_label_url(wtm_priority[:items].find { |i| i[:associable] == assignment })
+      aspiration_attrs = renderer.item_label_url(wtm_priority[:items].find { |i| i[:associable] == aspiration })
+
+      expect(assignment_attrs[:label]).to start_with("Assignment:")
+      expect(assignment_attrs[:url]).to eq(routes.organization_teammate_assignment_path(organization, wtm_teammate, assignment))
+      expect(assignment_attrs[:add_goal_label]).to eq("Add goal for JT + this assignment")
+      expect(assignment_attrs[:add_goal_url]).to eq(
         routes.choose_manage_goals_organization_assignment_path(
           organization,
           assignment,
@@ -120,9 +131,10 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
         )
       )
 
-      expect(aspiration_item[:url]).to eq(routes.organization_teammate_aspiration_path(organization, wtm_teammate, aspiration))
-      expect(aspiration_item[:add_goal_label]).to eq("Add goal for JT + this aspirational value")
-      expect(aspiration_item[:add_goal_url]).to eq(
+      expect(aspiration_attrs[:label]).to start_with("Aspiration:")
+      expect(aspiration_attrs[:url]).to eq(routes.organization_teammate_aspiration_path(organization, wtm_teammate, aspiration))
+      expect(aspiration_attrs[:add_goal_label]).to eq("Add goal for JT + this aspirational value")
+      expect(aspiration_attrs[:add_goal_url]).to eq(
         routes.choose_manage_goals_organization_aspiration_path(
           organization,
           aspiration,
@@ -159,13 +171,23 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(wtm_priority[:needs_attention]).to eq(false)
       expect(wtm_priority[:reason]).to be_nil
       routes = Rails.application.routes.url_helpers
-      expect(wtm_priority[:concrete_items].size).to eq(2)
-      api_item = wtm_priority[:concrete_items].find { |i| i[:label].include?("Build API") }
-      expect(api_item[:label]).to include("2 active goals")
-      expect(api_item[:url]).to eq(routes.organization_teammate_assignment_path(organization, tm, assignment))
-      asp_item = wtm_priority[:concrete_items].find { |i| i[:label].include?("Team First") }
-      expect(asp_item[:label]).to include("2 active goals")
-      expect(asp_item[:url]).to eq(routes.organization_teammate_aspiration_path(organization, tm, aspiration))
+      expect(wtm_priority[:data_kind]).to eq(:wtm_with_goals_success)
+      expect(wtm_priority[:concrete_items]).to eq([])
+      expect(wtm_priority[:items].size).to eq(2)
+      api_item = wtm_priority[:items].find { |i| i[:associable] == assignment }
+      expect(api_item[:active_goal_count]).to eq(2)
+      asp_item = wtm_priority[:items].find { |i| i[:associable] == aspiration }
+      expect(asp_item[:active_goal_count]).to eq(2)
+
+      renderer = OneOnOne::PriorityRenderer.new(priority: wtm_priority, organization: organization, teammate: tm)
+      api_rendered = renderer.item_label_url(api_item)
+      expect(api_rendered[:label]).to include("Build API")
+      expect(api_rendered[:label]).to include("2 active goals")
+      expect(api_rendered[:url]).to eq(routes.organization_teammate_assignment_path(organization, tm, assignment))
+      asp_rendered = renderer.item_label_url(asp_item)
+      expect(asp_rendered[:label]).to include("Team First")
+      expect(asp_rendered[:label]).to include("2 active goals")
+      expect(asp_rendered[:url]).to eq(routes.organization_teammate_aspiration_path(organization, tm, aspiration))
     end
 
     it "priority 3 when no WTM surfaces two reason lines and more details link to review_most_recent" do
@@ -184,13 +206,19 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       wtm_priority = result[:priorities].find { |p| p[:title].include?("working-to-meet assignments") }
 
       expect(wtm_priority[:needs_attention]).to eq(false)
-      expect(wtm_priority[:reason]).to eq(
+      expect(wtm_priority[:reason]).to be_nil
+      expect(wtm_priority[:data_kind]).to eq(:wtm_all_clear_success)
+      expect(wtm_priority[:data]).to eq(x: 1, y: 1, assignments_missing: 0, aspirations_missing: 0)
+      expect(wtm_priority[:concrete_items]).to eq([])
+
+      renderer = OneOnOne::PriorityRenderer.new(priority: wtm_priority, organization: organization, teammate: tm)
+      expect(renderer.reason_lines).to eq(
         [
           "#{tm.person.casual_name} is meeting or exceeding expectations for 1 required and active assignment and 1 aspirational value.",
           "#{tm.person.casual_name} has had all relevant check-ins."
         ]
       )
-      expect(wtm_priority[:concrete_items]).to eq([])
+
       routes = Rails.application.routes.url_helpers
       expect(wtm_priority[:cta_label]).to eq("More details")
       expect(wtm_priority[:cta_path]).to eq(routes.review_most_recent_organization_company_teammate_check_ins_path(organization, tm))
@@ -210,7 +238,12 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       result = described_class.call(organization: organization, teammate: tm, one_on_one_link: one_on_one_link)
       wtm_priority = result[:priorities].find { |p| p[:title].include?("working-to-meet assignments") }
 
-      expect(wtm_priority[:reason]).to eq(
+      expect(wtm_priority[:reason]).to be_nil
+      expect(wtm_priority[:data_kind]).to eq(:wtm_all_clear_success)
+      expect(wtm_priority[:data]).to eq(x: 1, y: 0, assignments_missing: 0, aspirations_missing: 1)
+
+      renderer = OneOnOne::PriorityRenderer.new(priority: wtm_priority, organization: organization, teammate: tm)
+      expect(renderer.reason_lines).to eq(
         [
           "#{tm.person.casual_name} is meeting or exceeding expectations for 1 required and active assignment and 0 aspirational values.",
           "#{tm.person.casual_name} has not had a check-in on 1 aspirational value."
@@ -256,14 +289,21 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(p5[:needs_attention]).to eq(false)
       expect(p5[:reason]).to be_nil
       expect(p5[:concrete_items]).to eq([])
-      expect(p5[:reason_plain]).to include("published OGO")
-      expect(p5[:reason_plain]).to include(observee_person.casual_name)
-      expect(p5[:reason_plain]).to include("Revenue goal")
-      expect(p5[:reason_plain]).to include("Customer focus")
-      expect(p5[:reason_plain]).to include("Facilitation")
-      expect(p5[:reason_plain]).to end_with("in the last 30 days!!")
+      expect(p5[:data_kind]).to eq(:observation_given_success)
+      expect(p5[:data][:given_count]).to eq(1)
+      expect(p5[:data][:observees]).to contain_exactly(observee_tm)
+      expect(p5[:data][:rateables]).to contain_exactly(assignment, aspiration, ability)
 
-      html = p5[:reason_html].to_s
+      renderer = OneOnOne::PriorityRenderer.new(priority: p5, organization: organization, teammate: hub_tm)
+      reason_plain = renderer.reason_plain
+      expect(reason_plain).to include("published OGO")
+      expect(reason_plain).to include(observee_person.casual_name)
+      expect(reason_plain).to include("Revenue goal")
+      expect(reason_plain).to include("Customer focus")
+      expect(reason_plain).to include("Facilitation")
+      expect(reason_plain).to end_with("in the last 30 days!!")
+
+      html = renderer.reason_html.to_s
       expect(html).to include(routes.organization_observations_path(organization, involving_teammate_id: hub_tm.id))
       expect(html).to include(routes.internal_organization_company_teammate_path(organization, observee_tm))
       expect(html).to include(routes.organization_assignment_path(organization, assignment))
@@ -306,8 +346,17 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(p6[:title]).to include("received a published observation")
       expect(p6[:needs_attention]).to eq(false)
       expect(p6[:reason]).to eq("1 Published non-journal observations were received in the last 30 days.")
-      expect(p6[:concrete_items].size).to eq(1)
-      line = p6[:concrete_items].first[:label_html].to_s
+      expect(p6[:data_kind]).to eq(:observation_received_success)
+      expect(p6[:data][:total]).to eq(1)
+      expect(p6[:items].size).to eq(1)
+      item = p6[:items].first
+      expect(item[:observation]).to eq(obs)
+      expect(item[:observer_teammate]).to eq(observer_tm)
+      expect(item[:rateables]).to contain_exactly(assignment, ability)
+      expect(p6[:concrete_items]).to eq([])
+
+      renderer = OneOnOne::PriorityRenderer.new(priority: p6, organization: organization, teammate: hub_tm)
+      line = renderer.item_html(item).to_s
       involving_href = routes.organization_observations_path(organization, involving_teammate_id: observer_tm.id)
       show_href = routes.organization_observation_path(organization, obs)
       expect(line).to include(" on ")
@@ -364,12 +413,24 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       p7 = result[:priorities].find { |p| p[:title].include?("working-to-meet assignments and aspirational values") }
 
       expect(p7[:needs_attention]).to eq(false)
-      involving = routes.organization_observations_path(organization, involving_teammate_id: hub_tm.id)
-      expect(p7[:reason_html].to_s).to include(involving)
-      expect(p7[:reason_plain]).to eq("1 Working-to-meet assignment/aspiration area has 2 recent published observations.")
-      expect(p7[:reason_html].to_s).to include("1 Working-to-meet assignment/aspiration area has 2 recent published")
+      expect(p7[:data_kind]).to eq(:wtm_received_success)
+      expect(p7[:data]).to eq(x: 1, y: 2)
+      expect(p7[:items].size).to eq(1)
+      item = p7[:items].first
+      expect(item[:associable]).to eq(assignment)
+      observer_entries = item[:observers_with_observations]
+      expect(observer_entries.size).to eq(1)
+      expect(observer_entries.first[:person]).to eq(observer_person)
+      expect(observer_entries.first[:observations]).to contain_exactly(obs_a, obs_b)
+      expect(p7[:concrete_items]).to eq([])
 
-      line = p7[:concrete_items].first[:label_html].to_s
+      renderer = OneOnOne::PriorityRenderer.new(priority: p7, organization: organization, teammate: hub_tm)
+      involving = routes.organization_observations_path(organization, involving_teammate_id: hub_tm.id)
+      expect(renderer.reason_html.to_s).to include(involving)
+      expect(renderer.reason_plain).to eq("1 Working-to-meet assignment/aspiration area has 2 recent published observations.")
+      expect(renderer.reason_html.to_s).to include("1 Working-to-meet assignment/aspiration area has 2 recent published")
+
+      line = renderer.item_html(item).to_s
       expect(line).to include(routes.organization_teammate_assignment_path(organization, hub_tm, assignment))
       anchors = Nokogiri::HTML::DocumentFragment.parse(line).css("a")
       obs_hrefs = anchors.map { |a| a["href"] }
@@ -404,9 +465,13 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(p9[:needs_attention]).to eq(false)
       expect(p9[:reason]).to be_nil
       expect(p9[:concrete_items]).to eq([])
-      expect(p9[:reason_plain]).to eq("There are 3 active goals in progress.")
-      expect(p9[:reason_html].to_s).to include(routes.my_growth_goals_organization_company_teammate_path(organization, hub_tm))
-      expect(p9[:reason_html].to_s).to include("3 active goals")
+      expect(p9[:data_kind]).to eq(:no_active_goals_success)
+      expect(p9[:data]).to eq(active_goal_count: 3)
+
+      renderer = OneOnOne::PriorityRenderer.new(priority: p9, organization: organization, teammate: hub_tm)
+      expect(renderer.reason_plain).to eq("There are 3 active goals in progress.")
+      expect(renderer.reason_html.to_s).to include(routes.my_growth_goals_organization_company_teammate_path(organization, hub_tm))
+      expect(renderer.reason_html.to_s).to include("3 active goals")
     end
   end
 end

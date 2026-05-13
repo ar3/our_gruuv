@@ -50,6 +50,7 @@
 
   .carousel-inner
     - priorities.each_with_index do |priority, idx|
+      - renderer = OneOnOne::PriorityRenderer.new(priority: priority, organization: organization, teammate: @teammate)
       .carousel-item{class: (idx == first_attention_index ? "active" : nil)}
         .card{class: (priority[:needs_attention] ? "border-warning" : (priority[:not_applicable] ? "border-secondary" : "border-success"))}
           .card-body
@@ -64,10 +65,16 @@
 
             .mb-2.p-3.rounded.bg-light.border-start.border-5.border-secondary
               %h6.mb-0.fw-semibold= priority[:title]
-            - if priority[:reason_html].present? || priority[:reason].present?
+            - rendered_lines = renderer.reason_lines
+            - rendered_reason = renderer.reason_html
+            - if rendered_lines.any? || rendered_reason.present? || priority[:reason].present?
               - reason_class = priority[:needs_attention] ? "text-dark" : "text-success"
-              - if priority[:reason_html].present?
-                %p.mb-2{class: reason_class}!= priority[:reason_html]
+              - if rendered_lines.any?
+                %ul.mb-2.ps-3{class: reason_class}
+                  - rendered_lines.each do |line|
+                    %li.mb-1= line
+              - elsif rendered_reason.present?
+                %p.mb-2{class: reason_class}!= rendered_reason
               - elsif priority[:reason].is_a?(Array)
                 %ul.mb-2.ps-3{class: reason_class}
                   - priority[:reason].each do |line|
@@ -75,13 +82,33 @@
               - else
                 %p.mb-2{class: reason_class}= priority[:reason]
 
-            - if priority[:concrete_items].any?
+            - if renderer.items.any?
+              %ul.mb-2.ps-3
+                - renderer.items.each do |item|
+                  - case renderer.items_render_mode
+                  - when :html
+                    %li!= renderer.item_html(item)
+                  - when :link
+                    - attrs = renderer.item_label_url(item)
+                    %li
+                      - if attrs.is_a?(Hash) && attrs[:url].present?
+                        - link_opts = {}
+                        - if attrs[:url].to_s.start_with?("http")
+                          - link_opts[:target] = "_blank"
+                          - link_opts[:rel] = "noopener noreferrer"
+                        .d-flex.flex-wrap.align-items-center.column-gap-2.row-gap-1
+                          = link_to attrs[:label], attrs[:url], **link_opts
+                          - if attrs[:add_goal_url].present? && attrs[:add_goal_label].present?
+                            = link_to attrs[:add_goal_label], attrs[:add_goal_url], class: "btn btn-sm btn-outline-secondary"
+                      - elsif attrs.is_a?(Hash)
+                        = attrs[:label]
+                      - else
+                        = attrs
+            - elsif priority[:concrete_items].any?
               %ul.mb-2.ps-3
                 - priority[:concrete_items].each do |item|
                   %li
-                    - if item.is_a?(Hash) && item[:label_html].present?
-                      != item[:label_html]
-                    - elsif item.is_a?(Hash) && item[:url].present?
+                    - if item.is_a?(Hash) && item[:url].present?
                       - link_opts = {}
                       - if item[:url].to_s.start_with?("http")
                         - link_opts[:target] = "_blank"

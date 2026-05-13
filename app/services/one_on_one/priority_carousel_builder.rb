@@ -92,9 +92,11 @@ module OneOnOne
         attention_priority(
           ASANA_URGENT_TASKS_TITLE,
           "There are tasks overdue or due in the next week.",
-          tasks.map { |item| format_task_link_item(item) },
+          [],
           cta_kind: :sync_anchor,
-          cta_label: "Open urgent Asana tasks"
+          cta_label: "Open urgent Asana tasks",
+          data_kind: :asana_tasks_attention,
+          items: tasks.map { |task| { task: task, project_id: asana_project_id_for_links } }
         )
       else
         success_priority(
@@ -117,7 +119,7 @@ module OneOnOne
         )
       end
 
-      concrete_items = rows.first(3).map { |row| blurred_or_obscured_row_to_link_item(row) }
+      item_data = rows.first(3).map { |row| blurred_or_obscured_item_data(row) }
 
       title = "Are any position, assignment, or aspiration check-ins blurred or obscured?"
       if rows.any?
@@ -126,11 +128,13 @@ module OneOnOne
         attention_priority(
           title,
           nil,
-          concrete_items,
+          [],
           total_item_count: rows.count,
           cta_kind: :open_top_prioritized_check_in,
           cta_label: "Open top check-in",
-          cta_path: top_check_in_path
+          cta_path: top_check_in_path,
+          data_kind: :blurred_or_obscured_attention,
+          items: item_data
         )
       else
         success_priority(
@@ -197,33 +201,13 @@ module OneOnOne
       rows
     end
 
-    def blurred_or_obscured_row_to_link_item(row)
-      label_parts = [
-        blurred_or_obscured_kind_prefix(row[:kind]),
-        row[:display_title],
-        "(Last check-in: #{blurred_or_obscured_last_check_in_words(row[:finalized_at])})"
-      ].join(" ")
-
+    def blurred_or_obscured_item_data(row)
       {
-        label: label_parts,
-        url: blurred_or_obscured_check_in_path(row)
+        kind: row[:kind],
+        record_id: row[:record_id],
+        display_title: row[:display_title],
+        finalized_at: row[:finalized_at]
       }
-    end
-
-    def blurred_or_obscured_kind_prefix(kind)
-      case kind
-      when :aspiration then "Aspiration:"
-      when :assignment then "Assignment:"
-      when :position then "Position:"
-      else "Check-in:"
-      end
-    end
-
-    def blurred_or_obscured_last_check_in_words(completed_at)
-      return "never" if completed_at.blank?
-
-      h = ApplicationController.helpers
-      "#{h.time_ago_in_words(completed_at)} ago"
     end
 
     def blurred_or_obscured_check_in_path(row)
@@ -283,22 +267,26 @@ module OneOnOne
         attention_priority(
           title,
           "Whenever we are working to meet expectations, we should have goals that help give clarity as to what has to be done in order to be meeting expectations",
-          gaps.map { |row| wtm_gap_without_goals_item(row[:associable]) },
+          [],
           cta_kind: :check_ins_review_most_recent,
           cta_label: "Check-in status",
-          cta_associable: nil
+          cta_associable: nil,
+          data_kind: :wtm_gap_without_goals_attention,
+          items: gaps.map { |row| { associable: row[:associable] } }
         )
       elsif all_wtm.any?
-        concrete = all_wtm.map { |row| wtm_working_to_meet_with_goals_item(row[:associable]) }
+        item_data = all_wtm.map { |row| wtm_working_to_meet_with_goals_item_data(row[:associable]) }
         success_priority(
           title,
           nil,
-          concrete,
+          [],
           display_item_limit: 5,
-          total_item_count: concrete.size
+          total_item_count: item_data.size,
+          data_kind: :wtm_with_goals_success,
+          items: item_data
         )
       else
-        reason_lines = wtm_all_clear_reason_lines(
+        data = wtm_all_clear_success_data(
           assignment_ids: assignment_ids,
           latest_assignment_check_ins: latest_assignment_check_ins,
           latest_aspiration_check_ins: latest_aspiration_check_ins
@@ -306,11 +294,13 @@ module OneOnOne
         review_path = review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
         success_priority(
           title,
-          reason_lines,
+          nil,
           [],
           cta_kind: :check_ins_review_most_recent,
           cta_label: "More details",
-          cta_path: review_path
+          cta_path: review_path,
+          data_kind: :wtm_all_clear_success,
+          data: data
         )
       end
     end
@@ -324,58 +314,26 @@ module OneOnOne
         .count(:goal_id)
     end
 
-    def wtm_working_to_meet_with_goals_item(associable)
-      n = active_goal_count_for_teammate_associable(associable)
-      h = ApplicationController.helpers
-      goal_phrase = h.pluralize(n, "active goal")
-      label =
-        case associable
-        when Assignment
-          "Assignment: #{associable.title} (#{goal_phrase})"
-        when Aspiration
-          "Aspiration: #{associable.name} (#{goal_phrase})"
-        else
-          raise ArgumentError, "Unsupported associable for WTM with goals item: #{associable.class.name}"
-        end
-
-      url =
-        case associable
-        when Assignment
-          organization_teammate_assignment_path(@organization, @teammate, associable)
-        when Aspiration
-          organization_teammate_aspiration_path(@organization, @teammate, associable)
-        end
-
-      { label: label, url: url }
+    def wtm_working_to_meet_with_goals_item_data(associable)
+      {
+        associable: associable,
+        active_goal_count: active_goal_count_for_teammate_associable(associable)
+      }
     end
 
-    def wtm_all_clear_reason_lines(assignment_ids:, latest_assignment_check_ins:, latest_aspiration_check_ins:)
-      casual = teammate_casual_name
-      h = ApplicationController.helpers
+    def wtm_all_clear_success_data(assignment_ids:, latest_assignment_check_ins:, latest_aspiration_check_ins:)
       x = assignment_ids.count { |aid| check_in_official_meeting_or_exceeding?(latest_assignment_check_ins[aid]) }
       aspiration_ids = Aspiration.within_hierarchy(@organization).pluck(:id)
       y = aspiration_ids.count { |aid| check_in_official_meeting_or_exceeding?(latest_aspiration_check_ins[aid]) }
-
-      expectations_line =
-        "#{casual} is meeting or exceeding expectations for #{h.pluralize(x, 'required and active assignment')} " \
-          "and #{h.pluralize(y, 'aspirational value')}."
-
       assignments_missing = assignment_ids.count { |aid| latest_assignment_check_ins[aid].blank? }
       aspirations_missing = aspiration_ids.count { |aid| latest_aspiration_check_ins[aid].blank? }
 
-      check_ins_line =
-        if assignments_missing.zero? && aspirations_missing.zero?
-          "#{casual} has had all relevant check-ins."
-        elsif assignments_missing.positive? && aspirations_missing.positive?
-          "#{casual} has not had a check-in on #{h.pluralize(assignments_missing, 'required or active assignment')} " \
-            "and #{h.pluralize(aspirations_missing, 'aspirational value')}."
-        elsif assignments_missing.positive?
-          "#{casual} has not had a check-in on #{h.pluralize(assignments_missing, 'required or active assignment')}."
-        else
-          "#{casual} has not had a check-in on #{h.pluralize(aspirations_missing, 'aspirational value')}."
-        end
-
-      [expectations_line, check_ins_line]
+      {
+        x: x,
+        y: y,
+        assignments_missing: assignments_missing,
+        aspirations_missing: aspirations_missing
+      }
     end
 
     def check_in_official_meeting_or_exceeding?(check_in)
@@ -393,85 +351,6 @@ module OneOnOne
       end.downcase
     end
 
-    def wtm_gap_without_goals_item(associable)
-      label =
-        case associable
-        when Assignment
-          "Assignment: #{associable.title}"
-        when Aspiration
-          "Aspiration: #{associable.name}"
-        else
-          raise ArgumentError, "Unsupported associable for WTM gap item: #{associable.class.name}"
-        end
-
-      lens_url =
-        case associable
-        when Assignment
-          organization_teammate_assignment_path(@organization, @teammate, associable)
-        when Aspiration
-          organization_teammate_aspiration_path(@organization, @teammate, associable)
-        end
-
-      initials = @teammate.person.max_two_initials.presence || "?"
-      kind_phrase = associable.is_a?(Assignment) ? "assignment" : "aspirational value"
-      add_goal_label = "Add goal for #{initials} + this #{kind_phrase}"
-
-      add_goal_url =
-        case associable
-        when Assignment
-          choose_manage_goals_organization_assignment_path(
-            @organization,
-            associable,
-            return_url: one_on_one_hub_return_path,
-            return_text: "Back to 1:1 Hub",
-            for_company_teammate_id: @teammate.id
-          )
-        when Aspiration
-          choose_manage_goals_organization_aspiration_path(
-            @organization,
-            associable,
-            return_url: one_on_one_hub_return_path,
-            return_text: "Back to 1:1 Hub",
-            for_company_teammate_id: @teammate.id
-          )
-        end
-
-      {
-        label: label,
-        url: lens_url,
-        add_goal_url: add_goal_url,
-        add_goal_label: add_goal_label
-      }
-    end
-
-    def one_on_one_hub_return_path
-      organization_company_teammate_one_on_one_link_path(@organization, @teammate)
-    end
-
-    def current_position_milestone_gap_item(row)
-      ability = row[:ability]
-      required = row[:required_level]
-      earned = row[:earned_level]
-      label = "Ability: #{ability.name} (need M#{required}, earned M#{earned})"
-      lens_url = organization_teammate_ability_path(@organization, @teammate, ability)
-      initials = @teammate.person.max_two_initials.presence || "?"
-      add_goal_label = "Add goal for #{initials} + this ability"
-      add_goal_url = choose_manage_goals_organization_ability_path(
-        @organization,
-        ability,
-        return_url: one_on_one_hub_return_path,
-        return_text: "Back to 1:1 Hub",
-        for_company_teammate_id: @teammate.id
-      )
-
-      {
-        label: label,
-        url: lens_url,
-        add_goal_url: add_goal_url,
-        add_goal_label: add_goal_label
-      }
-    end
-
     def priority_current_position_milestone_gaps_without_goals
       rows = current_position_ability_gaps_without_goals
       rows.sort_by! do |row|
@@ -483,10 +362,12 @@ module OneOnOne
         attention_priority(
           title,
           "Whenever we are below the milestone target for an ability required by the current position, we should have goals that make the path to the required level concrete.",
-          rows.map { |row| current_position_milestone_gap_item(row) },
+          [],
           cta_kind: :my_growth_abilities,
           cta_label: "View all Ability Milestone Requirements",
-          cta_associable: nil
+          cta_associable: nil,
+          data_kind: :milestone_gap_attention,
+          items: rows.map { |row| { ability: row[:ability], required_level: row[:required_level], earned_level: row[:earned_level] } }
         )
       else
         success_priority(
@@ -527,41 +408,25 @@ module OneOnOne
             end
         )
       else
-        reason_html, reason_plain = observation_given_green_reason_html_and_plain(
-          given_relation: given_relation,
-          given_count: given_count
-        )
+        data = observation_given_success_data(given_relation: given_relation, given_count: given_count)
         success_priority(
           title,
           nil,
           [],
-          reason_html: reason_html,
-          reason_plain: reason_plain
+          data_kind: :observation_given_success,
+          data: data
         )
       end
     end
 
-    def observations_given_to_others_last_30d_relation
-      Observation
-        .where(company: @organization, observer: @teammate.person, deleted_at: nil)
-        .published
-        .not_journal
-        .where("observations.observed_at >= ?", @thirty_days_ago)
-        .joins(:observees)
-        .where.not(observees: { teammate_id: @teammate.id })
-        .distinct
-    end
-
-    def observation_given_green_reason_html_and_plain(given_relation:, given_count:)
-      h = ApplicationController.helpers
-      casual = teammate_casual_name
+    def observation_given_success_data(given_relation:, given_count:)
       obs_ids = given_relation.unscope(:order).distinct.pluck(:id)
       observee_teammate_ids = Observee
         .where(observation_id: obs_ids)
         .where.not(teammate_id: @teammate.id)
         .distinct
         .pluck(:teammate_id)
-      observee_teammates = CompanyTeammate
+      observees = CompanyTeammate
         .where(id: observee_teammate_ids, organization_id: @organization.id)
         .includes(:person)
         .to_a
@@ -579,96 +444,19 @@ module OneOnOne
 
         record
       end
-      rateables.uniq! { |r| [r.class.name, r.id] }
-      type_rank = { "Assignment" => 0, "Aspiration" => 1, "Ability" => 2 }.freeze
-      rateables.sort_by! do |r|
-        [type_rank[r.class.name] || 99, observation_given_rateable_sort_key(r)]
-      end
 
-      involving_url = organization_observations_path(@organization, involving_teammate_id: @teammate.id)
-      casual_link = h.link_to(casual, involving_url)
-
-      observee_links = observee_teammates.map do |tm|
-        h.link_to(tm.person.casual_name, internal_organization_company_teammate_path(@organization, tm))
-      end
-      rateable_links = rateables.map do |rateable|
-        h.link_to(observation_given_rateable_label(rateable), organization_rateable_path_for_priority(rateable))
-      end
-
-      ogos_phrase = h.pluralize(given_count, "published OGO")
-      observees_fragment = join_html_fragments_sentence(observee_links)
-      rateables_fragment = join_html_fragments_sentence(rateable_links)
-
-      reason_html =
-        casual_link +
-          " has given #{ogos_phrase}, to ".html_safe +
-          observees_fragment +
-          (rateable_links.any? ? ", about ".html_safe + rateables_fragment : "".html_safe) +
-          " in the last 30 days!!".html_safe
-
-      observee_names = observee_teammates.map { |tm| tm.person.casual_name }
-      rateable_names = rateables.map { |r| observation_given_rateable_label(r) }
-      reason_plain = +"#{casual} has given #{ogos_phrase}, to #{observee_names.to_sentence}"
-      reason_plain << ", about #{rateable_names.to_sentence}" if rateable_names.any?
-      reason_plain << " in the last 30 days!!"
-
-      [reason_html, reason_plain]
+      { given_count: given_count, observees: observees, rateables: rateables }
     end
 
-    def observation_given_rateable_sort_key(rateable)
-      case rateable
-      when Assignment
-        rateable.title.to_s.downcase
-      when Aspiration, Ability
-        rateable.name.to_s.downcase
-      else
-        ""
-      end
-    end
-
-    def observation_given_rateable_label(rateable)
-      case rateable
-      when Assignment
-        rateable.title.presence || "Assignment"
-      when Aspiration
-        rateable.name.presence || "Aspiration"
-      when Ability
-        rateable.name.presence || "Ability"
-      else
-        rateable.class.name
-      end
-    end
-
-    def organization_rateable_path_for_priority(rateable)
-      organization_rateable_path_for_org(@organization, rateable)
-    end
-
-    def organization_rateable_path_for_org(org, rateable)
-      case rateable
-      when Assignment
-        organization_assignment_path(org, rateable)
-      when Aspiration
-        organization_aspiration_path(org, rateable)
-      when Ability
-        organization_ability_path(org, rateable)
-      else
-        raise ArgumentError, "Unsupported rateable: #{rateable.class.name}"
-      end
-    end
-
-    def join_html_fragments_sentence(fragments)
-      frags = fragments.compact
-      return "".html_safe if frags.empty?
-
-      h = ApplicationController.helpers
-      case frags.size
-      when 1
-        frags.first
-      when 2
-        frags[0] + " and ".html_safe + frags[1]
-      else
-        h.safe_join(frags[0..-2], ", ".html_safe) + ", and ".html_safe + frags.last
-      end
+    def observations_given_to_others_last_30d_relation
+      Observation
+        .where(company: @organization, observer: @teammate.person, deleted_at: nil)
+        .published
+        .not_journal
+        .where("observations.observed_at >= ?", @thirty_days_ago)
+        .joins(:observees)
+        .where.not(observees: { teammate_id: @teammate.id })
+        .distinct
     end
 
     def priority_no_observation_received_30d
@@ -700,61 +488,37 @@ module OneOnOne
       else
         total = recent_received.size
         display_limit = 5
-        concrete = recent_received.first(display_limit).map do |obs|
-          { label_html: observation_received_success_line_html(obs) }
-        end
+        items = recent_received.first(display_limit).map { |obs| observation_received_item_data(obs) }
         success_priority(
           title,
           "#{total} Published non-journal observations were received in the last 30 days.",
-          concrete,
+          [],
           display_item_limit: display_limit,
-          total_item_count: total
+          total_item_count: total,
+          data_kind: :observation_received_success,
+          data: { total: total },
+          items: items
         )
       end
     end
 
-    def observation_received_success_line_html(observation)
-      h = ApplicationController.helpers
-      org = observation.company
-      observer = observation.observer
-      casual = observer.casual_name
-      observer_teammate = CompanyTeammate.find_by(organization_id: org.id, person_id: observer.id)
-      observer_fragment =
-        if observer_teammate
-          involving_href = organization_observations_path(org, involving_teammate_id: observer_teammate.id)
-          h.link_to(casual, involving_href)
-        else
-          ERB::Util.html_escape(casual)
-        end
-
-      date_str = observation.observed_at.to_date.strftime("%b %d")
-      observation_show_href = organization_observation_path(org, observation)
-      date_link = h.link_to(date_str, observation_show_href)
-
+    def observation_received_item_data(observation)
+      observer_teammate = CompanyTeammate.find_by(organization_id: observation.company_id, person_id: observation.observer_id)
       rateables = observation.observation_ratings.filter_map(&:rateable).select do |r|
         r.is_a?(Assignment) || r.is_a?(Aspiration) || r.is_a?(Ability)
       end
-      rateables.uniq! { |r| [r.class.name, r.id] }
-      type_rank = { "Assignment" => 0, "Aspiration" => 1, "Ability" => 2 }.freeze
-      rateables.sort_by! { |r| [type_rank[r.class.name] || 99, observation_given_rateable_sort_key(r)] }
-
-      about_suffix =
-        if rateables.any?
-          links = rateables.map do |rateable|
-            h.link_to(observation_given_rateable_label(rateable), organization_rateable_path_for_org(org, rateable))
-          end
-          " about: ".html_safe + join_html_fragments_sentence(links)
-        else
-          "".html_safe
-        end
-
-      observer_fragment + " on ".html_safe + date_link + about_suffix
+      {
+        kind: :received_observation,
+        observation: observation,
+        observer_teammate: observer_teammate,
+        rateables: rateables
+      }
     end
 
     def priority_no_wtm_observation_received_30d
-      rows = wtm_items_without_received_observations
+      item_data = wtm_items_without_received_observations
       title = "Have all working-to-meet assignments and aspirational values received an observation in the last 30 days?"
-      if rows.any?
+      if item_data.any?
         feedback_new_path = new_organization_feedback_request_path(
           @organization,
           subject_of_feedback_teammate_id: @teammate.id
@@ -762,12 +526,14 @@ module OneOnOne
         attention_priority(
           title,
           "At least one working-to-meet assignment/aspiration has no published non-journal observation in the last 30 days.",
-          rows,
-          total_item_count: rows.size,
+          [],
+          total_item_count: item_data.size,
           display_item_limit: 5,
           cta_kind: :new_feedback_request,
           cta_label: "Request feedback about #{teammate_casual_name}",
-          cta_path: feedback_new_path
+          cta_path: feedback_new_path,
+          data_kind: :wtm_missing_observation_attention,
+          items: item_data
         )
       else
         associables = wtm_all_working_to_meet_associables
@@ -779,26 +545,36 @@ module OneOnOne
         end
         x = associables.size
         y = covering_ids.size
-        involving_href = organization_observations_path(@organization, involving_teammate_id: @teammate.id)
-        reason_html, reason_plain = wtm_received_success_opening_reason_html_and_plain(
-          x: x,
-          y: y,
-          involving_href: involving_href
-        )
         display_limit = 5
-        concrete = area_rows.first(display_limit).map do |row|
-          { label_html: wtm_received_success_area_line_html(row[:associable], row[:observations]) }
-        end
+        items = area_rows.first(display_limit).map { |row| wtm_received_item_data(row) }
         success_priority(
           title,
           nil,
-          concrete,
+          [],
           display_item_limit: display_limit,
           total_item_count: area_rows.size,
-          reason_html: reason_html,
-          reason_plain: reason_plain
+          data_kind: :wtm_received_success,
+          data: { x: x, y: y },
+          items: items
         )
       end
+    end
+
+    def wtm_received_item_data(row)
+      observations = Array(row[:observations])
+      by_observer = observations.group_by(&:observer_id)
+      observers_with_observations = by_observer.keys.sort_by do |pid|
+        by_observer[pid].first.observer.casual_name.to_s.downcase
+      end.map do |pid|
+        obs_for_person = by_observer[pid]
+        { person: obs_for_person.first.observer, observations: obs_for_person }
+      end
+
+      {
+        kind: :wtm_area,
+        associable: row[:associable],
+        observers_with_observations: observers_with_observations
+      }
     end
 
     def wtm_all_working_to_meet_associables
@@ -839,71 +615,6 @@ module OneOnOne
       scope.distinct.order(observed_at: :desc).includes(:observer).to_a
     end
 
-    def wtm_received_success_opening_reason_html_and_plain(x:, y:, involving_href:)
-      h = ApplicationController.helpers
-      lead =
-        if x == 1
-          "1 Working-to-meet assignment/aspiration area has #{y} recent published "
-        else
-          "#{x} Working-to-meet assignment/aspiration areas have #{y} recent published "
-        end
-      reason_html = lead.html_safe + h.link_to("observations", involving_href) + ".".html_safe
-      reason_plain =
-        if x == 1
-          "1 Working-to-meet assignment/aspiration area has #{y} recent published observations."
-        else
-          "#{x} Working-to-meet assignment/aspiration areas have #{y} recent published observations."
-        end
-      [reason_html, reason_plain]
-    end
-
-    def wtm_received_success_area_line_html(associable, observations)
-      h = ApplicationController.helpers
-      org = @organization
-      lens_url =
-        case associable
-        when Assignment
-          organization_teammate_assignment_path(org, @teammate, associable)
-        when Aspiration
-          organization_teammate_aspiration_path(org, @teammate, associable)
-        else
-          return "".html_safe
-        end
-
-      name_fragment =
-        case associable
-        when Assignment
-          "Assignment: ".html_safe + h.link_to(associable.title, lens_url)
-        when Aspiration
-          "Aspiration: ".html_safe + h.link_to(associable.name, lens_url)
-        else
-          "".html_safe
-        end
-
-      return name_fragment if observations.blank?
-
-      by_observer = observations.group_by(&:observer_id)
-      observer_ids = by_observer.keys.sort_by do |pid|
-        by_observer[pid].first.observer.casual_name.to_s.downcase
-      end
-
-      observer_segments = observer_ids.filter_map do |pid|
-        obs_for_person = by_observer[pid]
-        person = obs_for_person.first.observer
-        next if person.blank?
-
-        casual = person.casual_name
-        ordered = obs_for_person.sort_by(&:observed_at)
-        number_links = ordered.each_with_index.map do |obs, idx|
-          h.link_to("[#{idx + 1}]", organization_observation_path(org, obs))
-        end
-        ERB::Util.html_escape("#{casual} ") + h.safe_join(number_links, ", ".html_safe)
-      end
-
-      observers_fragment = h.safe_join(observer_segments, "; ".html_safe)
-      name_fragment + " — ".html_safe + observers_fragment
-    end
-
     def priority_active_goals_without_check_in_this_week
       active_goals = Goal.active.where(owner: @teammate, deleted_at: nil).includes(:goal_check_ins).to_a
       stale = active_goals.select do |goal|
@@ -914,17 +625,16 @@ module OneOnOne
 
       title = "Do all active goals have a check-in for this week?"
       if stale.any?
-        concrete = stale.map do |goal|
-          { label: goal.title, url: organization_goal_path(@organization, goal) }
-        end
         attention_priority(
           title,
           "Goals can drift to the background if we don't check in on them. Let's take the time to state how confident we are in hitting these goals:",
-          concrete,
+          [],
           total_item_count: stale.size,
           display_item_limit: 5,
           cta_kind: :my_growth_goals,
-          cta_label: "Grow by goals"
+          cta_label: "Grow by goals",
+          data_kind: :stale_goals_attention,
+          items: stale.map { |goal| { goal: goal } }
         )
       else
         success_priority(
@@ -954,9 +664,11 @@ module OneOnOne
         attention_priority(
           REMAINING_ASANA_TASKS_TITLE,
           "There are still incomplete tasks in the linked Asana project.",
-          remaining.map { |item| format_task_link_item(item) },
+          [],
           cta_kind: :sync_anchor,
-          cta_label: "Open remaining tasks"
+          cta_label: "Open remaining tasks",
+          data_kind: :asana_tasks_attention,
+          items: remaining.map { |task| { task: task, project_id: asana_project_id_for_links } }
         )
       else
         success_priority(
@@ -979,32 +691,12 @@ module OneOnOne
           cta_label: "Create goals"
         )
       else
-        h = ApplicationController.helpers
-        goals_href = my_growth_goals_organization_company_teammate_path(@organization, @teammate)
-        link_label =
-          if active_goal_count == 1
-            "1 active goal"
-          else
-            "#{active_goal_count} active goals"
-          end
-        reason_html =
-          if active_goal_count == 1
-            "There is ".html_safe + h.link_to(link_label, goals_href) + " in progress.".html_safe
-          else
-            "There are ".html_safe + h.link_to(link_label, goals_href) + " in progress.".html_safe
-          end
-        reason_plain =
-          if active_goal_count == 1
-            "There is 1 active goal in progress."
-          else
-            "There are #{active_goal_count} active goals in progress."
-          end
         success_priority(
           title,
           nil,
           [],
-          reason_html: reason_html,
-          reason_plain: reason_plain
+          data_kind: :no_active_goals_success,
+          data: { active_goal_count: active_goal_count }
         )
       end
     end
@@ -1016,10 +708,12 @@ module OneOnOne
         attention_priority(
           title,
           "Whenever a required assignment is unique to the target position and still has no active goal, we should have goals that make the path to meeting expectations in that assignment concrete.",
-          rows.map { |row| wtm_gap_without_goals_item(row[:assignment]) },
+          [],
           cta_kind: :my_growth_experiences,
           cta_label: "Grow by experiences",
-          cta_associable: nil
+          cta_associable: nil,
+          data_kind: :wtm_gap_without_goals_attention,
+          items: rows.map { |row| { associable: row[:assignment] } }
         )
       else
         success_priority(
@@ -1041,10 +735,12 @@ module OneOnOne
         attention_priority(
           title,
           "Whenever we are below the milestone target for an ability unique to the target position, we should have goals that make the path to the required level concrete.",
-          rows.map { |row| current_position_milestone_gap_item(row) },
+          [],
           cta_kind: :my_growth_abilities,
           cta_label: "View all Ability Milestone Requirements",
-          cta_associable: nil
+          cta_associable: nil,
+          data_kind: :milestone_gap_attention,
+          items: rows.map { |row| { ability: row[:ability], required_level: row[:required_level], earned_level: row[:earned_level] } }
         )
       else
         success_priority(
@@ -1127,12 +823,6 @@ module OneOnOne
       end.sort_by { |row| row[:ability].name.downcase }
     end
 
-    def wtm_missing_observation_list_item(label, url)
-      return label if url.blank?
-
-      { label: label, url: url }
-    end
-
     def wtm_items_without_received_observations
       latest_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:assignment_id)
       latest_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:aspiration_id)
@@ -1163,22 +853,28 @@ module OneOnOne
       latest_assignment_check_ins.each_value do |check_in|
         next unless check_in.official_rating == "working_to_meet"
         next if recent_assignment_ids.include?(check_in.assignment_id)
+
         assignment = Assignment.find_by(id: check_in.assignment_id)
-        label = "Assignment: #{assignment&.title || "Assignment ##{check_in.assignment_id}"}"
-        url = assignment.present? ? organization_teammate_assignment_path(@organization, @teammate, assignment) : nil
-        rows << wtm_missing_observation_list_item(label, url)
+        rows << { kind: :assignment, record: assignment, fallback_id: check_in.assignment_id }
       end
 
       latest_aspiration_check_ins.each_value do |check_in|
         next unless check_in.official_rating == "working_to_meet"
         next if recent_aspiration_ids.include?(check_in.aspiration_id)
+
         aspiration = Aspiration.find_by(id: check_in.aspiration_id)
-        label = "Aspiration: #{aspiration&.name || "Aspiration ##{check_in.aspiration_id}"}"
-        url = aspiration.present? ? organization_teammate_aspiration_path(@organization, @teammate, aspiration) : nil
-        rows << wtm_missing_observation_list_item(label, url)
+        rows << { kind: :aspiration, record: aspiration, fallback_id: check_in.aspiration_id }
       end
 
-      rows.sort_by { |row| row[:label].downcase }
+      rows.sort_by { |row| wtm_missing_observation_sort_key(row) }
+    end
+
+    def wtm_missing_observation_sort_key(row)
+      case row[:kind]
+      when :assignment then "assignment:#{(row[:record]&.title || "Assignment ##{row[:fallback_id]}").downcase}"
+      when :aspiration then "aspiration:#{(row[:record]&.name || "Aspiration ##{row[:fallback_id]}").downcase}"
+      else ""
+      end
     end
 
     def recent_received_non_journal_observations
@@ -1380,60 +1076,51 @@ module OneOnOne
       nil
     end
 
-    def format_task_item(item)
-      due_on = parse_due_on(item["due_on"])
-      due_label = due_on ? " (due #{due_on.strftime('%b %d')})" : ""
-      "#{item["name"]}#{due_label}"
-    end
-
-    def format_task_link_item(item)
-      label = format_task_item(item)
-      gid = item["gid"].presence
-      return label if gid.blank?
-
-      { label: label, url: AsanaService.task_url(gid, asana_project_id_for_links) }
-    end
-
     def asana_project_id_for_links
       @one_on_one_link.asana_project_id
     end
 
-    def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil, total_item_count: nil, cta_path: nil, display_item_limit: nil)
-      items = concrete_items.compact
-      total = total_item_count.presence || items.count
+    def attention_priority(title, reason, concrete_items, cta_kind:, cta_label:, cta_associable: nil, total_item_count: nil, cta_path: nil, display_item_limit: nil, data_kind: nil, data: nil, items: nil)
+      legacy_items = concrete_items.compact
+      total = total_item_count.presence || legacy_items.count
       limit = display_item_limit.presence || 3
-      {
+      row = {
         title: title,
         needs_attention: true,
         not_applicable: false,
         reason: reason,
-        concrete_items: items.first(limit),
+        concrete_items: legacy_items.first(limit),
         remaining_count: [total - limit, 0].max,
         cta_kind: cta_kind,
         cta_label: cta_label,
         cta_associable: cta_associable,
         cta_path: cta_path
       }
+      row[:data_kind] = data_kind if data_kind
+      row[:data] = data if data
+      row[:items] = items.first(limit) if items.is_a?(Array)
+      row
     end
 
-    def success_priority(title, reason, concrete_items, display_item_limit: nil, total_item_count: nil, cta_kind: nil, cta_label: nil, cta_path: nil, cta_associable: nil, reason_html: nil, reason_plain: nil)
-      items = concrete_items.compact
+    def success_priority(title, reason, concrete_items, display_item_limit: nil, total_item_count: nil, cta_kind: nil, cta_label: nil, cta_path: nil, cta_associable: nil, data_kind: nil, data: nil, items: nil)
+      legacy_items = concrete_items.compact
       limit = display_item_limit.presence || 3
-      total = total_item_count.presence || items.count
+      total = total_item_count.presence || legacy_items.count
       row = {
         title: title,
         needs_attention: false,
         not_applicable: false,
         reason: reason,
-        concrete_items: items.first(limit),
+        concrete_items: legacy_items.first(limit),
         remaining_count: [total - limit, 0].max,
         cta_kind: cta_kind,
         cta_label: cta_label,
         cta_associable: cta_associable,
         cta_path: cta_path
       }
-      row[:reason_html] = reason_html if reason_html.present?
-      row[:reason_plain] = reason_plain if reason_plain.present?
+      row[:data_kind] = data_kind if data_kind
+      row[:data] = data if data
+      row[:items] = items.first(limit) if items.is_a?(Array)
       row
     end
 
