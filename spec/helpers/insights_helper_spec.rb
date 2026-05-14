@@ -188,4 +188,26 @@ RSpec.describe InsightsHelper, type: :helper do
       expect(data).to eq([0])
     end
   end
+
+  describe '#og_scorecard_threshold_popover_inner_html' do
+    it 'returns a not-configured message when both thresholds are nil' do
+      row = { yellow: nil, green: nil, direction: :more }
+      html = helper.og_scorecard_threshold_popover_inner_html(row)
+      expect(html).to include('not configured')
+    end
+
+    it 'uses more-is-better wording when direction is not :less' do
+      row = { yellow: 2, green: 10, direction: :more }
+      html = helper.og_scorecard_threshold_popover_inner_html(row)
+      expect(html).to include('below the yellow')
+      expect(html).to include('at or above the green')
+    end
+
+    it 'uses less-is-better wording when direction is :less' do
+      row = { yellow: 100, green: 20, direction: :less }
+      html = helper.og_scorecard_threshold_popover_inner_html(row)
+      expect(html).to include('above the yellow')
+      expect(html).to include('at or below the green')
+    end
+  end
 end

@@ -560,6 +560,7 @@ Rails.application.routes.draw do
     # Insights analytics
     namespace :insights, module: :organizations do
       get '/', to: 'insights#index'
+      get 'og_scorecard', to: 'insights#og_scorecard'
       get 'observations', to: 'insights#observations'
       get 'feedback_requests', to: 'insights#feedback_requests'
       get 'prompts/download', to: 'insights#prompts_download'

@@ -1539,3 +1539,38 @@ body:has(.vertical-nav.open) .floating-toggle {
     }
   }
 }
+
+// Insights: OG Scorecard — keep first column visible when scrolling wide week range
+.og-scorecard-table {
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--bs-body-bg);
+    box-shadow: 1px 0 0 var(--bs-border-color);
+  }
+
+  thead .sticky-col,
+  tbody tr.table-secondary .sticky-col {
+    background-color: var(--bs-secondary-bg);
+  }
+}
+
+// OG Scorecard: optional threshold columns + per-row threshold popovers
+.og-scorecard--thresholds-hidden {
+  .og-scorecard-th-col {
+    display: none !important;
+  }
+}
+
+.og-scorecard-threshold-popover-btn {
+  display: none !important;
+}
+
+.og-scorecard--thresholds-hidden .og-scorecard-threshold-popover-btn {
+  display: inline-flex !important;
+}
+
+.popover.og-scorecard-threshold-popover {
+  max-width: min(22rem, 90vw);
+}

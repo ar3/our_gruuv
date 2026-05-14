@@ -24,6 +24,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
       get organization_insights_path(organization)
       expect(response.body).to include('Insights')
       expect(response.body).to include('Charts and reports')
+      expect(response.body).to include('OG Scorecard')
     end
   end
 
@@ -94,6 +95,33 @@ RSpec.describe 'Organizations::Insights', type: :request do
     it 'returns success with timeframe=year' do
       get organization_insights_observations_path(organization, timeframe: 'year')
       expect(response).to have_http_status(:success)
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/insights/og_scorecard' do
+    it 'returns http success' do
+      get organization_insights_og_scorecard_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders scorecard table, timeframe controls, and column headers' do
+      get organization_insights_og_scorecard_path(organization)
+      expect(response.body).to include('Insights: OG Scorecard')
+      expect(response.body).to include('Last 6-week average')
+      expect(response.body).to include('Yellow threshold')
+      expect(response.body).to include('Green threshold')
+      expect(response.body).to include('More or less is better')
+      expect(response.body).to include('Teammates')
+      expect(response.body).to include('Observations')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+      expect(response.body).to include('Custom')
+      expect(response.body).to include('Show Yellow / Green thresholds and')
+      expect(response.body).to include('More or less is better')
+      expect(response.body).to include('in the table')
+      expect(response.body).to include('og-scorecard--thresholds-hidden')
+      expect(response.body).to match(/data-controller=["']og-scorecard-thresholds["']/)
     end
   end
 

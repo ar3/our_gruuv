@@ -7,6 +7,23 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @insight_links = build_insight_links
   end
 
+  def og_scorecard
+    authorize company, :view_observations?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
+    week_starts_asc = og_scorecard_week_starts(chart_range)
+    @week_labels = week_starts_asc.reverse.map { |d| d.strftime('%b %d, %Y') }
+    @scorecard = Insights::OgScorecardBuilder.new(
+      company: company,
+      week_starts: week_starts_asc,
+      chart_range: chart_range
+    ).call
+  end
+
   def seats_titles_positions
     authorize company, :view_seats?
     
@@ -304,8 +321,15 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
   private
 
+  def og_scorecard_week_starts(chart_range)
+    start_date = chart_range.begin.to_date
+    end_date = chart_range.end.to_date
+    (start_date..end_date).map { |d| d.beginning_of_week(:monday) }.uniq.sort
+  end
+
   def build_insight_links
     links = []
+    links << { label: 'OG Scorecard', path: organization_insights_og_scorecard_path(organization) } if policy(company).view_observations?
     links << { label: 'Observations', path: organization_insights_observations_path(organization) } if policy(company).view_observations?
     links << { label: 'Who is doing what', path: organization_insights_who_is_doing_what_path(organization) } if policy(company).view_observations?
     links << { label: 'Feedback Requests', path: organization_insights_feedback_requests_path(organization) } if policy(company).view_feedback_requests?

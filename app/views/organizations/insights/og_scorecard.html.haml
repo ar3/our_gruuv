@@ -1,0 +1,108 @@
+- content_for :title, "Insights: OG Scorecard"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Insights", url: organization_insights_path(@organization) }, { label: "OG Scorecard", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-bar-chart-line.me-2
+      Insights: OG Scorecard
+      %span.d-inline-flex.align-items-center.ms-2{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "Weekly metrics and targets. Click for definitions and how to read this table."}
+        %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#ogScorecardPageInfo", "aria-expanded" => "false", "aria-controls" => "ogScorecardPageInfo", "aria-label" => "Show page explanation"}
+          %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
+
+.collapse.mb-4#ogScorecardPageInfo
+  .alert.alert-info.mb-0
+    %h5.fw-semibold.mb-2 Ultimate goal
+    %p.mb-2
+      Give leaders a single place to scan how the organization is doing week over week on a small set of core metrics (teammates and observations to start), with room to add thresholds later.
+
+    %h5.fw-semibold.mb-2 How weeks and averages work
+    %ul.mb-2
+      %li
+        %strong Week columns
+        read left to right from newest to oldest; each week is Monday through Sunday, and the column label is the Monday that starts that week.
+      %li
+        %strong Last 6-week average
+        is the mean of the six most recent weeks in the selected range (the leftmost week columns), or all weeks if the range has fewer than six.
+      %li
+        Use the switch below the period line to show or hide the Yellow and Green threshold columns and the “More or less is better” column. When those are hidden, each metric row has an info icon that explains how red, yellow, and green would map to the thresholds (once values are configured).
+
+    %h5.fw-semibold.mb-2 Metric definitions (initial set)
+    %ul.mb-2
+      %li
+        %strong Active teammates (weekly value):
+        count of teammates with a hire date who were still employed at the end of that week (Sunday), using the same organization scope as other Insights views.
+      %li
+        %strong Published an OGO:
+        an observation that is published and not deleted; the week column is based on
+        %code published_at
+        \.
+      %li
+        %strong Unique observees:
+        distinct teammates named on a published OGO in that week (again by
+        %code published_at
+        ).
+
+    %h5.fw-semibold.mb-2 Example row
+    %p.mb-0.text-muted
+      Under Observations, “Number of unique teammates that published an OGO” might show 8, 3, 5 reading left to right (newest to oldest); the last 6-week average summarizes the six most recent of those weeks. Yellow and green thresholds will appear once they are configured.
+
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_og_scorecard_path(@organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-4'
+
+%p.text-muted.small.mb-2
+  Period: #{@chart_title_period}
+
+.og-scorecard-scope.og-scorecard--thresholds-hidden{data: { controller: 'og-scorecard-thresholds' }}
+  .form-check.form-switch.mb-3
+    %input#og_scorecard_show_thresholds.form-check-input{type: 'checkbox', role: 'switch', data: { 'og-scorecard-thresholds-target': 'toggle', action: 'change->og-scorecard-thresholds#thresholdsToggled' }}
+    %label.form-check-label{for: 'og_scorecard_show_thresholds'}
+      Show Yellow / Green thresholds and “More or less is better” in the table
+
+  - @scorecard[:groups].each do |group|
+    - group[:rows].each do |row|
+      .d-none.og-scorecard-popover-source{id: "og-scorecard-pop-#{row[:key]}"}
+        = og_scorecard_threshold_popover_inner_html(row)
+
+  .table-responsive.border.rounded.shadow-sm
+    %table.table.table-sm.table-bordered.align-middle.mb-0.text-nowrap.og-scorecard-table
+      %thead.table-light
+        %tr
+          %th.sticky-col{scope: "col"} Metric
+          %th.text-end{scope: "col"} Last 6-week average
+          %th.text-end.og-scorecard-th-col{scope: "col"} Yellow threshold
+          %th.text-end.og-scorecard-th-col{scope: "col"} Green threshold
+          %th.og-scorecard-th-col{scope: "col"} More or less is better
+          - @week_labels.each do |label|
+            %th.text-end{scope: "col"}= label
+      %tbody
+        - @scorecard[:groups].each do |group|
+          %tr.table-secondary
+            %td.sticky-col.fw-semibold{colspan: 5 + @week_labels.size}= group[:title]
+          - group[:rows].each do |row|
+            %tr
+              %td.sticky-col
+                .d-flex.align-items-start.gap-1
+                  %span.flex-grow-1.text-wrap= row[:label]
+                  %button.btn.btn-link.p-0.text-body.og-scorecard-threshold-popover-btn.flex-shrink-0.align-self-start{type: 'button', data: { og_scorecard_popover_button: true, og_scorecard_popover_source_id: "og-scorecard-pop-#{row[:key]}" }, 'aria-label': "How red, yellow, and green map to thresholds for this metric"}
+                    %i.bi.bi-info-circle
+              %td.text-end= row[:six_week_avg].nil? ? "—" : row[:six_week_avg]
+              %td.text-end.og-scorecard-th-col= row[:yellow].nil? ? "—" : row[:yellow]
+              %td.text-end.og-scorecard-th-col= row[:green].nil? ? "—" : row[:green]
+              %td.og-scorecard-th-col
+                - case row[:direction]
+                - when :more
+                  More is better
+                - when :less
+                  Less is better
+                - else
+                  —
+              - row[:weekly_values].reverse.each do |v|
+                %td.text-end= v

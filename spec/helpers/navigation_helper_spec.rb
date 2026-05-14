@@ -353,13 +353,13 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(insights_section[:icon]).to eq('bi-bar-chart-line')
       end
 
-      it 'has the expected Insights sub-items with Observations first and Check-ins Progress last' do
+      it 'has the expected Insights sub-items with OG Scorecard first and Check-ins Progress last' do
         structure = helper.navigation_structure
         insights_section = structure.find { |item| item[:label] == 'Insights' }
         items = insights_section[:items]
         
         labels = items.map { |item| item[:label] }
-        expect(labels.first).to eq('Observations')
+        expect(labels.first).to eq('OG Scorecard')
         expect(labels).to include('Who is doing what')
         expect(labels).to include('Seats, Titles, Positions')
         expect(labels).to include('Assignments')
