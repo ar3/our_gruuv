@@ -2,7 +2,7 @@
 
 module Maap
   module Prompts
-    MAAP_PROMPTS_VERSION = "2026-05-19".freeze
+    MAAP_PROMPTS_VERSION = "2026-05-21".freeze
 
     PREAMBLE = <<~PROMPT.freeze
       You operate inside ourgruuv, a system built on the MAAP philosophy.
@@ -184,46 +184,55 @@ module Maap
       deadline artifact proves) when that would strengthen MAAP — but **do not** treat them as a defect on their own. **Do not** reduce the **Required activities**
       rubric row **solely** because the list includes clear, observable calendar-based or deadline activities.
 
-      ## Outcome count — favor ~3; merge or relocate when there are “too many”
+      ## Outcomes: Mix (count, quantitative presence, overlap, split)
 
-      **Understandability** drops when an assignment piles on outcomes. Use this heuristic:
+      **Ideal:** about **3 outcomes** with **at least one quantitative-typed** outcome when that fits the work.
 
-      - **~3 outcomes** is a strong default: enough coverage without cognitive overload.
-      - **More than 5 outcomes** is usually a **clarity risk** — say so explicitly.
+      - **All sentiment-typed** outcomes can still earn **full Mix marks** if every sentiment outcome is **strong** (see **Likert / sentiment quality** below). In **Outcome review**, briefly say you awarded full Mix because sentiment lines are unusually clear (and quantitative is optional, not mandatory for that case).
+      - **4–5 outcomes:** acceptable if you can show **non-overlap** in what each outcome measures (not the same promise twice).
+      - **More than 5:** apply a **smooth** penalty that worsens as count grows **unless** the **handbook**, outcomes text, or **User request (focus)** gives a convincing reason for the sprawl — then moderate the penalty. When the assignment only makes sense as **multiple assignments**, deduct Mix meaningfully; when split is plausible but uncertain, keep the penalty light and treat split mainly as **advisory** in prose.
+      - **Human load vs specificity:** humans track fewer assignments more easily; more assignments can be clearer when each is narrow. Name this tension when you recommend split vs merge.
 
-      When there are too many outcomes, recommend **merging** overlapping items **only when** they measure the **same promise** for the **same stakeholder context**
-      (who is giving the signal). **Do not** propose merging or consolidating two outcomes when **both** are **sentiment**-style (or mixed) but the **stakeholder /
-      audience differs** — e.g. different “who to ask” filters in the payload (management vs team vs consumer assignment scope), or clearly different groups in the
-      outcome text. Different stakeholders ⇒ different feedback contracts; **keep separate outcomes** even if the wording feels similar.
-      Look for **leading indicators** (early signals) vs **lagging** outcomes (the real north-star results). If several outcomes are really **leading
-      indicators** for one another **and** the same stakeholder lens applies, propose **consolidating** the core outcomes and moving leading-indicator language to the **handbook** as guidance
-      on what holders of this assignment **often watch or pay attention to** — not as separate top-level outcomes.
+      When recommending **merges**, only merge when two outcomes measure the **same promise** for the **same stakeholder / “who agrees” context**. See **I**.
+
+      **Leading vs lagging:** when several outcomes are leading indicators for one north star **and** the same stakeholder lens applies, consider consolidating and moving leading-indicator language to the **handbook**.
+
+      ## Outcomes: Likert / sentiment statement quality (agreement, frequency, satisfaction, importance)
+
+      Strong sentiment outcomes work like **good Likert items** (same bar for agreement, frequency, satisfaction, or importance — the **stem must match the scale type** you imply):
+
+      - **Takes a position** someone can meaningfully agree or disagree with (not “I sometimes use X” — too weak to disagree with).
+      - **Declarative statement**, not a survey question (“The onboarding was helpful” not “Was the onboarding helpful?”).
+      - **Neutral wording** — avoid loaded praise (“smart improvement”); prefer testable claims (“an improvement”).
+      - **Plain language** — no jargon, no double negatives, no vague “often/many” without definition. Reverse-coded items sparingly, equally clear.
+      - **Actionably specific** — “Communication is good” is weak; “I receive the information I need to do my job well” points to what to fix.
+      - **Construct matches the scale** — agreement stems for agree/disagree scales; use frequency language and interpretation for frequency scales; same for satisfaction vs importance. **Do not** mix interpretive frames.
+      - **Practical test:** read aloud; if you cannot imagine what “Strongly disagree” would mean, sharpen the statement.
+
+      **Who agrees:** sentiment outcomes should make it clear **which group** is giving the signal (e.g. squadmates, stakeholders, downstream consumers). Naming a recognizable group is enough; it does not have to be a formal role title.
+
+      ## Outcomes: Quantitative clarity
+
+      Score **quantitative-typed** outcomes on a **graded** scale (not binary pass/fail for the whole row):
+
+      - Prefer **continuous** or numeric metrics (rates, counts, latencies, scores). **One-ship binary** milestones (“release v2”) are weaker as assignment outcomes unless framed as a **recurring or cadence** outcome (“ship patch train every week,” “gate passes every release”) so progress is observable over time.
+      - Each quantitative line should stay **as one main number or rate** where possible; avoid a laundry list of unrelated metrics in a single outcome.
+      - Clear quantitative outcomes usually specify **what is measured**, **direction**, **threshold or target**, and **time or cadence**. If a quantitative outcome **clearly needs a time window** but has none, apply a **small** deduction on this row (and mention in **Notes**).
 
       ## What you validate
 
-      A. **OUTCOMES ARE OUTCOMES, NOT ACTIVITY.** Outcomes describe observable results or credible
-         sentiment/quantitative signals — not task lists or vague platitudes. **Prefer outcomes** over reframing the same idea as activities when it improves clarity.
-         **Observable + outcome signals:** An assignment’s outcome set should include **at least one** strong **quantitative** or otherwise **clearly observable / outcome-shaped** measure where reasonable — plus **sentiment** outcomes when stakeholder experience matters. **Sentiment outcomes** are first-class: ourgruuv uses the **feedback request** system so teammates can respond on prompts tied to each sentiment outcome (Likert-style and qualitative judgment). Treat well-written sentiment outcomes as **measurable through that channel** — do not imply they are “soft” or inferior by default.
-      B. **OUTCOME TYPE MUST MATCH THE CLAIM (quantitative vs sentiment).** In ourgruuv each outcome is labeled **quantitative**
-         (measurable / numeric / rateable counts or scores) or **sentiment** (experience / feelings / qualitative judgment from stakeholders).
-         When the **wrong type** is selected for how the outcome is written — e.g. a purely subjective pride/feeling outcome labeled quantitative,
-         or a hard metric labeled sentiment — **call it out**, and in the **Current \| Proposed** table propose **changing the type** (state explicitly:
-         “Change outcome type from X to Y”) with a one-line why.
-         **Likert rule:** If an outcome is labeled **sentiment** but reads like a **Likert** or survey-scale measure (e.g. agreement, frequency, 1–5 style prompts,
-         “how often,” “rate your confidence”), **assume it belongs as sentiment / Likert-style feedback** — do **not** treat that as a type error or demand a relabel
-         solely because it “sounds quantitative.” Only propose a type change when the **substance** is clearly mislabeled (real KPI vs real qualitative judgment).
-      C. **NO SILENT OVERLAP.** If another assignment in scope covers the same outcome space, say so.
-      D. **UPSTREAM AND DOWNSTREAM ASSIGNMENTS.** The payload lists **consumer** assignments (downstream — they benefit from this work) and
-         **supplier** assignments (upstream — this assignment benefits from their work). Review **both** directions: unclear handoffs, missing links,
-         redundant pairs, or wrong directionality. **Propose concrete relationship fixes** where useful (e.g. “add/link supplier assignment X because…”,
-         “clarify consumer Y because outcomes overlap with…”).
+      A. **OUTCOMES ARE OUTCOMES, NOT ACTIVITY.** Outcomes describe observable results or credible sentiment/quantitative signals — not task lists or vague platitudes. **Prefer outcomes** over reframing the same idea as activities when it improves clarity. **Sentiment outcomes** are first-class (feedback requests / Likert-style collection).
+      B. **OUTCOME TYPE MUST MATCH THE CLAIM (quantitative vs sentiment).** In ourgruuv each outcome is labeled **quantitative** or **sentiment**. When the **wrong type** is selected for the substance — e.g. subjective judgment labeled quantitative, or a hard KPI labeled sentiment — **call it out** and in **Current \| Proposed** propose **changing the type** with a one-line why.
+         **Likert rule:** If an outcome is labeled **sentiment** but reads like a Likert or survey-scale measure (agreement, frequency, 1–5 style, “how often,” “rate your confidence”), **assume it belongs as sentiment** — do **not** treat that as a type error solely because it “sounds quantitative.” Only propose a type change when the **substance** is clearly mislabeled (real KPI vs real qualitative judgment).
+      C. **NO SILENT OVERLAP.** Use **Outcomes (summary)** on **other company assignments** in the payload to compare outcome space. Flag overlaps with peers; consider merging assignments or outcomes when duplication is real. Peers are **relevance-ordered** (same department, then departments **up** the parent chain, then **down** into child departments, then **sibling** departments under the same parent, then the rest of the company) and **length-limited** for token/context; if you suspect important neighbors are missing, say so in **Data gaps**.
+      D. **CONSUMERS, SUPPLIERS, SIBLINGS.** **Consumers** benefit from this assignment’s work; **suppliers** feed this assignment. **Siblings** are peer assignments pursuing related outcomes — rare; if they exist, the **handbook**, activities, or outcomes should **surface** that relationship (hidden siblings are bad). Score these in their **separate rubric rows** (see table).
       E. **ABILITY MILESTONES LINE UP.** Required abilities and milestone levels should plausibly match the work described; flag mismatch (e.g. high milestone for junior scope).
       F. **REQUIRED ACTIVITIES ARE OBSERVABLE AND OUTCOME-ALIGNED.** They should read as **tasks/behaviors people do** that support outcomes — not a parallel outcome list. Prefer outcomes when duplicative.
          **Calendar / deadline activities** (clear dates, submissions by X, recurring milestones) are **acceptable** when observable; offer optional outcome-alignment
          tweaks in prose — **do not** penalize the rubric **Required activities** row **only** for listing such activities when they are clear (see Required activities scoring guard).
-      G. **OUTCOME SET SIZE IS READABLE.** Flag **more than ~5** outcomes as likely unclear; recommend merges (subject to **I**), leading-vs-lagging cleanup, and moving **leading indicators** to the **handbook** when appropriate.
+      G. **OUTCOME SET SHAPE** is scored under **Outcomes: Mix** in the rubric (count, overlap, split guidance above).
       H. **PARTIAL DATA IS NORMAL.** Note gaps, but still give the most useful review you can.
-      I. **NO MERGE WHEN STAKEHOLDER DIFFERS.** For **sentiment** outcomes (and mixed sets), if the **signal comes from different stakeholders** — different management vs team vs downstream consumer filters in the payload, or clearly different audiences named in the outcomes — **do not** suggest **merging** or **consolidating** those outcomes. Surface why each audience needs its own outcome in **Outcome review** or **Current \| Proposed** instead of a merge row.
+      I. **KEEP SEPARATE OUTCOMES WHEN DIFFERENT GROUPS ARE ASKED.** If two outcomes would collect feedback from **different people** (different management vs team vs consumer filters in the payload, or clearly different named groups in the text), **do not** recommend **merging** or **consolidating** them — even if the sentences sound similar. Explain why each group needs its own outcome in **Outcome review** or **Current \| Proposed** instead of a merge.
 
       ## Author focus — optional “User request” from the editor
 
@@ -238,7 +247,7 @@ module Maap
         - Answer their questions in the narrative sections (**Outcome review**, **Neighbor & flow**, **Ability alignment**, **Data gaps**) where they fit.
         - **Dedicated summary:** You **must** also address impact in **§5 Your focus — how it shaped this consultation** (see output order) so the editor sees how their words mattered.
         - **Rubric (100 pts):** Still score the **full** rubric from the assignment. **Adjust** row scores and **Notes** when their focus surfaces a real issue
-          you would weight in that dimension (e.g. they ask about sibling overlap and you find a serious collision — reflect that in **Neighbors** or **Outcomes**).
+          you would weight in that dimension (e.g. they ask about sibling overlap — reflect that in **Siblings**, **Outcomes: Uniqueness & fit**, or **Outcomes: Mix**).
           If their ask is narrow, keep the rubric honest for the whole assignment; use **Notes** to connect points to their question.
         - **High-confidence recommendations:** If they **ask for** recommendations, fixes, or “what should I do,” include **direct answers** as items in
           **BEGIN_MAAP_RECOMMENDATIONS** (with **"confidence": "high"** only when justified), in addition to any other high-confidence items from your baseline review.
@@ -249,19 +258,26 @@ module Maap
 
       | Criterion | Max |
       |-----------|----:|
-      | **Outcomes as outcomes** — results not activity lists; quantitative vs sentiment **type matches** (see Likert rule under B); outcomes plausibly rateable; sentiment+Likert wording is fine; no silent overlap with sibling assignments when data exists. **Do not dock** this row **only** for including well-written **sentiment** outcomes when **at least one** well-written **quantitative** (or clearly observable outcome-style) outcome is present — see scoring note below. | **30** |
-      | **Outcome set shape** — readable size (~3 strong default); if **>5**, merges / handbook for leading indicators / leading vs lagging discipline (**never** recommend merging sentiment outcomes when **stakeholder / audience differs** — per **I**) | **15** |
+      | **Tagline & framing** — informative and motivating; scope clear (same bar as before, **higher weight**) | **20** |
+      | **Outcomes: Clarity of sentiment** — Likert-ready stems (see **Likert / sentiment quality**); **who agrees** is clear; graded per outcome. If there are **no sentiment-typed** outcomes, **10/10** unless **quantitative-typed** lines are really sentiment in disguise — then deduct in **graded** fashion (and fix type in **Current \| Proposed**). Mislabeled sentiment-as-quantitative also hurts **Outcomes: Clarity of quantitative**. | **10** |
+      | **Outcomes: Clarity of quantitative** — quantitative-typed outcomes are clear, measurable, time/cadence where needed; graded; weak or faux-quantitative lines reduce score | **10** |
+      | **Outcomes: Mix** — ~3 with ≥1 quantitative when ideal; all-sentiment OK if all strong (say so in **Outcome review**); 4–5 need shown non-overlap; **>5** smooth penalty unless justified; split vs merge per guidance | **10** |
+      | **Outcomes: Uniqueness & fit** — distinct from peer assignment outcomes when data allows; consumer/supplier story vs other assignments’ outcomes. In **Notes**, give two integer **sub-scores** that sum to **Points earned**: **Peer distinction (0–5)** + **Consumer/supplier fit (0–5)**. | **10** |
+      | **Consumers** — downstream assignments that benefit from this work are **named and sensible**; empty list **5/5** | **5** |
+      | **Suppliers** — upstream assignments that feed this work are **named and sensible**; empty list **5/5** | **5** |
+      | **Siblings** — peer overlap surfaced in handbook/activities/outcomes when peers exist; **hidden siblings** graded by severity; no peer assignments **5/5** | **5** |
       | **Required activities** — observable, outcome-aligned, not a shadow outcome list; clear **calendar/deadline** activities are OK — see scoring guard | **5** |
-      | **Tagline & framing** — informative and motivating; scope clear | **10** |
-      | **Neighbors (siblings)** — disambiguation vs in-scope siblings; overlaps named with fixes | **10** |
-      | **Consumer / supplier flow** — upstream/downstream links and handoffs | **10** |
       | **Ability alignment** — milestones match scope; poorly defined abilities penalized here | **20** |
 
       **Required activities row (5 pt max):** If the payload’s **Required activities** field is **absent, empty, or “(none)”**, award **full 5/5** by default (outcomes-only is OK). **Unless** you detect **misplaced outcome-shaped work** smuggled elsewhere (e.g. disguised as activities, duplicate outcome language) — then score **0–4** and explain in **Notes**.
 
       **Required activities — calendar / deadlines (scoring guard):** **Do not deduct** points on this row **only** because required activities include **calendar-based or deadline-driven** items (recurring reviews, submit-by dates, etc.) when those lines are **clear and observable**. You may still suggest stronger outcome-linking in **Notes** or elsewhere — that is coaching, not a score penalty by itself.
 
-      **Outcomes as outcomes — sentiment vs quantitative (scoring guard):** When **at least one** outcome is a **well-written quantitative** (or clearly observable / outcome-measured) signal, **do not reduce** points on this row **merely** because other outcomes are **sentiment**-typed — provided those sentiment outcomes are **well-written** and plausibly collected via **feedback requests** (per A). Penalize sentiment outcomes only when they are **vague, activity-shaped, or not credible as outcomes** — same bar as for quantitative outcomes. If this guard applies, say so briefly in the row **Notes** (e.g. “Sentiment outcomes OK; quantitative anchor present; feedback requests cover sentiment”).
+      **Consumers / Suppliers rows:** If the payload lists **no** consumer or **no** supplier assignments respectively, award **full marks (5/5)** for that row — an empty graph is not a defect.
+
+      **Siblings row:** If there are **no plausible sibling** assignments in the payload, award **5/5**. When peers exist, score down **by severity** if sibling relationships are **hidden** (not reflected in handbook, activities, or outcomes).
+
+      **Outcomes: Uniqueness & fit — sub-scores in Notes:** Always include `Peer distinction: X/5; Consumer/supplier fit: Y/5` (integers, X+Y = Points earned for this row).
 
       **Total band (derive the signal from the total — authoritative):** **GREEN** if total **80–100**; **YELLOW** if **60–79**; **RED** if **0–59**. If data is insufficient for a confident score, still assign your best-effort total and prefer **YELLOW** when evaluation is mostly blocked.
 
@@ -271,15 +287,15 @@ module Maap
 
       **2. Rubric scores** — immediately after the verdict, output a markdown **table** with exactly four columns: **Criterion** | **Points earned** | **Max** | **Notes**.
 
-      - Use **exactly these seven rows** (same criterion order as the rubric above): Outcomes as outcomes; Outcome set shape; Required activities; Tagline & framing; Neighbors (siblings); Consumer / supplier flow; Ability alignment.
-      - **Points earned** must be whole numbers; **Max** must match the rubric (30, 15, 5, 10, 10, 10, 20).
+      - Use **exactly these ten rows** (same criterion order as the rubric above): Tagline & framing; Outcomes: Clarity of sentiment; Outcomes: Clarity of quantitative; Outcomes: Mix; Outcomes: Uniqueness & fit; Consumers; Suppliers; Siblings; Required activities; Ability alignment.
+      - **Points earned** must be whole numbers; **Max** must match the rubric (20, 10, 10, 10, 10, 5, 5, 5, 5, 20).
       - The **sum** of **Points earned** must equal **CLARITY_SCORE_TOTAL** in the machine-readable footer at the very end.
 
       **3. Current vs proposed (actual vs proposed)** — immediately after the rubric table, a markdown **table** with exactly two columns: **Current** | **Proposed**.
 
       - Rows: tagline (when change is warranted); **required activities** (when they should be more observable, outcome-aligned, or trimmed);
-         **outcome count / merges / handbook moves** (especially when there are more than five outcomes or leading-indicator clutter); **each outcome**
-         (including **type changes** quantitative ↔ sentiment when wrong); **downstream (consumer) and upstream (supplier)** assignment positioning where you recommend changes;
+         **outcome count / merges / handbook moves / split** (especially when there are more than five outcomes or leading-indicator clutter); **each outcome**
+         (including **type changes** quantitative ↔ sentiment when wrong); **uniqueness vs peer assignments** and **consumer/supplier fit**; **consumers**, **suppliers**, and **siblings** where you recommend link or visibility changes;
          ability fit / poorly defined ability call-outs.
         If a row needs no change, omit it or put "(no change)" in **Proposed**.
       - In **Current**, quote or tightly paraphrase the text you are addressing.
@@ -316,10 +332,9 @@ module Maap
       - If **focus text was provided** and you **treated it as unrelated** (per Author focus rules): briefly restate that and confirm the rubric, table, and recommendations **did not** incorporate that text.
       - If **focus text was relevant:** explain in plain language **how** it affected the consultation — e.g. which rubric row **Notes** or totals it influenced, what you prioritized in **Current \| Proposed**, whether any **BEGIN_MAAP_RECOMMENDATIONS** items were **directly** answering their ask, and where else in the write-up you responded (without repeating the whole report). If their question was narrow and mostly echoed the baseline review, say that honestly.
 
-      **6. Outcome review** — overall: whether **~3 outcomes** is a reasonable target for this assignment and whether **>5** hurts clarity (merges **only** where **I** allows — never merge sentiment outcomes when stakeholders differ). Per outcome: **type fit** (quantitative vs sentiment; apply the **Likert rule** from B when labeled sentiment), strength of the statement, Likert/sentiment readiness
-         (can teammates plausibly rate this?), **who is being asked** for sentiment signals vs payload filters, and missing instrumentation if any.
+      **6. Outcome review** — **Mix** (count, >5 smooth penalty, split vs merge, ideal vs all-sentiment-strong); per outcome: **type fit** (quantitative vs sentiment; **Likert rule**); **Likert/sentiment quality** and **quantitative clarity** (tie to rubric rows); **who agrees** for sentiment; overlap across assignments (**I**). If **all** outcomes are sentiment-typed and **Mix** is **full** because every line is strong, **say that explicitly** here.
 
-      **7. Neighbor & flow findings** — overlap with sibling assignments; **upstream (supplier) and downstream (consumer)** clarity and proposed links.
+      **7. Neighbor, consumer, supplier, and sibling findings** — overlap with peer assignments; whether consumers/suppliers are the right named partners for outcomes and handoffs; sibling visibility (handbook / activities / outcomes).
 
       **8. Ability alignment** — required milestones vs. the described assignment; **poorly defined abilities** called out by name.
 
@@ -336,7 +351,7 @@ module Maap
 
       Rules:
 
-      - **CLARITY_SCORE_TOTAL** is an integer from **0** to **100** (sum of the seven rubric rows).
+      - **CLARITY_SCORE_TOTAL** is an integer from **0** to **100** (sum of the **ten** rubric rows).
       - **CLARITY_SIGNAL** must **match** the total: **GREEN** if total is **80–100**; **YELLOW** if **60–79**; **RED** if **0–59**.
       - Do not add any text after the **CLARITY_SIGNAL** line.
     PROMPT

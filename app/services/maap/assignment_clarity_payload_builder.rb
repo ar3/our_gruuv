@@ -2,6 +2,10 @@
 
 module Maap
   class AssignmentClarityPayloadBuilder
+    # Peers are relevance-ordered (see `peer_assignments_for_clarity`), then truncated.
+    # Not a hard platform limit: raises token/latency cost. Increase if Consult OG budget allows.
+    PEER_ASSIGNMENTS_FOR_CLARITY_LIMIT = 80
+
     def self.call(assignment:)
       new(assignment: assignment).call
     end
@@ -12,10 +16,7 @@ module Maap
 
     def call
       company = @assignment.company
-      siblings = Assignment.unarchived.for_company(company).where.not(id: @assignment.id).includes(:department).order(:title).limit(40)
-      if @assignment.department_id.present?
-        siblings = siblings.where(department_id: [@assignment.department_id, nil])
-      end
+      peer_assignments = peer_assignments_for_clarity(company)
 
       sections = []
       sections << {
@@ -29,8 +30,8 @@ module Maap
       }
 
       sections << {
-        'title' => 'Other assignments in scope for overlap checks',
-        'body' => siblings.map { |a| sibling_summary(a) }
+        'title' => 'Other company assignments (for overlap and uniqueness)',
+        'body' => peer_assignments.map { |a| sibling_summary(a) }
       }
 
       sections << {
@@ -53,9 +54,9 @@ module Maap
         'body' => abilities_section
       }
 
-      siblings_arr = siblings.to_a
+      peers_arr = peer_assignments
       assignment_link_list =
-        ([@assignment] + siblings_arr + @assignment.consumer_assignments.to_a + @assignment.supplier_assignments.to_a)
+        ([@assignment] + peers_arr + @assignment.consumer_assignments.to_a + @assignment.supplier_assignments.to_a)
         .compact
         .uniq { |a| a.id }
       ability_link_list = @assignment.assignment_abilities.includes(:ability).map(&:ability)
@@ -73,6 +74,72 @@ module Maap
     end
 
     private
+
+    def peer_assignments_for_clarity(company)
+      base = Assignment.unarchived.for_company(company).where.not(id: @assignment.id)
+      ordered_ids = ordered_peer_assignment_ids(base, @assignment.department, PEER_ASSIGNMENTS_FOR_CLARITY_LIMIT)
+      return [] if ordered_ids.empty?
+
+      rows = Assignment.where(id: ordered_ids).includes(:department, :assignment_outcomes).index_by(&:id)
+      ordered_ids.filter_map { |id| rows[id] }
+    end
+
+    # Priority when the assignment has a department: same dept → ancestor depts (closest parent first)
+    # → descendant depts → sibling depts (same parent; other company roots if this dept is a root)
+    # → remaining company assignments (by title). When department is blank, entire company by title.
+    def ordered_peer_assignment_ids(base_relation, department, limit)
+      return base_relation.order(:title).limit(limit).pluck(:id) if department.blank?
+
+      seen = {}
+      ids = []
+
+      add_ids = lambda do |dept_ids|
+        return if ids.size >= limit
+        return if dept_ids.blank?
+
+        base_relation.where(department_id: dept_ids.uniq).order(:title).pluck(:id).each do |id|
+          next if seen.key?(id)
+
+          seen[id] = true
+          ids << id
+          break if ids.size >= limit
+        end
+      end
+
+      add_ids.call([department.id])
+
+      department.ancestors_list.each do |anc|
+        break if ids.size >= limit
+
+        add_ids.call([anc.id])
+      end
+
+      desc_ids = department.descendants.map(&:id)
+      add_ids.call(desc_ids) if desc_ids.any?
+
+      sib_ids = sibling_department_ids(department)
+      add_ids.call(sib_ids) if sib_ids.any?
+
+      return ids if ids.size >= limit
+
+      base_relation.where.not(id: ids).order(:title).limit(limit - ids.size).pluck(:id).each do |id|
+        next if seen.key?(id)
+
+        seen[id] = true
+        ids << id
+      end
+
+      ids
+    end
+
+    def sibling_department_ids(department)
+      scope = Department.active.for_company(department.company)
+      if department.parent_department_id.present?
+        scope.where(parent_department_id: department.parent_department_id).where.not(id: department.id).order(:name).pluck(:id)
+      else
+        scope.root_departments.where.not(id: department.id).order(:name).pluck(:id)
+      end
+    end
 
     def assignment_core_hash
       h = {
@@ -115,7 +182,8 @@ module Maap
       {
         'Title' => a.title,
         'Department' => a.department&.display_name || '(none)',
-        'Tagline' => a.tagline.to_s.truncate(400)
+        'Tagline' => a.tagline.to_s.truncate(400),
+        'Outcomes (summary)' => outcomes_preview_lines(a)
       }
     end
 
@@ -123,9 +191,9 @@ module Maap
       list =
         case kind
         when :consumer
-          @assignment.consumer_assignments.includes(:department).order(:title)
+          @assignment.consumer_assignments.includes(:department, :assignment_outcomes).order(:title)
         when :supplier
-          @assignment.supplier_assignments.includes(:department).order(:title)
+          @assignment.supplier_assignments.includes(:department, :assignment_outcomes).order(:title)
         end
       return '(none)' if list.blank?
 
@@ -133,9 +201,17 @@ module Maap
         {
           'Title' => a.title,
           'Department' => a.department&.display_name || '(none)',
-          'Tagline' => a.tagline.to_s.truncate(300)
+          'Tagline' => a.tagline.to_s.truncate(300),
+          'Outcomes (summary)' => outcomes_preview_lines(a)
         }
       end
+    end
+
+    def outcomes_preview_lines(assignment, max: 6, truncate: 280)
+      rows = assignment.assignment_outcomes.ordered.limit(max)
+      return ['(none listed)'] if rows.empty?
+
+      rows.map { |o| "#{o.outcome_type}: #{o.description.to_s.truncate(truncate)}" }
     end
 
     def position_sections
