@@ -37,21 +37,22 @@
         %span.badge.bg-danger
         red when both thresholds are set; otherwise neutral gray until you configure them (accordion at bottom).
 
-    %h5.fw-semibold.mb-2 Metric definitions (initial set)
+    %h5.fw-semibold.mb-2 Metric definitions
     %ul.mb-2
       %li
         %strong Active teammates:
         teammates with a hire date still employed at the end of that week (Sunday).
       %li
-        %strong Published an OGO:
-        published, not deleted; week from
+        %strong Observations:
+        published OGOs bucketed by
         %code published_at
         \.
       %li
-        %strong Unique observees:
-        distinct teammates on published OGOs that week (
-        %code published_at
-        ).
+        %strong Check-ins:
+        required position, assignment, and aspirational value check-ins evaluated as of each Sunday using the same clarity windows as Check-ins Health (30 / 60 / 90 days). See each row label for rollup rules.
+      %li
+        %strong Goals on check-ins rows:
+        active owned goals linked to an Aspirational Value or Assignment as of that Sunday.
 
 = render 'timeframe_selector',
   timeframe: @timeframe,
@@ -71,10 +72,11 @@
       Show Yellow / Green thresholds and “More or less is better” in the table
 
   .table-responsive.border.rounded.shadow-sm
-    %table.table.table-sm.table-bordered.align-middle.mb-0.text-nowrap.og-scorecard-table
+    %table.table.table-sm.table-bordered.align-middle.mb-0.og-scorecard-table
       %thead.table-light
         %tr
-          %th.sticky-col{scope: "col"} Metric
+          %th.sticky-col{scope: "col"}
+            %span.og-scorecard-metric-cell Metric
           %th.text-end{scope: "col"} Last 6-week average
           %th.text-end.og-scorecard-th-col{scope: "col"} Yellow threshold
           %th.text-end.og-scorecard-th-col{scope: "col"} Green threshold
@@ -87,7 +89,8 @@
             %td.sticky-col.fw-semibold{colspan: 5 + @week_labels.size}= group[:title]
           - group[:rows].each do |row|
             %tr
-              %td.sticky-col= row[:label]
+              %td.sticky-col
+                %span.og-scorecard-metric-cell= row[:label]
               %td.text-end= row[:six_week_avg].nil? ? "—" : row[:six_week_avg]
               %td.text-end.og-scorecard-th-col= row[:yellow_display].presence || "—"
               %td.text-end.og-scorecard-th-col= row[:green_display].presence || "—"

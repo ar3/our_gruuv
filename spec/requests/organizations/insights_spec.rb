@@ -113,6 +113,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('More or less is better')
       expect(response.body).to include('Teammates')
       expect(response.body).to include('Observations')
+      expect(response.body).to include('Check-ins')
+      expect(response.body).to include('Aspirational Value')
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')

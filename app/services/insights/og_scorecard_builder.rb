@@ -8,15 +8,39 @@ module Insights
       @week_starts = week_starts
       @chart_range = chart_range
       @thresholds_by_key = thresholds_by_key
+      @check_in_data = OgScorecard::CheckInDataPreloader.new(company).load
     end
 
     def call
       active_by_week = active_teammate_counts_by_week
       publishers_by_week, observees_by_week = observation_distinct_sets_by_week
+      check_in_clarity = OgScorecard::CheckInClarityWeekCounts.call(
+        company: company,
+        week_starts: week_starts,
+        preloaded_data: @check_in_data
+      )
+      goal_aspiration_by_week = OgScorecard::GoalsActiveAssociationWeekCounts.call(
+        company: company,
+        week_starts: week_starts,
+        associable_type: :aspiration
+      )
+      goal_assignment_by_week = OgScorecard::GoalsActiveAssociationWeekCounts.call(
+        company: company,
+        week_starts: week_starts,
+        associable_type: :assignment
+      )
 
       groups = OgScorecard::MetricRegistry.grouped.map do |group|
         rows = group[:entries].map do |entry|
-          counts = counts_for(entry.key, active_by_week, publishers_by_week, observees_by_week)
+          counts = counts_for(
+            entry.key,
+            active_by_week: active_by_week,
+            publishers_by_week: publishers_by_week,
+            observees_by_week: observees_by_week,
+            check_in_clarity: check_in_clarity,
+            goal_aspiration_by_week: goal_aspiration_by_week,
+            goal_assignment_by_week: goal_assignment_by_week
+          )
           build_row(entry, counts, active_by_week)
         end
         { title: group[:title], rows: rows }
@@ -29,11 +53,16 @@ module Insights
 
     attr_reader :company, :week_starts, :chart_range, :thresholds_by_key
 
-    def counts_for(key, active_by_week, publishers_by_week, observees_by_week)
+    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:)
       case key
       when 'active_teammates' then active_by_week
       when 'unique_ogo_publishers' then publishers_by_week
       when 'unique_ogo_observees' then observees_by_week
+      when 'all_check_ins_clear' then check_in_clarity[:all_check_ins_clear]
+      when 'all_check_ins_blurred' then check_in_clarity[:all_check_ins_blurred]
+      when 'all_check_ins_obscured' then check_in_clarity[:all_check_ins_obscured]
+      when 'active_goal_aspiration' then goal_aspiration_by_week
+      when 'active_goal_assignment' then goal_assignment_by_week
       else
         week_starts.index_with { 0 }
       end

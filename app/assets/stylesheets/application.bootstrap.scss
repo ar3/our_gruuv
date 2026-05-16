@@ -1542,10 +1542,31 @@ body:has(.vertical-nav.open) .floating-toggle {
 
 // Insights: OG Scorecard — keep first column visible when scrolling wide week range
 .og-scorecard-table {
+  // Bootstrap .table sets width: 100%, which stretches columns to fill the viewport.
+  width: max-content;
+
+  th:not(.sticky-col),
+  td:not(.sticky-col) {
+    white-space: nowrap;
+  }
+
+  .sticky-col:not([colspan]) {
+    width: 450px;
+  }
+
+  .og-scorecard-metric-cell {
+    display: inline-block;
+    width: 450px;
+    white-space: normal;
+    overflow-wrap: break-word;
+    vertical-align: top;
+  }
+
   .sticky-col {
     position: sticky;
     left: 0;
     z-index: 1;
+    white-space: normal !important;
     background-color: var(--bs-body-bg);
     box-shadow: 1px 0 0 var(--bs-border-color);
   }
