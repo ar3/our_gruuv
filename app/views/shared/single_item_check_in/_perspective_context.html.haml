@@ -1,9 +1,15 @@
 - start_on = check_in.check_in_started_on
 - start_phrase = start_on.present? ? start_on.strftime("%B %d, %Y") : "the start of this check-in"
-- counterparty_clause = single_item_check_in_counterparty_ready_review_clause(check_in, teammate, current_person)
+- counterparty_completed = single_item_check_in_counterparty_completed?(check_in, teammate, current_person)
 .check-in-perspective-notes.mb-3{ role: "note" }
   %p.mb-2.small.text-body
-    This is your perspective on #{teammate.person.casual_name} and #{object_name} from #{start_phrase} until now. #{counterparty_clause}
+    This is your perspective on #{teammate.person.casual_name} and #{object_name} from #{start_phrase} until now.
+  - if counterparty_completed
+    %p.mb-2.small.text-body
+      = render 'shared/check_ins/counterparty_completion_detail', check_in: check_in, teammate: teammate, current_person: current_person
+  - else
+    %p.mb-2.small.text-body
+      = single_item_check_in_counterparty_not_completed_clause(check_in, teammate, current_person)
   %p.mb-0.small.text-body
     Your check-in on #{teammate.person.casual_name} and #{object_name} is currently:
     - if is_complete

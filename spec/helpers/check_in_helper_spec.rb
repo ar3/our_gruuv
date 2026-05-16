@@ -253,12 +253,11 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
-  describe '#single_item_check_in_counterparty_ready_review_clause' do
+  describe '#single_item_check_in_counterparty_not_completed_clause' do
     let(:organization) { create(:organization) }
     let(:employee_person) { create(:person, first_name: 'Jamie', last_name: 'Emp') }
     let(:manager_person) { create(:person, first_name: 'Morgan', last_name: 'Mgr') }
     let(:employee_teammate) { create(:company_teammate, person: employee_person, organization: organization) }
-    let(:manager_teammate) { create(:company_teammate, person: manager_person, organization: organization) }
     let(:aspiration) { create(:aspiration, company: organization) }
 
     before do
@@ -266,44 +265,21 @@ RSpec.describe CheckInHelper, type: :helper do
     end
 
     it 'returns empty string when check_in is nil' do
-      expect(helper.single_item_check_in_counterparty_ready_review_clause(nil, employee_teammate, employee_person)).to eq('')
+      expect(helper.single_item_check_in_counterparty_not_completed_clause(nil, employee_teammate, employee_person)).to eq('')
     end
 
     it 'when viewing as employee and manager has not completed, names manager' do
       check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
         manager_completed_at: nil)
-      expect(helper.single_item_check_in_counterparty_ready_review_clause(check_in, employee_teammate, employee_person))
+      expect(helper.single_item_check_in_counterparty_not_completed_clause(check_in, employee_teammate, employee_person))
         .to eq("#{manager_person.casual_name} has not completed their check-in yet.")
-    end
-
-    it 'when viewing as employee and manager completed, includes time ago' do
-      completed = 2.days.ago
-      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
-        manager_completed_at: completed,
-        manager_completed_by_teammate: manager_teammate,
-        manager_rating: 'meeting',
-        manager_private_notes: 'ok')
-      allow(helper).to receive(:time_ago_in_words).with(completed).and_return('2 days')
-      expect(helper.single_item_check_in_counterparty_ready_review_clause(check_in, employee_teammate, employee_person))
-        .to eq("#{manager_person.casual_name} has reflected on this and marked their check-in ready for review 2 days ago.")
     end
 
     it 'when viewing as manager and employee has not completed, names employee' do
       check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
         employee_completed_at: nil)
-      expect(helper.single_item_check_in_counterparty_ready_review_clause(check_in, employee_teammate, manager_person))
+      expect(helper.single_item_check_in_counterparty_not_completed_clause(check_in, employee_teammate, manager_person))
         .to eq("#{employee_person.casual_name} has not completed their check-in yet.")
-    end
-
-    it 'when viewing as manager and employee completed, includes time ago' do
-      completed = 5.hours.ago
-      check_in = build(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration,
-        employee_completed_at: completed,
-        employee_rating: 'meeting',
-        employee_private_notes: 'notes')
-      allow(helper).to receive(:time_ago_in_words).with(completed).and_return('about 5 hours')
-      expect(helper.single_item_check_in_counterparty_ready_review_clause(check_in, employee_teammate, manager_person))
-        .to eq("#{employee_person.casual_name} has reflected on this and marked their check-in ready for review about 5 hours ago.")
     end
   end
 
@@ -565,7 +541,7 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
-  describe '#check_ins_awaiting_input_detail_line' do
+  describe '#check_in_counterparty_completion_detail_line' do
     let(:organization) { create(:organization) }
     let(:employee_person) { create(:person, preferred_name: 'Alex') }
     let(:manager_person) { create(:person, preferred_name: 'Mo') }
@@ -573,7 +549,7 @@ RSpec.describe CheckInHelper, type: :helper do
     let(:manager_teammate) { create(:company_teammate, person: manager_person, organization: organization) }
     let(:assignment) { create(:assignment, company: organization, title: 'Ship Feature') }
 
-    it 'describes the completer, object, and date range with bold emphasis' do
+    it 'describes the completer, object, and observation timeframe with bold emphasis' do
       started_on = Date.new(2026, 1, 1)
       completed_at = Time.zone.local(2026, 2, 15, 12, 0, 0)
       check_in = create(:assignment_check_in,
@@ -583,13 +559,32 @@ RSpec.describe CheckInHelper, type: :helper do
                         employee_completed_at: completed_at,
                         manager_completed_at: nil)
 
-      html = helper.check_ins_awaiting_input_detail_line(check_in)
+      html = helper.check_in_counterparty_completion_detail_line(check_in)
 
       expect(html).to include('Alex completed a check-in about the Assignment,')
       expect(html).to include('<strong>Ship Feature</strong>')
       expect(html).to include('<strong>Feb 15, 2026</strong>')
       expect(html).to include('their take on Alex and')
+      expect(html).to include('observing the timeframe between')
       expect(html).to include('<strong>Jan 01, 2026</strong>')
+    end
+
+    it 'uses counterparty completion when viewing as manager on a 1-by-1 page' do
+      started_on = Date.new(2026, 3, 1)
+      completed_at = Time.zone.local(2026, 3, 20, 12, 0, 0)
+      check_in = create(:assignment_check_in,
+                        teammate: employee_teammate,
+                        assignment: assignment,
+                        check_in_started_on: started_on,
+                        employee_completed_at: completed_at,
+                        manager_completed_at: nil)
+
+      html = helper.check_in_counterparty_completion_detail_line(
+        check_in, teammate: employee_teammate, current_person: manager_person
+      )
+
+      expect(html).to include('Alex completed a check-in about the Assignment,')
+      expect(html).to include('observing the timeframe between')
     end
   end
 

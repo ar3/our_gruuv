@@ -222,9 +222,10 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response.body).to include("Manager Rating")
       end
 
-      it "shows counterparty ready-for-review clause and draft pill for manager side" do
+      it "shows counterparty completion detail and draft pill for manager side" do
         get aspiration_show_path
-        expect(response.body).to include("#{employee_person.casual_name} has reflected on this and marked their check-in ready for review")
+        expect(response.body).to include("#{employee_person.casual_name} completed a check-in about the Aspirational Value,")
+        expect(response.body).to include("observing the timeframe between")
         expect(response.body).to include('class="badge bg-warning text-dark rounded-pill me-1"')
         expect(response.body).to include("draft")
       end

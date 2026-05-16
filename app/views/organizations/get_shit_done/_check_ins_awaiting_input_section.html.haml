@@ -38,7 +38,7 @@
                     %td.text-muted
                       %i.bi.bi-arrow-return-right
                     %td
-                      = check_ins_awaiting_input_detail_line(check_in)
+                      = render 'shared/check_ins/counterparty_completion_detail', check_in: check_in
                     %td
                       - if is_employee_role
                         %span.badge.bg-warning.text-dark

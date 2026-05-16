@@ -212,31 +212,16 @@ module CheckInHelper
     mode == :employee ? check_in.employee_completed_at : check_in.manager_completed_at
   end
 
-  # 1-by-1 check-in form: second sentence in the perspective blurb (counterparty completion).
-  def single_item_check_in_counterparty_ready_review_clause(check_in, teammate, current_person)
+  # 1-by-1 check-in form: second line when the counterparty has not completed yet.
+  def single_item_check_in_counterparty_not_completed_clause(check_in, teammate, current_person)
     return "" if check_in.blank? || teammate.blank? || current_person.blank?
 
-    mode = single_item_check_in_view_mode(teammate, current_person)
     counterparty = single_item_check_in_counterparty_name(teammate, current_person)
+    "#{counterparty} has not completed their check-in yet."
+  end
 
-    other_done, completed_at =
-      if mode == :employee
-        [check_in.manager_completed?, check_in.manager_completed_at]
-      else
-        [check_in.employee_completed?, check_in.employee_completed_at]
-      end
-
-    if other_done
-      ago =
-        if completed_at.present?
-          "#{time_ago_in_words(completed_at)} ago"
-        else
-          "recently"
-        end
-      "#{counterparty} has reflected on this and marked their check-in ready for review #{ago}."
-    else
-      "#{counterparty} has not completed their check-in yet."
-    end
+  def single_item_check_in_counterparty_completed?(check_in, teammate, current_person)
+    check_in_counterparty_completion_detail_context(check_in, teammate: teammate, current_person: current_person).present?
   end
 
   def single_item_check_in_move_destination_text(next_requires_check_in:, next_item:, show_check_in_status_done: false)
@@ -737,35 +722,12 @@ module CheckInHelper
     end
   end
 
-  # Detail sentence for one awaiting-input row (object names and dates wrapped in <strong>).
-  def check_ins_awaiting_input_detail_line(check_in)
-    completer_name = check_in_awaiting_input_completer_name(check_in)
-    employee_name = check_in.company_teammate.person.casual_name.presence || 'Employee'
-    object_type, object_name = check_in_awaiting_input_object_labels(check_in)
-    completed_on = gsd_check_in_display_date(check_in_awaiting_input_completer_completed_at(check_in))
-    started_on = gsd_check_in_display_date(check_in.check_in_started_on)
-    bold_object = content_tag(:strong, object_name)
-    bold_completed = content_tag(:strong, completed_on)
-    bold_started = content_tag(:strong, started_on)
+  # Counterparty completion blurb: completer, object, and observation timeframe (HTML; object names and dates bold).
+  def check_in_counterparty_completion_detail_line(check_in, teammate: nil, current_person: nil)
+    context = check_in_counterparty_completion_detail_context(check_in, teammate: teammate, current_person: current_person)
+    return '' unless context
 
-    safe_join([
-      completer_name,
-      ' completed a check-in about the ',
-      object_type,
-      ', ',
-      bold_object,
-      ', on ',
-      bold_completed,
-      '. This was a reflection of their take on ',
-      employee_name,
-      ' and ',
-      bold_object,
-      ' from ',
-      bold_started,
-      ' to ',
-      bold_completed,
-      '.'
-    ])
+    build_check_in_counterparty_completion_detail_html(context)
   end
 
   # Get Shit Done: link to the 1-by-1 check-in page for this record (assignment / aspiration / position).
@@ -784,23 +746,77 @@ module CheckInHelper
 
   private
 
-  def check_in_awaiting_input_completer_name(check_in)
-    if check_in.employee_completed? && !check_in.manager_completed?
-      check_in.company_teammate.person.casual_name.presence || 'Employee'
-    else
-      check_in.manager_completed_by_teammate&.person&.casual_name.presence || 'Manager'
+  def check_in_counterparty_completion_detail_context(check_in, teammate: nil, current_person: nil)
+    return nil if check_in.blank?
+
+    if teammate.present? && current_person.present?
+      mode = single_item_check_in_view_mode(teammate, current_person)
+      if mode == :employee
+        return nil unless check_in.manager_completed?
+
+        {
+          completer_name: check_in.manager_completed_by_teammate&.person&.casual_name.presence || 'Manager',
+          employee_name: check_in.company_teammate.person.casual_name.presence || 'Employee',
+          completed_at: check_in.manager_completed_at,
+          check_in: check_in
+        }
+      else
+        return nil unless check_in.employee_completed?
+
+        {
+          completer_name: check_in.company_teammate.person.casual_name.presence || 'Employee',
+          employee_name: check_in.company_teammate.person.casual_name.presence || 'Employee',
+          completed_at: check_in.employee_completed_at,
+          check_in: check_in
+        }
+      end
+    elsif check_in.employee_completed? && !check_in.manager_completed?
+      {
+        completer_name: check_in.company_teammate.person.casual_name.presence || 'Employee',
+        employee_name: check_in.company_teammate.person.casual_name.presence || 'Employee',
+        completed_at: check_in.employee_completed_at,
+        check_in: check_in
+      }
+    elsif check_in.manager_completed? && !check_in.employee_completed?
+      {
+        completer_name: check_in.manager_completed_by_teammate&.person&.casual_name.presence || 'Manager',
+        employee_name: check_in.company_teammate.person.casual_name.presence || 'Employee',
+        completed_at: check_in.manager_completed_at,
+        check_in: check_in
+      }
     end
   end
 
-  def check_in_awaiting_input_completer_completed_at(check_in)
-    if check_in.employee_completed? && !check_in.manager_completed?
-      check_in.employee_completed_at
-    else
-      check_in.manager_completed_at
-    end
+  def build_check_in_counterparty_completion_detail_html(context)
+    check_in = context[:check_in]
+    object_type, object_name = check_in_subject_object_labels(check_in)
+    completed_on = check_in_completion_display_date(context[:completed_at])
+    started_on = check_in_completion_display_date(check_in.check_in_started_on)
+    bold_object = content_tag(:strong, object_name)
+    bold_completed = content_tag(:strong, completed_on)
+    bold_started = content_tag(:strong, started_on)
+
+    safe_join([
+      context[:completer_name],
+      ' completed a check-in about the ',
+      object_type,
+      ', ',
+      bold_object,
+      ', on ',
+      bold_completed,
+      '. This was a reflection of their take on ',
+      context[:employee_name],
+      ' and ',
+      bold_object,
+      ' observing the timeframe between ',
+      bold_started,
+      ' to ',
+      bold_completed,
+      '.'
+    ])
   end
 
-  def check_in_awaiting_input_object_labels(check_in)
+  def check_in_subject_object_labels(check_in)
     case check_in
     when AssignmentCheckIn
       ['Assignment', check_in.assignment.title]
@@ -813,7 +829,7 @@ module CheckInHelper
     end
   end
 
-  def gsd_check_in_display_date(value)
+  def check_in_completion_display_date(value)
     return '' unless value.present?
 
     value.to_date.strftime('%b %d, %Y')
