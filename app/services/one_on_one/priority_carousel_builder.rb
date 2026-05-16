@@ -127,7 +127,7 @@ module OneOnOne
         top_check_in_path ||= review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
         attention_priority(
           title,
-          "To achieve continuous clarity and continuous improvement all important check-ins should be made at least every 90 days. There are some opportunities for improving/keeping clarity high... so before the next 1:1, go complete one of the check-ins listed.",
+          "To achieve continuous clarity and continuous improvement all important check-ins should be made at least every 90 days. There are some opportunities for improving clarity/keeping clarity high... so before the next 1:1, go complete one of the check-ins listed.",
           [],
           total_item_count: rows.count,
           cta_kind: :open_top_prioritized_check_in,
@@ -279,7 +279,7 @@ module OneOnOne
       if gaps.any?
         attention_priority(
           title,
-          "Whenever we are working to meet expectations, we should have goals that help give clarity as to what has to be done in order to be meeting expectations",
+          "Whenever we are working to meet expectations, clarity demands that we have goals attached to those assignments or aspirational values. Add these goals so the path to meeting expectations is clear!",
           [],
           cta_kind: :check_ins_review_most_recent,
           cta_label: "Check-in status",
@@ -374,7 +374,7 @@ module OneOnOne
       if rows.any?
         attention_priority(
           title,
-          "Whenever we are below the milestone target for an ability required by the current position, we should have goals that make the path to the required level concrete.",
+          "OG-level clarity demands that all Positions and Assignments have skills, knowledge, and demonstrated competencies (what we call Abilities) clearly defined so expectations are completely transparent (and therefore fair and achievable). There are gaps in the expected level of skill, knowledge, or competency demonstrated (what we call Ability Milestones). Adding goals to these gaps in expectations make the path to the required Ability Milestone concrete.",
           [],
           cta_kind: :my_growth_abilities,
           cta_label: "View all Ability Milestone Requirements",
@@ -403,7 +403,7 @@ module OneOnOne
         viewer_is_subject = @viewing_company_teammate.present? && @viewing_company_teammate.id == @teammate.id
         observation_given_explanation =
           "Published observations to others keep feedback flowing across the team. " \
-          "When #{teammate_casual_name} has not given one in 30 days, use a specific opportunity below or start a new observation."
+          "Since #{teammate_casual_name} has not given an OurGruuv Observation (OGO) in 30 days, use a specific opportunity below or start a new OGO."
         if suggestion_rows.any?
           attention_priority(
             title,
@@ -500,7 +500,7 @@ module OneOnOne
         )
         observation_received_explanation =
           "Fresh feedback helps #{teammate_casual_name} know how they are doing. " \
-          "When no published observation arrived in 30 days, request feedback using a specific opportunity below."
+          "Since no published observations have been published in 30 days, request feedback using a specific opportunity below."
         if suggestion_rows.any?
           attention_priority(
             title,
