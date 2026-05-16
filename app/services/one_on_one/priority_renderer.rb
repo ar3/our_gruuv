@@ -462,8 +462,30 @@ module OneOnOne
 
     def blurred_or_obscured_item_label_url(item)
       prefix = blurred_or_obscured_kind_prefix(item[:kind])
-      label = "#{prefix} #{item[:display_title]} (Last check-in: #{blurred_or_obscured_words(item[:finalized_at])})"
+      clarity_label = blurred_or_obscured_clarity_label(item[:clarity])
+      label =
+        "#{prefix} #{item[:display_title]} — #{clarity_label} " \
+        "(Last check-in: #{blurred_or_obscured_words(item[:finalized_at])})"
       { label: label, url: blurred_or_obscured_url(item) }
+    end
+
+    def blurred_or_obscured_clarity_label(clarity)
+      case clarity&.to_sym
+      when :blurred
+        "Blurred (#{blurred_check_in_age_hint})"
+      when :obscured
+        "Obscured (#{obscured_check_in_age_hint})"
+      else
+        clarity.to_s.humanize.presence || "Needs attention"
+      end
+    end
+
+    def blurred_check_in_age_hint
+      "check-in #{CheckInBehavior::CLARITY_CLEAR_DAYS}+ days old"
+    end
+
+    def obscured_check_in_age_hint
+      "check-in #{CheckInBehavior::CLARITY_BLURRED_DAYS}+ days old"
     end
 
     def blurred_or_obscured_kind_prefix(kind)

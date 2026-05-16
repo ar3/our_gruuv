@@ -121,13 +121,13 @@ module OneOnOne
 
       item_data = rows.first(3).map { |row| blurred_or_obscured_item_data(row) }
 
-      title = "Are any position, assignment, or aspiration check-ins blurred or obscured?"
+      title = blurred_or_obscured_priority_title
       if rows.any?
         top_check_in_path = blurred_or_obscured_check_in_path(rows.first)
         top_check_in_path ||= review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
         attention_priority(
           title,
-          "Blurred or obscured check-ins mean expectations are not clear enough to coach on. Re-open the highest-priority check-in and clarify rating and comments before the 1:1.",
+          "To achieve continuous clarity and continuous improvement all important check-ins should be made at least every 90 days. There are some opportunities for improving/keeping clarity high... so before the next 1:1, go complete one of the check-ins listed.",
           [],
           total_item_count: rows.count,
           cta_kind: :open_top_prioritized_check_in,
@@ -140,9 +140,21 @@ module OneOnOne
         success_priority(
           title,
           "Required check-ins are clear or crystal clear.",
-          ["No blurred or obscured assignment, aspiration, or position check-ins were found."]
+          ["No blurred (#{blurred_check_in_age_hint}) or obscured (#{obscured_check_in_age_hint}) assignment, aspiration, or position check-ins were found."]
         )
       end
+    end
+
+    def blurred_or_obscured_priority_title
+      "Are any position, assignment, or aspiration check-ins blurred (#{blurred_check_in_age_hint}) or obscured (#{obscured_check_in_age_hint})?"
+    end
+
+    def blurred_check_in_age_hint
+      "check-in #{CheckInBehavior::CLARITY_CLEAR_DAYS}+ days old"
+    end
+
+    def obscured_check_in_age_hint
+      "check-in #{CheckInBehavior::CLARITY_BLURRED_DAYS}+ days old"
     end
 
     def blurred_or_obscured_check_in_rows
@@ -206,7 +218,8 @@ module OneOnOne
         kind: row[:kind],
         record_id: row[:record_id],
         display_title: row[:display_title],
-        finalized_at: row[:finalized_at]
+        finalized_at: row[:finalized_at],
+        clarity: row[:clarity]
       }
     end
 
