@@ -10,6 +10,8 @@ class Organization < ApplicationRecord
     (2) Then they meet and review each other's answers together. The manager enters the agreed upon rating.
     (3) Finally, the employee acknowledges that this conversation happened, and they understand the ratings. **<< This is where you are**
 
+    *You can also acknowledge when an admin/manager changes your real job description by modifying assignments or changing your seat*
+
     This ensures clarity for all!
   MARKDOWN
 

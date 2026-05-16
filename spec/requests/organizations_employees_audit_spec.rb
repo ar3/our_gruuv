@@ -186,6 +186,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
 
       expect(response.body).to include('The OG process for clarity is a three step process.')
       expect(response.body).to include('This is where you are')
+      expect(response.body).to include('You can also acknowledge when an admin/manager changes your real job description')
       expect(response.body).to include('acknowledgement-explanation-callout--above')
       expect(response.body).not_to include('acknowledgement-explanation-callout--below')
     end
