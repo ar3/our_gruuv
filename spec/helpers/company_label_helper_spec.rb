@@ -67,6 +67,20 @@ RSpec.describe CompanyLabelHelper, type: :helper do
     end
   end
 
+  describe '#acknowledgement_explanation_markdown' do
+    it 'returns the default when no custom preference exists' do
+      expect(helper.acknowledgement_explanation_markdown(company)).to eq(Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT)
+    end
+
+    it 'returns the custom preference when set' do
+      create(:company_label_preference,
+             company: company,
+             label_key: Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY,
+             label_value: 'Custom copy.')
+      expect(helper.acknowledgement_explanation_markdown(company)).to eq('Custom copy.')
+    end
+  end
+
   describe '#company_label_plural' do
     context 'when company has a custom label preference' do
       before do

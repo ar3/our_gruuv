@@ -35,6 +35,9 @@
         
         .card-body
           = form_with url: acknowledge_snapshots_organization_employee_path(@organization, @person), method: :patch, local: true do |f|
+            - acknowledgement_explanation = acknowledgement_explanation_markdown(@organization)
+            = render 'shared/acknowledgement_explanation_callout', markdown_text: acknowledgement_explanation, direction: :down
+
             .table-responsive
               %table.table.table-sm
                 %thead
@@ -53,7 +56,7 @@
                     - snapshot_index = @maap_snapshots.index(snapshot)
                     - previous_snapshot = snapshot_index ? @maap_snapshots[snapshot_index + 1] : nil
                     = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: true, person: @person, organization: @organization, previous_snapshot: previous_snapshot }
-            
+
             .mt-3
               = f.submit 'Acknowledge Selected Check-ins', 
                         class: 'btn btn-success',

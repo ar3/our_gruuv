@@ -10,4 +10,15 @@ module CompanyLabelHelper
     label = company_label_for(key, default)
     label.pluralize
   end
+
+  def acknowledgement_explanation_markdown(organization = nil)
+    org = organization || current_organization
+    company = org&.root_company || org
+    return Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT unless company
+
+    company.label_for(
+      Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY,
+      Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT
+    )
+  end
 end

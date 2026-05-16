@@ -58,6 +58,17 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
       expect(assigns(:preferences)['get_shit_done']).to eq('Action Items')
     end
 
+    it 'loads acknowledgement_explanation preference prefilled with default' do
+      get :edit, params: { organization_id: company.to_param }
+      expect(assigns(:preferences)[Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY]).to eq(Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT)
+    end
+
+    it 'loads existing acknowledgement_explanation preference' do
+      create(:company_label_preference, company: company, label_key: Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY, label_value: 'Custom acknowledgement copy.')
+      get :edit, params: { organization_id: company.to_param }
+      expect(assigns(:preferences)[Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY]).to eq('Custom acknowledgement copy.')
+    end
+
     it 'allows view when user is employed but does not have customize_company (view-only)' do
       teammate = CompanyTeammate.find_by(person: person, organization: company)
       teammate.update!(can_customize_company: false)
@@ -218,6 +229,36 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
             preferences: { get_shit_done: '' }
           }
         }.to change { company.reload.company_label_preferences.count }.by(-1)
+      end
+
+      it 'creates acknowledgement_explanation preference' do
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { acknowledgement_explanation: 'Custom acknowledgement copy.' }
+          }
+        }.to change { company.reload.company_label_preferences.count }.by(1)
+        preference = company.company_label_preferences.find_by(label_key: Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY)
+        expect(preference.label_value).to eq('Custom acknowledgement copy.')
+      end
+
+      it 'removes acknowledgement_explanation preference when value is blank' do
+        create(:company_label_preference, company: company, label_key: Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY, label_value: 'Custom acknowledgement copy.')
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { acknowledgement_explanation: '' }
+          }
+        }.to change { company.reload.company_label_preferences.count }.by(-1)
+      end
+
+      it 'does not persist acknowledgement_explanation when unchanged default is submitted' do
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { acknowledgement_explanation: Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT }
+          }
+        }.not_to change { company.reload.company_label_preferences.count }
       end
 
       it 'updates observable_moment_notifier_teammate_id when organization params present' do

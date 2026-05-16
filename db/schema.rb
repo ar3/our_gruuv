@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_09_180000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_16_175935) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -365,7 +365,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_09_180000) do
   create_table "company_label_preferences", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.string "label_key", null: false
-    t.string "label_value"
+    t.text "label_value"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id", "label_key"], name: "index_company_label_preferences_on_company_id_and_label_key", unique: true

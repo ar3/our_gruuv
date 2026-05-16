@@ -45,8 +45,16 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
       'prompt' => @company.company_label_preferences.find_by(label_key: 'prompt')&.label_value || '',
       'kudos_point' => @company.company_label_preferences.find_by(label_key: 'kudos_point')&.label_value || '',
       'get_shit_done' => @company.company_label_preferences.find_by(label_key: 'get_shit_done')&.label_value || '',
-      'encourage_goal_and_observation' => @company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')&.label_value || 'true'
+      'encourage_goal_and_observation' => @company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')&.label_value || 'true',
+      Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY => acknowledgement_explanation_for_form
     }
+  end
+
+  def acknowledgement_explanation_for_form
+    @company.label_for(
+      Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY,
+      Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT
+    )
   end
 
   def update_observable_moment_notifier
@@ -80,6 +88,15 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
         unless preference.save
           success = false
         end
+      elsif key.to_s == Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY
+        if acknowledgement_explanation_blank_or_default?(value)
+          preference.destroy if preference.persisted?
+        else
+          preference.label_value = value
+          unless preference.save
+            success = false
+          end
+        end
       elsif value.present?
         preference.label_value = value
         unless preference.save
@@ -92,6 +109,11 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
     end
     
     success
+  end
+
+  def acknowledgement_explanation_blank_or_default?(value)
+    normalized = value.to_s.strip
+    normalized.blank? || normalized == Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT
   end
 
   def apply_logo_update

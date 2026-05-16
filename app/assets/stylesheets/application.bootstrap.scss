@@ -1574,3 +1574,27 @@ body:has(.vertical-nav.open) .floating-toggle {
 .popover.og-scorecard-threshold-popover {
   max-width: min(22rem, 90vw);
 }
+
+// Pending acknowledgement explainer (audit + Get Shit Done)
+.acknowledgement-explanation-callout {
+  &__arrow {
+    line-height: 1;
+    transform-origin: center center;
+
+    &--down {
+      transform: rotate(90deg);
+    }
+
+    &--up {
+      transform: rotate(-90deg);
+    }
+  }
+
+  &--above {
+    margin-bottom: 1rem;
+  }
+
+  &--below {
+    margin-top: 1rem;
+  }
+}

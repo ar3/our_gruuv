@@ -64,6 +64,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response).to have_http_status(:success)
       # snapshot1 should be included (pending acknowledgement) - check for unique reason text
       expect(response.body).to include('Test reason 1')
+      expect(response.body).to include('The OG process for clarity is a three step process.')
       # snapshot2 should NOT be included (already acknowledged) - check for unique reason text
       expect(response.body).not_to include('Test reason 2')
       # snapshot3 should NOT be included (different person) - check for unique reason text

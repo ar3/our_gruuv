@@ -180,6 +180,27 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       expect(response.body).to include('Pending Acknowledgements')
       expect(response.body).to include('select_all_snapshots')
     end
+
+    it 'shows acknowledgement explanation above the pending table' do
+      get audit_organization_employee_path(organization, employee_teammate)
+
+      expect(response.body).to include('The OG process for clarity is a three step process.')
+      expect(response.body).to include('This is where you are')
+      expect(response.body).to include('acknowledgement-explanation-callout--above')
+      expect(response.body).not_to include('acknowledgement-explanation-callout--below')
+    end
+
+    it 'shows custom acknowledgement explanation when configured' do
+      create(:company_label_preference,
+             company: organization,
+             label_key: Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY,
+             label_value: 'Our team uses acknowledgement to confirm understanding.')
+
+      get audit_organization_employee_path(organization, employee_teammate)
+
+      expect(response.body).to include('Our team uses acknowledgement to confirm understanding.')
+      expect(response.body).not_to include('The OG process for clarity is a three step process.')
+    end
     
     it 'renders snapshot_row partial for pending snapshots' do
       get audit_organization_employee_path(organization, employee_teammate)

@@ -47,6 +47,18 @@
 
   .row.mb-4
     .col-6
+      %h5.mb-3 What is acknowledgement?
+      %p.text-muted.small
+        Shown to employees above the pending acknowledgements table on the audit page, and at the bottom of Check-ins Awaiting Acknowledgement on Get Shit Done. Supports Markdown. Clear the field and save to restore the default message.
+    .col-6
+      = f.text_area "preferences[#{Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY}]",
+                    value: @preferences[Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY],
+                    rows: 12,
+                    class: 'form-control font-monospace',
+                    disabled: !can_customize
+
+  .row.mb-4
+    .col-6
       %h5.mb-3 Get Shit Done
       %p.text-muted.small
         The label for the "Get Shit Done" dashboard (page title, nav tooltips, and links like "Back to Get Shit Done Dashboard"). Leave blank to use the default "Get Shit Done". The URL path stays /get_shit_done.

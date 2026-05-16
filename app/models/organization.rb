@@ -2,6 +2,17 @@ class Organization < ApplicationRecord
   include PgSearch::Model
   has_paper_trail
 
+  ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY = 'acknowledgement_explanation'
+
+  ACKNOWLEDGEMENT_EXPLANATION_DEFAULT = <<~MARKDOWN.strip.freeze
+    The OG process for clarity is a three step process.
+    (1) Both the employee and the manager individually reflect on how the employee is doing in relation to the expectations, without being able to see each other's responses.
+    (2) Then they meet and review each other's answers together. The manager enters the agreed upon rating.
+    (3) Finally, the employee acknowledges that this conversation happened, and they understand the ratings. **<< This is where you are**
+
+    This ensures clarity for all!
+  MARKDOWN
+
   # STI removed: always treat as Organization (ignore type column if present)
   self.inheritance_column = :_type_disabled
 

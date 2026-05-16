@@ -39,6 +39,10 @@
                     = link_to "Acknowledge", 
                               audit_organization_employee_path(organization, @teammate),
                               class: "btn btn-primary btn-sm"
+
+        = render 'shared/acknowledgement_explanation_callout',
+                 markdown_text: acknowledgement_explanation_markdown(organization),
+                 direction: :up
       - else
         %p.text-muted.mb-0 No check-ins awaiting acknowledgement.
 

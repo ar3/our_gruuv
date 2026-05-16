@@ -1,0 +1,7 @@
+-# locals: (markdown_text:, direction: :down)
+- direction = local_assigns.fetch(:direction, :down)
+- arrow_modifier = direction == :up ? 'acknowledgement-explanation-callout__arrow--up' : 'acknowledgement-explanation-callout__arrow--down'
+.d-flex.align-items-end.gap-3.acknowledgement-explanation-callout{class: direction == :up ? 'acknowledgement-explanation-callout--below' : 'acknowledgement-explanation-callout--above'}
+  %i.bi.bi-arrow-return-right.display-1.text-info.flex-shrink-0.acknowledgement-explanation-callout__arrow{class: arrow_modifier, "aria-hidden" => "true"}
+  .alert.alert-info.flex-grow-1.mb-0
+    .markdown-content= render_markdown(markdown_text)
