@@ -7,6 +7,9 @@ module OneOnOne
   # Two parallel renderers live here so the carousel partial and the Slack digest
   # share a single source of truth for copy and link targets:
   #
+  #   - `explanation_html` / `explanation_plain` — needs-attention copy (and success `reason_*` paths).
+  #   - `primary_action` — `{ label:, path:, slack_url: }` for the hub button and Slack CTA link.
+  #   - `action_item_slack_lines` — mrkdwn bullet lines for structured or legacy items.
   #   - `reason_html` / `item_html` produce HTML SafeBuffers for the view layer.
   #   - `reason_plain` / `item_plain` produce plain text for Slack (and future renderers).
   #
@@ -15,15 +18,18 @@ module OneOnOne
   # `priority[:concrete_items]` shape (strings or `{ label:, url:, add_goal_* }` hashes).
   class PriorityRenderer
     include Rails.application.routes.url_helpers
+    include AssociableGoalsHelper
 
     RATEABLE_TYPE_RANK = { "Assignment" => 0, "Aspiration" => 1, "Ability" => 2 }.freeze
 
-    attr_reader :priority, :organization, :teammate
+    attr_reader :priority, :organization, :teammate, :hub_return_url, :route_teammate_param
 
-    def initialize(priority:, organization:, teammate:)
+    def initialize(priority:, organization:, teammate:, hub_return_url: nil, route_teammate_param: nil)
       @priority = priority
       @organization = organization
       @teammate = teammate
+      @hub_return_url = hub_return_url
+      @route_teammate_param = route_teammate_param || teammate
     end
 
     def reason_html
@@ -130,6 +136,57 @@ module OneOnOne
         when String then attrs
         end
       end
+    end
+
+    def explanation_plain
+      reason_plain.presence || normalize_explanation_string(priority[:reason])
+    end
+
+    def explanation_html
+      html = reason_html
+      return html if html.present?
+
+      lines = reason_lines
+      if lines.any?
+        return h.tag.ul(class: "mb-0 ps-3") do
+          h.safe_join(lines.map { |line| h.tag.li(line, class: "mb-1") })
+        end
+      end
+
+      text = normalize_explanation_string(priority[:reason])
+      return "".html_safe if text.blank?
+
+      h.tag.p(ERB::Util.html_escape(text), class: "mb-0")
+    end
+
+    def primary_action
+      return nil unless priority[:needs_attention] && !priority[:not_applicable]
+
+      label = priority[:cta_label].to_s.presence
+      return nil if label.blank?
+
+      path = resolved_primary_action_path
+      return nil if path.blank?
+
+      slack_url = resolved_primary_action_slack_url(path)
+      { label: label, path: path, slack_url: slack_url }
+    end
+
+    def action_item_slack_lines
+      lines = []
+      mode = items_render_mode
+      if mode && items.any?
+        items.each do |item|
+          lines << slack_format_action_item(item, mode)
+        end
+      elsif priority[:concrete_items].present?
+        priority[:concrete_items].each do |item|
+          lines << slack_format_legacy_concrete_item(item)
+        end
+      end
+      remaining = priority[:remaining_count].to_i
+      lines << "• _+#{remaining} more_" if remaining.positive?
+      lines.compact
     end
 
     private
@@ -593,7 +650,15 @@ module OneOnOne
     end
 
     def one_on_one_hub_return_path
-      organization_company_teammate_one_on_one_link_path(organization, teammate)
+      hub_return_url.presence || organization_company_teammate_one_on_one_link_path(organization, route_teammate_param)
+    end
+
+    def one_on_one_hub_return_slack_url
+      hub_return_url.present? ? absolute_url_for_path(hub_return_url) : organization_company_teammate_one_on_one_link_url(organization, teammate)
+    end
+
+    def route_teammate
+      route_teammate_param
     end
 
     # ---------- shared helpers ----------
@@ -657,6 +722,157 @@ module OneOnOne
 
     def internal_teammate_path(tm)
       internal_organization_company_teammate_path(organization, tm)
+    end
+
+    def normalize_explanation_string(reason)
+      case reason
+      when Array
+        reason.compact.map(&:to_s).reject(&:blank?).join(" ")
+      when String
+        reason
+      else
+        ""
+      end
+    end
+
+    def resolved_primary_action_path
+      path = priority[:cta_path].to_s.presence
+      return path if path.present?
+
+      case priority[:cta_kind]
+      when :sync_anchor
+        "#sync"
+      when :check_ins_review_most_recent
+        review_most_recent_organization_company_teammate_check_ins_path(organization, route_teammate_param)
+      when :my_growth_abilities
+        my_growth_abilities_organization_company_teammate_path(organization, route_teammate_param)
+      when :my_growth_experiences
+        my_growth_experiences_organization_company_teammate_path(organization, route_teammate_param)
+      when :my_growth_goals
+        my_growth_goals_organization_company_teammate_path(organization, route_teammate_param)
+      when :new_observation
+        new_organization_observation_path(
+          organization,
+          return_url: one_on_one_hub_return_path,
+          return_text: "Back to 1:1 Hub"
+        )
+      when :new_feedback_request
+        new_organization_feedback_request_path(organization)
+      when :goals_index
+        organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}")
+      when :bulk_goals
+        bulk_new_organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}")
+      when :associable_goals
+        associable = priority[:cta_associable]
+        return nil if associable.blank?
+
+        associable_goals_choose_manage_path(
+          organization,
+          associable,
+          return_url: one_on_one_hub_return_path,
+          return_text: "Back to 1:1 Hub",
+          for_company_teammate_id: teammate.id
+        )
+      end
+    end
+
+    def resolved_primary_action_slack_url(path)
+      return path if path.to_s.match?(/\Ahttps?:\/\//i)
+
+      if path.to_s.start_with?("#")
+        return "#{organization_company_teammate_one_on_one_link_url(organization, teammate)}#{path}"
+      end
+
+      return absolute_url_for_path(path) if priority[:cta_path].present?
+
+      case priority[:cta_kind]
+      when :sync_anchor
+        "#{organization_company_teammate_one_on_one_link_url(organization, teammate)}#sync"
+      when :check_ins_review_most_recent
+        review_most_recent_organization_company_teammate_check_ins_url(organization, teammate)
+      when :my_growth_abilities
+        my_growth_abilities_organization_company_teammate_url(organization, teammate)
+      when :my_growth_experiences
+        my_growth_experiences_organization_company_teammate_url(organization, teammate)
+      when :my_growth_goals
+        my_growth_goals_organization_company_teammate_url(organization, teammate)
+      when :new_observation
+        new_organization_observation_url(
+          organization,
+          return_url: one_on_one_hub_return_slack_url,
+          return_text: "Back to 1:1 Hub"
+        )
+      when :new_feedback_request
+        new_organization_feedback_request_url(organization)
+      when :goals_index
+        organization_goals_url(organization, owner_id: "CompanyTeammate_#{teammate.id}")
+      when :bulk_goals
+        bulk_new_organization_goals_url(organization, owner_id: "CompanyTeammate_#{teammate.id}")
+      when :associable_goals
+        associable_goals_choose_manage_slack_url(priority[:cta_associable])
+      when :open_top_prioritized_check_in
+        absolute_url_for_path(path)
+      else
+        absolute_url_for_path(path)
+      end
+    end
+
+    def associable_goals_choose_manage_slack_url(associable)
+      return nil if associable.blank?
+
+      opts = {
+        return_url: one_on_one_hub_return_slack_url,
+        return_text: "Back to 1:1 Hub",
+        for_company_teammate_id: teammate.id
+      }
+      case associable
+      when Assignment
+        choose_manage_goals_organization_assignment_url(organization, associable, **opts)
+      when Ability
+        choose_manage_goals_organization_ability_url(organization, associable, **opts)
+      when Aspiration
+        choose_manage_goals_organization_aspiration_url(organization, associable, **opts)
+      end
+    end
+
+    def absolute_url_for_path(path)
+      return path.to_s if path.to_s.match?(/\Ahttps?:\/\//i)
+
+      host = Rails.application.routes.default_url_options[:host].presence ||
+        Rails.application.config.action_mailer.default_url_options&.dig(:host)
+      return path.to_s if host.blank?
+
+      protocol = Rails.application.routes.default_url_options[:protocol] ||
+        Rails.application.config.action_mailer.default_url_options&.dig(:protocol) ||
+        "https"
+      "#{protocol}://#{host}#{path}"
+    end
+
+    def slack_format_action_item(item, mode)
+      case mode
+      when :html
+        "• #{ERB::Util.html_escape(item_plain(item))}"
+      when :link
+        attrs = item_label_url(item)
+        slack_format_legacy_concrete_item(attrs)
+      end
+    end
+
+    def slack_format_legacy_concrete_item(item)
+      case item
+      when Hash
+        label = ERB::Util.html_escape(item[:label].to_s)
+        url = item[:url].to_s
+        bullet = url.present? ? "• <#{url}|#{label}>" : "• #{label}"
+        add_label = item[:add_goal_label].to_s
+        add_url = item[:add_goal_url].to_s
+        if add_url.present? && add_label.present?
+          bullet += " — <#{add_url}|#{ERB::Util.html_escape(add_label)}>"
+        end
+        bullet
+      else
+        "• #{ERB::Util.html_escape(item.to_s)}"
+      end
     end
   end
 end

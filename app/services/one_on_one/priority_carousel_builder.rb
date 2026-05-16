@@ -75,8 +75,8 @@ module OneOnOne
       if cache.blank?
         return attention_priority(
           ASANA_URGENT_TASKS_TITLE,
-          "Asana is linked but project data is not synced yet.",
-          ["Sync the Asana project first to evaluate urgent tasks."],
+          "The 1:1 Asana project is linked but task data has not been synced yet. Sync the project so we can surface overdue and due-soon tasks in this queue.",
+          [],
           cta_kind: :sync_anchor,
           cta_label: "Sync Asana now"
         )
@@ -91,7 +91,7 @@ module OneOnOne
       if tasks.any?
         attention_priority(
           ASANA_URGENT_TASKS_TITLE,
-          "There are tasks overdue or due in the next week.",
+          "Urgent Asana work competes with everything else in the 1:1. When tasks are overdue or due within a week, review them in Asana and update plan or due dates so nothing critical slips.",
           [],
           cta_kind: :sync_anchor,
           cta_label: "Open urgent Asana tasks",
@@ -127,7 +127,7 @@ module OneOnOne
         top_check_in_path ||= review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
         attention_priority(
           title,
-          nil,
+          "Blurred or obscured check-ins mean expectations are not clear enough to coach on. Re-open the highest-priority check-in and clarify rating and comments before the 1:1.",
           [],
           total_item_count: rows.count,
           cta_kind: :open_top_prioritized_check_in,
@@ -388,10 +388,13 @@ module OneOnOne
           observation_given_feedback_opportunity_rows.sort_by { |o| [-o[:sort_energy], o[:text].downcase] }
         )
         viewer_is_subject = @viewing_company_teammate.present? && @viewing_company_teammate.id == @teammate.id
+        observation_given_explanation =
+          "Published observations to others keep feedback flowing across the team. " \
+          "When #{teammate_casual_name} has not given one in 30 days, use a specific opportunity below or start a new observation."
         if suggestion_rows.any?
           attention_priority(
             title,
-            "No published non-journal observation was given to someone else in the last 30 days.",
+            observation_given_explanation,
             [],
             total_item_count: suggestion_rows.size,
             display_item_limit: 5,
@@ -408,10 +411,8 @@ module OneOnOne
         else
           attention_priority(
             title,
-            "No published non-journal observation was given to someone else in the last 30 days.",
-            ["Give one concrete observation to support someone else this week."],
-            total_item_count: 1,
-            display_item_limit: 5,
+            observation_given_explanation,
+            [],
             cta_kind: viewer_is_subject ? :new_observation : :new_feedback_request,
             cta_label:
               if viewer_is_subject
@@ -484,10 +485,13 @@ module OneOnOne
           @organization,
           subject_of_feedback_teammate_id: @teammate.id
         )
+        observation_received_explanation =
+          "Fresh feedback helps #{teammate_casual_name} know how they are doing. " \
+          "When no published observation arrived in 30 days, request feedback using a specific opportunity below."
         if suggestion_rows.any?
           attention_priority(
             title,
-            "No published non-journal observation was received in the last 30 days.",
+            observation_received_explanation,
             [],
             total_item_count: suggestion_rows.size,
             display_item_limit: 5,
@@ -500,10 +504,8 @@ module OneOnOne
         else
           attention_priority(
             title,
-            "No published non-journal observation was received in the last 30 days.",
-            ["Request fresh feedback to keep clarity high."],
-            total_item_count: 1,
-            display_item_limit: 5,
+            observation_received_explanation,
+            [],
             cta_kind: :new_feedback_request,
             cta_label: "Request feedback about #{teammate_casual_name}",
             cta_path: feedback_new_path
@@ -549,7 +551,8 @@ module OneOnOne
         )
         attention_priority(
           title,
-          "At least one working-to-meet assignment/aspiration has no published non-journal observation in the last 30 days.",
+          "Working-to-meet areas need recent feedback so growth stays targeted. " \
+          "When an assignment or aspiration rated working to meet has no published observation in 30 days, request feedback on that area.",
           [],
           total_item_count: item_data.size,
           display_item_limit: 5,
@@ -676,8 +679,8 @@ module OneOnOne
       if cache.blank?
         return attention_priority(
           REMAINING_ASANA_TASKS_TITLE,
-          "Asana is linked but project data is not synced yet.",
-          ["Sync the Asana project first to evaluate remaining tasks."],
+          "The 1:1 Asana project is linked but task data has not been synced yet. Sync the project so we can evaluate remaining incomplete tasks.",
+          [],
           cta_kind: :sync_anchor,
           cta_label: "Sync Asana now"
         )
@@ -687,7 +690,8 @@ module OneOnOne
       if remaining.any?
         attention_priority(
           REMAINING_ASANA_TASKS_TITLE,
-          "There are still incomplete tasks in the linked Asana project.",
+          "Clearing the linked Asana project keeps execution aligned with the 1:1. " \
+          "When incomplete tasks remain, review them in Asana and close or reschedule what is no longer needed.",
           [],
           cta_kind: :sync_anchor,
           cta_label: "Open remaining tasks",
@@ -709,8 +713,9 @@ module OneOnOne
       if active_goal_count.zero?
         attention_priority(
           title,
-          "The teammate currently has no active goals.",
-          ["Start at least one active goal to keep growth moving."],
+          "Active goals give #{teammate_casual_name} a concrete path for growth. " \
+          "When there are no active goals, create at least one goal to anchor the 1:1 conversation.",
+          [],
           cta_kind: :bulk_goals,
           cta_label: "Create goals"
         )

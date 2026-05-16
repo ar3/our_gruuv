@@ -139,11 +139,17 @@ RSpec.describe Digest::SlackMessageBuilderService do
   end
 
   describe '#about_me_main_payload' do
-    it 'includes weekly header with top 1:1 focus beside image, then summary with About link (no second top focus)' do
+    it 'includes weekly header with top 1:1 focus beside image, action-item divider, then About summary' do
       allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
         {
           priorities: [
-            { needs_attention: true, title: 'Example priority', reason: 'Example reason.' }
+            {
+              needs_attention: true,
+              title: 'Example priority',
+              reason: 'Example reason.',
+              cta_kind: :bulk_goals,
+              cta_label: 'Create goals'
+            }
           ],
           needs_attention_count: 1,
           total_count: 12,
@@ -156,19 +162,21 @@ RSpec.describe Digest::SlackMessageBuilderService do
 
       expect(result).to have_key(:blocks)
       expect(result).to have_key(:text)
-      expect(result[:blocks].size).to eq(2)
+      expect(result[:blocks].size).to be >= 3
 
       header_text = result[:blocks].first.dig(:text, :text)
       expect(header_text).to match(/\|Weekly 1:1 check-in> for /)
       expect(header_text).to include('Top 1:1 focus')
       expect(header_text).to include('Example priority')
       expect(header_text).to include('Example reason.')
+      expect(header_text).to include('Primary action:')
 
-      second_text = result[:blocks].second.dig(:text, :text)
-      expect(second_text).to include('healthy')
-      expect(second_text).to include('It is time for our weekly check-in.')
-      expect(second_text).not_to include('Top 1:1 focus')
-      expect(second_text).to match(
+      summary_block = result[:blocks].last
+      summary_text = summary_block.dig(:text, :text)
+      expect(summary_text).to include('healthy')
+      expect(summary_text).to include('It is time for our weekly check-in.')
+      expect(summary_text).not_to include('Top 1:1 focus')
+      expect(summary_text).to match(
         /\d+ <https?:\/\/[^|]+\|About #{Regexp.escape(person.casual_name)}> sections are healthy/
       )
 
@@ -183,7 +191,15 @@ RSpec.describe Digest::SlackMessageBuilderService do
       allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
         {
           priorities: [
-            { needs_attention: true, title: asana_title, reason: 'Sync first.', concrete_items: [], remaining_count: 0 }
+            {
+              needs_attention: true,
+              title: asana_title,
+              reason: 'Sync first.',
+              cta_kind: :sync_anchor,
+              cta_label: 'Sync Asana now',
+              concrete_items: [],
+              remaining_count: 0
+            }
           ],
           needs_attention_count: 1,
           total_count: 12,
@@ -197,7 +213,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
       expect(header_text).to include("<https://app.asana.com/0/111/222|#{asana_title}>")
     end
 
-    it 'links each listed Asana urgent task to its Asana URL in the top focus line' do
+    it 'lists Asana urgent tasks in a separate block below the top focus header' do
       create(:one_on_one_link, teammate: teammate, url: 'https://app.asana.com/0/111/222')
       asana_title = OneOnOne::PriorityCarouselBuilder::ASANA_URGENT_TASKS_TITLE
       allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
@@ -207,9 +223,10 @@ RSpec.describe Digest::SlackMessageBuilderService do
               needs_attention: true,
               title: asana_title,
               reason: 'There are tasks overdue or due in the next week.',
-              concrete_items: [
-                { label: 'Task A (due Jan 01)', url: 'https://app.asana.com/0/111/taskgid1' }
-              ],
+              cta_kind: :sync_anchor,
+              cta_label: 'Open urgent Asana tasks',
+              data_kind: :asana_tasks_attention,
+              items: [{ task: { 'gid' => 'taskgid1', 'name' => 'Task A', 'due_on' => '2026-01-01' }, project_id: '111' }],
               remaining_count: 2
             }
           ],
@@ -220,10 +237,49 @@ RSpec.describe Digest::SlackMessageBuilderService do
       )
 
       builder = described_class.new(teammate: teammate, organization: organization)
-      header_text = builder.about_me_main_payload[:blocks].first.dig(:text, :text)
+      blocks = builder.about_me_main_payload[:blocks]
+      bullets_block = blocks.find { |b| b.dig(:text, :text).to_s.include?('Task A') }
+      bullets_text = bullets_block.dig(:text, :text)
 
-      expect(header_text).to include('<https://app.asana.com/0/111/taskgid1|Task A (due Jan 01)>')
-      expect(header_text).to include('• _+2 more_')
+      expect(bullets_text).to include('Task A')
+      expect(bullets_text).to include('• _+2 more_')
+    end
+  end
+
+  describe '#about_me_priorities_thread_payload' do
+    it 'lists each needs-attention priority with explanation and primary action' do
+      allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
+        {
+          priorities: [
+            {
+              needs_attention: true,
+              title: 'First priority',
+              reason: 'First explanation.',
+              cta_kind: :bulk_goals,
+              cta_label: 'Create goals'
+            },
+            {
+              needs_attention: true,
+              title: 'Second priority',
+              reason: 'Second explanation.',
+              cta_kind: :my_growth_goals,
+              cta_label: 'Grow by goals'
+            }
+          ],
+          needs_attention_count: 2,
+          total_count: 12,
+          first_attention_index: 0
+        }
+      )
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      result = builder.about_me_priorities_thread_payload
+
+      expect(result[:text]).to include('First priority')
+      expect(result[:text]).to include('First explanation.')
+      expect(result[:text]).to include('Primary action:')
+      expect(result[:text]).to include('Second priority')
+      expect(result[:text]).to include('Second explanation.')
     end
   end
 

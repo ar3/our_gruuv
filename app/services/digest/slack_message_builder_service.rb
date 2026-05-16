@@ -100,17 +100,18 @@ module Digest
 
     def about_me_main_payload
       summary = about_me_summary_sentence_for_slack
-      top_line = top_one_thing_slack_line
       weekly_line = 'It is time for our weekly check-in.'
       subject_name = slack_escape(@teammate.person.display_name)
       helpers = Rails.application.routes.url_helpers
       one_on_one_hub_url = helpers.organization_company_teammate_one_on_one_link_url(@organization, @teammate)
       weekly_linked = "<#{one_on_one_hub_url}|Weekly 1:1 check-in>"
 
-      header_text = "*#{weekly_linked} for #{subject_name}*\n\n#{top_line}"
+      header_lines = ["*#{weekly_linked} for #{subject_name}*", ""]
+      header_lines.concat(top_one_thing_slack_focus_lines)
+      header_text = truncate_for_slack_section(header_lines.join("\n"))
       header_block = {
         type: 'section',
-        text: { type: 'mrkdwn', text: truncate_for_slack_section(header_text) }
+        text: { type: 'mrkdwn', text: header_text }
       }
       profile_image_url = @teammate.profile_image_url.to_s
       if profile_image_url.present?
@@ -121,13 +122,40 @@ module Digest
         }
       end
 
+      blocks = [header_block]
+      bullets_text = top_one_thing_slack_action_items_text
+      if bullets_text.present?
+        blocks << { type: 'divider' }
+        blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(bullets_text) } }
+      end
+
       main_text = "#{summary}\n#{weekly_line}"
-      blocks = [
-        header_block,
-        { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(main_text) } }
-      ]
+      blocks << { type: 'divider' }
+      blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(main_text) } }
 
       { blocks: blocks, text: main_text }
+    end
+
+    def about_me_priorities_thread_payload
+      priorities = one_thing_priorities_needing_attention
+      if priorities.empty?
+        text = "All clear — nothing in the 12-priority queue needs action right now."
+        return { blocks: [{ type: 'section', text: { type: 'mrkdwn', text: text } }], text: text }
+      end
+
+      blocks = [{ type: 'section', text: { type: 'mrkdwn', text: "*1:1 priorities needing attention (#{priorities.size})*" } }]
+      one_on_one_link = @teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
+
+      priorities.each_with_index do |priority, idx|
+        blocks << { type: 'divider' } if idx.positive?
+        blocks << {
+          type: 'section',
+          text: { type: 'mrkdwn', text: truncate_for_slack_section(priority_slack_summary_lines(priority, one_on_one_link).join("\n")) }
+        }
+      end
+
+      text = priorities.map { |p| priority_slack_summary_lines(p, one_on_one_link).join("\n") }.join("\n---\n")
+      { blocks: blocks, text: truncate_for_slack_section(text) }
     end
 
     def about_me_thread_payload
@@ -210,64 +238,75 @@ module Digest
       "#{green_sections.size} #{about_link} sections are healthy, #{yellow_sections.size} sections need some attention, and #{red_sections.size} sections need the most attention."
     end
 
-    def top_one_thing_slack_line
+    def one_thing_carousel_data
+      @one_thing_carousel_data ||= begin
+        one_on_one_link = @teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
+        OneOnOne::PriorityCarouselBuilder.call(
+          organization: @organization,
+          teammate: @teammate,
+          one_on_one_link: one_on_one_link,
+          viewing_company_teammate: @teammate
+        )
+      end
+    end
+
+    def one_thing_priorities_needing_attention
+      one_thing_carousel_data[:priorities].select { |row| row[:needs_attention] && !row[:not_applicable] }
+    end
+
+    def top_one_thing_priority
+      one_thing_priorities_needing_attention.first
+    end
+
+    def top_one_thing_slack_focus_lines
+      priority = top_one_thing_priority
+      return ["*Top 1:1 focus:* All clear — nothing in the 12-priority queue needs action right now."] if priority.blank?
+
       one_on_one_link = @teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
-      data = OneOnOne::PriorityCarouselBuilder.call(
-        organization: @organization,
-        teammate: @teammate,
-        one_on_one_link: one_on_one_link
-      )
-      priority = data[:priorities].find { |row| row[:needs_attention] }
-      if priority
-        asana_title = OneOnOne::PriorityCarouselBuilder::ASANA_URGENT_TASKS_TITLE
-        title_display =
-          if priority[:title] == asana_title && one_on_one_link.url.present?
-            "<#{one_on_one_link.url}|#{slack_escape(asana_title)}>"
-          else
-            slack_escape(priority[:title])
-          end
-        renderer = OneOnOne::PriorityRenderer.new(priority: priority, organization: @organization, teammate: @teammate)
-        reason_plain = renderer.reason_plain.presence || slack_priority_reason_plain(priority[:reason])
-        reason_suffix =
-          if reason_plain.present?
-            " — #{slack_escape(reason_plain)}"
-          else
-            ""
-          end
-        lines = ["*Top 1:1 focus:* #{title_display}#{reason_suffix}"]
-        if priority[:title] == asana_title && priority[:concrete_items].present?
-          priority[:concrete_items].each do |item|
-            lines << "• #{slack_priority_concrete_item(item)}"
-          end
-          rem = priority[:remaining_count].to_i
-          lines << "• _+#{rem} more_" if rem.positive?
+      priority_slack_summary_lines(priority, one_on_one_link, heading: "*Top 1:1 focus:*")
+    end
+
+    def top_one_thing_slack_action_items_text
+      priority = top_one_thing_priority
+      return "" if priority.blank?
+
+      renderer = priority_renderer_for(priority)
+      lines = renderer.action_item_slack_lines
+      lines.join("\n") if lines.any?
+    end
+
+    def priority_slack_summary_lines(priority, one_on_one_link, heading: nil)
+      renderer = priority_renderer_for(priority)
+      asana_title = OneOnOne::PriorityCarouselBuilder::ASANA_URGENT_TASKS_TITLE
+      title_display =
+        if priority[:title] == asana_title && one_on_one_link.url.present?
+          "<#{one_on_one_link.url}|#{slack_escape(asana_title)}>"
+        else
+          slack_escape(priority[:title])
         end
-        truncate_for_slack_section(lines.join("\n"))
-      else
-        "*Top 1:1 focus:* All clear — nothing in the 12-priority queue needs action right now."
+
+      lines = []
+      lines << "#{heading} #{title_display}" if heading.present?
+      lines << "*#{title_display}*" unless heading.present?
+
+      explanation = renderer.explanation_plain
+      lines << slack_escape(explanation) if explanation.present?
+
+      action = renderer.primary_action
+      if action && action[:slack_url].present?
+        lines << "*Primary action:* <#{action[:slack_url]}|#{slack_escape(action[:label])}>"
+      elsif action
+        lines << "*Primary action:* #{slack_escape(action[:label])}"
       end
+      lines
     end
 
-    def slack_priority_reason_plain(reason)
-      case reason
-      when Array
-        reason.compact.map(&:to_s).reject(&:blank?).join(" ")
-      when String
-        reason
-      else
-        ""
-      end
-    end
-
-    def slack_priority_concrete_item(item)
-      case item
-      when Hash
-        label = slack_escape(item[:label].to_s)
-        url = item[:url].to_s
-        url.present? ? "<#{url}|#{label}>" : label
-      else
-        slack_escape(item.to_s)
-      end
+    def priority_renderer_for(priority)
+      OneOnOne::PriorityRenderer.new(
+        priority: priority,
+        organization: @organization,
+        teammate: @teammate
+      )
     end
 
     # Returns [link_text, url] for the About Me section. URL is full URL for Slack mrkdwn links.

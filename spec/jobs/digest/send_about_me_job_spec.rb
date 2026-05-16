@@ -29,7 +29,7 @@ RSpec.describe Digest::SendAboutMeJob, type: :job do
 
     expect {
       described_class.perform_now(employee.id, '2026-16')
-    }.to change { Notification.where(notification_type: 'about_me_digest').count }.by(2)
+    }.to change { Notification.where(notification_type: 'about_me_digest').count }.by(3)
 
     expect(slack_service).to have_received(:open_or_create_group_dm).with(user_ids: contain_exactly('UEMP', 'UMGR'))
     expect(UserPreference.for_person(employee_person).preference(:about_me_last_sent_week)).to eq('2026-16')

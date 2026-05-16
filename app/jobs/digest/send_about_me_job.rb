@@ -35,6 +35,7 @@ module Digest
       digest_metadata = { channel: dm[:channel_id], username: ABOUT_ME_BOT_USERNAME }
       builder = Digest::SlackMessageBuilderService.new(teammate: teammate, organization: organization)
       main_payload = builder.about_me_main_payload
+      priorities_payload = builder.about_me_priorities_thread_payload
       detail_payload = builder.about_me_thread_payload
 
       main_notification = Notification.create!(
@@ -49,7 +50,18 @@ module Digest
       result = slack_service.post_message(main_notification.id)
       return unless result[:success] && main_notification.reload.message_id.present?
 
-      thread_notification = Notification.create!(
+      priorities_thread_notification = Notification.create!(
+        notifiable: teammate,
+        notification_type: 'about_me_digest',
+        main_thread: main_notification,
+        status: 'preparing_to_send',
+        metadata: digest_metadata,
+        rich_message: priorities_payload[:blocks],
+        fallback_text: priorities_payload[:text]
+      )
+      slack_service.post_message(priorities_thread_notification.id)
+
+      detail_thread_notification = Notification.create!(
         notifiable: teammate,
         notification_type: 'about_me_digest',
         main_thread: main_notification,
@@ -58,7 +70,7 @@ module Digest
         rich_message: detail_payload[:blocks],
         fallback_text: detail_payload[:text]
       )
-      slack_service.post_message(thread_notification.id)
+      slack_service.post_message(detail_thread_notification.id)
 
       return if week_key.blank?
 
