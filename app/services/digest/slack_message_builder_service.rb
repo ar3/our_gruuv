@@ -139,7 +139,7 @@ module Digest
     def about_me_priorities_thread_payload
       priorities = one_thing_priorities_needing_attention
       if priorities.empty?
-        text = "All clear — nothing in the 12-priority queue needs action right now."
+        text = "All clear — nothing in the 13-priority queue needs action right now."
         return { blocks: [{ type: 'section', text: { type: 'mrkdwn', text: text } }], text: text }
       end
 
@@ -260,7 +260,7 @@ module Digest
 
     def top_one_thing_slack_focus_lines
       priority = top_one_thing_priority
-      return ["*Top 1:1 focus:* All clear — nothing in the 12-priority queue needs action right now."] if priority.blank?
+      return ["*Top 1:1 focus:* All clear — nothing in the 13-priority queue needs action right now."] if priority.blank?
 
       one_on_one_link = @teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
       priority_slack_summary_lines(priority, one_on_one_link, heading: "*Top 1:1 focus:*")

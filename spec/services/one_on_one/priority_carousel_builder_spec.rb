@@ -5,7 +5,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
   let(:teammate) { create(:teammate, organization: organization) }
 
   describe ".call" do
-    it "builds 12 ordered priorities and starts at first attention item" do
+    it "builds 13 ordered priorities and starts at first attention item" do
       one_on_one_link = create(:one_on_one_link, teammate: teammate, url: "https://app.asana.com/0/123/456")
 
       result = described_class.call(
@@ -14,10 +14,74 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
         one_on_one_link: one_on_one_link
       )
 
-      expect(result[:priorities].size).to eq(12)
+      expect(result[:priorities].size).to eq(13)
       expect(result[:priorities].first[:title]).to eq(described_class::ASANA_URGENT_TASKS_TITLE)
       expect(result[:priorities].first[:needs_attention]).to eq(true)
       expect(result[:first_attention_index]).to eq(0)
+    end
+
+    it "flags check-ins ready for joint review as priority 2 when both sides have reflected" do
+      manager_person = create(:person, first_name: "Morgan", last_name: "Manager")
+      manager_teammate = create(:teammate, person: manager_person, organization: organization)
+      create(
+        :employment_tenure,
+        teammate: teammate,
+        company: organization,
+        manager_teammate: manager_teammate,
+        started_at: 1.year.ago,
+        ended_at: nil
+      )
+
+      zebra_aspiration = create(:aspiration, company: organization, name: "Zebra Value")
+      alpha_assignment = create(:assignment, company: organization.root_company || organization, title: "Alpha Assignment")
+      create(:aspiration_check_in, :ready_for_finalization, teammate: teammate, aspiration: zebra_aspiration)
+      create(:assignment_check_in, :ready_for_finalization, teammate: teammate, assignment: alpha_assignment)
+
+      one_on_one_link = create(:one_on_one_link, teammate: teammate, url: "https://example.com/1-1")
+      result = described_class.call(
+        organization: organization,
+        teammate: teammate,
+        one_on_one_link: one_on_one_link
+      )
+
+      ready = result[:priorities][1]
+      expect(ready[:title]).to eq(described_class::CHECK_INS_READY_FOR_REVIEW_TITLE)
+      expect(ready[:needs_attention]).to eq(true)
+      expect(ready[:data_kind]).to eq(:ready_for_review_attention)
+      expect(ready[:cta_label]).to eq("Review 2 check-ins together")
+      expect(ready[:reason]).to include("OG check-ins are a three-step process")
+      expect(ready[:items].map { |i| i[:display_title] }).to eq(["Zebra Value", "Alpha Assignment"])
+
+      renderer = OneOnOne::PriorityRenderer.new(priority: ready, organization: organization, teammate: teammate)
+      expect(renderer.explanation_plain).to include("crystal clear")
+      expect(renderer.primary_action[:path]).to include("finalization")
+    end
+
+    it "shows success for ready-for-review priority when nothing is waiting for joint review" do
+      manager_person = create(:person, first_name: "Morgan", last_name: "Manager")
+      manager_teammate = create(:teammate, person: manager_person, organization: organization)
+      create(
+        :employment_tenure,
+        teammate: teammate,
+        company: organization,
+        manager_teammate: manager_teammate,
+        started_at: 1.year.ago,
+        ended_at: nil
+      )
+
+      one_on_one_link = create(:one_on_one_link, teammate: teammate, url: "https://example.com/1-1")
+      result = described_class.call(
+        organization: organization,
+        teammate: teammate,
+        one_on_one_link: one_on_one_link
+      )
+
+      ready = result[:priorities][1]
+      expect(ready[:needs_attention]).to eq(false)
+      expect(ready[:reason]).to include("No check-ins are waiting for review between")
+      expect(ready[:reason]).to include(teammate.person.casual_name)
+      expect(ready[:reason]).to include("Morgan")
+      expect(ready[:reason]).to include("(or another manager)")
     end
 
     it "marks Asana-specific priorities as not applicable when no Asana source" do
@@ -30,13 +94,13 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       )
 
       first = result[:priorities][0]
-      eighth = result[:priorities][8]
-      remaining_asana = result[:priorities][10]
+      ninth = result[:priorities][9]
+      remaining_asana = result[:priorities][11]
 
       expect(first[:title]).to eq(described_class::ASANA_URGENT_TASKS_TITLE)
       expect(first[:not_applicable]).to eq(true)
       expect(first[:needs_attention]).to eq(false)
-      expect(eighth[:title]).to eq("Does #{teammate.person.casual_name} have at least one active goal?")
+      expect(ninth[:title]).to eq("Does #{teammate.person.casual_name} have at least one active goal?")
       expect(remaining_asana[:title]).to eq(described_class::REMAINING_ASANA_TASKS_TITLE)
       expect(remaining_asana[:not_applicable]).to eq(true)
     end
@@ -107,7 +171,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
 
       expect(wtm_priority[:needs_attention]).to eq(true)
       expect(wtm_priority[:reason]).to eq(
-        "Whenever we are working to meet expectations, we should have goals that help give clarity as to what has to be done in order to be meeting expectations"
+        "Whenever we are working to meet expectations, clarity demands that we have goals attached to those assignments or aspirational values. Add these goals so the path to meeting expectations is clear!"
       )
       expect(wtm_priority[:data_kind]).to eq(:wtm_gap_without_goals_attention)
       expect(wtm_priority[:concrete_items]).to eq([])
@@ -283,7 +347,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
         teammate: hub_tm,
         one_on_one_link: one_on_one_link
       )
-      p5 = result[:priorities][4]
+      p5 = result[:priorities][5]
 
       expect(p5[:title]).to include("given a published observation")
       expect(p5[:needs_attention]).to eq(false)
@@ -341,7 +405,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
         teammate: hub_tm,
         one_on_one_link: one_on_one_link
       )
-      p6 = result[:priorities][5]
+      p6 = result[:priorities][6]
 
       expect(p6[:title]).to include("received a published observation")
       expect(p6[:needs_attention]).to eq(false)
@@ -459,7 +523,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
         teammate: hub_tm,
         one_on_one_link: one_on_one_link
       )
-      p9 = result[:priorities][8]
+      p9 = result[:priorities][9]
 
       expect(p9[:title]).to include("at least one active goal")
       expect(p9[:needs_attention]).to eq(false)
@@ -490,7 +554,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       create(:assignment_tenure, teammate: peer_tm, assignment: supplier)
 
       result = described_class.call(organization: organization, teammate: hub_tm, one_on_one_link: one_on_one_link)
-      p5 = result[:priorities][4]
+      p5 = result[:priorities][5]
 
       expect(p5[:title]).to include("given a published observation")
       expect(p5[:needs_attention]).to eq(true)
@@ -521,7 +585,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       create(:assignment_tenure, teammate: peer_tm, assignment: consumer)
 
       result = described_class.call(organization: organization, teammate: hub_tm, one_on_one_link: one_on_one_link)
-      p6 = result[:priorities][5]
+      p6 = result[:priorities][6]
 
       expect(p6[:title]).to include("received a published observation")
       expect(p6[:needs_attention]).to eq(true)

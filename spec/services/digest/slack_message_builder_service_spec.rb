@@ -152,7 +152,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
             }
           ],
           needs_attention_count: 1,
-          total_count: 12,
+          total_count: 13,
           first_attention_index: 0
         }
       )
@@ -202,7 +202,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
             }
           ],
           needs_attention_count: 1,
-          total_count: 12,
+          total_count: 13,
           first_attention_index: 0
         }
       )
@@ -231,7 +231,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
             }
           ],
           needs_attention_count: 1,
-          total_count: 12,
+          total_count: 13,
           first_attention_index: 0
         }
       )
@@ -267,7 +267,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
             }
           ],
           needs_attention_count: 2,
-          total_count: 12,
+          total_count: 13,
           first_attention_index: 0
         }
       )

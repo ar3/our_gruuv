@@ -1,6 +1,6 @@
 # One Thing Priority Queue (1:1 Hub)
 
-The **One Thing Priority Queue** is the carousel on a teammate’s **1:1 Hub**. It walks managers and employees through twelve checks in a fixed order. The first item that **needs attention** is the recommended focus for the 1:1.
+The **One Thing Priority Queue** is the carousel on a teammate’s **1:1 Hub**. It walks managers and employees through thirteen checks in a fixed order. The first item that **needs attention** is the recommended focus for the 1:1.
 
 ## Needs-attention card structure
 
@@ -17,17 +17,18 @@ Every priority in **needs attention** mode should present three parts:
 | # | Question | Needs attention when |
 |---|----------|----------------------|
 | 1 | Are there overdue or due-soon Asana tasks? | Asana 1:1 project has urgent incomplete tasks (N/A if not Asana-linked) |
-| 2 | Are any position, assignment, or aspiration check-ins blurred (check-in 60+ days old) or obscured (check-in 90+ days old)? | Any required check-in is blurred or obscured |
-| 3 | Are any WTM assignments or aspirations missing active goals? | WTM rating without an active goal on that area |
-| 4 | Are any current-position ability milestones below target missing active goals? | Ability gap on current position without a covering goal |
-| 5 | Has the teammate given a published observation to someone else in 30 days? | None given |
-| 6 | Has the teammate received a published observation in 30 days? | None received |
-| 7 | Have all WTM assignments/aspirations received an observation in 30 days? | Any WTM area missing recent observation |
-| 8 | Do all active goals have a check-in for this week? | Any active goal missing this week’s check-in |
-| 9 | Does the teammate have at least one active goal? | Zero active goals |
-| 10 | Are target-position ability milestones below target missing active goals? | Target-only ability gap without goal |
-| 11 | Are there incomplete tasks in the linked Asana project? | Any incomplete tasks remain (N/A if not Asana-linked) |
-| 12 | Are target-position-only required assignments missing active goals? | Target-only required assignment without goal |
+| 2 | Are there check-ins ready for review together? | Any position, assignment, or aspiration check-in is `ready_for_finalization` (both sides reflected; joint review not done) |
+| 3 | Are any position, assignment, or aspiration check-ins blurred (check-in 60+ days old) or obscured (check-in 90+ days old)? | Any required check-in is blurred or obscured |
+| 4 | Are any WTM assignments or aspirations missing active goals? | WTM rating without an active goal on that area |
+| 5 | Are any current-position ability milestones below target missing active goals? | Ability gap on current position without a covering goal |
+| 6 | Has the teammate given a published observation to someone else in 30 days? | None given |
+| 7 | Has the teammate received a published observation in 30 days? | None received |
+| 8 | Have all WTM assignments/aspirations received an observation in 30 days? | Any WTM area missing recent observation |
+| 9 | Do all active goals have a check-in for this week? | Any active goal missing this week’s check-in |
+| 10 | Does the teammate have at least one active goal? | Zero active goals |
+| 11 | Are target-position ability milestones below target missing active goals? | Target-only ability gap without goal |
+| 12 | Are there incomplete tasks in the linked Asana project? | Any incomplete tasks remain (N/A if not Asana-linked) |
+| 13 | Are target-position-only required assignments missing active goals? | Target-only required assignment without goal |
 
 Lower numbers win: only the **first** needs-attention item is “the one thing” on the hub and in the digest header.
 
@@ -49,15 +50,16 @@ Digest assumes the **employee** is the audience for CTAs (e.g. “Start an obser
 
 | # | Explanation (P4 bar) | Entity/suggestion bullets | Primary CTA |
 |---|----------------------|---------------------------|-------------|
-| 1 | Yes (after copy pass) | Asana tasks via `items` | Sync / open tasks |
-| 2 | Yes | Check-in links | Open top check-in |
-| 3 | Yes | WTM areas | Check-in status |
-| 4 | Yes (reference) | Abilities + add goal | Ability milestones |
-| 5 | Yes | Suggestions or empty | Start observation |
-| 6 | Yes | Suggestions or empty | Request feedback |
-| 7 | Yes | WTM areas | Request feedback |
-| 8 | Yes | Stale goals | Grow by goals |
-| 9 | Yes | Empty when no goals | Create goals |
-| 10 | Yes | Abilities + add goal | Ability milestones |
-| 11 | Yes | Asana tasks | Open remaining / sync |
-| 12 | Yes | Assignments + add goal | Grow by experiences |
+| 1 | Yes | Asana tasks via `items` | Sync / open tasks |
+| 2 | Yes | Aspirations → assignments → position (alpha within group) | Review N check-ins together (finalization) |
+| 3 | Yes | Check-in links | Open top check-in |
+| 4 | Yes | WTM areas | Check-in status |
+| 5 | Yes (reference) | Abilities + add goal | Ability milestones |
+| 6 | Yes | Suggestions or empty | Start observation |
+| 7 | Yes | Suggestions or empty | Request feedback |
+| 8 | Yes | WTM areas | Request feedback |
+| 9 | Yes | Stale goals | Grow by goals |
+| 10 | Yes | Empty when no goals | Create goals |
+| 11 | Yes | Abilities + add goal | Ability milestones |
+| 12 | Yes | Asana tasks | Open remaining / sync |
+| 13 | Yes | Assignments + add goal | Grow by experiences |

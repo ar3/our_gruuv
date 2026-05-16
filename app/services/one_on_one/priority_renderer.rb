@@ -82,7 +82,8 @@ module OneOnOne
            :milestone_gap_attention,
            :wtm_missing_observation_attention,
            :stale_goals_attention,
-           :asana_tasks_attention
+           :asana_tasks_attention,
+           :ready_for_review_attention
         :link
       end
     end
@@ -116,6 +117,8 @@ module OneOnOne
         stale_goal_item_label_url(item)
       when :asana_tasks_attention
         asana_task_item_label_url(item)
+      when :ready_for_review_attention
+        ready_for_review_item_label_url(item)
       end
     end
 
@@ -458,7 +461,23 @@ module OneOnOne
       count == 1 ? "There is 1 active goal in progress." : "There are #{count} active goals in progress."
     end
 
-    # ---------- Priority 2: blurred/obscured (attention) ----------
+    # ---------- Priority 2: ready for joint review (attention) ----------
+
+    def ready_for_review_item_label_url(item)
+      prefix =
+        case item[:kind]
+        when :aspiration then "Aspiration:"
+        when :assignment then "Assignment:"
+        when :position then "Position:"
+        else "Check-in:"
+        end
+      {
+        label: "#{prefix} #{item[:display_title]}",
+        url: organization_company_teammate_finalization_path(organization, teammate)
+      }
+    end
+
+    # ---------- Priority 3: blurred/obscured (attention) ----------
 
     def blurred_or_obscured_item_label_url(item)
       prefix = blurred_or_obscured_kind_prefix(item[:kind])
@@ -766,6 +785,8 @@ module OneOnOne
         "#sync"
       when :check_ins_review_most_recent
         review_most_recent_organization_company_teammate_check_ins_path(organization, route_teammate_param)
+      when :check_ins_finalization
+        organization_company_teammate_finalization_path(organization, route_teammate_param)
       when :my_growth_abilities
         my_growth_abilities_organization_company_teammate_path(organization, route_teammate_param)
       when :my_growth_experiences
@@ -812,6 +833,8 @@ module OneOnOne
         "#{organization_company_teammate_one_on_one_link_url(organization, teammate)}#sync"
       when :check_ins_review_most_recent
         review_most_recent_organization_company_teammate_check_ins_url(organization, teammate)
+      when :check_ins_finalization
+        organization_company_teammate_finalization_url(organization, teammate)
       when :my_growth_abilities
         my_growth_abilities_organization_company_teammate_url(organization, teammate)
       when :my_growth_experiences

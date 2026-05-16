@@ -5,7 +5,10 @@ module OneOnOne
   class PriorityCarouselBuilder
     include Rails.application.routes.url_helpers
 
+    PRIORITY_TOTAL = 13
+
     ASANA_URGENT_TASKS_TITLE = "Are there overdue or due-soon Asana tasks?".freeze
+    CHECK_INS_READY_FOR_REVIEW_TITLE = "Are there check-ins ready for review together?".freeze
     REMAINING_ASANA_TASKS_TITLE = "Are there incomplete tasks remaining in the linked Asana project?".freeze
     OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT = 5
 
@@ -40,6 +43,7 @@ module OneOnOne
     def build_priorities
       [
         priority_asana_urgent_tasks,
+        priority_check_ins_ready_for_review,
         priority_blurred_or_obscured_check_ins,
         priority_wtm_required_or_active_without_goals,
         priority_current_position_milestone_gaps_without_goals,
@@ -52,7 +56,7 @@ module OneOnOne
         priority_remaining_asana_tasks,
         priority_target_unique_required_assignments_without_goals
       ].each_with_index.map do |row, idx|
-        row.merge(position: idx + 1, total: 12)
+        row.merge(position: idx + 1, total: PRIORITY_TOTAL)
       end
     end
 
@@ -105,6 +109,85 @@ module OneOnOne
           ["Everything urgent in Asana is already under control."]
         )
       end
+    end
+
+    def priority_check_ins_ready_for_review
+      rows = check_ins_ready_for_review_rows
+      title = CHECK_INS_READY_FOR_REVIEW_TITLE
+      if rows.any?
+        count = rows.size
+        cta_label = count == 1 ? "Review 1 check-in together" : "Review #{count} check-ins together"
+        attention_priority(
+          title,
+          check_ins_ready_for_review_attention_explanation,
+          [],
+          total_item_count: count,
+          cta_kind: :check_ins_finalization,
+          cta_label: cta_label,
+          cta_path: organization_company_teammate_finalization_path(@organization, @teammate),
+          data_kind: :ready_for_review_attention,
+          items: rows.map { |row| ready_for_review_item_data(row) }
+        )
+      else
+        success_priority(
+          title,
+          check_ins_ready_for_review_success_message,
+          ["All individual reflections are complete; nothing is queued for joint review right now."]
+        )
+      end
+    end
+
+    def check_ins_ready_for_review_attention_explanation
+      "OG check-ins are a three-step process: first each person reflects individually, then they review together, " \
+        "then the employee acknowledges the review. This ensures growth, expectations, and where folks stand are crystal clear."
+    end
+
+    def check_ins_ready_for_review_success_message
+      "No check-ins are waiting for review between #{teammate_casual_name} and #{teammate_manager_casual_name} (or another manager)."
+    end
+
+    def teammate_manager_casual_name
+      manager = @teammate.active_employment_tenure&.manager_teammate
+      manager&.person&.casual_name.presence || "their manager"
+    end
+
+    def check_ins_ready_for_review_rows
+      rows = []
+
+      AspirationCheckIn
+        .where(company_teammate: @teammate)
+        .ready_for_finalization
+        .includes(:aspiration)
+        .find_each do |check_in|
+          next if check_in.aspiration.blank?
+
+          rows << { kind: :aspiration, display_title: check_in.aspiration.name }
+        end
+
+      AssignmentCheckIn
+        .where(company_teammate: @teammate)
+        .ready_for_finalization
+        .includes(:assignment)
+        .find_each do |check_in|
+          next if check_in.assignment.blank?
+
+          rows << { kind: :assignment, display_title: check_in.assignment.title }
+        end
+
+      PositionCheckIn.where(company_teammate: @teammate).ready_for_finalization.find_each do |_check_in|
+        position = @teammate.active_employment_tenure&.position
+        rows << {
+          kind: :position,
+          display_title: position&.display_name.presence || "Current position"
+        }
+      end
+
+      group_rank = { aspiration: 0, assignment: 1, position: 2 }
+      rows.sort_by { |row| [group_rank.fetch(row[:kind], 99), row[:display_title].downcase] }
+    end
+
+    def ready_for_review_item_data(row)
+      { kind: row[:kind], display_title: row[:display_title] }
     end
 
     def priority_blurred_or_obscured_check_ins
