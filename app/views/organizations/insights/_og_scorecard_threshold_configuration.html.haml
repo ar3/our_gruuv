@@ -1,0 +1,47 @@
+- return unless can_configure
+
+.accordion.mt-5#ogScorecardThresholdAccordion
+  .accordion-item
+    %h2.accordion-header
+      %button.accordion-button.collapsed{type: 'button', 'data-bs-toggle': 'collapse', 'data-bs-target': '#ogScorecardThresholdCollapse', 'aria-expanded': 'false', 'aria-controls': 'ogScorecardThresholdCollapse'}
+        Configure thresholds
+    #ogScorecardThresholdCollapse.accordion-collapse.collapse{'data-bs-parent': '#ogScorecardThresholdAccordion'}
+      .accordion-body
+        %p.text-muted.small
+          Set yellow and green targets per metric. Weekly cells use these targets for background color (green = on target, yellow = between, red = off target). For unique-teammate metrics you can use % of that week’s active teammates; the table still shows raw counts.
+
+        = form_with url: organization_insights_og_scorecard_thresholds_path(organization), method: :patch, local: true do |f|
+          = hidden_field_tag :timeframe, timeframe if timeframe.present?
+          = hidden_field_tag :from, custom_from if custom_from.present?
+          = hidden_field_tag :to, custom_to if custom_to.present?
+
+          - metric_registry_groups.each do |group|
+            %h6.mt-3.mb-2= group[:title]
+            - group[:entries].each do |entry|
+              - thresh = thresholds_by_key[entry.key] || {}
+              - mode = thresh[:mode] || 'absolute'
+              .card.mb-2
+                .card-body.py-2
+                  %label.form-label.small.fw-semibold.mb-2= entry.label
+                  .row.g-2.align-items-end
+                    .col-md-3
+                      = label_tag "thresholds_#{entry.key}_yellow", 'Yellow threshold', class: 'form-label small mb-0'
+                      = number_field_tag "thresholds[#{entry.key}][yellow_threshold]", thresh[:yellow], class: 'form-control form-control-sm', step: 'any', min: 0
+                    .col-md-3
+                      = label_tag "thresholds_#{entry.key}_green", 'Green threshold', class: 'form-label small mb-0'
+                      = number_field_tag "thresholds[#{entry.key}][green_threshold]", thresh[:green], class: 'form-control form-control-sm', step: 'any', min: 0
+                    .col-md-4
+                      %span.form-label.small.mb-0.d-block Unit
+                      .form-check.form-check-inline
+                        = radio_button_tag "thresholds[#{entry.key}][threshold_mode]", 'absolute', mode == 'absolute', class: 'form-check-input', id: "thresholds_#{entry.key}_mode_absolute"
+                        = label_tag "thresholds_#{entry.key}_mode_absolute", 'Absolute count', class: 'form-check-label small'
+                      - if entry.supports_percent
+                        .form-check.form-check-inline
+                          = radio_button_tag "thresholds[#{entry.key}][threshold_mode]", 'percent', mode == 'percent', class: 'form-check-input', id: "thresholds_#{entry.key}_mode_percent"
+                          = label_tag "thresholds_#{entry.key}_mode_percent", '% of active teammates', class: 'form-check-label small'
+                    .col-md-2
+                      %span.form-label.small.mb-0.d-block Direction
+                      %span.small.text-muted= og_scorecard_direction_label(entry.direction)
+
+          .mt-3
+            = f.submit 'Save thresholds', class: 'btn btn-primary'

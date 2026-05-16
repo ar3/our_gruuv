@@ -121,41 +121,20 @@ module InsightsHelper
     end
   end
 
-  # OG Scorecard: inner HTML for threshold popover (shown when threshold columns are hidden).
-  def og_scorecard_threshold_popover_inner_html(row)
-    y_txt = row[:yellow].nil? ? '—' : og_scorecard_format_threshold(row[:yellow])
-    g_txt = row[:green].nil? ? '—' : og_scorecard_format_threshold(row[:green])
-
-    if row[:yellow].nil? && row[:green].nil?
-      return tag.p('Thresholds are not configured for this metric yet.', class: 'mb-0 small')
-    end
-
-    ye = ERB::Util.html_escape(y_txt)
-    ge = ERB::Util.html_escape(g_txt)
-
-    items = if row[:direction] == :less
-                [
-                  "🔴 Red if above the yellow threshold (#{ye})",
-                  "🟡 Yellow if between the green (#{ge}) and yellow (#{ye}) thresholds",
-                  "🟢 Green if at or below the green threshold (#{ge})"
-                ]
-              else
-                [
-                  "🔴 Red if below the yellow threshold (#{ye})",
-                  "🟡 Yellow if between the yellow (#{ye}) and green (#{ge}) thresholds",
-                  "🟢 Green if at or above the green threshold (#{ge})"
-                ]
-              end
-
-    tag.ul(class: 'mb-0 ps-3 small') do
-      safe_join(items.map { |line| tag.li(line.html_safe, class: 'mb-1') })
+  def og_scorecard_weekly_cell_class(status)
+    case status.to_sym
+    when :success then 'table-success'
+    when :warning then 'table-warning'
+    when :danger then 'table-danger'
+    else 'og-scorecard-cell-neutral'
     end
   end
 
-  def og_scorecard_format_threshold(value)
-    case value
-    when Integer, Float then value.to_s
-    else value.to_s
+  def og_scorecard_direction_label(direction)
+    case direction.to_sym
+    when :more then 'More is better'
+    when :less then 'Less is better'
+    else '—'
     end
   end
 end

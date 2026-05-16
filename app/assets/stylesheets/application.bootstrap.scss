@@ -1556,23 +1556,17 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
-// OG Scorecard: optional threshold columns + per-row threshold popovers
+// OG Scorecard: optional threshold / direction columns
 .og-scorecard--thresholds-hidden {
   .og-scorecard-th-col {
     display: none !important;
   }
 }
 
-.og-scorecard-threshold-popover-btn {
-  display: none !important;
-}
-
-.og-scorecard--thresholds-hidden .og-scorecard-threshold-popover-btn {
-  display: inline-flex !important;
-}
-
-.popover.og-scorecard-threshold-popover {
-  max-width: min(22rem, 90vw);
+.og-scorecard-table {
+  .og-scorecard-cell-neutral {
+    background-color: var(--bs-secondary-bg);
+  }
 }
 
 // Pending acknowledgement explainer (audit + Get Shit Done)

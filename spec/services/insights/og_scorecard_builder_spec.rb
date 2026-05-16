@@ -62,8 +62,8 @@ RSpec.describe Insights::OgScorecardBuilder do
 
       result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
       obs_group = result[:groups].find { |g| g[:title] == 'Observations' }
-      publishers = obs_group[:rows].find { |r| r[:key] == :unique_ogo_publishers }
-      observees = obs_group[:rows].find { |r| r[:key] == :unique_ogo_observees }
+      publishers = obs_group[:rows].find { |r| r[:key] == 'unique_ogo_publishers' }
+      observees = obs_group[:rows].find { |r| r[:key] == 'unique_ogo_observees' }
 
       expect(publishers[:weekly_values]).to eq([1, 1])
       expect(observees[:weekly_values]).to eq([1, 1])

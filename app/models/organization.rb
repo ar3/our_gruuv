@@ -65,6 +65,7 @@ class Organization < ApplicationRecord
           source: :third_party_object
 
   has_many :company_label_preferences, foreign_key: 'company_id', dependent: :destroy
+  has_many :og_scorecard_metric_thresholds, foreign_key: 'company_id', dependent: :destroy
 
   has_one_attached :logo
 

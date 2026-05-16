@@ -561,6 +561,7 @@ Rails.application.routes.draw do
     namespace :insights, module: :organizations do
       get '/', to: 'insights#index'
       get 'og_scorecard', to: 'insights#og_scorecard'
+      patch 'og_scorecard/thresholds', to: 'insights#update_og_scorecard_thresholds', as: :og_scorecard_thresholds
       get 'observations', to: 'insights#observations'
       get 'feedback_requests', to: 'insights#feedback_requests'
       get 'prompts/download', to: 'insights#prompts_download'

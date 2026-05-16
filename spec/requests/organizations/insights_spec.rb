@@ -122,6 +122,29 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('in the table')
       expect(response.body).to include('og-scorecard--thresholds-hidden')
       expect(response.body).to match(/data-controller=["']og-scorecard-thresholds["']/)
+      expect(response.body).not_to include('og-scorecard-popover-source')
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/insights/og_scorecard/thresholds' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:customize_company?).and_return(true)
+    end
+
+    it 'saves thresholds and redirects back to scorecard' do
+      patch organization_insights_og_scorecard_thresholds_path(organization), params: {
+        thresholds: {
+          'active_teammates' => {
+            'yellow_threshold' => '5',
+            'green_threshold' => '10',
+            'threshold_mode' => 'absolute'
+          }
+        }
+      }
+      expect(response).to redirect_to(organization_insights_og_scorecard_path(organization))
+      record = OgScorecardMetricThreshold.find_by(company: organization, metric_key: 'active_teammates')
+      expect(record.yellow_threshold).to eq(5)
+      expect(record.green_threshold).to eq(10)
     end
   end
 

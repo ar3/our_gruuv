@@ -17,11 +17,28 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     week_starts_asc = og_scorecard_week_starts(chart_range)
     @week_labels = week_starts_asc.reverse.map { |d| d.strftime('%b %d, %Y') }
+    @thresholds_by_key = Insights::OgScorecard::ThresholdsForCompany.call(company)
+    @can_configure_thresholds = policy(organization).customize_company?
+    @metric_registry_groups = Insights::OgScorecard::MetricRegistry.grouped
     @scorecard = Insights::OgScorecardBuilder.new(
       company: company,
       week_starts: week_starts_asc,
-      chart_range: chart_range
+      chart_range: chart_range,
+      thresholds_by_key: @thresholds_by_key
     ).call
+  end
+
+  def update_og_scorecard_thresholds
+    authorize organization, :customize_company?
+
+    Insights::OgScorecard::ThresholdsUpsert.call(
+      company: company,
+      params: params.fetch(:thresholds, {}).permit!.to_h
+    )
+    redirect_to organization_insights_og_scorecard_path(
+      organization,
+      **og_scorecard_timeframe_redirect_params
+    ), notice: 'Scorecard thresholds saved.'
   end
 
   def seats_titles_positions
@@ -325,6 +342,14 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     start_date = chart_range.begin.to_date
     end_date = chart_range.end.to_date
     (start_date..end_date).map { |d| d.beginning_of_week(:monday) }.uniq.sort
+  end
+
+  def og_scorecard_timeframe_redirect_params
+    {
+      timeframe: params[:timeframe].presence,
+      from: params[:from].presence,
+      to: params[:to].presence
+    }.compact
   end
 
   def build_insight_links

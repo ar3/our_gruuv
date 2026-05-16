@@ -3,70 +3,83 @@
 module Insights
   # Weekly scorecard rows for Insights: OG Scorecard (metric metadata + per-week values).
   class OgScorecardBuilder
-    METADATA = {
-      active_teammates: {
-        label: 'Number of active teammates',
-        yellow: nil,
-        green: nil,
-        direction: :more
-      },
-      unique_ogo_publishers: {
-        label: 'Number of unique teammates that published an OGO',
-        yellow: nil,
-        green: nil,
-        direction: :more
-      },
-      unique_ogo_observees: {
-        label: 'Number of unique teammates named as observees in an OGO',
-        yellow: nil,
-        green: nil,
-        direction: :more
-      }
-    }.freeze
-
-    def initialize(company:, week_starts:, chart_range:)
+    def initialize(company:, week_starts:, chart_range:, thresholds_by_key: {})
       @company = company
       @week_starts = week_starts
       @chart_range = chart_range
+      @thresholds_by_key = thresholds_by_key
     end
 
     def call
       active_by_week = active_teammate_counts_by_week
       publishers_by_week, observees_by_week = observation_distinct_sets_by_week
 
-      {
-        groups: [
-          {
-            title: 'Teammates',
-            rows: [build_row(:active_teammates, active_by_week)]
-          },
-          {
-            title: 'Observations',
-            rows: [
-              build_row(:unique_ogo_publishers, publishers_by_week),
-              build_row(:unique_ogo_observees, observees_by_week)
-            ]
-          }
-        ]
-      }
+      groups = OgScorecard::MetricRegistry.grouped.map do |group|
+        rows = group[:entries].map do |entry|
+          counts = counts_for(entry.key, active_by_week, publishers_by_week, observees_by_week)
+          build_row(entry, counts, active_by_week)
+        end
+        { title: group[:title], rows: rows }
+      end
+
+      { groups: groups }
     end
 
     private
 
-    attr_reader :company, :week_starts, :chart_range
+    attr_reader :company, :week_starts, :chart_range, :thresholds_by_key
 
-    def build_row(key, counts_by_week)
-      meta = METADATA.fetch(key)
+    def counts_for(key, active_by_week, publishers_by_week, observees_by_week)
+      case key
+      when 'active_teammates' then active_by_week
+      when 'unique_ogo_publishers' then publishers_by_week
+      when 'unique_ogo_observees' then observees_by_week
+      else
+        week_starts.index_with { 0 }
+      end
+    end
+
+    def build_row(entry, counts_by_week, active_by_week)
+      threshold = thresholds_by_key[entry.key] || {}
       weekly_values = week_starts.map { |wk| counts_by_week[wk] || 0 }
+      weekly_cell_statuses = week_starts.map.with_index do |wk, idx|
+        OgScorecard::CellStatus.for(
+          value: weekly_values[idx],
+          yellow: threshold[:yellow],
+          green: threshold[:green],
+          direction: entry.direction,
+          mode: threshold[:mode] || 'absolute',
+          active_teammate_count: active_by_week[wk]
+        )
+      end
+
       {
-        key: key,
-        label: meta[:label],
-        yellow: meta[:yellow],
-        green: meta[:green],
-        direction: meta[:direction],
+        key: entry.key,
+        label: entry.label,
+        direction: entry.direction,
+        supports_percent: entry.supports_percent,
+        yellow: threshold[:yellow],
+        green: threshold[:green],
+        threshold_mode: threshold[:mode] || 'absolute',
+        yellow_display: format_threshold(threshold[:yellow], threshold[:mode]),
+        green_display: format_threshold(threshold[:green], threshold[:mode]),
         six_week_avg: average_last_n(weekly_values, 6),
-        weekly_values: weekly_values
+        weekly_values: weekly_values,
+        weekly_cell_statuses: weekly_cell_statuses
       }
+    end
+
+    def format_threshold(value, mode)
+      return nil if value.nil?
+
+      if mode.to_s == 'percent'
+        num = value.to_f
+        formatted = num == num.to_i ? num.to_i.to_s : num.round(1).to_s
+        "#{formatted}%"
+      else
+        num = value.to_f
+        num == num.to_i ? num.to_i : num.round(1)
+      end
     end
 
     def average_last_n(values, n)
