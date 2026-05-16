@@ -78,6 +78,41 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
       expect(assigns(:filtered_and_paginated_teammates)).to be_present
     end
 
+    it 'shows 1:1 Hub, growth, and day-to-day CTAs without job blueprint' do
+      create(:one_on_one_link, teammate: direct_report1_teammate)
+
+      get organization_employees_path(organization, spotlight: 'manager_lite', view: 'managers_view', manager_teammate_id: manager_teammate.id)
+
+      expect(response.body).to include("1:1 Hub")
+      expect(response.body).to include("Alice A.")
+      expect(response.body).to include("Explore")
+      expect(response.body).to include("Growth")
+      expect(response.body).to include("Real Day-to-Day Job")
+      expect(response.body).not_to include('job blueprint')
+    end
+
+    context 'when a direct report has no position' do
+      before do
+        allow_any_instance_of(CompanyTeammate).to receive(:active_employment_tenure) do |teammate|
+          tenure = teammate.employment_tenures.active.find_by(company: teammate.organization)
+          if teammate.id == direct_report1_teammate.id && tenure
+            allow(tenure).to receive(:position).and_return(nil)
+          end
+          tenure
+        end
+      end
+
+      it 'shows a define-position CTA linking to seat management' do
+        get organization_employees_path(organization, spotlight: 'manager_lite', view: 'managers_view', manager_teammate_id: manager_teammate.id)
+
+        expect(response.body).to include("Define")
+        expect(response.body).to include("position")
+        expect(response.body).to include("btn-danger")
+        expect(response.body).to include(organization_teammate_position_path(organization, direct_report1_teammate))
+        expect(response.body).not_to match(/Review Alice A\.(?:&#39;|')s Real Day-to-Day Job/)
+      end
+    end
+
     it 'uses text-spice color classes in spotlight stats' do
       get organization_employees_path(organization, spotlight: 'manager_lite', view: 'managers_view', manager_teammate_id: manager_teammate.id)
       
@@ -228,7 +263,10 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
         get organization_employees_path(organization, spotlight: 'manager_lite', view: 'managers_view', manager_teammate_id: manager_teammate.id)
 
         expect(response.body).to include("involving_teammate_id=#{direct_report1_teammate.id}")
-        expect(response.body).to include("View the 2 OGOs involving Alice A.")
+        counts = assigns(:managers_view_observations_involving_counts_by_teammate_id)
+        expect(counts.fetch(direct_report1_teammate.id)).to eq(2)
+        expect(response.body).to match(/<span class="fw-bold">\s*2\s*<\/span>/)
+        expect(response.body).to include("OGOs involving Alice A.")
       end
     end
 

@@ -178,10 +178,9 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       end
 
       @managers_view_observations_involving_counts_by_teammate_id =
-        if query.current_view == 'managers_view' && @filtered_and_paginated_teammates.any? &&
-           Pundit.policy(pundit_user, company).view_observations?
-          @filtered_and_paginated_teammates.index_with do |teammate|
-            observations_involving_teammate_total_count(teammate)
+        if query.current_view == 'managers_view' && @filtered_and_paginated_teammates.any?
+          @filtered_and_paginated_teammates.each_with_object({}) do |teammate, counts|
+            counts[teammate.id] = observations_involving_teammate_total_count(teammate)
           end
         else
           {}

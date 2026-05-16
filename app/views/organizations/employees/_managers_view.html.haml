@@ -9,27 +9,43 @@
       - health_table_data = single_item_health_popover_table(cache)
       - health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : "No check-in health data yet."
       - active_tenure = teammate.is_a?(CompanyTeammate) ? teammate.active_employment_tenure : nil
-      - total_energy = teammate.is_a?(CompanyTeammate) ? teammate.active_assignment_tenures.sum { |t| t.anticipated_energy_percentage || 0 } : 0
+      - casual_name = teammate.person.casual_name
+      - one_on_one_link = teammate.is_a?(CompanyTeammate) ? (teammate.one_on_one_link || OneOnOneLink.new(teammate: teammate)) : nil
+      - can_one_on_one = one_on_one_link.present? && policy(one_on_one_link).show?
+      - one_on_one_tooltip = "You can open the 1:1 workspace for yourself, people in your managerial hierarchy, or if you have manage employment permission."
+      - can_view_observations = policy(company).view_observations?
+      - observations_tooltip = "You must be an active employee in this organization to view observations"
+      - ogo_involving_count = (@managers_view_observations_involving_counts_by_teammate_id || {})[teammate.id].to_i
+      - can_complete_picture = teammate.is_a?(CompanyTeammate) && policy(teammate).complete_picture?
+      - complete_picture_tooltip = "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"
+      - can_seat_management = teammate.is_a?(CompanyTeammate) && policy(teammate).show?
+      - seat_management_tooltip = "You need employment management permissions or to be in the managerial hierarchy to access seat management"
+      - has_position = active_tenure&.position.present?
 
       .row.g-2.align-items-stretch
-        .col-md-1.col-6
+        .col-6.col-md-1
           .h-100.d-flex.align-items-center
             = teammate_profile_image(teammate, size: 48)
-        .col-3.col-md-2
+        .col-6.col-md-2
           .h-100.d-flex.align-items-center
             = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-semibold fs-2 lh-sm"
-        .col-3.col-md-3
+        .col-6.col-md-3.order-1.order-md-1
           = link_to about_me_organization_company_teammate_path(@organization, teammate), class: "btn btn-primary btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center" do
             %i.bi.bi-person-badge.text-white
-            %span= "View About #{teammate.person.casual_name}"
-        .col-6.col-md-3
+            %span= "View About #{casual_name}"
+        .col-12.col-md-3.order-3.order-md-2
+          - if can_one_on_one
+            = link_to organization_company_teammate_one_on_one_link_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center" do
+              %i.bi.bi-compass.text-primary
+              %span= "#{casual_name}'s 1:1 Hub"
+          - else
+            = link_to "#", class: "btn btn-outline-secondary btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm text-center disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => one_on_one_tooltip do
+              %i.bi.bi-compass.text-primary
+              %span= "#{casual_name}'s 1:1 Hub"
+        .col-6.col-md-3.order-2.order-md-3
           = link_to my_growth_experiences_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center" do
             %i.bi.bi-graph-up-arrow.text-primary
-            %span= "Explore #{teammate.person.casual_name}'s Growth"
-        .col-6.col-md-3
-          = link_to complete_picture_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center" do
-            %i.bi.bi-briefcase.text-primary
-            %span= "Review #{teammate.person.casual_name}'s Real Day-to-Day Job"
+            %span= "Explore #{casual_name}'s Growth"
       .row.g-1.mt-1.align-items-stretch
         .offset-md-1.col-12.col-md-2
           - if rate_data
@@ -48,23 +64,38 @@
             %span
               %span.fw-semibold Decide what to get clear on
               %br
-              %small.text-muted= "#{teammate.person.casual_name}'s last check-in: #{last_check_in_phrase}"
-        - if policy(company).view_observations?
-          - ogo_involving_count = (@managers_view_observations_involving_counts_by_teammate_id || {})[teammate.id].to_i
-          .col-6.col-md-3.d-flex.align-items-stretch
+              %small.text-muted= "#{casual_name}'s last check-in: #{last_check_in_phrase}"
+        .col-6.col-md-3.d-flex.align-items-stretch
+          - if can_view_observations
             = link_to organization_observations_path(@organization, involving_teammate_id: teammate.id), class: "btn btn-outline-secondary btn-sm w-100 h-100 fw-normal d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center flex-grow-1" do
               %i.bi.bi-chat-left-quote.text-primary
               %span.fw-normal.text-wrap
                 = "View the "
                 %span.fw-bold= ogo_involving_count
-                %span.fw-normal= ogo_involving_count == 1 ? " OGO involving #{teammate.person.casual_name}" : " OGOs involving #{teammate.person.casual_name}"
-        .col-12.col-md-3.d-flex.align-items-start
-          - if active_tenure&.position
-            %small.text-muted.mt-1
-              = link_to job_description_organization_position_path(@organization, active_tenure.position), class: "link-secondary text-decoration-none small" do
-                %i.bi.bi-link-45deg.me-1
-                #{teammate.person.casual_name}'s job blueprint, the #{active_tenure.position.title.external_title} position.
-          - elsif !active_tenure || active_tenure.position.nil?
-            %small.text-muted.mt-1 need to define position
-
+                %span.fw-normal= ogo_involving_count == 1 ? " OGO involving #{casual_name}" : " OGOs involving #{casual_name}"
+          - else
+            = link_to "#", class: "btn btn-outline-secondary btn-sm w-100 h-100 fw-normal d-inline-flex align-items-center justify-content-center gap-2 shadow-sm text-center flex-grow-1 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => observations_tooltip do
+              %i.bi.bi-chat-left-quote.text-primary
+              %span.fw-normal.text-wrap
+                = "View the "
+                %span.fw-bold= ogo_involving_count
+                %span.fw-normal= ogo_involving_count == 1 ? " OGO involving #{casual_name}" : " OGOs involving #{casual_name}"
+        .col-12.col-md-3.d-flex.align-items-stretch
+          - if has_position
+            - if can_complete_picture
+              = link_to complete_picture_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center flex-grow-1" do
+                %i.bi.bi-briefcase.text-primary
+                %span= "Review #{casual_name}'s Real Day-to-Day Job"
+            - else
+              = link_to "#", class: "btn btn-outline-secondary btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm text-center flex-grow-1 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => complete_picture_tooltip do
+                %i.bi.bi-briefcase.text-primary
+                %span= "Review #{casual_name}'s Real Day-to-Day Job"
+          - elsif can_seat_management
+            = link_to organization_teammate_position_path(@organization, teammate), class: "btn btn-danger btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center flex-grow-1" do
+              %i.bi.bi-briefcase
+              %span= "Define #{casual_name}'s position"
+          - else
+            = link_to "#", class: "btn btn-danger btn-sm w-100 h-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm text-center flex-grow-1 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => seat_management_tooltip do
+              %i.bi.bi-briefcase
+              %span= "Define #{casual_name}'s position"
 
