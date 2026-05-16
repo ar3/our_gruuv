@@ -514,6 +514,85 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
+  describe '#check_ins_awaiting_input_group_header' do
+    let(:organization) { create(:organization) }
+    let(:employee_person) { create(:person, preferred_name: 'Alex') }
+    let(:manager_person) { create(:person, preferred_name: 'Mo') }
+    let(:employee_teammate) { create(:company_teammate, person: employee_person, organization: organization) }
+    let(:manager_teammate) { create(:company_teammate, person: manager_person, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization, title: 'Ship Feature') }
+
+    it 'uses manager-focused copy when the viewer is the employee' do
+      check_in = create(:assignment_check_in,
+                        teammate: employee_teammate,
+                        assignment: assignment,
+                        manager_completed_at: Time.current,
+                        manager_completed_by_teammate: manager_teammate,
+                        employee_completed_at: nil)
+
+      expect(helper.check_ins_awaiting_input_group_header([check_in], employee_teammate, employee_teammate))
+        .to eq('Your manager has completed their side of your 1 check-in')
+    end
+
+    it 'uses employee-focused copy when the viewer is the manager' do
+      check_in = create(:assignment_check_in,
+                        teammate: employee_teammate,
+                        assignment: assignment,
+                        employee_completed_at: Time.current,
+                        manager_completed_at: nil)
+
+      expect(helper.check_ins_awaiting_input_group_header([check_in], employee_teammate, manager_teammate))
+        .to eq('Alex has completed their side of 1 check-in and is awaiting you to complete your side')
+    end
+
+    it 'pluralizes manager label and awaiting verb for multiple check-ins' do
+      second_assignment = create(:assignment, company: organization, title: 'Other Work')
+      check_ins = [
+        create(:assignment_check_in,
+               teammate: employee_teammate,
+               assignment: assignment,
+               employee_completed_at: Time.current,
+               manager_completed_at: nil),
+        create(:assignment_check_in,
+               teammate: employee_teammate,
+               assignment: second_assignment,
+               employee_completed_at: Time.current,
+               manager_completed_at: nil)
+      ]
+
+      expect(helper.check_ins_awaiting_input_group_header(check_ins, employee_teammate, manager_teammate))
+        .to eq('Alex has completed their side of 2 check-ins and are awaiting you to complete your side')
+    end
+  end
+
+  describe '#check_ins_awaiting_input_detail_line' do
+    let(:organization) { create(:organization) }
+    let(:employee_person) { create(:person, preferred_name: 'Alex') }
+    let(:manager_person) { create(:person, preferred_name: 'Mo') }
+    let(:employee_teammate) { create(:company_teammate, person: employee_person, organization: organization) }
+    let(:manager_teammate) { create(:company_teammate, person: manager_person, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization, title: 'Ship Feature') }
+
+    it 'describes the completer, object, and date range with bold emphasis' do
+      started_on = Date.new(2026, 1, 1)
+      completed_at = Time.zone.local(2026, 2, 15, 12, 0, 0)
+      check_in = create(:assignment_check_in,
+                        teammate: employee_teammate,
+                        assignment: assignment,
+                        check_in_started_on: started_on,
+                        employee_completed_at: completed_at,
+                        manager_completed_at: nil)
+
+      html = helper.check_ins_awaiting_input_detail_line(check_in)
+
+      expect(html).to include('Alex completed a check-in about the Assignment,')
+      expect(html).to include('<strong>Ship Feature</strong>')
+      expect(html).to include('<strong>Feb 15, 2026</strong>')
+      expect(html).to include('their take on Alex and')
+      expect(html).to include('<strong>Jan 01, 2026</strong>')
+    end
+  end
+
   describe '#get_shit_done_check_in_review_path' do
     let(:organization) { create(:organization) }
     let(:person) { create(:person) }

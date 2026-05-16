@@ -187,6 +187,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         get "/organizations/#{company.to_param}/get_shit_done"
 
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('Your manager has completed their side of your 1 check-in')
         expect(response.body).to include('GSD Test Assignment')
         expect(response.body).to include('Complete as Employee')
         assignment_path = Rails.application.routes.url_helpers.organization_teammate_assignment_path(
@@ -197,6 +198,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
 
       it 'shows check-ins for direct reports where employee completed but manager has not (as manager)' do
         sign_in_as_teammate_for_request(manager_person, company)
+        employee_name = employee_teammate.person.casual_name
         create(:assignment_check_in,
                teammate: employee_teammate,
                assignment: assignment,
@@ -206,6 +208,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         get "/organizations/#{company.to_param}/get_shit_done"
 
         expect(response).to have_http_status(:success)
+        expect(response.body).to include("#{employee_name} has completed their side of 1 check-in and is awaiting you")
         expect(response.body).to include('GSD Test Assignment')
         expect(response.body).to include('Complete as Manager')
         assignment_path = Rails.application.routes.url_helpers.organization_teammate_assignment_path(

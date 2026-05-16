@@ -710,6 +710,64 @@ module CheckInHelper
     { primary_text: primary_text, secondary_hr: secondary_hr, secondary_text: secondary_text }
   end
 
+  # Get Shit Done — check-ins awaiting input: groups sorted by employee casual name (A–Z).
+  def check_ins_awaiting_input_by_employee(check_ins)
+    check_ins
+      .group_by(&:company_teammate)
+      .sort_by { |teammate, _| teammate.person.casual_name.to_s.downcase }
+  end
+
+  # Group header when the other participant has completed their side.
+  def check_ins_awaiting_input_group_header(check_ins, employee_teammate, viewing_teammate)
+    count = check_ins.size
+    if employee_teammate == viewing_teammate
+      manager_names = check_ins.filter_map do |ci|
+        ci.manager_completed_by_teammate&.person&.casual_name.presence
+      end.uniq
+      if manager_names.many?
+        "Your managers have completed their side of your #{pluralize(count, 'check-in')}"
+      else
+        "Your manager has completed their side of your #{pluralize(count, 'check-in')}"
+      end
+    else
+      employee_name = employee_teammate.person.casual_name.presence || 'Employee'
+      awaiting_verb = count == 1 ? 'is' : 'are'
+      "#{employee_name} has completed their side of #{pluralize(count, 'check-in')} " \
+        "and #{awaiting_verb} awaiting you to complete your side"
+    end
+  end
+
+  # Detail sentence for one awaiting-input row (object names and dates wrapped in <strong>).
+  def check_ins_awaiting_input_detail_line(check_in)
+    completer_name = check_in_awaiting_input_completer_name(check_in)
+    employee_name = check_in.company_teammate.person.casual_name.presence || 'Employee'
+    object_type, object_name = check_in_awaiting_input_object_labels(check_in)
+    completed_on = gsd_check_in_display_date(check_in_awaiting_input_completer_completed_at(check_in))
+    started_on = gsd_check_in_display_date(check_in.check_in_started_on)
+    bold_object = content_tag(:strong, object_name)
+    bold_completed = content_tag(:strong, completed_on)
+    bold_started = content_tag(:strong, started_on)
+
+    safe_join([
+      completer_name,
+      ' completed a check-in about the ',
+      object_type,
+      ', ',
+      bold_object,
+      ', on ',
+      bold_completed,
+      '. This was a reflection of their take on ',
+      employee_name,
+      ' and ',
+      bold_object,
+      ' from ',
+      bold_started,
+      ' to ',
+      bold_completed,
+      '.'
+    ])
+  end
+
   # Get Shit Done: link to the 1-by-1 check-in page for this record (assignment / aspiration / position).
   def get_shit_done_check_in_review_path(organization, check_in)
     case check_in
@@ -722,6 +780,43 @@ module CheckInHelper
     else
       organization_company_teammate_check_ins_path(organization, check_in.company_teammate)
     end
+  end
+
+  private
+
+  def check_in_awaiting_input_completer_name(check_in)
+    if check_in.employee_completed? && !check_in.manager_completed?
+      check_in.company_teammate.person.casual_name.presence || 'Employee'
+    else
+      check_in.manager_completed_by_teammate&.person&.casual_name.presence || 'Manager'
+    end
+  end
+
+  def check_in_awaiting_input_completer_completed_at(check_in)
+    if check_in.employee_completed? && !check_in.manager_completed?
+      check_in.employee_completed_at
+    else
+      check_in.manager_completed_at
+    end
+  end
+
+  def check_in_awaiting_input_object_labels(check_in)
+    case check_in
+    when AssignmentCheckIn
+      ['Assignment', check_in.assignment.title]
+    when AspirationCheckIn
+      ['Aspirational Value', check_in.aspiration.name]
+    when PositionCheckIn
+      ['Position', check_in.employment_tenure.position.display_name]
+    else
+      ['Check-in', 'this item']
+    end
+  end
+
+  def gsd_check_in_display_date(value)
+    return '' unless value.present?
+
+    value.to_date.strftime('%b %d, %Y')
   end
 end
 
