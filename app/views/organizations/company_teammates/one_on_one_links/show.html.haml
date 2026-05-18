@@ -39,7 +39,6 @@
   }
 
 - return_to_about_me_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, teammate_route_param(@teammate))
-- return_to_about_me_text = "Return to About #{casual_name}"
 - source = @one_on_one_link.external_project_source
 - cache = @one_on_one_link.external_project_cache_for(source) if source
 - viewing_user_has_identity = has_external_identity?(current_company_teammate, source) if source
@@ -75,13 +74,10 @@
     .col-md-9.col-lg-10
       %section#one-thing.mb-5
         .card.border-primary
-          .card-header.bg-primary.text-white.d-flex.justify-content-between.align-items-center
+          .card-header.bg-primary.text-white
             %h2.mb-0
               %i.bi.bi-house.me-2
               The One Thing
-            = link_to return_to_about_me_url, class: "btn btn-sm btn-light" do
-              %i.bi.bi-arrow-left.me-2
-              = return_to_about_me_text
           .card-body
             = render "priority_carousel", priority_carousel: @priority_carousel
 
