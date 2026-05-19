@@ -1,9 +1,11 @@
 class Slack::CreateObservationFromMessageService
   PLACEHOLDER_WHEN_CONTENT_UNAVAILABLE = "<delete or replace this with the content from the slack message... if you want OG to put the content in here, invite the OG Bot to this channel and we'll be able to do this for you automatically in the future>"
+  PARTIAL_MESSAGE_NOTE = "_Note: The quoted Slack message below may be incomplete because only part of it could be captured from Slack._"
 
   SLACK_USER_MENTION_PATTERN = /<@(U[A-Z0-9]+)>/
 
-  def initialize(organization:, team_id:, channel_id:, message_ts:, message_user_id:, triggering_user_id:, notes:, message_thread_ts: nil, payload_message_text: nil)
+  def initialize(organization:, team_id:, channel_id:, message_ts:, message_user_id:, triggering_user_id:, notes:,
+                 message_thread_ts: nil, payload_message_text: nil, message_text_partial: false)
     @organization = organization
     @team_id = team_id
     @channel_id = channel_id
@@ -13,6 +15,7 @@ class Slack::CreateObservationFromMessageService
     @triggering_user_id = triggering_user_id
     @notes = notes
     @payload_message_text = payload_message_text
+    @message_text_partial = message_text_partial
     @slack_service = SlackService.new(@organization)
   end
 
@@ -32,14 +35,14 @@ class Slack::CreateObservationFromMessageService
     end
     slack_message_permalink = permalink_result[:permalink]
 
-    # 3. Message body: prefer shortcut payload text; otherwise fetch via API (bot not in channel)
-    message_text = resolve_message_text
+    message_text = @payload_message_text.to_s.strip.presence
 
     # 4. Build observation story
     story_content = @notes.present? ? "#{@notes}\n\n" : ""
     story_content += "==========\n\n"
     story_content += "Link to message: #{slack_message_permalink}"
     if message_text.present?
+      story_content += "\n\n#{PARTIAL_MESSAGE_NOTE}" if @message_text_partial
       quoted_message = message_text.lines.map { |line| "> #{line.chomp}" }.join("\n")
       story_content += "\n\n#{quoted_message}"
     else
@@ -77,14 +80,6 @@ class Slack::CreateObservationFromMessageService
   end
 
   private
-
-  def resolve_message_text
-    payload_text = @payload_message_text.to_s.strip.presence
-    return payload_text if payload_text.present?
-
-    message_result = @slack_service.get_message(@channel_id, @message_ts, thread_ts: @message_thread_ts)
-    message_result[:success] ? message_result[:text].to_s.presence : nil
-  end
 
   def observee_slack_user_ids(message_text)
     ids = []

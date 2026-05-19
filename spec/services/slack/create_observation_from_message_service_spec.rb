@@ -121,6 +121,26 @@ RSpec.describe Slack::CreateObservationFromMessageService, type: :service do
           expect(observation.story).not_to include("> Hello from Slack.")
         end
 
+        it 'includes a partial-message note when message_text_partial is true' do
+          service_with_partial = described_class.new(
+            organization: organization,
+            team_id: team_id,
+            channel_id: channel_id,
+            message_ts: message_ts,
+            message_user_id: message_user_id,
+            triggering_user_id: triggering_user_id,
+            notes: '',
+            payload_message_text: 'Truncated only',
+            message_text_partial: true
+          )
+
+          result = service_with_partial.call
+
+          expect(result.ok?).to be true
+          expect(result.value.story).to include('may be incomplete')
+          expect(result.value.story).to include('> Truncated only')
+        end
+
         it 'adds observees from author and mentions in payload text' do
           mentioned_person = create(:person)
           mentioned_teammate = create(:teammate, person: mentioned_person, organization: organization)

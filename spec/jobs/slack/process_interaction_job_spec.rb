@@ -135,7 +135,8 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
           expect(Slack::CreateObservationFromMessageService).to receive(:new).with(
             hash_including(
               organization: organization,
-              payload_message_text: 'Shortcut payload body'
+              payload_message_text: 'Shortcut payload body',
+              message_text_partial: false
             )
           ).and_call_original
 

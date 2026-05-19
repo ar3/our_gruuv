@@ -319,25 +319,38 @@ class Webhooks::SlackController < ApplicationController
     slack_message = payload['message']
     payload_message_text = slack_message.is_a?(Hash) ? slack_message['text'] : nil
 
-    # Build private metadata for modal
-    private_metadata = {
+    metadata_result = Slack::PrepareObservationShortcutMetadataService.new(
+      organization: organization,
+      incoming_webhook: incoming_webhook,
       team_id: team_id,
       channel_id: channel_id,
       message_ts: message_ts,
       message_user_id: message_user_id,
-      triggering_user_id: triggering_user_id
-    }
-    private_metadata[:message_thread_ts] = message_thread_ts if message_thread_ts.present?
-    if payload_message_text.present?
-      private_metadata[:payload_message_text] = payload_message_text
+      triggering_user_id: triggering_user_id,
+      message_thread_ts: message_thread_ts,
+      payload_message_text: payload_message_text
+    ).call
+
+    unless metadata_result.ok?
+      incoming_webhook.mark_failed!(metadata_result.error)
+      Rails.logger.error "Slack webhook: Failed to prepare modal metadata - #{metadata_result.error}"
+      return
     end
-    private_metadata = private_metadata.to_json
-    
+
+    metadata = metadata_result.value
+    private_metadata = metadata[:private_metadata_json]
+    fallback_metadata = metadata[:fallback_metadata_json]
+
     # Open the modal immediately (trigger_id expires in 3 seconds)
     begin
       slack_service = SlackService.new(organization)
       result = slack_service.open_create_observation_modal(trigger_id, private_metadata)
-      
+
+      unless result[:success]
+        report_observation_modal_open_failure(result, organization_id: organization.id, incoming_webhook_id: incoming_webhook.id)
+        result = slack_service.open_create_observation_modal(trigger_id, fallback_metadata)
+      end
+
       if result[:success]
         incoming_webhook.mark_processed!
         Rails.logger.info "Slack webhook: Modal opened successfully for trigger_id: #{trigger_id}"
@@ -353,6 +366,19 @@ class Webhooks::SlackController < ApplicationController
     end
   end
   
+  def report_observation_modal_open_failure(result, organization_id:, incoming_webhook_id:)
+    Sentry.capture_message(
+      "Slack observation shortcut: views.open failed, retrying with minimal metadata",
+      level: :error,
+      extra: {
+        slack_error: result[:error],
+        response_metadata: result.dig(:response, 'response_metadata'),
+        organization_id: organization_id,
+        incoming_webhook_id: incoming_webhook_id
+      }
+    )
+  end
+
   def whitelisted_headers
     {
       'X-Slack-Request-Timestamp' => request.headers['X-Slack-Request-Timestamp'],

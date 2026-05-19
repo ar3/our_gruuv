@@ -707,7 +707,8 @@ class SlackService
         { success: true, response: response }
       else
         error = response['error'] || 'Unknown error'
-        { success: false, error: error }
+        log_views_open_failure(error, response)
+        { success: false, error: error, response: response }
       end
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error opening modal - #{e.message}"
@@ -1010,7 +1011,14 @@ class SlackService
   def slack_configured?
     @organization&.slack_configured? || ENV['SLACK_BOT_TOKEN'].present?
   end
-  
+
+  def log_views_open_failure(error, response)
+    metadata = response['response_metadata']
+    if metadata.present?
+      Rails.logger.error "Slack: views.open failed (#{error}) - response_metadata: #{metadata.inspect}"
+    end
+  end
+
   private
   
 

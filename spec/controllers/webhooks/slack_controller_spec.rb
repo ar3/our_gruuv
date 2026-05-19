@@ -37,6 +37,8 @@ RSpec.describe Webhooks::SlackController, type: :controller do
         expect(meta['message_user_id']).to eq('UAUTHOR')
         expect(meta['triggering_user_id']).to eq('UOBSERVER')
         expect(meta['message_thread_ts']).to eq('1234567890.000001')
+        expect(meta['shortcut_incoming_webhook_id']).to be_present
+        expect(metadata_json.bytesize).to be <= Slack::ObservationShortcutMetadata::PRIVATE_METADATA_LIMIT
         { success: true }
       end
 

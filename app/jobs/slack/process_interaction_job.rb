@@ -77,7 +77,11 @@ class Slack::ProcessInteractionJob < ApplicationJob
     message_user_id = private_metadata['message_user_id'] || private_metadata[:message_user_id]
     triggering_user_id = private_metadata['triggering_user_id'] || private_metadata[:triggering_user_id]
     payload_message_text = private_metadata['payload_message_text'] || private_metadata[:payload_message_text]
-    
+    payload_message_text_truncated = private_metadata['payload_message_text_truncated'] == true
+    slack_message_prefetch_attempted = private_metadata['slack_message_prefetch_attempted'] == true
+    slack_message_prefetch_succeeded = private_metadata['slack_message_prefetch_succeeded'] == true
+    shortcut_incoming_webhook_id = private_metadata['shortcut_incoming_webhook_id'] || private_metadata[:shortcut_incoming_webhook_id]
+
     # Resolve organization
     organization = Organization.find_by_slack_workspace_id(team_id)
     unless organization
@@ -95,6 +99,25 @@ class Slack::ProcessInteractionJob < ApplicationJob
     notes_block = state_values['notes'] || {}
     notes = notes_block.dig('notes', 'value') || ''
     
+    message_resolution = Slack::ResolveObservationMessageTextService.new(
+      organization: organization,
+      shortcut_incoming_webhook_id: shortcut_incoming_webhook_id,
+      payload_message_text: payload_message_text,
+      payload_message_text_truncated: payload_message_text_truncated,
+      slack_message_prefetch_attempted: slack_message_prefetch_attempted,
+      slack_message_prefetch_succeeded: slack_message_prefetch_succeeded,
+      channel_id: channel_id,
+      message_ts: message_ts,
+      message_thread_ts: message_thread_ts.presence
+    ).call
+
+    unless message_resolution.ok?
+      incoming_webhook.mark_failed!(message_resolution.error)
+      return
+    end
+
+    resolved = message_resolution.value
+
     # Create observation using Slack::CreateObservationFromMessageService
     service = Slack::CreateObservationFromMessageService.new(
       organization: organization,
@@ -105,7 +128,8 @@ class Slack::ProcessInteractionJob < ApplicationJob
       message_user_id: message_user_id,
       triggering_user_id: triggering_user_id,
       notes: notes,
-      payload_message_text: payload_message_text
+      payload_message_text: resolved.text,
+      message_text_partial: resolved.partial
     )
     
     result = service.call
