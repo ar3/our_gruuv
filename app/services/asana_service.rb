@@ -1,4 +1,6 @@
 class AsanaService
+  HTTP_CONNECT_TIMEOUT = 10
+  HTTP_READ_TIMEOUT = 120
 
   def initialize(teammate)
     @teammate = teammate
@@ -24,7 +26,7 @@ class AsanaService
       client_id = ENV['ASANA_CLIENT_ID']
       client_secret = ENV['ASANA_CLIENT_SECRET']
 
-      response = HTTP.post('https://app.asana.com/-/oauth_token', form: {
+      response = asana_http.post('https://app.asana.com/-/oauth_token', form: {
         grant_type: 'refresh_token',
         client_id: client_id,
         client_secret: client_secret,
@@ -56,7 +58,7 @@ class AsanaService
     return nil unless authenticated?
     
     begin
-      response = HTTP.auth("Bearer #{access_token}")
+      response = asana_http.auth("Bearer #{access_token}")
                       .get("https://app.asana.com/api/1.0/projects/#{project_id}")
       
       data = JSON.parse(response.body.to_s)
@@ -71,14 +73,14 @@ class AsanaService
     return { success: false, error: 'not_authenticated', message: 'Not authenticated with Asana' } unless authenticated?
     
     begin
-      response = HTTP.auth("Bearer #{access_token}")
+      response = asana_http.auth("Bearer #{access_token}")
                       .get("https://app.asana.com/api/1.0/projects/#{project_id}/sections")
       
       result = handle_api_response(response, 'fetch_project_sections')
       
       # If token was refreshed, retry the request
       if result[:error] == 'retry'
-        response = HTTP.auth("Bearer #{access_token}")
+        response = asana_http.auth("Bearer #{access_token}")
                         .get("https://app.asana.com/api/1.0/projects/#{project_id}/sections")
         result = handle_api_response(response, 'fetch_project_sections')
       end
@@ -108,14 +110,14 @@ class AsanaService
         params[:completed_since] = 'now' # Only incomplete tasks
       end
       
-      response = HTTP.auth("Bearer #{access_token}")
+      response = asana_http.auth("Bearer #{access_token}")
                       .get("https://app.asana.com/api/1.0/sections/#{section_id}/tasks", params: params)
       
       result = handle_api_response(response, 'fetch_section_tasks')
       
       # If token was refreshed, retry the request
       if result[:error] == 'retry'
-        response = HTTP.auth("Bearer #{access_token}")
+        response = asana_http.auth("Bearer #{access_token}")
                         .get("https://app.asana.com/api/1.0/sections/#{section_id}/tasks", params: params)
         result = handle_api_response(response, 'fetch_section_tasks')
       end
@@ -179,7 +181,7 @@ class AsanaService
     return { success: false, error: 'not_authenticated', message: 'Not authenticated with Asana' } unless authenticated?
     
     begin
-      response = HTTP.auth("Bearer #{access_token}")
+      response = asana_http.auth("Bearer #{access_token}")
                       .get("https://app.asana.com/api/1.0/tasks/#{task_gid}", params: {
                         opt_fields: 'name,completed,assignee.name,assignee.gid,due_on,gid,completed_at,notes,html_notes,created_at,tags.name,tags.color,tags.gid,parent,projects,workspace,permalink_url'
                       })
@@ -188,7 +190,7 @@ class AsanaService
       
       # If token was refreshed, retry the request
       if result[:error] == 'retry'
-        response = HTTP.auth("Bearer #{access_token}")
+        response = asana_http.auth("Bearer #{access_token}")
                         .get("https://app.asana.com/api/1.0/tasks/#{task_gid}", params: {
                           opt_fields: 'name,completed,assignee.name,assignee.gid,due_on,gid,completed_at,notes,html_notes,created_at,tags.name,tags.color,tags.gid,parent,projects,workspace,permalink_url'
                         })
@@ -234,6 +236,10 @@ class AsanaService
   end
 
   private
+
+  def asana_http
+    HTTP.timeout(connect: HTTP_CONNECT_TIMEOUT, read: HTTP_READ_TIMEOUT)
+  end
 
   def handle_api_response(response, operation = 'API call')
     case response.status

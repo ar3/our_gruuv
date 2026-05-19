@@ -51,6 +51,20 @@ module ExternalProjectHelper
     end
   end
 
+  def external_project_sync_status_path(cacheable, source)
+    case cacheable
+    when OneOnOneLink
+      sync_status_organization_company_teammate_one_on_one_link_path(
+        cacheable.teammate.organization,
+        cacheable.teammate,
+        source: source
+      )
+    else
+      # Phase 2+: TeamAsanaLink and other cacheables
+      nil
+    end
+  end
+
   def external_project_cache_path(cacheable, source, action = :sync)
     case cacheable
     when OneOnOneLink

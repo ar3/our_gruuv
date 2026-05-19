@@ -1,0 +1,24 @@
+- status_url ||= local_assigns[:status_url]
+- source ||= local_assigns[:source]
+
+.alert.alert-secondary.mb-3#external-project-sync-status-banner{
+  data: {
+    controller: "external-project-sync-poll",
+    external_project_sync_poll_status_url_value: status_url,
+    external_project_sync_poll_source_label_value: source_display_name(source)
+  }
+}
+  %i.bi.bi-hourglass-split.me-2
+  %span{ data: { sync_status_text: true } }
+    Syncing #{source_display_name(source)} project…
+  %span.ms-1.text-muted{ data: { sync_elapsed: true } }
+  %span.ms-1.text-warning.d-none{ data: { sync_slow_warning: true } }
+    Taking longer than expected.
+  .small.text-muted.mt-1{ data: { sync_last_checked: true } }
+    Last checked: just now
+
+.card.mb-3.border-0.bg-light
+  .card-body.placeholder-glow.py-4
+    - 4.times do
+      .placeholder.col-12.mb-2.rounded{ style: "height: 0.9rem;" }
+      .placeholder.col-10.mb-2.rounded{ style: "height: 0.9rem;" }

@@ -3,6 +3,7 @@
 - current_teammate ||= local_assigns[:current_teammate] || current_company_teammate
 - source ||= local_assigns[:source]
 - return_url ||= local_assigns[:return_url] || request.fullpath
+- sync_form_disabled = local_assigns.fetch(:sync_form_disabled, false)
 
 - has_identity = has_external_identity?(current_teammate, source)
 - refresh_path = external_project_cache_path(cacheable, source, :sync)
@@ -12,11 +13,13 @@
     %h5.mb-0
       %i.bi.bi-link-45deg.me-2
       #{source_display_name(source)} Project
-    = render 'shared/external_project/refresh_controls', 
-             cache: cache, 
-             current_teammate: current_teammate, 
-             source: source, 
-             refresh_path: refresh_path
+    = render 'shared/external_project/refresh_controls',
+             cache: cache,
+             cacheable: cacheable,
+             current_teammate: current_teammate,
+             source: source,
+             refresh_path: refresh_path,
+             sync_form_disabled: sync_form_disabled
   
   .card-body
     - if cache.has_more_items

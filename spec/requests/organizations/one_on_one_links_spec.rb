@@ -283,7 +283,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
 
   describe "POST /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link/sync" do
     let(:one_on_one_link) { create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789') }
-    let(:asana_identity) { create(:teammate_identity, :asana, teammate: employee_teammate) }
+    let(:asana_identity) { create(:teammate_identity, :asana, teammate: manager_teammate) }
 
     before do
       one_on_one_link
@@ -319,22 +319,45 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       })
     end
 
-    it "syncs project data" do
+    it "enqueues sync and redirects to the sync section" do
       asana_identity
       expect {
         post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+      }.to have_enqueued_job(ExternalProject::SyncCacheableJob)
+
+      expect(response).to redirect_to(
+        organization_company_teammate_one_on_one_link_path(organization, employee_teammate, anchor: 'sync')
+      )
+      expect(flash[:notice]).to match(/sync started/i)
+    end
+
+    it "shows the sync polling UI after redirect" do
+      asana_identity
+      post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+      follow_redirect!
+
+      expect(response.body).to include("external-project-sync-poll")
+      expect(response.body).to include("Syncing Asana project")
+      expect(response.body).to include("placeholder-glow")
+    end
+
+    it "syncs project data when the background job runs" do
+      asana_identity
+      expect {
+        post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+        perform_enqueued_jobs
       }.to change(ExternalProjectCache, :count).by(1)
-      
-      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
-      expect(flash[:notice]).to include('synced successfully')
+
+      cache = one_on_one_link.reload.external_project_cache_for('asana')
+      expect(cache.sync_status).to eq('completed')
+      expect(cache.last_synced_at).to be_present
     end
 
     it "displays synced project data on the page" do
       asana_identity
-      # Sync the project
       post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
-      
-      # View the page after sync
+      perform_enqueued_jobs
+
       get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
@@ -348,7 +371,8 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     it "displays task details with due dates and assignees" do
       asana_identity
       post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
-      
+      perform_enqueued_jobs
+
       get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
@@ -356,14 +380,15 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).to include('Due:') # Due date label
     end
 
-    it "handles return_url parameter when syncing" do
+    it "redirects to the sync anchor when syncing" do
       asana_identity
       return_url = about_me_organization_company_teammate_path(organization, employee_teammate)
-      
+
       post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana', return_url: return_url)
-      
-      # Should still redirect to one_on_one_link_path (not return_url) per implementation
-      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+
+      expect(response).to redirect_to(
+        organization_company_teammate_one_on_one_link_path(organization, employee_teammate, anchor: 'sync')
+      )
     end
 
     context "when sync fails with token expiration" do
@@ -375,25 +400,26 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
         })
       end
 
-      it "displays error message and does not create cache" do
-        asana_identity
-        expect {
-          post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
-        }.not_to change(ExternalProjectCache, :count)
-        
-        expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
-        expect(flash[:alert]).to include('token has expired')
-        expect(flash[:sync_error_type]).to eq('token_expired')
-      end
-
-      it "shows re-authentication link in view" do
+      it "marks the cache failed when the background job cannot sync" do
         asana_identity
         post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
-        
+        perform_enqueued_jobs
+
+        cache = one_on_one_link.reload.external_project_cache_for('asana')
+        expect(cache).to be_present
+        expect(cache.sync_status).to eq('failed')
+        expect(cache.sync_error_type).to eq('token_expired')
+        expect(cache.sync_error).to include('token has expired')
+      end
+
+      it "shows re-authentication link in view after a failed sync" do
+        asana_identity
+        post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+        perform_enqueued_jobs
+
         get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
-        
+
         expect(response).to have_http_status(:success)
-        # Check for error message or re-authentication link
         expect(response.body).to match(/token has expired|Reconnect|reconnect/i)
       end
     end
@@ -407,12 +433,14 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
         })
       end
 
-      it "displays permission error message" do
+      it "stores permission error on the cache when sync fails" do
         asana_identity
         post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
-        
-        expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
-        expect(flash[:alert]).to include('permission')
+        perform_enqueued_jobs
+
+        cache = one_on_one_link.reload.external_project_cache_for('asana')
+        expect(cache.sync_status).to eq('failed')
+        expect(cache.sync_error).to include('permission')
       end
     end
 
@@ -425,12 +453,14 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
         })
       end
 
-      it "displays not found error message" do
+      it "stores not found error on the cache when sync fails" do
         asana_identity
         post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
-        
-        expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
-        expect(flash[:alert]).to include('not found')
+        perform_enqueued_jobs
+
+        cache = one_on_one_link.reload.external_project_cache_for('asana')
+        expect(cache.sync_status).to eq('failed')
+        expect(cache.sync_error).to include('not found')
       end
     end
 

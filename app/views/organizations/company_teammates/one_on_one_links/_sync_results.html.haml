@@ -1,0 +1,46 @@
+-# Phase 1: 1:1 Hub sync results area (loading, errors, project data). Team links in a later phase.
+- cacheable ||= local_assigns[:cacheable]
+- cache ||= local_assigns[:cache]
+- current_teammate ||= local_assigns[:current_teammate] || current_company_teammate
+- source ||= local_assigns[:source]
+- viewing_user_has_identity ||= local_assigns[:viewing_user_has_identity]
+- has_project_access ||= local_assigns[:has_project_access]
+- return_url ||= local_assigns[:return_url] || request.fullpath
+- sync_form_disabled ||= local_assigns[:sync_form_disabled]
+- poll_sync ||= local_assigns[:poll_sync]
+- status_url = external_project_sync_status_path(cacheable, source) if source.present?
+- show_sync_progress = status_url.present? && (cache&.sync_in_progress? || poll_sync)
+
+#sync-results
+  - if show_sync_progress
+    = render "shared/external_project/sync_in_progress", status_url: status_url, source: source
+  - elsif cache&.sync_failed?
+    = render "shared/external_project/sync_error",
+             cache: cache,
+             cacheable: cacheable,
+             current_teammate: current_teammate,
+             source: source
+    - if cache.last_synced_at.present?
+      = render "shared/external_project/project_display",
+               cache: cache,
+               cacheable: cacheable,
+               current_teammate: current_teammate,
+               source: source,
+               return_url: return_url,
+               sync_form_disabled: sync_form_disabled
+  - elsif source && cache && cache.last_synced_at.present?
+    = render "shared/external_project/project_display",
+             cache: cache,
+             cacheable: cacheable,
+             current_teammate: current_teammate,
+             source: source,
+             return_url: return_url,
+             sync_form_disabled: sync_form_disabled
+  - elsif source && viewing_user_has_identity && !cache&.sync_in_progress?
+    = render "shared/external_project/sync_prompt",
+             cacheable: cacheable,
+             current_teammate: current_teammate,
+             source: source,
+             return_url: return_url,
+             has_project_access: has_project_access,
+             sync_form_disabled: sync_form_disabled

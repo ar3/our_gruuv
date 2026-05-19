@@ -32,6 +32,11 @@ module Digest
       dm = user_ids.one? ? slack_service.open_dm(user_id: user_ids.first) : slack_service.open_or_create_group_dm(user_ids: user_ids)
       return unless dm[:success] && dm[:channel_id].present?
 
+      Digest::SyncOneOnOneAsanaForAboutMe.call(
+        employee_teammate: teammate,
+        manager_teammate: manager_teammate
+      )
+
       digest_metadata = { channel: dm[:channel_id], username: ABOUT_ME_BOT_USERNAME }
       builder = Digest::SlackMessageBuilderService.new(teammate: teammate, organization: organization)
       main_payload = builder.about_me_main_payload

@@ -34,42 +34,35 @@ module Insights
         ),
         Entry.new(
           key: 'all_check_ins_clear',
-          label: "Number of unique teammates with all required check-ins at least clear " \
-                 "(each required position, assignment, and company aspirational value check-in is clear or crystal clear " \
-                 "as of that Sunday—crystal clear: finalized within #{CC} days; clear: #{CC + 1}–#{C} days; " \
-                 "teammates with no required check-ins count as clear)",
+          label: "Number of unique teammates with all required check-ins within #{C} days",
           direction: :more,
           supports_percent: true,
           group: 'Check-ins'
         ),
         Entry.new(
           key: 'all_check_ins_blurred',
-          label: "Number of unique teammates with at least one required check-in blurred " \
-                 "(at least one required check-in is blurred—finalized #{C + 1}–#{B} days before that Sunday—and none are obscured)",
+          label: "Number of unique teammates with at least one required check-in between #{C + 1}–#{B} days",
           direction: :less,
           supports_percent: true,
           group: 'Check-ins'
         ),
         Entry.new(
           key: 'all_check_ins_obscured',
-          label: "Number of unique teammates with at least one required check-in obscured " \
-                 "(at least one required check-in is obscured—no finalization within #{B} days before that Sunday)",
+          label: "Number of unique teammates with at least one required check-in older than #{B} days",
           direction: :less,
           supports_percent: true,
           group: 'Check-ins'
         ),
         Entry.new(
           key: 'active_goal_aspiration',
-          label: 'Number of unique teammates with an active goal attached to an Aspirational Value ' \
-                 '(goal owned by the teammate, started, not completed or deleted as of that Sunday, with a goal link to an aspiration)',
+          label: 'Number of unique teammates with an active goal attached to an Aspirational Value',
           direction: :more,
           supports_percent: true,
           group: 'Check-ins'
         ),
         Entry.new(
           key: 'active_goal_assignment',
-          label: 'Number of unique teammates with an active goal attached to an Assignment ' \
-                 '(goal owned by the teammate, started, not completed or deleted as of that Sunday, with a goal link to an assignment)',
+          label: 'Number of unique teammates with an active goal attached to an Assignment',
           direction: :more,
           supports_percent: true,
           group: 'Check-ins'

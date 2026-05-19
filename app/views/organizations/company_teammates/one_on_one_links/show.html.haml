@@ -39,9 +39,10 @@
   }
 
 - return_to_about_me_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, teammate_route_param(@teammate))
-- source = @one_on_one_link.external_project_source
-- cache = @one_on_one_link.external_project_cache_for(source) if source
+- source = @source
+- cache = @external_project_cache
 - viewing_user_has_identity = has_external_identity?(current_company_teammate, source) if source
+- sync_form_disabled = cache&.sync_in_progress? || @poll_external_project_sync
 - latest_goal_check_in_dates = @active_goals.filter_map { |goal| goal.goal_check_ins.map(&:check_in_week_start).compact.max }
 - most_recent_goal_check_in = latest_goal_check_in_dates.max
 
@@ -120,37 +121,37 @@
                       source: source,
                       return_url: request.fullpath
 
-            - if source && cache
-              = render 'shared/external_project/project_display',
-                      cache: cache,
-                      cacheable: @one_on_one_link,
-                      current_teammate: @teammate,
-                      source: source,
-                      return_url: request.fullpath
-            - elsif source && !cache && viewing_user_has_identity
-              = render 'shared/external_project/sync_prompt',
-                      cacheable: @one_on_one_link,
-                      current_teammate: current_company_teammate,
-                      source: source,
-                      return_url: request.fullpath,
-                      has_project_access: @has_project_access
-            - elsif @one_on_one_link.url.present?
+            = render "organizations/company_teammates/one_on_one_links/sync_results",
+                     cacheable: @one_on_one_link,
+                     cache: cache,
+                     current_teammate: current_company_teammate,
+                     source: source,
+                     viewing_user_has_identity: viewing_user_has_identity,
+                     has_project_access: @has_project_access,
+                     return_url: request.fullpath,
+                     sync_form_disabled: sync_form_disabled,
+                     poll_sync: @poll_external_project_sync
+            - if @one_on_one_link.url.present? && source != 'asana'
               .mb-4
                 %iframe{src: @one_on_one_link.url, style: "width: 100%; height: 500px; border: 1px solid #dee2e6; border-radius: 0.25rem;"}
 
             - form_method = @one_on_one_link.persisted? ? :patch : :post
-            = form_with model: [@organization, @person, @one_on_one_link], url: organization_company_teammate_one_on_one_link_path(organization, @teammate), method: form_method, local: true do |f|
+            = form_with model: [@organization, @person, @one_on_one_link], url: organization_company_teammate_one_on_one_link_path(organization, @teammate), method: form_method, local: true, html: { id: "one-on-one-sync-link-form" } do |f|
               .mb-3
                 = f.label :url, "Sync Link URL", class: "form-label"
-                = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789 or https://docs.google.com/..."
+                = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789 or https://docs.google.com/...", disabled: sync_form_disabled
                 - if @one_on_one_link.errors[:url].any?
                   .invalid-feedback.d-block
                     = @one_on_one_link.errors[:url].join(', ')
                 %small.form-text.text-muted
-                  This uses the same underlying 1:1 link.
+                  Put a link to the document, project, or system that you use to store your 1:1 notes and discussions. If it is an Asana project, we can automatically sync sections and tasks.
               .d-flex.gap-2
-                = f.submit "Save Sync Link", class: "btn btn-primary"
+                = f.submit "Save Sync Link", class: "btn btn-primary", disabled: sync_form_disabled
                 = link_to "Cancel", return_to_about_me_url, class: "btn btn-outline-secondary"
+            - if sync_form_disabled
+              %p.small.text-muted.mt-2.mb-0
+                %i.bi.bi-hourglass-split.me-1
+                Save and sync are disabled while a project sync is in progress.
 
       %section#execute.mb-5
         .card.border-info

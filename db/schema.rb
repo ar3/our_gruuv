@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_16_193046) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_18_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -467,12 +467,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_16_193046) do
     t.bigint "last_synced_by_teammate_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "sync_status"
+    t.string "sync_error_type"
+    t.text "sync_error"
+    t.datetime "sync_started_at"
     t.index ["cacheable_type", "cacheable_id", "source"], name: "index_external_project_caches_on_cacheable_and_source", unique: true
     t.index ["cacheable_type", "cacheable_id"], name: "index_external_project_caches_on_cacheable"
     t.index ["external_project_id"], name: "index_external_project_caches_on_external_project_id"
     t.index ["last_synced_by_teammate_id"], name: "index_external_project_caches_on_last_synced_by_teammate_id"
     t.index ["source", "last_synced_at"], name: "index_external_project_caches_on_source_and_synced_at"
     t.index ["source"], name: "index_external_project_caches_on_source"
+    t.index ["sync_status"], name: "index_external_project_caches_on_sync_status"
   end
 
   create_table "external_references", force: :cascade do |t|

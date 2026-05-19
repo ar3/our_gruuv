@@ -351,6 +351,7 @@ Rails.application.routes.draw do
       resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :create, :update] do
         member do
           post 'sync', to: 'company_teammates/one_on_one_links#sync', as: :sync
+          get 'sync_status', to: 'company_teammates/one_on_one_links#sync_status', as: :sync_status
           post 'associate_project', to: 'company_teammates/one_on_one_links#associate_project', as: :associate_project
           post 'disassociate_project', to: 'company_teammates/one_on_one_links#disassociate_project', as: :disassociate_project
           get 'asana/oauth/authorize', to: 'company_teammates/asana/oauth#authorize', as: :asana_oauth_authorize_one_on_one

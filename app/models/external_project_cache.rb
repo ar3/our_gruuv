@@ -1,4 +1,6 @@
 class ExternalProjectCache < ApplicationRecord
+  include ExternalProjectCacheSyncState
+
   # Associations
   belongs_to :cacheable, polymorphic: true
   belongs_to :last_synced_by_teammate, class_name: 'CompanyTeammate', optional: true

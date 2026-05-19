@@ -1,0 +1,26 @@
+- cache ||= local_assigns[:cache]
+- cacheable ||= local_assigns[:cacheable]
+- current_teammate ||= local_assigns[:current_teammate] || current_company_teammate
+- source ||= local_assigns[:source]
+
+- sync_error_type = cache.sync_error_type
+- oauth_path = external_project_oauth_path(cacheable, source) if cacheable
+
+.alert.alert-danger.mb-3
+  %strong Sync failed.
+  - if cache.sync_error.present?
+    = cache.sync_error
+  - else
+    Please try again.
+
+- if sync_error_type == 'token_expired' && oauth_path
+  .alert.alert-warning.mb-0
+    %i.bi.bi-exclamation-triangle.me-2
+    Your #{source_display_name(source)} token has expired.
+    = link_to "Reconnect your account", oauth_path, class: "alert-link"
+- elsif sync_error_type == 'not_authenticated' && oauth_path
+  .alert.alert-info.mb-0
+    %i.bi.bi-info-circle.me-2
+    Please
+    = link_to "connect your #{source_display_name(source)} account", oauth_path, class: "alert-link"
+    to sync the project.

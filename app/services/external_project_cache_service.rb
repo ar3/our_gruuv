@@ -1,4 +1,16 @@
 class ExternalProjectCacheService
+  def self.prepare_cache_record(cacheable, source)
+    project_id = get_project_id(cacheable, source)
+    return nil unless project_id.present?
+
+    cache = ExternalProjectCache.find_or_initialize_by(cacheable: cacheable, source: source)
+    cache.external_project_id = project_id
+    cache.external_project_url = get_project_url(cacheable, source)
+    cache.sections_data = [] unless cache.sections_data.is_a?(Array)
+    cache.items_data = [] unless cache.items_data.is_a?(Array)
+    cache
+  end
+
   def self.sync_project(cacheable, source, teammate)
     return { success: false, error: 'Invalid source' } unless %w[asana jira linear].include?(source)
     

@@ -1,6 +1,7 @@
 class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::OrganizationNamespaceBaseController
   include Organizations::ObservationsInvolvingTeammateCount
   include Organizations::AssignsViewableTeammates
+  include Organizations::OneOnOneExternalProjectSync
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -11,7 +12,7 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   def show
     authorize @one_on_one_link
     @person = @teammate.person
-    @source = @one_on_one_link&.external_project_source
+    load_external_project_cache_for_hub
     load_one_on_one_hub_data
     
     # Check if viewing user has access to the Asana project
@@ -41,10 +42,11 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     
     @one_on_one_link.assign_attributes(one_on_one_link_params)
     if @one_on_one_link.save
-      redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), notice: '1:1 link created successfully.'
+      maybe_enqueue_asana_sync_after_save!
+      redirect_to one_on_one_hub_path(anchor: asana_sync_redirect_anchor), notice: '1:1 link created successfully.'
     else
       @person = @teammate.person
-      @source = @one_on_one_link&.external_project_source
+      load_external_project_cache_for_hub
       load_one_on_one_hub_data
       render :show, status: :unprocessable_entity
     end
@@ -69,10 +71,11 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     
     @one_on_one_link.assign_attributes(one_on_one_link_params)
     if @one_on_one_link.save
-      redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), notice: '1:1 link updated successfully.'
+      maybe_enqueue_asana_sync_after_save!
+      redirect_to one_on_one_hub_path(anchor: asana_sync_redirect_anchor), notice: '1:1 link updated successfully.'
     else
       @person = @teammate.person
-      @source = @one_on_one_link&.external_project_source
+      load_external_project_cache_for_hub
       load_one_on_one_hub_data
       render :show, status: :unprocessable_entity
     end
@@ -80,20 +83,26 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
 
   def sync
     authorize @one_on_one_link, :update?
-    
+
     source = params[:source] || @one_on_one_link.external_project_source
-    return redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), alert: 'No project source detected.' unless source.present?
-    
-    result = ExternalProjectCacheService.sync_project(@one_on_one_link, source, current_company_teammate)
-    
-    if result[:success]
-      redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), notice: 'Project synced successfully.'
-    else
-      error_message = format_sync_error_message(result, source)
-      # Store error type in flash for view to use
-      flash[:sync_error_type] = result[:error_type]
-      redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), alert: error_message
+    unless source.present?
+      redirect_to one_on_one_hub_path(anchor: "sync"), alert: "No project source detected."
+      return
     end
+
+    enqueue_one_on_one_asana_sync!(source: source)
+  end
+
+  def sync_status
+    authorize @one_on_one_link, :update?
+
+    source = params[:source] || @one_on_one_link.external_project_source
+    cache = ExternalProjectCache.find_by(cacheable: @one_on_one_link, source: source) if source.present?
+    if cache.nil?
+      return render json: { status: "none", elapsed_seconds: 0, stale: false, slow: false }
+    end
+
+    render json: external_project_sync_status_json(cache)
   end
 
   def associate_project
@@ -368,28 +377,8 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     }
   end
 
-  def format_sync_error_message(result, source)
-    error_type = result[:error_type] || 'unknown_error'
-    base_message = result[:error] || 'Unknown error occurred'
-    
-    case error_type
-    when 'token_expired'
-      source_name = source == 'asana' ? 'Asana' : source.titleize
-      "Your #{source_name} token has expired. Please reconnect your account to sync the project."
-    when 'permission_denied'
-      "You do not have permission to access this project. #{base_message}"
-    when 'not_found', 'project_not_found'
-      "Project not found. Please verify the project URL is correct."
-    when 'not_authenticated'
-      source_name = source == 'asana' ? 'Asana' : source.titleize
-      "You are not authenticated with #{source_name}. Please connect your account first."
-    when 'network_error'
-      "Network error: #{base_message}. Please try again later."
-    when 'api_error'
-      "API error: #{base_message}. Please try again later."
-    else
-      "Failed to sync project: #{base_message}"
-    end
+  def asana_sync_redirect_anchor
+    @one_on_one_link.external_project_source == "asana" ? "sync" : nil
   end
 
   def set_teammate
