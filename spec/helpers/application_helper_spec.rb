@@ -124,6 +124,20 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
   end
 
+  describe '#render_markdown' do
+    it 'renders inline markdown inside double-quoted text' do
+      text = '**Learning Frequency**: squadmates agree: "_We are deliberately_ **learning** so much... ' \
+             'per [quarter](https://google.com)".'
+      html = helper.render_markdown(text)
+
+      expect(html).to include('<strong>Learning Frequency</strong>')
+      expect(html).to include('<em>We are deliberately</em>')
+      expect(html).to include('<strong>learning</strong>')
+      expect(html).to include('<a href="https://google.com">quarter</a>')
+      expect(html).not_to include('<q>')
+    end
+  end
+
   describe 'S.E.E. 20 helpers' do
     describe '#see_20_tooltip_title' do
       it 'returns the S.E.E. 20 tagline' do

@@ -404,6 +404,13 @@ RSpec.describe 'Organizations::Assignments', type: :request do
           expect(response).to have_http_status(:success)
           expect(response.body).to include('Ship features on time')
         end
+
+        it 'renders outcome description as markdown' do
+          outcome.update!(description: '**Bold outcome**')
+          get organization_assignment_path(organization, assignment)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('<strong>Bold outcome</strong>')
+        end
       end
 
       it 'links positions to their show pages' do

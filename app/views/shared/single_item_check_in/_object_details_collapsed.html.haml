@@ -50,7 +50,9 @@
               %strong Expected Outcomes
               %ul.mb-0
                 - object.assignment_outcomes.ordered.each do |outcome|
-                  %li= outcome.description
+                  %li
+                    .markdown-content
+                      = render_markdown(outcome.description)
     - if more_details_url.present?
       .mt-2
         = link_to more_details_link_text, more_details_url, class: "btn btn-sm btn-outline-secondary"

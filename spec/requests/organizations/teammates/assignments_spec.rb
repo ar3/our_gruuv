@@ -135,6 +135,13 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("Associated Goals")
       end
 
+      it "renders expected outcomes as markdown in assignment details" do
+        create(:assignment_outcome, assignment: assignment, description: "**Bold outcome**", outcome_type: "quantitative")
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("<strong>Bold outcome</strong>")
+      end
+
       it "links current period observations to the observations index with observee and assignment (no timeframe)" do
         get assignment_show_path
         expect(response).to have_http_status(:success)

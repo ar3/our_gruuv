@@ -74,9 +74,10 @@
                       .mb-3
                         %label.form-label.fw-bold Expected Outcomes
                         - @assignment_outcomes.each do |outcome|
-                          .form-control-plaintext.mb-1
-                            %i.bi.bi-check-circle.text-success.me-2
-                            = outcome.description
+                          .form-control-plaintext.mb-1.d-flex.align-items-start
+                            %i.bi.bi-check-circle.text-success.me-2.mt-1
+                            .markdown-content.flex-grow-1
+                              = render_markdown(outcome.description)
                     - else
                       .mb-3
                         %label.form-label.fw-bold Expected Outcomes

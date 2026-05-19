@@ -536,7 +536,8 @@ module ApplicationHelper
       superscript: true,
       underline: true,
       highlight: true,
-      quote: true,
+      # quote: disabled — wraps "..." in <q> before inline markdown runs, so bold/italic/links
+      # inside quoted outcome text (common for sentiment outcomes) render as literal characters.
       footnotes: true
     )
     
