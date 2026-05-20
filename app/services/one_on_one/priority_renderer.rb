@@ -19,6 +19,7 @@ module OneOnOne
   class PriorityRenderer
     include Rails.application.routes.url_helpers
     include AssociableGoalsHelper
+    include SlackAbsoluteUrls
 
     RATEABLE_TYPE_RANK = { "Assignment" => 0, "Aspiration" => 1, "Ability" => 2 }.freeze
 
@@ -881,16 +882,24 @@ module OneOnOne
     end
 
     def absolute_url_for_path(path)
-      return path.to_s if path.to_s.match?(/\Ahttps?:\/\//i)
+      slack_absolute_url(path)
+    end
 
-      host = Rails.application.routes.default_url_options[:host].presence ||
-        Rails.application.config.action_mailer.default_url_options&.dig(:host)
-      return path.to_s if host.blank?
-
-      protocol = Rails.application.routes.default_url_options[:protocol] ||
-        Rails.application.config.action_mailer.default_url_options&.dig(:protocol) ||
-        "https"
-      "#{protocol}://#{host}#{path}"
+    def slack_format_link_item(attrs)
+      case attrs
+      when Hash
+        label = ERB::Util.html_escape(attrs[:label].to_s)
+        url = slack_absolute_url(attrs[:url])
+        bullet = url.present? ? "• <#{url}|#{label}>" : "• #{label}"
+        add_label = attrs[:add_goal_label].to_s
+        add_url = slack_absolute_url(attrs[:add_goal_url])
+        if add_url.present? && add_label.present?
+          bullet += " — <#{add_url}|#{ERB::Util.html_escape(add_label)}>"
+        end
+        bullet
+      else
+        "• #{ERB::Util.html_escape(attrs.to_s)}"
+      end
     end
 
     def slack_format_action_item(item, mode)
@@ -898,8 +907,7 @@ module OneOnOne
       when :html
         "• #{ERB::Util.html_escape(item_plain(item))}"
       when :link
-        attrs = item_label_url(item)
-        slack_format_legacy_concrete_item(attrs)
+        slack_format_link_item(item_label_url(item))
       end
     end
 
@@ -907,10 +915,10 @@ module OneOnOne
       case item
       when Hash
         label = ERB::Util.html_escape(item[:label].to_s)
-        url = item[:url].to_s
+        url = slack_absolute_url(item[:url])
         bullet = url.present? ? "• <#{url}|#{label}>" : "• #{label}"
         add_label = item[:add_goal_label].to_s
-        add_url = item[:add_goal_url].to_s
+        add_url = slack_absolute_url(item[:add_goal_url])
         if add_url.present? && add_label.present?
           bullet += " — <#{add_url}|#{ERB::Util.html_escape(add_label)}>"
         end

@@ -5,6 +5,7 @@ module Digest
   # Uses company label for "Get shit done"; main message includes a link to configure the digest.
   class SlackMessageBuilderService
     include ActionView::Helpers::DateHelper
+    include SlackAbsoluteUrls
 
     GSD_CATEGORY_LABELS = {
       observable_moments: 'Observable Moments',
@@ -27,7 +28,7 @@ module Digest
     def main_message
       casual_name = slack_escape(@teammate.person.casual_name)
       total = @items[:total_pending].to_i
-      gsd_page_url = Rails.application.routes.url_helpers.organization_get_shit_done_url(@organization)
+      gsd_page_url = slack_app_url(:organization_get_shit_done_url, @organization)
       gsd_list_link = "<#{gsd_page_url}|#{slack_escape(@gsd_label)} list>"
 
       # Block content: "<casual name>, you have <total> items in the <label> list." (label is a link) then bullet list of count per category
@@ -102,8 +103,7 @@ module Digest
       summary = about_me_summary_sentence_for_slack
       weekly_line = 'It is time for our weekly check-in.'
       subject_name = slack_escape(@teammate.person.display_name)
-      helpers = Rails.application.routes.url_helpers
-      one_on_one_hub_url = helpers.organization_company_teammate_one_on_one_link_url(@organization, @teammate)
+      one_on_one_hub_url = slack_app_url(:organization_company_teammate_one_on_one_link_url, @organization, @teammate)
       weekly_linked = "<#{one_on_one_hub_url}|Weekly 1:1 check-in>"
 
       header_lines = ["*#{weekly_linked} for #{subject_name}*", ""]
@@ -199,6 +199,10 @@ module Digest
     # Slack section block text is limited to 3000 chars; exceeding causes invalid_blocks.
     SLACK_SECTION_TEXT_LIMIT = 3000
 
+    def slack_app_url(helper_name, *args)
+      slack_absolute_url(Rails.application.routes.url_helpers.public_send(helper_name, *args, slack_url_options))
+    end
+
     def truncate_for_slack_section(text)
       s = text.to_s
       return s if s.blank? || s.length <= SLACK_SECTION_TEXT_LIMIT
@@ -206,14 +210,14 @@ module Digest
     end
 
     def digest_config_url_for_organization
-      url = Rails.application.routes.url_helpers.edit_organization_digest_url(@organization)
+      url = slack_app_url(:edit_organization_digest_url, @organization)
       "<#{url}|Digest settings>"
     end
 
     # Formats one section for the About Me thread: link (and optional explanation). Check-in sections use ":" before explanation; others use ". ".
     def about_me_section_line(section)
       link_text, url = about_me_section_link(section[:key])
-      link_part = url.present? ? "<#{url}|#{slack_escape(link_text)}>" : slack_escape(link_text)
+      link_part = url.present? ? "<#{slack_absolute_url(url)}|#{slack_escape(link_text)}>" : slack_escape(link_text)
       explanation = section[:explanation_sentence].to_s
       separator = CHECK_IN_SECTION_KEYS.include?(section[:key]) ? ': ' : '. '
       explanation.present? ? "#{link_part}#{separator}#{slack_escape(explanation)}" : link_part
@@ -228,8 +232,7 @@ module Digest
 
     # Slack summary: "X <about|About Casual> sections are healthy, …"
     def about_me_summary_sentence_for_slack
-      helpers = Rails.application.routes.url_helpers
-      about_url = helpers.about_me_organization_company_teammate_url(@organization, @teammate)
+      about_url = slack_app_url(:about_me_organization_company_teammate_url, @organization, @teammate)
       casual = slack_escape(@teammate.person.casual_name)
       about_link = "<#{about_url}|About #{casual}>"
       red_sections = @about_me_sections.select { |s| s[:status] == :red }
@@ -294,7 +297,7 @@ module Digest
 
       action = renderer.primary_action
       if action && action[:slack_url].present?
-        lines << "*Primary action:* <#{action[:slack_url]}|#{slack_escape(action[:label])}>"
+        lines << "*Primary action:* <#{slack_absolute_url(action[:slack_url])}|#{slack_escape(action[:label])}>"
       elsif action
         lines << "*Primary action:* #{slack_escape(action[:label])}"
       end
@@ -309,32 +312,33 @@ module Digest
       )
     end
 
-    # Returns [link_text, url] for the About Me section. URL is full URL for Slack mrkdwn links.
+    # Returns [link_text, url] for the About Me section. URL is absolute for Slack mrkdwn links.
     def about_me_section_link(key)
       helpers = Rails.application.routes.url_helpers
+      opts = slack_url_options
       case key
       when :aspirations_check_in
-        ['Aspirational Values Check-In', helpers.organization_company_teammate_check_ins_url(@organization, @teammate)]
+        ['Aspirational Values Check-In', helpers.organization_company_teammate_check_ins_url(@organization, @teammate, opts)]
       when :assignments_check_in
-        ['Assignments/Outcomes Check-In', helpers.organization_company_teammate_check_ins_url(@organization, @teammate)]
+        ['Assignments/Outcomes Check-In', helpers.organization_company_teammate_check_ins_url(@organization, @teammate, opts)]
       when :position_check_in
-        ['Position/Overall', helpers.organization_company_teammate_check_ins_url(@organization, @teammate)]
+        ['Position/Overall', helpers.organization_company_teammate_check_ins_url(@organization, @teammate, opts)]
       when :goals
-        ['Active Goals', helpers.organization_goals_url(@organization, owner_id: "CompanyTeammate_#{@teammate.id}")]
+        ['Active Goals', helpers.organization_goals_url(@organization, { owner_id: "CompanyTeammate_#{@teammate.id}" }.merge(opts))]
       when :prompts
         label = @company.label_for('prompt', 'Prompts/Reflections')
-        [label, helpers.organization_prompts_url(@organization)]
+        [label, helpers.organization_prompts_url(@organization, opts)]
       when :stories
-        ['Observations (OGOs)', helpers.organization_observations_url(@organization, involving_teammate_id: @teammate.id)]
+        ['Observations (OGOs)', helpers.organization_observations_url(@organization, { involving_teammate_id: @teammate.id }.merge(opts))]
       when :one_on_one
-        ['1:1 Area', helpers.organization_company_teammate_one_on_one_link_url(@organization, @teammate)]
+        ['1:1 Area', helpers.organization_company_teammate_one_on_one_link_url(@organization, @teammate, opts)]
       when :abilities
         current_position = EmploymentTenure.where(company_teammate: @teammate, ended_at: nil).first&.position
         if current_position
           [ 'Abilities/Skills/Knowledge',
-            helpers.organization_eligibility_requirement_url(@organization, current_position, teammate_id: @teammate.id) ]
+            helpers.organization_eligibility_requirement_url(@organization, current_position, { teammate_id: @teammate.id }.merge(opts)) ]
         else
-          ['Abilities/Skills/Knowledge', helpers.organization_eligibility_requirements_url(@organization)]
+          ['Abilities/Skills/Knowledge', helpers.organization_eligibility_requirements_url(@organization, opts)]
         end
       else
         [key.to_s.humanize, nil]
@@ -373,7 +377,7 @@ module Digest
       title = goal.title.to_s
       snippet = title.length > 40 ? "#{title[0, 40]}..." : title
       snippet = slack_escape(snippet).tr('|', '-') # Slack: escape &<> and use - for |
-      url = Rails.application.routes.url_helpers.organization_goal_url(@organization, goal)
+      url = slack_app_url(:organization_goal_url, @organization, goal)
       "Last confidence check-in was #{time_ago} for: <#{url}|#{snippet}>"
     end
 
@@ -381,7 +385,7 @@ module Digest
       story = observation.story.to_s
       snippet = story.length > 40 ? "#{story[0, 40]}..." : story
       snippet = slack_escape(snippet)
-      url = Rails.application.routes.url_helpers.organization_observation_url(@organization, observation)
+      url = slack_app_url(:organization_observation_url, @organization, observation)
       "#{snippet} <#{url}|View>"
     end
 

@@ -284,6 +284,24 @@ RSpec.describe Digest::SlackMessageBuilderService do
   end
 
   describe '#thread2_about_me' do
+    it 'uses absolute URLs in section detail links' do
+      sections = [
+        {
+          key: :goals,
+          status: :red,
+          explanation_sentence: 'No active goals.'
+        }
+      ]
+      allow(Digest::AboutMeContentService).to receive(:new).and_return(instance_double(Digest::AboutMeContentService, sections: sections))
+      allow(GetShitDoneQueryService).to receive(:new).and_return(instance_double(GetShitDoneQueryService, all_pending_items: { total_pending: 0 }))
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      text = builder.thread2_about_me[:text]
+
+      expect(text).to match(/<https?:\/\/[^|]+\|Active Goals>/)
+      expect(text).not_to match(/<\/organizations/)
+    end
+
     it 'returns detailed section content without weekly summary sentence' do
       builder = described_class.new(teammate: teammate, organization: organization)
       result = builder.thread2_about_me
