@@ -168,18 +168,34 @@
                   .card-body
                     %h2.fw-bold.mb-1= @missing_goal_total_count
                     %p.text-muted.mb-2 finalized gaps without active goals
+                    - hub_teammate_param = teammate_route_param(@teammate)
                     - if @assignment_missing_goal_items.any?
                       %p.mb-1
                         %strong Assignments:
                         = @assignment_missing_goal_items.count
+                        = link_to my_growth_experiences_organization_company_teammate_path(organization, hub_teammate_param),
+                                  class: "ms-1 text-decoration-none",
+                                  title: "Grow by experiences",
+                                  aria: { label: "Grow by experiences" } do
+                          %i.bi.bi-box-arrow-up-right
                     - if @aspiration_missing_goal_items.any?
                       %p.mb-1
                         %strong Aspirations:
                         = @aspiration_missing_goal_items.count
+                        = link_to review_most_recent_organization_company_teammate_check_ins_path(organization, hub_teammate_param),
+                                  class: "ms-1 text-decoration-none",
+                                  title: "Check-in statuses",
+                                  aria: { label: "Check-in statuses" } do
+                          %i.bi.bi-box-arrow-up-right
                     - if @ability_missing_goal_items.any?
                       %p.mb-0
                         %strong Ability gaps:
                         = @ability_missing_goal_items.count
+                        = link_to my_growth_abilities_organization_company_teammate_path(organization, hub_teammate_param),
+                                  class: "ms-1 text-decoration-none",
+                                  title: "Grow by abilities",
+                                  aria: { label: "Grow by abilities" } do
+                          %i.bi.bi-box-arrow-up-right
 
               .col-12.col-xl-6
                 .card.h-100
