@@ -291,8 +291,12 @@
             .row.g-3
               .col-12.col-lg-6
                 .card.h-100
-                  .card-header
+                  .card-header.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
                     %h5.mb-0 Observations (30 Days)
+                    - if @observations_involving_url.present?
+                      = link_to @observations_involving_url, class: "btn btn-sm btn-outline-primary" do
+                        %i.bi.bi-box-arrow-up-right.me-1
+                        All observations involving #{casual_name}
                   .card-body
                     %p.mb-1
                       %strong Given:
@@ -311,7 +315,11 @@
                         - @upcoming_check_ins.first(8).each do |row|
                           %li.mb-2
                             %strong= "#{row[:type]}:"
-                            = " #{row[:name]} - "
+                            - if row[:url].present?
+                              = link_to row[:name], row[:url], class: "text-decoration-none"
+                            - else
+                              = row[:name]
+                            = " - "
                             - if row[:due_on]
                               - if row[:overdue]
                                 %span.text-danger= "Overdue since #{row[:due_on].strftime('%b %d, %Y')}"
@@ -339,17 +347,23 @@
                           %tbody
                             - @abilities_gap_rows.first(10).each do |row|
                               %tr
-                                %td= row[:ability].name
+                                %td
+                                  = link_to row[:ability].name,
+                                            organization_teammate_ability_path(organization, teammate_route_param(@teammate), row[:ability]),
+                                            class: "text-decoration-none"
                                 %td= row[:earned_level]
                                 %td= row[:required_level]
                     - else
                       %p.text-muted.mb-0 No current ability milestone gaps were found.
 
               - if @can_run_teammate_growth
+                - manager_casual_name = @teammate.active_employment_tenure&.manager_teammate&.person&.casual_name.presence || "their manager"
                 = render 'organizations/company_teammates/one_on_one_links/teammate_growth_evolve',
                          organization: organization,
                          teammate: @teammate,
-                         run: @teammate_growth_maap_run
+                         run: @teammate_growth_maap_run,
+                         employee_casual_name: casual_name,
+                         manager_casual_name: manager_casual_name
 
       %hr.my-4
       = render "organizations/company_teammates/internal_views_navigation", organization: organization, teammate: @teammate, for_one_on_one_hub: true

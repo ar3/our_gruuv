@@ -278,6 +278,9 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     @abilities_gap_rows = required_abilities_for_current_position(@teammate).select do |row|
       row[:required_level].to_i > row[:earned_level].to_i
     end
+    @observations_involving_url = if Pundit.policy(pundit_user, company).view_observations?
+                                  organization_observations_path(organization, involving_teammate_id: @teammate.id)
+                                end
   end
 
   def load_goals_confidence_chart_data
@@ -346,32 +349,48 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     rows = []
 
     position_latest = PositionCheckIn.latest_finalized_for(@teammate)
-    rows << build_due_row("Position", position&.display_name || "Current position", position_latest)
+    rows << build_due_row(
+      "Position",
+      position&.display_name || "Current position",
+      position_latest,
+      url: position_check_in_organization_teammate_path(organization, @teammate)
+    )
 
     if position
       assignment_ids = position.required_assignments.pluck(:assignment_id)
       assignments = Assignment.where(id: assignment_ids)
       assignments.each do |assignment|
         latest = AssignmentCheckIn.latest_finalized_for(@teammate, assignment)
-        rows << build_due_row("Assignment", assignment.title, latest)
+        rows << build_due_row(
+          "Assignment",
+          assignment.title,
+          latest,
+          url: organization_teammate_assignment_path(organization, @teammate, assignment)
+        )
       end
     end
 
     Aspiration.within_hierarchy(organization).ordered.each do |aspiration|
       latest = AspirationCheckIn.latest_finalized_for(@teammate, aspiration)
-      rows << build_due_row("Aspiration", aspiration.name, latest)
+      rows << build_due_row(
+        "Aspiration",
+        aspiration.name,
+        latest,
+        url: organization_teammate_aspiration_path(organization, @teammate, aspiration)
+      )
     end
 
     rows.sort_by { |row| row[:due_on] || Date.current }
   end
 
-  def build_due_row(type, name, latest_check_in)
+  def build_due_row(type, name, latest_check_in, url: nil)
     due_on = if latest_check_in&.official_check_in_completed_at
       latest_check_in.official_check_in_completed_at.to_date + (CheckInBehavior::CLARITY_BLURRED_DAYS + 1).days
     end
     {
       type: type,
       name: name,
+      url: url,
       due_on: due_on,
       overdue: due_on.blank? || due_on < Date.current
     }
