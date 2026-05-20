@@ -202,7 +202,18 @@
                   .card-header
                     %h5.mb-0 Draft / Unstarted Goals
                   .card-body
-                    %h2.fw-bold.mb-1= @draft_goals_count
+                    %h2.fw-bold.mb-1
+                      = @draft_goals_count
+                      = link_to organization_goals_path(organization,
+                                                        owner_id: "CompanyTeammate_#{@teammate.id}",
+                                                        status: "draft",
+                                                        view: "hierarchical-collapsible",
+                                                        return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
+                                                        return_text: "Back to 1:1 Hub"),
+                                class: "ms-1 text-decoration-none",
+                                title: "View draft goals",
+                                aria: { label: "View draft goals" } do
+                        %i.bi.bi-box-arrow-up-right
                     %p.text-muted.mb-0 goals are drafted but not started
 
               .col-12.col-xl-6
@@ -213,6 +224,16 @@
                     %p.mb-1
                       %strong Active goals:
                       = @active_goals.count
+                      = link_to organization_goals_path(organization,
+                                                        owner_id: "CompanyTeammate_#{@teammate.id}",
+                                                        status: "active",
+                                                        view: "hierarchical-collapsible",
+                                                        return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
+                                                        return_text: "Back to 1:1 Hub"),
+                                class: "ms-1 text-decoration-none",
+                                title: "View active goals",
+                                aria: { label: "View active goals" } do
+                        %i.bi.bi-box-arrow-up-right
                     %p.mb-1
                       %strong Need check-in:
                       = @active_goals_needing_check_in_count
@@ -228,6 +249,16 @@
                     %p.mb-1
                       %strong Completed goals:
                       = @completed_goals.count
+                      = link_to organization_goals_path(organization,
+                                                        owner_id: "CompanyTeammate_#{@teammate.id}",
+                                                        status: "completed",
+                                                        view: "hierarchical-collapsible",
+                                                        return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
+                                                        return_text: "Back to 1:1 Hub"),
+                                class: "ms-1 text-decoration-none",
+                                title: "View completed goals",
+                                aria: { label: "View completed goals" } do
+                        %i.bi.bi-box-arrow-up-right
                     %p.mb-1
                       %strong Last completed:
                       = @last_goal_completed_at ? @last_goal_completed_at.strftime("%b %d, %Y") : "Never"
