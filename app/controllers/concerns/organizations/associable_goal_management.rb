@@ -33,10 +33,7 @@ module Organizations
       assign_goal_flow_overlay_request_context!
 
       if request.get?
-        candidate_goals = Goals::AssociableGoalCandidatesQuery.new(
-          associable: @associable,
-          goals_scope: policy_scope(Goal)
-        ).call
+        candidate_goals = associable_goal_candidate_goals
         associated_goal_ids = @associable.goal_ids.to_set
         @available_goals_with_status = candidate_goals.map do |g|
           { goal: g, already_associated: associated_goal_ids.include?(g.id) }
@@ -64,7 +61,7 @@ module Organizations
       errors = []
 
       goal_ids.each do |goal_id|
-        goal = Goal.find_by(id: goal_id)
+        goal = associable_goal_candidate_goals.find { |g| g.id == goal_id.to_i }
         next unless goal
 
         ga = @associable.goal_associations.build(goal: goal)
@@ -127,6 +124,25 @@ module Organizations
 
     def default_associable_goals_return_text
       associable_display_title(associable_for_goal_management)
+    end
+
+    def associable_goal_candidate_goals
+      goals = Goals::AssociableGoalCandidatesQuery.new(
+        associable: @associable,
+        goals_scope: policy_scope(Goal)
+      ).call.to_a
+      goals.select! { |goal| goal.can_be_viewed_by?(current_person) }
+
+      if params[:for_company_teammate_id].present?
+        subject_teammate = CompanyTeammate.find_by(id: params[:for_company_teammate_id])
+        if subject_teammate
+          goals.select! do |goal|
+            goal.owner_type == "CompanyTeammate" && goal.owner_id == subject_teammate.id
+          end
+        end
+      end
+
+      goals
     end
   end
 end

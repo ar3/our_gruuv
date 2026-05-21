@@ -20,7 +20,7 @@
         %i.bi.bi-plus.me-1
         Add New / Associate Goals
   .card-body
-    - non_archived_goals = associable.goals.reject { |g| g.deleted_at.present? }
+    - non_archived_goals = local_assigns[:visible_goals] || @visible_associable_goals || []
     = render 'shared/goals/associated_goals_hierarchy_body',
         organization: organization,
         linked_goals: linked_goals,

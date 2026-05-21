@@ -210,6 +210,26 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
         expect(response.body).to include("View all of #{employee_person.casual_name}'s goals")
       end
+
+      context "when another teammate's goal is also associated with the assignment" do
+        let(:other_person) { create(:person) }
+        let!(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
+        let!(:other_private_goal) do
+          create(:goal, :only_creator_and_owner,
+            company_id: organization.id,
+            creator: other_teammate,
+            owner: other_teammate,
+            title: "Other Teammate Secret Goal")
+        end
+        let!(:_other_association) { create(:goal_association, associable: assignment, goal: other_private_goal) }
+
+        it "does not list the other teammate's private goal on the subject's assignment page" do
+          get assignment_show_path
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include("Linked Sample Goal")
+          expect(response.body).not_to include("Other Teammate Secret Goal")
+        end
+      end
     end
   end
 

@@ -76,7 +76,7 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
       return_text: "Back to 1-by-1 check-in"
     )
 
-    load_associable_goals_display!(@ability)
+    load_associable_goals_display!(@ability, subject_teammate: @teammate)
   end
 
   private

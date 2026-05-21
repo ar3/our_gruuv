@@ -89,7 +89,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
       return_text: "Back to 1-by-1 check-in"
     )
 
-    load_associable_goals_display!(@aspiration)
+    load_associable_goals_display!(@aspiration, subject_teammate: @teammate)
   end
 
   def start_check_in

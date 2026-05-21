@@ -108,7 +108,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       return_text: "Back to 1-by-1 check-in"
     )
 
-    load_associable_goals_display!(@assignment)
+    load_associable_goals_display!(@assignment, subject_teammate: @teammate)
   end
 
   def start_check_in
