@@ -1613,3 +1613,10 @@ body:has(.vertical-nav.open) .floating-toggle {
     margin-top: 1rem;
   }
 }
+
+// Assignment show: Cytoscape accountability flow graph
+.assignment-accountability-flow-graph {
+  min-height: 280px;
+  width: 100%;
+  cursor: pointer;
+}

@@ -206,9 +206,13 @@ class Organizations::AssignmentsController < ApplicationController
       @most_popular_personal_alignment = nil
     end
     
-    # Load consumer assignments (assignments that benefit from this assignment)
-    @consumer_assignments = @assignment.consumer_assignments.includes(:department, :company).order(:title)
-    
+    scoped_assignment_ids = policy_scope(Assignment).where(company: @assignment.company).unarchived.pluck(:id)
+    @accountability_flow = Assignments::AccountabilityFlowGraph.new(
+      assignment: @assignment,
+      organization: @organization,
+      scoped_assignment_ids: scoped_assignment_ids
+    )
+
     # Load positions that require or suggest this assignment
     @position_assignments = @assignment.position_assignments
       .includes(position: [:title, :position_level])

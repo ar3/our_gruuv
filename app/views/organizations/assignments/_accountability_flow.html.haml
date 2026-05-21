@@ -1,0 +1,29 @@
+- flow = local_assigns.fetch(:accountability_flow)
+- components = flow.components
+
+- if flow.has_supply_links? && components.any?
+  - components.each_with_index do |component, index|
+    - graph_id = "assignment-accountability-flow-#{assignment.id}-#{index}"
+    .assignment-accountability-flow-graph-wrapper{class: (index > 0) ? 'mt-4' : nil}
+      - if components.size > 1
+        %p.small.text-muted.mb-2 Connected flow #{index + 1}
+      .assignment-accountability-flow-graph.border.rounded.bg-white{
+        id: graph_id,
+        role: "img",
+        "aria-label": "Interactive map of assignment supply relationships",
+        data: {
+          controller: "assignment-accountability-flow",
+          assignment_accountability_flow_elements_json_value: component.elements.to_json,
+          assignment_accountability_flow_roots_json_value: component.root_node_ids.to_json
+        }
+      }
+  %p.small.text-muted.mb-0.mt-3
+    %i.bi.bi-arrow-right.me-1
+    Arrows show supply direction: an assignment on the left supplies results consumed by the assignment on the right.
+    Click a node to open that assignment.
+- else
+  %p.text-muted.mb-0
+    No supply relationships are linked to this assignment yet.
+    - if policy(assignment).manage_consumer_assignments?
+      = link_to "Manage consumer assignments", organization_assignment_consumer_assignments_path(organization, assignment), class: "text-decoration-none"
+      to map how this assignment's results flow to others.

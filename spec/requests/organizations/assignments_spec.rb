@@ -111,6 +111,17 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include(assignment.title)
       end
 
+      it 'renders the assignment accountability flow section' do
+        downstream = create(:assignment, company: organization, title: 'Downstream Role')
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream, company: organization)
+
+        get organization_assignment_path(organization, assignment)
+
+        expect(response.body).to include('Assignment Accountability Flow')
+        expect(response.body).to include('assignment-accountability-flow')
+        expect(response.body).to include('Downstream Role')
+      end
+
       it 'shows teammate lens CTA to the 1-by-1 assignment page and omits Associated Goals on catalog show' do
         get organization_assignment_path(organization, assignment)
         lens_href = organization_teammate_assignment_path(organization, person_teammate, assignment)

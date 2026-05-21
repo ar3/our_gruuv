@@ -237,22 +237,27 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
         sign_in_as_teammate(person, organization)
       end
 
-      it 'loads consumer assignments' do
+      it 'loads accountability flow graph data for supply relationships' do
         AssignmentSupplyRelationship.create!(
           supplier_assignment: assignment,
           consumer_assignment: consumer1
         )
-        
+
         get :show, params: { organization_id: organization.id, id: assignment.id }
-        
-        expect(assigns(:consumer_assignments)).to include(consumer1)
-        expect(assigns(:consumer_assignments)).not_to include(consumer2)
+
+        flow = assigns(:accountability_flow)
+        expect(flow).to be_a(Assignments::AccountabilityFlowGraph)
+        expect(flow.has_supply_links?).to be true
+        expect(flow.components.first.assignments).to include(assignment, consumer1)
+        expect(flow.components.first.assignments).not_to include(consumer2)
       end
 
-      it 'loads empty consumer assignments when none exist' do
+      it 'loads accountability flow without supply links when none exist' do
         get :show, params: { organization_id: organization.id, id: assignment.id }
-        
-        expect(assigns(:consumer_assignments)).to be_empty
+
+        flow = assigns(:accountability_flow)
+        expect(flow.has_supply_links?).to be false
+        expect(flow.components).to be_empty
       end
     end
   end

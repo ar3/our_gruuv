@@ -151,25 +151,20 @@
                      show_milestone_parentheticals: true,
                      include_prefix: true
 
-    - if @consumer_assignments.any? || policy(@assignment).show?
-      .card.mb-4{ role: "region", "aria-labelledby": "consumer-assignments" }
-        .card-header
-          %h5.mb-0{ id: "consumer-assignments" }
-            %i.bi.bi-arrow-down-circle.me-2
-            Assignments that benefit from / consume the results of #{@assignment.title}
+    - if policy(@assignment).show?
+      .card.mb-4{ role: "region", "aria-labelledby": "assignment-accountability-flow" }
+        .card-header.d-flex.flex-wrap.justify-content-between.align-items-center.gap-2
+          %h5.mb-0{ id: "assignment-accountability-flow" }
+            %i.bi.bi-diagram-3.me-2
+            Assignment Accountability Flow
+          - if policy(@organization).view_assignment_flows?
+            = link_to full_network_graph_organization_assignment_flows_path(@organization), class: "btn btn-sm btn-outline-secondary" do
+              %i.bi.bi-diagram-3-fill.me-1
+              Full organization map
         .card-body
-          - if @consumer_assignments.any?
-            .row
-              - @consumer_assignments.each_slice((@consumer_assignments.count.to_f / 3).ceil) do |slice|
-                .col-md-4
-                  - slice.each do |consumer_assignment|
-                    .mb-2
-                      = link_to consumer_assignment.title, organization_assignment_path(@organization, consumer_assignment), class: "text-decoration-none"
-                      - if consumer_assignment.department
-                        %br
-                        %small.text-muted= consumer_assignment.department.display_name
-          - else
-            %p.text-muted.mb-0 No assignments currently benefit from this assignment.
+          %p.text-muted.mb-3
+            How this assignment connects to others through supply and consumption—who it supports downstream and who supplies it upstream.
+          = render "organizations/assignments/accountability_flow", accountability_flow: @accountability_flow, assignment: @assignment, organization: @organization
 
     - if @position_assignments.any?
       .card.mb-4{ role: "region", "aria-labelledby": "positions" }
