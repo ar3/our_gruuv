@@ -99,10 +99,30 @@ RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request
         end
       end
 
-      it 'shows enabled save button' do
+      it 'shows enabled save buttons at top and bottom when options exist' do
+        consumer1
+
         get organization_assignment_consumer_assignments_path(organization, assignment)
-        expect(response.body).to include('Save Consumer Assignments')
-        expect(response.body).not_to include('disabled')
+
+        assert_select 'input[type="submit"][value="Save Consumer Assignments"]', count: 2
+      end
+
+      it 'shows bottom save when no other assignments exist' do
+        get organization_assignment_consumer_assignments_path(organization, assignment)
+
+        assert_select 'input[type="submit"][value="Save Consumer Assignments"]', count: 1
+      end
+
+      it 'shows selection toolbar with search and empty selection label' do
+        consumer1
+        consumer2
+
+        get organization_assignment_consumer_assignments_path(organization, assignment)
+
+        expect(response.body).to include('placeholder="Search assignments..."')
+        expect(response.body).to include('aria-label="Filter assignments"')
+        expect(response.body).to include('None selected')
+        expect(response.body).to include('data-controller="selection-toolbar options-filter"')
       end
     end
 
@@ -117,10 +137,12 @@ RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request
         expect(response).to have_http_status(:success)
       end
 
-      it 'shows enabled save button' do
+      it 'shows enabled save buttons at top and bottom when options exist' do
+        consumer1
+
         get organization_assignment_consumer_assignments_path(organization, assignment)
-        expect(response.body).to include('Save Consumer Assignments')
-        expect(response.body).not_to include('disabled')
+
+        assert_select 'input[type="submit"][value="Save Consumer Assignments"]', count: 2
       end
     end
 

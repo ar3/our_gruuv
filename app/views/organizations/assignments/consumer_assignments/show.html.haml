@@ -11,6 +11,8 @@
 - content_for :return_text do
   = @return_text || "Back to #{@assignment.title}"
 
+- can_manage = policy(@assignment).manage_consumer_assignments?
+
 = form_with url: organization_assignment_consumer_assignments_path(@organization, @assignment), method: :patch, local: true do |form|
   .row
     .col-12
@@ -21,31 +23,42 @@
             Select Consumer Assignments
         .card-body
           %p.text-muted.mb-3
-            Select which assignments benefit from or consume the results of 
+            Select which assignments benefit from or consume the results of
             %strong= @assignment.title
             = ". These assignments will be able to reference this assignment's outcomes."
-          
+
           - if @assignments.any?
-            .row
-              - @assignments.each_slice((@assignments.count.to_f / 3).ceil) do |slice|
-                .col-md-4
-                  - slice.each do |assignment|
-                    .mb-2
-                      .form-check
-                        = check_box_tag "consumer_assignment_ids[]", 
-                                        assignment.id, 
-                                        @existing_consumer_assignment_ids.include?(assignment.id),
-                                        class: "form-check-input",
-                                        id: "consumer_assignment_#{assignment.id}",
-                                        disabled: !policy(@assignment).manage_consumer_assignments?
-                        = label_tag "consumer_assignment_#{assignment.id}", class: "form-check-label" do
-                          %strong= assignment.title
-                          - if assignment.department
-                            %br
-                            %small.text-muted= assignment.department.display_name
-                          - else
-                            %br
-                            %small.text-muted= assignment.company.name
+            .mb-3{data: {controller: "selection-toolbar options-filter"}}
+              = render "shared/selection_pages/toolbar",
+                form: form,
+                save_label: "Save Consumer Assignments",
+                can_manage: can_manage,
+                search_placeholder: "Search assignments...",
+                search_aria_label: "Filter assignments",
+                disabled_tooltip: "Requires manage MAAP permission",
+                large_save: true
+
+              .row{data: {options_filter_target: "list"}}
+                - @assignments.each_slice((@assignments.count.to_f / 3).ceil) do |slice|
+                  .col-md-4
+                    - slice.each do |assignment|
+                      .mb-2.filterable-option
+                        .form-check
+                          = check_box_tag "consumer_assignment_ids[]",
+                            assignment.id,
+                            @existing_consumer_assignment_ids.include?(assignment.id),
+                            class: "form-check-input",
+                            id: "consumer_assignment_#{assignment.id}",
+                            disabled: !can_manage,
+                            data: {selection_toolbar_label: assignment.title}
+                          = label_tag "consumer_assignment_#{assignment.id}", class: "form-check-label" do
+                            %strong= assignment.title
+                            - if assignment.department
+                              %br
+                              %small.text-muted= assignment.department.display_name
+                            - else
+                              %br
+                              %small.text-muted= assignment.company.name
           - else
             .alert.alert-info
               %i.bi.bi-info-circle.me-2
@@ -53,12 +66,9 @@
 
       .card.mb-4
         .card-body
-          - can_manage = policy(@assignment).manage_consumer_assignments?
-          - if can_manage
-            = form.submit "Save Consumer Assignments", class: "btn btn-primary btn-lg"
-          - else
-            .d-flex.align-items-center.gap-2
-              .flex-grow-1
-                %button.btn.btn-primary.btn-lg.w-100.disabled{disabled: true, type: "button"}
-                  Save Consumer Assignments
-              %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires manage MAAP permission"}
+          = render "shared/selection_pages/save_button",
+            form: form,
+            label: "Save Consumer Assignments",
+            can_manage: can_manage,
+            large: true,
+            disabled_tooltip: "Requires manage MAAP permission"

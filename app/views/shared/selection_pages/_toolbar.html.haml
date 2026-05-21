@@ -1,0 +1,11 @@
+-# locals: form (required), save_label (required), can_manage (required),
+-#        search_placeholder (required), search_aria_label (required),
+-#        empty_selection_label: "None selected", disabled_tooltip: nil, large_save: false
+.selection-toolbar.mb-3.d-flex.flex-column.flex-md-row.gap-2.align-items-stretch.align-items-md-center
+  .selection-toolbar__search.flex-md-shrink-0
+    %input.form-control.form-control-lg{type: "search", placeholder: search_placeholder, "data-options-filter-target": "input", "aria-label": search_aria_label}
+  .selection-toolbar__selected.flex-grow-1.d-flex.flex-wrap.gap-1.align-items-center
+    %span.text-muted.small{data: {selection_toolbar_target: "emptyLabel"}}= local_assigns.fetch(:empty_selection_label, "None selected")
+    %span.d-flex.flex-wrap.gap-1.align-items-center{data: {selection_toolbar_target: "pills"}}
+  .selection-toolbar__save.flex-md-shrink-0.align-self-md-end
+    = render "shared/selection_pages/save_button", form: form, label: save_label, can_manage: can_manage, large: local_assigns.fetch(:large_save, false), disabled_tooltip: local_assigns[:disabled_tooltip]

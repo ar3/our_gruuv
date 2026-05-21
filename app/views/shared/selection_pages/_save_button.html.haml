@@ -1,0 +1,9 @@
+-# locals: form (required), label (required), can_manage (required), large: false
+- if can_manage
+  = form.submit label, class: ["btn", "btn-primary", ("btn-lg" if local_assigns.fetch(:large, false))].compact.join(" ")
+- else
+  .d-flex.align-items-center.gap-2
+    .flex-grow-1
+      %button.btn.btn-primary{class: ("btn-lg" if local_assigns.fetch(:large, false)), disabled: true, type: "button"}
+        = label
+    %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => local_assigns[:disabled_tooltip] || "Requires permission to save"}
