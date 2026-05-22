@@ -1620,3 +1620,19 @@ body:has(.vertical-nav.open) .floating-toggle {
   width: 100%;
   cursor: pointer;
 }
+
+// Full organization assignment supply network (tabbed viz)
+.assignment-full-network-graph-highcharts,
+.assignment-full-network-graph-vis {
+  min-height: 560px;
+  width: 100%;
+}
+
+.assignment-full-network-graph-cytoscape {
+  min-height: 560px;
+}
+
+.assignment-full-network-graph-mermaid {
+  min-height: 200px;
+  overflow-x: auto;
+}

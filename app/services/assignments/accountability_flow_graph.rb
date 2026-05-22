@@ -37,8 +37,13 @@ module Assignments
         Component.new(
           assignments: assignments,
           relationships: relationships,
-          elements: cytoscape_elements(assignments, relationships),
-          root_node_ids: root_node_ids(relationships)
+          elements: SupplyGraphElements.cytoscape_elements(
+            assignments,
+            relationships,
+            organization: @organization,
+            current_assignment_id: @assignment.id
+          ),
+          root_node_ids: SupplyGraphElements.cytoscape_root_node_ids(relationships)
         )
       ]
     end
@@ -79,47 +84,5 @@ module Assignments
       adjacency.transform_values(&:to_a)
     end
 
-    def root_node_ids(relationships)
-      consumer_ids = relationships.map(&:consumer_assignment_id).to_set
-      supplier_ids = relationships.map(&:supplier_assignment_id).to_set
-      roots = supplier_ids - consumer_ids
-      roots = supplier_ids if roots.empty?
-      roots.map { |id| node_id(id) }
-    end
-
-    def cytoscape_elements(assignments, relationships)
-      nodes = assignments.map do |assignment|
-        {
-          group: 'nodes',
-          data: {
-            id: node_id(assignment.id),
-            label: assignment.title.to_s.truncate(60),
-            url: organization_assignment_path(@organization, assignment),
-            isCurrent: assignment.id == @assignment.id
-          }
-        }
-      end
-
-      edges = relationships.map do |relationship|
-        {
-          group: 'edges',
-          data: {
-            id: "e#{relationship.id}",
-            source: node_id(relationship.supplier_assignment_id),
-            target: node_id(relationship.consumer_assignment_id)
-          }
-        }
-      end
-
-      nodes + edges
-    end
-
-    def node_id(assignment_id)
-      "a#{assignment_id}"
-    end
-
-    def organization_assignment_path(organization, assignment)
-      Rails.application.routes.url_helpers.organization_assignment_path(organization, assignment)
-    end
   end
 end

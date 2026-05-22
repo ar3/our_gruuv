@@ -25,6 +25,11 @@ class Organizations::AssignmentFlowsController < Organizations::OrganizationName
       .includes(:department, :assignment_outcomes)
       .order(:title)
     @supply_relationships = relationships
+    @network_graph = Assignments::FullNetworkGraphPresenter.new(
+      assignments: @assignments,
+      supply_relationships: @supply_relationships,
+      organization: @organization
+    )
     render layout: determine_layout
   end
 

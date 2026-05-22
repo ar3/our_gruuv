@@ -4,10 +4,26 @@ import cytoscape from "cytoscape"
 export default class extends Controller {
   static values = {
     elementsJson: String,
-    rootsJson: { type: String, default: "[]" }
+    rootsJson: { type: String, default: "[]" },
+    lazy: { type: Boolean, default: false }
   }
 
   connect() {
+    if (this.lazyValue) return
+    this.render()
+  }
+
+  initGraph() {
+    if (this.cy) return
+    this.render()
+  }
+
+  resize() {
+    this.cy?.resize()
+    this.cy?.fit(undefined, 24)
+  }
+
+  render() {
     let elements = []
     let roots = []
 

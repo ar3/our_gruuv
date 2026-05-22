@@ -1,5 +1,6 @@
 module GoalsHelper
   include AssociableGoalsHelper
+  include MermaidFlowchartEscaping
 
   # Build Mermaid flowchart DSL for goal parent-child links.
   # Node IDs are safe (g_<id>); labels are escaped for Mermaid (quotes, backslashes).
@@ -13,12 +14,12 @@ module GoalsHelper
 
     goal_ids = goals.map(&:id).to_set
 
-    # Node definitions: g_<id>["Label"]
+    # Node definitions: g_<id>("Label")
     goals.each do |g|
       node_id = "g_#{g.id}"
-      label = g.title.to_s.truncate(50)
-      escaped_label = label.gsub('\\', '\\\\').gsub('"', '\\"')
-      lines << "  #{node_id}[\"#{escaped_label}\"]"
+      label = mermaid_normalize_flowchart_text(g.title).truncate(50)
+      escaped_label = mermaid_escape_flowchart_label(label)
+      lines << "  #{node_id}(\"#{escaped_label}\")"
     end
 
     # Edges: parent --> child
@@ -27,14 +28,6 @@ module GoalsHelper
       cid = link.child_id
       next unless goal_ids.include?(pid) && goal_ids.include?(cid)
       lines << "  g_#{pid} --> g_#{cid}"
-    end
-
-    # Click links to goal pages
-    if organization.present?
-      goals.each do |g|
-        url = organization_goal_path(organization, g)
-        lines << "  click g_#{g.id} href \"#{url}\""
-      end
     end
 
     lines.join("\n")

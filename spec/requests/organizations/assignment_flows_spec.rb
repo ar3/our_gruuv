@@ -27,11 +27,24 @@ RSpec.describe 'Organizations::AssignmentFlows', type: :request do
   end
 
   describe 'GET /organizations/:organization_id/assignment_flows/full_network_graph' do
-    it 'returns success and shows full network graph page' do
+    it 'returns success and shows full network graph page with visualization tabs' do
+      supplier = create(:assignment, company: organization, title: 'Root Supplier')
+      consumer = create(:assignment, company: organization, title: 'Downstream Consumer')
+      create(:assignment_supply_relationship, supplier_assignment: supplier, consumer_assignment: consumer)
+
       get full_network_graph_organization_assignment_flows_path(organization)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Full network graph')
       expect(response.body).to include('Automatic flow')
+      expect(response.body).to include('Highcharts')
+      expect(response.body).to include('Cytoscape')
+      expect(response.body).to include('vis.js')
+      expect(response.body).to include('Mermaid')
+      expect(response.body).to include('mermaid.min.js')
+      expect(response.body).to include('assignment_flow_mermaid_source_value')
+      expect(response.body).to include('flowchart TB')
+      expect(response.body).to include('networkgraph.js')
+      expect(response.body).to include('assignment-full-network-graph')
     end
 
     it 'shows assignments that have supply relationships' do
@@ -42,6 +55,7 @@ RSpec.describe 'Organizations::AssignmentFlows', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Supplier Assignment')
       expect(response.body).to include('Consumer Assignment')
+      expect(response.body).to include('assignment-accountability-flow')
     end
   end
 
