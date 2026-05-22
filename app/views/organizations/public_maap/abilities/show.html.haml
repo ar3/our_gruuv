@@ -48,7 +48,7 @@
           - description = @ability.send("milestone_#{level}_description")
           - if description.present?
             .mb-3
-              %h6.text-primary Milestone #{level}
+              %h6.text-primary Milestone #{level} (#{milestone_level_display(level)})
               .markdown-content.markdown-content--bordered= render_markdown(description)
         - if (1..5).all? { |level| @ability.send("milestone_#{level}_description").blank? }
           %em.text-muted No milestone descriptions provided

@@ -218,6 +218,7 @@ RSpec.describe 'Organizations::Abilities', type: :request do
       expect(response.body).to include('class="markdown-content"')
       expect(response.body).to match(%r{<strong>Bold</strong>})
       expect(response.body).to match(%r{<em>emphasis</em>})
+      expect(response.body).to include('Milestone 2 (Advanced)')
     end
 
     it 'shows spotlight audit footer with PaperTrail change history link' do
