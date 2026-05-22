@@ -1,0 +1,34 @@
+- elements = local_assigns.fetch(:elements)
+- root_node_ids = local_assigns.fetch(:root_node_ids)
+- export_filename = local_assigns.fetch(:export_filename, "supply-network-graph")
+- lazy = local_assigns.fetch(:lazy, false)
+- highlight_tiers = local_assigns.fetch(:highlight_tiers, false)
+- graph_id = local_assigns[:graph_id]
+- extra_graph_classes = local_assigns.fetch(:extra_graph_classes, "")
+- aria_label = local_assigns.fetch(:aria_label, "Interactive map of assignment supply relationships")
+
+.assignment-cytoscape-flow-graph{
+  data: {
+    controller: "assignment-accountability-flow",
+    assignment_accountability_flow_elements_json_value: elements.to_json,
+    assignment_accountability_flow_roots_json_value: root_node_ids.to_json,
+    assignment_accountability_flow_lazy_value: lazy,
+    assignment_accountability_flow_highlight_tiers_value: highlight_tiers,
+    assignment_accountability_flow_export_filename_value: export_filename
+  }
+}
+  .d-flex.flex-wrap.justify-content-end.align-items-center.gap-2.mb-2
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Export graph"}
+      %button.btn.btn-outline-secondary{type: "button", title: "Download PNG", data: { action: "assignment-accountability-flow#exportPng" }}
+        %i.bi.bi-file-image.me-1
+        PNG
+      %button.btn.btn-outline-secondary{type: "button", title: "Download SVG", data: { action: "assignment-accountability-flow#exportSvg" }}
+        %i.bi.bi-filetype-svg.me-1
+        SVG
+  .assignment-accountability-flow-graph.border.rounded.bg-white.assignment-full-network-graph-cytoscape{
+    class: extra_graph_classes,
+    id: graph_id,
+    role: "img",
+    "aria-label": aria_label,
+    data: { assignment_accountability_flow_target: "graph" }
+  }

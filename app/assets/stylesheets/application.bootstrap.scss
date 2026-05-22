@@ -1614,11 +1614,15 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
-// Assignment show: Cytoscape accountability flow graph
+// Cytoscape supply flow graphs (assignment show, position, full network)
 .assignment-accountability-flow-graph {
-  min-height: 280px;
+  min-height: 560px;
   width: 100%;
   cursor: pointer;
+}
+
+.assignment-cytoscape-flow-graph {
+  width: 100%;
 }
 
 // Full organization assignment supply network (tabbed viz)

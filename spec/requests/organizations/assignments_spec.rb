@@ -119,6 +119,8 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
         expect(response.body).to include('Assignment Accountability Flow')
         expect(response.body).to include('assignment-accountability-flow')
+        expect(response.body).to include('assignment-accountability-flow#exportPng')
+        expect(response.body).to include('assignment-accountability-flow#exportSvg')
         expect(response.body).to include('Downstream Role')
       end
 

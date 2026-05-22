@@ -31,7 +31,7 @@ export default class extends Controller {
     this.visNetwork = null
     this.networkgraphScriptLoading = false
 
-    window.setTimeout(() => this.initMermaid(), 50)
+    window.setTimeout(() => this.initCytoscape(), 50)
   }
 
   disconnect() {
@@ -247,12 +247,15 @@ export default class extends Controller {
     if (!this.hasCytoscapePaneTarget) return
 
     const graphEl = this.cytoscapePaneTarget.querySelector(
-      "[data-controller~='assignment-accountability-flow']"
+      "[data-assignment-accountability-flow-target='graph']"
     )
     if (!graphEl) return
 
+    const wrapper = graphEl.closest("[data-controller~='assignment-accountability-flow']")
+    if (!wrapper) return
+
     const cytoscapeController = this.application.getControllerForElementAndIdentifier(
-      graphEl,
+      wrapper,
       "assignment-accountability-flow"
     )
     cytoscapeController?.initGraph()

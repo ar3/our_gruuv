@@ -15,11 +15,11 @@
 }
   %ul.nav.nav-tabs.card-header-tabs{role: "tablist"}
     %li.nav-item{role: "presentation"}
-      %button.nav-link.active{id: "full-network-mermaid-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-mermaid-pane", "aria-controls": "full-network-mermaid-pane", "aria-selected": "true"}
-        Mermaid
-    %li.nav-item{role: "presentation"}
-      %button.nav-link{id: "full-network-cytoscape-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-cytoscape-pane", "aria-controls": "full-network-cytoscape-pane", "aria-selected": "false"}
+      %button.nav-link.active{id: "full-network-cytoscape-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-cytoscape-pane", "aria-controls": "full-network-cytoscape-pane", "aria-selected": "true"}
         Cytoscape
+    %li.nav-item{role: "presentation"}
+      %button.nav-link{id: "full-network-mermaid-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-mermaid-pane", "aria-controls": "full-network-mermaid-pane", "aria-selected": "false"}
+        Mermaid
     %li.nav-item{role: "presentation"}
       %button.nav-link{id: "full-network-highcharts-sankey-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-highcharts-sankey-pane", "aria-controls": "full-network-highcharts-sankey-pane", "aria-selected": "false"}
         Highcharts – Sankey
@@ -33,7 +33,16 @@
       %button.nav-link{id: "full-network-vis-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-vis-pane", "aria-controls": "full-network-vis-pane", "aria-selected": "false"}
         vis.js
   .tab-content.pt-3
-    .tab-pane.fade.show.active{id: "full-network-mermaid-pane", role: "tabpanel", "aria-labelledby": "full-network-mermaid-tab", data: { assignment_full_network_graph_target: "mermaidPane" }}
+    .tab-pane.fade.show.active{id: "full-network-cytoscape-pane", role: "tabpanel", "aria-labelledby": "full-network-cytoscape-tab", data: { assignment_full_network_graph_target: "cytoscapePane" }}
+      %p.small.text-muted.mb-2
+        Interactive supply network. Click a node to open that assignment, or export as PNG or SVG.
+      = render "shared/cytoscape/supply_flow_graph",
+        elements: network_graph.cytoscape_elements,
+        root_node_ids: network_graph.cytoscape_root_node_ids,
+        export_filename: "organization-assignment-supply-network",
+        lazy: true,
+        aria_label: "Interactive map of assignment supply relationships"
+    .tab-pane.fade{id: "full-network-mermaid-pane", role: "tabpanel", "aria-labelledby": "full-network-mermaid-tab", data: { assignment_full_network_graph_target: "mermaidPane" }}
       %p.small.text-muted.mb-2
         Top-to-bottom flowchart. Click a node to open that assignment.
       .assignment-flow-mermaid.assignment-full-network-graph-mermaid{
@@ -43,19 +52,6 @@
           assignment_flow_mermaid_source_value: mermaid_flowchart_dsl(assignments, supply_relationships, organization: organization),
           assignment_flow_mermaid_click_urls_value: mermaid_assignment_click_urls(assignments, organization: organization).to_json,
           assignment_full_network_graph_target: "mermaidContainer"
-        }
-      }
-    .tab-pane.fade{id: "full-network-cytoscape-pane", role: "tabpanel", "aria-labelledby": "full-network-cytoscape-tab", data: { assignment_full_network_graph_target: "cytoscapePane" }}
-      %p.small.text-muted.mb-2
-        Same interactive graph as the assignment show page. Click a node to open that assignment.
-      .assignment-accountability-flow-graph.border.rounded.bg-white.assignment-full-network-graph-cytoscape{
-        role: "img",
-        "aria-label": "Interactive map of assignment supply relationships",
-        data: {
-          controller: "assignment-accountability-flow",
-          assignment_accountability_flow_elements_json_value: network_graph.cytoscape_elements.to_json,
-          assignment_accountability_flow_roots_json_value: network_graph.cytoscape_root_node_ids.to_json,
-          assignment_accountability_flow_lazy_value: true
         }
       }
     .tab-pane.fade{id: "full-network-highcharts-sankey-pane", role: "tabpanel", "aria-labelledby": "full-network-highcharts-sankey-tab", data: { assignment_full_network_graph_target: "highchartsSankeyPane" }}

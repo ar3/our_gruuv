@@ -1,4 +1,6 @@
 - flow = local_assigns.fetch(:accountability_flow)
+- assignment = local_assigns.fetch(:assignment)
+- organization = local_assigns.fetch(:organization)
 - components = flow.components
 = render "shared/cytoscape_dagre_scripts"
 
@@ -8,16 +10,12 @@
     .assignment-accountability-flow-graph-wrapper{class: (index > 0) ? 'mt-4' : nil}
       - if components.size > 1
         %p.small.text-muted.mb-2 Connected flow #{index + 1}
-      .assignment-accountability-flow-graph.border.rounded.bg-white{
-        id: graph_id,
-        role: "img",
-        "aria-label": "Interactive map of assignment supply relationships",
-        data: {
-          controller: "assignment-accountability-flow",
-          assignment_accountability_flow_elements_json_value: component.elements.to_json,
-          assignment_accountability_flow_roots_json_value: component.root_node_ids.to_json
-        }
-      }
+      = render "shared/cytoscape/supply_flow_graph",
+        elements: component.elements,
+        root_node_ids: component.root_node_ids,
+        export_filename: "assignment-accountability-flow-#{assignment.id}-#{index + 1}",
+        graph_id: graph_id,
+        aria_label: "Interactive map of assignment supply relationships"
   %p.small.text-muted.mb-0.mt-3
     %i.bi.bi-arrow-right.me-1
     Arrows show supply direction: an assignment on the left supplies results consumed by the assignment on the right.

@@ -167,6 +167,8 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('Position assignment reliance network')
       expect(response.body).to include('assignment-accountability-flow')
       expect(response.body).to include('data-assignment-accountability-flow-highlight-tiers-value')
+      expect(response.body).to include('assignment-accountability-flow#exportPng')
+      expect(response.body).to include('assignment-accountability-flow#exportSvg')
     end
   end
 

@@ -15,11 +15,14 @@ function registerDagreLayout() {
 }
 
 export default class extends Controller {
+  static targets = ["graph"]
+
   static values = {
     elementsJson: String,
     rootsJson: { type: String, default: "[]" },
     lazy: { type: Boolean, default: false },
-    highlightTiers: { type: Boolean, default: false }
+    highlightTiers: { type: Boolean, default: false },
+    exportFilename: { type: String, default: "supply-network-graph" }
   }
 
   connect() {
@@ -37,6 +40,31 @@ export default class extends Controller {
     this.cy?.fit(undefined, 24)
   }
 
+  exportPng() {
+    this.initGraph()
+    if (!this.cy) return
+
+    this.prepareForExport()
+    const dataUri = this.cy.png({
+      full: true,
+      scale: 2,
+      bg: "#ffffff"
+    })
+    this.downloadDataUri(dataUri, `${this.exportFilenameValue}.png`)
+  }
+
+  exportSvg() {
+    this.initGraph()
+    if (!this.cy) return
+
+    this.prepareForExport()
+    const svg = this.cy.svg({
+      full: true,
+      bg: "#ffffff"
+    })
+    this.downloadBlob(svg, `${this.exportFilenameValue}.svg`, "image/svg+xml;charset=utf-8")
+  }
+
   render() {
     let elements = []
     let roots = []
@@ -48,16 +76,16 @@ export default class extends Controller {
       return
     }
 
-    if (!elements.length) return
+    if (!elements.length || !this.hasGraphTarget) return
 
     const useDagreLayout = registerDagreLayout()
 
     this.cy = cytoscape({
-      container: this.element,
+      container: this.graphTarget,
       elements: elements,
       minZoom: 0.4,
       maxZoom: 2,
-      style: this.graphStyles(useDagreLayout),
+      style: this.graphStyles(),
       layout: this.layoutConfig(roots, useDagreLayout),
       wheelSensitivity: 0.2
     })
@@ -73,7 +101,29 @@ export default class extends Controller {
     this.cy = null
   }
 
-  graphStyles(useDagreLayout = false) {
+  prepareForExport() {
+    this.cy.resize()
+    this.cy.fit(undefined, 24)
+  }
+
+  downloadDataUri(dataUri, filename) {
+    const link = document.createElement("a")
+    link.download = filename
+    link.href = dataUri
+    link.click()
+  }
+
+  downloadBlob(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.download = filename
+    link.href = url
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  graphStyles() {
     const baseNodeStyle = {
       selector: "node",
       style: {
@@ -102,21 +152,8 @@ export default class extends Controller {
         "target-arrow-color": "#6c757d",
         "target-arrow-shape": "triangle",
         "curve-style": "bezier",
-        "control-point-step-size": 40,
-        "arrow-scale": 0.9
-      }
-    }
-
-    const dagreEdgeStyle = {
-      selector: "edge",
-      style: {
-        width: 2,
-        "line-color": "#6c757d",
-        "target-arrow-color": "#6c757d",
-        "target-arrow-shape": "triangle",
-        "curve-style": "taxi",
-        "taxi-direction": "horizontal",
-        "taxi-turn-min-distance": 12,
+        "control-point-distances": 22,
+        "control-point-weights": 0.5,
         "arrow-scale": 0.9
       }
     }
@@ -150,7 +187,7 @@ export default class extends Controller {
             "border-color": "#ced4da"
           }
         },
-        useDagreLayout ? dagreEdgeStyle : edgeStyle
+        edgeStyle
       ]
     }
 
@@ -165,7 +202,7 @@ export default class extends Controller {
           "font-weight": "bold"
         }
       },
-      useDagreLayout ? dagreEdgeStyle : edgeStyle
+      edgeStyle
     ]
   }
 
