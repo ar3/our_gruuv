@@ -1,5 +1,6 @@
 - flow = local_assigns.fetch(:accountability_flow)
 - components = flow.components
+= render "shared/cytoscape_dagre_scripts"
 
 - if flow.has_supply_links? && components.any?
   - components.each_with_index do |component, index|

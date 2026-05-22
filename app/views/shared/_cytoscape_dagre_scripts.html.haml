@@ -1,0 +1,5 @@
+- unless @_cytoscape_dagre_scripts_included
+  - @_cytoscape_dagre_scripts_included = true
+  - content_for :javascript do
+    %script{ src: "https://unpkg.com/dagre@0.8.5/dist/dagre.min.js", "data-turbo-track": "reload" }
+    %script{ src: "https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js", "data-turbo-track": "reload" }

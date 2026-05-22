@@ -1,5 +1,6 @@
 - network = local_assigns.fetch(:position_reliance_network)
 - components = network.components
+= render "shared/cytoscape_dagre_scripts"
 
 - if network.show_graph?
   - components.each_with_index do |component, index|

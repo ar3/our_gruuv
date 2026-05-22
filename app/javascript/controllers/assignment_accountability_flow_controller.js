@@ -1,6 +1,19 @@
 import { Controller } from "@hotwired/stimulus"
 import cytoscape from "cytoscape"
 
+let dagreExtensionRegistered = false
+
+function registerDagreLayout() {
+  if (dagreExtensionRegistered) return true
+
+  const register = window.cytoscapeDagre
+  if (typeof register !== "function") return false
+
+  cytoscape.use(register)
+  dagreExtensionRegistered = true
+  return true
+}
+
 export default class extends Controller {
   static values = {
     elementsJson: String,
@@ -37,13 +50,15 @@ export default class extends Controller {
 
     if (!elements.length) return
 
+    const useDagreLayout = registerDagreLayout()
+
     this.cy = cytoscape({
       container: this.element,
       elements: elements,
       minZoom: 0.4,
       maxZoom: 2,
-      style: this.graphStyles(),
-      layout: this.layoutConfig(roots),
+      style: this.graphStyles(useDagreLayout),
+      layout: this.layoutConfig(roots, useDagreLayout),
       wheelSensitivity: 0.2
     })
 
@@ -58,7 +73,7 @@ export default class extends Controller {
     this.cy = null
   }
 
-  graphStyles() {
+  graphStyles(useDagreLayout = false) {
     const baseNodeStyle = {
       selector: "node",
       style: {
@@ -86,7 +101,23 @@ export default class extends Controller {
         "line-color": "#6c757d",
         "target-arrow-color": "#6c757d",
         "target-arrow-shape": "triangle",
-        "curve-style": "bezier"
+        "curve-style": "bezier",
+        "control-point-step-size": 40,
+        "arrow-scale": 0.9
+      }
+    }
+
+    const dagreEdgeStyle = {
+      selector: "edge",
+      style: {
+        width: 2,
+        "line-color": "#6c757d",
+        "target-arrow-color": "#6c757d",
+        "target-arrow-shape": "triangle",
+        "curve-style": "taxi",
+        "taxi-direction": "horizontal",
+        "taxi-turn-min-distance": 12,
+        "arrow-scale": 0.9
       }
     }
 
@@ -119,7 +150,7 @@ export default class extends Controller {
             "border-color": "#ced4da"
           }
         },
-        edgeStyle
+        useDagreLayout ? dagreEdgeStyle : edgeStyle
       ]
     }
 
@@ -134,17 +165,31 @@ export default class extends Controller {
           "font-weight": "bold"
         }
       },
-      edgeStyle
+      useDagreLayout ? dagreEdgeStyle : edgeStyle
     ]
   }
 
-  layoutConfig(roots) {
+  layoutConfig(roots, useDagreLayout = false) {
+    if (useDagreLayout) {
+      return {
+        name: "dagre",
+        rankDir: "LR",
+        ranker: "network-simplex",
+        rankSep: 90,
+        nodeSep: 48,
+        edgeSep: 24,
+        animate: false,
+        padding: 30
+      }
+    }
+
     const config = {
       name: "breadthfirst",
       directed: true,
-      spacingFactor: 1.35,
+      spacingFactor: 2,
+      avoidOverlap: true,
       animate: false,
-      padding: 24
+      padding: 30
     }
 
     if (roots.length > 0) {
