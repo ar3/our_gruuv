@@ -1,0 +1,13 @@
+-# locals: organization, teammate, return_url, return_text, editable:, anchor_key: ('one_on_one' | 'about_me')
+- anchor_key = local_assigns.fetch(:anchor_key, 'one_on_one')
+
+.mb-4
+  = render 'organizations/employees/managers_view'
+
+= render 'shared/digest/weekly_digest_settings',
+         organization: organization,
+         teammate: teammate,
+         return_url: return_url,
+         return_text: return_text,
+         editable: local_assigns.fetch(:editable, false),
+         anchor_key: anchor_key

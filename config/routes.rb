@@ -109,6 +109,8 @@ Rails.application.routes.draw do
       post :sync_all_mediums, on: :member
       post :send_gsd_test, on: :member
       post :send_about_me_test, on: :member
+      post :send_one_on_one_test, on: :member
+      post :send_weekly_digests_now, on: :member
     end
     
     # Observable Moments

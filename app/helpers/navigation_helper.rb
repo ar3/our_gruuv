@@ -30,6 +30,17 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: '1:1 Hub',
+            icon: 'bi-link-45deg',
+            path: organization_company_teammate_one_on_one_link_path(current_organization, current_company_teammate),
+            policy_check: -> {
+              current_company_teammate.present? &&
+                policy(OneOnOneLink.new(teammate: current_company_teammate)).show?
+            },
+            active_check: -> { controller_name == 'one_on_one_links' && action_name == 'show' },
+            coming_soon: false
+          },
+          {
             label: 'My Check-In',
             icon: 'bi-clipboard-check',
             path: organization_company_teammate_check_ins_path(current_organization, current_company_teammate),

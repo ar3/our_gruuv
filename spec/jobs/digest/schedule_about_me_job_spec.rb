@@ -14,13 +14,15 @@ RSpec.describe Digest::ScheduleAboutMeJob, type: :job do
     t
   end
 
-  it 'enqueues weekly send job when weekday/hour match and medium is enabled' do
+  it 'enqueues both weekly digest jobs when weekday/hour match and medium is enabled' do
     prefs = UserPreference.for_person(person)
     prefs.update_preference('digest_slack', 'on')
     prefs.update_preference('about_me_weekly_day', '2') # Tuesday
 
     travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
-      expect { described_class.perform_now }.to have_enqueued_job(Digest::SendAboutMeJob).with(teammate.id, '2025-10')
+      expect { described_class.perform_now }
+        .to have_enqueued_job(Digest::SendAboutMeJob).with(teammate.id, '2025-10')
+        .and have_enqueued_job(Digest::SendOneOnOneDigestJob).with(teammate.id, '2025-10')
     end
   end
 
@@ -30,8 +32,33 @@ RSpec.describe Digest::ScheduleAboutMeJob, type: :job do
     prefs.update_preference('about_me_weekly_day', 'off')
 
     travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
+      expect { described_class.perform_now }
+        .not_to have_enqueued_job(Digest::SendAboutMeJob)
+      expect { described_class.perform_now }
+        .not_to have_enqueued_job(Digest::SendOneOnOneDigestJob)
+    end
+  end
+
+  it 'does not enqueue About Me when about me digest toggle is off' do
+    prefs = UserPreference.for_person(person)
+    prefs.update_preference('digest_slack', 'on')
+    prefs.update_preference('about_me_weekly_day', '2')
+    prefs.update_preference('about_me_digest_enabled', 'off')
+    prefs.update_preference('one_on_one_digest_enabled', 'on')
+
+    travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
       expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendAboutMeJob)
     end
+  end
+
+  it 'respects weekly digest toggle preferences' do
+    prefs = UserPreference.for_person(person)
+    prefs.update_preference('about_me_digest_enabled', 'off')
+    prefs.update_preference('one_on_one_digest_enabled', 'on')
+
+    job = described_class.new
+    expect(job.send(:weekly_digest_enabled?, prefs, :about_me_digest_enabled)).to be(false)
+    expect(job.send(:weekly_digest_enabled?, prefs, :one_on_one_digest_enabled)).to be(true)
   end
 
   it 'enqueues when employee slack is off but manager slack is on' do
@@ -46,7 +73,9 @@ RSpec.describe Digest::ScheduleAboutMeJob, type: :job do
     UserPreference.for_person(manager_person).update_preference('digest_slack', 'on')
 
     travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
-      expect { described_class.perform_now }.to have_enqueued_job(Digest::SendAboutMeJob).with(teammate.id, '2025-10')
+      expect { described_class.perform_now }
+        .to have_enqueued_job(Digest::SendAboutMeJob).with(teammate.id, '2025-10')
+        .and have_enqueued_job(Digest::SendOneOnOneDigestJob).with(teammate.id, '2025-10')
     end
   end
 end

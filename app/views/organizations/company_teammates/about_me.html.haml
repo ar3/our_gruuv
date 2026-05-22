@@ -23,6 +23,15 @@
 - if @show_onboarding_spotlight
   = render partial: 'organizations/company_teammates/about_me/onboarding_spotlight'
 
+- digest_return_url = about_me_organization_company_teammate_path(organization, teammate_route_param(@selected_teammate), anchor: 'weekly-digest-settings-about_me')
+= render 'shared/teammate_context/manager_lite_and_weekly_digest',
+         organization: organization,
+         teammate: @selected_teammate,
+         return_url: digest_return_url,
+         return_text: 'Back to About Me',
+         editable: policy(@selected_teammate).update?,
+         anchor_key: 'about_me'
+
 -# Aspirational Values Check-In Section (Read-Only)
 = render partial: 'organizations/company_teammates/about_me/aspirations_check_in_section'
 

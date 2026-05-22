@@ -230,22 +230,25 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(structure.first[:label]).to eq('About Me')
       end
 
-      it 'has the expected seven sub-items: About teammate, My Check-In, OGO\'s involving me, My Feedback Requests, My Prompts, My Goals, My Huddles' do
+      it 'has the expected eight sub-items including 1:1 Hub below About teammate' do
         structure = helper.navigation_structure
         about_me_section = structure.find { |item| item[:label] == 'About Me' }
         items = about_me_section[:items]
         labels = items.map { |item| item[:label] }
 
-        expect(items.length).to eq(7)
+        expect(items.length).to eq(8)
         expect(labels[0]).to match(/\AAbout .+\z/)
+        expect(labels[1]).to eq('1:1 Hub')
+        one_on_one_item = items.find { |i| i[:label] == '1:1 Hub' }
+        expect(one_on_one_item[:icon]).to eq('bi-link-45deg')
         my_check_in = items.find { |i| i[:label] == 'My Check-In' }
         expect(my_check_in[:active_check]).to be_present
-        expect(labels[1]).to eq('My Check-In')
-        expect(labels[2]).to eq("OGO's involving me")
-        expect(labels[3]).to eq('My Feedback Requests')
-        expect(labels[4]).to eq('My Prompts')
-        expect(labels[5]).to eq('My Goals')
-        expect(labels[6]).to eq('My Huddles')
+        expect(labels[2]).to eq('My Check-In')
+        expect(labels[3]).to eq("OGO's involving me")
+        expect(labels[4]).to eq('My Feedback Requests')
+        expect(labels[5]).to eq('My Prompts')
+        expect(labels[6]).to eq('My Goals')
+        expect(labels[7]).to eq('My Huddles')
       end
     end
 

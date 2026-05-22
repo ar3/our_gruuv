@@ -1,0 +1,19 @@
+-# locals: teammate_id:, weekly_day:, form_id: (optional)
+- teammate_id = local_assigns.fetch(:teammate_id)
+- weekly_day = local_assigns.fetch(:weekly_day).to_s
+- form_id = local_assigns[:form_id]
+- form_opts = form_id.present? ? { form: form_id } : {}
+- radio_name = "about_me_days[#{teammate_id}]"
+- day_options = [['Sun', '0'], ['Mon', '1'], ['Tue', '2'], ['Wed', '3'], ['Thu', '4'], ['Fri', '5'], ['Sat', '6']]
+- off_id = "about_me_weekly_day_off_#{teammate_id}"
+- submit_on_change = { onchange: 'this.form.submit()' }
+
+.btn-group.flex-wrap{role: 'group', 'aria-label': 'Weekly reminder day'}
+  - day_options.each do |label, value|
+    - input_id = "about_me_weekly_day_#{value}_#{teammate_id}"
+    %input{type: 'radio', name: radio_name, value: value, id: input_id, checked: weekly_day == value, class: 'btn-check', **form_opts, **submit_on_change}
+    %label.btn.btn-outline-primary.btn-sm{for: input_id, title: label}= label
+
+  %input{type: 'radio', name: radio_name, value: 'off', id: off_id, checked: weekly_day == 'off', class: 'btn-check', **form_opts, **submit_on_change}
+  %label.btn.btn-outline-secondary.btn-sm{for: off_id, title: 'No weekly reminder', 'aria-label': 'No weekly reminder'}
+    %i.bi.bi-x-circle

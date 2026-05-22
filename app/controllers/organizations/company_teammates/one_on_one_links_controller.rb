@@ -1,6 +1,6 @@
 class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::OrganizationNamespaceBaseController
-  include Organizations::ObservationsInvolvingTeammateCount
   include Organizations::AssignsViewableTeammates
+  include Organizations::AssignsManagersViewCardForTeammate
   include Organizations::OneOnOneExternalProjectSync
 
   before_action :authenticate_person!
@@ -132,21 +132,6 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     return unless @teammate
 
     assign_viewable_teammates_context!(selected_teammate: @teammate)
-  end
-
-  def assign_managers_view_card_for_teammate
-    return unless @teammate
-
-    @filtered_and_paginated_teammates = [@teammate]
-    @check_in_health_caches_by_teammate = CheckInHealthCache
-      .where(teammate_id: @teammate.id, organization_id: organization.id)
-      .index_by(&:teammate_id)
-    @managers_view_observations_involving_counts_by_teammate_id =
-      if Pundit.policy(pundit_user, company).view_observations?
-        { @teammate.id => observations_involving_teammate_total_count(@teammate) }
-      else
-        {}
-      end
   end
 
   def load_one_on_one_hub_data

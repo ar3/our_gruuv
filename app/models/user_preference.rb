@@ -2,6 +2,8 @@ class UserPreference < ApplicationRecord
   belongs_to :person
   
   # Default preferences structure
+  WEEKLY_DIGEST_TOGGLE_KEYS = %w[about_me_digest_enabled one_on_one_digest_enabled].freeze
+
   DEFAULT_PREFERENCES = {
     layout: 'vertical',
     vertical_nav_open: false,
@@ -12,7 +14,10 @@ class UserPreference < ApplicationRecord
     digest_sms: 'off',
     digest_weekly_day: nil,
     about_me_weekly_day: 'off',
-    about_me_last_sent_week: nil
+    about_me_last_sent_week: nil,
+    one_on_one_last_sent_week: nil,
+    about_me_digest_enabled: 'off',
+    one_on_one_digest_enabled: 'on'
   }.freeze
   
   # Ensure preferences is always a hash with defaults
@@ -64,8 +69,12 @@ class UserPreference < ApplicationRecord
   # Find or create preferences for a person
   def self.for_person(person)
     find_or_create_by(person: person) do |pref|
-      pref.preferences = DEFAULT_PREFERENCES.dup
+      pref.preferences = default_preferences_without_weekly_digest_toggles
     end
+  end
+
+  def self.default_preferences_without_weekly_digest_toggles
+    DEFAULT_PREFERENCES.stringify_keys.except(*WEEKLY_DIGEST_TOGGLE_KEYS)
   end
   
   private
@@ -79,14 +88,17 @@ class UserPreference < ApplicationRecord
   end
   
   def set_default_preferences
-    self.preferences = DEFAULT_PREFERENCES.dup if preferences.nil? || preferences.empty?
+    if preferences.nil? || preferences.empty?
+      self.preferences = self.class.default_preferences_without_weekly_digest_toggles
+    end
   end
   
   def ensure_preferences_hash
     self.preferences = {} if preferences.nil?
-    # Merge with defaults to ensure all keys exist
+    # Merge with defaults to ensure all keys exist (weekly digest toggles are opt-in via stored keys)
     if preferences.is_a?(Hash)
-      self.preferences = DEFAULT_PREFERENCES.merge(preferences.stringify_keys)
+      base_defaults = DEFAULT_PREFERENCES.stringify_keys.except(*WEEKLY_DIGEST_TOGGLE_KEYS)
+      self.preferences = base_defaults.merge(preferences.stringify_keys)
     end
   end
 end

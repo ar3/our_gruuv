@@ -21,6 +21,8 @@
 - effective_sms = @user_preference.effective_digest_sms(@teammate.person)
 - gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
 - gsd_test_enabled = @gsd_pending_items_count.to_i.positive?
+- about_me_digest_on = @user_preference.preference(:about_me_digest_enabled) == 'on'
+- one_on_one_digest_on = @user_preference.preference(:one_on_one_digest_enabled) == 'on'
 
 .card.mb-4
   .card-body
@@ -29,7 +31,7 @@
         .border.rounded.p-3.h-100
           %h6.mb-2= "#{gsd_label} digest"
           %p.text-muted.small.mb-3
-            Sent daily at 8:00 AM in your timezone when you have items in #{gsd_label}. Uses your notification preferences below.
+            Sent on weekdays at 8:00 AM in your timezone when you have items in #{gsd_label}. Uses your notification preferences below.
           - if gsd_test_enabled
             = link_to send_gsd_test_organization_digest_path(@organization, return_url: @return_url, return_text: @return_text),
                       class: 'btn btn-outline-primary btn-sm',
@@ -44,20 +46,26 @@
               %i.bi.bi-info-circle
       .col-12.col-lg-6
         .border.rounded.p-3.h-100
-          %h6.mb-2 1:1 About Me digest
+          %h6.mb-2 Weekly Slack digests (1:1 + About Me)
           %p.text-muted.small.mb-3
-            Sent weekly on each selected day to a DM with the employee and their direct manager. Uses the same notification preferences below.
+            Sent on the selected weekday at 8:00 AM in each employee's timezone to a DM with the employee and their direct manager.
           - about_me_test_options = @about_me_teammates.map { |tm| [tm.person.display_name, tm.id] }
-          = form_with url: send_about_me_test_organization_digest_path(@organization), method: :post, local: true, class: "d-flex flex-wrap gap-2 align-items-center" do
-            = hidden_field_tag :return_url, @return_url
-            = hidden_field_tag :return_text, @return_text
-            = select_tag :teammate_id,
-                         options_for_select(about_me_test_options, @teammate.id),
-                         class: 'form-select form-select-sm',
-                         style: 'max-width: 280px;'
-            = button_tag type: 'submit', class: 'btn btn-outline-secondary btn-sm' do
-              %i.bi.bi-send.me-1
-              Send test (1:1)
+          .d-flex.flex-wrap.gap-2.align-items-center.mb-2
+            = form_with url: send_one_on_one_test_organization_digest_path(@organization), method: :post, local: true, class: "d-flex flex-wrap gap-2 align-items-center" do
+              = hidden_field_tag :return_url, @return_url
+              = hidden_field_tag :return_text, @return_text
+              = select_tag :teammate_id, options_for_select(about_me_test_options, @teammate.id), class: 'form-select form-select-sm', style: 'max-width: 280px;'
+              = button_tag type: 'submit', class: 'btn btn-outline-secondary btn-sm' do
+                %i.bi.bi-send.me-1
+                Send test (1:1)
+          .d-flex.flex-wrap.gap-2.align-items-center
+            = form_with url: send_about_me_test_organization_digest_path(@organization), method: :post, local: true, class: "d-flex flex-wrap gap-2 align-items-center" do
+              = hidden_field_tag :return_url, @return_url
+              = hidden_field_tag :return_text, @return_text
+              = select_tag :teammate_id, options_for_select(about_me_test_options, @teammate.id), class: 'form-select form-select-sm', style: 'max-width: 280px;'
+              = button_tag type: 'submit', class: 'btn btn-outline-secondary btn-sm' do
+                %i.bi.bi-send.me-1
+                Send test (About Me)
 
     = form_with url: organization_digest_path(@organization), method: :patch, local: true do |f|
       - if @return_url.present?
@@ -87,15 +95,28 @@
         = label_tag :digest_email, 'Email (coming soon)', class: 'form-check-label text-muted'
 
       %hr.my-4
-      %h5.mb-3 About Me weekly 1:1 digest day
+      %h5.mb-3 Your weekly digest toggles
+      %p.text-muted.small.mb-2
+        Both digests use the same weekday below. Turn on one or both.
+      = hidden_field_tag :one_on_one_digest_enabled, 'off'
+      .form-check.mb-2
+        = check_box_tag :one_on_one_digest_enabled, 'on', one_on_one_digest_on, class: 'form-check-input'
+        = label_tag :one_on_one_digest_enabled, 'Weekly 1:1 guide digest', class: 'form-check-label'
+      = hidden_field_tag :about_me_digest_enabled, 'off'
+      .form-check.mb-3
+        = check_box_tag :about_me_digest_enabled, 'on', about_me_digest_on, class: 'form-check-input'
+        = label_tag :about_me_digest_enabled, 'Weekly About Me reminder digest', class: 'form-check-label'
+
+      %hr.my-4
+      %h5.mb-3 Weekly reminder day
       %p.text-muted.small
-        This digest sends at 8:00 AM in each employee's timezone to a group DM with the employee and their direct manager.
+        Applies to each employee listed. Sent at 8:00 AM in that employee's timezone.
       .table-responsive
         %table.table.table-sm.align-middle
           %thead
             %tr
               %th Employee
-              - [['Sun', '0'], ['Mon', '1'], ['Tue', '2'], ['Wed', '3'], ['Thu', '4'], ['Fri', '5'], ['Sat', '6'], ['No 1:1', 'off']].each do |label, _value|
+              - [['Sun', '0'], ['Mon', '1'], ['Tue', '2'], ['Wed', '3'], ['Thu', '4'], ['Fri', '5'], ['Sat', '6'], ['No weekly reminder', 'off']].each do |label, _value|
                 %th.text-center= label
           %tbody
             - @about_me_teammates.each do |employee|

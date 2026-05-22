@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Organizations::Digest', type: :request do
+  include ActiveJob::TestHelper
+
   let(:company) { create(:organization) }
   let(:person) { create(:person) }
   let!(:teammate) { create(:company_teammate, organization: company, person: person) }
@@ -82,6 +84,44 @@ RSpec.describe 'Organizations::Digest', type: :request do
       expect(flash[:alert]).to eq('No notifications will be sent since no mediums are configured to send notifications to.')
     end
 
+    it 'updates digest mediums for a direct report when digest_teammate_id is set' do
+      report_person = create(:person)
+      report = create(:company_teammate, organization: company, person: report_person)
+      create(:employment_tenure, teammate: report, company: company, manager_teammate: teammate, started_at: 1.year.ago, ended_at: nil)
+      report.update!(first_employed_at: 1.year.ago)
+      UserPreference.for_person(report_person).update_preference('digest_slack', 'off')
+      UserPreference.for_person(report_person).update_preference('digest_sms', 'off')
+
+      patch organization_digest_path(company),
+            params: {
+              digest_teammate_id: report.id,
+              digest_slack: 'on',
+              digest_sms: 'on',
+              return_url: organization_company_teammate_one_on_one_link_path(company, report)
+            }
+
+      report_pref = UserPreference.for_person(report_person).reload
+      expect(report_pref.preference(:digest_slack)).to eq('on')
+      expect(report_pref.preference(:digest_sms)).to eq('on')
+      expect(UserPreference.for_person(person).preference(:digest_slack)).to eq('off')
+    end
+
+    it 'does not change digest mediums when medium params are omitted' do
+      UserPreference.for_person(person).update_preference('digest_email', 'on')
+      UserPreference.for_person(person).update_preference('digest_slack', 'on')
+
+      patch organization_digest_path(company),
+            params: {
+              digest_teammate_id: teammate.id,
+              one_on_one_digest_enabled: 'on',
+              return_url: organization_company_teammate_one_on_one_link_path(company, teammate)
+            }
+
+      pref = UserPreference.for_person(person).reload
+      expect(pref.preference(:digest_slack)).to eq('on')
+      expect(pref.preference(:digest_email)).to eq('on')
+    end
+
     it 'saves about me weekly day for a direct report from digest settings payload' do
       report_person = create(:person)
       report = create(:company_teammate, organization: company, person: report_person)
@@ -127,6 +167,44 @@ RSpec.describe 'Organizations::Digest', type: :request do
         post send_about_me_test_organization_digest_path(company), params: { teammate_id: teammate.id }
       }.to have_enqueued_job(Digest::SendAboutMeJob).with(teammate.id)
       expect(response).to redirect_to(edit_organization_digest_path(company))
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/digest/send_one_on_one_test' do
+    it 'queues 1:1 digest send test and redirects to digest page' do
+      expect {
+        post send_one_on_one_test_organization_digest_path(company), params: { teammate_id: teammate.id }
+      }.to have_enqueued_job(Digest::SendOneOnOneDigestJob).with(teammate.id)
+      expect(response).to redirect_to(edit_organization_digest_path(company))
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/digest/send_weekly_digests_now' do
+    it 'queues enabled weekly digests for the teammate' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('one_on_one_digest_enabled', 'on')
+      prefs.update_preference('about_me_digest_enabled', 'off')
+
+      expect {
+        post send_weekly_digests_now_organization_digest_path(company),
+             params: { teammate_id: teammate.id, return_url: organization_company_teammate_path(company, teammate) }
+      }.to have_enqueued_job(Digest::SendOneOnOneDigestJob).with(teammate.id)
+
+      expect(enqueued_jobs.map { |j| j[:job] }).not_to include(Digest::SendAboutMeJob)
+      expect(response).to redirect_to(organization_company_teammate_path(company, teammate))
+      expect(flash[:notice]).to include('1:1 guide')
+    end
+
+    it 'does not queue when no digest is selected' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('one_on_one_digest_enabled', 'off')
+      prefs.update_preference('about_me_digest_enabled', 'off')
+
+      expect {
+        post send_weekly_digests_now_organization_digest_path(company), params: { teammate_id: teammate.id }
+      }.not_to have_enqueued_job(Digest::SendOneOnOneDigestJob)
+
+      expect(flash[:alert]).to include('Select at least one weekly digest')
     end
   end
 

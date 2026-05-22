@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Organizations::DigestController < Organizations::OrganizationNamespaceBaseController
+  include DigestHelper
+
   before_action :authenticate_person!
   before_action :set_teammate
   after_action :verify_authorized
@@ -31,13 +33,9 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
 
   def update
     authorize current_user_preferences, :update?
-    slack = params[:digest_slack].to_s == 'on' ? 'on' : 'off'
-    email = params[:digest_email].to_s == 'on' ? 'on' : 'off'
-    sms = params[:digest_sms].to_s == 'on' ? 'on' : 'off'
-
-    current_user_preferences.update_preference('digest_slack', slack)
-    current_user_preferences.update_preference('digest_email', email)
-    current_user_preferences.update_preference('digest_sms', sms)
+    prefs = weekly_digest_preferences_for_update
+    update_digest_mediums!(prefs)
+    update_weekly_digest_toggles!
     update_about_me_days!
 
     if params[:commit] == 'Save 1:1 day'
@@ -47,7 +45,7 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
     end
 
     if params[:return_url].present? && params[:commit].blank?
-      if slack == 'off' && sms == 'off'
+      if digest_mediums_submitted? && digest_mediums_all_off?(prefs)
         redirect_to params[:return_url],
                     alert: 'No notifications will be sent since no mediums are configured to send notifications to.'
       else
@@ -56,7 +54,7 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
       return
     end
 
-    if slack == 'off' && sms == 'off'
+    if digest_mediums_submitted? && digest_mediums_all_off?(prefs)
       redirect_to edit_organization_digest_path(@organization, return_url: params[:return_url], return_text: params[:return_text]),
                   alert: 'No notifications will be sent since no mediums are configured to send notifications to.'
     else
@@ -90,6 +88,56 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
       .includes(:person)
       .order('people.last_name ASC, people.first_name ASC')
       .references(:people)
+  end
+
+  def update_digest_mediums!(prefs)
+    if params.key?(:digest_slack)
+      value = params[:digest_slack].to_s == 'on' ? 'on' : 'off'
+      prefs.update_preference('digest_slack', value)
+    end
+    if params.key?(:digest_email)
+      value = params[:digest_email].to_s == 'on' ? 'on' : 'off'
+      prefs.update_preference('digest_email', value)
+    end
+    if params.key?(:digest_sms)
+      value = params[:digest_sms].to_s == 'on' ? 'on' : 'off'
+      prefs.update_preference('digest_sms', value)
+    end
+  end
+
+  def digest_mediums_submitted?
+    params.key?(:digest_slack) || params.key?(:digest_email) || params.key?(:digest_sms)
+  end
+
+  def digest_mediums_all_off?(prefs)
+    prefs.effective_digest_slack(nil) != 'on' && prefs.effective_digest_sms(nil) != 'on'
+  end
+
+  def update_weekly_digest_toggles!
+    prefs = weekly_digest_preferences_for_update
+
+    if params.key?(:about_me_digest_enabled)
+      value = params[:about_me_digest_enabled].to_s == 'on' ? 'on' : 'off'
+      prefs.update_preference('about_me_digest_enabled', value)
+    end
+    if params.key?(:one_on_one_digest_enabled)
+      value = params[:one_on_one_digest_enabled].to_s == 'on' ? 'on' : 'off'
+      prefs.update_preference('one_on_one_digest_enabled', value)
+    end
+  end
+
+  def weekly_digest_preferences_for_update
+    teammate = weekly_digest_teammate_from_params
+    return current_user_preferences unless teammate
+
+    authorize teammate, :update?, policy_class: CompanyTeammatePolicy
+    UserPreference.for_person(teammate.person)
+  end
+
+  def weekly_digest_teammate_from_params
+    return nil if params[:digest_teammate_id].blank?
+
+    CompanyTeammate.find_by(id: params[:digest_teammate_id], organization: @organization)
   end
 
   def update_about_me_days!
@@ -136,12 +184,59 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
     authorize current_user_preferences, :update?
     teammate = CompanyTeammate.find_by(id: params[:teammate_id], organization: @organization)
     unless teammate
-      redirect_to edit_organization_digest_path(@organization), alert: 'Could not find teammate for 1:1 test.'
+      redirect_to edit_organization_digest_path(@organization), alert: 'Could not find teammate for About Me digest test.'
       return
     end
+    authorize teammate, :update?, policy_class: CompanyTeammatePolicy
 
     Digest::SendAboutMeJob.perform_later(teammate.id)
     redirect_to edit_organization_digest_path(@organization, return_url: params[:return_url], return_text: params[:return_text]),
+                notice: "About Me digest test queued for #{teammate.person.casual_name}."
+  end
+
+  def send_one_on_one_test
+    authorize current_user_preferences, :update?
+    teammate = CompanyTeammate.find_by(id: params[:teammate_id], organization: @organization)
+    unless teammate
+      redirect_to edit_organization_digest_path(@organization), alert: 'Could not find teammate for 1:1 digest test.'
+      return
+    end
+    authorize teammate, :update?, policy_class: CompanyTeammatePolicy
+
+    Digest::SendOneOnOneDigestJob.perform_later(teammate.id)
+    redirect_to edit_organization_digest_path(@organization, return_url: params[:return_url], return_text: params[:return_text]),
                 notice: "1:1 digest test queued for #{teammate.person.casual_name}."
+  end
+
+  def send_weekly_digests_now
+    authorize current_user_preferences, :update?
+    teammate = CompanyTeammate.find_by(id: params[:teammate_id], organization: @organization)
+    redirect_target = params[:return_url].presence || edit_organization_digest_path(@organization)
+
+    unless teammate
+      redirect_to redirect_target, alert: 'Could not find teammate for weekly digest send.'
+      return
+    end
+    authorize teammate, :update?, policy_class: CompanyTeammatePolicy
+
+    prefs = UserPreference.for_person(teammate.person)
+    one_on_one_on = weekly_digest_enabled_in_prefs?(prefs, :one_on_one_digest_enabled)
+    about_me_on = weekly_digest_enabled_in_prefs?(prefs, :about_me_digest_enabled)
+
+    unless one_on_one_on || about_me_on
+      redirect_to redirect_target,
+                  alert: 'Select at least one weekly digest (1:1 guide or About Me reminder) before sending.'
+      return
+    end
+
+    Digest::SendOneOnOneDigestJob.perform_later(teammate.id) if one_on_one_on
+    Digest::SendAboutMeJob.perform_later(teammate.id) if about_me_on
+
+    labels = []
+    labels << '1:1 guide' if one_on_one_on
+    labels << 'About Me reminder' if about_me_on
+    notice = "Queued #{labels.join(' and ')} for #{teammate.person.casual_name}. They should arrive in Slack shortly."
+
+    redirect_to redirect_target, notice: notice
   end
 end

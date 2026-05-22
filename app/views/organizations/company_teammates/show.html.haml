@@ -30,11 +30,12 @@
           %i.bi.bi-bell.me-2
           Digest
       .card-body
-        - about_me_day = UserPreference.for_person(@teammate.person).preference(:about_me_weekly_day).presence || 'off'
         - digest_prefs = UserPreference.for_person(@teammate.person)
         - gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
         - can_configure_digest = current_company_teammate == @teammate
         - direct_reports_count = EmploymentTenure.where(company: organization, manager_teammate: @teammate, ended_at: nil).distinct.count(:teammate_id)
+        - about_me_digest_on = digest_prefs.preference(:about_me_digest_enabled) == 'on'
+        - one_on_one_digest_on = digest_prefs.preference(:one_on_one_digest_enabled) == 'on'
         = form_with url: organization_digest_path(organization), method: :patch, local: true, class: "mt-2" do
           .row.g-3
             .col-12.col-lg-8
@@ -49,9 +50,20 @@
                   = check_box_tag :digest_sms, 'on', digest_prefs.effective_digest_sms(@teammate.person) == 'on', class: 'form-check-input', id: "profile_digest_sms", onchange: "this.form.submit()"
                   = label_tag :profile_digest_sms, 'SMS', class: 'form-check-label'
               %hr.my-3
-              .small.fw-semibold.mb-2 Weekly 1:1 check-in day
+              .small.fw-semibold.mb-2 Weekly Slack digests
+              %p.text-muted.small.mb-2 Both use the same weekday below.
+              = hidden_field_tag :one_on_one_digest_enabled, 'off'
+              .form-check.mb-2
+                = check_box_tag :one_on_one_digest_enabled, 'on', one_on_one_digest_on, class: 'form-check-input', id: 'profile_one_on_one_digest', onchange: 'this.form.submit()'
+                = label_tag :profile_one_on_one_digest, 'Weekly 1:1 guide digest', class: 'form-check-label'
+              = hidden_field_tag :about_me_digest_enabled, 'off'
+              .form-check.mb-2
+                = check_box_tag :about_me_digest_enabled, 'on', about_me_digest_on, class: 'form-check-input', id: 'profile_about_me_digest', onchange: 'this.form.submit()'
+                = label_tag :profile_about_me_digest, 'Weekly About Me reminder digest', class: 'form-check-label'
+              .small.fw-semibold.mb-2.mt-2 Weekly reminder day
+              - about_me_day = digest_prefs.preference(:about_me_weekly_day).presence || 'off'
               .d-flex.flex-wrap.gap-2
-                - [['Sun', '0'], ['Mon', '1'], ['Tue', '2'], ['Wed', '3'], ['Thu', '4'], ['Fri', '5'], ['Sat', '6'], ['No 1:1', 'off']].each do |label, value|
+                - [['Sun', '0'], ['Mon', '1'], ['Tue', '2'], ['Wed', '3'], ['Thu', '4'], ['Fri', '5'], ['Sat', '6'], ['No weekly reminder', 'off']].each do |label, value|
                   .form-check.form-check-inline
                     = radio_button_tag "about_me_days[#{@teammate.id}]", value, about_me_day.to_s == value.to_s, class: 'form-check-input', onchange: "this.form.submit()"
                     = label_tag nil, label, class: 'form-check-label'

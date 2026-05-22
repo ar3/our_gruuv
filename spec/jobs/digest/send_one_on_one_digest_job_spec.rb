@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Digest::SendAboutMeJob, type: :job do
+RSpec.describe Digest::SendOneOnOneDigestJob, type: :job do
   let(:organization) { create(:organization) }
   let(:employee_person) { create(:person) }
   let(:manager_person) { create(:person) }
@@ -20,37 +20,25 @@ RSpec.describe Digest::SendAboutMeJob, type: :job do
     UserPreference.for_person(manager_person).update_preference('digest_slack', 'on')
   end
 
-  it 'opens a group dm and posts main plus About Me section thread' do
+  it 'opens a group dm and posts main plus thread messages' do
     slack_service = instance_double(SlackService)
     allow(SlackService).to receive(:new).and_return(slack_service)
     allow(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'G123' })
     allow(slack_service).to receive(:post_message).and_return({ success: true })
     allow_any_instance_of(Notification).to receive(:reload) { |n| n.update_column(:message_id, '123.456') if n.message_id.blank?; n }
-
-    expect(Digest::SyncOneOnOneAsanaForAboutMe).not_to receive(:call)
+    allow(Digest::SyncOneOnOneAsanaForAboutMe).to receive(:call).and_return(synced: false, skipped: :no_link)
 
     expect {
       described_class.perform_now(employee.id, '2026-16')
-    }.to change { Notification.where(notification_type: 'about_me_digest').count }.by(2)
+    }.to change { Notification.where(notification_type: 'one_on_one_digest').count }.by(2)
+
+    expect(Digest::SyncOneOnOneAsanaForAboutMe).to have_received(:call).with(
+      employee_teammate: employee,
+      manager_teammate: manager
+    )
 
     expect(slack_service).to have_received(:open_or_create_group_dm).with(user_ids: contain_exactly('UEMP', 'UMGR'))
-    expect(UserPreference.for_person(employee_person).preference(:about_me_last_sent_week)).to eq('2026-16')
-  end
-
-  it 'sends a direct dm when only one slack identity exists' do
-    manager.teammate_identities.where(provider: 'slack').delete_all
-
-    slack_service = instance_double(SlackService)
-    allow(SlackService).to receive(:new).and_return(slack_service)
-    allow(slack_service).to receive(:open_dm).and_return({ success: true, channel_id: 'D123' })
-    allow(slack_service).to receive(:open_or_create_group_dm)
-    allow(slack_service).to receive(:post_message).and_return({ success: true })
-    allow_any_instance_of(Notification).to receive(:reload) { |n| n.update_column(:message_id, '123.456') if n.message_id.blank?; n }
-
-    described_class.perform_now(employee.id, '2026-17')
-
-    expect(slack_service).to have_received(:open_dm).with(user_id: 'UEMP')
-    expect(slack_service).not_to have_received(:open_or_create_group_dm)
+    expect(UserPreference.for_person(employee_person).preference(:one_on_one_last_sent_week)).to eq('2026-16')
   end
 
   it 'does not send when neither employee nor manager has slack enabled' do
@@ -60,6 +48,6 @@ RSpec.describe Digest::SendAboutMeJob, type: :job do
     expect(SlackService).not_to receive(:new)
     expect {
       described_class.perform_now(employee.id, '2026-19')
-    }.not_to change { Notification.where(notification_type: 'about_me_digest').count }
+    }.not_to change { Notification.where(notification_type: 'one_on_one_digest').count }
   end
 end

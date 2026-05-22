@@ -1,11 +1,13 @@
 class Organizations::CompanyTeammatesController < Organizations::OrganizationNamespaceBaseController
   include Organizations::AssignsViewableTeammates
+  include Organizations::AssignsManagersViewCardForTeammate
 
   helper MyGrowthExperiencesHelper
   helper MyGrowthAbilitiesHelper
 
   before_action :authenticate_person!
   before_action :set_teammate
+  before_action :assign_managers_view_card_for_teammate, only: :about_me
   after_action :verify_authorized
 
   def show

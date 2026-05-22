@@ -38,13 +38,21 @@ Lower numbers win: only the **first** needs-attention item is “the one thing�
 - **Renderer:** `OneOnOne::PriorityRenderer` — turns structured `items` into links/HTML, resolves primary-action URLs, and formats Slack copy.
 - **Legacy `concrete_items`:** Deprecated for new work; prefer `items` + `data_kind`. Still supported in the carousel for older paths.
 
-## Slack About Me digest
+## Slack weekly digests (two separate messages)
 
-- **Main message:** Weekly 1:1 header, **Top 1:1 focus** (title + explanation + primary action link), divider, bullet list for that top priority, divider, About Me summary.
-- **First thread reply:** All needs-attention priorities (title + explanation + primary action each), separated clearly. No per-entity bullets in this thread.
-- **Second thread reply:** About Me section breakdown (healthy / yellow / red), unchanged.
+When both are enabled, the employee and manager receive **two root messages** in the same group DM on the configured weekday.
 
-Digest assumes the **employee** is the audience for CTAs (e.g. “Start an observation”).
+### 1:1 guide digest
+
+- **Main message:** Weekly 1:1 link, **Top 1:1 focus** (title + explanation + primary action), divider, action-item bullets for that top priority only, “time for weekly check-in” line.
+- **Thread reply:** Count of priorities needing attention (of 13), then the **2nd and 3rd** needs-attention priorities (title + explanation + primary action each). No per-entity bullets in the thread.
+
+### About Me reminder digest
+
+- **Main message:** About Me summary (healthy / yellow / red section counts) with link to About Me.
+- **Thread reply:** About Me section breakdown (healthy / yellow / red lists).
+
+Both digests assume the **employee** is the audience for CTAs (e.g. “Start an observation”).
 
 ## Audit reference (needs attention)
 

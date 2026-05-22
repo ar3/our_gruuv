@@ -99,9 +99,8 @@ module Digest
       about_me_thread_payload
     end
 
-    def about_me_main_payload
-      summary = about_me_summary_sentence_for_slack
-      weekly_line = 'It is time for our weekly check-in.'
+    def one_on_one_main_payload
+      summary_intro = 'It is time for our weekly check-in.'
       subject_name = slack_escape(@teammate.person.display_name)
       one_on_one_hub_url = slack_app_url(:organization_company_teammate_one_on_one_link_url, @organization, @teammate)
       weekly_linked = "<#{one_on_one_hub_url}|Weekly 1:1 check-in>"
@@ -129,10 +128,65 @@ module Digest
         blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(bullets_text) } }
       end
 
-      main_text = "#{summary}\n#{weekly_line}"
       blocks << { type: 'divider' }
-      blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(main_text) } }
+      blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(summary_intro) } }
 
+      main_text = "#{weekly_linked} for #{subject_name}\n#{summary_intro}"
+      { blocks: blocks, text: main_text }
+    end
+
+    def one_on_one_thread_payload
+      priorities = one_thing_priorities_needing_attention
+      total_count = one_thing_carousel_data[:total_count].to_i
+      total_count = 13 if total_count.zero?
+
+      if priorities.empty?
+        text = "All clear — nothing in the #{total_count}-priority queue needs action right now."
+        return { blocks: [{ type: 'section', text: { type: 'mrkdwn', text: text } }], text: text }
+      end
+
+      one_on_one_link = @teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
+      follow_on = priorities.drop(1).take(2)
+      intro = "*#{priorities.size} of #{total_count} priorities need attention*"
+      blocks = [{ type: 'section', text: { type: 'mrkdwn', text: intro } }]
+
+      follow_on.each do |priority|
+        blocks << { type: 'divider' }
+        blocks << {
+          type: 'section',
+          text: { type: 'mrkdwn', text: truncate_for_slack_section(priority_slack_summary_lines(priority, one_on_one_link).join("\n")) }
+        }
+      end
+
+      if follow_on.empty?
+        text = intro
+      else
+        text = ([intro] + follow_on.map { |p| priority_slack_summary_lines(p, one_on_one_link).join("\n") }).join("\n---\n")
+      end
+      { blocks: blocks, text: truncate_for_slack_section(text) }
+    end
+
+    def about_me_main_payload
+      summary = about_me_summary_sentence_for_slack
+      subject_name = slack_escape(@teammate.person.display_name)
+      about_url = slack_app_url(:about_me_organization_company_teammate_url, @organization, @teammate)
+      header_lines = ["*<#{about_url}|About Me reminder> for #{subject_name}*", "", summary]
+      header_text = truncate_for_slack_section(header_lines.join("\n"))
+      header_block = {
+        type: 'section',
+        text: { type: 'mrkdwn', text: header_text }
+      }
+      profile_image_url = @teammate.profile_image_url.to_s
+      if profile_image_url.present?
+        header_block[:accessory] = {
+          type: 'image',
+          image_url: profile_image_url,
+          alt_text: "#{subject_name} profile image"
+        }
+      end
+
+      blocks = [header_block]
+      main_text = summary
       { blocks: blocks, text: main_text }
     end
 
