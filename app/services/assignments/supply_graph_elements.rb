@@ -61,6 +61,37 @@ module Assignments
       { nodes: nodes, links: links }
     end
 
+    # Sankey: fixed flow layout (less "floating" than networkgraph). Good for supply → consumer.
+    def highcharts_sankey_data(assignments, relationships, organization:)
+      assignment_ids = assignments.map(&:id).to_set
+      title_counts = assignments.group_by { |a| a.title.to_s }.transform_values(&:size)
+
+      nodes = assignments.map do |assignment|
+        title = assignment.title.to_s
+        name = if title_counts[title] > 1
+                 "#{title.truncate(45)} (#{assignment.id})"
+               else
+                 title.truncate(60)
+               end
+
+        {
+          id: assignment.id.to_s,
+          name: name,
+          url: organization_assignment_path(organization, assignment)
+        }
+      end
+
+      data = relationships.filter_map do |relationship|
+        supplier_id = relationship.supplier_assignment_id
+        consumer_id = relationship.consumer_assignment_id
+        next unless assignment_ids.include?(supplier_id) && assignment_ids.include?(consumer_id)
+
+        [supplier_id.to_s, consumer_id.to_s, 1]
+      end
+
+      { nodes: nodes, data: data }
+    end
+
     def vis_network_data(assignments, relationships, organization:)
       assignment_ids = assignments.map(&:id).to_set
       nodes = assignments.map do |assignment|

@@ -29,6 +29,14 @@ module Assignments
       )
     end
 
+    def highcharts_sankey_data
+      SupplyGraphElements.highcharts_sankey_data(
+        @assignments,
+        @supply_relationships,
+        organization: @organization
+      )
+    end
+
     def vis_network_data
       SupplyGraphElements.vis_network_data(@assignments, @supply_relationships, organization: @organization)
     end

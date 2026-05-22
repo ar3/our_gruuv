@@ -33,6 +33,20 @@ RSpec.describe Assignments::SupplyGraphElements do
     end
   end
 
+  describe '.highcharts_sankey_data' do
+    it 'builds nodes and weighted supplier-to-consumer links' do
+      data = described_class.highcharts_sankey_data(
+        assignments,
+        relationships,
+        organization: organization
+      )
+
+      expect(data[:nodes].map { |n| n[:id] }).to contain_exactly(supplier.id.to_s, consumer.id.to_s)
+      expect(data[:data]).to eq([[supplier.id.to_s, consumer.id.to_s, 1]])
+      expect(data[:nodes].first).to include(:url)
+    end
+  end
+
   describe '.highcharts_network_graph_data' do
     it 'builds nodes and supplier-to-consumer links' do
       data = described_class.highcharts_network_graph_data(

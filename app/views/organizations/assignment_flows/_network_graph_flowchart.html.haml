@@ -7,29 +7,39 @@
   data: {
     controller: "assignment-full-network-graph",
     action: "shown.bs.tab->assignment-full-network-graph#onTabShown",
-    assignment_full_network_graph_highcharts_data_json_value: network_graph.highcharts_network_graph_data.to_json,
+    assignment_full_network_graph_highcharts_network_data_json_value: network_graph.highcharts_network_graph_data.to_json,
+    assignment_full_network_graph_highcharts_sankey_data_json_value: network_graph.highcharts_sankey_data.to_json,
     assignment_full_network_graph_vis_network_data_json_value: network_graph.vis_network_data.to_json
   }
 }
   %ul.nav.nav-tabs.card-header-tabs{role: "tablist"}
     %li.nav-item{role: "presentation"}
-      %button.nav-link.active{id: "full-network-highcharts-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-highcharts-pane", "aria-controls": "full-network-highcharts-pane", "aria-selected": "true"}
-        Highcharts
+      %button.nav-link.active{id: "full-network-mermaid-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-mermaid-pane", "aria-controls": "full-network-mermaid-pane", "aria-selected": "true"}
+        Mermaid
     %li.nav-item{role: "presentation"}
       %button.nav-link{id: "full-network-cytoscape-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-cytoscape-pane", "aria-controls": "full-network-cytoscape-pane", "aria-selected": "false"}
         Cytoscape
     %li.nav-item{role: "presentation"}
+      %button.nav-link{id: "full-network-highcharts-sankey-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-highcharts-sankey-pane", "aria-controls": "full-network-highcharts-sankey-pane", "aria-selected": "false"}
+        Highcharts – Sankey
+    %li.nav-item{role: "presentation"}
+      %button.nav-link{id: "full-network-highcharts-network-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-highcharts-network-pane", "aria-controls": "full-network-highcharts-network-pane", "aria-selected": "false"}
+        Highcharts – Network
+    %li.nav-item{role: "presentation"}
       %button.nav-link{id: "full-network-vis-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-vis-pane", "aria-controls": "full-network-vis-pane", "aria-selected": "false"}
         vis.js
-    %li.nav-item{role: "presentation"}
-      %button.nav-link{id: "full-network-mermaid-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-mermaid-pane", "aria-controls": "full-network-mermaid-pane", "aria-selected": "false"}
-        Mermaid
   .tab-content.pt-3
-    .tab-pane.fade.show.active{id: "full-network-highcharts-pane", role: "tabpanel", "aria-labelledby": "full-network-highcharts-tab", data: { assignment_full_network_graph_target: "highchartsPane" }}
+    .tab-pane.fade.show.active{id: "full-network-mermaid-pane", role: "tabpanel", "aria-labelledby": "full-network-mermaid-tab", data: { assignment_full_network_graph_target: "mermaidPane" }}
       %p.small.text-muted.mb-2
-        Force-directed network graph (Highcharts networkgraph). Arrows follow supply → consumption.
-      #full-network-highcharts-chart.assignment-full-network-graph-highcharts{
-        data: { assignment_full_network_graph_target: "highchartsContainer" }
+        Top-to-bottom flowchart. Click a node to open that assignment.
+      .assignment-flow-mermaid.assignment-full-network-graph-mermaid{
+        data: {
+          controller: "assignment-flow-mermaid",
+          assignment_flow_mermaid_lazy_value: true,
+          assignment_flow_mermaid_source_value: mermaid_flowchart_dsl(assignments, supply_relationships, organization: organization),
+          assignment_flow_mermaid_click_urls_value: mermaid_assignment_click_urls(assignments, organization: organization).to_json,
+          assignment_full_network_graph_target: "mermaidContainer"
+        }
       }
     .tab-pane.fade{id: "full-network-cytoscape-pane", role: "tabpanel", "aria-labelledby": "full-network-cytoscape-tab", data: { assignment_full_network_graph_target: "cytoscapePane" }}
       %p.small.text-muted.mb-2
@@ -44,23 +54,23 @@
           assignment_accountability_flow_lazy_value: true
         }
       }
+    .tab-pane.fade{id: "full-network-highcharts-sankey-pane", role: "tabpanel", "aria-labelledby": "full-network-highcharts-sankey-tab", data: { assignment_full_network_graph_target: "highchartsSankeyPane" }}
+      %p.small.text-muted.mb-2
+        Structured left-to-right flows (supplier → consumer). Click a node to open that assignment.
+      #full-network-highcharts-sankey.assignment-full-network-graph-highcharts{
+        data: { assignment_full_network_graph_target: "highchartsSankeyContainer" }
+      }
+    .tab-pane.fade{id: "full-network-highcharts-network-pane", role: "tabpanel", "aria-labelledby": "full-network-highcharts-network-tab", data: { assignment_full_network_graph_target: "highchartsNetworkPane" }}
+      %p.small.text-muted.mb-2
+        Force-directed layout with physics simulation. Pan and zoom; click a node to open that assignment.
+      #full-network-highcharts-network.assignment-full-network-graph-highcharts{
+        data: { assignment_full_network_graph_target: "highchartsNetworkContainer" }
+      }
     .tab-pane.fade{id: "full-network-vis-pane", role: "tabpanel", "aria-labelledby": "full-network-vis-tab", data: { assignment_full_network_graph_target: "visPane" }}
       %p.small.text-muted.mb-2
         Hierarchical left-to-right layout (vis-network). Click a node to open that assignment.
       #full-network-vis-chart.assignment-full-network-graph-vis{
         data: { assignment_full_network_graph_target: "visContainer" }
-      }
-    .tab-pane.fade{id: "full-network-mermaid-pane", role: "tabpanel", "aria-labelledby": "full-network-mermaid-tab", data: { assignment_full_network_graph_target: "mermaidPane" }}
-      %p.small.text-muted.mb-2
-        Original top-to-bottom flowchart (Mermaid). Click a node to open that assignment.
-      .assignment-flow-mermaid.assignment-full-network-graph-mermaid{
-        data: {
-          controller: "assignment-flow-mermaid",
-          assignment_flow_mermaid_lazy_value: true,
-          assignment_flow_mermaid_source_value: mermaid_flowchart_dsl(assignments, supply_relationships, organization: organization),
-          assignment_flow_mermaid_click_urls_value: mermaid_assignment_click_urls(assignments, organization: organization).to_json,
-          assignment_full_network_graph_target: "mermaidContainer"
-        }
       }
   %p.small.text-muted.mb-0.mt-3
     %i.bi.bi-arrow-right.me-1
