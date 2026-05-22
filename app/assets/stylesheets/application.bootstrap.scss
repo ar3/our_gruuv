@@ -1623,7 +1623,8 @@ body:has(.vertical-nav.open) .floating-toggle {
 
 // Full organization assignment supply network (tabbed viz)
 .assignment-full-network-graph-highcharts,
-.assignment-full-network-graph-vis {
+.assignment-full-network-graph-vis,
+.assignment-full-network-graph-g6 {
   min-height: 560px;
   width: 100%;
 }

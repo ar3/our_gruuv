@@ -9,6 +9,8 @@ export default class extends Controller {
     "highchartsNetworkPane",
     "highchartsNetworkContainer",
     "cytoscapePane",
+    "g6Pane",
+    "g6Container",
     "visPane",
     "visContainer",
     "mermaidPane",
@@ -18,12 +20,14 @@ export default class extends Controller {
   static values = {
     highchartsNetworkDataJson: String,
     highchartsSankeyDataJson: String,
+    g6GraphDataJson: String,
     visNetworkDataJson: String
   }
 
   connect() {
     this.highchartsSankeyChart = null
     this.highchartsNetworkChart = null
+    this.g6Graph = null
     this.visNetwork = null
     this.networkgraphScriptLoading = false
 
@@ -32,6 +36,8 @@ export default class extends Controller {
 
   disconnect() {
     this.destroyHighchartsCharts()
+    this.g6Graph?.destroy()
+    this.g6Graph = null
     this.visNetwork?.destroy()
     this.visNetwork = null
   }
@@ -49,6 +55,8 @@ export default class extends Controller {
       this.initSankey()
     } else if (paneId === "#full-network-highcharts-network-pane") {
       this.ensureNetworkgraphModule(() => this.initNetworkGraph())
+    } else if (paneId === "#full-network-g6-pane") {
+      this.initG6()
     } else if (paneId === "#full-network-vis-pane") {
       this.initVisNetwork()
     }
@@ -249,6 +257,123 @@ export default class extends Controller {
     )
     cytoscapeController?.initGraph()
     cytoscapeController?.resize()
+  }
+
+  initG6() {
+    if (this.g6Graph || !this.hasG6ContainerTarget) return
+
+    let graphData = { nodes: [], edges: [] }
+    try {
+      graphData = JSON.parse(this.g6GraphDataJsonValue || "{}")
+    } catch {
+      return
+    }
+
+    if (!graphData.nodes?.length) return
+
+    const container = this.g6ContainerTarget
+
+    window.setTimeout(async () => {
+      try {
+        const G6 = await this.ensureG6()
+        const { Graph } = G6
+        const width = container.clientWidth || container.offsetWidth || 800
+
+        container.innerHTML = ""
+
+        this.g6Graph = new Graph({
+          container,
+          width,
+          height: 560,
+          data: graphData,
+          layout: {
+            type: "dagre",
+            rankdir: "LR",
+            nodesep: 48,
+            ranksep: 72
+          },
+          node: {
+            type: "rect",
+            style: {
+              size: [140, 44],
+              labelText: (datum) => datum.data?.label ?? datum.id,
+              labelFontSize: 11,
+              labelFill: "#212529",
+              fill: "#f8f9fa",
+              stroke: "#adb5bd",
+              lineWidth: 1,
+              radius: 4,
+              cursor: "pointer"
+            }
+          },
+          edge: {
+            type: "line",
+            style: {
+              stroke: "#6c757d",
+              lineWidth: 2,
+              endArrow: true
+            }
+          },
+          behaviors: ["drag-canvas", "zoom-canvas"],
+          autoFit: "view"
+        })
+
+        this.g6Graph.on("node:click", (event) => {
+          const nodeId = event.target?.id
+          if (!nodeId) return
+
+          const nodeData = this.g6Graph.getNodeData(nodeId)
+          const url = nodeData?.data?.url
+          if (url) window.location.assign(url)
+        })
+
+        await this.g6Graph.render()
+      } catch (error) {
+        console.error("[G6] Failed to render assignment network graph", error)
+        container.replaceChildren(this.g6ErrorElement("Could not load G6 graph."))
+      }
+    }, 50)
+  }
+
+  ensureG6(attempts = 0) {
+    const G6_SRC = "https://unpkg.com/@antv/g6@5.0.49/dist/g6.min.js"
+
+    return new Promise((resolve, reject) => {
+      if (window.G6?.Graph) {
+        resolve(window.G6)
+        return
+      }
+
+      const existing = document.querySelector(`script[src="${G6_SRC}"]`)
+      if (existing) {
+        if (attempts < 100) {
+          setTimeout(() => {
+            this.ensureG6(attempts + 1).then(resolve).catch(reject)
+          }, 100)
+        } else {
+          reject(new Error("G6 library timed out"))
+        }
+        return
+      }
+
+      const script = document.createElement("script")
+      script.src = G6_SRC
+      script.async = false
+      script.dataset.turboTrack = "reload"
+      script.onload = () => {
+        if (window.G6?.Graph) resolve(window.G6)
+        else reject(new Error("G6 script loaded without Graph export"))
+      }
+      script.onerror = () => reject(new Error("G6 script failed to load"))
+      document.head.appendChild(script)
+    })
+  }
+
+  g6ErrorElement(message) {
+    const notice = document.createElement("p")
+    notice.className = "text-danger small mb-0"
+    notice.textContent = message
+    return notice
   }
 
   initVisNetwork() {

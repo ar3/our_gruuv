@@ -9,6 +9,7 @@
     action: "shown.bs.tab->assignment-full-network-graph#onTabShown",
     assignment_full_network_graph_highcharts_network_data_json_value: network_graph.highcharts_network_graph_data.to_json,
     assignment_full_network_graph_highcharts_sankey_data_json_value: network_graph.highcharts_sankey_data.to_json,
+    assignment_full_network_graph_g6_graph_data_json_value: network_graph.g6_graph_data.to_json,
     assignment_full_network_graph_vis_network_data_json_value: network_graph.vis_network_data.to_json
   }
 }
@@ -25,6 +26,9 @@
     %li.nav-item{role: "presentation"}
       %button.nav-link{id: "full-network-highcharts-network-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-highcharts-network-pane", "aria-controls": "full-network-highcharts-network-pane", "aria-selected": "false"}
         Highcharts – Network
+    %li.nav-item{role: "presentation"}
+      %button.nav-link{id: "full-network-g6-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-g6-pane", "aria-controls": "full-network-g6-pane", "aria-selected": "false"}
+        G6
     %li.nav-item{role: "presentation"}
       %button.nav-link{id: "full-network-vis-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#full-network-vis-pane", "aria-controls": "full-network-vis-pane", "aria-selected": "false"}
         vis.js
@@ -65,6 +69,12 @@
         Force-directed layout with physics simulation. Pan and zoom; click a node to open that assignment.
       #full-network-highcharts-network.assignment-full-network-graph-highcharts{
         data: { assignment_full_network_graph_target: "highchartsNetworkContainer" }
+      }
+    .tab-pane.fade{id: "full-network-g6-pane", role: "tabpanel", "aria-labelledby": "full-network-g6-tab", data: { assignment_full_network_graph_target: "g6Pane" }}
+      %p.small.text-muted.mb-2
+        Ant Design G6 directed layout (left → right). Pan, zoom, and click a node to open that assignment.
+      #full-network-g6-chart.assignment-full-network-graph-g6{
+        data: { assignment_full_network_graph_target: "g6Container" }
       }
     .tab-pane.fade{id: "full-network-vis-pane", role: "tabpanel", "aria-labelledby": "full-network-vis-tab", data: { assignment_full_network_graph_target: "visPane" }}
       %p.small.text-muted.mb-2

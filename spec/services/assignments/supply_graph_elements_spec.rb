@@ -61,6 +61,20 @@ RSpec.describe Assignments::SupplyGraphElements do
     end
   end
 
+  describe '.g6_graph_data' do
+    it 'builds G6 nodes and directed edges with navigation urls' do
+      data = described_class.g6_graph_data(assignments, relationships, organization: organization)
+
+      expect(data[:nodes].map { |n| n[:id] }).to contain_exactly(supplier.id.to_s, consumer.id.to_s)
+      expect(data[:nodes].first[:data][:label]).to eq('Supplier')
+      expect(data[:edges].first).to include(
+        id: "e#{relationship.id}",
+        source: supplier.id.to_s,
+        target: consumer.id.to_s
+      )
+    end
+  end
+
   describe '.vis_network_data' do
     it 'builds vis nodes and edges with navigation urls' do
       data = described_class.vis_network_data(assignments, relationships, organization: organization)

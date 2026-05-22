@@ -92,6 +92,33 @@ module Assignments
       { nodes: nodes, data: data }
     end
 
+    def g6_graph_data(assignments, relationships, organization:)
+      assignment_ids = assignments.map(&:id).to_set
+      nodes = assignments.map do |assignment|
+        {
+          id: assignment.id.to_s,
+          data: {
+            label: assignment.title.to_s.truncate(60),
+            url: organization_assignment_path(organization, assignment)
+          }
+        }
+      end
+
+      edges = relationships.filter_map do |relationship|
+        supplier_id = relationship.supplier_assignment_id
+        consumer_id = relationship.consumer_assignment_id
+        next unless assignment_ids.include?(supplier_id) && assignment_ids.include?(consumer_id)
+
+        {
+          id: "e#{relationship.id}",
+          source: supplier_id.to_s,
+          target: consumer_id.to_s
+        }
+      end
+
+      { nodes: nodes, edges: edges }
+    end
+
     def vis_network_data(assignments, relationships, organization:)
       assignment_ids = assignments.map(&:id).to_set
       nodes = assignments.map do |assignment|

@@ -37,6 +37,10 @@ module Assignments
       )
     end
 
+    def g6_graph_data
+      SupplyGraphElements.g6_graph_data(@assignments, @supply_relationships, organization: @organization)
+    end
+
     def vis_network_data
       SupplyGraphElements.vis_network_data(@assignments, @supply_relationships, organization: @organization)
     end
