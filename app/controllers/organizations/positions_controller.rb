@@ -131,6 +131,10 @@ class Organizations::PositionsController < ApplicationController
     @ability_milestone_requirements = helpers.ability_milestone_requirements_for_position(@position)
     set_eligibility_source_context_for_show
     @position_clarity_run = @position.position_clarity_maap_agent_run
+    @position_reliance_network = Assignments::PositionRelianceNetworkGraph.new(
+      position: @position,
+      organization: @organization
+    )
     render layout: determine_layout
   end
 

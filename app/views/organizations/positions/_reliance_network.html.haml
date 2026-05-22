@@ -1,0 +1,34 @@
+- network = local_assigns.fetch(:position_reliance_network)
+- components = network.components
+
+- if network.show_graph?
+  - components.each_with_index do |component, index|
+    - graph_id = "position-reliance-network-#{position.id}-#{index}"
+    .assignment-accountability-flow-graph-wrapper{class: (index > 0) ? 'mt-4' : nil}
+      - if components.size > 1
+        %p.small.text-muted.mb-2 Connected flow #{index + 1}
+      .assignment-accountability-flow-graph.border.rounded.bg-white{
+        id: graph_id,
+        role: "img",
+        "aria-label": "Position assignment supply reliance network",
+        data: {
+          controller: "assignment-accountability-flow",
+          assignment_accountability_flow_elements_json_value: component.elements.to_json,
+          assignment_accountability_flow_roots_json_value: component.root_node_ids.to_json,
+          assignment_accountability_flow_highlight_tiers_value: true
+        }
+      }
+  .d-flex.flex-wrap.gap-3.small.text-muted.mb-2.mt-3
+    %span
+      %span.d-inline-block.rounded.border.border-primary.border-3.me-1{style: "width: 14px; height: 14px; background-color: #cfe2ff; vertical-align: middle;"}
+      Required on this position
+    %span
+      %span.d-inline-block.rounded.border.me-1{style: "width: 14px; height: 14px; background-color: #e7f1ff; border: 2px solid #6ea8fe !important; vertical-align: middle;"}
+      Suggested on this position
+    %span
+      %span.d-inline-block.rounded.border.me-1{style: "width: 14px; height: 14px; background-color: #f1f3f5; border: 1px solid #ced4da !important; vertical-align: middle;"}
+      One step away (supplier or consumer)
+  %p.small.text-muted.mb-0
+    %i.bi.bi-arrow-right.me-1
+    Arrows show supply direction: an assignment on the left supplies results consumed by the assignment on the right.
+    Click a node to open that assignment.

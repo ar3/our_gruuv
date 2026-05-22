@@ -156,6 +156,18 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include(other.display_name)
       expect(response.body).to include(organization_position_path(organization, other))
     end
+
+    it 'renders the position assignment reliance network when the position has assignments' do
+      assignment = create(:assignment, company: organization, title: 'Networked Assignment')
+      create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required')
+
+      get organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Position assignment reliance network')
+      expect(response.body).to include('assignment-accountability-flow')
+      expect(response.body).to include('data-assignment-accountability-flow-highlight-tiers-value')
+    end
   end
 
   describe 'GET /organizations/:organization_id/positions/:id/job_description' do

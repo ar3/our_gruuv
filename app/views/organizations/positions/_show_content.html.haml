@@ -248,3 +248,16 @@
               This section is for managers only. To see who has what title, visit the
               = link_to @position.title.external_title, organization_title_path(@organization, @position.title), class: "text-decoration-none fw-bold"
               page.
+
+- if @position_reliance_network&.show_graph?
+  .row
+    .col-12
+      .card.mt-4{role: "region", "aria-labelledby": "position-reliance-network"}
+        .card-header
+          %h5.mb-0{id: "position-reliance-network"}
+            %i.bi.bi-diagram-3.me-2
+            Position assignment reliance network
+        .card-body
+          %p.text-muted.mb-3
+            How this position's required and suggested assignments connect to other assignments through supply and consumption—one step beyond the position in each direction.
+          = render "organizations/positions/reliance_network", position_reliance_network: @position_reliance_network, position: @position
