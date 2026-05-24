@@ -34,8 +34,9 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
     it "returns http success" do
       get position_check_in_organization_teammate_path(organization, teammate)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('data-controller="confirm-leave"')
-      expect(response.body).to match(/confirm-leave#markDirty/)
+      expect(response.body).to include('data-controller="check-in-autosave"')
+      expect(response.body).to match(/check-in-autosave#markDirty/)
+      expect(response.body).to include('data-check-in-autosave-target="status"')
     end
 
     it "shows the perspective context for the open position check-in" do

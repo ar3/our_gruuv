@@ -34,6 +34,60 @@ RSpec.describe "Organizations::CheckIns", type: :request do
   end
   
   describe "PATCH /organizations/:org_id/company_teammates/:company_teammate_id/check_ins" do
+    context "auto-save (JSON)" do
+      it "persists check-in data and returns ok without redirecting" do
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+              params: {
+                check_ins: {
+                  position_check_in: {
+                    manager_rating: 2,
+                    manager_private_notes: "Auto-saved notes",
+                    status: "draft"
+                  }
+                },
+                autosave: "1",
+                save_and_continue_editing: "1"
+              },
+              headers: { "Accept" => "application/json" }
+
+        expect(response).to have_http_status(:ok)
+        body = JSON.parse(response.body)
+        expect(body["ok"]).to be true
+        expect(body["saved_at"]).to be_present
+
+        check_in = PositionCheckIn.find_by(company_teammate: employee_teammate)
+        expect(check_in.manager_rating).to eq(2)
+        expect(check_in.manager_private_notes).to eq("Auto-saved notes")
+      end
+
+      it "returns errors as JSON when validation fails" do
+        check_in = PositionCheckIn.find_or_create_open_for(employee_teammate)
+        allow(PositionCheckIn).to receive(:find_or_create_open_for).with(employee_teammate).and_return(check_in)
+        invalid_record = check_in
+        invalid_record.errors.add(:base, "Something went wrong")
+        allow(check_in).to receive(:update!).and_raise(ActiveRecord::RecordInvalid.new(invalid_record))
+
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+              params: {
+                check_ins: {
+                  position_check_in: {
+                    manager_rating: 2,
+                    manager_private_notes: "Bad save",
+                    status: "draft"
+                  }
+                },
+                autosave: "1",
+                save_and_continue_editing: "1"
+              },
+              headers: { "Accept" => "application/json" }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        body = JSON.parse(response.body)
+        expect(body["ok"]).to be false
+        expect(body["errors"]).to be_present
+      end
+    end
+
     context "position check-in" do
       context "when marking as draft" do
         it "saves data but does not mark as completed" do
@@ -338,8 +392,9 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         get organization_company_teammate_check_ins_path(organization, employee_teammate)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('data-controller="confirm-leave"')
-        expect(response.body).to match(/confirm-leave#markDirty/)
+        expect(response.body).to include('data-controller="check-in-autosave"')
+        expect(response.body).to match(/check-in-autosave#markDirty/)
+        expect(response.body).to include('data-check-in-autosave-target="status"')
         expect(response.body).to include(" - Check-Ins")
         expect(response.body).to include("You can check in on as many or as few assignments, aspirational values, and position in bulk")
         expect(response.body).to include("Go to the Check-in Status page")

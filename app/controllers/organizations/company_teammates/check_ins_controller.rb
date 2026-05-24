@@ -136,24 +136,18 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   end
   
   def update
-    @check_in_errors = []
-    check_ins_params = params[:check_ins] || params
-    apply_single_item_status_override!
-
-    update_position_check_in(check_ins_params) if check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
-    update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
-    update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
-
-    redirect_url = determine_redirect_url
-    if @check_in_errors.any?
-      redirect_to redirect_url, alert: check_in_errors_flash_message
-    else
-      CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
-      redirect_to redirect_url, notice: 'Check-ins saved successfully.'
-    end
+    perform_check_in_update
+    respond_to_check_in_update
   end
 
   def save_and_redirect
+    perform_check_in_update
+    respond_to_check_in_update
+  end
+  
+  private
+
+  def perform_check_in_update
     @check_in_errors = []
     check_ins_params = params[:check_ins] || params
     apply_single_item_status_override!
@@ -161,17 +155,29 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     update_position_check_in(check_ins_params) if check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
     update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
+  end
 
-    redirect_url = determine_redirect_url
-    if @check_in_errors.any?
-      redirect_to redirect_url, alert: check_in_errors_flash_message
-    else
-      CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
-      redirect_to redirect_url, notice: 'Check-ins saved successfully.'
+  def respond_to_check_in_update
+    respond_to do |format|
+      format.html do
+        redirect_url = determine_redirect_url
+        if @check_in_errors.any?
+          redirect_to redirect_url, alert: check_in_errors_flash_message
+        else
+          CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
+          redirect_to redirect_url, notice: 'Check-ins saved successfully.'
+        end
+      end
+      format.json do
+        if @check_in_errors.any?
+          render json: { ok: false, errors: @check_in_errors }, status: :unprocessable_entity
+        else
+          CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
+          render json: { ok: true, saved_at: Time.current.iso8601 }
+        end
+      end
     end
   end
-  
-  private
   
   def set_teammate
     @teammate = find_organization_teammate!(params[:company_teammate_id], scope: organization.teammates.includes(:person))

@@ -1637,6 +1637,12 @@ body:has(.vertical-nav.open) .floating-toggle {
   min-height: 560px;
 }
 
+// Check-in auto-save: fixed indicator bottom-right of viewport
+.check-in-autosave-status {
+  z-index: 1040;
+  max-width: calc(100vw - 2rem);
+}
+
 .assignment-full-network-graph-mermaid {
   min-height: 200px;
   overflow-x: auto;

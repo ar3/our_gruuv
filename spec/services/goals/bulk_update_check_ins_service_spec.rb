@@ -399,7 +399,8 @@ RSpec.describe Goals::BulkUpdateCheckInsService, type: :service do
           company: organization,
           started_at: 1.week.ago,
           most_likely_target_date: Date.today + 1.month,
-          privacy_level: 'everyone_in_company')
+          privacy_level: 'everyone_in_company',
+          edit_check_in_permission: 'only_creator_and_owner')
       end
 
       it 'does not save check-in when non-creator non-owner submits (permission denied)' do

@@ -75,8 +75,10 @@
               object_name: @single_item_name,
               is_complete: is_complete
             = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
-              data: { controller: "confirm-leave",
-                      action: "input->confirm-leave#markDirty change->confirm-leave#markDirty turbo:submit-end->confirm-leave#markCleanOnSuccess" } do |form|
+              data: { controller: "check-in-autosave",
+                      check_in_autosave_debounce_ms_value: 2500,
+                      action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit" } do |form|
+              = render "shared/check_in_autosave_status"
               = form.hidden_field :current_url, value: position_check_in_organization_teammate_path(@organization, @teammate), id: nil
               = form.hidden_field :current_type, value: "position", id: nil
               = form.hidden_field :current_id, value: "", id: nil

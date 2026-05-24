@@ -46,8 +46,9 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       it "shows the perspective context with assignment title" do
         get assignment_show_path
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('data-controller="confirm-leave"')
-        expect(response.body).to match(/confirm-leave#markDirty/)
+        expect(response.body).to include('data-controller="check-in-autosave"')
+        expect(response.body).to match(/check-in-autosave#markDirty/)
+        expect(response.body).to include('data-check-in-autosave-target="status"')
         expect(response.body).to include("This is your perspective on #{employee_person.casual_name} and #{assignment.title}")
         expect(response.body).to include("March 15, 2026")
         expect(response.body).to include("Your check-in on #{employee_person.casual_name} and #{assignment.title} is currently:")
