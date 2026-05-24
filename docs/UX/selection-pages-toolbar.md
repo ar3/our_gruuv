@@ -145,5 +145,6 @@ For MAAP-style pages, users without permission are **redirected** — do not bui
 ## Where it’s used
 
 - **Manage Consumer Assignments** — `organizations/assignments/:id/consumer_assignments`
+- **Manage Observees** — `organizations/observations/:id/manage_observees`
 
 When you add this pattern to another page, add it here and in [selection-pages-rollout-plan.md](./selection-pages-rollout-plan.md).

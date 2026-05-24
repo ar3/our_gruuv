@@ -316,6 +316,14 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response.body).to include('teammate_ids[]')
       expect(response.body).to include('Save Changes')
     end
+
+    it 'shows selection toolbar with search, pills support, and duplicate save' do
+      get manage_observees_organization_observation_path(organization, draft)
+
+      expect(response.body).to include('data-controller="selection-toolbar options-filter"')
+      expect(response.body).to include('None selected')
+      assert_select 'input[type="submit"][value="Save Changes"]', count: 2
+    end
   end
 
   describe 'PATCH /organizations/:organization_id/observations/:id/manage_observees' do

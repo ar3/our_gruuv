@@ -15,19 +15,19 @@
     column-count: 1;
     column-gap: 1rem;
   }
-  
+
   @media (min-width: 576px) {
     .teammate-columns {
       column-count: 2;
     }
   }
-  
+
   @media (min-width: 992px) {
     .teammate-columns {
       column-count: 3;
     }
   }
-  
+
   .teammate-columns > * {
     break-inside: avoid;
     page-break-inside: avoid;
@@ -45,28 +45,35 @@
       = hidden_field_tag :return_url, params[:return_url]
       = hidden_field_tag :return_text, params[:return_text]
 
-      .d-flex.gap-2.mb-3
-        = form.submit 'Save Changes', class: 'btn btn-primary'
-
       - if @teammates.any?
-        .mb-3{ data: { controller: "options-filter" } }
-          %input.form-control.form-control-lg.mb-3{ type: "search", placeholder: "Search teammates...", "data-options-filter-target": "input", "aria-label": "Filter teammates" }
-          .teammate-columns{ "data-options-filter-target": "list" }
+        .mb-3{data: {controller: "selection-toolbar options-filter"}}
+          = render "shared/selection_pages/toolbar",
+            form: form,
+            save_label: "Save Changes",
+            can_manage: true,
+            search_placeholder: "Search teammates...",
+            search_aria_label: "Filter teammates"
+
+          .teammate-columns{data: {options_filter_target: "list"}}
             - @teammates.each do |teammate|
               - checked = @selected_observee_ids.include?(teammate.id)
-              %label.card.filterable-option.text-decoration-none{ for: "teammate_#{teammate.id}", style: "cursor: pointer;" }
+              - display_name = teammate.person.preferred_first_then_last_display_name
+              %label.card.filterable-option.text-decoration-none{for: "teammate_#{teammate.id}", style: "cursor: pointer;"}
                 .card-body
                   .d-flex.align-items-start
                     .form-check.me-2.mt-1
-                      = check_box_tag 'teammate_ids[]', teammate.id, checked,
-                                    class: 'form-check-input',
-                                    id: "teammate_#{teammate.id}"
+                      = check_box_tag "teammate_ids[]",
+                        teammate.id,
+                        checked,
+                        class: "form-check-input",
+                        id: "teammate_#{teammate.id}",
+                        data: {selection_toolbar_label: display_name}
                     .flex-grow-1
                       .d-flex.align-items-center.mb-2
                         .me-3
                           = teammate_profile_image(teammate, size: 48)
                         .flex-grow-1
-                          %h6.mb-1= teammate.person.preferred_first_then_last_display_name
+                          %h6.mb-1= display_name
                       - active_tenure = teammate.employment_tenures.find { |tenure| tenure.ended_at.nil? && tenure.company_id == teammate.organization_id }
                       - department = active_tenure&.position&.title&.department
                       - if department
@@ -80,6 +87,4 @@
           No teammates available to select as observees.
 
       .d-flex.gap-2.mt-3
-        = form.submit 'Save Changes', class: 'btn btn-primary'
-
-
+        = render "shared/selection_pages/save_button", form: form, label: "Save Changes", can_manage: true

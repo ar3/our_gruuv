@@ -79,7 +79,7 @@ For **multi-select checkbox** pages that also need selected pills and duplicate 
 ## Where it’s used
 
 - **Select Teammate:** `/organizations/:org/teammate_milestones/select_teammate` — filters teammate cards by name, manager, position.
-- **Manage Observees:** `/organizations/:org/observations/:id/manage_observees` — filters observee cards (multi-select checkboxes) by name, manager, position. *(Toolbar/pills/save pattern not yet applied — see rollout plan B1.)*
+- **Manage Observees:** `/organizations/:org/observations/:id/manage_observees` — filters observee cards; full [selection toolbar](../UX/selection-pages-toolbar.md).
 - **Manage Consumer Assignments:** `/organizations/:org/assignments/:id/consumer_assignments` — full selection toolbar + options filter.
 
 When you add the filter to another page, add that page to this “Where it’s used” section so we can keep the list current.

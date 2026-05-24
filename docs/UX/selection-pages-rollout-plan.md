@@ -26,7 +26,7 @@ Do **not** batch multiple pages unless you ask for it.
 
 | # | Page | View | Route (approx.) | Notes |
 |---|------|------|-----------------|-------|
-| B1 | Manage Observees | `observations/manage_observees` | `manage_observees_organization_observation_path` | Has `options-filter`; align toolbar order, add pills, top save |
+| B1 | Manage Observees ✅ | `observations/manage_observees` | `manage_observees_organization_observation_path` | Done |
 | B2 | Manage Team Members | `teams/manage_members` | `update_members` on team | Save top/bottom today; add search + pills |
 | B3 | Share Observation Privately | `observations/share_privately` | notify teammates on observation | Some checkboxes disabled |
 | B4 | Observation review — notify | `observations/review` | `notify_teammate_ids[]` | Part of review flow |
