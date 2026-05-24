@@ -10,12 +10,8 @@
     .assignment-accountability-flow-graph-wrapper{class: (index > 0) ? 'mt-4' : nil}
       - if components.size > 1
         %p.small.text-muted.mb-2 Connected flow #{index + 1}
-      = render "shared/cytoscape/supply_flow_graph",
-        elements: component.elements,
-        root_node_ids: component.root_node_ids,
-        export_filename: "assignment-accountability-flow-#{assignment.id}-#{index + 1}",
-        graph_id: graph_id,
-        aria_label: "Interactive map of assignment supply relationships"
+      - cytoscape_locals = cytoscape_supply_flow_graph_locals(elements: component.elements, root_node_ids: component.root_node_ids, layoutable: assignment, graph_kind: "accountability_flow", organization: organization)
+      = render partial: "shared/cytoscape/supply_flow_graph", locals: cytoscape_locals.merge(export_filename: "assignment-accountability-flow-#{assignment.id}-#{index + 1}", graph_id: graph_id, aria_label: "Interactive map of assignment supply relationships")
   %p.small.text-muted.mb-0.mt-3
     %i.bi.bi-arrow-right.me-1
     Arrows show supply direction: an assignment on the left supplies results consumed by the assignment on the right.

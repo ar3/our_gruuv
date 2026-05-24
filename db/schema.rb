@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_19_130000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_24_001114) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -370,6 +370,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_19_130000) do
     t.datetime "updated_at", null: false
     t.index ["company_id", "label_key"], name: "index_company_label_preferences_on_company_id_and_label_key", unique: true
     t.index ["company_id"], name: "index_company_label_preferences_on_company_id"
+  end
+
+  create_table "cytoscape_graph_layouts", force: :cascade do |t|
+    t.string "layoutable_type", null: false
+    t.bigint "layoutable_id", null: false
+    t.string "graph_kind", null: false
+    t.jsonb "positions", default: {}, null: false
+    t.string "node_fingerprint"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["layoutable_type", "layoutable_id", "graph_kind"], name: "index_cytoscape_graph_layouts_on_layoutable_and_kind", unique: true
+    t.index ["layoutable_type", "layoutable_id"], name: "index_cytoscape_graph_layouts_on_layoutable"
   end
 
   create_table "debug_responses", force: :cascade do |t|

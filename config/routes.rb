@@ -299,7 +299,17 @@ Rails.application.routes.draw do
       resources :assignment_outcomes, only: [:edit, :update], module: :assignments
       resource :consumer_assignments, only: [:show, :update], module: :assignments
       resources :goal_associations, module: :assignments, only: [:create, :destroy]
+      resource :cytoscape_graph_layout,
+               only: %i[show update destroy],
+               controller: "cytoscape_graph_layouts",
+               defaults: { graph_kind: "accountability_flow" }
     end
+
+    resource :full_network_cytoscape_graph_layout,
+             only: %i[show update destroy],
+             module: :organizations,
+             controller: "cytoscape_graph_layouts",
+             defaults: { graph_kind: "full_network" }
 
     # Assignment Flows (ordered lists of assignments)
     resources :assignment_flows, module: :organizations, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
@@ -422,6 +432,10 @@ Rails.application.routes.draw do
         patch :update_eligibility
       end
       resource :ability_milestones, only: [:show, :update], module: :positions
+      resource :cytoscape_graph_layout,
+               only: %i[show update destroy],
+               controller: "cytoscape_graph_layouts",
+               defaults: { graph_kind: "position_reliance" }
     end
     
     # Titles management

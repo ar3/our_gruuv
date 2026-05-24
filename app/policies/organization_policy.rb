@@ -126,6 +126,10 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  def update_cytoscape_graph_layout?
+    view_assignment_flows? && manage_assignments?
+  end
+
   def view_aspirations?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?

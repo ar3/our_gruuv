@@ -38,6 +38,10 @@ class AssignmentPolicy < ApplicationPolicy
     viewing_teammate.person.admin? || user_has_maap_permission_for_record?
   end
 
+  def update_cytoscape_graph_layout?
+    update?
+  end
+
   def archive?
     update?
   end

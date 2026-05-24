@@ -12,6 +12,18 @@ RSpec.describe Assignments::SupplyGraphElements do
   let(:assignments) { [supplier, consumer] }
   let(:relationships) { [relationship] }
 
+  describe '.cytoscape_node_fingerprint' do
+    it 'returns a stable digest for the same node set' do
+      elements = [
+        { group: 'nodes', data: { id: 'a2' } },
+        { group: 'nodes', data: { id: 'a1' } }
+      ]
+
+      expect(described_class.cytoscape_node_fingerprint(elements))
+        .to eq(described_class.cytoscape_node_fingerprint(elements.reverse))
+    end
+  end
+
   describe '.cytoscape_elements' do
     it 'builds nodes and directed edges' do
       elements = described_class.cytoscape_elements(

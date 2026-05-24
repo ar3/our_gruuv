@@ -145,6 +145,16 @@ module Assignments
       { nodes: nodes, edges: edges }
     end
 
+    def cytoscape_node_fingerprint(elements)
+      node_ids = elements
+        .select { |element| element[:group] == "nodes" }
+        .map { |element| element.dig(:data, :id) }
+        .compact
+        .sort
+
+      Digest::SHA256.hexdigest(node_ids.join(","))
+    end
+
     def cytoscape_node_id(assignment_id)
       "a#{assignment_id}"
     end

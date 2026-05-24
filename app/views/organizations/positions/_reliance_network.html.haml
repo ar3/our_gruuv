@@ -9,13 +9,8 @@
     .assignment-accountability-flow-graph-wrapper{class: (index > 0) ? 'mt-4' : nil}
       - if components.size > 1
         %p.small.text-muted.mb-2 Connected flow #{index + 1}
-      = render "shared/cytoscape/supply_flow_graph",
-        elements: component.elements,
-        root_node_ids: component.root_node_ids,
-        export_filename: "position-reliance-network-#{position.id}-#{index + 1}",
-        highlight_tiers: true,
-        graph_id: graph_id,
-        aria_label: "Position assignment supply reliance network"
+      - cytoscape_locals = cytoscape_supply_flow_graph_locals(elements: component.elements, root_node_ids: component.root_node_ids, layoutable: position, graph_kind: "position_reliance", organization: organization)
+      = render partial: "shared/cytoscape/supply_flow_graph", locals: cytoscape_locals.merge(export_filename: "position-reliance-network-#{position.id}-#{index + 1}", highlight_tiers: true, graph_id: graph_id, aria_label: "Position assignment supply reliance network")
   .d-flex.flex-wrap.gap-3.small.text-muted.mb-2.mt-3
     %span
       %span.d-inline-block.rounded.border.border-primary.border-3.me-1{style: "width: 14px; height: 14px; background-color: #cfe2ff; vertical-align: middle;"}

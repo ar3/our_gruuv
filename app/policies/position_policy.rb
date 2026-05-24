@@ -1,4 +1,8 @@
 class PositionPolicy < ApplicationPolicy
+  def update_cytoscape_graph_layout?
+    update?
+  end
+
   def show?
     return true if admin_bypass?
     

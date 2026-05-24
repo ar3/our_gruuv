@@ -6,6 +6,11 @@
 - graph_id = local_assigns[:graph_id]
 - extra_graph_classes = local_assigns.fetch(:extra_graph_classes, "")
 - aria_label = local_assigns.fetch(:aria_label, "Interactive map of assignment supply relationships")
+- saved_positions = local_assigns.fetch(:saved_positions, {})
+- node_fingerprint = local_assigns.fetch(:node_fingerprint, "")
+- stored_node_fingerprint = local_assigns.fetch(:stored_node_fingerprint, "")
+- layout_url = local_assigns.fetch(:layout_url, "")
+- can_edit_layout = local_assigns.fetch(:can_edit_layout, false)
 
 .assignment-cytoscape-flow-graph{
   data: {
@@ -14,10 +19,26 @@
     assignment_accountability_flow_roots_json_value: root_node_ids.to_json,
     assignment_accountability_flow_lazy_value: lazy,
     assignment_accountability_flow_highlight_tiers_value: highlight_tiers,
-    assignment_accountability_flow_export_filename_value: export_filename
+    assignment_accountability_flow_export_filename_value: export_filename,
+    assignment_accountability_flow_saved_positions_json_value: saved_positions.to_json,
+    assignment_accountability_flow_node_fingerprint_value: node_fingerprint,
+    assignment_accountability_flow_stored_node_fingerprint_value: stored_node_fingerprint,
+    assignment_accountability_flow_layout_url_value: layout_url,
+    assignment_accountability_flow_can_edit_layout_value: can_edit_layout
   }
 }
+  - if can_edit_layout
+    %p.small.text-muted.mb-2
+      Drag nodes to rearrange, then save. The layout is shared for everyone in the company.
   .d-flex.flex-wrap.justify-content-end.align-items-center.gap-2.mb-2
+    - if can_edit_layout
+      %span.small.text-muted.me-auto{data: { assignment_accountability_flow_target: "saveStatus" }}
+      %button.btn.btn-sm.btn-primary{type: "button", title: "Save node positions for everyone", data: { assignment_accountability_flow_target: "saveButton", action: "assignment-accountability-flow#saveLayout" }}
+        %i.bi.bi-save.me-1
+        Save layout
+      %button.btn.btn-sm.btn-outline-secondary{type: "button", title: "Reset to automatic layout", data: { action: "assignment-accountability-flow#resetLayout" }}
+        %i.bi.bi-arrow-counterclockwise.me-1
+        Reset layout
     .btn-group.btn-group-sm{role: "group", "aria-label": "Export graph"}
       %button.btn.btn-outline-secondary{type: "button", title: "Download PNG", data: { action: "assignment-accountability-flow#exportPng" }}
         %i.bi.bi-file-image.me-1
