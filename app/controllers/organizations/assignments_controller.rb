@@ -383,6 +383,7 @@ class Organizations::AssignmentsController < ApplicationController
     end
     redirect_params[:outcomes_filter] = params[:outcomes_filter] if params[:outcomes_filter].present?
     redirect_params[:abilities_filter] = params[:abilities_filter] if params[:abilities_filter].present?
+    redirect_params[:connections_filter] = params[:connections_filter] if params[:connections_filter].present?
     redirect_params[:major_version] = params[:major_version] if params[:major_version].present?
     redirect_params[:sort] = params[:sort] if params[:sort].present?
     redirect_params[:direction] = params[:direction] if params[:direction].present?

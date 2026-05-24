@@ -135,6 +135,37 @@ RSpec.describe AssignmentsQuery, type: :query do
       end
     end
 
+    context 'filtering by connections' do
+      let(:assignment_with_connections) { create(:assignment, company: organization) }
+      let(:assignment_without_connections) { create(:assignment, company: organization) }
+      let(:other_assignment) { create(:assignment, company: organization) }
+
+      before do
+        create(
+          :assignment_supply_relationship,
+          company: organization,
+          supplier_assignment: assignment_with_connections,
+          consumer_assignment: other_assignment
+        )
+      end
+
+      it 'filters by connections with "with" filter' do
+        query = AssignmentsQuery.new(organization, { connections_filter: 'with' }, current_person: person, policy_scope: policy_scope)
+        results = query.call
+
+        expect(results).to include(assignment_with_connections, other_assignment)
+        expect(results).not_to include(assignment_without_connections)
+      end
+
+      it 'filters by connections with "without" filter' do
+        query = AssignmentsQuery.new(organization, { connections_filter: 'without' }, current_person: person, policy_scope: policy_scope)
+        results = query.call
+
+        expect(results).to include(assignment_without_connections)
+        expect(results).not_to include(assignment_with_connections, other_assignment)
+      end
+    end
+
     context 'filtering by major version' do
       let(:assignment_v1) { create(:assignment, company: organization, semantic_version: '1.0.0') }
       let(:assignment_v2) { create(:assignment, company: organization, semantic_version: '2.0.0') }
@@ -204,6 +235,16 @@ RSpec.describe AssignmentsQuery, type: :query do
     it 'excludes outcomes_filter when "all"' do
       query = AssignmentsQuery.new(organization, { outcomes_filter: 'all' }, current_person: person)
       expect(query.current_filters[:outcomes_filter]).to be_nil
+    end
+
+    it 'includes connections_filter when not "all"' do
+      query = AssignmentsQuery.new(organization, { connections_filter: 'with' }, current_person: person)
+      expect(query.current_filters[:connections_filter]).to eq('with')
+    end
+
+    it 'excludes connections_filter when "all"' do
+      query = AssignmentsQuery.new(organization, { connections_filter: 'all' }, current_person: person)
+      expect(query.current_filters[:connections_filter]).to be_nil
     end
 
     it 'includes show_archived when present and 1' do

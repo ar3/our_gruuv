@@ -14,6 +14,7 @@ class AssignmentsQuery
     assignments = filter_by_organizations(assignments)
     assignments = filter_by_outcomes(assignments)
     assignments = filter_by_abilities(assignments)
+    assignments = filter_by_connections(assignments)
     assignments = filter_by_major_version(assignments)
     assignments = apply_sort(assignments)
     assignments
@@ -29,6 +30,7 @@ class AssignmentsQuery
     end
     filters[:outcomes_filter] = params[:outcomes_filter] if params[:outcomes_filter].present? && params[:outcomes_filter] != 'all'
     filters[:abilities_filter] = params[:abilities_filter] if params[:abilities_filter].present? && params[:abilities_filter] != 'all'
+    filters[:connections_filter] = params[:connections_filter] if params[:connections_filter].present? && params[:connections_filter] != 'all'
     filters[:major_version] = params[:major_version] if params[:major_version].present?
     filters
   end
@@ -122,6 +124,29 @@ class AssignmentsQuery
     when 'without'
       assignments.left_joins(:assignment_abilities)
                  .where(assignment_abilities: { id: nil })
+    else
+      assignments
+    end
+  end
+
+  def filter_by_connections(assignments)
+    case params[:connections_filter]
+    when 'with'
+      assignments.where(<<~SQL.squish)
+        EXISTS (
+          SELECT 1 FROM assignment_supply_relationships
+          WHERE supplier_assignment_id = assignments.id
+             OR consumer_assignment_id = assignments.id
+        )
+      SQL
+    when 'without'
+      assignments.where(<<~SQL.squish)
+        NOT EXISTS (
+          SELECT 1 FROM assignment_supply_relationships
+          WHERE supplier_assignment_id = assignments.id
+             OR consumer_assignment_id = assignments.id
+        )
+      SQL
     else
       assignments
     end

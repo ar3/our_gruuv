@@ -58,6 +58,16 @@
               = label_tag 'abilities_filter_without', 'W/o abilities', class: 'btn btn-outline-secondary', for: 'abilities_filter_without'
           
           .mb-3
+            %label.form-label Consumer/Supplier Connections
+            .btn-group.w-100{role: "group", "aria-label": "Consumer/Supplier Connections filter"}
+              = radio_button_tag 'connections_filter', 'all', (@current_filters[:connections_filter].blank? || @current_filters[:connections_filter] == 'all'), class: 'btn-check', id: 'connections_filter_all'
+              = label_tag 'connections_filter_all', 'W/ or W/O Supplier or Consumer connection', class: 'btn btn-outline-secondary', for: 'connections_filter_all'
+              = radio_button_tag 'connections_filter', 'with', @current_filters[:connections_filter] == 'with', class: 'btn-check', id: 'connections_filter_with'
+              = label_tag 'connections_filter_with', 'W/ connections', class: 'btn btn-outline-secondary', for: 'connections_filter_with'
+              = radio_button_tag 'connections_filter', 'without', @current_filters[:connections_filter] == 'without', class: 'btn-check', id: 'connections_filter_without'
+              = label_tag 'connections_filter_without', 'W/O connections', class: 'btn btn-outline-secondary', for: 'connections_filter_without'
+          
+          .mb-3
             %label.form-label Major Version
             - major_version_options = [['All Versions', '']] + (0..10).map { |v| ["v#{v}.x.x", v] }
             = select_tag 'major_version', options_for_select(major_version_options, @current_filters[:major_version]), class: 'form-select'

@@ -119,6 +119,23 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
       expect(assignments).not_to include(assignment_without_abilities)
     end
 
+    it 'filters by connections with tri-state filter' do
+      assignment_with_connections = create(:assignment, company: organization)
+      assignment_without_connections = create(:assignment, company: organization)
+      other_assignment = create(:assignment, company: organization)
+      create(
+        :assignment_supply_relationship,
+        company: organization,
+        supplier_assignment: assignment_with_connections,
+        consumer_assignment: other_assignment
+      )
+
+      get :index, params: { organization_id: organization.id, connections_filter: 'with' }
+      assignments = assigns(:assignments)
+      expect(assignments).to include(assignment_with_connections, other_assignment)
+      expect(assignments).not_to include(assignment_without_connections)
+    end
+
     it 'combines major_version filter with sorting' do
       get :index, params: { organization_id: organization.id, major_version: 1, sort: 'title' }
       assignments = assigns(:assignments)

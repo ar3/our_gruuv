@@ -57,6 +57,8 @@
                   - filter_parts << "Outcomes: #{params[:outcomes_filter] == 'with' ? 'W/' : 'W/o'}"
                 - if params[:abilities_filter].present? && params[:abilities_filter] != 'all'
                   - filter_parts << "Abilities: #{params[:abilities_filter] == 'with' ? 'W/' : 'W/o'}"
+                - if params[:connections_filter].present? && params[:connections_filter] != 'all'
+                  - filter_parts << "Connections: #{params[:connections_filter] == 'with' ? 'W/' : 'W/o'}"
                 - if params[:major_version].present?
                   - filter_parts << "v#{params[:major_version]}.x.x"
                 = filter_parts.any? ? filter_parts.join(' / ') : 'All'
