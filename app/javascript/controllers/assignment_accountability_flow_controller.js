@@ -3,6 +3,14 @@ import cytoscape from "cytoscape"
 
 let dagreExtensionRegistered = false
 
+const RESET_LAYOUT_CONFIRM_MESSAGE = [
+  "Resetting the layout will erase, not just your changes, but all changes that have been made to this layout.",
+  "",
+  "This should only be done if the current layout is broken or so jumbled that starting over is the best option.",
+  "",
+  "Are you sure you want to reset?"
+].join("\n")
+
 function registerDagreLayout() {
   if (dagreExtensionRegistered) return true
 
@@ -74,8 +82,10 @@ export default class extends Controller {
     this.downloadBlob(svg, `${this.exportFilenameValue}.svg`, "image/svg+xml;charset=utf-8")
   }
 
-  resetLayout() {
+  resetLayout(event) {
+    event?.preventDefault()
     if (!this.canEditLayoutValue || !this.layoutUrlValue) return
+    if (!window.confirm(RESET_LAYOUT_CONFIRM_MESSAGE)) return
 
     fetch(this.layoutUrlValue, {
       method: "DELETE",
