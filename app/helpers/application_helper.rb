@@ -1,6 +1,7 @@
 module ApplicationHelper
   include HuddleConstants
   include Pagy::Frontend
+  include TerminologyHelper
   include TeammateSwitcherHelper
   include CheckInHelper
   include CompanyLabelHelper
