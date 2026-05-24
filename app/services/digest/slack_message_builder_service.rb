@@ -9,11 +9,11 @@ module Digest
 
     GSD_CATEGORY_LABELS = {
       observable_moments: 'Observable Moments',
-      maap_snapshots: 'Check-ins Awaiting Acknowledgement',
+      maap_snapshots: -> { I18n.t('terminology.clarity_check_ins_awaiting_acknowledgement') },
       observation_drafts: 'Observation Drafts',
       silent_observations: 'Silent Observations',
-      goals_needing_check_in: 'Goal Check-ins',
-      check_ins_awaiting_input: 'Check-ins Awaiting Your Input'
+      goals_needing_check_in: -> { I18n.t('terminology.goal_confidence_checks') },
+      check_ins_awaiting_input: -> { I18n.t('terminology.clarity_check_ins_awaiting_your_input') }
     }.freeze
 
     def initialize(teammate:, organization:)
@@ -36,7 +36,7 @@ module Digest
         lines = ["#{casual_name}, you have #{total} #{'item'.pluralize(total)} in the #{gsd_list_link}."]
         GSD_CATEGORY_LABELS.each do |key, label|
           count = category_count(key)
-          lines << "• #{count} in #{label}" if count.positive?
+          lines << "• #{count} in #{gsd_category_label(label)}" if count.positive?
         end
         lines.join("\n")
       else
@@ -68,7 +68,7 @@ module Digest
       GSD_CATEGORY_LABELS.each do |key, label|
         next if category_count(key).zero?
 
-        lines = ["*#{label}*"]
+        lines = ["*#{gsd_category_label(label)}*"]
         item_lines = item_labels_for(key)
         item_lines.each { |line| lines << "  • #{line}" }
         text = truncate_for_slack_section(lines.join("\n"))
@@ -100,10 +100,10 @@ module Digest
     end
 
     def one_on_one_main_payload
-      summary_intro = 'It is time for our weekly check-in.'
+      summary_intro = I18n.t('terminology.weekly_1_1_intro')
       subject_name = slack_escape(@teammate.person.display_name)
       one_on_one_hub_url = slack_app_url(:organization_company_teammate_one_on_one_link_url, @organization, @teammate)
-      weekly_linked = "<#{one_on_one_hub_url}|Weekly 1:1 check-in>"
+      weekly_linked = "<#{one_on_one_hub_url}|#{I18n.t('terminology.weekly_1_1')}>"
 
       header_lines = ["*#{weekly_linked} for #{subject_name}*", ""]
       header_lines.concat(top_one_thing_slack_focus_lines)
@@ -244,6 +244,10 @@ module Digest
     end
 
     private
+
+    def gsd_category_label(label)
+      label.respond_to?(:call) ? label.call : label
+    end
 
     # Slack mrkdwn treats &, <, > as control characters. Escape user-generated content to avoid invalid_blocks.
     def slack_escape(str)
@@ -432,7 +436,7 @@ module Digest
       snippet = title.length > 40 ? "#{title[0, 40]}..." : title
       snippet = slack_escape(snippet).tr('|', '-') # Slack: escape &<> and use - for |
       url = slack_app_url(:organization_goal_url, @organization, goal)
-      "Last confidence check-in was #{time_ago} for: <#{url}|#{snippet}>"
+      "#{I18n.t('terminology.last_slack_confidence_check', time_ago: time_ago)} <#{url}|#{snippet}>"
     end
 
     def observation_draft_label(observation)
@@ -450,7 +454,7 @@ module Digest
                 when PositionCheckIn then check_in.employment_tenure&.position&.display_name
                 else nil
                 end
-      subject = slack_escape(subject.presence || 'Check-in')
+      subject = slack_escape(subject.presence || I18n.t('terminology.slack_clarity_check_in_subject_default'))
 
       other_person = check_in.employee_completed? ? check_in.teammate&.person : check_in.manager_completed_by_teammate&.person
       completed_at = check_in.employee_completed? ? check_in.employee_completed_at : check_in.manager_completed_at

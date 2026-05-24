@@ -24,7 +24,7 @@ Every priority in **needs attention** mode should present three parts:
 | 6 | Has the teammate given a published observation to someone else in 30 days? | None given |
 | 7 | Has the teammate received a published observation in 30 days? | None received |
 | 8 | Have all WTM assignments/aspirations received an observation in 30 days? | Any WTM area missing recent observation |
-| 9 | Do all active goals have a check-in for this week? | Any active goal missing this week’s check-in |
+| 9 | Do all active goals have a confidence check for this week? | Any active goal missing this week’s confidence check |
 | 10 | Does the teammate have at least one active goal? | Zero active goals |
 | 11 | Are target-position ability milestones below target missing active goals? | Target-only ability gap without goal |
 | 12 | Are there incomplete tasks in the linked Asana project? | Any incomplete tasks remain (N/A if not Asana-linked) |
@@ -44,7 +44,7 @@ When both are enabled, the employee and manager receive **two root messages** in
 
 ### 1:1 guide digest
 
-- **Main message:** Weekly 1:1 link, **Top 1:1 focus** (title + explanation + primary action), divider, action-item bullets for that top priority only, “time for weekly check-in” line.
+- **Main message:** Weekly 1:1 link, **Top 1:1 focus** (title + explanation + primary action), divider, action-item bullets for that top priority only, “time for your weekly 1:1” line.
 - **Thread reply:** Count of priorities needing attention (of 13), then the **2nd and 3rd** needs-attention priorities (title + explanation + primary action each). No per-entity bullets in the thread.
 
 ### About Me reminder digest

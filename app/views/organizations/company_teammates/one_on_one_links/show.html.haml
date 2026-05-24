@@ -190,8 +190,8 @@
                         = @aspiration_missing_goal_items.count
                         = link_to review_most_recent_organization_company_teammate_check_ins_path(organization, hub_teammate_param),
                                   class: "ms-1 text-decoration-none",
-                                  title: "Check-in statuses",
-                                  aria: { label: "Check-in statuses" } do
+                                  title: clarity_check_in_statuses_label,
+                                  aria: { label: clarity_check_in_statuses_label } do
                           %i.bi.bi-box-arrow-up-right
                     - if @ability_missing_goal_items.any?
                       %p.mb-0
@@ -241,11 +241,11 @@
                                 aria: { label: "View active goals" } do
                         %i.bi.bi-box-arrow-up-right
                     %p.mb-1
-                      %strong Need check-in:
+                      %strong= "#{need_confidence_check_label}:"
                       = @active_goals_needing_check_in_count
                     %p.mb-0
-                      %strong Last check-in:
-                      = most_recent_goal_check_in ? most_recent_goal_check_in.strftime("%b %d, %Y") : "No check-ins yet"
+                      %strong= "#{last_confidence_check_label}:"
+                      = most_recent_goal_check_in ? most_recent_goal_check_in.strftime("%b %d, %Y") : no_confidence_checks_yet_label
 
               .col-12.col-xl-6
                 .card.h-100
@@ -285,7 +285,7 @@
                 - if @goals_confidence_series.any?
                   #oneOnOneGoalsConfidenceChart{style: "height: 320px;"}
                 - else
-                  %p.text-muted.mb-0 No goal confidence check-ins yet.
+                  %p.text-muted.mb-0= no_confidence_checks_yet_label
 
       %section#evolve.mb-5
         .card.border-warning
@@ -314,7 +314,7 @@
               .col-12.col-lg-6
                 .card.h-100
                   .card-header
-                    %h5.mb-0 Upcoming Check-Ins
+                    %h5.mb-0= upcoming_clarity_check_ins_label
                   .card-body
                     - if @upcoming_check_ins.any?
                       %ul.list-unstyled.mb-0
@@ -332,9 +332,9 @@
                               - else
                                 %span.text-success= "Due by #{row[:due_on].strftime('%b %d, %Y')}"
                             - else
-                              %span.text-danger Due now (no finalized check-in yet)
+                              %span.text-danger= due_now_no_finalized_clarity_check_in_label
                     - else
-                      %p.text-muted.mb-0 No check-in schedule data yet.
+                      %p.text-muted.mb-0= no_clarity_check_in_schedule_data_label
 
               .col-12
                 .card

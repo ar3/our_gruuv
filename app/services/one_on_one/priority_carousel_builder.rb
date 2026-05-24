@@ -746,11 +746,11 @@ module OneOnOne
       end
       stale.sort_by!(&:title)
 
-      title = "Do all active goals have a check-in for this week?"
+      title = I18n.t('terminology.priority_active_goals_confidence_check_title')
       if stale.any?
         attention_priority(
           title,
-          "Goals can drift to the background if we don't check in on them. Let's take the time to state how confident we are in hitting these goals:",
+          I18n.t('terminology.priority_active_goals_confidence_check_attention'),
           [],
           total_item_count: stale.size,
           display_item_limit: 5,
@@ -762,7 +762,7 @@ module OneOnOne
       else
         success_priority(
           title,
-          "All active goals already have a check-in this week.",
+          I18n.t('terminology.priority_active_goals_confidence_check_success'),
           ["All active goals are up to date for the current week."]
         )
       end

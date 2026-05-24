@@ -425,6 +425,18 @@ module TerminologyHelper
     terminology(:weekly_1_1)
   end
 
+  def weekly_1_1_intro_label
+    terminology(:weekly_1_1_intro)
+  end
+
+  def due_now_no_finalized_clarity_check_in_label
+    terminology(:due_now_no_finalized_clarity_check_in)
+  end
+
+  def no_clarity_check_in_schedule_data_label
+    terminology(:no_clarity_check_in_schedule_data)
+  end
+
   def one_on_one_hub_label
     terminology(:one_on_one_hub)
   end

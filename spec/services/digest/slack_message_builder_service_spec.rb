@@ -81,9 +81,9 @@ RSpec.describe Digest::SlackMessageBuilderService do
       builder = described_class.new(teammate: teammate, organization: organization)
       result = builder.gsd_thread_payloads
 
-      expect(result.length).to eq(2) # Goal Check-ins + Check-ins Awaiting Your Input
-      expect(result.map { |p| p[:text] }.join).to include('Goal Check-ins')
-      expect(result.map { |p| p[:text] }.join).to include('Check-ins Awaiting Your Input')
+      expect(result.length).to eq(2) # Goal confidence checks + Clarity check-ins awaiting your input
+      expect(result.map { |p| p[:text] }.join).to include('Goal confidence checks')
+      expect(result.map { |p| p[:text] }.join).to include('Clarity check-ins awaiting your input')
     end
 
     it 'escapes user content so Slack mrkdwn does not get invalid_blocks (e.g. < and > in goal titles)' do
@@ -152,7 +152,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
       expect(header_text).not_to include('Top 1:1 focus')
       expect(header_text).not_to include('Weekly 1:1 check-in')
       expect(result[:text]).to include('healthy')
-      expect(result[:text]).not_to include('It is time for our weekly check-in.')
+      expect(result[:text]).not_to include('It is time for your weekly 1:1.')
     end
   end
 
@@ -179,10 +179,11 @@ RSpec.describe Digest::SlackMessageBuilderService do
       result = builder.one_on_one_main_payload
 
       header_text = result[:blocks].first.dig(:text, :text)
-      expect(header_text).to match(/\|Weekly 1:1 check-in> for /)
+      expect(header_text).to match(/\|Weekly 1:1> for /)
+      expect(header_text).not_to include('Weekly 1:1 check-in')
       expect(header_text).to include('Top 1:1 focus')
       expect(header_text).to include('Example priority')
-      expect(result[:text]).to include('It is time for our weekly check-in.')
+      expect(result[:text]).to include('It is time for your weekly 1:1.')
       expect(result[:text]).not_to include('sections are healthy')
     end
   end
@@ -256,7 +257,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
       expect(result).to have_key(:blocks)
       expect(result).to have_key(:text)
       expect(result[:text]).to include('NEEDS MOST ATTENTION').or include('NEEDS SOME ATTENTION').or include('HEALTHY')
-      expect(result[:text]).not_to include('It is time for our weekly check-in.')
+      expect(result[:text]).not_to include('It is time for your weekly 1:1.')
     end
   end
 

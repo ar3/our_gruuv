@@ -36,8 +36,8 @@ module Digest
       },
       goals: {
         red: 'No active goals',
-        yellow: 'Has active goals but not all have check-ins in the past 2 weeks',
-        green: 'Any goal completed in last 90 days, OR all active goals have check-ins in past 2 weeks'
+        yellow: I18n.t('terminology.about_me_goals_yellow_confidence'),
+        green: I18n.t('terminology.about_me_goals_green_confidence')
       },
       prompts: {
         red: 'No prompts started or no responses provided',

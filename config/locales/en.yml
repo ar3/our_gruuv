@@ -146,7 +146,17 @@ en:
     with_confidence_check_in_past_two_weeks: " with a confidence check in the past two weeks, and "
 
     weekly_1_1: "Weekly 1:1"
+    weekly_1_1_intro: "It is time for your weekly 1:1."
     one_on_one_hub: "1:1 Hub"
+    priority_active_goals_confidence_check_title: "Do all active goals have a confidence check for this week?"
+    priority_active_goals_confidence_check_attention: "Goals can drift to the background if we don't add confidence checks on them. Let's take the time to state how confident we are in hitting these goals:"
+    priority_active_goals_confidence_check_success: "All active goals already have a confidence check this week."
+    due_now_no_finalized_clarity_check_in: "Due now (no finalized clarity check-in yet)"
+    no_clarity_check_in_schedule_data: "No clarity check-in schedule data yet."
+    last_slack_confidence_check: "Last confidence check was %{time_ago} for:"
+    slack_clarity_check_in_subject_default: "Clarity check-in"
+    about_me_goals_yellow_confidence: "Has active goals but not all have confidence checks in the past 2 weeks"
+    about_me_goals_green_confidence: "Any goal completed in last 90 days, OR all active goals have confidence checks in past 2 weeks"
 
   activerecord:
     attributes:
