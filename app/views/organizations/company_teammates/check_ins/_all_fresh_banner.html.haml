@@ -5,9 +5,8 @@
     .flex-shrink-0.d-flex.align-items-center
       %i.bi.bi-check-circle-fill.check-ins-fresh-banner__icon{ aria: { hidden: true } }
     .flex-grow-1.min-w-0.ps-1
-      %p.mb-3.fw-semibold.fs-5.lh-base All check-ins are fresh... your work here is likely done for now!
-      %p.mb-3.text-body-secondary.lh-lg
-        Some folks do their check-ins more frequently than once every 90 days... if that is you... please scroll down and get your check-in on!!
+      %p.mb-3.fw-semibold.fs-5.lh-base= all_clarity_check_ins_fresh_label
+      %p.mb-3.text-body-secondary.lh-lg= all_clarity_check_ins_fresh_sub_label
       - if banner.show_clarity_follow_up && !banner.check_back_in_days.nil?
         %p.mb-0.text-body-secondary.lh-lg
           #{teammate.person.casual_name} is 100% clear on where they stand at #{banner.organization_display_name}.

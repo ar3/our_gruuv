@@ -68,7 +68,7 @@ module CheckIns
         new_quick_note_organization_observations_path(
           @organization,
           return_url: organization_company_teammate_check_ins_path(@organization, @teammate),
-          return_text: "Check-ins",
+          return_text: I18n.t("terminology.clarity_hub"),
           observee_ids: [teammate.id],
           rateable_type: 'Assignment',
           rateable_id: assignment_id
@@ -79,7 +79,7 @@ module CheckIns
         new_quick_note_organization_observations_path(
           @organization,
           return_url: organization_company_teammate_check_ins_path(@organization, @teammate),
-          return_text: "Check-ins",
+          return_text: I18n.t("terminology.clarity_hub"),
           observee_ids: [teammate.id],
           rateable_type: 'Aspiration',
           rateable_id: aspiration_id
@@ -90,7 +90,7 @@ module CheckIns
         new_quick_note_organization_observations_path(
           @organization,
           return_url: organization_company_teammate_check_ins_path(@organization, @teammate),
-          return_text: "Check-ins",
+          return_text: I18n.t("terminology.clarity_hub"),
           observee_ids: [teammate.id],
           rateable_type: 'Ability',
           rateable_id: ability_id
@@ -100,7 +100,7 @@ module CheckIns
         new_quick_note_organization_observations_path(
           @organization,
           return_url: organization_company_teammate_check_ins_path(@organization, @teammate),
-          return_text: "Check-ins",
+          return_text: I18n.t("terminology.clarity_hub"),
           observee_ids: [teammate.id]
         )
       when /^continue_editing$/

@@ -44,7 +44,7 @@
     Assignments
   - assignments_primary_html = capture do
     %i.bi.bi-check-circle.me-2
-    Check-in on my #{pluralize(current_company_teammate&.active_assignments&.count || 0, 'Assignment')}
+    = dashboard_clarity_check_in_on_assignments_label(count: current_company_teammate&.active_assignments&.count || 0)
   - assignments_secondary_html = capture do
     %i.bi.bi-list.me-1
     All #{pluralize(organization.all_assignments_including_descendants.count, 'Assignment')}

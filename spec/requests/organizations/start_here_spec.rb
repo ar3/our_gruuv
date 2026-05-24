@@ -84,7 +84,7 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       json = JSON.parse(response.body)
       expect(json['widgets']['about_me']['ok']).to eq(true)
       expect(json['widgets']['about_me']['html']).to be_present
-      expect(json['widgets']['about_me']['html']).to include('Your check-ins, goals, observations, and growth in one place.')
+      expect(json['widgets']['about_me']['html']).to include('Your clarity check-ins, goal confidence checks, observations, and growth in one place.')
       expect(json['widgets']['get_shit_done']['ok']).to eq(true)
     end
 

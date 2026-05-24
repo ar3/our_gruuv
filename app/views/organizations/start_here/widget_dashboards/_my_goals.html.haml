@@ -7,11 +7,11 @@
   - if recent.positive?
     %p.small.text-muted.mb-1
       %i.bi.bi-check-circle-fill.text-success.me-1.align-text-bottom{aria: { hidden: true }}
-      #{recent} #{recent == 1 ? 'goal has' : 'goals have'} had a check-in in the past 2 weeks
+      = my_goals_recent_confidence_check_label(count: recent)
   - if stale.positive?
     %p.small.text-muted.mb-1
       %i.bi.bi-exclamation-triangle-fill.text-warning.me-1.align-text-bottom{aria: { hidden: true }}
-      #{stale} #{stale == 1 ? 'goal has' : 'goals have'} not had a check-in in the past 2 weeks
+      = my_goals_stale_confidence_check_label(count: stale)
   - if drafts.positive?
     %p.small.text-muted{class: completed.positive? ? "mb-1" : "mb-0"}
       %i.bi.bi-pause-circle-fill.text-muted.me-1.align-text-bottom{aria: { hidden: true }}

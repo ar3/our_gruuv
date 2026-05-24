@@ -110,7 +110,7 @@
                     next_url: @single_item_next_url,
                     show_check_in_status_done: @single_item_show_check_in_status_done
     - else
-      .alert.alert-info No open position check-in. Create one from the bulk check-in page.
+      .alert.alert-info= position_check_in_from_clarity_hub_label
 
     - if @check_ins.present?
       = render "shared/single_item_check_in/prior_check_ins_table", check_ins: @check_ins, sentence_type: :position, employee_name: @teammate.person.casual_name

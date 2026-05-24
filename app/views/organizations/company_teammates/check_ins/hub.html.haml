@@ -20,7 +20,7 @@
 .row.g-3.mb-4
 - rate_data = check_in_health_completion_rate_and_breakdown(@check_in_health_cache)
 - health_table_data = single_item_health_popover_table(@check_in_health_cache)
-- health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : "No check-in health data yet."
+- health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : no_clarity_check_in_health_data_label
 
 .d-flex.justify-content-between.align-items-center.mb-3.gap-3.flex-wrap
   %p.mb-0.fw-medium

@@ -8,7 +8,6 @@ module OneOnOne
     PRIORITY_TOTAL = 13
 
     ASANA_URGENT_TASKS_TITLE = "Are there overdue or due-soon Asana tasks?".freeze
-    CHECK_INS_READY_FOR_REVIEW_TITLE = "Are there check-ins ready for review together?".freeze
     REMAINING_ASANA_TASKS_TITLE = "Are there incomplete tasks remaining in the linked Asana project?".freeze
     OBSERVATION_FEEDBACK_OPPORTUNITY_LIMIT = 5
 
@@ -113,10 +112,10 @@ module OneOnOne
 
     def priority_check_ins_ready_for_review
       rows = check_ins_ready_for_review_rows
-      title = CHECK_INS_READY_FOR_REVIEW_TITLE
+      title = I18n.t("terminology.priority_clarity_ready_for_review_title")
       if rows.any?
         count = rows.size
-        cta_label = count == 1 ? "Review 1 check-in together" : "Review #{count} check-ins together"
+        cta_label = I18n.t("terminology.priority_review_clarity_check_ins_together", count: count)
         attention_priority(
           title,
           check_ins_ready_for_review_attention_explanation,
@@ -138,12 +137,15 @@ module OneOnOne
     end
 
     def check_ins_ready_for_review_attention_explanation
-      "OG check-ins are a three-step process: first each person reflects individually, then they review together, " \
-        "then the employee acknowledges the review. This ensures growth, expectations, and where folks stand are crystal clear."
+      I18n.t("terminology.priority_clarity_ready_for_review_explanation")
     end
 
     def check_ins_ready_for_review_success_message
-      "No check-ins are waiting for review between #{teammate_casual_name} and #{teammate_manager_casual_name} (or another manager)."
+      I18n.t(
+        "terminology.priority_no_clarity_check_ins_waiting_review",
+        employee: teammate_casual_name,
+        manager: teammate_manager_casual_name
+      )
     end
 
     def teammate_manager_casual_name
@@ -210,11 +212,11 @@ module OneOnOne
         top_check_in_path ||= review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
         attention_priority(
           title,
-          "To achieve continuous clarity and continuous improvement all important check-ins should be made at least every 90 days. There are some opportunities for improving clarity/keeping clarity high... so before the next 1:1, go complete one of the check-ins listed.",
+          I18n.t("terminology.priority_clarity_90_day_attention"),
           [],
           total_item_count: rows.count,
           cta_kind: :open_top_prioritized_check_in,
-          cta_label: "Open top check-in",
+          cta_label: I18n.t("terminology.priority_open_top_clarity_check_in"),
           cta_path: top_check_in_path,
           data_kind: :blurred_or_obscured_attention,
           items: item_data
@@ -222,22 +224,32 @@ module OneOnOne
       else
         success_priority(
           title,
-          "Required check-ins are clear or crystal clear.",
-          ["No blurred (#{blurred_check_in_age_hint}) or obscured (#{obscured_check_in_age_hint}) assignment, aspiration, or position check-ins were found."]
+          I18n.t("terminology.priority_required_clarity_check_ins_clear"),
+          [
+            I18n.t(
+              "terminology.priority_no_blurred_clarity_check_ins",
+              blurred_hint: blurred_check_in_age_hint,
+              obscured_hint: obscured_check_in_age_hint
+            )
+          ]
         )
       end
     end
 
     def blurred_or_obscured_priority_title
-      "Are any position, assignment, or aspiration check-ins blurred (#{blurred_check_in_age_hint}) or obscured (#{obscured_check_in_age_hint})?"
+      I18n.t(
+        "terminology.priority_blurred_obscured_clarity_title",
+        blurred_hint: blurred_check_in_age_hint,
+        obscured_hint: obscured_check_in_age_hint
+      )
     end
 
     def blurred_check_in_age_hint
-      "check-in #{CheckInBehavior::CLARITY_CLEAR_DAYS}+ days old"
+      I18n.t("terminology.clarity_check_in_age_hint", days: CheckInBehavior::CLARITY_CLEAR_DAYS)
     end
 
     def obscured_check_in_age_hint
-      "check-in #{CheckInBehavior::CLARITY_BLURRED_DAYS}+ days old"
+      I18n.t("terminology.clarity_check_in_age_hint", days: CheckInBehavior::CLARITY_BLURRED_DAYS)
     end
 
     def blurred_or_obscured_check_in_rows

@@ -56,7 +56,7 @@
             - if fin.present?
               .small{style: "white-space: pre-line;"}= aspiration_review_most_recent_last_reviewed_line(fin, employee_name)
             - elsif !opn&.ready_for_finalization?
-              %span.text-muted No completed check-in yet.
+              %span.text-muted= no_completed_clarity_check_in_yet_label
             = render 'review_most_recent_joint_review', open_check_in: opn, employee_name: employee_name, manager_name: manager_name, organization: organization, teammate: @teammate
           %td
             = render 'review_most_recent_aspiration_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :employee
@@ -97,7 +97,7 @@
             - if fin.present?
               .small{style: "white-space: pre-line;"}= assignment_review_most_recent_last_reviewed_line(fin, employee_name)
             - elsif !opn&.ready_for_finalization?
-              %span.text-muted No completed check-in yet.
+              %span.text-muted= no_completed_clarity_check_in_yet_label
             = render 'review_most_recent_joint_review', open_check_in: opn, employee_name: employee_name, manager_name: manager_name, organization: organization, teammate: @teammate
           %td
             = render 'review_most_recent_assignment_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :employee
@@ -131,7 +131,7 @@
             - if fin.present?
               .small{style: "white-space: pre-line;"}= position_review_most_recent_last_reviewed_line(fin, employee_name)
             - elsif !opn&.ready_for_finalization?
-              %span.text-muted No completed check-in yet.
+              %span.text-muted= no_completed_clarity_check_in_yet_label
             = render 'review_most_recent_joint_review', open_check_in: opn, employee_name: employee_name, manager_name: manager_name, organization: organization, teammate: @teammate
           %td
             = render 'review_most_recent_position_side_column', finalized_check_in: fin, open_check_in: opn, employee_name: employee_name, manager_name: manager_name, side: :employee

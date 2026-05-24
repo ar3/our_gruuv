@@ -5,12 +5,12 @@ class StartHere::Widgets::MyCheckInWidget < StartHere::Widget::Base
     id: "my_check_in",
     group: "About Me",
     icon: "bi-chat-square-text",
-    selection_title: "Check-in status",
-    selection_description: "How clear your check-ins are across values, assignments, and position.",
-    label: "Check-in status",
+    selection_title: I18n.t("terminology.start_here_clarity_check_in_status"),
+    selection_description: I18n.t("terminology.start_here_clarity_check_in_status_description"),
+    label: I18n.t("terminology.start_here_clarity_check_in_status"),
     path: ->(c) { c.view.organization_company_teammate_check_ins_path(c.organization, c.company_teammate) },
     description: nil,
-    button_label: "Check-In"
+    button_label: I18n.t("terminology.start_here_open_clarity_check_ins")
   }.freeze
 
   def dashboard_content

@@ -45,11 +45,11 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       )
 
       ready = result[:priorities][1]
-      expect(ready[:title]).to eq(described_class::CHECK_INS_READY_FOR_REVIEW_TITLE)
+      expect(ready[:title]).to eq(I18n.t("terminology.priority_clarity_ready_for_review_title"))
       expect(ready[:needs_attention]).to eq(true)
       expect(ready[:data_kind]).to eq(:ready_for_review_attention)
-      expect(ready[:cta_label]).to eq("Review 2 check-ins together")
-      expect(ready[:reason]).to include("OG check-ins are a three-step process")
+      expect(ready[:cta_label]).to eq(I18n.t("terminology.priority_review_clarity_check_ins_together", count: 2))
+      expect(ready[:reason]).to include("OG clarity check-ins are a three-step process")
       expect(ready[:items].map { |i| i[:display_title] }).to eq(["Zebra Value", "Alpha Assignment"])
 
       renderer = OneOnOne::PriorityRenderer.new(priority: ready, organization: organization, teammate: teammate)
@@ -78,7 +78,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
 
       ready = result[:priorities][1]
       expect(ready[:needs_attention]).to eq(false)
-      expect(ready[:reason]).to include("No check-ins are waiting for review between")
+      expect(ready[:reason]).to include("No clarity check-ins are waiting for review between")
       expect(ready[:reason]).to include(teammate.person.casual_name)
       expect(ready[:reason]).to include("Morgan")
       expect(ready[:reason]).to include("(or another manager)")

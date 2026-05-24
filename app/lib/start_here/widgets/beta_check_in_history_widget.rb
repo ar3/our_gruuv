@@ -6,12 +6,12 @@ class StartHere::Widgets::BetaCheckInHistoryWidget < StartHere::Widget::Base
     id: "beta_check_in_history",
     group: "About Me",
     icon: "bi-table",
-    selection_title: "Check-in status",
-    selection_description: "How clear your check-ins are across values, assignments, and position.",
-    label: "Check-in status",
+    selection_title: I18n.t("terminology.start_here_clarity_check_in_status"),
+    selection_description: I18n.t("terminology.start_here_clarity_check_in_status_description"),
+    label: I18n.t("terminology.start_here_clarity_check_in_status"),
     path: ->(c) { c.view.review_most_recent_organization_company_teammate_check_ins_path(c.organization, c.company_teammate) },
     description: nil,
-    button_label: "Check-in history"
+    button_label: I18n.t("terminology.clarity_check_in_history")
   }.freeze
 
   def dashboard_content

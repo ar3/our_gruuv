@@ -2,7 +2,7 @@
 - status_rows = [ { names: groups[:green], icon: "bi-check-square-fill", color: "text-success" }, { names: groups[:yellow], icon: "bi-exclamation-triangle-fill", color: "text-warning" }, { names: groups[:red], icon: "bi-x-square-fill", color: "text-danger" } ]
 .mb-0.start-here-about-me-dashboard
   %p.text-muted.small.mb-2
-    Your check-ins, goals, observations, and growth in one place.
+    = about_me_start_here_intro_label
   - status_rows.each do |row|
     - names = row[:names]
     - next if names.blank?

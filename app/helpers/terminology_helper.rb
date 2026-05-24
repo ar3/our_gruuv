@@ -440,4 +440,66 @@ module TerminologyHelper
   def one_on_one_hub_label
     terminology(:one_on_one_hub)
   end
+
+  def clarity_check_in_history_label
+    terminology(:clarity_check_in_history)
+  end
+
+  def acknowledge_finalized_clarity_check_in_label
+    terminology(:acknowledge_finalized_clarity_check_in)
+  end
+
+  def dashboard_clarity_descriptions
+    [
+      terminology(:dashboard_clarity_description_1),
+      terminology(:dashboard_clarity_description_2),
+      terminology(:dashboard_clarity_description_3)
+    ]
+  end
+
+  def about_me_start_here_intro_label
+    terminology(:about_me_start_here_intro)
+  end
+
+  def my_goals_recent_confidence_check_label(count:)
+    terminology(:my_goals_recent_confidence_check, count: count)
+  end
+
+  def my_goals_stale_confidence_check_label(count:)
+    terminology(:my_goals_stale_confidence_check, count: count)
+  end
+
+  def no_completed_clarity_check_in_yet_label
+    terminology(:no_completed_clarity_check_in_yet)
+  end
+
+  def no_clarity_check_in_health_data_label
+    terminology(:no_clarity_check_in_health_data)
+  end
+
+  def no_clarity_check_ins_awaiting_your_input_label
+    terminology(:no_clarity_check_ins_awaiting_your_input)
+  end
+
+  def all_clarity_check_ins_fresh_label
+    terminology(:all_clarity_check_ins_fresh)
+  end
+
+  def all_clarity_check_ins_fresh_sub_label
+    terminology(:all_clarity_check_ins_fresh_sub)
+  end
+
+  def dashboard_clarity_check_in_on_assignments_label(count:)
+    key = count == 1 ? :dashboard_clarity_check_in_on_assignments : :dashboard_clarity_check_in_on_assignments_other
+    terminology(key, count: count)
+  end
+
+  def go_add_confidence_checks_on_goals_label(name:, count:)
+    key = count == 1 ? :go_add_confidence_checks_on_goals : :go_add_confidence_checks_on_goals_other
+    terminology(key, name: name, count: count)
+  end
+
+  def position_check_in_from_clarity_hub_label
+    terminology(:position_check_in_from_clarity_hub)
+  end
 end

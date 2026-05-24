@@ -1,25 +1,25 @@
-/ Giant Check-Ins Card at Top
+/ Giant Clarity Check-Ins card at top
 - check_ins_header_html = capture do
   %i.bi.bi-clipboard-check.me-3
-  Check-Ins
+  = clarity_hub_label
 - check_ins_primary_html = capture do
   %i.bi.bi-clipboard-data.me-3
-  Start My Check-In
+  = go_to_clarity_hub_label
 - check_ins_secondary_html = capture do
   - if @ready_for_finalization_count.to_i > 0
     %i.bi.bi-check-circle.me-2
     Finalize (#{@ready_for_finalization_count})
   - else
     %i.bi.bi-clock-history.me-2
-    Check-In History
+    = clarity_check_in_history_label
 - check_ins_tertiary_html = capture do
   - if @finalized_check_in_exists
     %i.bi.bi-check-square.me-2
-    Acknowledge Finalized Check-In
+    = acknowledge_finalized_clarity_check_in_label
   - else
     %i.bi.bi-clock-history.me-2
-    Check-In History
-- check_ins_description = ['Track progress, share updates, grow together', 'Regular check-ins build trust and transparency', 'Stay aligned, stay connected, stay growing'].sample
+    = clarity_check_in_history_label
+- check_ins_description = dashboard_clarity_descriptions.sample
 
 = render 'organizations/dashboard/dashboard_hero_card',
   header_html: check_ins_header_html,

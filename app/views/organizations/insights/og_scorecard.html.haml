@@ -48,11 +48,11 @@
         %code published_at
         \.
       %li
-        %strong Check-ins:
-        required position, assignment, and aspirational value check-ins evaluated as of each Sunday using the same clarity windows as Check-ins Health (30 / 60 / 90 days). See each row label for rollup rules.
+        %strong= "#{I18n.t('terminology.og_scorecard_clarity_check_ins_label')}:"
+        = I18n.t('terminology.og_scorecard_clarity_check_ins_help')
       %li
-        %strong Goals on check-ins rows:
-        active owned goals linked to an Aspirational Value or Assignment as of that Sunday.
+        %strong= "#{I18n.t('terminology.og_scorecard_goals_on_clarity_rows_label')}:"
+        = I18n.t('terminology.og_scorecard_goals_on_clarity_rows_help')
 
 = render 'timeframe_selector',
   timeframe: @timeframe,
