@@ -1,8 +1,8 @@
 - goals_count = @goals_needing_check_in.count
 = render 'shared/section_header', 
-         title: 'Goal Check-ins', 
-         icon: 'bi-bullseye', 
-         description: 'Goals needing check-in updates',
+         title: goal_confidence_checks_label,
+         icon: 'bi-bullseye',
+         description: goal_confidence_checks_description,
          collapsible: true,
          collapse_target: 'goalCheckInsSection',
          status_indicator: :warning
@@ -11,7 +11,7 @@
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#goalCheckInsSection", "aria-expanded" => "false", "aria-controls" => "goalCheckInsSection", style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
-    = pluralize(goals_count, 'goal') + ' needing check-in'
+    = goals_needing_confidence_check_summary(count: goals_count)
 
 -# Collapsible content
 .collapse#goalCheckInsSection

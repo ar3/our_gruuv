@@ -103,7 +103,7 @@ module Goals
     rescue Date::Error => e
       Result.err("Invalid date format: #{e.message}")
     rescue => e
-      Result.err("Failed to save check-in: #{e.message}")
+      Result.err("#{I18n.t('terminology.failed_to_save_confidence_check')}: #{e.message}")
     end
 
     private

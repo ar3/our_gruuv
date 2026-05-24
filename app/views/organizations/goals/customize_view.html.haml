@@ -141,7 +141,7 @@
             = radio_button_tag 'view', 'hierarchical-collapsible', @current_view == 'hierarchical-collapsible', class: 'form-check-input', id: 'view_hierarchical_collapsible'
             = label_tag 'view_hierarchical_collapsible', class: 'form-check-label' do
               %i.bi.bi-chevron-bar-expand.me-2
-              Hierarchical Collapsible (with check-ins)
+              = hierarchical_collapsible_with_confidence_checks_label
   
   .row
     .col-md-4

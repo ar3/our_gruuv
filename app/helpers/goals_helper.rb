@@ -1,4 +1,5 @@
 module GoalsHelper
+  include TerminologyHelper
   include AssociableGoalsHelper
   include MermaidFlowchartEscaping
 
@@ -123,9 +124,9 @@ module GoalsHelper
 
   def goal_no_check_in_access_tooltip(goal)
     if goal.owner_type == 'CompanyTeammate'
-      "Only the goal creator or owner can add check-ins to this goal."
+      only_creator_owner_can_add_confidence_checks_label
     else
-      "You don't have permission to add check-ins to this goal."
+      no_permission_add_confidence_checks_label
     end
   end
 
@@ -457,7 +458,7 @@ module GoalsHelper
     when :edit
       'Edit Mode'
     when :check_in
-      'Check-in Mode'
+      confidence_check_mode_label
     else
       'View Mode' # Default
     end
@@ -899,9 +900,9 @@ module GoalsHelper
 
   def goal_last_check_in_recency_phrase(goal)
     last = goal.goal_check_ins.recent.first
-    return 'Goal has no check-ins' if last.blank?
+    return goal_has_no_confidence_checks_label if last.blank?
 
-    "Last check-in #{time_ago_in_words(last.created_at)} ago"
+    last_confidence_check_ago_label(time: time_ago_in_words(last.created_at))
   end
 
   def goal_owner_path(organization, goal)

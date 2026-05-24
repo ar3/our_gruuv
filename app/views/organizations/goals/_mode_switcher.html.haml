@@ -38,15 +38,15 @@
       - if current_mode == :check_in
         .dropdown-item.text-muted
           %i.bi.bi-calendar-check.me-2
-          Check-in Mode (Active)
+          = confidence_check_mode_active_label
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif goal.started_at.present? && policy(goal).show?
         = link_to organization_goal_path(organization, goal, anchor: 'check-in'), class: 'dropdown-item' do
           %i.bi.bi-calendar-check.me-2
-          Check-in Mode
+          = confidence_check_mode_label
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-calendar-check.me-2
-          Check-in Mode
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal.started_at.nil? ? "Goal must be started to access check-in mode" : "You need permission to view this goal"}
+          = confidence_check_mode_label
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal.started_at.nil? ? goal_must_be_started_for_confidence_check_mode_label : "You need permission to view this goal"}
 

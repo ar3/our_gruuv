@@ -146,13 +146,13 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response).to have_http_status(:success)
       # If goals are found, the section is visible and shows them
       if response.body.include?('Unique Goal Title')
-        expect(response.body).to include('Goal Check-ins')
+        expect(response.body).to include('Goal confidence checks')
         expect(response.body).to include('Unique Goal Title 1')
         expect(response.body).to include('Unique Goal Title 2')
       else
         # When no goals, the section is hidden and listed in the completed section
         expect(response.body).to include("you've completed everything")
-        expect(response.body).to include('Goal Check-ins')
+        expect(response.body).to include('Goal confidence checks')
       end
     end
 
@@ -298,7 +298,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include('Observable Moments')
       expect(response.body).to include('Clarity check-ins awaiting acknowledgement')
       expect(response.body).to include('Clarity check-ins awaiting your input')
-      expect(response.body).to include('Goal Check-ins')
+      expect(response.body).to include('Goal confidence checks')
       expect(response.body).to include('Observation Drafts')
       expect(response.body).to include('Silent Observations')
     end

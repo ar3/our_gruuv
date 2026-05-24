@@ -866,7 +866,7 @@ RSpec.describe 'About Me Page', type: :request do
         get about_me_organization_company_teammate_path(organization, teammate)
         expect(response.body).to include("#{person.casual_name} has")
         expect(response.body).to include("active goal")
-        expect(response.body).to include("with a check-in in the past two weeks")
+        expect(response.body).to include("with a confidence check in the past two weeks")
         expect(response.body).to include("completed in the last 90 days")
       end
 
@@ -1420,7 +1420,7 @@ RSpec.describe 'About Me Page', type: :request do
 
       it 'shows milestone 3 as incomplete with link to create goal' do
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body).to include('Setting Goals with Weekly Check-ins')
+        expect(response.body).to include('Setting goals with weekly confidence checks')
         expect(response.body).to include('Create Goal')
         expect(response.body).to include(new_organization_goal_path(organization))
       end

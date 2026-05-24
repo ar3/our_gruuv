@@ -13,7 +13,7 @@
       .card-header
         %h5.mb-0
           %i.bi.bi-clock-history.me-2
-          Check-in History
+          = confidence_check_history_label
       .card-body
         - if @check_ins.any?
           .table-responsive
@@ -41,14 +41,14 @@
                     %td= check_in.confidence_reporter.display_name
                     %td= format_time_in_user_timezone(check_in.created_at)
         - else
-          %p.text-muted No check-ins recorded yet.
+          %p.text-muted= no_confidence_checks_recorded_label
 
     / Record Final Check-in and Learnings Form
     .card.mb-4
       .card-header
         %h5.mb-0
           %i.bi.bi-check-circle.me-2
-          Record Final Check-in and Learnings
+          = record_final_confidence_check_and_learnings_label
       .card-body
         = form_with url: complete_organization_goal_path(@organization, @goal), method: :post, local: true do |f|
           = hidden_field_tag :return_url, @return_url
@@ -76,7 +76,7 @@
             = label_tag :learnings, "What did you learn?", class: "form-label fw-bold"
             = text_area_tag :learnings, "", rows: 5, class: "form-control", required: true, placeholder: "Describe what you learned from working on this goal..."
             %small.form-text.text-muted
-              This will be saved as the reason for your final check-in.
+              = final_confidence_check_reason_hint_label
           
           .d-flex.gap-2
             = submit_tag "Mark Goal as Done", class: "btn btn-primary"

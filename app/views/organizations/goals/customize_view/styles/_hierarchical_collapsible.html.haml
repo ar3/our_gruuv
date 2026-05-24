@@ -15,7 +15,7 @@
       .d-flex.align-items-center
         %i.bi.bi-calendar-event.me-2
         %span
-          %strong Current Check-in Week:
+          %strong= "#{current_confidence_check_week_label}:"
           = "#{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}"
       .d-flex.align-items-center.gap-2
         %button.btn.btn-outline-secondary.btn-sm#expand-all-goals{type: "button", "data-action": "click->goals-tree#expandAll"}

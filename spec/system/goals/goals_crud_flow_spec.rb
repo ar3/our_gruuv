@@ -206,7 +206,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       
       # Should successfully create and redirect to check-in mode
       # Wait for the redirect to complete - check for "Check-in Mode" which is the page title
-      expect(page).to have_content('Check-in Mode', wait: 10)
+      expect(page).to have_content('Confidence check mode', wait: 10)
       
       created_goal = Goal.find_by(title: 'Test Goal')
       expect(created_goal).to be_present, "Goal was not created."

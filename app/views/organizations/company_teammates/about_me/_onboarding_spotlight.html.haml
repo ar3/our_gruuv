@@ -64,7 +64,7 @@
               %h5.card-title.mb-2
                 %span.badge.bg-success.me-2 Complete
                 Milestone 3
-              %p.card-text.fw-bold Setting Goals with Weekly Check-ins
+              %p.card-text.fw-bold= weekly_confidence_checks_label
               %p.card-text.text-muted.small
                 Excellent! You've challenged yourself and set goals that you check in on weekly.
         - else
@@ -75,7 +75,7 @@
               %h5.card-title.mb-2
                 %span.badge.bg-primary.me-2 Next
                 Milestone 3
-              %p.card-text.fw-bold Setting Goals with Weekly Check-ins
+              %p.card-text.fw-bold= weekly_confidence_checks_label
               %p.card-text.text-muted.small.mb-3
                 Challenge yourself and set goals that you check in on weekly.
               = link_to new_organization_goal_path(organization),

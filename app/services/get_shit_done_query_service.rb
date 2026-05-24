@@ -85,7 +85,7 @@ class GetShitDoneQueryService
       { count: observable_moments.count, label: "Observable Moments" },
       { count: maap_snapshots.count, label: I18n.t("terminology.clarity_check_ins_awaiting_acknowledgement") },
       { count: check_ins_awaiting_input.size, label: I18n.t("terminology.clarity_check_ins_awaiting_your_input") },
-      { count: goals_needing_check_in.count, label: "Goal Check-ins" },
+      { count: goals_needing_check_in.count, label: I18n.t("terminology.goal_confidence_checks") },
       { count: observation_drafts.count, label: "Observation Drafts" },
       { count: silent_observations.count, label: "Silent Observations" }
     ].select { |row| row[:count].positive? }

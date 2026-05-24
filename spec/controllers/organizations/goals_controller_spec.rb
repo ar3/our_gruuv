@@ -608,9 +608,9 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(goal.creator).to eq(creator_teammate)
     end
     
-    it 'redirects to the goal check-in mode' do
+    it 'redirects to the goal confidence check mode' do
       post :create, params: { organization_id: company.id, goal: valid_attributes }
-      expect(response).to redirect_to(weekly_update_organization_goal_path(company, Goal.last))
+      expect(response).to redirect_to(organization_goal_path(company, Goal.last, anchor: 'check-in'))
     end
     
     it 'shows flash notice on success' do
@@ -970,85 +970,16 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   describe 'GET #weekly_update' do
     let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago) }
     
-    it 'renders the weekly update page' do
+    it 'redirects to goal show confidence check anchor' do
       get :weekly_update, params: { organization_id: company.id, id: goal.id }
-      expect(response).to have_http_status(:success)
+      expect(response).to redirect_to(organization_goal_path(company, goal, anchor: 'check-in'))
     end
     
     it 'authorizes goal access' do
       get :weekly_update, params: { organization_id: company.id, id: goal.id }
-      expect(response).to have_http_status(:success)
+      expect(response).to redirect_to(organization_goal_path(company, goal, anchor: 'check-in'))
     end
     
-    it 'loads all check-ins chronologically' do
-      check_in1 = create(:goal_check_in, goal: goal, check_in_week_start: 3.weeks.ago.beginning_of_week(:monday), confidence_reporter: person)
-      check_in2 = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_reporter: person)
-      check_in3 = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_reporter: person)
-      
-      get :weekly_update, params: { organization_id: company.id, id: goal.id }
-      
-      expect(assigns(:all_check_ins)).to eq([check_in1, check_in2, check_in3])
-    end
-    
-    it 'loads current week check-in if exists' do
-      current_week_start = Date.current.beginning_of_week(:monday)
-      current_check_in = create(:goal_check_in, goal: goal, check_in_week_start: current_week_start, confidence_reporter: person)
-      
-      get :weekly_update, params: { organization_id: company.id, id: goal.id }
-      
-      expect(assigns(:current_check_in)).to eq(current_check_in)
-      expect(assigns(:current_week_start)).to eq(current_week_start)
-    end
-    
-    it 'loads all check-ins in chronological order' do
-      old_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_reporter: person)
-      recent_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_reporter: person)
-      
-      get :weekly_update, params: { organization_id: company.id, id: goal.id }
-      
-      expect(assigns(:all_check_ins)).to eq([old_check_in, recent_check_in])
-    end
-    
-    it 'sets return_url and return_text from params' do
-      return_url = organization_goal_path(company, goal)
-      return_text = 'Back to Goal'
-      
-      get :weekly_update, params: { 
-        organization_id: company.id, 
-        id: goal.id,
-        return_url: return_url,
-        return_text: return_text
-      }
-      
-      expect(assigns(:return_url)).to eq(return_url)
-      expect(assigns(:return_text)).to eq(return_text)
-    end
-    
-    it 'defaults return_url and return_text if not provided' do
-      get :weekly_update, params: { organization_id: company.id, id: goal.id }
-      
-      expect(assigns(:return_url)).to eq(organization_goal_path(company, goal))
-      expect(assigns(:return_text)).to eq('Back to Goal')
-    end
-
-    it 'assigns progress_chart_data when goal has target dates and started_at' do
-      goal.update!(
-        most_likely_target_date: 8.weeks.from_now.to_date,
-        started_at: 4.weeks.ago
-      )
-      get :weekly_update, params: { organization_id: company.id, id: goal.id }
-      chart = assigns(:progress_chart_data)
-      expect(chart).to be_a(Hash)
-      expect(chart[:categories]).to be_an(Array)
-      expect(chart[:series]).to be_an(Array)
-      expect(chart[:series].map { |s| s[:name] }).to include('Behind schedule', 'On schedule band', 'Ahead band', 'Ahead of schedule', 'Actual confidence')
-    end
-
-    it 'assigns progress_chart_data as nil when goal has no target dates' do
-      goal.update!(earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
-      get :weekly_update, params: { organization_id: company.id, id: goal.id }
-      expect(assigns(:progress_chart_data)).to be_nil
-    end
   end
   
   describe 'PATCH #update' do
@@ -1264,7 +1195,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         id: goal.id,
         confidence_percentage: 75
       }
-      expect(response).to redirect_to(organization_goal_path(company, goal))
+      expect(response).to redirect_to(organization_goal_path(company, goal, anchor: 'check-in'))
     end
     
     it 'shows flash notice on success' do
@@ -1273,7 +1204,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         id: goal.id,
         confidence_percentage: 75
       }
-      expect(flash[:notice]).to eq('Check-in saved successfully.')
+      expect(flash[:notice]).to eq('Confidence check saved successfully.')
     end
 
     context 'when goal has not been started' do
@@ -1300,8 +1231,8 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         confidence_percentage: 150  # Invalid - should be 0-100
       }
       
-      expect(response).to redirect_to(organization_goal_path(company, goal))
-      expect(flash[:alert]).to match(/Failed to save check-in/)
+      expect(response).to redirect_to(organization_goal_path(company, goal, anchor: 'check-in'))
+      expect(flash[:alert]).to match(/Failed to save confidence check/)
     end
     
     it 'updates most_likely_target_date when provided' do

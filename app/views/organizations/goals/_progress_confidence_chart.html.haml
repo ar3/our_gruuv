@@ -6,7 +6,7 @@
   %div
     %div{id: chart_dom_id, style: "height: 400px;"}
     %p.small.text-muted.mt-2.mb-0
-      Colored bands show on-track zones by week. Blue points are your actual check-ins.
+      Colored bands show on-track zones by week. #{progress_chart_confidence_checks_help_label}
     - if progress_chart_data[:thresholds_table].present?
       .mt-3
         %a.btn.btn-outline-secondary.btn-sm{"data-bs-toggle" => "collapse", "data-bs-target" => "##{chart_dom_id}-thresholds-table-collapse", "aria-expanded" => "false", "aria-controls" => "#{chart_dom_id}-thresholds-table-collapse", href: "#"}

@@ -539,11 +539,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     return_url = goal_check_in_redirect_url(params[:return_url])
 
     if result.ok?
-      notice = 'Check-in saved successfully.'
+      notice = I18n.t('terminology.confidence_check_saved_successfully')
       notice += ' Target date updated.' if result.value[:target_date_updated]
       redirect_to return_url, notice: notice
     else
-      redirect_to return_url, alert: "Failed to save check-in: #{result.error}"
+      redirect_to return_url, alert: "#{I18n.t('terminology.failed_to_save_confidence_check')}: #{result.error}"
     end
   end
   
@@ -700,14 +700,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     if result.ok?
       if result.value[:failure_count] > 0
         redirect_to organization_goals_path(@organization, params.except(:controller, :action, :goal_check_ins, :authenticity_token, :commit).permit!.to_h),
-                    alert: "Some check-ins failed to save. #{result.value[:success_count]} saved, #{result.value[:failure_count]} failed."
+                    alert: I18n.t('terminology.some_confidence_checks_failed_save',
+                                   success_count: result.value[:success_count],
+                                   failure_count: result.value[:failure_count])
       else
         redirect_to organization_goals_path(@organization, params.except(:controller, :action, :goal_check_ins, :authenticity_token, :commit).permit!.to_h),
-                    notice: "Successfully saved #{result.value[:success_count]} check-in(s)."
+                    notice: I18n.t('terminology.successfully_saved_confidence_checks_count',
+                                   count: result.value[:success_count])
       end
     else
       redirect_to organization_goals_path(@organization, params.except(:controller, :action, :goal_check_ins, :authenticity_token, :commit).permit!.to_h),
-                  alert: "Failed to save check-ins: #{result.error}"
+                  alert: "#{I18n.t('terminology.failed_to_save_confidence_checks')}: #{result.error}"
     end
   end
   

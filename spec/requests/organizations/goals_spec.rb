@@ -383,10 +383,10 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, unstarted_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Current Week Check-In')
-        expect(response.body).to include('Checking in on this goal will start this goal as well.')
-        expect(response.body).to include('Save Check-In')
-        expect(response.body).not_to include('Start this goal to add check-ins.')
+        expect(response.body).to include('Current week confidence check')
+        expect(response.body).to include('Submitting a confidence check on this goal will start this goal as well.')
+        expect(response.body).to include('Save confidence check')
+        expect(response.body).not_to include('Start this goal to add confidence checks.')
       end
     end
 
@@ -397,7 +397,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, started_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Observations and Goal Check-ins')
+        expect(response.body).to include('Observations and goal confidence checks')
         expect(response.body).to include(organization_goal_path(organization, started_goal, anchor: 'check-in'))
         expect(response.body).to include('btn-primary')
         expect(response.body).not_to include('aria-disabled="true"')
@@ -411,9 +411,9 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, other_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Observations and Goal Check-ins')
+        expect(response.body).to include('Observations and goal confidence checks')
         expect(response.body).to include('Other Goal')
-        expect(response.body).to include('Current Week Check-In')
+        expect(response.body).to include('Current week confidence check')
       end
       
       it 'displays last check-in in sentence form when present' do
@@ -437,8 +437,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, started_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).not_to include('Check-In History')
-        expect(response.body).to include('Current Week Check-In')
+        expect(response.body).not_to include('Confidence check history')
+        expect(response.body).to include('Current week confidence check')
       end
 
       it 'displays Progress card with chart when goal has check-ins and target date' do
@@ -482,7 +482,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
 
       follow_weekly_update_redirect!
       expect(response.body).to include(goal.title)
-      expect(response.body).to include('Current Week Check-In')
+      expect(response.body).to include('Current week confidence check')
     end
     
     it 'loads all check-ins chronologically' do
@@ -512,14 +512,14 @@ RSpec.describe 'Organizations::Goals', type: :request do
 
       get weekly_update_organization_goal_path(organization, goal)
       follow_weekly_update_redirect!
-      expect(response.body).to include('Check-In History')
+      expect(response.body).to include('Confidence check history')
       expect(response.body).to include('60%')
       expect(response.body).to include('80%')
-      # Verify they appear in chronological order (oldest first) within Check-In History
+      # Verify they appear in chronological order (oldest first) within confidence check history
       # (avoid matching percentages in the Current Week form dropdown)
       body = response.body
-      history_start = body.index('Check-In History')
-      history_end = body.index('Current Week Check-In') || body.length
+      history_start = body.index('Confidence check history')
+      history_end = body.index('Current week confidence check') || body.length
       history_section = body[history_start...history_end]
       old_index = history_section.index('60%')
       recent_index = history_section.index('80%')
@@ -870,7 +870,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       }
       
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Current Check-in Week')
+      expect(response.body).to include('Current confidence check week')
     end
 
     it 'shows inline check-in forms for check-in eligible goals' do

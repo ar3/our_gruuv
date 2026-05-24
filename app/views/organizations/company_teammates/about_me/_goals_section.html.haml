@@ -21,7 +21,7 @@
       %span.inline-sentence-highlight= pluralize(all_goals.count, 'active goal')
       = ", ".html_safe
       %span.inline-sentence-highlight= pluralize(@goals_with_recent_check_ins_count, 'goal')
-      = " with a check-in in the past two weeks, and ".html_safe
+      = with_confidence_check_in_past_two_weeks.html_safe
       %span.inline-sentence-highlight= pluralize(@goals_completed_count, 'goal')
       = " completed in the last 90 days.".html_safe
     - else
@@ -58,14 +58,14 @@
                       - if calc_date.present?
                         = " this will be hit by #{calc_date.strftime('%b %d, %Y')}"
                     - else
-                      %span.text-muted No check-in yet
+                      %span.text-muted= no_confidence_check_yet_label
                   %td
                     - if needs_check_in
-                      %span.badge.bg-warning.text-dark New check-in needed
+                      %span.badge.bg-warning.text-dark= new_confidence_check_needed_label
                     - elsif latest_check_in
                       %span.badge.bg-success Up to date
                     - else
-                      %span.badge.bg-secondary No check-in yet
+                      %span.badge.bg-secondary= no_confidence_check_yet_label
       - else
         %p.text-muted.mb-3 No active goals found.
       
@@ -88,7 +88,7 @@
                     return_text: "Back to About Me"),
                   class: "btn btn-outline-success w-100" do
             %i.bi.bi-box-arrow-up-right.me-2
-            = "Go check-in on your #{pluralize(active_goals_count, 'active goal')}"
+            = add_confidence_checks_on_active_goals_label(count: active_goals_count)
         .col-md-4.col-12
           = link_to organization_goals_path(organization,
                     owner_id: "CompanyTeammate_#{@teammate.id}",

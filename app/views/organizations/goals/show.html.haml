@@ -274,7 +274,7 @@
           %em.text-muted No child goals linked yet.
 
 = render 'shared/section_header',
-         title: 'Observations and Goal Check-ins',
+         title: observations_and_goal_confidence_checks_label,
          icon: 'bi-calendar-check',
          description: @goal.title,
          include_top_header_margin: false
@@ -295,7 +295,7 @@
 
       - if @all_check_ins.any?
         .timeline-item.mb-4
-          %h5.mb-3 Check-In History
+          %h5.mb-3= confidence_check_history_label
           - @all_check_ins.each do |check_in|
             .card.mb-3
               .card-body
@@ -318,14 +318,14 @@
           .card-header.bg-success.text-white
             %h5.mb-0
               %i.bi.bi-calendar-event.me-2
-              Current Week Check-In
+              = current_week_confidence_check_label
           .card-body
             - if !goal_is_completed?(@goal) && @goal.deleted_at.nil? && (@goal.started_at.present? || @goal.check_in_eligible?)
               - current_week_start = @current_week_start || Date.current.beginning_of_week(:monday)
               - current_week_end = current_week_start.end_of_week(:sunday)
               - if @goal.started_at.nil?
                 %p.small.text-muted.mb-3
-                  Checking in on this goal will start this goal as well.
+                  = checking_in_starts_goal_label
               %p.small.text-muted.mb-3
                 Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
               = form_with url: check_in_organization_goal_path(@organization, @goal, return_url: organization_goal_path(@organization, @goal), return_text: 'Goal'), method: :post, local: true do |f|
@@ -350,17 +350,17 @@
                   = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...'
                 - if can_save_check_in
                   .d-grid
-                    = f.submit "Save Check-In", class: "btn btn-primary"
+                    = f.submit save_confidence_check_label, class: "btn btn-primary"
                 - else
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100{type: "button", disabled: true}
-                        Save Check-In
+                        = save_confidence_check_label
                     %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal), tabindex: "0", role: "img", "aria-label" => "Permission notice"}
             - elsif goal_is_completed?(@goal)
-              .alert.alert-info.mb-0 Goal is completed. Check-ins are read-only.
+              .alert.alert-info.mb-0= goal_completed_confidence_checks_readonly_label
             - else
-              .alert.alert-info.mb-0 Start this goal to add check-ins.
+              .alert.alert-info.mb-0= start_goal_to_add_confidence_checks_label
 
       .timeline-item.mb-4
         .card.border-secondary

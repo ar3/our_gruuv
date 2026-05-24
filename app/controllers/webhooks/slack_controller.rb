@@ -267,7 +267,7 @@ class Webhooks::SlackController < ApplicationController
       # Return success response to close the modal
       { response_action: 'clear' }
     else
-      error_message = "Failed to save check-in: #{result.error}"
+      error_message = "#{I18n.t('terminology.failed_to_save_confidence_check')}: #{result.error}"
       Rails.logger.error "Slack webhook: #{error_message}"
       incoming_webhook.mark_failed!(error_message)
       

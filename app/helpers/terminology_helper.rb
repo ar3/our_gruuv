@@ -327,6 +327,98 @@ module TerminologyHelper
     terminology(:weekly_confidence_check_tooltip)
   end
 
+  def checking_in_starts_goal_label
+    terminology(:checking_in_starts_goal)
+  end
+
+  def goal_completed_confidence_checks_readonly_label
+    terminology(:goal_completed_confidence_checks_readonly)
+  end
+
+  def start_goal_to_add_confidence_checks_label
+    terminology(:start_goal_to_add_confidence_checks)
+  end
+
+  def anyone_can_submit_confidence_checks_label
+    terminology(:anyone_can_submit_confidence_checks)
+  end
+
+  def creator_owner_confidence_check_permission_label
+    terminology(:creator_owner_confidence_check_permission)
+  end
+
+  def goal_must_be_started_for_confidence_check_mode_label
+    terminology(:goal_must_be_started_for_confidence_check_mode)
+  end
+
+  def record_final_confidence_check_and_learnings_label
+    terminology(:record_final_confidence_check_and_learnings)
+  end
+
+  def no_confidence_checks_recorded_label
+    terminology(:no_confidence_checks_recorded)
+  end
+
+  def final_confidence_check_reason_hint_label
+    terminology(:final_confidence_check_reason_hint)
+  end
+
+  def hierarchical_collapsible_with_confidence_checks_label
+    terminology(:hierarchical_collapsible_with_confidence_checks)
+  end
+
+  def progress_chart_confidence_checks_help_label
+    terminology(:progress_chart_confidence_checks_help)
+  end
+
+  def observations_confidence_checks_tooltip_label
+    terminology(:observations_confidence_checks_tooltip)
+  end
+
+  def confidence_check_saved_successfully_label
+    terminology(:confidence_check_saved_successfully)
+  end
+
+  def some_confidence_checks_failed_save_label(success_count:, failure_count:)
+    terminology(:some_confidence_checks_failed_save, success_count: success_count, failure_count: failure_count)
+  end
+
+  def successfully_saved_confidence_checks_count_label(count:)
+    terminology(:successfully_saved_confidence_checks_count, count: count)
+  end
+
+  def add_confidence_checks_on_active_goals_label(count:)
+    terminology(:add_confidence_checks_on_active_goals, count: count)
+  end
+
+  def goals_needing_confidence_check_summary(count:)
+    terminology(:goals_needing_confidence_check_summary, count: count)
+  end
+
+  def no_confidence_check_yet_label
+    terminology(:no_confidence_check_yet)
+  end
+
+  def only_creator_owner_can_add_confidence_checks_label
+    terminology(:only_creator_owner_can_add_confidence_checks)
+  end
+
+  def no_permission_add_confidence_checks_label
+    terminology(:no_permission_add_confidence_checks)
+  end
+
+  def edit_all_goals_confidence_checks_label
+    terminology(:edit_all_goals_confidence_checks)
+  end
+
+  def goal_confidence_checks_description
+    terminology(:goal_confidence_checks_description)
+  end
+
+  def with_confidence_check_in_past_two_weeks
+    terminology(:with_confidence_check_in_past_two_weeks)
+  end
+
   # --- 1:1 (avoid "1:1 check-in") ---
 
   def weekly_1_1_label

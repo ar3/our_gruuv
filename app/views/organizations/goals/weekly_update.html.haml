@@ -29,7 +29,7 @@
   / Middle: Check-in History (chronological, oldest to newest)
   - if @all_check_ins.any?
     .timeline-item.mb-4
-      %h5.mb-3 Check-In History
+      %h5.mb-3= confidence_check_history_label
       - @all_check_ins.each do |check_in|
         .card.mb-3
           .card-body
@@ -53,7 +53,7 @@
       .card-header.bg-success.text-white
         %h5.mb-0
           %i.bi.bi-calendar-event.me-2
-          Current Week Check-In
+          = current_week_confidence_check_label
       .card-body
         - current_week_start = @current_week_start || Date.current.beginning_of_week(:monday)
         - current_week_end = current_week_start.end_of_week(:sunday)
@@ -83,7 +83,7 @@
             = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...'
           
           .d-grid
-            = f.submit "Save Check-In", class: "btn btn-primary"
+            = f.submit save_confidence_check_label, class: "btn btn-primary"
   
   / Bottom: Target Dates
   .timeline-item.mb-4

@@ -6,7 +6,7 @@
       .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
         %h5.mb-0
           Observations
-          %i.bi.bi-info-circle.text-primary.ms-1{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", title: "Use observations for informal commentary on how you or others are doing toward this goal—alongside check-ins. Managers and teammates can leave quick notes here."}
+          %i.bi.bi-info-circle.text-primary.ms-1{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", title: observations_confidence_checks_tooltip_label}
         .d-flex.flex-wrap.align-items-center.gap-2
           - if policy(company).view_observations?
             = link_to organization_observations_path(@organization, goal_id: @goal.id, view: 'large_list', return_url: organization_goal_url(@organization, @goal), return_text: 'Goal'), class: "btn btn-sm btn-outline-secondary" do

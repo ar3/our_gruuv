@@ -140,7 +140,7 @@
     - if non_archived_goals.any? && @can_edit
       .mb-3
         = button_tag type: 'submit', form: 'prompt-edit-form', name: 'save_and_edit_goals', value: '1', class: "btn btn-sm btn-outline-secondary" do
-          Check-in on / Edit all goals
+          = edit_all_goals_confidence_checks_label
     = render 'shared/goals/associated_goals_hierarchy_body',
         organization: @organization,
         linked_goals: @linked_goals,
