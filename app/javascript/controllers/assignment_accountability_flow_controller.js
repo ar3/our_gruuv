@@ -42,6 +42,7 @@ export default class extends Controller {
     this.savedPositionsOverride = null
     this.dragged = false
     this.layoutDirty = false
+    this.savingLayout = false
 
     if (this.lazyValue) return
     this.render()
@@ -151,18 +152,21 @@ export default class extends Controller {
     this.initGraph()
     if (!this.cy || !this.canEditLayoutValue || !this.layoutUrlValue) return
 
-    if (this.hasSaveButtonTarget) this.saveButtonTarget.disabled = true
+    this.savingLayout = true
+    this.updateSaveButton()
     this.setSaveStatus("Saving…")
     this.persistLayout()
       .then(() => {
         this.layoutDirty = false
-        this.updateSaveButton()
         this.setSaveStatus("Layout saved for everyone.")
       })
       .catch(() => {
         this.layoutDirty = true
-        this.updateSaveButton()
         this.setSaveStatus("Could not save layout. Try again.")
+      })
+      .finally(() => {
+        this.savingLayout = false
+        this.updateSaveButton()
       })
   }
 
@@ -277,6 +281,7 @@ export default class extends Controller {
   updateSaveButton() {
     if (!this.hasSaveButtonTarget) return
 
+    this.saveButtonTarget.disabled = this.savingLayout
     this.saveButtonTarget.classList.toggle("btn-primary", this.layoutDirty)
     this.saveButtonTarget.classList.toggle("btn-outline-primary", !this.layoutDirty)
   }
