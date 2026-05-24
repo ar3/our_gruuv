@@ -105,7 +105,7 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
         expect(params["timeframe"]).to be_nil
         expect(params["timeframe_start_date"]).to be_nil
         expect(params["timeframe_end_date"]).to be_nil
-        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_text"]).to eq("Back to 1-by-1 clarity check-in")
         expect(params["return_url"]).to eq(path)
       end
 
@@ -126,7 +126,7 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
         expect(params["observee_ids"]).to eq([teammate.id.to_s])
         expect(params["rateable_type"]).to be_nil
         expect(params["rateable_id"]).to be_nil
-        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_text"]).to eq("Back to 1-by-1 clarity check-in")
         expect(params["return_url"]).to eq(path)
       end
     end

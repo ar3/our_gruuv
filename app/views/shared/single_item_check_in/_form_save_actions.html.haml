@@ -26,9 +26,9 @@
         .d-flex.flex-wrap.align-items-center.gap-2.ms-1.mt-1.small.text-muted
           %span ... OR...
           - if next_requires_check_in && next_url.present?
-            = form.submit "[Update and go to Bulk Check-in]", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+            = form.submit update_and_go_to_bulk_clarity_check_in_label, name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
             %span |
-          = form.submit "[Update and go to Review Check-ins]", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+          = form.submit update_and_go_to_review_clarity_check_ins_label, name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
         - if show_delete_action
           .d-flex.flex-wrap.align-items-center.gap-2.ms-1.mt-1.small.text-muted
             %span ... OR...
@@ -47,9 +47,9 @@
         .d-flex.flex-wrap.align-items-center.gap-2.ms-1.mt-1.small.text-muted
           %span ... OR...
           - if next_requires_check_in && next_url.present?
-            = form.submit "[Update and go to Bulk Check-in]", name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+            = form.submit update_and_go_to_bulk_clarity_check_in_label, name: "save_and_go_to_bulk_check_in", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
             %span |
-          = form.submit "[Update and go to Review Check-ins]", name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
+          = form.submit update_and_go_to_review_clarity_check_ins_label, name: "save_and_go_to_review_check_ins", class: "btn btn-sm btn-link text-secondary text-decoration-none p-0"
         - if show_delete_action
           .d-flex.flex-wrap.align-items-center.gap-2.ms-1.mt-1.small.text-muted
             %span ... OR...

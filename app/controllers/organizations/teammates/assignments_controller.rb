@@ -97,7 +97,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       rateable_type: "Assignment",
       rateable_id: @assignment.id,
       return_url: organization_teammate_assignment_path(organization, @teammate, @assignment),
-      return_text: "Back to 1-by-1 check-in"
+      return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
     @observations_new_observation_url = new_organization_observation_path(
       organization,
@@ -105,7 +105,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       rateable_type: "Assignment",
       rateable_id: @assignment.id,
       return_url: organization_teammate_assignment_path(organization, @teammate, @assignment),
-      return_text: "Back to 1-by-1 check-in"
+      return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
 
     load_associable_goals_display!(@assignment, subject_teammate: @teammate)

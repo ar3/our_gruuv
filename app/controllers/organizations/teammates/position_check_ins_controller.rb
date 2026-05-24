@@ -71,13 +71,13 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
       organization,
       observee_ids: [@teammate.id],
       return_url: position_check_in_return_path,
-      return_text: "Back to 1-by-1 check-in"
+      return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
     @observations_new_observation_url = new_organization_observation_path(
       organization,
       observee_ids: [@teammate.id],
       return_url: position_check_in_return_path,
-      return_text: "Back to 1-by-1 check-in"
+      return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
 
     render "organizations/teammates/position_check_ins/show"

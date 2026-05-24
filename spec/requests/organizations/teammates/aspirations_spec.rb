@@ -172,7 +172,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(params["timeframe"]).to be_nil
         expect(params["timeframe_start_date"]).to be_nil
         expect(params["timeframe_end_date"]).to be_nil
-        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_text"]).to eq("Back to 1-by-1 clarity check-in")
         expect(params["return_url"]).to eq(aspiration_show_path)
       end
 
@@ -193,7 +193,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(params["observee_ids"]).to eq([employee_teammate.id.to_s])
         expect(params["rateable_type"]).to eq("Aspiration")
         expect(params["rateable_id"]).to eq(aspiration.id.to_s)
-        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_text"]).to eq("Back to 1-by-1 clarity check-in")
         expect(params["return_url"]).to eq(aspiration_show_path)
       end
     end

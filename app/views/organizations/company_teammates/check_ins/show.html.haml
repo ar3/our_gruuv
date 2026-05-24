@@ -1,4 +1,4 @@
-- content_for :title, teammate_context_page_title(@selected_teammate, "Check-Ins")
+- content_for :title, teammate_context_page_title(@selected_teammate, bulk_clarity_check_in_label)
 
 - content_for :header do
   .d-flex.flex-column.gap-1
@@ -9,8 +9,8 @@
                  selected_teammate: @selected_teammate,
                  viewable_teammate_groups: @viewable_teammate_groups,
                  path_for_teammate: ->(tm) { organization_company_teammate_check_ins_path(organization, tm) },
-                 switch_aria_label: "Switch teammate for bulk check-ins"
-        %span= " - Check-Ins"
+                 switch_aria_label: switch_teammate_bulk_clarity_check_ins_label
+        %span= " - #{bulk_clarity_check_in_label}"
     %p.text-muted.mb-0= "View Mode: #{@view_mode.to_s.titleize}"
         
 - content_for :header_action do
@@ -18,7 +18,7 @@
     = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Bulk Check-In", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: bulk_clarity_check_in_label, url: nil }])
 
 = render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 1
 
@@ -182,12 +182,12 @@
   .col-12.col-lg-6
     .alert.alert-info.mb-0
       %i.bi.bi-info-circle.me-2
-      You can check in on as many or as few assignments, aspirational values, and position in bulk using the form below ---- or click any name to check in on that item one at a time.
+      = bulk_page_intro
   .col-12.col-lg-6.d-flex.flex-column.justify-content-center
     = link_to review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-primary w-100" do
-      Go to the Check-in Status page
+      = go_to_clarity_check_in_status_page_label
     %small.text-muted.mt-2
-      On that page you can view all of the recent check-ins in an easy to understand table
+      = bulk_status_page_table_hint
 
 = form_with url: organization_company_teammate_check_ins_path(organization, @teammate), method: :patch, scope: :check_ins, local: true,
             data: { turbo: false,
@@ -210,7 +210,7 @@
     .col-12
       .d-flex.gap-2
         = f.submit 'Save All & Continue Editing', name: 'save_and_continue_editing', class: 'btn btn-outline-primary btn-lg'
-        = f.submit 'Save All & Proceed to Review Check-Ins', class: 'btn btn-primary btn-lg'
+        = f.submit save_all_proceed_review_clarity_check_ins_label, class: 'btn btn-primary btn-lg'
 
   -# Assignment Section
   = render 'shared/section_header', 
@@ -258,7 +258,7 @@
     .col-12
       .d-flex.gap-2
         = f.submit 'Save All & Continue Editing', name: 'save_and_continue_editing', class: 'btn btn-outline-primary btn-lg'
-        = f.submit 'Save All & Proceed to Review Check-Ins', class: 'btn btn-primary btn-lg'
+        = f.submit save_all_proceed_review_clarity_check_ins_label, class: 'btn btn-primary btn-lg'
   
   -# Position Section
   = render 'shared/section_header', 
@@ -274,7 +274,7 @@
     .col-12
       .d-flex.gap-2
         = f.submit 'Save All & Continue Editing', name: 'save_and_continue_editing', class: 'btn btn-outline-primary btn-lg'
-        = f.submit 'Save All & Proceed to Review Check-Ins', class: 'btn btn-primary btn-lg'
+        = f.submit save_all_proceed_review_clarity_check_ins_label, class: 'btn btn-primary btn-lg'
 
 
 

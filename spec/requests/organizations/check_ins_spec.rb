@@ -395,10 +395,10 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         expect(response.body).to include('data-controller="check-in-autosave"')
         expect(response.body).to match(/check-in-autosave#markDirty/)
         expect(response.body).to include('data-check-in-autosave-target="status"')
-        expect(response.body).to include(" - Check-Ins")
-        expect(response.body).to include("You can check in on as many or as few assignments, aspirational values, and position in bulk")
-        expect(response.body).to include("Go to the Check-in Status page")
-        expect(response.body).to include("On that page you can view all of the recent check-ins in an easy to understand table")
+        expect(response.body).to include(" - Bulk clarity check-in")
+        expect(response.body).to include("complete clarity check-ins on as many or as few")
+        expect(response.body).to include("Go to the clarity check-in status page")
+        expect(response.body).to include("recent clarity check-ins in an easy to understand table")
         expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate))
       end
     end
@@ -533,7 +533,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         expect(html).to match(/Save All (&amp;|&) Continue Editing/)
         
         # Should also see the existing "Save All & Proceed to Review Check-Ins" button
-        expect(html).to match(/Save All (&amp;|&) Proceed to Review Check-Ins/)
+        expect(html).to match(/Save All (&amp;|&) Proceed to Review clarity check-ins/)
       end
 
       it "shows both buttons in all three sections (position, assignment, aspiration)" do
@@ -603,12 +603,12 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(" - Check-In Statuses")
+      expect(response.body).to include(" - Clarity check-in statuses")
       expect(response.body).to include(employee_person.casual_name)
       expect(response.body).not_to include('id="teammate_switcher"')
-      expect(response.body).to include('Check-in on any single assignment, value, or position one at a time by clicking on the name listed below')
-      expect(response.body).to include('Go to the Bulk Check-in page')
-      expect(response.body).to include('On that page you can check-in on just one item or all of them at once')
+      expect(response.body).to include('Start a clarity check-in on any single assignment, value, or position one at a time')
+      expect(response.body).to include('Go to the Bulk clarity check-in page')
+      expect(response.body).to include('complete a clarity check-in on just one item or all of them at once')
       expect(response.body).to include('Clarity Check-Ins (Active)')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
@@ -623,7 +623,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       get review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Go to the Bulk Check-in page')
+      expect(response.body).to include('Go to the Bulk clarity check-in page')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
       expect(response.body).to include('Last Check-In by')

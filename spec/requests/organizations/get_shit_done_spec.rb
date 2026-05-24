@@ -174,7 +174,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
 
         expect(response).to have_http_status(:success)
         # When empty, section is hidden and listed in the caption
-        expect(response.body).to include('Check-ins Awaiting Your Input')
+        expect(response.body).to include('Clarity check-ins awaiting your input')
       end
 
       it 'shows check-ins where manager completed but employee has not (as employee)' do
@@ -285,7 +285,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("you've completed everything")
-        expect(response.body).to include('Check-ins Awaiting Your Input')
+        expect(response.body).to include('Clarity check-ins awaiting your input')
       end
     end
 
@@ -296,8 +296,8 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include("you've completed everything")
       # All categories appear in the completed section when the user has no pending items
       expect(response.body).to include('Observable Moments')
-      expect(response.body).to include('Check-ins Awaiting Acknowledgement')
-      expect(response.body).to include('Check-ins Awaiting Your Input')
+      expect(response.body).to include('Clarity check-ins awaiting acknowledgement')
+      expect(response.body).to include('Clarity check-ins awaiting your input')
       expect(response.body).to include('Goal Check-ins')
       expect(response.body).to include('Observation Drafts')
       expect(response.body).to include('Silent Observations')

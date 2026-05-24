@@ -163,7 +163,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(params["timeframe"]).to be_nil
         expect(params["timeframe_start_date"]).to be_nil
         expect(params["timeframe_end_date"]).to be_nil
-        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_text"]).to eq("Back to 1-by-1 clarity check-in")
         expect(params["return_url"]).to eq(assignment_show_path)
       end
 
@@ -184,7 +184,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(params["observee_ids"]).to eq([employee_teammate.id.to_s])
         expect(params["rateable_type"]).to eq("Assignment")
         expect(params["rateable_id"]).to eq(assignment.id.to_s)
-        expect(params["return_text"]).to eq("Back to 1-by-1 check-in")
+        expect(params["return_text"]).to eq("Back to 1-by-1 clarity check-in")
         expect(params["return_url"]).to eq(assignment_show_path)
       end
     end

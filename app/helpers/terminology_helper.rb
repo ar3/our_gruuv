@@ -97,6 +97,18 @@ module TerminologyHelper
     terminology(:clarity_check_ins_awaiting_your_input)
   end
 
+  def clarity_check_ins_awaiting_acknowledgement_label
+    terminology(:clarity_check_ins_awaiting_acknowledgement)
+  end
+
+  def clarity_check_ins_awaiting_acknowledgement_description
+    terminology(:clarity_check_ins_awaiting_acknowledgement_description)
+  end
+
+  def clarity_check_ins_awaiting_acknowledgement_summary(count:)
+    terminology(:clarity_check_ins_awaiting_acknowledgement_summary, count: count)
+  end
+
   def review_clarity_check_ins_label
     terminology(:review_clarity_check_ins)
   end
@@ -119,6 +131,106 @@ module TerminologyHelper
 
   def insights_clarity_check_ins_progress_label
     terminology(:insights_clarity_check_ins_progress)
+  end
+
+  def insights_clarity_check_ins_health_label
+    terminology(:insights_clarity_check_ins_health)
+  end
+
+  def review_finalize_clarity_check_ins_together_label
+    terminology(:review_finalize_clarity_check_ins_together)
+  end
+
+  def switch_teammate_bulk_clarity_check_ins_label
+    terminology(:switch_teammate_bulk_clarity_check_ins)
+  end
+
+  def back_to_one_by_one_clarity_check_in_label
+    terminology(:back_to_one_by_one_clarity_check_in)
+  end
+
+  def clarity_check_in_statuses_title_label
+    terminology(:clarity_check_in_statuses_title)
+  end
+
+  def review_most_recent_single_item_hint
+    terminology(:review_most_recent_single_item_hint)
+  end
+
+  def go_to_bulk_clarity_check_in_page_label
+    terminology(:go_to_bulk_clarity_check_in_page)
+  end
+
+  def bulk_page_clarity_check_in_hint
+    terminology(:bulk_page_clarity_check_in_hint)
+  end
+
+  def bulk_page_intro
+    terminology(:bulk_page_intro)
+  end
+
+  def go_to_clarity_check_in_status_page_label
+    terminology(:go_to_clarity_check_in_status_page)
+  end
+
+  def bulk_status_page_table_hint
+    terminology(:bulk_status_page_table_hint)
+  end
+
+  def update_and_go_to_bulk_clarity_check_in_label
+    terminology(:update_and_go_to_bulk_clarity_check_in)
+  end
+
+  def update_and_go_to_review_clarity_check_ins_label
+    terminology(:update_and_go_to_review_clarity_check_ins)
+  end
+
+  def one_by_one_clarity_check_in_on_name_label(name:)
+    terminology(:one_by_one_clarity_check_in_on_name, name: name)
+  end
+
+  def finalize_clarity_check_ins_confirm_message
+    terminology(:finalize_clarity_check_ins_confirm)
+  end
+
+  def close_selected_clarity_check_ins_label
+    terminology(:close_selected_clarity_check_ins)
+  end
+
+  def manager_will_finalize_clarity_check_ins_label
+    terminology(:manager_will_finalize_clarity_check_ins)
+  end
+
+  def no_clarity_check_ins_ready_for_finalization_label
+    terminology(:no_clarity_check_ins_ready_for_finalization)
+  end
+
+  def finalize_clarity_check_ins_for_person_label(name:)
+    terminology(:finalize_clarity_check_ins_for_person, name: name)
+  end
+
+  def finalize_clarity_check_ins_breadcrumb_label
+    terminology(:finalize_clarity_check_ins_breadcrumb)
+  end
+
+  def clarity_check_ins_awaiting_input_description
+    terminology(:clarity_check_ins_awaiting_input_description)
+  end
+
+  def clarity_check_ins_awaiting_input_summary(count:)
+    terminology(:clarity_check_ins_awaiting_input_summary, count: count)
+  end
+
+  def clarity_check_in_acknowledgement_nudges_label
+    terminology(:clarity_check_in_acknowledgement_nudges)
+  end
+
+  def unacknowledged_finalized_clarity_check_ins_help
+    terminology(:unacknowledged_finalized_clarity_check_ins_help)
+  end
+
+  def same_scopes_as_clarity_check_ins_health_label
+    terminology(:same_scopes_as_clarity_check_ins_health)
   end
 
   # --- Confidence checks (goals) ---

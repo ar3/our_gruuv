@@ -1,8 +1,8 @@
 - snapshots_count = @maap_snapshots.count
 = render 'shared/section_header', 
-         title: 'Check-ins Awaiting Acknowledgement', 
-         icon: 'bi-clipboard-check', 
-         description: 'Changes in your job that you need to review and acknowledge',
+         title: clarity_check_ins_awaiting_acknowledgement_label,
+         icon: 'bi-clipboard-check',
+         description: clarity_check_ins_awaiting_acknowledgement_description,
          collapsible: true,
          collapse_target: 'maapSnapshotsSection',
          status_indicator: :warning
@@ -11,7 +11,7 @@
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#maapSnapshotsSection", "aria-expanded" => "false", "aria-controls" => "maapSnapshotsSection", style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
-    = pluralize(snapshots_count, 'check-in') + ' awaiting acknowledgement'
+    = clarity_check_ins_awaiting_acknowledgement_summary(count: snapshots_count)
 
 -# Collapsible content
 .collapse#maapSnapshotsSection

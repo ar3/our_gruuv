@@ -65,7 +65,7 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
       rateable_type: "Ability",
       rateable_id: @ability.id,
       return_url: ability_show_return_path,
-      return_text: "Back to 1-by-1 check-in"
+      return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
     @observations_new_observation_url = new_organization_observation_path(
       organization,
@@ -73,7 +73,7 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
       rateable_type: "Ability",
       rateable_id: @ability.id,
       return_url: ability_show_return_path,
-      return_text: "Back to 1-by-1 check-in"
+      return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
 
     load_associable_goals_display!(@ability, subject_teammate: @teammate)

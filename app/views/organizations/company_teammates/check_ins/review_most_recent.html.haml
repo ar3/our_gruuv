@@ -1,4 +1,4 @@
-- content_for :title, teammate_context_page_title(@selected_teammate, "Check-In Statuses")
+- content_for :title, teammate_context_page_title(@selected_teammate, clarity_check_in_statuses_title_label)
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -7,13 +7,13 @@
                organization: organization,
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups
-      %span= " - Check-In Statuses"
+      %span= " - #{clarity_check_in_statuses_title_label}"
 
 - content_for :header_action do
   = render "people/view_switcher"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Check-In Statuses", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: clarity_check_in_statuses_title_label, url: nil }])
 
 - employee_name = @teammate.person.casual_name
 - manager_name = @teammate.current_manager&.casual_name.presence || 'Manager'
@@ -22,12 +22,12 @@
   .col-12.col-lg-6
     .alert.alert-info.mb-0
       %i.bi.bi-info-circle.me-2
-      Check-in on any single assignment, value, or position one at a time by clicking on the name listed below
+      = review_most_recent_single_item_hint
   .col-12.col-lg-6.d-flex.flex-column.justify-content-center
     = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-primary w-100" do
-      Go to the Bulk Check-in page
+      = go_to_bulk_clarity_check_in_page_label
     %small.text-muted.mt-2
-      On that page you can check-in on just one item or all of them at once
+      = bulk_page_clarity_check_in_hint
 
 = render 'shared/section_header',
          title: 'Aspirational Values',

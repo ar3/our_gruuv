@@ -1,8 +1,8 @@
 - check_ins_count = @check_ins_awaiting_input.size
 = render 'shared/section_header',
-         title: 'Check-ins Awaiting Your Input',
+         title: clarity_check_ins_awaiting_your_input_label,
          icon: 'bi-clipboard-check',
-         description: 'Check-ins where the other participant has completed their side',
+         description: clarity_check_ins_awaiting_input_description,
          collapsible: true,
          collapse_target: 'checkInsAwaitingInputSection',
          status_indicator: :warning
@@ -11,7 +11,7 @@
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#checkInsAwaitingInputSection", "aria-expanded" => "false", "aria-controls" => "checkInsAwaitingInputSection", style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
-    = pluralize(check_ins_count, 'check-in') + ' awaiting your input'
+    = clarity_check_ins_awaiting_input_summary(count: check_ins_count)
 
 -# Collapsible content
 .collapse#checkInsAwaitingInputSection

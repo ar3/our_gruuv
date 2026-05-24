@@ -1,4 +1,4 @@
-- content_for :title, "Insights: Check-ins Progress"
+- content_for :title, insights_clarity_check_ins_progress_label
 
 - chart_title_period = @chart_title_period
 
@@ -6,7 +6,7 @@
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-clipboard-check.me-2
-      Insights: Check-ins Progress
+      = insights_clarity_check_ins_progress_label
 
 = render 'timeframe_selector',
   timeframe: @timeframe,

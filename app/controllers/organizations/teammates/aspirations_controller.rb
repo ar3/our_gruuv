@@ -78,7 +78,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
       rateable_type: "Aspiration",
       rateable_id: @aspiration.id,
       return_url: organization_teammate_aspiration_path(organization, @teammate, @aspiration),
-      return_text: "Back to 1-by-1 check-in"
+      return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
     @observations_new_observation_url = new_organization_observation_path(
       organization,
@@ -86,7 +86,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
       rateable_type: "Aspiration",
       rateable_id: @aspiration.id,
       return_url: organization_teammate_aspiration_path(organization, @teammate, @aspiration),
-      return_text: "Back to 1-by-1 check-in"
+      return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
 
     load_associable_goals_display!(@aspiration, subject_teammate: @teammate)

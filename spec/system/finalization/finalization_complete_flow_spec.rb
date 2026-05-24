@@ -105,8 +105,8 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
       # Should see disabled controls
       # Check for disabled checkboxes
       expect(page).to have_css('input[type="checkbox"][disabled]')
-      # Button text is "Finalize Selected Check-Ins", not "Save"
-      expect(page).to have_css('input[type="submit"][value="Finalize Selected Check-Ins"][disabled]')
+      # Button text is "Finalize selected clarity check-ins", not "Save"
+      expect(page).to have_css('input[type="submit"][value="Finalize selected clarity check-ins"][disabled]')
       
       # Should not be able to edit fields - check for assignment check-in fields
       expect(page).not_to have_field("assignment_check_ins[#{check_in_both1.id}][official_rating]", disabled: false)

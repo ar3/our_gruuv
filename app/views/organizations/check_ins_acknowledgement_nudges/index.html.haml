@@ -8,7 +8,7 @@
     .d-flex.align-items-center
       %small.text-muted.ms-3
         %i.bi.bi-info-circle.me-1
-        See who has unacknowledged finalized check-ins (MAAP snapshots) and nudge via Slack
+        = unacknowledged_finalized_clarity_check_ins_help
 
 .mb-4
   = content_for :go_back_link
@@ -49,7 +49,7 @@
             .col-md-10
               %label.form-label.fw-bold.fs-5.mb-2 Who to show
               = select_tag :manager_id, options_for_select(@available_manager_filter_options, @current_manager_filter), class: "form-select form-select-lg", id: "check-ins-ack-nudge-manager-select", required: true
-              %small.form-text.text-muted Same scopes as Check-ins Health
+              %small.form-text.text-muted= same_scopes_as_clarity_check_ins_health_label
             .col-md-2
               = f.submit "Go", class: "btn btn-primary btn-lg w-100"
           - if params[:page].present?
@@ -59,10 +59,10 @@
   .col-lg-12.d-flex.gap-2.flex-wrap.align-items-center
     = link_to organization_check_ins_health_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
       %i.bi.bi-heart-pulse.me-2
-      Check-ins Health
+      = insights_clarity_check_ins_health_label
     = link_to organization_insights_check_ins_progress_path(@organization), class: 'btn btn-outline-secondary' do
       %i.bi.bi-bar-chart-steps.me-2
-      Check-ins Progress
+      = insights_clarity_check_ins_progress_label
 
 .row.justify-content-center.mb-2
   .col-lg-12

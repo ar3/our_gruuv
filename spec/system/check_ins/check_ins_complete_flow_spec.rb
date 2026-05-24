@@ -82,7 +82,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       # Save all at once - button text is "Save All & Proceed to Review Check-Ins"
       # There are multiple buttons (one per section), use first or scope to form
       # Capybara's first() has implicit wait
-      first('input[type="submit"][value="Save All & Proceed to Review Check-Ins"]', visible: true).click
+      first('input[type="submit"][value="Save All & Proceed to Review clarity check-ins"]', visible: true).click
       
       # Verify all check-ins were saved
       expect(page).to have_success_flash('Check-ins saved successfully')
