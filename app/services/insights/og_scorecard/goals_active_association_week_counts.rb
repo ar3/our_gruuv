@@ -6,7 +6,8 @@ module Insights
     class GoalsActiveAssociationWeekCounts
       ASSOCIABLE_TYPES = {
         aspiration: 'Aspiration',
-        assignment: 'Assignment'
+        assignment: 'Assignment',
+        ability: 'Ability'
       }.freeze
 
       def self.call(company:, week_starts:, associable_type:)
@@ -67,6 +68,8 @@ module Insights
           Aspiration.within_hierarchy(company).pluck(:id)
         when 'Assignment'
           Assignment.where(company: company).pluck(:id)
+        when 'Ability'
+          Ability.where(company: company).pluck(:id)
         else
           []
         end

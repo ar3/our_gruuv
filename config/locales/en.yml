@@ -178,6 +178,8 @@ en:
     og_scorecard_clarity_check_ins_help: "required position, assignment, and aspirational value clarity check-ins evaluated as of each Sunday using the same clarity windows as Clarity check-ins Health (30 / 60 / 90 days). See each row label for rollup rules."
     og_scorecard_goals_on_clarity_rows_label: "Goals on clarity rows"
     og_scorecard_goals_on_clarity_rows_help: "active owned goals with or without a confidence check that week (same rules as goals coverage chart)."
+    og_scorecard_ability_milestones_label: "Ability Milestones"
+    og_scorecard_ability_milestones_help: "milestone attained_at in the Mon–Sun week, or in the rolling 90 calendar days ending that Sunday; goal row uses active owned goals linked to an Ability."
     priority_clarity_ready_for_review_title: "Are there clarity check-ins ready for review together?"
     priority_review_clarity_check_ins_together:
       one: "Review 1 clarity check-in together"

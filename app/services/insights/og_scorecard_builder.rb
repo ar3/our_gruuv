@@ -29,6 +29,12 @@ module Insights
         week_starts: week_starts,
         associable_type: :assignment
       )
+      milestone_counts = OgScorecard::MilestonesWeekCounts.call(company: company, week_starts: week_starts)
+      goal_ability_by_week = OgScorecard::GoalsActiveAssociationWeekCounts.call(
+        company: company,
+        week_starts: week_starts,
+        associable_type: :ability
+      )
 
       groups = OgScorecard::MetricRegistry.grouped.map do |group|
         rows = group[:entries].map do |entry|
@@ -39,7 +45,9 @@ module Insights
             observees_by_week: observees_by_week,
             check_in_clarity: check_in_clarity,
             goal_aspiration_by_week: goal_aspiration_by_week,
-            goal_assignment_by_week: goal_assignment_by_week
+            goal_assignment_by_week: goal_assignment_by_week,
+            milestone_counts: milestone_counts,
+            goal_ability_by_week: goal_ability_by_week
           )
           build_row(entry, counts, active_by_week)
         end
@@ -53,7 +61,7 @@ module Insights
 
     attr_reader :company, :week_starts, :chart_range, :thresholds_by_key
 
-    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:)
+    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:)
       case key
       when 'active_teammates' then active_by_week
       when 'unique_ogo_publishers' then publishers_by_week
@@ -63,6 +71,11 @@ module Insights
       when 'all_check_ins_obscured' then check_in_clarity[:all_check_ins_obscured]
       when 'active_goal_aspiration' then goal_aspiration_by_week
       when 'active_goal_assignment' then goal_assignment_by_week
+      when 'unique_teammates_milestone_this_week' then milestone_counts[:unique_teammates_milestone_this_week]
+      when 'milestones_earned_this_week' then milestone_counts[:milestones_earned_this_week]
+      when 'unique_teammates_milestone_90_days' then milestone_counts[:unique_teammates_milestone_90_days]
+      when 'milestones_earned_90_days' then milestone_counts[:milestones_earned_90_days]
+      when 'active_goal_ability' then goal_ability_by_week
       else
         week_starts.index_with { 0 }
       end

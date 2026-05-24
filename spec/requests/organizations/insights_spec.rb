@@ -114,6 +114,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Teammates')
       expect(response.body).to include('Observations')
       expect(response.body).to include('Check-ins')
+      expect(response.body).to include('Ability Milestones')
       expect(response.body).to include('Aspirational Value')
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')

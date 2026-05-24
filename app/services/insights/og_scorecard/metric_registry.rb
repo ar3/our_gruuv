@@ -66,6 +66,46 @@ module Insights
           direction: :more,
           supports_percent: true,
           group: 'Check-ins'
+        ),
+        Entry.new(
+          key: 'unique_teammates_milestone_this_week',
+          label: 'Number of unique teammates with a milestone earned this week ' \
+                 '(ability milestone attained in that Mon–Sun week, for abilities in this company)',
+          direction: :more,
+          supports_percent: true,
+          group: 'Ability Milestones'
+        ),
+        Entry.new(
+          key: 'milestones_earned_this_week',
+          label: 'Number of milestones earned this week ' \
+                 '(count of ability milestone records with attained_at in that Mon–Sun week)',
+          direction: :more,
+          supports_percent: false,
+          group: 'Ability Milestones'
+        ),
+        Entry.new(
+          key: 'unique_teammates_milestone_90_days',
+          label: 'Number of unique teammates with a milestone earned within the past 90 days ' \
+                 '(rolling 90 calendar days ending that Sunday, for abilities in this company)',
+          direction: :more,
+          supports_percent: true,
+          group: 'Ability Milestones'
+        ),
+        Entry.new(
+          key: 'milestones_earned_90_days',
+          label: 'Number of milestones earned within the past 90 days ' \
+                 '(count of ability milestone records in the rolling 90-day window ending that Sunday)',
+          direction: :more,
+          supports_percent: false,
+          group: 'Ability Milestones'
+        ),
+        Entry.new(
+          key: 'active_goal_ability',
+          label: 'Number of unique teammates with an active goal attached to an Ability ' \
+                 '(goal owned by the teammate, started, not completed or deleted as of that Sunday, with a goal link to an ability)',
+          direction: :more,
+          supports_percent: true,
+          group: 'Ability Milestones'
         )
       ].freeze
 
