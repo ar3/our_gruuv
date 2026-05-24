@@ -13,49 +13,49 @@ module Insights
       ENTRIES = [
         Entry.new(
           key: 'active_teammates',
-          label: 'Number of active teammates',
+          label: 'Active teammates',
           direction: :more,
           supports_percent: true,
           group: 'Teammates'
         ),
         Entry.new(
           key: 'unique_ogo_publishers',
-          label: 'Number of unique teammates that published an OGO',
+          label: 'Teammates that published an OGO',
           direction: :more,
           supports_percent: true,
           group: 'Observations'
         ),
         Entry.new(
           key: 'unique_ogo_observees',
-          label: 'Number of unique teammates named as observees in an OGO',
+          label: 'Teammates named as observees in an OGO',
           direction: :more,
           supports_percent: true,
           group: 'Observations'
         ),
         Entry.new(
           key: 'all_check_ins_clear',
-          label: "Number of unique teammates with all required check-ins within #{C} days",
+          label: "Teammates with Healthy Clarity (checked-in within #{C} days)",
           direction: :more,
           supports_percent: true,
           group: 'Check-ins'
         ),
         Entry.new(
           key: 'all_check_ins_blurred',
-          label: "Number of unique teammates with at least one required check-in between #{C + 1}–#{B} days",
+          label: "Teammates with diminishing clarity (checked-in between #{C + 1}–#{B} days ago)",
           direction: :less,
           supports_percent: true,
           group: 'Check-ins'
         ),
         Entry.new(
           key: 'all_check_ins_obscured',
-          label: "Number of unique teammates with at least one required check-in older than #{B} days",
+          label: "Teammates with a lack of clarity (at least one required check-in older than #{B} days ago)",
           direction: :less,
           supports_percent: true,
           group: 'Check-ins'
         ),
         Entry.new(
           key: 'unique_teammates_milestone_this_week',
-          label: 'Number of unique teammates with a milestone earned this week ' \
+          label: 'Teammates with a milestone earned this week ' \
                  '(ability milestone attained in that Mon–Sun week, for abilities in this company)',
           direction: :more,
           supports_percent: true,
@@ -71,62 +71,56 @@ module Insights
         ),
         Entry.new(
           key: 'unique_teammates_milestone_90_days',
-          label: 'Number of unique teammates with a milestone earned within the past 90 days ' \
-                 '(rolling 90 calendar days ending that Sunday, for abilities in this company)',
+          label: 'Teammates with a milestone earned within the past 90 days',
           direction: :more,
           supports_percent: true,
           group: 'Ability Milestones'
         ),
         Entry.new(
           key: 'milestones_earned_90_days',
-          label: 'Number of milestones earned within the past 90 days ' \
-                 '(count of ability milestone records in the rolling 90-day window ending that Sunday)',
+          label: 'Milestones earned within the past 90 days',
           direction: :more,
           supports_percent: false,
           group: 'Ability Milestones'
         ),
         Entry.new(
           key: 'unique_teammates_active_goal',
-          label: 'Number of unique teammates with an active goal ' \
-                 '(goal owned by the teammate, started, not completed or deleted as of that Sunday)',
+          label: 'Teammates with an active goal',
           direction: :more,
           supports_percent: true,
           group: 'Goals'
         ),
         Entry.new(
           key: 'active_goal_aspiration',
-          label: 'Number of unique teammates with an active goal attached to an Aspirational Value',
+          label: 'Teammates with an active goal attached to an Aspirational Value',
           direction: :more,
           supports_percent: true,
           group: 'Goals'
         ),
         Entry.new(
           key: 'active_goal_assignment',
-          label: 'Number of unique teammates with an active goal attached to an Assignment',
+          label: 'Teammates with an active goal attached to an Assignment',
           direction: :more,
           supports_percent: true,
           group: 'Goals'
         ),
         Entry.new(
           key: 'active_goal_ability',
-          label: 'Number of unique teammates with an active goal attached to an Ability ' \
-                 '(goal owned by the teammate, started, not completed or deleted as of that Sunday, with a goal link to an ability)',
+          label: 'Teammates with an active goal attached to an Ability',
           direction: :more,
           supports_percent: true,
           group: 'Goals'
         ),
         Entry.new(
           key: 'unique_teammates_goal_check_in_this_week',
-          label: 'Number of unique teammates with at least one goal check-in this week ' \
-                 '(a GoalCheckIn created during that Mon–Sun week on an active owned goal as of that Sunday)',
+          label: 'Teammates with at least one goal confidence check-in this week',
           direction: :more,
           supports_percent: true,
           group: 'Goals'
         ),
         Entry.new(
           key: 'unique_teammates_completed_goal_90_days',
-          label: 'Number of unique teammates with a completed goal in the past 90 days ' \
-                 '(rolling 90 calendar days ending that Sunday; goal owned by the teammate with completed_at in that window)',
+          label: 'Teammates with a completed goal in the past 90 days',
           direction: :more,
           supports_percent: true,
           group: 'Goals'
