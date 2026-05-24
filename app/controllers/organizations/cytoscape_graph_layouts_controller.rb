@@ -70,7 +70,7 @@ module Organizations
           consumer_assignment_id: assignment_ids
         )
         graph_assignment_ids = (relationships.pluck(:supplier_assignment_id) + relationships.pluck(:consumer_assignment_id)).uniq
-        graph_assignment_ids.map { |id| Assignments::SupplyGraphElements.cytoscape_node_id(id) }
+        graph_assignment_ids.map { |id| ::Assignments::SupplyGraphElements.cytoscape_node_id(id) }
       when "accountability_flow"
         node_ids_from_elements(assignments_accountability_flow_elements)
       when "position_reliance"

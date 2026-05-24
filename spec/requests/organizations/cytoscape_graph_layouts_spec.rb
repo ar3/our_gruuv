@@ -35,6 +35,29 @@ RSpec.describe "Organizations::CytoscapeGraphLayouts", type: :request do
     end
   end
 
+  describe "PATCH /organizations/:organization_id/full_network_cytoscape_graph_layout" do
+    it "persists node positions for the organization full network graph" do
+      supplier = create(:assignment, company: organization)
+      consumer = create(:assignment, company: organization)
+      create(:assignment_supply_relationship, supplier_assignment: supplier, consumer_assignment: consumer)
+
+      patch organization_full_network_cytoscape_graph_layout_path(organization),
+            params: {
+              positions: {
+                "a#{supplier.id}" => { x: 10, y: 20 },
+                "a#{consumer.id}" => { x: 30, y: 40 }
+              },
+              node_fingerprint: "test-fingerprint"
+            },
+            as: :json
+
+      expect(response).to have_http_status(:no_content)
+
+      layout = CytoscapeGraphLayout.for_layoutable(organization, graph_kind: "full_network")
+      expect(layout.positions.keys).to contain_exactly("a#{supplier.id}", "a#{consumer.id}")
+    end
+  end
+
   describe "DELETE /organizations/:organization_id/full_network_cytoscape_graph_layout" do
     it "removes the organization full-network layout" do
       CytoscapeGraphLayout.create!(
