@@ -62,7 +62,7 @@ export default class extends Controller {
   buildPill(checkbox) {
     const pill = document.createElement("span")
     pill.className =
-      "badge bg-primary rounded-pill d-inline-flex align-items-center gap-2 py-2 px-3 selection-toolbar-pill"
+      "badge bg-primary rounded-pill d-inline-flex align-items-center gap-1 py-1 px-2 fs-6 fw-normal selection-toolbar-pill"
 
     const label = document.createElement("span")
     label.textContent = this.pillLabel(checkbox)
@@ -70,10 +70,10 @@ export default class extends Controller {
     const removeBtn = document.createElement("button")
     removeBtn.type = "button"
     removeBtn.className =
-      "btn btn-link btn-sm p-0 text-white text-decoration-none selection-toolbar-pill-remove"
+      "btn btn-link btn-sm p-0 text-white text-decoration-none selection-toolbar-pill-remove lh-1"
     removeBtn.setAttribute("aria-label", `Remove ${label.textContent}`)
     removeBtn.dataset.selectionToolbarRemove = checkbox.id
-    removeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>'
+    removeBtn.innerHTML = '<i class="bi bi-x" aria-hidden="true"></i>'
 
     pill.append(label, removeBtn)
     return pill
