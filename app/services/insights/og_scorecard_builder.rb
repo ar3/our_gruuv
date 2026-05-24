@@ -35,6 +35,7 @@ module Insights
         week_starts: week_starts,
         associable_type: :ability
       )
+      goals_counts = OgScorecard::GoalsWeekCounts.call(company: company, week_starts: week_starts)
 
       groups = OgScorecard::MetricRegistry.grouped.map do |group|
         rows = group[:entries].map do |entry|
@@ -47,7 +48,8 @@ module Insights
             goal_aspiration_by_week: goal_aspiration_by_week,
             goal_assignment_by_week: goal_assignment_by_week,
             milestone_counts: milestone_counts,
-            goal_ability_by_week: goal_ability_by_week
+            goal_ability_by_week: goal_ability_by_week,
+            goals_counts: goals_counts
           )
           build_row(entry, counts, active_by_week)
         end
@@ -61,7 +63,7 @@ module Insights
 
     attr_reader :company, :week_starts, :chart_range, :thresholds_by_key
 
-    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:)
+    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:)
       case key
       when 'active_teammates' then active_by_week
       when 'unique_ogo_publishers' then publishers_by_week
@@ -76,6 +78,9 @@ module Insights
       when 'unique_teammates_milestone_90_days' then milestone_counts[:unique_teammates_milestone_90_days]
       when 'milestones_earned_90_days' then milestone_counts[:milestones_earned_90_days]
       when 'active_goal_ability' then goal_ability_by_week
+      when 'unique_teammates_active_goal' then goals_counts[:unique_teammates_active_goal]
+      when 'unique_teammates_goal_check_in_this_week' then goals_counts[:unique_teammates_goal_check_in_this_week]
+      when 'unique_teammates_completed_goal_90_days' then goals_counts[:unique_teammates_completed_goal_90_days]
       else
         week_starts.index_with { 0 }
       end

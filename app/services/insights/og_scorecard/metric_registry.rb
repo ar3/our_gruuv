@@ -54,20 +54,6 @@ module Insights
           group: 'Check-ins'
         ),
         Entry.new(
-          key: 'active_goal_aspiration',
-          label: 'Number of unique teammates with an active goal attached to an Aspirational Value',
-          direction: :more,
-          supports_percent: true,
-          group: 'Check-ins'
-        ),
-        Entry.new(
-          key: 'active_goal_assignment',
-          label: 'Number of unique teammates with an active goal attached to an Assignment',
-          direction: :more,
-          supports_percent: true,
-          group: 'Check-ins'
-        ),
-        Entry.new(
           key: 'unique_teammates_milestone_this_week',
           label: 'Number of unique teammates with a milestone earned this week ' \
                  '(ability milestone attained in that Mon–Sun week, for abilities in this company)',
@@ -100,12 +86,50 @@ module Insights
           group: 'Ability Milestones'
         ),
         Entry.new(
+          key: 'unique_teammates_active_goal',
+          label: 'Number of unique teammates with an active goal ' \
+                 '(goal owned by the teammate, started, not completed or deleted as of that Sunday)',
+          direction: :more,
+          supports_percent: true,
+          group: 'Goals'
+        ),
+        Entry.new(
+          key: 'active_goal_aspiration',
+          label: 'Number of unique teammates with an active goal attached to an Aspirational Value',
+          direction: :more,
+          supports_percent: true,
+          group: 'Goals'
+        ),
+        Entry.new(
+          key: 'active_goal_assignment',
+          label: 'Number of unique teammates with an active goal attached to an Assignment',
+          direction: :more,
+          supports_percent: true,
+          group: 'Goals'
+        ),
+        Entry.new(
           key: 'active_goal_ability',
           label: 'Number of unique teammates with an active goal attached to an Ability ' \
                  '(goal owned by the teammate, started, not completed or deleted as of that Sunday, with a goal link to an ability)',
           direction: :more,
           supports_percent: true,
-          group: 'Ability Milestones'
+          group: 'Goals'
+        ),
+        Entry.new(
+          key: 'unique_teammates_goal_check_in_this_week',
+          label: 'Number of unique teammates with at least one goal check-in this week ' \
+                 '(a GoalCheckIn created during that Mon–Sun week on an active owned goal as of that Sunday)',
+          direction: :more,
+          supports_percent: true,
+          group: 'Goals'
+        ),
+        Entry.new(
+          key: 'unique_teammates_completed_goal_90_days',
+          label: 'Number of unique teammates with a completed goal in the past 90 days ' \
+                 '(rolling 90 calendar days ending that Sunday; goal owned by the teammate with completed_at in that window)',
+          direction: :more,
+          supports_percent: true,
+          group: 'Goals'
         )
       ].freeze
 
