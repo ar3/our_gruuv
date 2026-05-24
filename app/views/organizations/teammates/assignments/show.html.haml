@@ -7,7 +7,7 @@
     .assignment-check-in-toggle[aria-expanded="true"] .details-collapsed { display: none; }
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-in Hub", url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: @assignment.title, url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: @assignment.title, url: nil }])
 
 .row.mb-3
   .col-12

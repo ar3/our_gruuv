@@ -15,14 +15,14 @@ RSpec.describe PeopleHelper, type: :helper do
         expect(helper.people_current_view_name).to eq('Manage Profile Mode')
       end
       
-      it 'returns My Check-ins for check_ins controller' do
+      it 'returns Clarity Check-Ins for check_ins controller' do
         allow(helper).to receive(:controller_name).and_return('check_ins')
-        expect(helper.people_current_view_name).to eq('My Check-ins')
+        expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
       end
       
-      it 'returns My Check-ins for finalizations controller' do
+      it 'returns Clarity Check-Ins for finalizations controller' do
         allow(helper).to receive(:controller_name).and_return('finalizations')
-        expect(helper.people_current_view_name).to eq('My Check-ins')
+        expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
       end
       
       it 'returns Seat Management Mode for position controller' do
@@ -31,16 +31,16 @@ RSpec.describe PeopleHelper, type: :helper do
       end
     end
 
-    it 'returns My Check-ins for check_ins review_most_recent action' do
+    it 'returns Clarity Check-Ins for check_ins review_most_recent action' do
       allow(helper).to receive(:action_name).and_return('review_most_recent')
       allow(helper).to receive(:controller_name).and_return('check_ins')
-      expect(helper.people_current_view_name).to eq('My Check-ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
     end
 
-    it 'returns My Check-ins for check_ins hub action' do
+    it 'returns Clarity Check-Ins for check_ins hub action' do
       allow(helper).to receive(:action_name).and_return('hub')
       allow(helper).to receive(:controller_name).and_return('check_ins')
-      expect(helper.people_current_view_name).to eq('My Check-ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
     end
 
     it 'returns One on One Hub for one_on_one_links show action' do
@@ -80,10 +80,10 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('My Growth')
     end
 
-    it 'returns My Check-ins for audit action' do
+    it 'returns Clarity Check-Ins for audit action' do
       allow(helper).to receive(:action_name).and_return('audit')
       allow(helper).to receive(:controller_name).and_return('employees')
-      expect(helper.people_current_view_name).to eq('My Check-ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
     end
 
     it 'returns Kudos Points Mode for kudos_points action' do

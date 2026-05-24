@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Organizations::CompanyTeammatesHelper
+  include TerminologyHelper
   # Each entry: title, description, path, enabled, tooltip (for disabled; shown on wrapper with data-bs-toggle="tooltip").
   # Keep enabled? flags in sync with app/views/people/_view_switcher.html.haml; 1:1 uses OneOnOneLinkPolicy#show?.
   #
@@ -73,8 +74,8 @@ module Organizations::CompanyTeammatesHelper
         tooltip: hierarchy_complete_picture
       },
       {
-        title: "My Check-ins",
-        description: "Check-in hub, spreadsheets, reviews, and finalization for this teammate.",
+        title: clarity_hub_label,
+        description: clarity_hub_description,
         path: hub_organization_company_teammate_check_ins_path(organization, tm),
         enabled: policy(tm).view_check_ins?,
         tooltip: hierarchy_check_ins

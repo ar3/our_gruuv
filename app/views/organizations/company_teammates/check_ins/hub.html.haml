@@ -1,4 +1,4 @@
-- content_for :title, teammate_context_page_title(@selected_teammate, "Check-in Hub")
+- content_for :title, teammate_context_page_title(@selected_teammate, clarity_hub_label)
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -8,14 +8,14 @@
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups,
                path_for_teammate: ->(tm) { hub_organization_company_teammate_check_ins_path(organization, tm) },
-               switch_aria_label: "Switch teammate for check-in hub"
-      %span= " - Check-in Hub"
+               switch_aria_label: switch_teammate_for_clarity_hub_label
+      %span= " - #{clarity_hub_label}"
 
 - content_for :header_action do
   = render "people/view_switcher"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "Check-in Hub", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: clarity_hub_label, url: nil }])
 
 .row.g-3.mb-4
 - rate_data = check_in_health_completion_rate_and_breakdown(@check_in_health_cache)
@@ -43,13 +43,13 @@
         .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
           .flex-grow-1
             - if @next_up_requires_check_in
-              %h3.fw-bold.mb-2 Check-In, One Thing At A Time
+              %h3.fw-bold.mb-2= clarity_check_in_one_at_a_time_label
               %p.fs-5.mb-2= "Next up: #{@next_up_label}"
-              %p.text-muted.mb-0 You can choose anything to check in on.
+              %p.text-muted.mb-0= choose_any_for_clarity_check_in_label
             - else
-              %h3.fw-bold.mb-2 Check-In Early On One Thing
+              %h3.fw-bold.mb-2= early_clarity_check_in_one_thing_label
               %p.fs-5.mb-2 You're fully up to date right now.
-              %p.mb-0= "Want to check in early on #{@next_up_label}?"
+              %p.mb-0= early_clarity_check_in_on_label(label: @next_up_label)
           %i.bi.bi-arrow-right-circle.display-2.text-primary
 
   .col-12.col-lg-3
@@ -57,7 +57,7 @@
       .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
         .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
           .flex-grow-1
-            %h4.fw-bold.mb-2 Bulk Check-in
+            %h4.fw-bold.mb-2= bulk_clarity_check_in_label
             %p.text-muted.mb-0 If you are ready to give multiple ratings at once.
           %i.bi.bi-grid-1x2-fill.display-4.text-success
 
@@ -66,8 +66,8 @@
       .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
         .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
           .flex-grow-1
-            %h4.fw-bold.mb-2 View Latest Check-ins
-            %p.text-muted.mb-0 Get a simple view of the most recent check-ins at a glance.
+            %h4.fw-bold.mb-2= view_latest_clarity_check_ins_label
+            %p.text-muted.mb-0= view_latest_clarity_check_ins_description
           %i.bi.bi-table.display-4.text-info
 
 .row.g-3
@@ -77,8 +77,8 @@
       .card.h-100.hover-lift{class: review_card_class, style: "cursor: pointer;"}
         .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
           .flex-grow-1
-            %h4.fw-bold.mb-2= "Review #{@ready_for_review_count} Check-Ins Together"
-            %p.text-muted.mb-0 Finalize check-ins that both sides have completed.
+            %h4.fw-bold.mb-2= review_clarity_check_ins_together_label(count: @ready_for_review_count)
+            %p.text-muted.mb-0= finalize_clarity_check_ins_both_sides_label
           %i.bi.bi-people-fill.display-4.text-warning
 
   .col-12.col-lg-6
@@ -86,6 +86,6 @@
       .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
         .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
           .flex-grow-1
-            %h4.fw-bold.mb-2= "View #{@snapshot_total_count} Audit/Check-In Acknowledgements"
+            %h4.fw-bold.mb-2= view_audit_clarity_check_in_acknowledgements_label(count: @snapshot_total_count)
             %p.text-muted.mb-0= "#{@snapshot_unacknowledged_count} have not been acknowledged yet."
           %i.bi.bi-journal-check.display-4.text-dark

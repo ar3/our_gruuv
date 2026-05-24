@@ -4,8 +4,8 @@ require 'rails_helper'
 
 RSpec.describe TerminologyHelper, type: :helper do
   describe 'clarity check-in labels' do
-    it 'returns Clarity Hub' do
-      expect(helper.clarity_hub_label).to eq('Clarity Hub')
+    it 'returns Clarity Check-Ins' do
+      expect(helper.clarity_hub_label).to eq('Clarity Check-Ins')
     end
 
     it 'returns bulk clarity check-in label' do

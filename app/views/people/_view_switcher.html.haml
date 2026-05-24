@@ -84,17 +84,17 @@
       - if my_check_ins_active
         .dropdown-item.text-muted
           %i.bi.bi-chat-square-text.me-2
-          My Check-ins (Active)
+          = clarity_hub_active_label
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).view_check_ins?
         = link_to hub_organization_company_teammate_check_ins_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-chat-square-text.me-2
-          My Check-ins
+          = clarity_hub_label
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-chat-square-text.me-2
-          My Check-ins
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
+          = clarity_hub_label
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => clarity_check_in_features_tooltip}
 
     %li
       - one_on_one_active = controller_name == 'one_on_one_links' && action_name == 'show'

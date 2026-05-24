@@ -13,7 +13,7 @@
   = render "people/view_switcher"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Check-in Hub", url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Check-In Statuses", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Check-In Statuses", url: nil }])
 
 - employee_name = @teammate.person.casual_name
 - manager_name = @teammate.current_manager&.casual_name.presence || 'Manager'

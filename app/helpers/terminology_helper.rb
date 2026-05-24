@@ -7,10 +7,46 @@ module TerminologyHelper
     t("terminology.#{key}", **options)
   end
 
-  # --- Clarity Hub / clarity check-ins (position, assignment, aspiration) ---
+  # --- Clarity Check-Ins hub / clarity check-ins (position, assignment, aspiration) ---
 
   def clarity_hub_label
     terminology(:clarity_hub)
+  end
+
+  def clarity_hub_active_label
+    terminology(:clarity_hub_active)
+  end
+
+  def clarity_hub_description
+    terminology(:clarity_hub_description)
+  end
+
+  def switch_teammate_for_clarity_hub_label
+    terminology(:switch_teammate_for_clarity_hub)
+  end
+
+  def view_audit_clarity_check_in_acknowledgements_label(count:)
+    terminology(:view_audit_clarity_check_in_acknowledgements, count: count)
+  end
+
+  def finalize_clarity_check_ins_both_sides_label
+    terminology(:finalize_clarity_check_ins_both_sides)
+  end
+
+  def view_latest_clarity_check_ins_description
+    terminology(:view_latest_clarity_check_ins_description)
+  end
+
+  def choose_any_for_clarity_check_in_label
+    terminology(:choose_any_for_clarity_check_in)
+  end
+
+  def early_clarity_check_in_on_label(label:)
+    terminology(:early_clarity_check_in_on, label: label)
+  end
+
+  def clarity_check_in_features_tooltip
+    terminology(:clarity_check_in_features_tooltip)
   end
 
   def clarity_check_in_label

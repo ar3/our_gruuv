@@ -1,4 +1,5 @@
 module PeopleHelper
+  include TerminologyHelper
   def identity_provider_icon(identity)
     case identity.provider
     when 'google_oauth2'
@@ -130,7 +131,7 @@ module PeopleHelper
     if (controller_name == 'check_ins' && %w[hub show review_most_recent].include?(action_name)) ||
        (controller_name == 'finalizations' && action_name == 'show') ||
        (controller_name == 'employees' && action_name == 'audit')
-      return 'My Check-ins'
+      return clarity_hub_label
     end
 
     if controller_name == 'one_on_one_links' && action_name == 'show'
@@ -169,7 +170,7 @@ module PeopleHelper
     when 'about_me'
       'About Me'
     when 'audit'
-      'My Check-ins'
+      clarity_hub_label
     when 'check_in'
       'Check-In'
     else

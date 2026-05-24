@@ -406,9 +406,9 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to include("is working to meet on #{aspiration.name}, but there is no active goal linked yet")
       end
 
-      it 'uses the new check-in hub CTA wording in all three check-in sections' do
+      it 'uses the Clarity Check-Ins CTA wording in all three check-in sections' do
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body.scan('Go To All Check-ins').count).to eq(3)
+        expect(response.body.scan('Go to Clarity Check-Ins').count).to eq(3)
       end
     end
   end
