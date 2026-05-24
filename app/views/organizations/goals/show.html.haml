@@ -320,9 +320,12 @@
               %i.bi.bi-calendar-event.me-2
               Current Week Check-In
           .card-body
-            - if @goal.started_at.present? && !goal_is_completed?(@goal)
+            - if !goal_is_completed?(@goal) && @goal.deleted_at.nil? && (@goal.started_at.present? || @goal.check_in_eligible?)
               - current_week_start = @current_week_start || Date.current.beginning_of_week(:monday)
               - current_week_end = current_week_start.end_of_week(:sunday)
+              - if @goal.started_at.nil?
+                %p.small.text-muted.mb-3
+                  Checking in on this goal will start this goal as well.
               %p.small.text-muted.mb-3
                 Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
               = form_with url: check_in_organization_goal_path(@organization, @goal, return_url: organization_goal_path(@organization, @goal), return_text: 'Goal'), method: :post, local: true do |f|

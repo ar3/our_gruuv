@@ -471,13 +471,32 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         expect(assigns(:last_check_in)).to eq(last_check_in)
       end
       
-      it 'does not load check-ins when goal is not started' do
-        unstarted_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil)
-        
+      it 'loads current week check-in data for unstarted check-in eligible goals' do
+        unstarted_goal = create(:goal,
+          creator: creator_teammate,
+          owner: creator_teammate,
+          goal_type: 'qualitative_key_result',
+          started_at: nil,
+          most_likely_target_date: 2.months.from_now.to_date)
+
         get :show, params: { organization_id: company.id, id: unstarted_goal.id }
-        
+
         expect(assigns(:current_check_in)).to be_nil
-        expect(assigns(:last_check_in)).to be_nil
+        expect(assigns(:current_week_start)).to eq(current_week_start)
+      end
+
+      it 'does not load current week check-in data when goal is not check-in eligible' do
+        unstarted_objective = create(:goal,
+          creator: creator_teammate,
+          owner: creator_teammate,
+          goal_type: 'inspirational_objective',
+          started_at: nil,
+          most_likely_target_date: 2.months.from_now.to_date)
+
+        get :show, params: { organization_id: company.id, id: unstarted_objective.id }
+
+        expect(assigns(:current_check_in)).to be_nil
+        expect(assigns(:current_week_start)).to be_nil
       end
 
       it 'assigns progress_chart_data when goal has target dates and started_at' do

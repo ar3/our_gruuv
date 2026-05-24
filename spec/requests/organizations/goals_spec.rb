@@ -368,6 +368,28 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).not_to include('Create/associate new child goal')
     end
 
+    context 'when goal is unstarted but check-in eligible' do
+      let(:unstarted_goal) do
+        create(:goal,
+          creator: teammate,
+          owner: teammate,
+          title: 'Unstarted Key Result',
+          goal_type: 'qualitative_key_result',
+          started_at: nil,
+          most_likely_target_date: 2.months.from_now.to_date)
+      end
+
+      it 'shows the current week check-in form with a start-on-check-in caption' do
+        get organization_goal_path(organization, unstarted_goal)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Current Week Check-In')
+        expect(response.body).to include('Checking in on this goal will start this goal as well.')
+        expect(response.body).to include('Save Check-In')
+        expect(response.body).not_to include('Start this goal to add check-ins.')
+      end
+    end
+
     context 'when goal is started' do
       let(:started_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Started Goal', started_at: 1.week.ago) }
       

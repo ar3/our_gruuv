@@ -206,8 +206,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       .includes(:confidence_reporter)
       .order(check_in_week_start: :asc)
     
-    # Load check-in data for started goals
-    if @goal.started_at.present?
+    # Load check-in data when the current-week form is shown (started goals, or unstarted check-in eligible)
+    if @goal.completed_at.nil? && @goal.deleted_at.nil? && (@goal.started_at.present? || @goal.check_in_eligible?)
       @current_week_start = Date.current.beginning_of_week(:monday)
       @current_check_in = @goal.goal_check_ins
         .for_week(@current_week_start)
