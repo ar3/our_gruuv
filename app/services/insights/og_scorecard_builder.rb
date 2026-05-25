@@ -14,6 +14,10 @@ module Insights
     def call
       active_by_week = active_teammate_counts_by_week
       publishers_by_week, observees_by_week = observation_distinct_sets_by_week
+      observations_30_day_counts = OgScorecard::ObservationsThirtyDayWeekCounts.call(
+        company: company,
+        week_starts: week_starts
+      )
       check_in_clarity = OgScorecard::CheckInClarityWeekCounts.call(
         company: company,
         week_starts: week_starts,
@@ -44,6 +48,7 @@ module Insights
             active_by_week: active_by_week,
             publishers_by_week: publishers_by_week,
             observees_by_week: observees_by_week,
+            observations_30_day_counts: observations_30_day_counts,
             check_in_clarity: check_in_clarity,
             goal_aspiration_by_week: goal_aspiration_by_week,
             goal_assignment_by_week: goal_assignment_by_week,
@@ -63,11 +68,13 @@ module Insights
 
     attr_reader :company, :week_starts, :chart_range, :thresholds_by_key
 
-    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:)
+    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, observations_30_day_counts:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:)
       case key
       when 'active_teammates' then active_by_week
       when 'unique_ogo_publishers' then publishers_by_week
       when 'unique_ogo_observees' then observees_by_week
+      when 'unique_ogo_publishers_30_days' then observations_30_day_counts[:unique_ogo_publishers_30_days]
+      when 'unique_ogo_observees_30_days' then observations_30_day_counts[:unique_ogo_observees_30_days]
       when 'all_check_ins_clear' then check_in_clarity[:all_check_ins_clear]
       when 'all_check_ins_blurred' then check_in_clarity[:all_check_ins_blurred]
       when 'all_check_ins_obscured' then check_in_clarity[:all_check_ins_obscured]

@@ -33,6 +33,20 @@ module Insights
           group: 'Observations'
         ),
         Entry.new(
+          key: 'unique_ogo_publishers_30_days',
+          label: 'Teammates that published an OGO within 30 days of this week',
+          direction: :more,
+          supports_percent: true,
+          group: 'Observations'
+        ),
+        Entry.new(
+          key: 'unique_ogo_observees_30_days',
+          label: 'Teammates mentioned in a published OGO within 30 days of this week',
+          direction: :more,
+          supports_percent: true,
+          group: 'Observations'
+        ),
+        Entry.new(
           key: 'all_check_ins_clear',
           label: "Teammates with Healthy Clarity (checked-in within #{C} days)",
           direction: :more,
