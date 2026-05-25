@@ -38,6 +38,12 @@
               Delete title
           %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions to delete titles"}
 
+      %hr.my-1
+      - title_positions = t.positions.includes(:position_level).sort_by { |p| p.position_level.level }
+      .d-flex.flex-column.gap-1
+        - title_positions.each do |position|
+          = link_to position.display_name, organization_position_path(org, position), class: "text-decoration-none small"
+
     %hr.mt-auto.pt-3.mb-2
     %small.text-muted.d-block
       Created by #{created_name} on #{format_time_in_user_timezone(created_at)}

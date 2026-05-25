@@ -101,8 +101,7 @@
                 %tr
                   %th Name
                   %th Email
-                  %th Position
-                  %th Actions
+                  %th Seat
               %tbody
                 - @teammates_with_title.each do |tenure|
                   - teammate = tenure.teammate
@@ -112,11 +111,10 @@
                     %td
                       %small.text-muted= teammate.person.email
                     %td
-                      = tenure.position.display_name
-                    %td
-                      = link_to internal_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary btn-sm" do
-                        %i.bi.bi-eye.me-1
-                        View
+                      - if tenure.seat
+                        = link_to tenure.seat.display_name, organization_seat_path(@organization, tenure.seat), class: "text-decoration-none"
+                      - else
+                        %span.text-muted —
         - else
           .alert.alert-info.mb-0
             %h6.mb-2

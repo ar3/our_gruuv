@@ -86,6 +86,37 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include("Other Role")
       expect(response.body).to include(organization_title_path(organization, other))
     end
+
+    it "shows linked seats in the teammates table" do
+      position_level = create(:position_level, position_major_level: position_major_level, level: "1.1")
+      position = create(:position, title: title, position_level: position_level)
+      seat = create(:seat, title: title)
+      employee_person = create(:person)
+      employee_teammate = create(:teammate, person: employee_person, organization: organization)
+      tenure = build(:employment_tenure, teammate: employee_teammate, company: organization, seat: seat, ended_at: nil)
+      tenure.position = position
+      tenure.save!
+
+      get organization_title_path(organization, title)
+
+      expect(response.body).to include(">Seat</th>")
+      expect(response.body).to include(organization_seat_path(organization, seat))
+      expect(response.body).to include(seat.display_name)
+    end
+
+    it "links to each position in the actions card" do
+      level_one = create(:position_level, position_major_level: position_major_level, level: "1.1")
+      level_two = create(:position_level, position_major_level: position_major_level, level: "1.2")
+      position_one = create(:position, title: title, position_level: level_one)
+      position_two = create(:position, title: title, position_level: level_two)
+
+      get organization_title_path(organization, title)
+
+      expect(response.body).to include(organization_position_path(organization, position_one))
+      expect(response.body).to include(organization_position_path(organization, position_two))
+      expect(response.body).to include(position_one.display_name)
+      expect(response.body).to include(position_two.display_name)
+    end
   end
 
   describe "PATCH /update" do

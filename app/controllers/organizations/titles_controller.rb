@@ -22,7 +22,7 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
       .active
       .joins(:position, company_teammate: :person)
       .where(positions: { title_id: @title.id })
-      .includes(company_teammate: :person, position: [:title, :position_level])
+      .includes(:seat, company_teammate: :person, position: [:title, :position_level])
       .order('people.last_name, people.first_name, employment_tenures.started_at DESC')
     
     # Group by teammate_id and take the first (most recent) tenure for each teammate
