@@ -3,13 +3,21 @@ require 'rails_helper'
 RSpec.describe 'Manage Observees', type: :system do
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
-  let!(:observer_teammate) { CompanyTeammate.create!(person: observer, organization: company) }
+  let!(:observer_teammate) do
+    CompanyTeammate.create!(person: observer, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+  end
   let(:observee_person) { create(:person) }
-  let!(:observee_teammate) { CompanyTeammate.create!(person: observee_person, organization: company) }
+  let!(:observee_teammate) do
+    CompanyTeammate.create!(person: observee_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+  end
   let(:new_person) { create(:person) }
-  let!(:new_teammate) { CompanyTeammate.create!(person: new_person, organization: company) }
+  let!(:new_teammate) do
+    CompanyTeammate.create!(person: new_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+  end
   let(:another_person) { create(:person) }
-  let!(:another_teammate) { CompanyTeammate.create!(person: another_person, organization: company) }
+  let!(:another_teammate) do
+    CompanyTeammate.create!(person: another_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+  end
 
   before do
     sign_in_as(observer, company)
@@ -18,6 +26,7 @@ RSpec.describe 'Manage Observees', type: :system do
   describe 'managing observees from new observation page' do
     let(:draft) do
       build(:observation, observer: observer, company: company, published_at: nil).tap do |obs|
+        obs.observees.clear # factory adds a default observee
         obs.observees.build(teammate: observee_teammate)
         obs.save!
       end
@@ -38,7 +47,21 @@ RSpec.describe 'Manage Observees', type: :system do
       expect(page).to have_selector('input[aria-label="Filter teammates"]')
     end
 
-    it 'shows all teammates with correct checked/unchecked state' do
+    it 'does not list terminated teammates' do
+      terminated_person = create(:person)
+      terminated_teammate = CompanyTeammate.create!(
+        person: terminated_person,
+        organization: company,
+        first_employed_at: 6.months.ago,
+        last_terminated_at: 1.month.ago
+      )
+
+      visit manage_observees_organization_observation_path(company, draft)
+
+      expect(page).not_to have_css("#teammate_#{terminated_teammate.id}")
+    end
+
+    it 'shows active teammates with correct checked/unchecked state' do
       visit manage_observees_organization_observation_path(company, draft)
       
       # Existing observee should be checked
@@ -138,6 +161,7 @@ RSpec.describe 'Manage Observees', type: :system do
   describe 'managing observees from typed observation pages' do
     let(:kudos_draft) do
       build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'kudos', created_as_type: 'kudos').tap do |obs|
+        obs.observees.clear
         obs.observees.build(teammate: observee_teammate)
         obs.save!
       end
@@ -145,6 +169,7 @@ RSpec.describe 'Manage Observees', type: :system do
 
     let(:feedback_draft) do
       build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'feedback', created_as_type: 'feedback').tap do |obs|
+        obs.observees.clear
         obs.observees.build(teammate: observee_teammate)
         obs.save!
       end
@@ -152,6 +177,7 @@ RSpec.describe 'Manage Observees', type: :system do
 
     let(:quick_note_draft) do
       build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'quick_note', created_as_type: 'quick_note').tap do |obs|
+        obs.observees.clear
         obs.observees.build(teammate: observee_teammate)
         obs.save!
       end

@@ -1633,7 +1633,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     else
       # GET - render picker
       @selected_observee_ids = @observation.observees.pluck(:teammate_id).to_set
-      @teammates = organization.teammates
+      @teammates = @observation.company.teammates
+        .merge(CompanyTeammate.employed)
         .joins(:person)
         .includes(:person, employment_tenures: { position: { title: :department } })
         .order(Arel.sql('people.last_name, COALESCE(people.preferred_name, people.first_name)'))

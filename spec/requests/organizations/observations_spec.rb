@@ -255,7 +255,9 @@ RSpec.describe 'Organizations::Observations', type: :request do
 
     # Manager (has position) – used as manager_teammate for others
     let(:manager_person) { create(:person) }
-    let!(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
+    let!(:manager_teammate) do
+      create(:teammate, person: manager_person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+    end
     let!(:manager_tenure) do
       create(:employment_tenure, company_teammate: manager_teammate, company: organization)
     end
@@ -263,7 +265,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
     # Teammate with position and manager
     let(:with_position_and_manager_person) { create(:person) }
     let!(:teammate_with_position_and_manager) do
-      create(:teammate, person: with_position_and_manager_person, organization: organization)
+      create(:teammate, person: with_position_and_manager_person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
     end
     let!(:tenure_with_position_and_manager) do
       create(:employment_tenure, company_teammate: teammate_with_position_and_manager, company: organization, manager: manager_teammate)
@@ -273,16 +275,22 @@ RSpec.describe 'Organizations::Observations', type: :request do
     # Teammate with position, no manager
     let(:with_position_no_manager_person) { create(:person) }
     let!(:teammate_with_position_no_manager) do
-      create(:teammate, person: with_position_no_manager_person, organization: organization)
+      create(:teammate, person: with_position_no_manager_person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
     end
     let!(:tenure_with_position_no_manager) do
       create(:employment_tenure, company_teammate: teammate_with_position_no_manager, company: organization)
     end
 
-    # Teammate without position (no active employment tenure)
+    # Active employed teammate without position (no active employment tenure)
     let(:no_position_person) { create(:person) }
     let!(:teammate_without_position) do
-      create(:teammate, person: no_position_person, organization: organization)
+      create(:teammate, person: no_position_person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+    end
+
+    # Terminated teammate — should not appear in picker
+    let(:terminated_person) { create(:person) }
+    let!(:terminated_teammate) do
+      create(:teammate, person: terminated_person, organization: organization, first_employed_at: 6.months.ago, last_terminated_at: 1.month.ago)
     end
 
     it 'renders the manage observees page with success' do
@@ -294,7 +302,8 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response.body).to include('Search teammates...')
     end
 
-    it 'shows all teammates including those with and without positions and department metadata' do
+    it 'shows active company teammates including those with and without positions and department metadata' do
+      teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
       tenure_with_position_and_manager.position.title.update!(department: engineering_department)
       get manage_observees_organization_observation_path(organization, draft)
 
@@ -304,11 +313,15 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response.body).to include('Department: Engineering')
       # Teammate with position, no department
       expect(response.body).to include(with_position_no_manager_person.preferred_first_then_last_display_name)
-      # Teammate without position
+      # Active employed teammate without position
       expect(response.body).to include(no_position_person.preferred_first_then_last_display_name)
+      # Terminated teammate excluded
+      expect(response.body).not_to include(terminated_person.preferred_first_then_last_display_name)
     end
 
     it 'includes observer in teammate list and shows checkboxes for multi-select' do
+      teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+
       get manage_observees_organization_observation_path(organization, draft)
 
       expect(response).to have_http_status(:success)

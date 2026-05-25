@@ -2134,11 +2134,24 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(response).to render_template(layout: 'overlay')
     end
 
-    it 'assigns all teammates (not just unselected)' do
+    it 'assigns active company teammates (not just unselected)' do
+      observee_teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+      other_teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+
       get :manage_observees, params: { organization_id: company.id, id: draft.id }
       teammate_ids = assigns(:teammates).pluck(:id)
       expect(teammate_ids).to include(observee_teammate.id)
       expect(teammate_ids).to include(other_teammate.id)
+    end
+
+    it 'excludes terminated teammates' do
+      observee_teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+      other_teammate.update!(first_employed_at: 6.months.ago, last_terminated_at: 1.month.ago)
+
+      get :manage_observees, params: { organization_id: company.id, id: draft.id }
+      teammate_ids = assigns(:teammates).pluck(:id)
+      expect(teammate_ids).to include(observee_teammate.id)
+      expect(teammate_ids).not_to include(other_teammate.id)
     end
 
     it 'requires authorization' do
