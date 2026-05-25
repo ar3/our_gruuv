@@ -38,6 +38,12 @@
         %i.bi.bi-person-circle.me-2
         My Profile
   - if current_organization
+    - one_on_one_link_record = current_company_teammate&.one_on_one_link || OneOnOneLink.new(teammate: current_company_teammate)
+    - if current_company_teammate && policy(one_on_one_link_record).show?
+      %li
+        = link_to organization_company_teammate_one_on_one_link_path(current_organization, current_company_teammate), class: "dropdown-item" do
+          %i.bi.bi-link-45deg.me-2
+          My 1:1
     %li
       = link_to about_me_organization_company_teammate_path(current_organization, current_company_teammate), class: "dropdown-item" do
         %i.bi.bi-person-badge.me-2
