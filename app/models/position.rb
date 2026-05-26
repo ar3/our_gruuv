@@ -84,11 +84,11 @@ class Position < ApplicationRecord
   end
   
   def required_assignments
-    position_assignments.where(assignment_type: 'required').includes(:assignment)
+    position_assignments.required.includes(:assignment).ordered_by_max_energy_then_title
   end
   
   def suggested_assignments
-    position_assignments.where(assignment_type: 'suggested').includes(:assignment)
+    position_assignments.suggested.includes(:assignment).ordered_by_max_energy_then_title
   end
   
   def required_assignments_count

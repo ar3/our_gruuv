@@ -15,6 +15,12 @@ class PositionAssignment < ApplicationRecord
   # Scopes
   scope :required, -> { where(assignment_type: 'required') }
   scope :suggested, -> { where(assignment_type: 'suggested') }
+  scope :ordered_by_max_energy_then_title, lambda {
+    joins(:assignment).order(
+      Arel.sql('position_assignments.max_estimated_energy DESC NULLS LAST'),
+      'assignments.title ASC'
+    )
+  }
   
   # Instance methods
   def display_name

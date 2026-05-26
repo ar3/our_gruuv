@@ -206,6 +206,32 @@ RSpec.describe Position, type: :model do
     describe 'assignment methods' do
       let(:position_with_assignments) { create(:position, :with_assignments, title: title, position_level: position_level) }
 
+      it 'orders required assignments by max energy descending then title' do
+        low = create(:assignment, title: 'Alpha Task', company: company)
+        high = create(:assignment, title: 'Zulu Task', company: company)
+        tie_b = create(:assignment, title: 'Bravo Task', company: company)
+        tie_a = create(:assignment, title: 'Alpha Tie', company: company)
+        create(:position_assignment, position: position, assignment: low, assignment_type: 'required', max_estimated_energy: 10)
+        create(:position_assignment, position: position, assignment: high, assignment_type: 'required', max_estimated_energy: 50)
+        create(:position_assignment, position: position, assignment: tie_b, assignment_type: 'required', max_estimated_energy: 30)
+        create(:position_assignment, position: position, assignment: tie_a, assignment_type: 'required', max_estimated_energy: 30)
+
+        expect(position.required_assignments.map { |pa| pa.assignment.title }).to eq(
+          ['Zulu Task', 'Alpha Tie', 'Bravo Task', 'Alpha Task']
+        )
+      end
+
+      it 'orders suggested assignments by max energy descending then title' do
+        low = create(:assignment, title: 'Beta Suggested', company: company)
+        high = create(:assignment, title: 'Omega Suggested', company: company)
+        create(:position_assignment, position: position, assignment: low, assignment_type: 'suggested', max_estimated_energy: 5)
+        create(:position_assignment, position: position, assignment: high, assignment_type: 'suggested', max_estimated_energy: 40)
+
+        expect(position.suggested_assignments.map { |pa| pa.assignment.title }).to eq(
+          ['Omega Suggested', 'Beta Suggested']
+        )
+      end
+
       it 'returns required assignments' do
         expect(position_with_assignments.required_assignments.count).to eq(2)
       end
