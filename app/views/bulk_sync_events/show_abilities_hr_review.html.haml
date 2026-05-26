@@ -4,9 +4,13 @@
 - preview = @bulk_sync_event.preview_actions.is_a?(Hash) ? @bulk_sync_event.preview_actions.stringify_keys : {}
 - parse_ok = preview['parse_ok'] != false
 - parse_errors = Array(preview['parse_errors'])
-- rows = Array(preview['rows'])
+- parse_warnings = Array(preview['parse_warnings'])
+- ability_groups = Array(preview['ability_groups'])
+- association_rows = Array(preview['association_rows'])
+- groups_by_id = ability_groups.index_by { |g| g['id'].to_s }
 - assignments_scope = policy_scope(Assignment).where(company_id: organization.id).order(:title)
-- needs_enrichment_poll = @bulk_sync_event.preview? && parse_ok && rows.any? { |r| r['state'].to_s == 'pending' && r['enrichment_status'].to_s == 'pending' }
+- terminal_group_states = %w[applied skipped invalid]
+- abilities_phase_done = ability_groups.present? && ability_groups.all? { |g| terminal_group_states.include?(g['state'].to_s) }
 
 .container-fluid
   .d-flex.justify-content-between.align-items-center.mb-4
@@ -29,6 +33,13 @@
         %dt.col-sm-3 Created
         %dd.col-sm-9= format_time_in_user_timezone(@bulk_sync_event.created_at)
 
+  - if parse_warnings.any?
+    .alert.alert-warning
+      %h6.alert-heading Warnings
+      %ul.mb-0
+        - parse_warnings.each do |msg|
+          %li= msg
+
   - unless parse_ok
     .alert.alert-danger
       %h6.alert-heading CSV could not be fully parsed
@@ -36,90 +47,105 @@
         - parse_errors.each do |msg|
           %li= msg
 
-  - if parse_ok && needs_enrichment_poll
-    .alert.alert-info.d-flex.align-items-center.justify-content-between
-      %span
-        %strong Preparing suggestions…
-        Refresh this page in a few seconds if rows stay empty of AI proposals.
-      = link_to 'Refresh', organization_bulk_sync_event_path(organization, @bulk_sync_event), class: 'btn btn-sm btn-outline-primary'
+  - if parse_ok && ability_groups.any?
+    %h2.h4.mt-4 Step 1 — Abilities
+    %p.text-muted Review each unique ability from the file. Approve to save the ability; assignment links come in step 2.
 
-  - if parse_ok && rows.any?
-    - rows.each do |row|
-      - rid = row['id']
-      - next if rid.blank?
-      - st = row['state'].to_s
-      - desc = (row['description'] || {}).stringify_keys
+    - ability_groups.each do |group|
+      - gid = group['id']
+      - next if gid.blank?
+      - gst = group['state'].to_s
+      - desc = (group['description'] || {}).stringify_keys
       - desc_value = desc['proposed'].presence || desc['normalized'].presence || desc['raw'].presence || ''
-      - join = (row['join_milestone'] || {}).stringify_keys
-      - join_level = join['level'].presence || 1
-      - milestones = (row['milestones'] || {}).stringify_keys
-      .card.mb-4.border-start.border-4{class: st == 'applied' ? 'border-success' : st == 'skipped' ? 'border-secondary' : 'border-primary'}
-        .card-header.d-flex.justify-content-between.align-items-center
+      - milestones = (group['milestones'] || {}).stringify_keys
+      - has_match = group['matched_ability_id'].present?
+      - dept_selected = group['default_department_id']
+      - group_border_class = { 'applied' => 'border-success', 'skipped' => 'border-secondary', 'invalid' => 'border-danger' }.fetch(gst, 'border-primary')
+      .card.mb-4.border-start.border-4{id: "ability-group-#{gid}", class: group_border_class}
+        .card-header.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
           %div
-            %strong= row['ability_name'].presence || '(unnamed)'
-            %span.text-muted.ms-2
-              Assignment context:
-              %code= row['assignment_raw']
-            - mk = row['assignment_match_kind'].to_s
-            - if mk.present?
-              %span.badge.bg-secondary.ms-1= "Match: #{mk}"
-          - if st == 'applied' && row['applied_ability_id'].present?
-            = link_to 'Open ability', organization_ability_path(organization, row['applied_ability_id']), class: 'btn btn-sm btn-outline-primary'
-          - elsif st == 'skipped'
+            %strong= group['ability_name'].presence || '(unnamed)'
+            - if gst == 'invalid'
+              %span.badge.bg-danger.ms-2 Invalid
+            - amk = group['ability_match_kind'].to_s
+            - if amk.present? && amk != 'none' && gst != 'invalid'
+              %span.badge.bg-secondary.ms-2= "Match: #{amk}"
+          - if gst == 'applied' && group['applied_ability_id'].present?
+            = link_to 'Open ability', organization_ability_path(organization, group['applied_ability_id']), class: 'btn btn-sm btn-outline-primary'
+          - elsif gst == 'skipped'
             %span.badge.bg-secondary Skipped
+          - elsif gst == 'invalid'
+            %span.badge.bg-danger Skipped (invalid)
+
         .card-body
-          - if st == 'pending'
-            = form_with url: approve_abilities_hr_row_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, local: true do
-              = hidden_field_tag :row_id, rid
+          .row.mb-3
+            .col-md-4
+              %span.text-muted.small Rows in file
+              %div.fw-semibold= group['file_row_count']
+            .col-md-4
+              %span.text-muted.small Assignments in file
+              %div.fw-semibold= group['file_assignment_count']
+              - titles = Array(group['file_assignment_titles'])
+              - if titles.any?
+                %small.text-muted= titles.join(', ')
+            .col-md-4
+              %span.text-muted.small Already associated
+              - existing = Array(group['existing_associations'] || [])
+              - if existing.any?
+                %ul.mb-0.ps-3.small
+                  - existing.each do |assoc|
+                    %li
+                      = link_to assoc['assignment_title'], organization_assignment_path(organization, assoc['assignment_id'])
+                      %span.text-muted
+                        (milestone #{assoc['milestone_level']})
+              - else
+                %div.fw-semibold 0
+
+          - if gst == 'invalid'
+            %p.text-danger.mb-0= group['invalid_reason'].presence || 'This row cannot be imported.'
+
+          - elsif gst == 'pending'
+            = form_with url: approve_abilities_hr_ability_group_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, local: true, data: { turbo: false }, class: 'mb-0' do |f|
+              = hidden_field_tag :ability_group_id, gid
               .row.mb-3
                 .col-md-6
-                  %label.form-label Assignment
-                  = select_tag :resolved_assignment_id, options_from_collection_for_select(assignments_scope, :id, :title, row['resolved_assignment_id']), class: 'form-select', name: 'resolved_assignment_id'
-                  - alts = Array(row['assignment_alternatives'])
-                  - if alts.size > 1
-                    %small.text-muted.d-block.mt-1 Search alternatives: #{alts.map { |a| a['title'] }.join('; ')}
-                .col-md-6
-                  %label.form-label Join milestone (1–5)
-                  = number_field_tag :join_milestone_level, join_level, class: 'form-control', min: 1, max: 5, name: 'join_milestone_level'
-                  - if join['rationale'].present?
-                    %small.text-muted.d-block.mt-1= join['rationale']
-              .row.mb-3.align-items-end
-                .col-md-5
                   %label.form-label Ability name
-                  = text_field_tag :ability_name, (row['form_ability_name'].presence || row['ability_name']), class: 'form-control', name: 'ability_name'
-                  - amk = row['ability_match_kind'].to_s
-                  - if amk.present? && amk != 'none'
-                    %small.text-muted.d-block.mt-1
-                      Matched
-                      %span.badge.bg-secondary= amk
-                  - if row['ability_intent'].to_s == 'update' && row['ability_name'].to_s.strip != (row['form_ability_name'].presence || row['ability_name']).to_s.strip
-                    %small.text-muted.d-block.mt-1
-                      Name in file:
-                      %code= row['ability_name']
-                  - aalts = Array(row['ability_alternatives'])
-                  - if aalts.any?
-                    %small.text-muted.d-block.mt-1
-                      Other matches:
-                      = aalts.map { |a| a['name'] }.join('; ')
-                .col-md-4
-                  %label.form-label.text-muted.small Outcome
-                  %div
-                    - if row['ability_intent'].to_s == 'update'
-                      %span.badge.bg-warning.text-dark Will update existing ability
-                    - else
-                      %span.badge.bg-success Will create new ability
-                .col-md-3
-                  %label.form-label.text-muted.small Department (default)
-                  %div.fw-normal.text-body
-                    = row['default_department_label'].presence || 'None'
+                  = text_field_tag :ability_name, (group['form_ability_name'].presence || group['ability_name']), class: 'form-control', name: 'ability_name'
+                  - match_candidates = Array(group['match_candidates']).first(3)
+                  - if match_candidates.any?
+                    %div.mt-2
+                      %small.text-muted.d-block Possible matches
+                      %ul.mb-0.ps-3.small
+                        - match_candidates.each do |candidate|
+                          %li
+                            = link_to candidate['name'], organization_ability_path(organization, candidate['ability_id'])
+                            %span.text-muted.ms-1
+                              #{candidate['confidence']}% confidence
+                      - unless has_match
+                        %small.text-muted.d-block.mt-1 None met the 90% threshold to pre-select an existing ability.
+                  - elsif group['enrichment_status'].to_s != 'complete'
+                    %small.text-muted.d-block.mt-1 Similar-ability matching was not run for this group.
+                  - elsif group['ability_match_kind'].to_s != 'exact_insensitive'
+                    %small.text-muted.d-block.mt-1 No similar abilities found.
+                .col-md-6
+                  = render 'shared/department_dropdown',
+                    form: f,
+                    organization: organization,
+                    field_name: :department_id,
+                    label_text: 'Department',
+                    selected_department_id: dept_selected,
+                    include_blank: true,
+                    include_root_option: false,
+                    exclude_ids: [],
+                    help_text: nil
               .row.mb-3
                 .col-12
                   %label.form-label Description (editable)
                   = text_area_tag :description, desc_value, class: 'form-control', rows: 6, name: 'description'
               .mb-2
-                %button.btn.btn-sm.btn-outline-secondary{type: 'button', 'data-bs-toggle' => 'collapse', 'data-bs-target' => "#milestone-fields-#{rid}"}
+                %button.btn.btn-sm.btn-outline-secondary{type: 'button', 'data-bs-toggle' => 'collapse', 'data-bs-target' => "#milestone-fields-#{gid}"}
                   Milestone 1–5 text
-              .collapse{id: "milestone-fields-#{rid}"}
+              .collapse{id: "milestone-fields-#{gid}"}
                 .row
                   - (1..5).each do |n|
                     - mh = milestones[n.to_s].is_a?(Hash) ? milestones[n.to_s].stringify_keys : {}
@@ -127,20 +153,137 @@
                     .col-12.mb-2
                       %label.form-label= "Milestone #{n}"
                       = text_area_tag "milestone_#{n}_description", mv, class: 'form-control small', rows: 4, name: "milestone_#{n}_description"
-              .d-flex.gap-2.mt-3
-                = submit_tag 'Approve row', class: 'btn btn-primary'
-            = button_to 'Skip row', skip_abilities_hr_row_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, params: { row_id: rid }, class: 'btn btn-outline-secondary mt-2'
-          - elsif st == 'applied'
-            %p.text-success.mb-0 Applied to database.
+              .d-flex.flex-wrap.gap-2.mt-3
+                - if has_match
+                  = button_tag 'Approve, Update Existing', type: 'submit', name: 'mode', value: 'update', class: 'btn btn-warning'
+                  = button_tag 'Match is inaccurate, Create New Instead', type: 'submit', name: 'mode', value: 'create', class: 'btn btn-outline-secondary'
+                - else
+                  = button_tag 'Approve, Create New', type: 'submit', name: 'mode', value: 'create', class: 'btn btn-success'
+                  = button_tag 'Approve, Update Existing', type: 'submit', name: 'mode', value: 'update', class: 'btn btn-warning', disabled: true
+            = button_to 'Skip Ability', skip_abilities_hr_ability_group_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, params: { ability_group_id: gid }, class: 'btn btn-outline-secondary mt-2', data: { turbo: false }
+
+          - elsif gst == 'applied'
+            %p.text-success.mb-0
+              Ability saved (#{group['ability_action']}).
+              Complete assignment links in step 2 below.
           - else
-            %p.text-muted.mb-0 Row was skipped.
+            %p.text-muted.mb-0 Ability was skipped. Related assignment links are skipped in step 2.
+
+    - if abilities_phase_done
+      %h2.h4.mt-5#step-2-associations Step 2 — Assignment associations
+      %p.text-muted Set apply or skip for each row, then process all at once.
+
+      - assignment_titles_by_id = assignments_scope.each_with_object({}) { |a, h| h[a.id] = a.title }
+      - step2_association_rows = abilities_hr_association_rows_sorted_by_assignment(association_rows, assignment_titles_by_id: assignment_titles_by_id)
+
+      - if association_rows.empty?
+        .alert.alert-info No assignment associations in this file.
+
+      - pending_association_rows = step2_association_rows.select { |row| row['id'].present? && row['state'].to_s == 'pending' && (groups_by_id[row['ability_group_id'].to_s] || {})['state'].to_s == 'applied' }
+
+      - if pending_association_rows.any?
+        = form_with url: process_abilities_hr_associations_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, local: true, data: { turbo: false } do
+          - pending_association_rows.each do |row|
+            - rid = row['id']
+            - group = groups_by_id[row['ability_group_id'].to_s] || {}
+            - join = (row['join_milestone'] || {}).stringify_keys
+            - join_level = join['level'].presence || 1
+            - ability_id = group['applied_ability_id']
+            - ability_label = group['form_ability_name'].presence || group['ability_name']
+            .card.mb-3.border-start.border-3.border-info{id: "association-row-#{rid}"}
+              .card-header
+                %strong= row['assignment_raw'].presence || '(assignment)'
+                %span.text-muted.ms-2 →
+                - if ability_id.present?
+                  = link_to ability_label, organization_ability_path(organization, ability_id)
+                - else
+                  %span.text-muted= ability_label
+              .card-body
+                = hidden_field_tag 'association_submissions[][association_row_id]', rid
+                .row.g-3.align-items-end
+                  .col-md-3
+                    %label.form-label Action
+                    = select_tag 'association_submissions[][action]',
+                      options_for_select([['Apply', 'apply'], ['Skip', 'skip']], 'apply'),
+                      class: 'form-select'
+                  .col-md-5
+                    %label.form-label Assignment
+                    = select_tag 'association_submissions[][resolved_assignment_id]',
+                      options_from_collection_for_select(assignments_scope, :id, :title, row['resolved_assignment_id']),
+                      class: 'form-select'
+                  .col-md-4
+                    %label.form-label Required milestone
+                    = select_tag 'association_submissions[][join_milestone_level]',
+                      abilities_hr_join_milestone_select_options(ability_name: ability_label, selected: join_level),
+                      class: 'form-select'
+                    - association_caption = abilities_hr_existing_assignment_ability_caption(assignment_id: row['resolved_assignment_id'], ability_id: ability_id, ability_name: ability_label)
+                    %small.text-muted.d-block.mt-1= association_caption
+                    - if join['rationale'].present?
+                      %small.text-muted.d-block= join['rationale']
+          .d-flex.justify-content-end.mt-4.pt-3.border-top
+            = submit_tag 'Process all associations', class: 'btn btn-primary btn-lg'
+
+      - step2_association_rows.each do |row|
+        - rid = row['id']
+        - next if rid.blank?
+        - rst = row['state'].to_s
+        - next if rst == 'pending' && (groups_by_id[row['ability_group_id'].to_s] || {})['state'].to_s == 'applied'
+        - group = groups_by_id[row['ability_group_id'].to_s] || {}
+        - join = (row['join_milestone'] || {}).stringify_keys
+        - join_level = join['level'].presence || 1
+        - ability_id = group['applied_ability_id']
+        - ability_label = group['form_ability_name'].presence || group['ability_name']
+        - row_border_class = { 'applied' => 'border-success', 'skipped' => 'border-secondary' }.fetch(rst, 'border-info')
+        .card.mb-3.border-start.border-3{id: "association-row-#{rid}", class: row_border_class}
+          .card-header
+            %strong= row['assignment_raw'].presence || '(assignment)'
+            %span.text-muted.ms-2 →
+            - if ability_id.present?
+              = link_to ability_label, organization_ability_path(organization, ability_id)
+            - else
+              %span.text-muted= ability_label
+            - if rst == 'skipped' && row['skipped_reason'] == 'ability_skipped'
+              %span.badge.bg-secondary.ms-2 Skipped (ability skipped)
+          .card-body
+            - if rst == 'applied'
+              %p.text-success.mb-2 Association saved.
+              %ul.mb-0
+                %li
+                  = link_to 'Assignment', organization_assignment_path(organization, row['resolved_assignment_id'])
+                %li
+                  = link_to 'Ability', organization_ability_path(organization, ability_id)
+                  %span.text-muted (milestone #{join_level})
+            - else
+              %p.text-muted.mb-0 Association skipped.
+
+    - elsif parse_ok
+      .alert.alert-info.mt-4
+        %strong Step 2 locked.
+        Approve, update, or skip every ability above to review assignment associations.
 
   - elsif parse_ok
     .alert.alert-warning No ability rows were parsed.
+
+  - scroll_target = flash[:scroll_to].presence
+  - if scroll_target.present?
+    :javascript
+      (function() {
+        function scrollToHrReviewTarget() {
+          var id = (window.location.hash || '').replace(/^#/, '') || #{scroll_target.to_json};
+          var el = document.getElementById(id);
+          if (el) { el.scrollIntoView({ block: 'start' }); }
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', scrollToHrReviewTarget);
+        } else {
+          scrollToHrReviewTarget();
+        }
+      })();
 
   - results_h = @bulk_sync_event.results.is_a?(Hash) ? @bulk_sync_event.results.stringify_keys : {}
   - if @bulk_sync_event.completed? && results_h['summary'].is_a?(Hash)
     - s = results_h['summary'].stringify_keys
     .alert.alert-success.mt-3
       %strong Done.
-      Applied: #{s['applied']}, skipped: #{s['skipped']}, failed: #{s['failed']}.
+      Abilities applied: #{s['abilities_applied']}, skipped: #{s['abilities_skipped']}, invalid: #{s['abilities_invalid']}.
+      Associations applied: #{s['associations_applied']}, skipped: #{s['associations_skipped']}.

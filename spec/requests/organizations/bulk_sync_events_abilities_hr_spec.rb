@@ -19,7 +19,7 @@ RSpec.describe 'Bulk sync HR abilities import', type: :request do
   before do
     PaperTrail.enabled = false
     sign_in_as_teammate_for_request(person, organization)
-    allow(AbilitiesHrReviewEnrichmentJob).to receive(:perform_later)
+    allow(AbilitiesHrReview::EnrichPreview).to receive(:call).and_return(true)
   end
 
   after { PaperTrail.enabled = true }
@@ -35,14 +35,15 @@ RSpec.describe 'Bulk sync HR abilities import', type: :request do
     expect(response).to redirect_to(%r{/bulk_sync_events/\d+\z})
     event = BulkSyncEvent::UploadAbilitiesHrReview.order(:id).last
     expect(event.preview_actions['parse_ok']).to be true
-    expect(event.preview_actions['rows'].size).to eq(1)
+    expect(event.preview_actions['ability_groups'].size).to eq(1)
 
     get organization_bulk_sync_event_path(organization, event)
     expect(response).to have_http_status(:success)
     expect(response.body).to include('Knife work')
+    expect(response.body).to include('Step 1')
   end
 
-  it 'approves a row' do
+  it 'approves ability then association' do
     preview = AbilitiesHrReview::BuildPreview.call(file_content: csv, organization: organization)[:preview_actions]
     event = create(
       :upload_abilities_hr_review,
@@ -50,17 +51,16 @@ RSpec.describe 'Bulk sync HR abilities import', type: :request do
       creator: person,
       initiator: person,
       source_contents: csv,
-      preview_actions: preview
+      preview_actions: preview.merge('parse_ok' => true)
     )
 
-    row_id = event.preview_actions['rows'].first['id']
+    group_id = event.preview_actions['ability_groups'].first['id']
 
-    post approve_abilities_hr_row_organization_bulk_sync_event_path(organization, event), params: {
-      row_id: row_id,
-      resolved_assignment_id: assignment.id,
+    post approve_abilities_hr_ability_group_organization_bulk_sync_event_path(organization, event), params: {
+      ability_group_id: group_id,
+      mode: 'create',
       ability_name: 'Knife work',
       description: 'Use knives safely.',
-      join_milestone_level: 2,
       milestone_1_description: 'M1',
       milestone_2_description: '',
       milestone_3_description: '',
@@ -68,8 +68,28 @@ RSpec.describe 'Bulk sync HR abilities import', type: :request do
       milestone_5_description: ''
     }
 
-    expect(response).to redirect_to(organization_bulk_sync_event_path(organization, event))
+    expect(response).to redirect_to(
+      organization_bulk_sync_event_path(organization, event, anchor: "ability-group-#{group_id}")
+    )
     expect(Ability.exists?(company_id: organization.id, name: 'Knife work')).to be true
+
+    assoc_id = event.reload.preview_actions['association_rows'].first['id']
+    post process_abilities_hr_associations_organization_bulk_sync_event_path(organization, event), params: {
+      association_submissions: [
+        {
+          association_row_id: assoc_id,
+          action: 'apply',
+          resolved_assignment_id: assignment.id,
+          join_milestone_level: 2
+        }
+      ]
+    }
+
+    expect(response).to redirect_to(
+      organization_bulk_sync_event_path(organization, event, anchor: 'step-2-associations')
+    )
     expect(event.reload.status).to eq('completed')
+    ability = Ability.find_by(company_id: organization.id, name: 'Knife work')
+    expect(AssignmentAbility.exists?(assignment_id: assignment.id, ability_id: ability.id)).to be true
   end
 end

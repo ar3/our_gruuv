@@ -1,23 +1,32 @@
 # frozen_string_literal: true
 
 class BulkSyncEvent::UploadAbilitiesHrReview < BulkSyncEvent
+  TERMINAL_ROW_STATES = %w[applied skipped failed invalid].freeze
+
   def self.mark_completed_if_done!(event)
     return unless event.is_a?(BulkSyncEvent::UploadAbilitiesHrReview)
-
-    rows = Array(event.preview_actions&.dig('rows'))
-    return if rows.empty?
     return unless event.preview?
 
-    terminal = rows.all? { |r| %w[applied skipped failed].include?(r['state'].to_s) }
-    return unless terminal
+    preview = event.preview_actions.is_a?(Hash) ? event.preview_actions.deep_stringify_keys : {}
+    groups = Array(preview['ability_groups'])
+    associations = Array(preview['association_rows'])
+
+    return if groups.empty?
+
+    return unless groups.all? { |g| TERMINAL_ROW_STATES.include?(g['state'].to_s) }
+    return if groups.any? { |g| g['state'].to_s == 'pending' }
+    return if associations.any? { |a| a['state'].to_s == 'pending' }
 
     existing = event.results.is_a?(Hash) ? event.results.deep_stringify_keys : {}
     existing['successes'] ||= []
     existing['failures'] ||= []
     existing['summary'] = {
-      'applied' => rows.count { |r| r['state'] == 'applied' },
-      'skipped' => rows.count { |r| r['state'] == 'skipped' },
-      'failed' => rows.count { |r| r['state'] == 'failed' }
+      'abilities_applied' => groups.count { |g| g['state'] == 'applied' },
+      'abilities_skipped' => groups.count { |g| g['state'] == 'skipped' },
+      'abilities_invalid' => groups.count { |g| g['state'] == 'invalid' },
+      'associations_applied' => associations.count { |a| a['state'] == 'applied' },
+      'associations_skipped' => associations.count { |a| a['state'] == 'skipped' },
+      'associations_failed' => associations.count { |a| a['state'] == 'failed' }
     }
     event.update!(status: :completed, results: existing)
   end
@@ -39,7 +48,7 @@ class BulkSyncEvent::UploadAbilitiesHrReview < BulkSyncEvent
     )
 
     if built[:ok]
-      AbilitiesHrReviewEnrichmentJob.perform_later(id)
+      AbilitiesHrReview::EnrichPreview.call(bulk_sync_event: self)
     end
 
     true

@@ -11,6 +11,18 @@ RSpec.describe AbilitiesHrReview::CsvBlockParser do
     CSV
   end
 
+  it 'warns but still parses ability row before assignment header' do
+    early_csv = <<~CSV
+      Assignment,Ability,Description,Milestone 1,Milestone 2,Milestone 3,Milestone 4,Milestone 5,Ability milestone
+      ,Early skill,Desc.,,,,,,
+      Line Cook,,
+    CSV
+    parser = described_class.new(early_csv)
+    expect(parser.parse).to be true
+    expect(parser.warnings).not_to be_empty
+    expect(parser.ability_rows.first['ability_name']).to eq('Early skill')
+  end
+
   it 'parses assignment header then ability row' do
     parser = described_class.new(csv)
     expect(parser.parse).to be true

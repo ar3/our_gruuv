@@ -1,6 +1,13 @@
 class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseController
+  helper AbilitiesHrReviewHelper
+
   before_action :require_login
-  before_action :set_bulk_sync_event, only: [:show, :destroy, :process_sync, :approve_abilities_hr_row, :skip_abilities_hr_row]
+  before_action :set_bulk_sync_event, only: [
+    :show, :destroy, :process_sync,
+    :approve_abilities_hr_ability_group,
+    :skip_abilities_hr_ability_group,
+    :process_abilities_hr_associations
+  ]
   before_action :authorize_bulk_sync_events, only: [:new, :create, :run_auto_refresh_slack]
 
   def index
@@ -100,40 +107,56 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
     # Show page displays sync details, preview actions, and results
   end
 
-  def approve_abilities_hr_row
+  def approve_abilities_hr_ability_group
     authorize @bulk_sync_event, :process_sync?
 
-    result = AbilitiesHrReview::ApproveRow.call(
+    result = AbilitiesHrReview::ApproveAbilityGroup.call(
       bulk_sync_event: @bulk_sync_event,
-      row_id: params.require(:row_id),
+      ability_group_id: params.require(:ability_group_id),
       person: current_person,
-      overrides: abilities_hr_review_override_params
+      mode: params.require(:mode),
+      overrides: abilities_hr_review_ability_override_params
     )
 
-    if result.ok?
-      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
-                  notice: 'Ability created and linked to assignment.'
-    else
-      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
-                  alert: result.error
-    end
+    notice_or_alert(
+      result,
+      'Ability saved.',
+      'Could not save ability.',
+      anchor: abilities_hr_review_ability_group_anchor
+    )
   end
 
-  def skip_abilities_hr_row
+  def skip_abilities_hr_ability_group
     authorize @bulk_sync_event, :process_sync?
 
-    result = AbilitiesHrReview::SkipRow.call(
+    result = AbilitiesHrReview::SkipAbilityGroup.call(
       bulk_sync_event: @bulk_sync_event,
-      row_id: params.require(:row_id)
+      ability_group_id: params.require(:ability_group_id)
     )
 
-    if result.ok?
-      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
-                  notice: 'Row skipped.'
-    else
-      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
-                  alert: result.error
-    end
+    notice_or_alert(
+      result,
+      'Ability skipped.',
+      'Could not skip ability.',
+      anchor: abilities_hr_review_ability_group_anchor
+    )
+  end
+
+  def process_abilities_hr_associations
+    authorize @bulk_sync_event, :process_sync?
+
+    result = AbilitiesHrReview::ProcessAssociationRows.call(
+      bulk_sync_event: @bulk_sync_event,
+      person: current_person,
+      submissions: associations_bulk_submission_params
+    )
+
+    notice_or_alert(
+      result,
+      'Associations processed.',
+      'Could not process associations:',
+      anchor: 'step-2-associations'
+    )
   end
 
   def new
@@ -207,7 +230,7 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
 
     if @bulk_sync_event.is_a?(BulkSyncEvent::UploadAbilitiesHrReview)
       redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event),
-                  alert: 'This import is applied row-by-row from the review screen. Use Approve on each row.'
+                  alert: 'This import is reviewed on the event page: approve each ability, then each assignment association.'
       return
     end
 
@@ -332,11 +355,9 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
     params.require(:bulk_sync_event).permit()
   end
 
-  def abilities_hr_review_override_params
+  def abilities_hr_review_ability_override_params
     params.permit(
-      :resolved_assignment_id,
       :ability_name,
-      :join_milestone_level,
       :department_id,
       :description,
       :milestone_1_description,
@@ -346,6 +367,36 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
       :milestone_5_description
     ).to_h
   end
+
+  def associations_bulk_submission_params
+    Array(params[:association_submissions]).map do |entry|
+      entry.permit(:association_row_id, :action, :resolved_assignment_id, :join_milestone_level).to_h
+    end
+  end
+
+  def notice_or_alert(result, notice_message, alert_prefix, anchor: nil)
+    flash[:scroll_to] = anchor if result.ok? && anchor.present?
+    redirect_url = abilities_hr_review_redirect_url(anchor: anchor)
+
+    if result.ok?
+      redirect_to redirect_url, notice: notice_message
+    else
+      redirect_to redirect_url, alert: "#{alert_prefix} #{result.error}"
+    end
+  end
+
+  def abilities_hr_review_redirect_url(anchor: nil)
+    base = organization_bulk_sync_event_path(current_organization, @bulk_sync_event)
+    anchor.present? ? "#{base}##{anchor}" : base
+  end
+
+  def abilities_hr_review_ability_group_anchor
+    id = params[:ability_group_id].to_s.strip
+    return nil if id.blank?
+
+    "ability-group-#{id}"
+  end
+
 
   def authorize_bulk_sync_events
     authorize BulkSyncEvent

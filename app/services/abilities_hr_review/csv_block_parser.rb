@@ -5,11 +5,12 @@ require 'csv'
 module AbilitiesHrReview
   # Parses HR-style CSV: assignment title on its own row; subsequent rows are abilities until blank.
   class CsvBlockParser
-    attr_reader :errors, :ability_rows
+    attr_reader :errors, :warnings, :ability_rows
 
     def initialize(file_content)
       @file_content = file_content.to_s
       @errors = []
+      @warnings = []
       @ability_rows = []
     end
 
@@ -60,7 +61,7 @@ module AbilitiesHrReview
         end
 
         if current_assignment.blank?
-          @errors << "Row #{csv_row_number}: ability row appears before any assignment header."
+          @warnings << "Row #{csv_row_number}: ability row appears before any assignment header."
         end
 
         @ability_rows << {

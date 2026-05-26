@@ -5,18 +5,8 @@ class AbilitiesHrReviewEnrichmentJob < ApplicationJob
 
   def perform(bulk_sync_event_id)
     event = BulkSyncEvent.find_by(id: bulk_sync_event_id)
-    return unless event.is_a?(BulkSyncEvent::UploadAbilitiesHrReview)
+    return unless event
 
-    rows = Array(event.preview_actions&.dig('rows'))
-    return if rows.empty?
-
-    updated = rows.map do |row|
-      next row if row['state'].to_s != 'pending'
-
-      Llm::AbilitiesHrReviewEnricher.enrich_row(row)
-    end
-
-    preview = event.preview_actions.merge('rows' => updated, 'enrichment' => { 'status' => 'complete', 'at' => Time.current.iso8601 })
-    event.update!(preview_actions: preview)
+    AbilitiesHrReview::EnrichPreview.call(bulk_sync_event: event)
   end
 end

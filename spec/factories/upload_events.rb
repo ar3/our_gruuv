@@ -44,7 +44,7 @@ FactoryBot.define do
       filename { 'abilities.csv' }
       source_contents { 'Assignment,Ability' }
       source_data { { type: 'file_upload', filename: 'abilities.csv', file_size: 10, uploaded_at: Time.current } }
-      preview_actions { { 'rows' => [], 'parse_ok' => true, 'version' => 1 } }
+      preview_actions { { 'ability_groups' => [], 'association_rows' => [], 'parse_ok' => true, 'version' => 2 } }
       results { { 'successes' => [], 'failures' => [] } }
       status { 'preview' }
     end

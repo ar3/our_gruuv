@@ -4,11 +4,16 @@ module Llm
   # Fills description/milestone "proposed" fields from normalized text (LLM optional).
   class AbilitiesHrReviewEnricher
     def self.enrich_row(row)
-      new(row).enrich_row
+      enrich_group(row)
     end
 
-    def initialize(row)
+    def self.enrich_group(group, organization:)
+      new(group, organization: organization).enrich_row
+    end
+
+    def initialize(row, organization: nil)
       @row = row.deep_stringify_keys
+      @organization = organization
     end
 
     def enrich_row
@@ -22,6 +27,10 @@ module Llm
         h = milestones[k].is_a?(Hash) ? milestones[k].stringify_keys : {}
         base = h['normalized'].presence || h['raw'].presence || ''
         out['milestones'][k] = h.merge('proposed' => propose_text(base))
+      end
+
+      if @organization.present?
+        out = Llm::AbilitiesHrReviewMatcher.apply_to_group(out, organization: @organization)
       end
 
       out['enrichment_status'] = 'complete'

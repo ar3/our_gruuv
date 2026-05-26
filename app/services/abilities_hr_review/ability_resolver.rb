@@ -1,34 +1,32 @@
 # frozen_string_literal: true
 
 module AbilitiesHrReview
-  # Resolves an imported ability name to an existing Ability: exact name → FlexibleNameMatcher → pg_search.
+  # Resolves an imported ability: case-insensitive trimmed name match first (sync).
+  # Similarity matching runs later via Llm::AbilitiesHrReviewMatcher in enrichment.
   class AbilityResolver
-    include FlexibleNameMatcher
-
-    def self.call(organization:, name:)
-      new(organization: organization, name: name).call
+    def self.call(organization:, name:, description: nil, milestones: nil)
+      new(organization: organization, name: name, description: description, milestones: milestones).call
     end
 
-    def initialize(organization:, name:)
+    def initialize(organization:, name:, description: nil, milestones: nil)
       @organization = organization
       @name = name.to_s.strip
+      @description = description
+      @milestones = milestones
     end
 
     def call
       return empty_result if @name.blank?
 
-      scope = Ability.where(company_id: @organization.id)
-
-      exact = scope.find_by(name: @name)
-      return build_result(exact, 'exact', []) if exact
-
-      flex = find_with_flexible_matching(Ability, :name, @name, scope)
-      return build_result(flex, 'flexible', []) if flex
-
-      search_hits = Ability.search_by_full_text(@name).where(company_id: @organization.id).limit(5).to_a
-      if search_hits.any?
-        alts = search_hits.drop(1).map { |a| { 'id' => a.id, 'name' => a.name } }
-        return build_result(search_hits.first, 'search', alts)
+      exact = find_insensitive_exact
+      if exact
+        candidate = candidate_entry(exact, 100, 'exact_insensitive')
+        return {
+          'ability_id' => exact.id,
+          'canonical_name' => exact.name,
+          'match_kind' => 'exact_insensitive',
+          'match_candidates' => [candidate]
+        }
       end
 
       empty_result
@@ -36,17 +34,30 @@ module AbilitiesHrReview
 
     private
 
-    def build_result(ability, kind, alternatives)
+    def find_insensitive_exact
+      normalized = @name.downcase
+      Ability.unarchived
+             .where(company_id: @organization.id)
+             .where('LOWER(TRIM(name)) = ?', normalized)
+             .first
+    end
+
+    def candidate_entry(ability, confidence, kind)
       {
         'ability_id' => ability.id,
-        'canonical_name' => ability.name,
-        'match_kind' => kind,
-        'alternatives' => alternatives
+        'name' => ability.name,
+        'confidence' => confidence.to_i.clamp(0, 100),
+        'match_kind' => kind
       }
     end
 
     def empty_result
-      { 'ability_id' => nil, 'canonical_name' => nil, 'match_kind' => 'none', 'alternatives' => [] }
+      {
+        'ability_id' => nil,
+        'canonical_name' => nil,
+        'match_kind' => 'none',
+        'match_candidates' => []
+      }
     end
   end
 end
