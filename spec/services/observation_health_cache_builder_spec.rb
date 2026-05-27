@@ -41,6 +41,23 @@ RSpec.describe ObservationHealthCacheBuilder do
       result = described_class.call(teammate, organization)
       expect(result["given"]["status"]).to eq("red")
       expect(result["given"]["last_published_at"]).to be_nil
+      expect(result["given"]["observations_count"]).to eq(0)
+    end
+
+    it "stores observations_count and last_published_at for given and received" do
+      travel_to Time.zone.parse("2026-05-27 12:00:00") do
+        publish_observation!(published_at: 10.days.ago)
+        publish_observation!(
+          observer: other_teammate.person,
+          published_at: 20.days.ago,
+          observee_teammates: [teammate]
+        )
+        result = described_class.call(teammate, organization)
+        expect(result["given"]["observations_count"]).to eq(1)
+        expect(result["received"]["observations_count"]).to eq(1)
+        expect(result["given"]["last_published_at"]).to be_present
+        expect(result["received"]["last_published_at"]).to be_present
+      end
     end
 
     it "marks given green for a recent published observation" do

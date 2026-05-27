@@ -1,0 +1,233 @@
+- content_for :title, "Observations Health Dashboard"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-eye.me-2
+      Observations Health Dashboard
+      %span.d-inline-flex.align-items-center.ms-2{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "See who is giving and receiving feedback and whether OGO patterns look healthy. Click for a full breakdown."}
+        %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#observationsHealthPageInfo", "aria-expanded" => "false", "aria-controls" => "observationsHealthPageInfo", "aria-label" => "Show page explanation"}
+          %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
+
+.mb-4
+  = content_for :go_back_link
+
+.collapse.mb-4#observationsHealthPageInfo
+  .alert.alert-info.mb-0
+    %h5.fw-semibold.mb-2 Ultimate goal
+    %p.mb-3 Give managers a quick view of who is actively giving and receiving OGO feedback—and whether authored OGOs show a healthy mix of kudos and constructive ratings.
+    %p.mb-2
+      %strong How to read each row:
+      Given and Received drive the row spotlight (worst of the two). Kudos mix and Rating intensity are additional culture signals from OGOs this person authored.
+    %p.mb-3 Use refresh controls only when you believe cached data is out of date and want to queue a background rebuild.
+
+    .card.mb-3
+      .card-header.py-2
+        %strong Example employee row
+      .card-body.py-2
+        .table-responsive
+          %table.table.table-sm.mb-2
+            %thead
+              %tr
+                %th Employee
+                %th Given
+                %th Received
+                %th Kudos mix
+                %th Rating intensity
+            %tbody
+              %tr
+                %td
+                  Alex Rivera
+                  %br
+                  %small.text-muted Casey Manager
+                %td
+                  .alert.alert-success.mb-0.py-1.small
+                    %strong Healthy
+                    %div.text-muted 4 OGOs, last 5 days ago
+                %td
+                  .alert.alert-warning.mb-0.py-1.small
+                    %strong Stale
+                    %div.text-muted 2 OGOs, last 2 months ago
+                %td
+                  .alert.alert-success.mb-0.py-1.small
+                    %strong 4:1
+                    %span.ms-1 Kudos: 4 | Constructive: 1
+                %td
+                  .alert.alert-success.mb-0.py-1.small
+                    %strong 3:1
+                    %span.ms-1 Less extreme: 6 | Most extreme: 2
+        .row.g-2.small
+          .col-12.col-lg-6
+            %div
+              %i.bi.bi-arrow-up-right.me-1
+              Hover Kudos mix and Rating intensity for why the ratio matters for that person.
+            %div
+              %i.bi.bi-arrow-up-right.me-1
+              Hover Given or Received for recency rules (#{Observations::HealthRecency::RECENCY_DAYS}-day window).
+          .col-12.col-lg-6
+            %div
+              %i.bi.bi-arrow-up-right.me-1
+              Spotlight counts use only Given + Received—not the mix columns.
+            %div
+              %i.bi.bi-arrow-up-right.me-1
+              Refresh queues a rebuild; data also refreshes on publish/unpublish and nightly.
+
+    .row
+      .col-12.col-lg-6
+        %h6.fw-semibold.mb-2 Given & Received (recency)
+        %ul.mb-0
+          %li
+            %span.d-inline-block.rounded-circle.me-2.align-middle.bg-success{style: "width: 10px; height: 10px;"}
+            %strong Healthy
+            = " — published a qualifying OGO in the last #{Observations::HealthRecency::RECENCY_DAYS} days."
+          %li
+            %span.d-inline-block.rounded-circle.me-2.align-middle.bg-warning{style: "width: 10px; height: 10px;"}
+            %strong Stale
+            = " — last publish was more than #{Observations::HealthRecency::RECENCY_DAYS} days ago."
+          %li
+            %span.d-inline-block.rounded-circle.me-2.align-middle.bg-danger{style: "width: 10px; height: 10px;"}
+            %strong Never
+            = " — no qualifying published OGOs yet."
+      .col-12.col-lg-6
+        %h6.fw-semibold.mb-2 Kudos mix & Rating intensity
+        %ul.mb-0
+          %li
+            %strong Kudos mix
+            = " — kudos-style vs constructive OGOs authored (target about #{Insights::ObservationsRatingHealth::KUDOS_CONSTRUCTIVE_HEALTHY_RATIO_LABEL})."
+          %li
+            %strong Rating intensity
+            = " — everyday (Solid + Misaligned) vs extreme (Exceptional + Concerning) ratings on authored OGOs (target about 3:1)."
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Observations Health Dashboard", url: nil }])
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            .row.text-center
+              .col-3
+                .h3.text-primary= @spotlight_stats[:total_employees]
+                %small.text-muted Total Active Employees
+              .col-3
+                .h3.text-success= @spotlight_stats[:healthy_count]
+                %small.text-muted Healthy
+              .col-3
+                .h3.text-warning= @spotlight_stats[:ok_count]
+                %small.text-muted Ok
+              .col-3
+                .h3.text-danger= @spotlight_stats[:concerning_count]
+                %small.text-muted Needs attention
+          .col-md-4
+            - if @spotlight_stats[:concerning_count] > 0
+              .alert.alert-danger.small.mb-0
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong= "#{@spotlight_stats[:concerning_pct]}% need attention"
+      .card-footer.bg-light
+        .row.align-items-start
+          .col-md-5
+            %small.text-muted
+              %i.bi.bi-funnel.me-1
+              Who to show: #{observations_health_filter_label(@current_manager_filter)}
+          .col-md-7
+            .small.text-muted.text-md-end
+              - observations_health_definition_lines.each do |line|
+                %div.mb-1= line
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        = form_with url: organization_observations_health_path(@organization), method: :get, local: true, id: "observations-health-filter-form" do |f|
+          .row.align-items-end
+            .col-md-10
+              %label.form-label.fw-bold.fs-5.mb-2 Who to show
+              = select_tag :manager_id, options_for_select(@available_manager_filter_options, @current_manager_filter), class: "form-select form-select-lg", id: "observations-health-manager-select", required: true
+              %small.form-text.text-muted Choose scope: everyone, your reports, or a specific manager's direct reports
+            .col-md-2
+              = f.submit "Go", class: "btn btn-primary btn-lg w-100"
+          - if params[:page].present?
+            = hidden_field_tag :page, params[:page]
+
+.row.justify-content-center.mb-3
+  .col-lg-12.d-flex.gap-2.flex-wrap.align-items-center
+    = button_to organization_observations_health_refresh_all_path(@organization, manager_id: @current_manager_filter), method: :post, class: "btn btn-outline-primary" do
+      %i.bi.bi-arrow-clockwise.me-2
+      Refresh all in this view
+    = link_to organization_insights_observations_path(@organization), class: "btn btn-outline-secondary" do
+      %i.bi.bi-bar-chart-steps.me-2
+      Company Observations Insights
+
+.row.justify-content-center.mb-2
+  .col-lg-12
+    %small.text-muted= raw pagy_info(@pagy)
+
+.row.justify-content-center
+  .col-lg-12
+    - if @employee_rows.any?
+      .table-responsive
+        %table.table.table-hover.table-layout-fixed
+          %colgroup
+            %col{style: "width: 22%"}
+            %col{style: "width: 19%"}
+            %col{style: "width: 19%"}
+            %col{style: "width: 20%"}
+            %col{style: "width: 20%"}
+          %thead
+            %tr
+              %th Employee
+              %th Given
+              %th Received
+              %th Kudos mix
+              %th Rating intensity
+          %tbody
+            - @employee_rows.each do |row|
+              %tr
+                %td
+                  = link_to row[:person].display_name, organization_observations_path(@organization), class: "text-decoration-none fw-bold"
+                  %br
+                  - if row[:manager_teammate]
+                    %small.text-muted
+                      = link_to row[:manager].display_name, organization_observations_health_path(@organization, manager_id: "CompanyTeammate_#{row[:manager_teammate].id}"), class: "text-muted"
+                  - else
+                    %small.text-muted —
+                  - if row[:refreshed_at]
+                    %br
+                    %small.text-muted
+                      Refreshed #{time_ago_in_words(row[:refreshed_at])} ago
+                      = button_to organization_observations_health_refresh_path(@organization, teammate_id: row[:teammate].id), method: :post, class: "btn btn-link btn-sm p-0 text-muted", title: "Queue cache refresh", form: { class: "d-inline" } do
+                        %i.bi.bi-arrow-clockwise
+                %td
+                  %div{observations_health_cell_attrs(observations_health_recency_alert_class(row[:given]["status"]), "Given", observations_health_recency_popover_content("Given"))}
+                    %strong= observations_health_recency_copy(row[:given]["status"])
+                    %div.small.text-muted.mt-1= observations_health_recency_caption(row[:given])
+                %td
+                  %div{observations_health_cell_attrs(observations_health_recency_alert_class(row[:received]["status"]), "Received", observations_health_recency_popover_content("Received"))}
+                    %strong= observations_health_recency_copy(row[:received]["status"])
+                    %div.small.text-muted.mt-1= observations_health_recency_caption(row[:received])
+                %td
+                  %div{observations_health_cell_attrs(observations_health_band_alert_class(row[:kudos_mix]["band"]), "Kudos mix", observations_health_kudos_mix_popover_content(row))}
+                    %strong= row[:kudos_mix]["display_ratio"]
+                    %span.ms-2
+                      Kudos: #{row[:kudos_mix]["kudos_count"]}
+                      |
+                      Constructive: #{row[:kudos_mix]["constructive_count"]}
+                %td
+                  %div{observations_health_cell_attrs(observations_health_band_alert_class(row[:rating_intensity]["band"]), "Rating intensity", observations_health_rating_intensity_popover_content(row))}
+                    %strong= row[:rating_intensity]["display_ratio"]
+                    %span.ms-2
+                      Less extreme: #{row[:rating_intensity]["less_extreme_count"]}
+                      |
+                      Most extreme: #{row[:rating_intensity]["most_extreme_count"]}
+      .d-flex.justify-content-center.mt-4
+        - if @pagy.pages > 1
+          = raw pagy_nav(@pagy)
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No one in this view
+        %p.mb-0
+          Change the filter above or there are no active employees in the selected scope.

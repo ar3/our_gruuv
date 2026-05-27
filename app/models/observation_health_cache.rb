@@ -9,7 +9,7 @@ class ObservationHealthCache < ApplicationRecord
 
   # Payload structure:
   # {
-  #   "given" => { "status" => "red"|"yellow"|"green", "last_published_at" => iso8601|null },
+  #   "given" => { "status" => "red"|"yellow"|"green", "last_published_at" => iso8601|null, "observations_count" => n },
   #   "received" => { same },
   #   "kudos_mix" => { "band" => ..., "kudos_count" => n, "constructive_count" => n, "display_ratio" => "N:1" },
   #   "rating_intensity" => { "band" => ..., "less_extreme_count" => n, "most_extreme_count" => n, "display_ratio" => "N:1" },

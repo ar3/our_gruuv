@@ -394,6 +394,27 @@ RSpec.describe OrganizationPolicy, type: :policy do
     end
   end
 
+  describe '#observations_health?' do
+    context 'when organization matches viewing_teammate.organization' do
+      it 'allows access for any employed teammate' do
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.observations_health?).to be true
+      end
+
+      it 'denies access when user is not employed' do
+        policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+        expect(policy.observations_health?).to be false
+      end
+    end
+
+    context 'when organization does not match viewing_teammate.organization' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.observations_health?).to be false
+      end
+    end
+  end
+
   describe '#view_slack_settings?' do
     context 'when organization matches viewing_teammate.organization' do
       it 'allows access for any employed teammate (nav link visibility)' do

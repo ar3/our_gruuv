@@ -23,6 +23,22 @@ RSpec.describe Observations::HealthRecency do
     end
   end
 
+  describe ".payload_for_scope" do
+    let(:organization) { create(:organization, :company) }
+    let(:teammate) { create(:teammate, organization: organization, first_employed_at: 1.month.ago) }
+
+    it "includes observations_count from the scope" do
+      build(:observation, observer: teammate.person, company: organization, published_at: 5.days.ago, story: "Hi", privacy_level: :observed_only).tap do |obs|
+        obs.observees.clear
+        obs.save!
+      end
+      scope = Observations::HealthScopes.given_scope(teammate, organization)
+      payload = described_class.payload_for_scope(scope)
+      expect(payload["observations_count"]).to eq(1)
+      expect(payload["status"]).to eq("green")
+    end
+  end
+
   describe ".overall_status" do
     it "returns the worse of given and received" do
       expect(described_class.overall_status("green", "yellow")).to eq("yellow")

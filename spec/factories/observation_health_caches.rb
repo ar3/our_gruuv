@@ -7,8 +7,8 @@ FactoryBot.define do
     refreshed_at { Time.current }
     payload do
       {
-        "given" => { "status" => "red", "last_published_at" => nil },
-        "received" => { "status" => "red", "last_published_at" => nil },
+        "given" => { "status" => "red", "last_published_at" => nil, "observations_count" => 0 },
+        "received" => { "status" => "red", "last_published_at" => nil, "observations_count" => 0 },
         "kudos_mix" => {
           "band" => "no_data",
           "kudos_count" => 0,

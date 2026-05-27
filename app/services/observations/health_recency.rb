@@ -20,11 +20,19 @@ module Observations
       [given_status, received_status].min_by { |status| SEVERITY_ORDER.fetch(status.to_s, 0) }
     end
 
-    def payload_for(last_published_at)
-      {
+    def payload_for(last_published_at, observations_count: nil)
+      payload = {
         "status" => status_for_last_published_at(last_published_at),
         "last_published_at" => last_published_at&.iso8601
       }
+      payload["observations_count"] = observations_count unless observations_count.nil?
+      payload
+    end
+
+    def payload_for_scope(scope)
+      count = scope.count
+      last_published_at = scope.maximum(:published_at)
+      payload_for(last_published_at, observations_count: count)
     end
   end
 end

@@ -171,6 +171,9 @@ Rails.application.routes.draw do
     get :goals_health, to: 'organizations/goals_health#index'
     get :goals_health_export, to: 'organizations/goals_health#export'
     get :goals_health_employee_summary_export, to: 'organizations/goals_health#export_employee_summary'
+    get :observations_health, to: 'organizations/observations_health#index'
+    post :observations_health_refresh, to: 'organizations/observations_health#refresh', as: :observations_health_refresh
+    post :observations_health_refresh_all, to: 'organizations/observations_health#refresh_all', as: :observations_health_refresh_all
 
     # Employment management wizard
     resources :employment_management, only: [:index, :new, :create], controller: 'organizations/employment_management' do

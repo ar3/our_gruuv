@@ -40,13 +40,15 @@ class ObservationHealthCacheBuilder
   attr_reader :teammate, :organization
 
   def build_given_payload
-    last_published_at = Observations::HealthScopes.given_scope(teammate, organization).maximum(:published_at)
-    Observations::HealthRecency.payload_for(last_published_at)
+    Observations::HealthRecency.payload_for_scope(
+      Observations::HealthScopes.given_scope(teammate, organization)
+    )
   end
 
   def build_received_payload
-    last_published_at = Observations::HealthScopes.received_scope(teammate, organization).maximum(:published_at)
-    Observations::HealthRecency.payload_for(last_published_at)
+    Observations::HealthRecency.payload_for_scope(
+      Observations::HealthScopes.received_scope(teammate, organization)
+    )
   end
 
   def authored_observations
