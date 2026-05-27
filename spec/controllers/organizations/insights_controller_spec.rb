@@ -313,6 +313,20 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(kudos[:mixed]).to eq(0)
     end
 
+    it 'assigns observations_rating_health_ratios from shared rating health service' do
+      ability = create(:ability, company: company)
+      obs = create(:observation, observer: person, company: company, published_at: 1.day.ago, deleted_at: nil)
+      create(:observation_rating, observation: obs, rateable: ability, rating: :agree)
+      create(:observation_rating, observation: obs, rateable: create(:assignment, company: company), rating: :disagree)
+
+      get :observations, params: { organization_id: company.id }
+
+      rows = assigns(:observations_rating_health_ratios)
+      expect(rows.size).to eq(3)
+      kudos_row = rows.find { |r| r[:name] == "Kudos : Constructive" }
+      expect(kudos_row[:kudos_constructive_band]).to eq(:below_three)
+    end
+
     it 'assigns privacy counts per observer' do
       create(:observation, observer: person, company: company, published_at: 1.day.ago, deleted_at: nil, privacy_level: :observer_only)
       create(:observation, observer: person, company: company, published_at: 1.day.ago, deleted_at: nil, privacy_level: :public_to_company)
