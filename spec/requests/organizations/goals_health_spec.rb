@@ -29,6 +29,13 @@ RSpec.describe "Goals Health", type: :request do
       expect(response.body).to include("Shared w/ Mgrs")
     end
 
+    it "shows health dashboard switcher with links to check-ins and observations health" do
+      get organization_goals_health_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(organization_check_ins_health_path(company, manager_id: "everyone"))
+      expect(response.body).to include(organization_observations_health_path(company, manager_id: "everyone"))
+    end
+
     it "uses aggregate counts that ignore privacy for table/spotlight data" do
       report_person = create(:person, first_name: "Report", last_name: "Employee")
       report_teammate = create(:teammate, person: report_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)

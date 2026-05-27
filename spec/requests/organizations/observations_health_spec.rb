@@ -32,6 +32,13 @@ RSpec.describe "Observations Health", type: :request do
       expect(response.body).to include("Spotlight Healthy / Ok / Needs attention uses only Given and Received")
     end
 
+    it "shows health dashboard switcher with links to check-ins and goals health" do
+      get organization_observations_health_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(organization_check_ins_health_path(company, manager_id: "everyone"))
+      expect(response.body).to include(organization_goals_health_path(company, manager_id: "everyone"))
+    end
+
     it "with manager_id=just_me returns success" do
       get organization_observations_health_path(company), params: { manager_id: "just_me" }
       expect(response).to have_http_status(:success)

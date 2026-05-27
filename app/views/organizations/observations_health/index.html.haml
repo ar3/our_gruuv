@@ -152,13 +152,15 @@
             = hidden_field_tag :page, params[:page]
 
 .row.justify-content-center.mb-3
-  .col-lg-12.d-flex.gap-2.flex-wrap.align-items-center
-    = button_to organization_observations_health_refresh_all_path(@organization, manager_id: @current_manager_filter), method: :post, class: "btn btn-outline-primary" do
-      %i.bi.bi-arrow-clockwise.me-2
-      Refresh all in this view
-    = link_to organization_insights_observations_path(@organization), class: "btn btn-outline-secondary" do
-      %i.bi.bi-bar-chart-steps.me-2
-      Company Observations Insights
+  .col-lg-12
+    = render "organizations/health/dashboard_switcher", organization: @organization, current: :observations_health, manager_id: @current_manager_filter
+    .d-flex.gap-2.flex-wrap.align-items-center
+      = button_to organization_observations_health_refresh_all_path(@organization, manager_id: @current_manager_filter), method: :post, class: "btn btn-outline-primary" do
+        %i.bi.bi-arrow-clockwise.me-2
+        Refresh all in this view
+      = link_to organization_insights_observations_path(@organization), class: "btn btn-outline-secondary" do
+        %i.bi.bi-bar-chart-steps.me-2
+        Company Observations Insights
 
 .row.justify-content-center.mb-2
   .col-lg-12

@@ -150,27 +150,29 @@
           - if params[:page].present?
             = hidden_field_tag :page, params[:page]
 
-/ Download and link
+/ Health dashboard switcher + page actions
 .row.justify-content-center.mb-3
-  .col-lg-12.d-flex.gap-2.flex-wrap.align-items-center
-    = link_to organization_check_ins_health_export_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
-      %i.bi.bi-download.me-2
-      Download check-ins (CSV)
-    = link_to organization_check_ins_health_employee_summary_export_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
-      %i.bi.bi-download.me-2
-      Download employee check-in summary CSV
-    - if can_view_check_ins_health_by_manager?
-      = link_to organization_check_ins_health_by_manager_path(@organization), class: 'btn btn-outline-primary' do
-        %i.bi.bi-people.me-2
-        By manager
-    - else
-      %span.d-inline-block{title: "You must be a manager with direct reports to view the By Manager page.", "data-bs-toggle" => "tooltip", "data-bs-placement" => "top"}
-        %button.btn.btn-outline-secondary.disabled{type: "button", disabled: true}
-          %i.bi.bi-exclamation-triangle.me-2
+  .col-lg-12
+    = render "organizations/health/dashboard_switcher", organization: @organization, current: :check_ins_health, manager_id: @current_manager_filter
+    .d-flex.gap-2.flex-wrap.align-items-center
+      = link_to organization_check_ins_health_export_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
+        %i.bi.bi-download.me-2
+        Download check-ins (CSV)
+      = link_to organization_check_ins_health_employee_summary_export_path(@organization, manager_id: @current_manager_filter), class: 'btn btn-outline-primary' do
+        %i.bi.bi-download.me-2
+        Download employee check-in summary CSV
+      - if can_view_check_ins_health_by_manager?
+        = link_to organization_check_ins_health_by_manager_path(@organization), class: 'btn btn-outline-primary' do
+          %i.bi.bi-people.me-2
           By manager
-    = link_to organization_insights_check_ins_progress_path(@organization), class: 'btn btn-outline-secondary' do
-      %i.bi.bi-bar-chart-steps.me-2
-      Check-ins Progress
+      - else
+        %span.d-inline-block{title: "You must be a manager with direct reports to view the By Manager page.", "data-bs-toggle" => "tooltip", "data-bs-placement" => "top"}
+          %button.btn.btn-outline-secondary.disabled{type: "button", disabled: true}
+            %i.bi.bi-exclamation-triangle.me-2
+            By manager
+      = link_to organization_insights_check_ins_progress_path(@organization), class: 'btn btn-outline-secondary' do
+        %i.bi.bi-bar-chart-steps.me-2
+        Check-ins Progress
 
 / Pagination Info
 .row.justify-content-center.mb-2

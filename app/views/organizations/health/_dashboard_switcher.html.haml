@@ -1,0 +1,7 @@
+- pages = health_dashboard_switcher_pages(organization, manager_id: manager_id)
+- if pages.size > 1
+  .btn-group.mb-3{role: "group", "aria-label" => "Health dashboards"}
+    - pages.each do |page|
+      = link_to page[:path], class: health_dashboard_switcher_button_class(page[:key], current) do
+        %i.bi{class: "#{page[:icon]} me-1"}
+        = page[:label]

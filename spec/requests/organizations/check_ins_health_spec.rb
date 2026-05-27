@@ -30,6 +30,14 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response.body).to include('Milestones')
     end
 
+    it "shows health dashboard switcher with links to goals and observations health" do
+      get organization_check_ins_health_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(organization_goals_health_path(company, manager_id: "everyone"))
+      expect(response.body).to include(organization_observations_health_path(company, manager_id: "everyone"))
+      expect(response.body).to include('aria-label="Health dashboards"')
+    end
+
     it 'shows By manager link when user can view by manager' do
       get organization_check_ins_health_path(company)
       expect(response).to have_http_status(:success)
