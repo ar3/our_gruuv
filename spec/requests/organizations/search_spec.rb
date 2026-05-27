@@ -147,10 +147,15 @@ RSpec.describe 'Organizations::Search', type: :request do
       end
 
       context 'with abilities in search results' do
-        # Stub search results so the view is fully exercised for abilities; this would catch
-        # view bugs like calling ability.organization instead of ability.company (NoMethodError).
+        let(:department) { create(:department, company: organization, name: 'Engineering') }
         let(:searchable_ability) do
-          create(:ability, company: organization, name: 'UniqueSearchableAbility', description: 'Description for search')
+          create(
+            :ability,
+            company: organization,
+            department: department,
+            name: 'UniqueSearchableAbility',
+            description: 'Description for search'
+          )
         end
 
         before do
@@ -167,13 +172,21 @@ RSpec.describe 'Organizations::Search', type: :request do
           allow(GlobalSearchQuery).to receive(:new).and_return(query_double)
         end
 
-        it 'renders abilities results without error (exercises full view for abilities)' do
+        it 'renders abilities results with department link' do
           get organization_search_path(organization, q: 'anything')
           expect(response).to have_http_status(:success)
           expect(assigns(:results)[:abilities]).to eq([searchable_ability])
           expect(response.body).to include('UniqueSearchableAbility')
-          expect(response.body).to include(searchable_ability.company.display_name)
+          expect(response.body).to include('Engineering')
+          expect(response.body).to include(organization_department_path(organization, department))
           expect(response.body).to include(organization_ability_path(organization, searchable_ability))
+        end
+
+        it 'renders no department when ability has none' do
+          searchable_ability.update!(department: nil)
+          get organization_search_path(organization, q: 'anything')
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('No department')
         end
       end
     end

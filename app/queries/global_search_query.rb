@@ -81,10 +81,23 @@ class GlobalSearchQuery
     results[:abilities] = scope_abilities_to_organization(results[:abilities])
     results[:titles] = scope_titles_to_organization(results[:titles])
 
+    preload_display_associations!(results)
+
     # Calculate total count
     results[:total_count] = results.values.sum(&:size)
 
     results
+  end
+
+  def preload_display_associations!(results)
+    %i[assignments abilities titles].each do |key|
+      next if results[key].empty?
+
+      ActiveRecord::Associations::Preloader.new(
+        records: results[key],
+        associations: :department
+      ).call
+    end
   end
 
   def can_view_person?(person)

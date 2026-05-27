@@ -88,14 +88,14 @@
                     %tr
                       %th Title
                       %th Tagline
-                      %th Company
+                      %th Department
                   %tbody
                     - @results[:assignments].each do |assignment|
                       %tr
                         %td
                           = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none fw-bold"
                         %td= truncate(assignment.tagline, length: 50)
-                        %td= assignment.company.display_name
+                        %td= search_department_cell(assignment)
 
         - if @results[:abilities].any?
           .card.mb-4
@@ -110,14 +110,14 @@
                     %tr
                       %th Name
                       %th Description
-                      %th Organization
+                      %th Department
                   %tbody
                     - @results[:abilities].each do |ability|
                       %tr
                         %td
                           = link_to ability.name, organization_ability_path(@organization, ability), class: "text-decoration-none fw-bold"
                         %td= truncate(ability.description, length: 100)
-                        %td= ability.company.display_name
+                        %td= search_department_cell(ability)
 
         - if @results[:titles].any?
           .card.mb-4
@@ -131,13 +131,13 @@
                   %thead
                     %tr
                       %th Title
-                      %th Company
+                      %th Department
                   %tbody
                     - @results[:titles].each do |title|
                       %tr
                         %td
                           = link_to title.external_title, organization_title_path(@organization, title), class: "text-decoration-none fw-bold"
-                        %td= title.company.display_name
+                        %td= search_department_cell(title)
 
         - if @results[:observations].any?
           .card.mb-4
