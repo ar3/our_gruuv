@@ -23,6 +23,9 @@ RSpec.describe 'Horizontal Navigation', type: :request do
     allow_any_instance_of(OrganizationPolicy).to receive(:view_bulk_sync_events?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:show?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:check_ins_health?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:goals_health?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:observations_health?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:customize_company?).and_return(true)
     # Mock Huddle policy
     allow_any_instance_of(HuddlePolicy).to receive(:show?).and_return(true)
@@ -195,6 +198,16 @@ RSpec.describe 'Horizontal Navigation', type: :request do
     it 'includes Check-ins Health link' do
       expect(response.body).to include('Check-ins Health')
       expect(response.body).to include(organization_check_ins_health_path(organization))
+    end
+
+    it 'includes Goals Health link' do
+      expect(response.body).to include('Goals Health')
+      expect(response.body).to include(organization_goals_health_path(organization))
+    end
+
+    it 'includes Observations Health link' do
+      expect(response.body).to include('Observations Health')
+      expect(response.body).to include(organization_observations_health_path(organization))
     end
 
     it 'includes Check-ins Progress link' do

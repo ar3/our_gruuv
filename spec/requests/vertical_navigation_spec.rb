@@ -26,6 +26,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
     allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:check_ins_health?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:goals_health?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:observations_health?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_slack_settings?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_company_preferences?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:customize_company?).and_return(true)
@@ -77,6 +78,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           manage_employment?: true,
           check_ins_health?: true,
           goals_health?: true,
+          observations_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -93,6 +95,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           manage_employment?: true,
           check_ins_health?: true,
           goals_health?: true,
+          observations_health?: true,
           view_slack_settings?: true,
           view_company_preferences?: true,
           view_prompts?: true,
@@ -145,6 +148,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           manage_employment?: true,
           check_ins_health?: true,
           goals_health?: true,
+          observations_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -161,6 +165,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           manage_employment?: true,
           check_ins_health?: true,
           goals_health?: true,
+          observations_health?: true,
           view_slack_settings?: true,
           view_company_preferences?: true,
           view_prompts?: true,
@@ -247,6 +252,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           manage_employment?: true,
           check_ins_health?: true,
           goals_health?: true,
+          observations_health?: true,
           view_prompts?: true,
           view_prompt_templates?: true,
           view_observations?: true,
@@ -263,6 +269,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
           manage_employment?: true,
           check_ins_health?: true,
           goals_health?: true,
+          observations_health?: true,
           view_slack_settings?: true,
           view_company_preferences?: true,
           view_prompts?: true,
@@ -383,12 +390,12 @@ RSpec.describe 'Vertical Navigation', type: :request do
   describe 'active state and query parameters' do
     before do
       org_policy_double = double(
-        show?: true, manage_employment?: true, check_ins_health?: true, goals_health?: true, view_prompts?: true, view_prompt_templates?: true,
+        show?: true, manage_employment?: true, check_ins_health?: true, goals_health?: true, observations_health?: true, view_prompts?: true, view_prompt_templates?: true,
         view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true,
         view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true
       )
       company_policy_double = double(
-        show?: true, manage_employment?: true, check_ins_health?: true, goals_health?: true, view_slack_settings?: true, view_company_preferences?: true,
+        show?: true, manage_employment?: true, check_ins_health?: true, goals_health?: true, observations_health?: true, view_slack_settings?: true, view_company_preferences?: true,
         view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true,
         view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true,
         view_feedback_requests?: true, customize_company?: true

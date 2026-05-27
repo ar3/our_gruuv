@@ -208,16 +208,37 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Observations',
-            icon: 'bi-eye',
-            path: organization_insights_observations_path(current_organization),
+            label: 'Who is doing what',
+            icon: 'bi-pie-chart',
+            path: organization_insights_who_is_doing_what_path(current_organization),
             policy_check: -> { policy(current_company).view_observations? },
             coming_soon: false
           },
           {
-            label: 'Who is doing what',
-            icon: 'bi-pie-chart',
-            path: organization_insights_who_is_doing_what_path(current_organization),
+            label: 'Check-ins Health',
+            icon: 'bi-heart-pulse',
+            path: organization_check_ins_health_path(current_organization),
+            policy_check: -> { policy(current_organization).check_ins_health? },
+            coming_soon: false
+          },
+          {
+            label: 'Goals Health',
+            icon: 'bi-heart-pulse',
+            path: organization_goals_health_path(current_organization),
+            policy_check: -> { policy(current_organization).goals_health? },
+            coming_soon: false
+          },
+          {
+            label: 'Observations Health',
+            icon: 'bi-heart-pulse',
+            path: organization_observations_health_path(current_organization),
+            policy_check: -> { policy(current_organization).observations_health? },
+            coming_soon: false
+          },
+          {
+            label: 'Observations',
+            icon: 'bi-eye',
+            path: organization_insights_observations_path(current_organization),
             policy_check: -> { policy(current_company).view_observations? },
             coming_soon: false
           },
@@ -257,13 +278,6 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Goals Health',
-            icon: 'bi-heart-pulse',
-            path: organization_goals_health_path(current_organization),
-            policy_check: -> { policy(current_organization).goals_health? },
-            coming_soon: false
-          },
-          {
             label: 'Prompts',
             icon: 'bi-journal-text',
             path: organization_insights_prompts_path(current_organization),
@@ -275,13 +289,6 @@ module NavigationHelper
             icon: 'bi-chat-dots',
             path: huddles_review_organization_path(current_organization),
             policy_check: -> { policy(current_organization).show? },
-            coming_soon: false
-          },
-          {
-            label: 'Check-ins Health',
-            icon: 'bi-heart-pulse',
-            path: organization_check_ins_health_path(current_organization),
-            policy_check: -> { policy(current_organization).check_ins_health? },
             coming_soon: false
           },
           {

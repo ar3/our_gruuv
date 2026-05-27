@@ -165,7 +165,7 @@ RSpec.describe NavigationHelper, type: :helper do
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
-          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, view_slack_settings?: true, view_company_preferences?: true)
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, observations_health?: true, view_slack_settings?: true, view_company_preferences?: true)
         elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
           double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, view_company_preferences?: true)
         elsif record.is_a?(CompanyTeammate)
@@ -363,11 +363,17 @@ RSpec.describe NavigationHelper, type: :helper do
         
         labels = items.map { |item| item[:label] }
         expect(labels.first).to eq('OG Scorecard')
-        expect(labels).to include('Who is doing what')
+        expect(labels.index('Who is doing what')).to eq(1)
+        expect(labels.index('Check-ins Health')).to eq(2)
+        expect(labels.index('Goals Health')).to eq(3)
+        expect(labels.index('Observations Health')).to eq(4)
+        expect(labels.index('Observations')).to eq(5)
         expect(labels).to include('Seats, Titles, Positions')
         expect(labels).to include('Assignments')
         expect(labels).to include('Abilities')
         expect(labels).to include('Goals')
+        expect(labels).to include('Goals Health')
+        expect(labels).to include('Observations Health')
         expect(labels).to include('Feedback Requests')
         expect(labels).to include('Huddles')
         expect(labels).to include('Check-ins Health')

@@ -115,8 +115,13 @@
                     %li= link_to "Bulk Events", organization_bulk_sync_events_path(current_organization), class: "dropdown-item"
                   - if policy(current_company).view_bulk_sync_events?
                     %li= link_to "Bulk Downloads", organization_bulk_downloads_path(current_organization), class: "dropdown-item"
-                  - if policy(current_organization).manage_employment?
+                  - if policy(current_organization).check_ins_health?
                     %li= link_to "Check-ins Health", organization_check_ins_health_path(current_organization), class: "dropdown-item"
+                  - if policy(current_organization).goals_health?
+                    %li= link_to "Goals Health", organization_goals_health_path(current_organization), class: "dropdown-item"
+                  - if policy(current_organization).observations_health?
+                    %li= link_to "Observations Health", organization_observations_health_path(current_organization), class: "dropdown-item"
+                  - if policy(current_organization).check_ins_health?
                     %li= link_to "Check-ins Progress", organization_insights_check_ins_progress_path(current_organization), class: "dropdown-item"
                   - if current_company_teammate
                     - about_me_path = about_me_organization_company_teammate_path(current_organization, current_company_teammate)
