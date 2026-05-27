@@ -153,6 +153,55 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(html).to include("goals-health-spotlight-compact")
     end
 
+    it 'returns observations health widget with compact spotlight metrics' do
+      teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+      post organization_start_here_add_widget_path(company), params: { widget_id: "insights_observations_health" }
+
+      post organization_start_here_widget_dashboards_path(company),
+           params: { widget_ids: %w[insights_observations_health] },
+           as: :json
+      json = JSON.parse(response.body)
+      html = json.dig("widgets", "insights_observations_health", "html").to_s
+      expect(json.dig("widgets", "insights_observations_health", "ok")).to eq(true)
+      expect(html).to include("Total Active Employees")
+      expect(html).to include("Healthy")
+      expect(html).to include("Ok")
+      expect(html).to include("Needs attention")
+      expect(html).to include("observations-health-spotlight-compact")
+    end
+
+    it 'returns check-ins health widget with compact spotlight metrics' do
+      teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+      post organization_start_here_add_widget_path(company), params: { widget_id: "insights_check_ins_health" }
+
+      post organization_start_here_widget_dashboards_path(company),
+           params: { widget_ids: %w[insights_check_ins_health] },
+           as: :json
+      json = JSON.parse(response.body)
+      html = json.dig("widgets", "insights_check_ins_health", "html").to_s
+      expect(json.dig("widgets", "insights_check_ins_health", "ok")).to eq(true)
+      expect(html).to include("Total Active Employees")
+      expect(html).to include("Healthy")
+      expect(html).to include("Ok")
+      expect(html).to include("Needs attention")
+      expect(html).to include("check-ins-health-spotlight-compact")
+    end
+
+    it 'returns 1:1 hub widget with top priority and green vs attention counts' do
+      teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+      create(:one_on_one_link, teammate: teammate)
+      post organization_start_here_add_widget_path(company), params: { widget_id: "one_on_one_hub" }
+
+      post organization_start_here_widget_dashboards_path(company),
+           params: { widget_ids: %w[one_on_one_hub] },
+           as: :json
+      json = JSON.parse(response.body)
+      html = json.dig("widgets", "one_on_one_hub", "html").to_s
+      expect(json.dig("widgets", "one_on_one_hub", "ok")).to eq(true)
+      expect(html).to include("one-on-one-hub-start-here-compact")
+      expect(html).to match(/green|need attention|\(\d+ total\)/)
+    end
+
     it 'omits widget ids that are not on the user dashboard' do
       post organization_start_here_widget_dashboards_path(company),
            params: { widget_ids: %w[about_me not_on_my_dashboard_xyz] },

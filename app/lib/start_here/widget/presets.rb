@@ -13,17 +13,21 @@ module StartHere
           %w[
             my_employees
             get_shit_done
+            one_on_one_hub
+            insights_check_ins_health
             insights_goals_health
-            about_me
-            beta_check_in_history
+            insights_observations_health
+            my_check_in
             my_goals
             about_complete_picture
             beta_my_growth
             observations_involving_me
+            about_me
           ]
         when :non_manager
           # Matches start_here_dashboard_widgets_v1 non-manager layout (by position).
           %w[
+            one_on_one_hub
             about_me
             get_shit_done
             my_goals
@@ -37,6 +41,7 @@ module StartHere
         when :og_enthusiast
           # Matches start_here_dashboard_widgets_v1 OG enthusiast layout (by position).
           %w[
+            one_on_one_hub
             about_me
             add_new_ogo
             observations_involving_me

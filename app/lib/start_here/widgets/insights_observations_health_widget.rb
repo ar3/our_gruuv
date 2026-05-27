@@ -2,17 +2,17 @@
 
 require "ostruct"
 
-class StartHere::Widgets::InsightsCheckInsHealthWidget < StartHere::Widget::Base
+class StartHere::Widgets::InsightsObservationsHealthWidget < StartHere::Widget::Base
   START_HERE_WIDGET = {
-    id: "insights_check_ins_health",
+    id: "insights_observations_health",
     group: "Insights",
     icon: "bi-heart-pulse",
-    selection_title: I18n.t("terminology.insights_clarity_check_ins_health"),
-    selection_description: "Check-in health across employees.",
-    label: "Check-ins Health",
-    path: ->(c) { c.view.organization_check_ins_health_path(c.organization) },
+    selection_title: "Observations Health",
+    selection_description: "Observations health across employees.",
+    label: "Observations Health",
+    path: ->(c) { c.view.organization_observations_health_path(c.organization) },
     description: nil,
-    button_label: "Check-ins Health"
+    button_label: "Observations Health"
   }.freeze
 
   def dashboard_content
@@ -30,17 +30,17 @@ class StartHere::Widgets::InsightsCheckInsHealthWidget < StartHere::Widget::Base
     imp = ctrl.respond_to?(:impersonating_teammate) ? ctrl.impersonating_teammate : nil
     puser = OpenStruct.new(user: ct, impersonating_teammate: imp)
     org_policy = OrganizationPolicy.new(puser, org)
-    return ActiveSupport::SafeBuffer.new unless org_policy.check_ins_health?
+    return ActiveSupport::SafeBuffer.new unless org_policy.observations_health?
 
-    stats = CheckInsHealthSpotlightService.new(
+    stats = ObservationsHealthSpotlightService.new(
       organization: org,
       current_person: person,
       current_company_teammate: ct,
       manage_employment: org_policy.manage_employment?
-    ).compact_spotlight_stats(nil)
+    ).rows_and_spotlight_for(nil).fetch(:spotlight_stats)
 
     view.render(
-      partial: "shared/check_ins_health_spotlight_compact",
+      partial: "shared/observations_health_spotlight_compact",
       locals: { stats: stats },
       formats: [ :html ]
     )

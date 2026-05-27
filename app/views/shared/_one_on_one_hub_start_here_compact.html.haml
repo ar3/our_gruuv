@@ -1,0 +1,11 @@
+-# locals: summary (Hash :top_title, :green_count, :needs_attention_count, :total_count)
+.one-on-one-hub-start-here-compact
+  .fw-semibold.small.text-body.lh-sm.mb-1= summary[:top_title]
+  .text-muted.small.mb-0
+    %span.text-success.fw-semibold= summary[:green_count]
+    green
+    %span.text-muted ·
+    %span.text-danger.fw-semibold= summary[:needs_attention_count]
+    need attention
+    %span.text-muted
+      (#{summary[:total_count]} total)

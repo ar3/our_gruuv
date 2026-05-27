@@ -9,32 +9,15 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
   def index
     authorize @organization, :check_ins_health?
     apply_filter_default_if_needed
-    active_teammates = filtered_teammates_for_check_ins_health.to_a
-
-    # Load cached health data for each teammate
-    teammate_ids = active_teammates.map(&:id)
-    caches_by_teammate = CheckInHealthCache.where(
-      teammate_id: teammate_ids,
-      organization_id: @organization.id
-    ).index_by(&:teammate_id)
-
-    all_employee_health_data = active_teammates.map do |teammate|
-      cache = caches_by_teammate[teammate.id]
-      {
-        teammate: teammate,
-        person: teammate.person,
-        cache: cache
-      }
-    end
-
-    # Spotlight stats from cache (0-4 points per item)
-    @spotlight_stats = calculate_spotlight_stats_from_cache(all_employee_health_data)
+    data = check_ins_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])
+    all_employee_health_data = data.fetch(:rows)
+    @spotlight_stats = data.fetch(:spotlight_stats)
 
     # Paginate
     @pagy = Pagy.new(count: all_employee_health_data.count, page: params[:page] || 1, items: 25)
     @employee_health_data = all_employee_health_data[@pagy.offset, @pagy.items]
     @current_manager_filter = params[:manager_id]
-    @available_manager_filter_options = available_check_ins_health_manager_filter_options
+    @available_manager_filter_options = check_ins_health_spotlight_service.available_manager_filter_options
   end
 
   def export
@@ -92,7 +75,7 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     authorize @organization, :check_ins_health?
     apply_filter_default_if_needed
 
-    teammate_ids = filtered_teammates_for_check_ins_health.pluck(:id)
+    teammate_ids = check_ins_health_spotlight_service.filtered_teammates(params[:manager_id]).pluck(:id)
     teammate_ids.each { |teammate_id| CheckInHealthCacheRefreshJob.perform_later(teammate_id) }
 
     redirect_to organization_check_ins_health_path(@organization, manager_id: params[:manager_id]),
@@ -112,6 +95,15 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
 
   def can_view_check_ins_health_by_manager?
     policy(@organization).manage_employment? || current_company_teammate&.has_direct_reports?
+  end
+
+  def check_ins_health_spotlight_service
+    @check_ins_health_spotlight_service ||= CheckInsHealthSpotlightService.new(
+      organization: @organization,
+      current_person: current_person,
+      current_company_teammate: current_company_teammate,
+      manage_employment: policy(@organization).manage_employment?
+    )
   end
 
   def managers_with_direct_reports_for_by_manager(company)
@@ -162,48 +154,5 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     unless current_person
       redirect_to root_path, alert: 'Please log in to access this page.'
     end
-  end
-
-  # Spotlight stats from check-ins only (position, assignments, aspirations). Excludes milestones.
-  def calculate_spotlight_stats_from_cache(employee_health_data)
-    total_employees = employee_health_data.count
-    all_healthy = 0
-    needing_attention = 0
-    total_points = 0.0
-    max_points = 0.0
-
-    employee_health_data.each do |data|
-      cache = data[:cache]
-      unless cache
-        needing_attention += 1
-        next
-      end
-      points = cache.completion_points
-      pos_pts = points[:position].to_f
-      assign_pts = points[:assignments].to_f
-      aspir_pts = points[:aspirations].to_f
-      pos_max = 4.0
-      assign_max = (cache.payload_assignments.size * 4).to_f
-      assign_max = 4.0 if cache.payload_assignments.empty?
-      aspir_max = (cache.payload_aspirations.size * 4).to_f
-      aspir_max = 4.0 if cache.payload_aspirations.empty?
-      total_max = pos_max + assign_max + aspir_max
-      total_points += pos_pts + assign_pts + aspir_pts
-      max_points += total_max
-      if pos_pts >= 4 && assign_pts >= assign_max && aspir_pts >= aspir_max
-        all_healthy += 1
-      elsif pos_pts < 2 || assign_pts < assign_max * 0.5 || aspir_pts < aspir_max * 0.5
-        needing_attention += 1
-      end
-    end
-
-    completion_rate = max_points.positive? ? (total_points / max_points * 100).round(1) : 0
-
-    {
-      total_employees: total_employees,
-      all_healthy: all_healthy,
-      needing_attention: needing_attention,
-      completion_rate: completion_rate
-    }
   end
 end
