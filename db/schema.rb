@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_24_001114) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_27_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -895,6 +895,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_24_001114) do
     t.index ["processed_at"], name: "index_observable_moments_on_processed_at"
   end
 
+  create_table "observation_health_caches", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "refreshed_at"
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_observation_health_caches_on_organization_id"
+    t.index ["teammate_id", "organization_id"], name: "index_observation_health_caches_on_teammate_and_organization", unique: true
+    t.index ["teammate_id"], name: "index_observation_health_caches_on_teammate_id"
+  end
+
   create_table "observation_ratings", force: :cascade do |t|
     t.bigint "observation_id", null: false
     t.string "rateable_type", null: false
@@ -1712,6 +1724,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_24_001114) do
   add_foreign_key "observable_moments", "people", column: "created_by_id"
   add_foreign_key "observable_moments", "teammates", column: "primary_potential_observer_id"
   add_foreign_key "observable_moments", "teammates", column: "processed_by_teammate_id"
+  add_foreign_key "observation_health_caches", "organizations"
+  add_foreign_key "observation_health_caches", "teammates"
   add_foreign_key "observation_ratings", "observations"
   add_foreign_key "observations", "feedback_request_questions"
   add_foreign_key "observations", "goals", on_delete: :nullify
