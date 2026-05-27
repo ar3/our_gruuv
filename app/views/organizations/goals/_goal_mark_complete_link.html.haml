@@ -1,0 +1,30 @@
+- goal = local_assigns.fetch(:goal)
+- organization = local_assigns.fetch(:organization)
+- return_url = local_assigns.fetch(:return_url, request.url)
+- return_text = local_assigns.fetch(:return_text, 'Goal')
+- button_class = local_assigns.fetch(:button_class, 'btn btn-success')
+- label = local_assigns.fetch(:label, 'Complete')
+- tooltip = local_assigns.fetch(:tooltip, 'mark this goal as done and log if it was hit or not')
+- stacked = local_assigns.fetch(:stacked, false)
+- link_extra_class = stacked ? ' goal-mark-complete-link--stacked' : ' text-nowrap'
+- can_update = policy(goal).update?
+
+- if can_update
+  = link_to done_organization_goal_path(organization, goal, return_url: return_url, return_text: return_text),
+      class: "#{button_class}#{link_extra_class}",
+      "data-bs-toggle" => "tooltip",
+      "data-bs-title" => tooltip do
+    %i.bi.bi-check-circle{class: ('me-1' unless stacked)}
+    - if stacked
+      %span= label
+    - else
+      = label
+- else
+  .d-inline-flex.align-items-center.gap-1{class: local_assigns[:wrapper_class]}
+    %span{class: "#{button_class} disabled#{link_extra_class}", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(goal)}
+      %i.bi.bi-check-circle{class: ('me-1' unless stacked)}
+      - if stacked
+        %span= label
+      - else
+        = label
+    %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_edit_access_tooltip(goal)}

@@ -328,6 +328,54 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(completed_goal.title)
     end
+
+    it 'shows completion banner with narrative sentences above goal details' do
+      tz = person.timezone.presence || 'Eastern Time (US & Canada)'
+      completed_at = Time.zone.parse('2026-05-15 14:30:00')
+      week_start = completed_at.in_time_zone(tz).to_date.beginning_of_week(:monday)
+      started_at = 3.weeks.ago
+      completed_goal = create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Banner Completed Goal',
+        started_at: started_at,
+        completed_at: completed_at,
+        earliest_target_date: Date.new(2026, 4, 1),
+        most_likely_target_date: Date.new(2026, 5, 1),
+        latest_target_date: Date.new(2026, 6, 1),
+        initial_confidence: :commit)
+      create(:goal_check_in,
+        goal: completed_goal,
+        confidence_reporter: person,
+        check_in_week_start: week_start,
+        confidence_percentage: 100,
+        confidence_reason: "We shipped the MVP and iterated on feedback.")
+
+      get organization_goal_path(organization, completed_goal)
+
+      expect(response).to have_http_status(:success)
+      banner_pos = response.body.index('goal-completion-banner-heading')
+      what_pos = response.body.index('What Is This Goal?')
+      expect(banner_pos).to be_present
+      expect(what_pos).to be_present
+      expect(banner_pos).to be < what_pos
+      expect(response.body).to include('Goal completed')
+      expect(response.body).to include('set out to')
+      expect(response.body).to include('Banner Completed Goal')
+      expect(response.body).to include('have this done by')
+      expect(response.body).to include('the earliest')
+      expect(response.body).to include('most likely on')
+      expect(response.body).to include('the latest')
+      expect(response.body).to include('Commit')
+      expect(response.body).to include('confidence-level goal')
+      expect(response.body).to include('marked this goal as')
+      expect(response.body).to include('hit!')
+      expect(response.body).to include('Here is what they learned:')
+      expect(response.body).to include('We shipped the MVP')
+      expect(response.body).to include('goal-completion-banner__emphasis')
+      expect(response.body).not_to include('Completed on')
+      expect(response.body).not_to include('Results')
+    end
     
     it 'does not show archived child goals on goal show page' do
       active_child = create(:goal, creator: teammate, owner: teammate, title: 'Active Child Goal')
@@ -348,6 +396,26 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Create/associate new child goal')
       expect(response.body).to include(choose_outgoing_link_organization_goal_goal_links_path(organization, goal, goal_type: 'stepping_stone_activity'))
+    end
+
+    it 'displays Mark complete in Actions and Complete rail on current week check-in when user can update' do
+      get organization_goal_path(organization, goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Mark complete')
+      expect(response.body).to include(done_organization_goal_path(organization, goal))
+      expect(response.body).to include('goal-check-in-inline-layout--triple-column')
+      expect(response.body).to include('mark this goal as done and log if it was hit or not')
+    end
+
+    it 'does not display Mark complete when goal is completed' do
+      completed_goal = create(:goal, creator: teammate, owner: teammate, title: 'Completed Goal', started_at: 1.week.ago, completed_at: 1.day.ago)
+
+      get organization_goal_path(organization, completed_goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('Mark complete')
+      expect(response.body).not_to include('goal-check-in-inline-layout--triple-column')
     end
 
     it 'does not display Create/associate new child goal button when user cannot update goal' do
@@ -414,6 +482,24 @@ RSpec.describe 'Organizations::Goals', type: :request do
         expect(response.body).to include('Observations and goal confidence checks')
         expect(response.body).to include('Other Goal')
         expect(response.body).to include('Current week confidence check')
+      end
+
+      it 'does not link Mark complete or Complete rail when viewer cannot update the goal' do
+        other_person = create(:person)
+        other_teammate = create(:company_teammate, person: other_person, organization: organization)
+        other_goal = create(:goal,
+          creator: other_teammate,
+          owner: other_teammate,
+          title: 'Other Goal',
+          started_at: 1.week.ago,
+          privacy_level: 'everyone_in_company',
+          edit_check_in_permission: 'only_creator_and_owner')
+
+        get organization_goal_path(organization, other_goal)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include(done_organization_goal_path(organization, other_goal))
+        expect(response.body).not_to include('goal-check-in-inline-layout--triple-column')
       end
       
       it 'displays last check-in in sentence form when present' do

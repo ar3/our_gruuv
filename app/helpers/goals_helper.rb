@@ -795,6 +795,127 @@ module GoalsHelper
     goal.started_at.present? && goal.completed_at.blank? && goal.deleted_at.blank?
   end
 
+  # Most recent check-in for the completed-goal banner (reporter, outcome, learnings).
+  def goal_completion_banner_check_in(goal)
+    return nil unless goal_is_completed?(goal)
+
+    goal.goal_check_ins.includes(:confidence_reporter).recent.first
+  end
+
+  def goal_completion_banner_emphasis(text)
+    content_tag(:span, text, class: "goal-completion-banner__emphasis")
+  end
+
+  def goal_completion_banner_join_phrases(phrases)
+    return nil if phrases.blank?
+
+    case phrases.length
+    when 1
+      phrases.first
+    when 2
+      safe_join([phrases[0], " and ", phrases[1]])
+    else
+      safe_join([safe_join(phrases[0..-2], ", "), ", and ", phrases.last])
+    end
+  end
+
+  def goal_completion_banner_target_dates_phrase(goal)
+    clauses = []
+    if goal.earliest_target_date.present?
+      clauses << safe_join(["the earliest ", goal_completion_banner_emphasis(format_date_in_user_timezone(goal.earliest_target_date))])
+    end
+    if goal.latest_target_date.present?
+      clauses << safe_join(["the latest ", goal_completion_banner_emphasis(format_date_in_user_timezone(goal.latest_target_date))])
+    end
+    if goal.most_likely_target_date.present?
+      clauses << safe_join(["most likely on ", goal_completion_banner_emphasis(format_date_in_user_timezone(goal.most_likely_target_date))])
+    end
+
+    goal_completion_banner_join_phrases(clauses)
+  end
+
+  def goal_completion_banner_opening_paragraph(goal)
+    start_at = goal.started_at || goal.created_at
+    start_label = format_date_in_user_timezone(start_at)
+    owner_name = goal_owner_display_name(goal)
+    title = goal.title
+
+    paragraph = safe_join([
+      "On ",
+      goal_completion_banner_emphasis(start_label),
+      ", ",
+      goal_completion_banner_emphasis(owner_name),
+      " set out to ",
+      goal_completion_banner_emphasis(title),
+      "."
+    ])
+
+    target_dates = goal_completion_banner_target_dates_phrase(goal)
+    if target_dates.present?
+      paragraph = safe_join([paragraph, " They said they'd have this done by ", target_dates, "."])
+    end
+
+    if goal.initial_confidence.present?
+      confidence_label = goal.initial_confidence.to_s.humanize
+      paragraph = safe_join([
+        paragraph,
+        " This was a ",
+        goal_completion_banner_emphasis(confidence_label),
+        " confidence-level goal."
+      ])
+    end
+
+    paragraph
+  end
+
+  def goal_completion_banner_reporter_casual_name(reporter)
+    return "Someone" unless reporter
+
+    reporter.casual_name.presence || reporter.display_name
+  end
+
+  def goal_completion_banner_outcome_label(check_in)
+    case check_in&.confidence_percentage
+    when 100
+      "hit!"
+    when 0
+      "missed"
+    else
+      "#{check_in&.confidence_percentage}%"
+    end
+  end
+
+  def goal_completion_banner_completion_paragraph(goal, check_in)
+    completed_label = format_time_in_user_timezone(goal.completed_at)
+    reporter_name = goal_completion_banner_reporter_casual_name(check_in&.confidence_reporter)
+    outcome = goal_completion_banner_outcome_label(check_in)
+
+    safe_join([
+      "On ",
+      goal_completion_banner_emphasis(completed_label),
+      ", ",
+      goal_completion_banner_emphasis(reporter_name),
+      " marked this goal as ",
+      goal_completion_banner_emphasis(outcome)
+    ]) + "."
+  end
+
+  def goal_completion_banner_learnings_text(check_in)
+    check_in&.confidence_reason.to_s.strip.presence
+  end
+
+  def goal_completion_banner_learnings_paragraph(check_in)
+    learnings = goal_completion_banner_learnings_text(check_in)
+    if learnings.present?
+      safe_join([
+        "Here is what they learned: ",
+        content_tag(:span, learnings, class: "goal-completion-banner__emphasis goal-completion-banner__learnings")
+      ])
+    else
+      content_tag(:span, "No learnings text was saved on the completion record.", class: "text-muted fst-italic")
+    end
+  end
+
   def goal_teammate_casual_name(teammate)
     return nil unless teammate&.person
 

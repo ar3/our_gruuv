@@ -1,0 +1,14 @@
+- goal = local_assigns.fetch(:goal)
+- completion_ci = goal_completion_banner_check_in(goal)
+
+.goal-completion-banner.alert.alert-success.border.border-success.border-2.shadow-sm.mb-4.py-4.px-3.px-md-4{role: "region", "aria-labelledby": "goal-completion-banner-heading"}
+  .d-flex.flex-column.flex-md-row.align-items-md-start.gap-3
+    .text-center.text-md-start.flex-shrink-0
+      %i.bi.bi-trophy-fill.display-4.text-success.d-block.mx-auto.mx-md-0{"aria-hidden": "true"}
+    .flex-grow-1.min-w-0
+      %h2.goal-completion-banner__heading#goal-completion-banner-heading.mb-3.text-success-emphasis
+        Goal completed
+      .goal-completion-banner__body
+        %p.mb-3!= goal_completion_banner_opening_paragraph(goal)
+        %p.mb-3!= goal_completion_banner_completion_paragraph(goal, completion_ci)
+        %p.mb-0!= goal_completion_banner_learnings_paragraph(completion_ci)
