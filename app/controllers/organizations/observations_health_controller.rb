@@ -44,6 +44,30 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
                 notice: "Refresh queued for #{teammate_ids.size} teammate#{'s' if teammate_ids.size != 1}."
   end
 
+  def export
+    authorize @organization, :observations_health?
+    apply_filter_default_if_needed
+
+    teammates = observations_health_spotlight_service.filtered_teammates(params[:manager_id]).to_a
+    csv_content = ObservationsHealthObservationsCsvBuilder.new(
+      @organization,
+      teammates,
+      current_person: current_person
+    ).call
+    filename = "observations_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
+    send_data csv_content, filename: filename, type: "text/csv", disposition: "attachment"
+  end
+
+  def export_employee_summary
+    authorize @organization, :observations_health?
+    apply_filter_default_if_needed
+
+    rows = observations_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])[:rows]
+    csv_content = ObservationsHealthEmployeeSummaryCsvBuilder.new(rows).call
+    filename = "employee_observations_health_summary_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
+    send_data csv_content, filename: filename, type: "text/csv", disposition: "attachment"
+  end
+
   private
 
   def observations_health_spotlight_service

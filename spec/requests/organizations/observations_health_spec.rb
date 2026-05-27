@@ -30,6 +30,8 @@ RSpec.describe "Observations Health", type: :request do
       expect(response.body).to include("Company Observations Insights")
       expect(response.body).to include('data-bs-toggle="popover"')
       expect(response.body).to include("Spotlight Healthy / Ok / Needs attention uses only Given and Received")
+      expect(response.body).to include("Download OGOs (CSV)")
+      expect(response.body).to include("Download employees observations summary (CSV)")
     end
 
     it "shows health dashboard switcher with links to check-ins and goals health" do
@@ -62,6 +64,24 @@ RSpec.describe "Observations Health", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("2:1")
       expect(response.body).to include("bi-arrow-clockwise")
+    end
+  end
+
+  describe "GET /organizations/:organization_id/observations_health_export" do
+    it "returns CSV attachment" do
+      get organization_observations_health_export_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.content_type).to include("text/csv")
+      expect(response.headers["Content-Disposition"]).to include("attachment")
+    end
+  end
+
+  describe "GET /organizations/:organization_id/observations_health_employee_summary_export" do
+    it "returns CSV attachment" do
+      get organization_observations_health_employee_summary_export_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.content_type).to include("text/csv")
+      expect(response.headers["Content-Disposition"]).to include("attachment")
     end
   end
 

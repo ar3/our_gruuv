@@ -34,5 +34,21 @@ module Observations
         OR observations.observer_id = :person_id
       SQL
     end
+
+    # Observations the viewer may see (same rules as Observations index / filtered_observations).
+    def visible_observations_for_person(current_person, organization)
+      return Observation.none if current_person.blank?
+
+      company = organization.root_company || organization
+      ObservationVisibilityQuery.new(current_person, company).visible_observations
+    end
+
+    def given_scope_for_person(teammate, organization, current_person:)
+      given_scope(teammate, organization).merge(visible_observations_for_person(current_person, organization))
+    end
+
+    def received_scope_for_person(teammate, organization, current_person:)
+      received_scope(teammate, organization).merge(visible_observations_for_person(current_person, organization))
+    end
   end
 end

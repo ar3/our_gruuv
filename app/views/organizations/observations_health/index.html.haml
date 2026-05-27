@@ -155,6 +155,12 @@
   .col-lg-12
     = render "organizations/health/dashboard_switcher", organization: @organization, current: :observations_health, manager_id: @current_manager_filter
     .d-flex.gap-2.flex-wrap.align-items-center
+      = link_to organization_observations_health_export_path(@organization, manager_id: @current_manager_filter), class: "btn btn-outline-primary" do
+        %i.bi.bi-download.me-2
+        Download OGOs (CSV)
+      = link_to organization_observations_health_employee_summary_export_path(@organization, manager_id: @current_manager_filter), class: "btn btn-outline-primary" do
+        %i.bi.bi-download.me-2
+        Download employees observations summary (CSV)
       = button_to organization_observations_health_refresh_all_path(@organization, manager_id: @current_manager_filter), method: :post, class: "btn btn-outline-primary" do
         %i.bi.bi-arrow-clockwise.me-2
         Refresh all in this view
