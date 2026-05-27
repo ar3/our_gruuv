@@ -17,7 +17,9 @@ module Observations
     
     # Enforce privacy level if needed
     privacy_changed = PrivacyLevelEnforcementService.call(@observation)
-    
+
+    HealthCacheRefresh.enqueue_for_observation(@observation.reload)
+
     # Kudos points are awarded by the observer in the nudge (award_kudos), not on publish
     privacy_changed
   end

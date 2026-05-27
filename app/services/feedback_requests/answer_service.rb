@@ -112,7 +112,7 @@ module FeedbackRequests
         end
 
         if @complete
-          created_or_updated.each { |obs| obs.publish! if obs.story.present? }
+          created_or_updated.each { |obs| Observations::PublishService.call(obs) if obs.story.present? }
         end
 
         Result.ok(created_or_updated)

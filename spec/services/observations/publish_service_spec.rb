@@ -34,6 +34,24 @@ RSpec.describe Observations::PublishService do
         }.not_to change(PointsExchangeTransaction, :count)
         expect(PointsExchangeTransaction.exists?(observation: draft)).to be false
       end
+
+      it 'enqueues observation health cache refresh for observer and observees' do
+        observer_teammate = create(:teammate, organization: company)
+        draft_with_observer = build(
+          :observation,
+          observer: observer_teammate.person,
+          company: company,
+          published_at: nil,
+          story: 'Test story'
+        )
+        draft_with_observer.observees.build(teammate: observee_teammate)
+        draft_with_observer.save!
+
+        expect {
+          described_class.call(draft_with_observer)
+        }.to have_enqueued_job(ObservationHealthCacheRefreshJob).with(observer_teammate.id)
+          .and have_enqueued_job(ObservationHealthCacheRefreshJob).with(observee_teammate.id)
+      end
     end
 
     context 'with observation ratings' do

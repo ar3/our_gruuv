@@ -9,6 +9,11 @@ production:
     queue: default
     schedule: at 5am every day
 
+  daily_refresh_observation_health_caches:
+    class: DailyRefreshObservationHealthCachesJob
+    queue: default
+    schedule: at 5am every day
+
   schedule_gsd_digests:
     class: Digest::ScheduleDigestsJob
     queue: default

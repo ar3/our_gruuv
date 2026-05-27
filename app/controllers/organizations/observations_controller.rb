@@ -1241,9 +1241,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         redirect_to new_organization_observation_path(organization, redirect_params), notice: 'Converted to generic observation. All features are now available.'
       elsif params[:save_draft_and_return].present?
         # Convert published observation to draft if it was published
-        if @observation.published_at.present?
-          @observation.update_column(:published_at, nil)
-        end
+        Observations::UnpublishService.call(@observation) if @observation.published_at.present?
         # Save draft and return to the specified return_url, or observation show page, or observations index
         redirect_url = params[:return_url].presence || (@observation.present? ? organization_observation_path(organization, @observation) : organization_observations_path(organization))
         redirect_to redirect_url, notice: 'Draft saved successfully.'
