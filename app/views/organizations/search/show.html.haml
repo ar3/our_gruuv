@@ -44,7 +44,6 @@
                     %tr
                       %th Name
                       %th Email
-                      %th Actions
                   %tbody
                     - @results[:people].each do |person|
                       - teammate = person.teammates.find_by(organization: @organization)
@@ -55,11 +54,6 @@
                           - else
                             = person.display_name
                         %td= person.email
-                        %td
-                          .btn-group.btn-group-sm
-                            - if teammate
-                              = link_to internal_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary" do
-                                %i.bi.bi-eye
 
         - if @results[:organizations].any?
           .card.mb-4
@@ -74,43 +68,12 @@
                     %tr
                       %th Name
                       %th Type
-                      %th Actions
                   %tbody
                     - @results[:organizations].each do |organization|
                       %tr
-                        %td= organization.display_name
+                        %td
+                          = link_to organization.display_name, organization_path(organization), class: "text-decoration-none fw-bold"
                         %td Organization
-                        %td
-                          .btn-group.btn-group-sm
-                            = link_to organization_path(organization), class: "btn btn-outline-primary" do
-                              %i.bi.bi-eye
-
-        - if @results[:observations].any?
-          .card.mb-4
-            .card-header
-              %h5.mb-0
-                %i.bi.bi-chat-text.me-2
-                Observations (#{@results[:observations].count})
-            .card-body
-              .table-responsive
-                %table.table.table-hover
-                  %thead
-                    %tr
-                      %th Story Preview
-                      %th Observer
-                      %th Date
-                      %th Actions
-                  %tbody
-                    - @results[:observations].each do |observation|
-                      %tr
-                        %td
-                          = truncate(observation.story, length: 100)
-                        %td= observation.observer.display_name
-                        %td= format_date_in_user_timezone(observation.observed_at, format: "%b %d, %Y")
-                        %td
-                          .btn-group.btn-group-sm
-                            = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary" do
-                              %i.bi.bi-eye
 
         - if @results[:assignments].any?
           .card.mb-4
@@ -126,17 +89,13 @@
                       %th Title
                       %th Tagline
                       %th Company
-                      %th Actions
                   %tbody
                     - @results[:assignments].each do |assignment|
                       %tr
-                        %td= assignment.title
+                        %td
+                          = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none fw-bold"
                         %td= truncate(assignment.tagline, length: 50)
                         %td= assignment.company.display_name
-                        %td
-                          .btn-group.btn-group-sm
-                            = link_to organization_assignment_path(@organization, assignment), class: "btn btn-outline-primary" do
-                              %i.bi.bi-eye
 
         - if @results[:abilities].any?
           .card.mb-4
@@ -152,17 +111,13 @@
                       %th Name
                       %th Description
                       %th Organization
-                      %th Actions
                   %tbody
                     - @results[:abilities].each do |ability|
                       %tr
-                        %td= ability.name
+                        %td
+                          = link_to ability.name, organization_ability_path(@organization, ability), class: "text-decoration-none fw-bold"
                         %td= truncate(ability.description, length: 100)
                         %td= ability.company.display_name
-                        %td
-                          .btn-group.btn-group-sm
-                            = link_to organization_ability_path(@organization, ability), class: "btn btn-outline-primary" do
-                              %i.bi.bi-eye
 
         - if @results[:titles].any?
           .card.mb-4
@@ -177,17 +132,34 @@
                     %tr
                       %th Title
                       %th Company
-                      %th Actions
                   %tbody
                     - @results[:titles].each do |title|
                       %tr
                         %td
                           = link_to title.external_title, organization_title_path(@organization, title), class: "text-decoration-none fw-bold"
                         %td= title.company.display_name
+
+        - if @results[:observations].any?
+          .card.mb-4
+            .card-header
+              %h5.mb-0
+                %i.bi.bi-chat-text.me-2
+                Observations (#{@results[:observations].count})
+            .card-body
+              .table-responsive
+                %table.table.table-hover
+                  %thead
+                    %tr
+                      %th Story Preview
+                      %th Observer
+                      %th Date
+                  %tbody
+                    - @results[:observations].each do |observation|
+                      %tr
                         %td
-                          .btn-group.btn-group-sm
-                            = link_to organization_title_path(@organization, title), class: "btn btn-outline-primary" do
-                              %i.bi.bi-eye
+                          = link_to truncate(observation.story, length: 100), organization_observation_path(@organization, observation), class: "text-decoration-none fw-bold"
+                        %td= observation.observer.display_name
+                        %td= format_date_in_user_timezone(observation.observed_at, format: "%b %d, %Y")
   - else
     .row.justify-content-center
       .col-lg-12
