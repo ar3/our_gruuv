@@ -580,7 +580,7 @@ module ApplicationHelper
   end
 
   # --- Start page preference (where to land when logging in or clicking org's Gruuv in header) ---
-  START_PAGE_VALUES = %w[start_here about_me one_on_one_hub get_shit_done goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
+  START_PAGE_VALUES = %w[start_here about_me one_on_one_hub clarity_check_in_hub get_shit_done goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
 
   def start_page_preference_key(organization)
     "start_page_#{organization.id}"
@@ -606,6 +606,8 @@ module ApplicationHelper
       about_me_organization_company_teammate_path(organization, company_teammate)
     when 'one_on_one_hub'
       organization_company_teammate_one_on_one_link_path(organization, company_teammate)
+    when 'clarity_check_in_hub'
+      hub_organization_company_teammate_check_ins_path(organization, company_teammate)
     when 'get_shit_done'
       organization_get_shit_done_path(organization)
     when 'goals'
@@ -634,6 +636,7 @@ module ApplicationHelper
       ['Start Here page', 'start_here'],
       ["About #{casual}", 'about_me'],
       ["#{casual}'s 1:1 Hub", 'one_on_one_hub'],
+      ["#{casual}'s Clarity Check-In Hub", 'clarity_check_in_hub'],
       ["#{casual}'s #{gsd_label} list", 'get_shit_done'],
       ["#{casual}'s Goals", 'goals'],
       ["Observations involving #{casual}", 'observations_involving_me'],

@@ -219,6 +219,13 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(UserPreference.for_person(person).reload.preference(key)).to eq('insights')
     end
 
+    it 'accepts clarity check-in hub as start page' do
+      post organization_start_here_update_start_page_path(company), params: { start_page: 'clarity_check_in_hub' }
+      expect(response).to redirect_to(organization_start_here_path(company))
+      key = "start_page_#{company.id}"
+      expect(UserPreference.for_person(person).reload.preference(key)).to eq('clarity_check_in_hub')
+    end
+
     it 'rejects invalid start page value' do
       post organization_start_here_update_start_page_path(company), params: { start_page: 'not_a_real_page' }
       expect(response).to redirect_to(organization_start_here_path(company))
