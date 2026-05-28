@@ -1241,21 +1241,20 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   end
 
   def up_next_rank_reason(item, index, ordered_items)
-    return "ranked first due to highest urgency" if index.zero?
+    current_completed_at = item[:my_side_completed_at]
+    return "ranked first because your side has not been completed yet" if index.zero? && current_completed_at.blank?
+    return "ranked first because it has the oldest completed date on your side" if index.zero?
 
-    if item[:required]
-      previous_item = ordered_items[index - 1]
-      return "ordered before non-required check-ins" unless previous_item&.dig(:required)
+    previous_item = ordered_items[index - 1]
+    previous_completed_at = previous_item[:my_side_completed_at]
+    if current_completed_at.blank?
+      "ordered among items where your side has not been completed yet"
+    elsif previous_completed_at.blank?
+      "ordered after items where your side has not been completed yet"
+    elsif previous_completed_at.to_i == current_completed_at.to_i
+      "ordered by type then name when completion timing ties"
     else
-      return "ordered after required check-ins" if ordered_items.any? { |other| other[:required] }
-    end
-
-    previous_bucket = ordered_items[index - 1][:bucket]&.to_sym
-    current_bucket = item[:bucket]&.to_sym
-    if previous_bucket == current_bucket
-      "ordered after same-bucket items by type and id"
-    else
-      "ordered after all higher-urgency buckets"
+      "ordered by your side's completion date from oldest to newest"
     end
   end
 
@@ -1278,7 +1277,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         "Required status: not required — included because this item exists in the 1-by-1 check-in scope."
       end
     else
-      "Required status: not required — included because aspirations are always part of the 1-by-1 check-in scope."
+      "Required status: required — aspirations are always included for 1-by-1 clarity check-ins."
     end
   end
 

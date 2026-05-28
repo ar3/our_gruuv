@@ -31,11 +31,11 @@
   %p.mb-2
     The goal of this page is to explain why each 1-by-1 check-in appears where it does in the queue for each perspective.
   %p.mb-2
-    Example: an assignment can be ranked above another item because it is required for the current position or active assignment tenure, even if both have older finalized history.
+    Example: an item where your side has never been completed ranks above one you completed recently, because this queue is based on your side's completion timing.
   %ul.mb-0
-    %li Required check-ins are ordered first.
-    %li Within required/non-required groups, older clarity buckets are shown before fresher ones.
-    %li If bucket urgency ties, assignment/aspiration/position ordering and id break ties.
+    %li First, items where your side is not completed yet (never completed on this open check-in).
+    %li Then, items where your side is completed, ordered oldest completion to newest.
+    %li Ties break by type (aspiration, assignment, position), then alphabetical name.
 
 %p.text-muted.mb-3
   Two live lists of 1-by-1 check-ins sorted by urgency: one from the employee perspective, one from the manager perspective.

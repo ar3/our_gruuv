@@ -71,12 +71,10 @@ module CheckIns
       current_person&.id == teammate.person_id
     end
 
-    def last_activity_time(check_in)
+    def my_side_completed_at(check_in)
       return nil unless check_in
-      times = [check_in.official_check_in_completed_at]
-      times << check_in.employee_completed_at if employee?
-      times << check_in.manager_completed_at unless employee?
-      times.compact.max
+
+      employee? ? check_in.employee_completed_at : check_in.manager_completed_at
     end
 
     def bucket_for(last_activity)
@@ -98,22 +96,20 @@ module CheckIns
       position_item = build_position_item
 
       all = aspirations + assignments + (position_item ? [position_item] : [])
-      sort_by_bucket_and_type(all)
+      sort_by_my_side_completion_then_type_and_name(all)
     end
 
     def build_aspiration_items
       Aspiration.within_hierarchy(organization).ordered.map do |aspiration|
-        closed = AspirationCheckIn.where(company_teammate: teammate, aspiration: aspiration).closed
-          .order(official_check_in_completed_at: :desc).first
         open_ci = AspirationCheckIn.where(company_teammate: teammate, aspiration: aspiration).open.first
-        check_in = closed || open_ci
-        last_activity = last_activity_time(check_in)
+        last_activity = my_side_completed_at(open_ci)
         {
           type: :aspiration,
           id: aspiration.id,
           name: aspiration.name,
           bucket: bucket_for(last_activity),
-          required: false
+          required: true,
+          my_side_completed_at: last_activity
         }
       end
     end
@@ -136,17 +132,15 @@ module CheckIns
       assignments_by_id = required_assignments_by_id.merge(active_assignments_by_id)
 
       assignments_by_id.values.map do |assignment|
-        closed = AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).closed
-          .order(official_check_in_completed_at: :desc).first
         open_ci = AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).open.first
-        check_in = closed || open_ci
-        last_activity = last_activity_time(check_in)
+        last_activity = my_side_completed_at(open_ci)
         {
           type: :assignment,
           id: assignment.id,
           name: assignment.title,
           bucket: bucket_for(last_activity),
-          required: required_assignment_ids.include?(assignment.id) || active_assignments_by_id.key?(assignment.id)
+          required: true,
+          my_side_completed_at: last_activity
         }
       end
     end
@@ -155,26 +149,30 @@ module CheckIns
       employment = teammate.employment_tenures.active.first
       return nil unless employment&.position
 
-      closed = PositionCheckIn.where(company_teammate: teammate).closed
-        .order(official_check_in_completed_at: :desc).first
       open_ci = PositionCheckIn.where(company_teammate: teammate).open.first
-      check_in = closed || open_ci
-      last_activity = last_activity_time(check_in)
+      last_activity = my_side_completed_at(open_ci)
       name = employment.position.title&.external_title.presence || "Position"
       {
         type: :position,
         id: nil,
         name: name,
         bucket: bucket_for(last_activity),
-        required: true
+        required: true,
+        my_side_completed_at: last_activity
       }
     end
 
-    def sort_by_bucket_and_type(items)
-      required_order = ->(item) { item[:required] ? 0 : 1 }
-      order = { BUCKET_RED => 0, BUCKET_YELLOW => 1, BUCKET_GREEN => 2 }
+    def sort_by_my_side_completion_then_type_and_name(items)
       type_order = { aspiration: 0, assignment: 1, position: 2 }
-      items.sort_by { |i| [required_order.call(i), order[i[:bucket]], type_order[i[:type]] || 99, i[:id].to_i] }
+      items.sort_by do |i|
+        completed_at = i[:my_side_completed_at]
+        [
+          completed_at.present? ? 1 : 0,
+          completed_at || Time.zone.at(0),
+          type_order[i[:type]] || 99,
+          i[:name].to_s.downcase
+        ]
+      end
     end
 
     def required_position_assignment_ids

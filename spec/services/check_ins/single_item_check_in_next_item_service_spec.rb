@@ -75,8 +75,8 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
     end
   end
 
-  describe "ordering required check-ins first" do
-    it "puts required and active-tenure assignments ahead of non-required items" do
+  describe "ordering by viewing side completion timing" do
+    it "orders nil my-side completion first, then oldest to newest, then type and name" do
       position_major_level = create(:position_major_level)
       title = create(:title, company: organization, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level)
@@ -84,15 +84,18 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
       teammate.employment_tenures.update_all(ended_at: Time.current)
       create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
 
-      required_assignment = create(:assignment, company: organization, title: "Required Assignment")
-      active_assignment = create(:assignment, company: organization, title: "Active Tenure Assignment")
-      optional_aspiration = create(:aspiration, company: organization, name: "Optional Aspiration")
-      create(:position_assignment, position: position, assignment: required_assignment, assignment_type: "required")
-      create(:assignment_tenure, teammate: teammate, assignment: active_assignment, started_at: 6.months.ago, ended_at: nil)
+      alpha_aspiration = create(:aspiration, company: organization, name: "Alpha Aspiration")
+      zeta_aspiration = create(:aspiration, company: organization, name: "Zeta Aspiration")
+      older_assignment = create(:assignment, company: organization, title: "Older Assignment")
+      newer_assignment = create(:assignment, company: organization, title: "Newer Assignment")
+      create(:assignment_tenure, teammate: teammate, assignment: older_assignment, started_at: 7.months.ago, ended_at: nil)
+      create(:assignment_tenure, teammate: teammate, assignment: newer_assignment, started_at: 6.months.ago, ended_at: nil)
 
-      create(:assignment_check_in, teammate: teammate, assignment: active_assignment, employee_completed_at: 10.days.ago)
-      create(:aspiration_check_in, teammate: teammate, aspiration: optional_aspiration, employee_completed_at: 120.days.ago)
-      allow_any_instance_of(described_class).to receive(:required_position_assignment_ids).and_return([required_assignment.id])
+      create(:aspiration_check_in, teammate: teammate, aspiration: alpha_aspiration, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(:aspiration_check_in, teammate: teammate, aspiration: zeta_aspiration, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(:assignment_check_in, teammate: teammate, assignment: older_assignment, employee_completed_at: 40.days.ago, official_check_in_completed_at: nil)
+      create(:assignment_check_in, teammate: teammate, assignment: newer_assignment, employee_completed_at: 10.days.ago, official_check_in_completed_at: nil)
+      PositionCheckIn.find_or_create_open_for(teammate).update!(employee_completed_at: 5.days.ago)
 
       result = described_class.call(
         teammate: teammate,
@@ -103,12 +106,13 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
       )
 
       ordered_items = result[:ordered_items]
-      first_non_required_index = ordered_items.index { |i| !i[:required] }
-
-      expect(ordered_items.any? { |i| i[:name] == "Required Assignment" && i[:required] }).to be(true)
-      expect(ordered_items.any? { |i| i[:name] == "Active Tenure Assignment" && i[:required] }).to be(true)
-      expect(first_non_required_index).not_to be_nil
-      expect(ordered_items.first(first_non_required_index).all? { |i| i[:required] }).to be(true)
+      expect(ordered_items.map { |i| i[:name] }).to eq([
+        "Alpha Aspiration",
+        "Zeta Aspiration",
+        "Older Assignment",
+        "Newer Assignment",
+        position.title.external_title
+      ])
     end
   end
 end
