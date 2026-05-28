@@ -133,6 +133,8 @@ Rails.application.routes.draw do
       member do
         get :audit
         patch :acknowledge_snapshots
+        patch :update_start_page
+        post :copy_start_page_configuration
       end
     end
 

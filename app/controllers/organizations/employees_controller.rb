@@ -185,6 +185,14 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         else
           {}
         end
+
+      if query.current_view == 'start_page'
+        load_start_page_display_data(@filtered_and_paginated_teammates)
+      else
+        @start_page_by_teammate_id = {}
+        @start_page_summary_by_teammate_id = {}
+        @can_edit_start_page_by_teammate_id = {}
+      end
       
       # For spotlight calculations, we need the original relation (before status filtering) for joins
       # but use filtered_teammates for counts. Pass both to calculate_spotlight_stats.
@@ -229,6 +237,42 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @current_sort = query.current_sort
     @current_view = query.current_view
     @has_active_filters = query.has_active_filters?
+  end
+
+  def update_start_page
+    authorize @organization, :show?
+    teammate = @organization.teammates.find(params[:id])
+
+    unless allow_start_page_edit_for?(teammate)
+      redirect_back fallback_location: organization_employees_path(@organization), alert: 'You do not have permission to update this teammate start page.'
+      return
+    end
+
+    allowed = helpers.start_page_options_for_select(@organization, teammate).map { |pair| pair.last.to_s }
+    value = params[:start_page].to_s
+    unless allowed.include?(value)
+      redirect_back fallback_location: organization_employees_path(@organization, view: 'start_page'), alert: 'Invalid start page.'
+      return
+    end
+
+    key = helpers.start_page_preference_key(@organization)
+    UserPreference.for_person(teammate.person).update_preference(key, value)
+    redirect_back fallback_location: organization_employees_path(@organization, view: 'start_page'), notice: 'Start page updated.'
+  end
+
+  def copy_start_page_configuration
+    authorize @organization, :show?
+    source_teammate = @organization.teammates.find(params[:id])
+
+    source_pref = UserPreference.for_person(source_teammate.person).preferences[StartHereDashboardService::PREFERENCE_KEY]
+    unless source_pref.is_a?(Hash) && source_pref.present?
+      redirect_back fallback_location: organization_employees_path(@organization, view: 'start_page'), alert: 'No Start Here configuration to copy.'
+      return
+    end
+
+    copied_value = source_pref.deep_dup
+    UserPreference.for_person(current_person).update_preference(StartHereDashboardService::PREFERENCE_KEY, copied_value)
+    redirect_back fallback_location: organization_employees_path(@organization, view: 'start_page'), notice: 'Start Here configuration copied.'
   end
 
   def customize_view
@@ -439,6 +483,29 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   end
   
   private
+
+  def load_start_page_display_data(teammates)
+    key = helpers.start_page_preference_key(@organization)
+    @start_page_by_teammate_id = {}
+    @start_page_summary_by_teammate_id = {}
+    @can_edit_start_page_by_teammate_id = {}
+
+    teammates.each do |teammate|
+      pref = UserPreference.for_person(teammate.person)
+      start_page_value = pref.preference(key).presence || 'about_me'
+      @start_page_by_teammate_id[teammate.id] = start_page_value
+      @start_page_summary_by_teammate_id[teammate.id] = helpers.start_page_dashboard_summary_for_person(@organization, teammate, teammate.person)
+      @can_edit_start_page_by_teammate_id[teammate.id] = allow_start_page_edit_for?(teammate)
+    end
+  end
+
+  def allow_start_page_edit_for?(teammate)
+    return false unless current_company_teammate && teammate
+    return true if policy(@organization).manage_employment?
+    return true if current_company_teammate == teammate
+
+    current_company_teammate.in_managerial_hierarchy_of?(teammate)
+  end
 
   def active_managers_for_organization
     # Get active managers (for filtering, lenient mode - don't require them to be active teammates)

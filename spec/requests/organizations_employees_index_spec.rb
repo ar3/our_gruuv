@@ -460,4 +460,108 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     end
   end
 
+  describe 'start_page view and actions' do
+    let(:viewer_person) { create(:person) }
+    let!(:viewer_teammate) { create(:company_teammate, person: viewer_person, organization: organization, first_employed_at: 1.year.ago) }
+    let(:other_person) { create(:person) }
+    let!(:other_teammate) { create(:company_teammate, person: other_person, organization: organization, first_employed_at: 1.year.ago) }
+    let(:report_person) { create(:person) }
+    let!(:report_teammate) { create(:company_teammate, person: report_person, organization: organization, first_employed_at: 1.year.ago) }
+
+    before do
+      allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(viewer_person)
+      allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(viewer_teammate)
+      create(:employment_tenure, teammate: viewer_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      create(:employment_tenure, teammate: report_teammate, company: organization, manager_teammate: viewer_teammate, started_at: 6.months.ago, ended_at: nil)
+      create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 6.months.ago, ended_at: nil)
+      UserPreference.for_person(report_person).update_preference(StartHereDashboardService::PREFERENCE_KEY, {
+        "about_me" => { "position" => 1 }
+      })
+    end
+
+    it 'renders start_page display with summary and action' do
+      get organization_employees_path(organization, view: 'start_page')
+
+      expect(response).to be_successful
+      expect(response.body).to include('Start Here Configuration')
+      expect(response.body).to include('I want to use that')
+    end
+
+    it 'does not show copy button when teammate has no start here configuration' do
+      get organization_employees_path(organization, view: 'start_page')
+      doc = Nokogiri::HTML(response.body)
+      path = copy_start_page_configuration_organization_employee_path(organization, other_teammate)
+      button_form = doc.at_css("form[action='#{path}']")
+
+      expect(button_form).to be_nil
+    end
+
+    it 'disables home page selector for unrelated teammate' do
+      get organization_employees_path(organization, view: 'start_page')
+      doc = Nokogiri::HTML(response.body)
+      path = update_start_page_organization_employee_path(organization, other_teammate)
+      select = doc.at_css("form[action='#{path}'] select[name='start_page']")
+
+      expect(select).to be_present
+      expect(select['disabled']).to eq('disabled')
+    end
+
+    it 'enables home page selector for self and managerial-hierarchy teammate' do
+      get organization_employees_path(organization, view: 'start_page')
+      doc = Nokogiri::HTML(response.body)
+      self_path = update_start_page_organization_employee_path(organization, viewer_teammate)
+      report_path = update_start_page_organization_employee_path(organization, report_teammate)
+
+      self_select = doc.at_css("form[action='#{self_path}'] select[name='start_page']")
+      report_select = doc.at_css("form[action='#{report_path}'] select[name='start_page']")
+
+      expect(self_select).to be_present
+      expect(self_select['disabled']).to be_nil
+      expect(report_select).to be_present
+      expect(report_select['disabled']).to be_nil
+    end
+
+    it 'updates start page when viewer is in managerial hierarchy' do
+      patch update_start_page_organization_employee_path(organization, report_teammate), params: { start_page: 'insights' }
+      key = "start_page_#{organization.id}"
+      stored = UserPreference.for_person(report_person).preference(key)
+
+      expect(response).to redirect_to(organization_employees_path(organization, view: 'start_page'))
+      expect(stored).to eq('insights')
+    end
+
+    it 'rejects start page update for unauthorized teammate' do
+      patch update_start_page_organization_employee_path(organization, other_teammate), params: { start_page: 'insights' }
+      key = "start_page_#{organization.id}"
+      stored = UserPreference.for_person(other_person).preference(key)
+
+      expect(response).to redirect_to(organization_employees_path(organization))
+      expect(stored).not_to eq('insights')
+    end
+
+    it 'copies only start here dashboard configuration to viewer' do
+      source_prefs = UserPreference.for_person(other_person)
+      source_prefs.update_preference(StartHereDashboardService::PREFERENCE_KEY, {
+        "about_me" => { "position" => 1 },
+        "my_goals" => { "position" => 2 }
+      })
+      source_prefs.update_preference("start_page_#{organization.id}", "insights")
+
+      viewer_prefs = UserPreference.for_person(viewer_person)
+      viewer_prefs.update_preference("start_page_#{organization.id}", "about_me")
+
+      post copy_start_page_configuration_organization_employee_path(organization, other_teammate)
+
+      copied = UserPreference.for_person(viewer_person).preferences[StartHereDashboardService::PREFERENCE_KEY]
+      viewer_start_page = UserPreference.for_person(viewer_person).preference("start_page_#{organization.id}")
+
+      expect(response).to redirect_to(organization_employees_path(organization, view: 'start_page'))
+      expect(copied).to eq({
+        "about_me" => { "position" => 1 },
+        "my_goals" => { "position" => 2 }
+      })
+      expect(viewer_start_page).to eq("about_me")
+    end
+  end
+
 end

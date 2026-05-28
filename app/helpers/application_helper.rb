@@ -580,7 +580,7 @@ module ApplicationHelper
   end
 
   # --- Start page preference (where to land when logging in or clicking org's Gruuv in header) ---
-  START_PAGE_VALUES = %w[start_here about_me get_shit_done goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
+  START_PAGE_VALUES = %w[start_here about_me one_on_one_hub get_shit_done goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
 
   def start_page_preference_key(organization)
     "start_page_#{organization.id}"
@@ -604,6 +604,8 @@ module ApplicationHelper
       organization_start_here_path(organization)
     when 'about_me'
       about_me_organization_company_teammate_path(organization, company_teammate)
+    when 'one_on_one_hub'
+      organization_company_teammate_one_on_one_link_path(organization, company_teammate)
     when 'get_shit_done'
       organization_get_shit_done_path(organization)
     when 'goals'
@@ -631,6 +633,7 @@ module ApplicationHelper
     [
       ['Start Here page', 'start_here'],
       ["About #{casual}", 'about_me'],
+      ["#{casual}'s 1:1 Hub", 'one_on_one_hub'],
       ["#{casual}'s #{gsd_label} list", 'get_shit_done'],
       ["#{casual}'s Goals", 'goals'],
       ["Observations involving #{casual}", 'observations_involving_me'],
@@ -639,6 +642,79 @@ module ApplicationHelper
       ['Celebrate Milestones', 'celebrate_milestones'],
       ['Insights', 'insights']
     ]
+  end
+
+  def start_page_label_for_value(organization, company_teammate, value)
+    return "Unknown" if value.blank?
+
+    options = start_page_options_for_select(organization, company_teammate)
+    options_hash = options.to_h
+    options_hash[value.to_s] || value.to_s.humanize
+  end
+
+  def start_page_dashboard_summary_for_person(organization, company_teammate, person)
+    widgets = start_page_dashboard_widget_ids_for_person(person)
+    return { title: "No Start Here configuration", tooltip: nil, preset_name: nil, has_configuration: false } if widgets.empty?
+
+    preset_name = start_page_dashboard_preset_name_for_widget_ids(widgets)
+    if preset_name.present?
+      return {
+        title: preset_name,
+        tooltip: start_page_dashboard_widget_labels(widgets, organization, company_teammate).join(", "),
+        preset_name: preset_name,
+        has_configuration: true
+      }
+    end
+
+    labels = start_page_dashboard_widget_labels(widgets, organization, company_teammate)
+    preview = labels.first(3).join(", ")
+    {
+      title: "#{widgets.count} widgets: #{preview}",
+      tooltip: labels.join(", "),
+      preset_name: nil,
+      has_configuration: true
+    }
+  end
+
+  def start_page_dashboard_widget_ids_for_person(person)
+    pref = UserPreference.for_person(person).preferences[StartHereDashboardService::PREFERENCE_KEY]
+    return [] unless pref.is_a?(Hash)
+
+    pref.stringify_keys
+      .select { |_id, slot| slot.is_a?(Hash) && slot["position"].present? }
+      .sort_by { |_id, slot| slot["position"].to_i }
+      .map(&:first)
+  end
+
+  def start_page_dashboard_preset_name_for_widget_ids(widget_ids)
+    return nil if widget_ids.blank?
+
+    presets = {
+      manager: "Manager default",
+      non_manager: "Non-manager default",
+      og_enthusiast: "OG enthusiast default"
+    }
+
+    presets.each do |key, label|
+      return label if StartHere::Widget::Presets.widget_ids_for(key) == widget_ids
+    end
+
+    nil
+  end
+
+  def start_page_dashboard_widget_labels(widget_ids, organization, company_teammate)
+    context = StartHere::Widget::Context.new(
+      view: self,
+      organization: organization,
+      company_teammate: company_teammate,
+      person: company_teammate&.person
+    )
+
+    widget_ids.filter_map do |wid|
+      StartHere::Widget::Registry.instance(wid, context).display_title
+    rescue StandardError
+      nil
+    end
   end
 
   # Start page picker only when top/side nav is shown; clean layout always lands on Start Here.

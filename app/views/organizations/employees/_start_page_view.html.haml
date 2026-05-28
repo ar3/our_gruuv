@@ -1,0 +1,37 @@
+.table-responsive
+  %table.table.table-hover
+    %thead
+      %tr
+        %th Teammate
+        %th Home Page
+        %th Start Here Configuration
+        %th Actions
+    %tbody
+      - @filtered_and_paginated_teammates.each do |teammate|
+        - start_page_value = (@start_page_by_teammate_id || {})[teammate.id] || 'about_me'
+        - summary = (@start_page_summary_by_teammate_id || {})[teammate.id] || { title: 'No Start Here configuration', tooltip: nil, has_configuration: false }
+        - can_edit_home_page = (@can_edit_start_page_by_teammate_id || {})[teammate.id]
+        %tr
+          %td
+            = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
+            %br
+            %small.text-muted= teammate.person.email
+          %td
+            = form_with url: update_start_page_organization_employee_path(@organization, teammate), method: :patch, local: true, html: { data: { turbo: false }, class: "mb-0" } do
+              = select_tag :start_page,
+                           options_for_select(start_page_options_for_select(@organization, teammate), start_page_value),
+                           class: "form-select form-select-sm",
+                           disabled: !can_edit_home_page,
+                           onchange: "this.form.submit()"
+          %td
+            - if summary[:tooltip].present?
+              %span{"data-bs-toggle" => "tooltip", "data-bs-title" => summary[:tooltip]}= summary[:title]
+            - else
+              = summary[:title]
+          %td
+            - if summary[:has_configuration]
+              = button_to "I want to use that",
+                          copy_start_page_configuration_organization_employee_path(@organization, teammate),
+                          method: :post,
+                          class: "btn btn-outline-primary btn-sm",
+                          form: { data: { turbo: false, confirm: "Replace your Start Here configuration with #{teammate.person.casual_name}'s?" } }
