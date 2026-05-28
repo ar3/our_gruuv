@@ -134,6 +134,22 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       @next_up_url = organization_company_teammate_check_ins_path(organization, @teammate)
     end
   end
+
+  def up_next
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    @person = @teammate.person
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+    @up_next_page_title = "Clarity Check-ins... Up Next"
+
+    @employee_perspective_person = @teammate.person
+    @manager_perspective_person = @teammate.current_manager || current_person
+    @employee_name = @teammate.person.casual_name.presence || "Employee"
+    @manager_name = @teammate.current_manager&.casual_name.presence || "Manager"
+
+    @employee_up_next_items = build_up_next_explainer_items_for(@employee_perspective_person)
+    @manager_up_next_items = build_up_next_explainer_items_for(@manager_perspective_person)
+  end
   
   def update
     perform_check_in_update
@@ -1084,6 +1100,152 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       position_check_in_organization_teammate_path(organization, @teammate)
     else
       organization_company_teammate_check_ins_path(organization, @teammate)
+    end
+  end
+
+  def build_up_next_explainer_items_for(perspective_person)
+    next_result = CheckIns::SingleItemCheckInNextItemService.call(
+      teammate: @teammate,
+      organization: organization,
+      current_person: perspective_person,
+      current_type: :position,
+      current_id: nil
+    )
+    ordered_items = next_result[:ordered_items].to_a
+    latest_finalized_by_key = build_latest_finalized_by_item_key(ordered_items)
+    latest_open_by_key = build_latest_open_check_in_by_item_key(ordered_items)
+
+    ordered_items.each_with_index.map do |item, index|
+      item_key = up_next_item_key(item)
+      latest_finalized = latest_finalized_by_key[item_key]
+      latest_open = latest_open_by_key[item_key]
+      {
+        item: item,
+        rank: index + 1,
+        url: check_in_hub_item_url(item),
+        finalized_line: up_next_finalized_line(latest_finalized),
+        current_open_line: up_next_current_open_line(latest_open),
+        therefore_line: up_next_therefore_line(item[:bucket], index, ordered_items)
+      }
+    end
+  end
+
+  def build_latest_finalized_by_item_key(items)
+    aspiration_ids = items.select { |i| i[:type] == :aspiration }.map { |i| i[:id] }.compact
+    assignment_ids = items.select { |i| i[:type] == :assignment }.map { |i| i[:id] }.compact
+    by_key = {}
+
+    if aspiration_ids.any?
+      AspirationCheckIn.where(company_teammate: @teammate, aspiration_id: aspiration_ids)
+        .closed
+        .order(official_check_in_completed_at: :desc)
+        .group_by(&:aspiration_id)
+        .each { |id, rows| by_key[up_next_item_key(type: :aspiration, id: id)] = rows.first }
+    end
+
+    if assignment_ids.any?
+      AssignmentCheckIn.where(company_teammate: @teammate, assignment_id: assignment_ids)
+        .closed
+        .order(official_check_in_completed_at: :desc)
+        .group_by(&:assignment_id)
+        .each { |id, rows| by_key[up_next_item_key(type: :assignment, id: id)] = rows.first }
+    end
+
+    position_latest = PositionCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).first
+    by_key[up_next_item_key(type: :position, id: nil)] = position_latest if position_latest
+
+    by_key
+  end
+
+  def build_latest_open_check_in_by_item_key(items)
+    aspiration_ids = items.select { |i| i[:type] == :aspiration }.map { |i| i[:id] }.compact
+    assignment_ids = items.select { |i| i[:type] == :assignment }.map { |i| i[:id] }.compact
+    by_key = {}
+
+    if aspiration_ids.any?
+      AspirationCheckIn.where(company_teammate: @teammate, aspiration_id: aspiration_ids)
+        .open
+        .order(check_in_started_on: :desc, created_at: :desc)
+        .group_by(&:aspiration_id)
+        .each { |id, rows| by_key[up_next_item_key(type: :aspiration, id: id)] = rows.first }
+    end
+
+    if assignment_ids.any?
+      AssignmentCheckIn.where(company_teammate: @teammate, assignment_id: assignment_ids)
+        .open
+        .order(check_in_started_on: :desc, created_at: :desc)
+        .group_by(&:assignment_id)
+        .each { |id, rows| by_key[up_next_item_key(type: :assignment, id: id)] = rows.first }
+    end
+
+    position_latest_open = PositionCheckIn.where(company_teammate: @teammate).open.order(check_in_started_on: :desc, created_at: :desc).first
+    by_key[up_next_item_key(type: :position, id: nil)] = position_latest_open if position_latest_open
+
+    by_key
+  end
+
+  def up_next_item_key(item = nil, type: nil, id: nil)
+    item_type = item ? item[:type] : type
+    item_id = item ? item[:id] : id
+    "#{item_type}:#{item_id || 'none'}"
+  end
+
+  def up_next_finalized_line(latest_finalized)
+    if latest_finalized&.official_check_in_completed_at.present?
+      "Last finalized #{view_context.time_ago_in_words(latest_finalized.official_check_in_completed_at)} ago."
+    else
+      "No finalized check-in yet."
+    end
+  end
+
+  def up_next_current_open_line(latest_open)
+    return "No open check-in yet for this item." if latest_open.blank?
+
+    employee_side = up_next_side_completion_phrase(latest_open.employee_completed_at)
+    manager_side = up_next_side_completion_phrase(latest_open.manager_completed_at)
+    "#{@employee_name}: #{employee_side} · #{@manager_name}: #{manager_side}"
+  end
+
+  def up_next_side_completion_phrase(timestamp)
+    timestamp.present? ? "#{view_context.time_ago_in_words(timestamp)} ago" : "not completed yet"
+  end
+
+  def up_next_therefore_line(bucket, index, ordered_items)
+    rank_reason = up_next_rank_reason(bucket, index, ordered_items)
+    "Therefore this is #{up_next_clarity_level_label(bucket)}, #{up_next_bucket_label(bucket)}, and #{rank_reason}."
+  end
+
+  def up_next_clarity_level_label(bucket)
+    case bucket&.to_sym
+    when :green
+      "crystal clear"
+    when :yellow
+      "clear"
+    else
+      "blurred or obscured"
+    end
+  end
+
+  def up_next_bucket_label(bucket)
+    case bucket&.to_sym
+    when :green
+      "green bucket"
+    when :yellow
+      "yellow bucket"
+    else
+      "red bucket"
+    end
+  end
+
+  def up_next_rank_reason(bucket, index, ordered_items)
+    return "ranked first due to highest urgency" if index.zero?
+
+    previous_bucket = ordered_items[index - 1][:bucket]&.to_sym
+    current_bucket = bucket&.to_sym
+    if previous_bucket == current_bucket
+      "ordered after same-bucket items by type and id"
+    else
+      "ordered after all higher-urgency buckets"
     end
   end
 

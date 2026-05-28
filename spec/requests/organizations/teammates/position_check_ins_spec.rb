@@ -47,6 +47,15 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response.body).to include("draft")
     end
 
+    it "links the 1-by-1 clarity check-in text to the up next explainer page" do
+      get position_check_in_organization_teammate_path(organization, teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("1-by-1 clarity check-in")
+      expect(response.body).to include(up_next_organization_company_teammate_check_ins_path(organization, teammate))
+      expect(response.body).to include("on #{title.external_title}")
+    end
+
     it "renders the show template" do
       get position_check_in_organization_teammate_path(organization, teammate)
       expect(response).to render_template("organizations/teammates/position_check_ins/show")

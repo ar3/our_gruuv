@@ -685,4 +685,30 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include("One on One Hub")
     end
   end
+
+  describe "GET /organizations/:org_id/company_teammates/:company_teammate_id/check_ins/up_next" do
+    before do
+      sign_in_as_teammate_for_request(manager_person, organization)
+    end
+
+    it "renders the up next explainer with both perspectives and links" do
+      assignment = create(:assignment, company: organization, title: "Up Next Assignment")
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago)
+      aspiration = create(:aspiration, company: organization, name: "Up Next Aspiration")
+      AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration)
+      AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
+      PositionCheckIn.find_or_create_open_for(employee_teammate)
+
+      get up_next_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(" - Clarity Check-ins... Up Next")
+      expect(response.body).to include("#{employee_person.casual_name} perspective")
+      expect(response.body).to include("#{manager_person.casual_name} perspective")
+      expect(response.body).to include("Therefore this is")
+      expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/assignments/#{assignment.id}")
+      expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/aspirations/#{aspiration.id}")
+      expect(response.body).to include(position_check_in_organization_teammate_path(organization, employee_teammate))
+    end
+  end
 end

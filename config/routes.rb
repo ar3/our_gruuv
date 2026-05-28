@@ -365,6 +365,7 @@ Rails.application.routes.draw do
         post :save_and_redirect, on: :member
         get :review_most_recent, on: :member
         get :hub, on: :member
+        get :up_next, on: :member
       end
       
       resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :create, :update] do

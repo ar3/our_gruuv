@@ -9,7 +9,9 @@
         = teammate_profile_image(@teammate, size: 48)
       .d-flex.flex-column
         %span.fw-bold= @teammate.person.casual_name
-        %span.text-muted.small= one_by_one_clarity_check_in_on_name_label(name: @single_item_name)
+        %span.text-muted.small
+          = link_to one_by_one_clarity_check_in_label, up_next_organization_company_teammate_check_ins_path(@organization, @teammate), class: "text-muted"
+          = " on #{@single_item_name}"
     .d-flex.align-items-center.gap-2
       - if current_person == @teammate.person
         %span.badge.bg-secondary Employee View

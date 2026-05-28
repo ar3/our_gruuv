@@ -1,0 +1,50 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, @up_next_page_title)
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { up_next_organization_company_teammate_check_ins_path(organization, tm) },
+               switch_aria_label: switch_teammate_for_clarity_hub_label
+      %span= " - #{@up_next_page_title}"
+
+- content_for :header_action do
+  = render "people/view_switcher"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: @up_next_page_title, url: nil }])
+
+%p.text-muted.mb-3
+  Two live lists of 1-by-1 check-ins sorted by urgency: one from the employee perspective, one from the manager perspective.
+
+.row.g-4
+  .col-12.col-lg-6
+    .card.h-100
+      .card-header
+        %h5.mb-0= "#{@employee_name} perspective"
+      .card-body
+        %ol.ps-3.mb-0
+          - @employee_up_next_items.each do |row|
+            %li.mb-3
+              = link_to "#{row[:rank]}. #{row.dig(:item, :name)}", row[:url], class: "fw-semibold text-decoration-none"
+              %ul.mb-0
+                %li= row[:finalized_line]
+                %li= row[:current_open_line]
+                %li= row[:therefore_line]
+
+  .col-12.col-lg-6
+    .card.h-100
+      .card-header
+        %h5.mb-0= "#{@manager_name} perspective"
+      .card-body
+        %ol.ps-3.mb-0
+          - @manager_up_next_items.each do |row|
+            %li.mb-3
+              = link_to "#{row[:rank]}. #{row.dig(:item, :name)}", row[:url], class: "fw-semibold text-decoration-none"
+              %ul.mb-0
+                %li= row[:finalized_line]
+                %li= row[:current_open_line]
+                %li= row[:therefore_line]
