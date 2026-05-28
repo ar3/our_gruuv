@@ -56,4 +56,44 @@ RSpec.describe AbilitiesHrReviewHelper, type: :helper do
       expect(html).to include('Milestone 1 – Demonstrated @ Knife work')
     end
   end
+
+  describe '#abilities_hr_values_differ?' do
+    it 'treats surrounding whitespace as equal' do
+      expect(helper.abilities_hr_values_differ?('  Same value  ', 'Same value')).to be(false)
+    end
+
+    it 'returns true when trimmed values differ' do
+      expect(helper.abilities_hr_values_differ?('One', 'Two')).to be(true)
+    end
+  end
+
+  describe '#abilities_hr_field_comparison' do
+    let(:organization) { create(:organization) }
+    let(:ability) do
+      create(
+        :ability,
+        company: organization,
+        description: 'Use knives safely.',
+        milestone_1_description: 'M1 existing'
+      )
+    end
+
+    it 'returns existing ability values for description and milestones' do
+      description = helper.abilities_hr_field_comparison(
+        matched_ability: ability,
+        field: 'description',
+        proposed_value: 'Use knives safely.'
+      )
+      milestone = helper.abilities_hr_field_comparison(
+        matched_ability: ability,
+        field: 'milestone_1_description',
+        proposed_value: 'M1 new'
+      )
+
+      expect(description['existing_value']).to eq('Use knives safely.')
+      expect(description['different']).to be(false)
+      expect(milestone['existing_value']).to eq('M1 existing')
+      expect(milestone['different']).to be(true)
+    end
+  end
 end

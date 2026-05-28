@@ -92,4 +92,40 @@ RSpec.describe 'Bulk sync HR abilities import', type: :request do
     ability = Ability.find_by(company_id: organization.id, name: 'Knife work')
     expect(AssignmentAbility.exists?(assignment_id: assignment.id, ability_id: ability.id)).to be true
   end
+
+  it 'shows side-by-side compare fields only for differing matched values' do
+    create(
+      :ability,
+      company: organization,
+      name: 'Knife work',
+      description: 'Use knives safely.',
+      milestone_1_description: 'M1 existing'
+    )
+    csv_with_match = <<~CSV
+      Assignment,Ability,Description,Milestone 1,Milestone 2,Milestone 3,Milestone 4,Milestone 5,Ability milestone
+      Line Cook,,
+      ,Knife work,Use knives safely.,M1 changed,,,,,2
+    CSV
+    preview = AbilitiesHrReview::BuildPreview.call(file_content: csv_with_match, organization: organization)[:preview_actions]
+    event = create(
+      :upload_abilities_hr_review,
+      organization: organization,
+      creator: person,
+      initiator: person,
+      source_contents: csv_with_match,
+      preview_actions: preview.merge('parse_ok' => true)
+    )
+
+    get organization_bulk_sync_event_path(organization, event)
+    expect(response).to have_http_status(:success)
+    html = Nokogiri::HTML(response.body)
+    compare_labels = html.css('label.form-label').map { |n| n.text.strip }.select { |t| t == 'Current existing value' }
+    disabled_values = html.css('textarea[disabled]').map { |node| node.text.strip }
+
+    expect(compare_labels.size).to eq(1)
+    expect(response.body).to include('Description (editable)')
+    expect(response.body).to include('M1 existing')
+    expect(response.body).to include('M1 changed')
+    expect(disabled_values).to contain_exactly('M1 existing')
+  end
 end

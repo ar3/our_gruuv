@@ -105,6 +105,7 @@
             %p.text-danger.mb-0= group['invalid_reason'].presence || 'This row cannot be imported.'
 
           - elsif gst == 'pending'
+            - matched_ability = has_match ? Ability.find_by(id: group['matched_ability_id'], company_id: organization.id) : nil
             = form_with url: approve_abilities_hr_ability_group_organization_bulk_sync_event_path(organization, @bulk_sync_event), method: :post, local: true, data: { turbo: false }, class: 'mb-0' do |f|
               = hidden_field_tag :ability_group_id, gid
               .row.mb-3
@@ -139,9 +140,18 @@
                     exclude_ids: [],
                     help_text: nil
               .row.mb-3
-                .col-12
-                  %label.form-label Description (editable)
-                  = text_area_tag :description, desc_value, class: 'form-control', rows: 6, name: 'description'
+                - description_comparison = abilities_hr_field_comparison(matched_ability: matched_ability, field: 'description', proposed_value: desc_value)
+                - if description_comparison['different']
+                  .col-md-6
+                    %label.form-label Description (editable)
+                    = text_area_tag :description, desc_value, class: 'form-control', rows: 6, name: 'description'
+                  .col-md-6
+                    %label.form-label Current existing value
+                    = text_area_tag nil, description_comparison['existing_value'], class: 'form-control', rows: 6, disabled: true
+                - else
+                  .col-12
+                    %label.form-label Description (editable)
+                    = text_area_tag :description, desc_value, class: 'form-control', rows: 6, name: 'description'
               .mb-2
                 %button.btn.btn-sm.btn-outline-secondary{type: 'button', 'data-bs-toggle' => 'collapse', 'data-bs-target' => "#milestone-fields-#{gid}"}
                   Milestone 1–5 text
@@ -150,9 +160,19 @@
                   - (1..5).each do |n|
                     - mh = milestones[n.to_s].is_a?(Hash) ? milestones[n.to_s].stringify_keys : {}
                     - mv = mh['proposed'].presence || mh['normalized'].presence || mh['raw'].presence || ''
-                    .col-12.mb-2
-                      %label.form-label= "Milestone #{n}"
-                      = text_area_tag "milestone_#{n}_description", mv, class: 'form-control small', rows: 4, name: "milestone_#{n}_description"
+                    - field_name = "milestone_#{n}_description"
+                    - milestone_comparison = abilities_hr_field_comparison(matched_ability: matched_ability, field: field_name, proposed_value: mv)
+                    - if milestone_comparison['different']
+                      .col-md-6.mb-2
+                        %label.form-label= "Milestone #{n}"
+                        = text_area_tag field_name, mv, class: 'form-control small', rows: 4, name: field_name
+                      .col-md-6.mb-2
+                        %label.form-label Current existing value
+                        = text_area_tag nil, milestone_comparison['existing_value'], class: 'form-control small', rows: 4, disabled: true
+                    - else
+                      .col-12.mb-2
+                        %label.form-label= "Milestone #{n}"
+                        = text_area_tag field_name, mv, class: 'form-control small', rows: 4, name: field_name
               .d-flex.flex-wrap.gap-2.mt-3
                 - if has_match
                   = button_tag 'Approve, Update Existing', type: 'submit', name: 'mode', value: 'update', class: 'btn btn-warning'

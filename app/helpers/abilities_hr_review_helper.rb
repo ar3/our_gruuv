@@ -1,6 +1,40 @@
 # frozen_string_literal: true
 
 module AbilitiesHrReviewHelper
+  def abilities_hr_compare_normalized(value)
+    value.to_s.strip
+  end
+
+  def abilities_hr_values_differ?(left, right)
+    abilities_hr_compare_normalized(left) != abilities_hr_compare_normalized(right)
+  end
+
+  def abilities_hr_existing_field_value(ability, field)
+    return '' if ability.blank?
+
+    case field.to_s
+    when 'description'
+      ability.description.to_s
+    when /\Amilestone_(\d+)_description\z/
+      level = Regexp.last_match(1).to_i
+      if level.between?(1, 5)
+        ability.public_send("milestone_#{level}_description").to_s
+      else
+        ''
+      end
+    else
+      ''
+    end
+  end
+
+  def abilities_hr_field_comparison(matched_ability:, field:, proposed_value:)
+    existing_value = abilities_hr_existing_field_value(matched_ability, field)
+    {
+      'existing_value' => existing_value,
+      'different' => abilities_hr_values_differ?(proposed_value, existing_value)
+    }.stringify_keys
+  end
+
   def abilities_hr_milestone_option_label(level, ability_name:)
     n = level.to_i
     adjective = milestone_level_display(n)
