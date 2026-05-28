@@ -128,7 +128,7 @@ module AbilitiesHrReview
         end
 
         @errors << 'Missing Assignment column' if @assignment_key.blank?
-        @errors << 'Missing Ability name column (Ability, Ability Name, or Name)' if @ability_name_key.blank?
+        @errors << 'Missing Ability name column (Ability, Abilities, Ability Name, or Name)' if @ability_name_key.blank?
         @errors << 'Missing Description column' if @description_key.blank?
       end
 
@@ -147,7 +147,7 @@ module AbilitiesHrReview
       end
 
       def find_ability_name(stripped)
-        prefer = find_first(stripped, [/\Aability\s*name\z/i, /\Aability\z/i])
+        prefer = find_first(stripped, [/\Aability\s*name\z/i, /\Aabilities\z/i, /\Aability\z/i])
         return prefer if prefer.present?
 
         find_first(stripped, [/\Aname\z/i])

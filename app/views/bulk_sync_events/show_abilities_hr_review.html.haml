@@ -165,14 +165,14 @@
                     - if milestone_comparison['different']
                       .col-md-6.mb-2
                         %label.form-label= "Milestone #{n}"
-                        = text_area_tag field_name, mv, class: 'form-control small', rows: 4, name: field_name
+                        = text_area_tag field_name, mv, class: 'form-control small', rows: 20, name: field_name
                       .col-md-6.mb-2
                         %label.form-label Current existing value
-                        = text_area_tag nil, milestone_comparison['existing_value'], class: 'form-control small', rows: 4, disabled: true
+                        = text_area_tag nil, milestone_comparison['existing_value'], class: 'form-control small', rows: 20, disabled: true
                     - else
                       .col-12.mb-2
                         %label.form-label= "Milestone #{n}"
-                        = text_area_tag field_name, mv, class: 'form-control small', rows: 4, name: field_name
+                        = text_area_tag field_name, mv, class: 'form-control small', rows: 20, name: field_name
               .d-flex.flex-wrap.gap-2.mt-3
                 - if has_match
                   = button_tag 'Approve, Update Existing', type: 'submit', name: 'mode', value: 'update', class: 'btn btn-warning'

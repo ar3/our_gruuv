@@ -39,8 +39,13 @@ RSpec.describe 'Bulk sync HR abilities import', type: :request do
 
     get organization_bulk_sync_event_path(organization, event)
     expect(response).to have_http_status(:success)
+    html = Nokogiri::HTML(response.body)
+    milestone_rows = html.css('textarea[name^="milestone_"][name$="_description"]')
+
     expect(response.body).to include('Knife work')
     expect(response.body).to include('Step 1')
+    expect(milestone_rows.size).to eq(5)
+    expect(milestone_rows.map { |n| n['rows'] }.uniq).to eq(['20'])
   end
 
   it 'approves ability then association' do

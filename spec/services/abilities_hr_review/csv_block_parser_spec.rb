@@ -35,4 +35,17 @@ RSpec.describe AbilitiesHrReview::CsvBlockParser do
     expect(row['milestone_1_raw']).to include('M1')
     expect(row['ability_milestone_raw']).to eq('2')
   end
+
+  it 'accepts Abilities as the ability name header' do
+    abilities_header_csv = <<~CSV
+      Assignment,Abilities,Description,Milestone 1,Milestone 2,Milestone 3,Milestone 4,Milestone 5,Ability milestone
+      Line Cook,,
+      ,Knife work,Use knives safely.,M1 body,,,,,2
+    CSV
+    parser = described_class.new(abilities_header_csv)
+
+    expect(parser.parse).to be true
+    expect(parser.errors).to be_empty
+    expect(parser.ability_rows.first['ability_name']).to eq('Knife work')
+  end
 end
