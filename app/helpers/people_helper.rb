@@ -134,7 +134,7 @@ module PeopleHelper
       return clarity_hub_label
     end
 
-    if controller_name == 'one_on_one_links' && action_name == 'show'
+    if controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
       return 'One on One Hub'
     end
 

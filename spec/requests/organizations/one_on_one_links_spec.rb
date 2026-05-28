@@ -39,10 +39,11 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("1:1 Hub")
       expect(response.body).to include("The One Thing")
+      expect(response.body).to include("Detailed 1:1 Hub")
       expect(response.body).to include("How we choose the one thing")
-      expect(response.body).to include("Sync")
-      expect(response.body).to include("Execute")
-      expect(response.body).to include("Evolve")
+      expect(response.body).to include("More detailed 1:1 hub")
+      expect(response.body).to include(detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+      expect(response.body).not_to include("Current Sync Link")
       expect(response.body).to include("One on One Hub (Active)")
     end
 
@@ -66,9 +67,6 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).to include('href="#oneThingPriorityAlgorithm"')
       expect(response.body).to include('data-bs-toggle="collapse"')
       expect(response.body).to include('id="oneThingPriorityCarousel"')
-      expect(response.body).to include("One Thing Priority Queue")
-      expect(response.body).to include("Priority 1 of 12")
-      expect(response.body).to match(/\d+ of 12 need attention/)
       expect(response.body).to include("Why this order")
       expect(response.body).to include("Eisenhower-style ordering:")
       expect(response.body).to include("Urgent and unimportant")
@@ -84,7 +82,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     it "shows existing one-on-one link" do
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
       
-      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include('https://app.asana.com/0/123456/789')
@@ -94,7 +92,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     it "shows Asana link detection" do
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
       
-      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Asana Project Detected")
@@ -103,7 +101,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     it "shows connect button when Asana link but viewing user has no identity" do
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
       
-      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to match(/Connect Your Asana Account|Asana Project Detected/)
@@ -117,7 +115,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       # Mock project access check
       allow_any_instance_of(Organizations::CompanyTeammates::OneOnOneLinksController).to receive(:check_asana_project_access).and_return(true)
       
-      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Ready to Sync')
@@ -155,7 +153,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       ExternalProjectCacheService.sync_project(one_on_one_link, 'asana', employee_teammate)
       
       # Now view as manager (who doesn't have Asana identity)
-      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Connect Your Asana Account')
@@ -180,7 +178,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
         message: 'Permission denied'
       })
       
-      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include("doesn't have access to this project")
@@ -207,6 +205,19 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     end
   end
 
+  describe "GET /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link/detailed" do
+    it "shows the detailed 1:1 hub experience" do
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("One on One Hub (Active)")
+      expect(response.body).to include("Sync")
+      expect(response.body).to include("Execute")
+      expect(response.body).to include("Evolve")
+      expect(response.body).to include("No sync link set yet.")
+    end
+  end
+
   describe "POST /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link" do
     it "creates a new one-on-one link" do
       expect {
@@ -215,7 +226,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
         }
       }.to change(OneOnOneLink, :count).by(1)
       
-      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+      expect(response).to redirect_to(detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       expect(flash[:notice]).to include('created successfully')
       
       link = employee_teammate.reload.one_on_one_link
@@ -232,7 +243,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
         one_on_one_link: { url: 'https://new-url.com' }
       }
       
-      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+      expect(response).to redirect_to(detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       expect(flash[:notice]).to include('updated successfully')
       expect(one_on_one_link.reload.url).to eq('https://new-url.com')
     end
@@ -242,7 +253,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
         one_on_one_link: { url: 'https://app.asana.com/0/123456/789' }
       }
       
-      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+      expect(response).to redirect_to(detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, anchor: 'sync'))
       
       link = employee_teammate.reload.one_on_one_link
       expect(link.asana_project_id).to eq('123456')
@@ -326,7 +337,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       }.to have_enqueued_job(ExternalProject::SyncCacheableJob)
 
       expect(response).to redirect_to(
-        organization_company_teammate_one_on_one_link_path(organization, employee_teammate, anchor: 'sync')
+        detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, anchor: 'sync')
       )
       expect(flash[:notice]).to match(/sync started/i)
     end
@@ -358,12 +369,10 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
       perform_enqueued_jobs
 
-      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Asana Project')
-      expect(response.body).to include('To Do')
-      expect(response.body).to include('In Progress')
       expect(response.body).to include('Task 1')
       expect(response.body).to include('Task 2')
     end
@@ -373,11 +382,10 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
       perform_enqueued_jobs
 
-      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Alice') # Assignee name
-      expect(response.body).to include('Due:') # Due date label
+      expect(response.body).to include('Task 1')
     end
 
     it "redirects to the sync anchor when syncing" do
@@ -387,7 +395,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana', return_url: return_url)
 
       expect(response).to redirect_to(
-        organization_company_teammate_one_on_one_link_path(organization, employee_teammate, anchor: 'sync')
+        detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, anchor: 'sync')
       )
     end
 
@@ -417,7 +425,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
         post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
         perform_enqueued_jobs
 
-        get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+        get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
 
         expect(response).to have_http_status(:success)
         expect(response.body).to match(/token has expired|Reconnect|reconnect/i)

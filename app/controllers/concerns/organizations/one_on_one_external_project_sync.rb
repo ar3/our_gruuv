@@ -7,7 +7,7 @@ module Organizations
     private
 
     def one_on_one_hub_path(anchor: nil)
-      organization_company_teammate_one_on_one_link_path(
+      detailed_organization_company_teammate_one_on_one_link_path(
         organization,
         @teammate,
         anchor: anchor

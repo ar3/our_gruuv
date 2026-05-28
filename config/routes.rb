@@ -370,6 +370,7 @@ Rails.application.routes.draw do
       
       resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :create, :update] do
         member do
+          get :detailed
           post 'sync', to: 'company_teammates/one_on_one_links#sync', as: :sync
           get 'sync_status', to: 'company_teammates/one_on_one_links#sync_status', as: :sync_status
           post 'associate_project', to: 'company_teammates/one_on_one_links#associate_project', as: :associate_project

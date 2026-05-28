@@ -97,7 +97,7 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => clarity_check_in_features_tooltip}
 
     %li
-      - one_on_one_active = controller_name == 'one_on_one_links' && action_name == 'show'
+      - one_on_one_active = controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
       - one_on_one_link = @teammate&.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
       - if one_on_one_active
         .dropdown-item.text-muted

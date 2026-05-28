@@ -1,0 +1,14 @@
+- one_thing_active = local_assigns.fetch(:one_thing_active, false)
+- detailed_active = local_assigns.fetch(:detailed_active, false)
+
+%ul.nav.nav-tabs.mb-4
+  %li.nav-item
+    = link_to "One Thing",
+      organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
+      class: "nav-link #{'active' if one_thing_active}",
+      aria: { current: (one_thing_active ? "page" : nil) }
+  %li.nav-item
+    = link_to "Detailed 1:1 Hub",
+      detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
+      class: "nav-link #{'active' if detailed_active}",
+      aria: { current: (detailed_active ? "page" : nil) }

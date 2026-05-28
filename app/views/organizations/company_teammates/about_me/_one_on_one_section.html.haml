@@ -109,5 +109,5 @@
       
       .d-grid
         = link_to "Manage / View Full Details about 1:1", 
-                  @one_on_one_url,
+                  detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
                   class: "btn btn-outline-primary"

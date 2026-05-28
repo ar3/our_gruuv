@@ -6,21 +6,15 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :set_one_on_one_link
-  before_action :assign_viewable_teammates_for_one_on_one, only: %i[show create update]
-  before_action :assign_managers_view_card_for_teammate, only: %i[show create update]
+  before_action :assign_viewable_teammates_for_one_on_one, only: %i[show detailed create update]
+  before_action :assign_managers_view_card_for_teammate, only: %i[show detailed create update]
 
   def show
-    authorize @one_on_one_link
-    @person = @teammate.person
-    load_external_project_cache_for_hub
-    load_one_on_one_hub_data
-    
-    # Check if viewing user has access to the Asana project
-    if @source == 'asana' && current_company_teammate&.has_asana_identity? && @one_on_one_link&.asana_project_id
-      @has_project_access = check_asana_project_access(@one_on_one_link.asana_project_id)
-    else
-      @has_project_access = nil
-    end
+    load_hub_state
+  end
+
+  def detailed
+    load_hub_state
   end
 
   def create
@@ -45,10 +39,8 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
       maybe_enqueue_asana_sync_after_save!
       redirect_to one_on_one_hub_path(anchor: asana_sync_redirect_anchor), notice: '1:1 link created successfully.'
     else
-      @person = @teammate.person
-      load_external_project_cache_for_hub
-      load_one_on_one_hub_data
-      render :show, status: :unprocessable_entity
+      load_hub_state
+      render :detailed, status: :unprocessable_entity
     end
   end
 
@@ -74,10 +66,8 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
       maybe_enqueue_asana_sync_after_save!
       redirect_to one_on_one_hub_path(anchor: asana_sync_redirect_anchor), notice: '1:1 link updated successfully.'
     else
-      @person = @teammate.person
-      load_external_project_cache_for_hub
-      load_one_on_one_hub_data
-      render :show, status: :unprocessable_entity
+      load_hub_state
+      render :detailed, status: :unprocessable_entity
     end
   end
 
@@ -127,6 +117,20 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   end
 
   private
+
+  def load_hub_state
+    authorize @one_on_one_link
+    @person = @teammate.person
+    load_external_project_cache_for_hub
+    load_one_on_one_hub_data
+
+    # Check if viewing user has access to the Asana project
+    if @source == 'asana' && current_company_teammate&.has_asana_identity? && @one_on_one_link&.asana_project_id
+      @has_project_access = check_asana_project_access(@one_on_one_link.asana_project_id)
+    else
+      @has_project_access = nil
+    end
+  end
 
   def assign_viewable_teammates_for_one_on_one
     return unless @teammate

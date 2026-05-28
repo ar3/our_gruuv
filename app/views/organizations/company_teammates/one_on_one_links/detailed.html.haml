@@ -1,0 +1,463 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, "1:1 Hub")
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
+               switch_aria_label: "Switch teammate for 1:1 Hub"
+      %span= " - 1:1 Hub"
+
+- content_for :header_action do
+  = render "people/view_switcher"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: nil }])
+
+- casual_name = @teammate.person.casual_name
+:css
+  .one-on-one-hub-nav .nav-link.active {
+    background-color: #0d6efd !important;
+    color: white !important;
+    border-radius: 0.375rem;
+  }
+
+  .one-on-one-hub-nav .nav-link:hover {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+  }
+
+  .one-on-one-hub-nav .nav-link {
+    transition: all 0.2s ease-in-out;
+  }
+
+  section[id] {
+    scroll-margin-top: 2rem;
+  }
+
+- return_to_about_me_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, teammate_route_param(@teammate))
+- source = @source
+- cache = @external_project_cache
+- viewing_user_has_identity = has_external_identity?(current_company_teammate, source) if source
+- sync_form_disabled = cache&.sync_in_progress? || @poll_external_project_sync
+- latest_goal_check_in_dates = @active_goals.filter_map { |goal| goal.goal_check_ins.map(&:check_in_week_start).compact.max }
+- most_recent_goal_check_in = latest_goal_check_in_dates.max
+
+- digest_return_url = detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "weekly-digest-settings-one_on_one")
+= render "shared/teammate_context/manager_lite_and_weekly_digest",
+         organization: organization,
+         teammate: @teammate,
+         return_url: digest_return_url,
+         return_text: "Back to Detailed 1:1 Hub",
+         editable: policy(@teammate).update?,
+         anchor_key: "one_on_one"
+
+= render "hub_tabs", one_thing_active: false, detailed_active: true
+
+.container-fluid
+  .row
+    .col-md-3.col-lg-2.d-none.d-md-block
+      .position-sticky{style: "top: 2rem;"}
+        .card
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-compass.me-2
+              1:1 Hub
+          .card-body.p-0
+            %nav.nav.flex-column#oneOnOneHubNav.one-on-one-hub-nav
+              %a.nav-link{href: "#one-thing", data: { section: "one-thing" }}
+                %i.bi.bi-house.me-2
+              %a.nav-link{href: "#sync", data: { section: "sync" }}
+                %i.bi.bi-arrow-repeat.me-2
+                Sync
+              %a.nav-link{href: "#execute", data: { section: "execute" }}
+                %i.bi.bi-play-circle.me-2
+                Execute
+              %a.nav-link{href: "#evolve", data: { section: "evolve" }}
+                %i.bi.bi-graph-up.me-2
+                Evolve
+
+    .col-md-9.col-lg-10
+      %section#one-thing.mb-5
+        .card.border-primary
+          .card-header.bg-primary.text-white
+            %h2.mb-0
+              %i.bi.bi-house.me-2
+              The One Thing
+          .card-body
+            = render "priority_carousel", priority_carousel: @priority_carousel
+
+            %p.mb-2
+              %a.d-flex.align-items-center.justify-content-between.text-decoration-none.p-3.border.rounded.bg-light.text-body{"data-bs-toggle" => "collapse", href: "#oneThingPriorityAlgorithm", role: "button", "aria-expanded" => "false", "aria-controls" => "oneThingPriorityAlgorithm"}
+                %span.fw-semibold
+                  %i.bi.bi-diagram-3.me-2
+                  How we choose the one thing
+                %i.bi.bi-chevron-down.text-muted
+            .collapse#oneThingPriorityAlgorithm
+              .border.border-top-0.rounded-bottom.p-3.bg-white
+                = render "one_thing_priority_algorithm"
+                .d-flex.justify-content-end.mt-3
+                  %span.badge.rounded-pill.bg-info-subtle.text-info-emphasis.border{"data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => one_thing_tie_breaks_popover_content, role: "note", style: "cursor: help;"}
+                    %i.bi.bi-info-circle.me-1{"aria-hidden" => "true"}
+                    How do we break ties?
+
+      %section#sync.mb-5
+        .card.border-success
+          .card-header.bg-success.text-white
+            %h3.mb-0
+              %i.bi.bi-arrow-repeat.me-2
+              Sync
+          .card-body
+            - if @one_on_one_link.url.present?
+              .mb-3
+                %strong Current Sync Link:
+                = link_to @one_on_one_link.url, @one_on_one_link.url, target: "_blank", rel: "noopener noreferrer", class: "ms-2"
+                - if @source
+                  %span.badge.bg-info.ms-2= "#{source_display_name(@source)} Project Detected"
+            - else
+              .alert.alert-warning.mb-3
+                %i.bi.bi-exclamation-circle.me-2
+                No sync link set yet.
+
+            - if source == "asana" && !viewing_user_has_identity
+              = render "shared/external_project/associate_prompt",
+                      cacheable: @one_on_one_link,
+                      current_teammate: current_company_teammate,
+                      source: source,
+                      return_url: request.fullpath
+
+            = render "organizations/company_teammates/one_on_one_links/sync_results",
+                     cacheable: @one_on_one_link,
+                     cache: cache,
+                     current_teammate: current_company_teammate,
+                     source: source,
+                     viewing_user_has_identity: viewing_user_has_identity,
+                     has_project_access: @has_project_access,
+                     return_url: request.fullpath,
+                     sync_form_disabled: sync_form_disabled,
+                     poll_sync: @poll_external_project_sync
+            - if @one_on_one_link.url.present? && source != "asana"
+              .mb-4
+                %iframe{src: @one_on_one_link.url, style: "width: 100%; height: 500px; border: 1px solid #dee2e6; border-radius: 0.25rem;"}
+
+            - form_method = @one_on_one_link.persisted? ? :patch : :post
+            = form_with model: [@organization, @person, @one_on_one_link], url: organization_company_teammate_one_on_one_link_path(organization, @teammate), method: form_method, local: true, html: { id: "one-on-one-sync-link-form" } do |f|
+              .mb-3
+                = f.label :url, "Sync Link URL", class: "form-label"
+                = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789 or https://docs.google.com/...", disabled: sync_form_disabled
+                - if @one_on_one_link.errors[:url].any?
+                  .invalid-feedback.d-block
+                    = @one_on_one_link.errors[:url].join(", ")
+                %small.form-text.text-muted
+                  Put a link to the document, project, or system that you use to store your 1:1 notes and discussions. If it is an Asana project, we can automatically sync sections and tasks.
+              .d-flex.gap-2
+                = f.submit "Save Sync Link", class: "btn btn-primary", disabled: sync_form_disabled
+                = link_to "Cancel", return_to_about_me_url, class: "btn btn-outline-secondary"
+            - if sync_form_disabled
+              %p.small.text-muted.mt-2.mb-0
+                %i.bi.bi-hourglass-split.me-1
+                Save and sync are disabled while a project sync is in progress.
+
+      %section#execute.mb-5
+        .card.border-info
+          .card-header.bg-info.text-white
+            %h3.mb-0
+              %i.bi.bi-play-circle.me-2
+              Execute
+          .card-body
+            .row.g-3
+              .col-12.col-xl-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Goals Needed
+                  .card-body
+                    %h2.fw-bold.mb-1= @missing_goal_total_count
+                    %p.text-muted.mb-2 finalized gaps without active goals
+                    - hub_teammate_param = teammate_route_param(@teammate)
+                    - if @assignment_missing_goal_items.any?
+                      %p.mb-1
+                        %strong Assignments:
+                        = @assignment_missing_goal_items.count
+                        = link_to my_growth_experiences_organization_company_teammate_path(organization, hub_teammate_param),
+                                  class: "ms-1 text-decoration-none",
+                                  title: "Grow by experiences",
+                                  aria: { label: "Grow by experiences" } do
+                          %i.bi.bi-box-arrow-up-right
+                    - if @aspiration_missing_goal_items.any?
+                      %p.mb-1
+                        %strong Aspirations:
+                        = @aspiration_missing_goal_items.count
+                        = link_to review_most_recent_organization_company_teammate_check_ins_path(organization, hub_teammate_param),
+                                  class: "ms-1 text-decoration-none",
+                                  title: clarity_check_in_statuses_label,
+                                  aria: { label: clarity_check_in_statuses_label } do
+                          %i.bi.bi-box-arrow-up-right
+                    - if @ability_missing_goal_items.any?
+                      %p.mb-0
+                        %strong Ability gaps:
+                        = @ability_missing_goal_items.count
+                        = link_to my_growth_abilities_organization_company_teammate_path(organization, hub_teammate_param),
+                                  class: "ms-1 text-decoration-none",
+                                  title: "Grow by abilities",
+                                  aria: { label: "Grow by abilities" } do
+                          %i.bi.bi-box-arrow-up-right
+
+              .col-12.col-xl-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Draft / Unstarted Goals
+                  .card-body
+                    %h2.fw-bold.mb-1
+                      = @draft_goals_count
+                      = link_to organization_goals_path(organization,
+                                                        owner_id: "CompanyTeammate_#{@teammate.id}",
+                                                        status: "draft",
+                                                        view: "hierarchical-collapsible",
+                                                        return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
+                                                        return_text: "Back to 1:1 Hub"),
+                                class: "ms-1 text-decoration-none",
+                                title: "View draft goals",
+                                aria: { label: "View draft goals" } do
+                        %i.bi.bi-box-arrow-up-right
+                    %p.text-muted.mb-0 goals are drafted but not started
+
+              .col-12.col-xl-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Active Goals Summary
+                  .card-body
+                    %p.mb-1
+                      %strong Active goals:
+                      = @active_goals.count
+                      = link_to organization_goals_path(organization,
+                                                        owner_id: "CompanyTeammate_#{@teammate.id}",
+                                                        status: "active",
+                                                        view: "hierarchical-collapsible",
+                                                        return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
+                                                        return_text: "Back to 1:1 Hub"),
+                                class: "ms-1 text-decoration-none",
+                                title: "View active goals",
+                                aria: { label: "View active goals" } do
+                        %i.bi.bi-box-arrow-up-right
+                    %p.mb-1
+                      %strong= "#{need_confidence_check_label}:"
+                      = @active_goals_needing_check_in_count
+                    %p.mb-0
+                      %strong= "#{last_confidence_check_label}:"
+                      = most_recent_goal_check_in ? most_recent_goal_check_in.strftime("%b %d, %Y") : no_confidence_checks_yet_label
+
+              .col-12.col-xl-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0 Completed Goal Outcomes
+                  .card-body
+                    %p.mb-1
+                      %strong Completed goals:
+                      = @completed_goals.count
+                      = link_to organization_goals_path(organization,
+                                                        owner_id: "CompanyTeammate_#{@teammate.id}",
+                                                        status: "completed",
+                                                        view: "hierarchical-collapsible",
+                                                        return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
+                                                        return_text: "Back to 1:1 Hub"),
+                                class: "ms-1 text-decoration-none",
+                                title: "View completed goals",
+                                aria: { label: "View completed goals" } do
+                        %i.bi.bi-box-arrow-up-right
+                    %p.mb-1
+                      %strong Last completed:
+                      = @last_goal_completed_at ? @last_goal_completed_at.strftime("%b %d, %Y") : "Never"
+                    %p.mb-1
+                      %strong On time:
+                      = "#{@goal_outcome_counts[:on_time]} (#{@goal_outcome_rates[:on_time]}%)"
+                    %p.mb-1
+                      %strong Late:
+                      = "#{@goal_outcome_counts[:late]} (#{@goal_outcome_rates[:late]}%)"
+                    %p.mb-0
+                      %strong Missed:
+                      = "#{@goal_outcome_counts[:missed]} (#{@goal_outcome_rates[:missed]}%)"
+
+            .card.mt-3
+              .card-header
+                %h5.mb-0 Goal Confidence (Last 90 Days)
+              .card-body
+                - if @goals_confidence_series.any?
+                  #oneOnOneGoalsConfidenceChart{style: "height: 320px;"}
+                - else
+                  %p.text-muted.mb-0= no_confidence_checks_yet_label
+
+      %section#evolve.mb-5
+        .card.border-warning
+          .card-header.bg-warning.text-dark
+            %h3.mb-0
+              %i.bi.bi-graph-up.me-2
+              Evolve
+          .card-body
+            .row.g-3
+              .col-12.col-lg-6
+                .card.h-100
+                  .card-header.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+                    %h5.mb-0 Observations (30 Days)
+                    - if @observations_involving_url.present?
+                      = link_to @observations_involving_url, class: "btn btn-sm btn-outline-primary" do
+                        %i.bi.bi-box-arrow-up-right.me-1
+                        All observations involving #{casual_name}
+                  .card-body
+                    %p.mb-1
+                      %strong Given:
+                      = @observations_given_30d_count
+                    %p.mb-0
+                      %strong Received:
+                      = @observations_received_30d_count
+
+              .col-12.col-lg-6
+                .card.h-100
+                  .card-header
+                    %h5.mb-0= upcoming_clarity_check_ins_label
+                  .card-body
+                    - if @upcoming_check_ins.any?
+                      %ul.list-unstyled.mb-0
+                        - @upcoming_check_ins.first(8).each do |row|
+                          %li.mb-2
+                            %strong= "#{row[:type]}:"
+                            - if row[:url].present?
+                              = link_to row[:name], row[:url], class: "text-decoration-none"
+                            - else
+                              = row[:name]
+                            = " - "
+                            - if row[:due_on]
+                              - if row[:overdue]
+                                %span.text-danger= "Overdue since #{row[:due_on].strftime('%b %d, %Y')}"
+                              - else
+                                %span.text-success= "Due by #{row[:due_on].strftime('%b %d, %Y')}"
+                            - else
+                              %span.text-danger= due_now_no_finalized_clarity_check_in_label
+                    - else
+                      %p.text-muted.mb-0= no_clarity_check_in_schedule_data_label
+
+              .col-12
+                .card
+                  .card-header
+                    %h5.mb-0 Grow By Abilities
+                  .card-body
+                    - if @abilities_gap_rows.any?
+                      %p.mb-2= "#{@abilities_gap_rows.count} abilities are below needed milestone levels for the current position."
+                      .table-responsive
+                        %table.table.table-sm
+                          %thead
+                            %tr
+                              %th Ability
+                              %th Current
+                              %th Needed
+                          %tbody
+                            - @abilities_gap_rows.first(10).each do |row|
+                              %tr
+                                %td
+                                  = link_to row[:ability].name,
+                                            organization_teammate_ability_path(organization, teammate_route_param(@teammate), row[:ability]),
+                                            class: "text-decoration-none"
+                                %td= row[:earned_level]
+                                %td= row[:required_level]
+                    - else
+                      %p.text-muted.mb-0 No current ability milestone gaps were found.
+
+              - if @can_run_teammate_growth
+                - manager_casual_name = @teammate.active_employment_tenure&.manager_teammate&.person&.casual_name.presence || "their manager"
+                = render "organizations/company_teammates/one_on_one_links/teammate_growth_evolve",
+                         organization: organization,
+                         teammate: @teammate,
+                         run: @teammate_growth_maap_run,
+                         employee_casual_name: casual_name,
+                         manager_casual_name: manager_casual_name
+
+      %hr.my-4
+      = render "organizations/company_teammates/internal_views_navigation", organization: organization, teammate: @teammate, for_one_on_one_hub: true
+
+:javascript
+  (function() {
+    function updateOneOnOneActiveSection() {
+      var navLinks = document.querySelectorAll('#oneOnOneHubNav .nav-link');
+      var sections = document.querySelectorAll('section[id]');
+      var scrollPosition = window.pageYOffset + 100;
+      var current = 'one-thing';
+
+      sections.forEach(function(section) {
+        var top = section.offsetTop;
+        var bottom = top + section.clientHeight;
+        if (scrollPosition >= top && scrollPosition < bottom) {
+          current = section.id;
+        }
+      });
+
+      navLinks.forEach(function(link) {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    }
+
+    function initializeOneOnOneHub() {
+      var navLinks = document.querySelectorAll('#oneOnOneHubNav .nav-link');
+      navLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          var target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+      window.addEventListener('scroll', updateOneOnOneActiveSection);
+      window.addEventListener('resize', updateOneOnOneActiveSection);
+      updateOneOnOneActiveSection();
+
+      var oneThingCarouselEl = document.getElementById('oneThingPriorityCarousel');
+      var oneThingCarouselCurrent = document.getElementById('oneThingPriorityCurrentIndicator');
+      if (oneThingCarouselEl && oneThingCarouselCurrent) {
+        var oneThingTotal = parseInt(oneThingCarouselCurrent.getAttribute('data-total-priorities'), 10) || 12;
+        var setOneThingCurrent = function(toIndex) {
+          var oneBased = (toIndex || 0) + 1;
+          oneThingCarouselCurrent.textContent = 'Viewing priority ' + oneBased + ' of ' + oneThingTotal;
+        };
+
+        oneThingCarouselEl.addEventListener('slid.bs.carousel', function(event) {
+          setOneThingCurrent(event.to);
+        });
+
+        var activeDot = oneThingCarouselEl.querySelector('.carousel-indicators .active');
+        var initialIndex = activeDot ? parseInt(activeDot.getAttribute('data-bs-slide-to'), 10) : 0;
+        setOneThingCurrent(isNaN(initialIndex) ? 0 : initialIndex);
+      }
+
+      var chartSeries = #{@goals_confidence_series.to_json};
+      var chartEl = document.getElementById('oneOnOneGoalsConfidenceChart');
+      if (typeof Highcharts !== 'undefined' && chartEl && chartSeries.length > 0) {
+        Highcharts.chart('oneOnOneGoalsConfidenceChart', {
+          title: { text: null },
+          xAxis: { type: 'datetime' },
+          yAxis: {
+            title: { text: 'Confidence %' },
+            min: 0,
+            max: 100
+          },
+          tooltip: {
+            shared: true,
+            xDateFormat: '%b %d, %Y',
+            valueSuffix: '%'
+          },
+          legend: { enabled: true },
+          series: chartSeries
+        });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeOneOnOneHub);
+    } else {
+      initializeOneOnOneHub();
+    }
+  })();
