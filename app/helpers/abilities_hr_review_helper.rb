@@ -79,7 +79,7 @@ module AbilitiesHrReviewHelper
   end
 
   def abilities_hr_assignment_sort_title(row, assignment_titles_by_id = {})
-    id = row['resolved_assignment_id'].to_s.presence&.to_i
+    id = row['resolved_assignment_id'].to_i
     if id.positive? && assignment_titles_by_id[id].present?
       assignment_titles_by_id[id].to_s
     else

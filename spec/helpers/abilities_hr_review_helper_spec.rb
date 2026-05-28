@@ -47,6 +47,21 @@ RSpec.describe AbilitiesHrReviewHelper, type: :helper do
       )
       expect(sorted.map { |r| r['id'] }).to eq(%w[a b])
     end
+
+    it 'falls back to assignment_raw when resolved_assignment_id is nil' do
+      rows = [
+        { 'id' => 'b', 'resolved_assignment_id' => nil, 'assignment_raw' => 'Zebra' },
+        { 'id' => 'a', 'resolved_assignment_id' => nil, 'assignment_raw' => 'Apple' }
+      ]
+
+      expect do
+        sorted = helper.abilities_hr_association_rows_sorted_by_assignment(
+          rows,
+          assignment_titles_by_id: {}
+        )
+        expect(sorted.map { |r| r['id'] }).to eq(%w[a b])
+      end.not_to raise_error
+    end
   end
 
   describe '#abilities_hr_join_milestone_select_options' do
