@@ -706,6 +706,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include("#{employee_person.casual_name} perspective")
       expect(response.body).to include("#{manager_person.casual_name} perspective")
       expect(response.body).to include("Therefore this is")
+      expect(response.body).to include("Required status:")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/assignments/#{assignment.id}")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/aspirations/#{aspiration.id}")
       expect(response.body).to include(position_check_in_organization_teammate_path(organization, employee_teammate))

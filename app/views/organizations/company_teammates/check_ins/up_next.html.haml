@@ -10,12 +10,32 @@
                path_for_teammate: ->(tm) { up_next_organization_company_teammate_check_ins_path(organization, tm) },
                switch_aria_label: switch_teammate_for_clarity_hub_label
       %span= " - #{@up_next_page_title}"
+    %button.btn.btn-outline-info.btn-sm.rounded-circle.p-0.d-inline-flex.align-items-center.justify-content-center{
+      type: "button",
+      style: "width: 28px; height: 28px;",
+      "data-bs-toggle" => "collapse",
+      "data-bs-target" => "#up-next-help",
+      "aria-expanded" => "false",
+      "aria-controls" => "up-next-help",
+      title: "How this ordering works. Click for details."
+    }
+      %i.bi.bi-info-lg
 
 - content_for :header_action do
   = render "people/view_switcher"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: @up_next_page_title, url: nil }])
+
+#up-next-help.alert.alert-info.collapse.mb-3{ role: "region", "aria-label" => "How up-next ordering works" }
+  %p.mb-2
+    The goal of this page is to explain why each 1-by-1 check-in appears where it does in the queue for each perspective.
+  %p.mb-2
+    Example: an assignment can be ranked above another item because it is required for the current position or active assignment tenure, even if both have older finalized history.
+  %ul.mb-0
+    %li Required check-ins are ordered first.
+    %li Within required/non-required groups, older clarity buckets are shown before fresher ones.
+    %li If bucket urgency ties, assignment/aspiration/position ordering and id break ties.
 
 %p.text-muted.mb-3
   Two live lists of 1-by-1 check-ins sorted by urgency: one from the employee perspective, one from the manager perspective.
@@ -34,6 +54,7 @@
                 %li= row[:finalized_line]
                 %li= row[:current_open_line]
                 %li= row[:therefore_line]
+                %li= row[:required_line]
 
   .col-12.col-lg-6
     .card.h-100
@@ -48,3 +69,4 @@
                 %li= row[:finalized_line]
                 %li= row[:current_open_line]
                 %li= row[:therefore_line]
+                %li= row[:required_line]

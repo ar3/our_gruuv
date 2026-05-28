@@ -112,21 +112,30 @@ module CheckIns
           type: :aspiration,
           id: aspiration.id,
           name: aspiration.name,
-          bucket: bucket_for(last_activity)
+          bucket: bucket_for(last_activity),
+          required: false
         }
       end
     end
 
     def build_assignment_items
-      tenures = teammate.assignment_tenures
+      active_tenures = teammate.assignment_tenures
         .active
         .joins(:assignment)
         .where(assignments: { company: organization.self_and_descendants })
         .includes(:assignment)
         .distinct
 
-      tenures.map do |tenure|
-        assignment = tenure.assignment
+      active_assignments_by_id = active_tenures.index_by(&:assignment_id).transform_values(&:assignment)
+      required_assignment_ids = required_position_assignment_ids
+      required_assignments_by_id = if required_assignment_ids.any?
+        Assignment.where(id: required_assignment_ids, company: organization.self_and_descendants).index_by(&:id)
+      else
+        {}
+      end
+      assignments_by_id = required_assignments_by_id.merge(active_assignments_by_id)
+
+      assignments_by_id.values.map do |assignment|
         closed = AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).closed
           .order(official_check_in_completed_at: :desc).first
         open_ci = AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).open.first
@@ -136,7 +145,8 @@ module CheckIns
           type: :assignment,
           id: assignment.id,
           name: assignment.title,
-          bucket: bucket_for(last_activity)
+          bucket: bucket_for(last_activity),
+          required: required_assignment_ids.include?(assignment.id) || active_assignments_by_id.key?(assignment.id)
         }
       end
     end
@@ -155,14 +165,23 @@ module CheckIns
         type: :position,
         id: nil,
         name: name,
-        bucket: bucket_for(last_activity)
+        bucket: bucket_for(last_activity),
+        required: true
       }
     end
 
     def sort_by_bucket_and_type(items)
+      required_order = ->(item) { item[:required] ? 0 : 1 }
       order = { BUCKET_RED => 0, BUCKET_YELLOW => 1, BUCKET_GREEN => 2 }
       type_order = { aspiration: 0, assignment: 1, position: 2 }
-      items.sort_by { |i| [order[i[:bucket]], type_order[i[:type]] || 99, i[:id].to_i] }
+      items.sort_by { |i| [required_order.call(i), order[i[:bucket]], type_order[i[:type]] || 99, i[:id].to_i] }
+    end
+
+    def required_position_assignment_ids
+      active_position = teammate.employment_tenures.active.where(company: organization).first&.position
+      return [] unless active_position
+
+      active_position.required_assignments.pluck(:assignment_id)
     end
 
     # Items are sorted red → yellow → green. Simple (index + 1) % n skips items that sort

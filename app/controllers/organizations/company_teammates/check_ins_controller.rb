@@ -146,6 +146,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @manager_perspective_person = @teammate.current_manager || current_person
     @employee_name = @teammate.person.casual_name.presence || "Employee"
     @manager_name = @teammate.current_manager&.casual_name.presence || "Manager"
+    @up_next_required_assignment_ids = required_assignment_ids_for_teammate.to_set
+    @up_next_active_tenure_assignment_ids = active_assignment_ids_for_teammate.to_set
 
     @employee_up_next_items = build_up_next_explainer_items_for(@employee_perspective_person)
     @manager_up_next_items = build_up_next_explainer_items_for(@manager_perspective_person)
@@ -1125,7 +1127,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         url: check_in_hub_item_url(item),
         finalized_line: up_next_finalized_line(latest_finalized),
         current_open_line: up_next_current_open_line(latest_open),
-        therefore_line: up_next_therefore_line(item[:bucket], index, ordered_items)
+        therefore_line: up_next_therefore_line(item, index, ordered_items),
+        required_line: up_next_required_line(item)
       }
     end
   end
@@ -1210,9 +1213,9 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     timestamp.present? ? "#{view_context.time_ago_in_words(timestamp)} ago" : "not completed yet"
   end
 
-  def up_next_therefore_line(bucket, index, ordered_items)
-    rank_reason = up_next_rank_reason(bucket, index, ordered_items)
-    "Therefore this is #{up_next_clarity_level_label(bucket)}, #{up_next_bucket_label(bucket)}, and #{rank_reason}."
+  def up_next_therefore_line(item, index, ordered_items)
+    rank_reason = up_next_rank_reason(item, index, ordered_items)
+    "Therefore this is #{up_next_clarity_level_label(item[:bucket])}, #{up_next_bucket_label(item[:bucket])}, and #{rank_reason}."
   end
 
   def up_next_clarity_level_label(bucket)
@@ -1237,16 +1240,55 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
   end
 
-  def up_next_rank_reason(bucket, index, ordered_items)
+  def up_next_rank_reason(item, index, ordered_items)
     return "ranked first due to highest urgency" if index.zero?
 
+    if item[:required]
+      previous_item = ordered_items[index - 1]
+      return "ordered before non-required check-ins" unless previous_item&.dig(:required)
+    else
+      return "ordered after required check-ins" if ordered_items.any? { |other| other[:required] }
+    end
+
     previous_bucket = ordered_items[index - 1][:bucket]&.to_sym
-    current_bucket = bucket&.to_sym
+    current_bucket = item[:bucket]&.to_sym
     if previous_bucket == current_bucket
       "ordered after same-bucket items by type and id"
     else
       "ordered after all higher-urgency buckets"
     end
+  end
+
+  def up_next_required_line(item)
+    case item[:type]&.to_sym
+    when :position
+      "Required status: required — this is the teammate's current position check-in."
+    when :assignment
+      assignment_id = item[:id].to_i
+      on_position = @up_next_required_assignment_ids.include?(assignment_id)
+      active_tenure = @up_next_active_tenure_assignment_ids.include?(assignment_id)
+
+      if on_position && active_tenure
+        "Required status: required — this assignment is required on the current position and has an active assignment tenure."
+      elsif on_position
+        "Required status: required — this assignment is required on the current position."
+      elsif active_tenure
+        "Required status: required — this assignment is on the list because the teammate currently has it as an active assignment tenure."
+      else
+        "Required status: not required — included because this item exists in the 1-by-1 check-in scope."
+      end
+    else
+      "Required status: not required — included because aspirations are always part of the 1-by-1 check-in scope."
+    end
+  end
+
+  def active_assignment_ids_for_teammate
+    AssignmentTenure
+      .joins(:assignment)
+      .where(company_teammate: @teammate, ended_at: nil)
+      .where(assignments: { company: organization.self_and_descendants })
+      .distinct
+      .pluck(:assignment_id)
   end
 
   def apply_single_item_status_override!
