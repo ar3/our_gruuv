@@ -14,7 +14,10 @@
     Your check-in on #{teammate.person.casual_name} and #{object_name} is currently:
     - if is_complete
       %span.badge.bg-success.rounded-pill.me-1 ready for review
-      %span.text-body ... click the blue button below to save and keep it ready for review
+      %span.text-body ... if you want to make changes, make them, and then click the blue button below to save and keep it ready for review...
     - else
       %span.badge.bg-warning.text-dark.rounded-pill.me-1 draft
       %span.text-body ... click the blue button below to mark it ready for review
+  - if is_complete
+    .text-center.mt-3
+      = link_to '... Or go to the "review together" page', organization_company_teammate_finalization_path(organization, teammate), class: "btn btn-outline-primary btn-lg px-5"

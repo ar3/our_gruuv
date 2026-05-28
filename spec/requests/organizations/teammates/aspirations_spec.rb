@@ -208,7 +208,9 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         get aspiration_show_path
         expect(response.body).to include('class="badge bg-success rounded-pill me-1"')
         expect(response.body).to include("ready for review")
-        expect(response.body).to include("click the blue button below to save and keep it ready for review")
+        expect(response.body).to include("if you want to make changes, make them, and then click the blue button below to save and keep it ready for review")
+        expect(response.body).to include('... Or go to the &quot;review together&quot; page')
+        expect(response.body).to include(organization_company_teammate_finalization_path(organization, employee_teammate))
       end
     end
 
