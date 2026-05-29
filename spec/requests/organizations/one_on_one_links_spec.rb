@@ -531,8 +531,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).to include("observee_ids%5B%5D=#{employee_teammate.id}")
       expect(response.body).to include("rateable_type=Assignment")
       expect(response.body).to include("rateable_id=#{assignment.id}")
-      expect(response.body).to include("1 OGO where")
-      expect(response.body).to include("is observed and OGO Assignment is rated")
+      expect(response.body).to include("1 relevant OGO")
     end
 
     it "shows danger badge on hub tabs when essential WTM areas lack active goals" do

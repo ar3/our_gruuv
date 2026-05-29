@@ -82,16 +82,10 @@ module Organizations
       )
     end
 
-    def work_to_meet_ogo_count_caption_for(row, casual_name)
-      object_name = row.associable.respond_to?(:title) ? row.associable.title : row.associable.name
-      phrase =
-        if row.ogo_count.zero?
-          "No OGOs where #{casual_name} is observed and #{object_name} is rated"
-        else
-          "#{pluralize(row.ogo_count, 'OGO')} where #{casual_name} is observed and #{object_name} is rated"
-        end
-
-      link_to phrase, work_to_meet_filtered_ogos_path(row.associable), class: "text-muted text-decoration-none"
+    def work_to_meet_ogo_count_caption_for(row)
+      link_to pluralize(row.ogo_count, "relevant OGO"),
+        work_to_meet_filtered_ogos_path(row.associable),
+        class: "text-muted text-decoration-none"
     end
 
     private

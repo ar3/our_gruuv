@@ -6,8 +6,8 @@ RSpec.describe OneOnOne::WorkToMeetSummary do
   let(:organization) { create(:organization) }
   let(:teammate) { create(:teammate, organization: organization) }
 
-  def call_summary
-    described_class.call(organization: organization, teammate: teammate)
+  def call_summary(viewing_person: nil)
+    described_class.call(organization: organization, teammate: teammate, viewing_person: viewing_person)
   end
 
   describe "tab badge" do
@@ -88,7 +88,7 @@ RSpec.describe OneOnOne::WorkToMeetSummary do
   end
 
   describe "OGO counts" do
-    it "counts published OGOs where the teammate is observed and the object is rated" do
+    it "counts published OGOs visible to the viewing person where the teammate is observed and the object is rated" do
       assignment = create(:assignment, company: organization, title: "Rated Assignment")
       create(:assignment_tenure, teammate: teammate, assignment: assignment)
       create(:assignment_check_in, :finalized, :working_to_meet, teammate: teammate, assignment: assignment)
@@ -99,9 +99,35 @@ RSpec.describe OneOnOne::WorkToMeetSummary do
       create(:observee, observation: observation, company_teammate: teammate)
       create(:observation_rating, observation: observation, rateable: assignment)
 
-      summary = call_summary
+      summary = call_summary(viewing_person: observer)
 
       expect(summary.essential_assignment_rows.first.ogo_count).to eq(1)
+    end
+
+    it "excludes OGOs the viewing person cannot see" do
+      assignment = create(:assignment, company: organization, title: "Private Rated Assignment")
+      create(:assignment_tenure, teammate: teammate, assignment: assignment)
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: teammate, assignment: assignment)
+
+      other_observer = create(:person)
+      other_teammate = create(:teammate, organization: organization, person: other_observer)
+      observation = create(
+        :observation,
+        company: organization,
+        observer: other_observer,
+        published_at: Time.current,
+        privacy_level: :observed_only
+      )
+      observation.observees.destroy_all
+      create(:observee, observation: observation, company_teammate: teammate)
+      create(:observation_rating, observation: observation, rateable: assignment)
+
+      unrelated_viewer = create(:person)
+      create(:teammate, organization: organization, person: unrelated_viewer)
+
+      summary = call_summary(viewing_person: unrelated_viewer)
+
+      expect(summary.essential_assignment_rows.first.ogo_count).to eq(0)
     end
   end
 end

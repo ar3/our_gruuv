@@ -32,7 +32,7 @@
               %span.text-muted.small= send(rating_display_method, check_in.official_rating)
           %td
             = link_to "Add OGO", work_to_meet_add_ogo_path(associable), class: "btn btn-sm btn-outline-secondary"
-            %p.text-muted.small.mb-0.mt-1= work_to_meet_ogo_count_caption_for(row, casual_name)
+            %p.text-muted.small.mb-0.mt-1= work_to_meet_ogo_count_caption_for(row)
           %td
             - if row.has_active_goal
               %span.badge.text-bg-success

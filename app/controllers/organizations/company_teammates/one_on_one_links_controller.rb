@@ -157,7 +157,11 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   end
 
   def load_work_to_meet_summary
-    OneOnOne::WorkToMeetSummary.call(organization: organization, teammate: @teammate)
+    OneOnOne::WorkToMeetSummary.call(
+      organization: organization,
+      teammate: @teammate,
+      viewing_person: current_person
+    )
   end
 
   def load_teammate_growth_for_one_on_one_hub

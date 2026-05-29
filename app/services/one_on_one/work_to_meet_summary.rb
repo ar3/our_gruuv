@@ -22,13 +22,14 @@ module OneOnOne
       :non_essential_assignment_rows
     )
 
-    def self.call(organization:, teammate:)
-      new(organization: organization, teammate: teammate).call
+    def self.call(organization:, teammate:, viewing_person:)
+      new(organization: organization, teammate: teammate, viewing_person: viewing_person).call
     end
 
-    def initialize(organization:, teammate:)
+    def initialize(organization:, teammate:, viewing_person:)
       @organization = organization
       @teammate = teammate
+      @viewing_person = viewing_person
     end
 
     def call
@@ -62,7 +63,7 @@ module OneOnOne
 
     private
 
-    attr_reader :organization, :teammate
+    attr_reader :organization, :teammate, :viewing_person
 
     def essential_assignment_id_set
       Set.new(relevant_assignment_ids)
@@ -146,12 +147,7 @@ module OneOnOne
       aspiration_ids = associables.grep(Aspiration).map(&:id).uniq
       counts = Hash.new(0)
 
-      base_scope = Observation
-        .joins(:observees, :observation_ratings)
-        .where(company: organization, deleted_at: nil)
-        .merge(Observation.published)
-        .merge(Observation.not_journal)
-        .where(observees: { teammate_id: teammate.id })
+      base_scope = visible_ogo_scope
 
       if assignment_ids.any?
         base_scope
@@ -170,6 +166,15 @@ module OneOnOne
       end
 
       counts
+    end
+
+    def visible_ogo_scope
+      ObservationVisibilityQuery.new(viewing_person, organization)
+        .visible_observations
+        .joins(:observees, :observation_ratings)
+        .merge(Observation.published)
+        .merge(Observation.not_journal)
+        .where(observees: { teammate_id: teammate.id })
     end
 
     def build_aspiration_rows(goal_counts)
