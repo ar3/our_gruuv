@@ -7,6 +7,8 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
   describe ".call" do
     it "builds 13 ordered priorities and starts at first attention item" do
       one_on_one_link = create(:one_on_one_link, teammate: teammate, url: "https://app.asana.com/0/123/456")
+      aspiration = create(:aspiration, company: organization, name: "Team Value")
+      create(:aspiration_check_in, :ready_for_finalization, teammate: teammate, aspiration: aspiration)
 
       result = described_class.call(
         organization: organization,
@@ -16,8 +18,9 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
 
       expect(result[:priorities].size).to eq(13)
       expect(result[:priorities].first[:title]).to eq(described_class::ASANA_URGENT_TASKS_TITLE)
-      expect(result[:priorities].first[:needs_attention]).to eq(true)
-      expect(result[:first_attention_index]).to eq(0)
+      expect(result[:priorities].first[:not_applicable]).to eq(true)
+      expect(result[:priorities].first[:needs_attention]).to eq(false)
+      expect(result[:first_attention_index]).to eq(1)
     end
 
     it "flags check-ins ready for joint review as priority 2 when both sides have reflected" do
@@ -84,6 +87,29 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(ready[:reason]).to include("(or another manager)")
     end
 
+    it "marks Asana-specific priorities as not applicable when Asana is linked but never synced" do
+      one_on_one_link = create(
+        :one_on_one_link,
+        teammate: teammate,
+        url: "https://app.asana.com/0/123/456",
+        deep_integration_config: { "asana_project_id" => "123456" }
+      )
+
+      result = described_class.call(
+        organization: organization,
+        teammate: teammate,
+        one_on_one_link: one_on_one_link
+      )
+
+      urgent = result[:priorities].find { |p| p[:title] == described_class::ASANA_URGENT_TASKS_TITLE }
+      remaining = result[:priorities].find { |p| p[:title] == described_class::REMAINING_ASANA_TASKS_TITLE }
+
+      expect(urgent[:not_applicable]).to eq(true)
+      expect(urgent[:needs_attention]).to eq(false)
+      expect(remaining[:not_applicable]).to eq(true)
+      expect(remaining[:needs_attention]).to eq(false)
+    end
+
     it "marks Asana-specific priorities as not applicable when no Asana source" do
       one_on_one_link = create(:one_on_one_link, teammate: teammate, url: "https://example.com/1-1")
 
@@ -116,6 +142,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       create(
         :external_project_cache,
         cacheable: one_on_one_link,
+        last_synced_at: 1.day.ago,
         items_data: [
           {
             "gid" => "task-abc",

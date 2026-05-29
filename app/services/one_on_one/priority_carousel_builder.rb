@@ -72,19 +72,9 @@ module OneOnOne
     end
 
     def priority_asana_urgent_tasks
+      return not_applicable_priority(ASANA_URGENT_TASKS_TITLE) unless asana_applicable?
+
       cache = asana_cache
-      return not_applicable_priority(ASANA_URGENT_TASKS_TITLE) unless asana_source?
-
-      if cache.blank?
-        return attention_priority(
-          ASANA_URGENT_TASKS_TITLE,
-          "The 1:1 Asana project is linked but task data has not been synced yet. Sync the project so we can surface overdue and due-soon tasks in this queue.",
-          [],
-          cta_kind: :sync_anchor,
-          cta_label: "Sync Asana now"
-        )
-      end
-
       tasks = cache.incomplete_items.select do |item|
         due_on = parse_due_on(item["due_on"])
         due_on && due_on <= (@today + 7.days)
@@ -781,20 +771,9 @@ module OneOnOne
     end
 
     def priority_remaining_asana_tasks
-      cache = asana_cache
-      return not_applicable_priority(REMAINING_ASANA_TASKS_TITLE) unless asana_source?
+      return not_applicable_priority(REMAINING_ASANA_TASKS_TITLE) unless asana_applicable?
 
-      if cache.blank?
-        return attention_priority(
-          REMAINING_ASANA_TASKS_TITLE,
-          "The 1:1 Asana project is linked but task data has not been synced yet. Sync the project so we can evaluate remaining incomplete tasks.",
-          [],
-          cta_kind: :sync_anchor,
-          cta_label: "Sync Asana now"
-        )
-      end
-
-      remaining = cache.incomplete_items.sort_by { |item| [(item["name"] || "").downcase] }
+      remaining = asana_cache.incomplete_items.sort_by { |item| [(item["name"] || "").downcase] }
       if remaining.any?
         attention_priority(
           REMAINING_ASANA_TASKS_TITLE,
@@ -1225,6 +1204,15 @@ module OneOnOne
 
     def asana_source?
       @one_on_one_link.external_project_source == "asana"
+    end
+
+    def asana_synced?
+      cache = asana_cache
+      cache.present? && cache.last_synced_at.present?
+    end
+
+    def asana_applicable?
+      asana_source? && asana_synced?
     end
 
     def asana_cache
