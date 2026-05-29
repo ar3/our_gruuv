@@ -330,8 +330,8 @@ module OneOnOne
     end
 
     def priority_wtm_required_or_active_without_goals
-      latest_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:assignment_id)
-      latest_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:aspiration_id)
+      latest_assignment_check_ins = latest_assignment_check_ins_by_teammate
+      latest_aspiration_check_ins = latest_aspiration_check_ins_by_teammate
 
       position = @teammate.active_employment_tenure&.position
       assignment_ids = []
@@ -713,8 +713,8 @@ module OneOnOne
     end
 
     def wtm_all_working_to_meet_associables
-      latest_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:assignment_id)
-      latest_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:aspiration_id)
+      latest_assignment_check_ins = latest_assignment_check_ins_by_teammate
+      latest_aspiration_check_ins = latest_aspiration_check_ins_by_teammate
       out = []
       latest_assignment_check_ins.each_value do |check_in|
         next unless check_in.official_rating == "working_to_meet"
@@ -961,8 +961,8 @@ module OneOnOne
     end
 
     def wtm_items_without_received_observations
-      latest_assignment_check_ins = AssignmentCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:assignment_id)
-      latest_aspiration_check_ins = AspirationCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).index_by(&:aspiration_id)
+      latest_assignment_check_ins = latest_assignment_check_ins_by_teammate
+      latest_aspiration_check_ins = latest_aspiration_check_ins_by_teammate
 
       recent_assignment_ids = Observation.joins(:observees, :observation_ratings)
         .where(company: @organization, deleted_at: nil)
@@ -1298,6 +1298,20 @@ module OneOnOne
         cta_label: nil,
         cta_associable: nil
       }
+    end
+
+    def latest_assignment_check_ins_by_teammate
+      @latest_assignment_check_ins_by_teammate ||= AssignmentCheckIn.latest_finalized_index_by(
+        AssignmentCheckIn.where(company_teammate: @teammate),
+        :assignment_id
+      )
+    end
+
+    def latest_aspiration_check_ins_by_teammate
+      @latest_aspiration_check_ins_by_teammate ||= AspirationCheckIn.latest_finalized_index_by(
+        AspirationCheckIn.where(company_teammate: @teammate),
+        :aspiration_id
+      )
     end
   end
 end

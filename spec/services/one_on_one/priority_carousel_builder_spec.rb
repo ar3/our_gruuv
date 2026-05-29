@@ -146,6 +146,46 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(attrs[:label]).to include("Ship feature")
     end
 
+    it "priority 3 (WTM without goals) uses the most recent finalized aspiration check-in when multiple exist" do
+      wtm_teammate = create(:teammate, organization: organization)
+      one_on_one_link = create(:one_on_one_link, teammate: wtm_teammate, url: "https://example.com/hub")
+      aspiration = create(:aspiration, company: organization, name: "Customer Love")
+
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: wtm_teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: 6.months.ago,
+        employee_rating: "meeting",
+        manager_rating: "meeting",
+        official_rating: "meeting"
+      )
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: wtm_teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: 1.week.ago,
+        employee_rating: "working_to_meet",
+        manager_rating: "working_to_meet",
+        official_rating: "working_to_meet"
+      )
+
+      result = described_class.call(
+        organization: organization,
+        teammate: wtm_teammate,
+        one_on_one_link: one_on_one_link
+      )
+
+      wtm_priority = result[:priorities].find do |p|
+        p[:title] == "Are any working-to-meet assignments or aspirational values missing active goals?"
+      end
+
+      expect(wtm_priority[:needs_attention]).to eq(true)
+      expect(wtm_priority[:items].map { |i| i[:associable] }).to eq([aspiration])
+    end
+
     it "priority 3 (WTM without goals) explains why goals matter, links each row to the teammate lens, and adds a compact goal CTA" do
       employee_person = create(:person, first_name: "Jamie", last_name: "Taylor")
       wtm_teammate = create(:teammate, organization: organization, person: employee_person)

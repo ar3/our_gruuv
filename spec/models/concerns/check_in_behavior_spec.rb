@@ -185,6 +185,38 @@ RSpec.describe CheckInBehavior, type: :model do
     end
   end
 
+  describe ".latest_finalized_index_by" do
+    it "returns the most recent finalized check-in per group key" do
+      teammate = create(:teammate)
+      aspiration = create(:aspiration, company: teammate.organization)
+
+      older = create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: 6.months.ago,
+        official_rating: "meeting"
+      )
+      newer = create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: 1.week.ago,
+        official_rating: "working_to_meet"
+      )
+
+      indexed = AspirationCheckIn.latest_finalized_index_by(
+        AspirationCheckIn.where(company_teammate: teammate),
+        :aspiration_id
+      )
+
+      expect(indexed[aspiration.id]).to eq(newer)
+      expect(indexed[aspiration.id]).not_to eq(older)
+    end
+  end
+
   describe ".recency_tricolor_bucket" do
     it "returns :red when timestamp is blank" do
       expect(described_class.recency_tricolor_bucket(nil)).to eq(:red)

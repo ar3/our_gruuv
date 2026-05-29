@@ -178,11 +178,12 @@ module OneOnOne
     end
 
     def build_aspiration_rows(goal_counts)
-      latest_by_aspiration = latest_aspiration_check_ins_by_id
+      hierarchy_aspirations = Aspiration.within_hierarchy(organization).ordered.index_by(&:id)
 
-      Aspiration.within_hierarchy(organization).ordered.filter_map do |aspiration|
-        check_in = latest_by_aspiration[aspiration.id]
-        next unless check_in&.official_rating == "working_to_meet"
+      latest_aspiration_check_ins_by_id.filter_map do |aspiration_id, check_in|
+        aspiration = hierarchy_aspirations[aspiration_id]
+        next if aspiration.blank?
+        next unless check_in.official_rating == "working_to_meet"
 
         row_for(aspiration, check_in, goal_counts)
       end
@@ -217,19 +218,17 @@ module OneOnOne
     end
 
     def latest_assignment_check_ins_by_id
-      @latest_assignment_check_ins_by_id ||= AssignmentCheckIn
-        .where(company_teammate: teammate)
-        .closed
-        .order(official_check_in_completed_at: :desc)
-        .index_by(&:assignment_id)
+      @latest_assignment_check_ins_by_id ||= AssignmentCheckIn.latest_finalized_index_by(
+        AssignmentCheckIn.where(company_teammate: teammate),
+        :assignment_id
+      )
     end
 
     def latest_aspiration_check_ins_by_id
-      @latest_aspiration_check_ins_by_id ||= AspirationCheckIn
-        .where(company_teammate: teammate)
-        .closed
-        .order(official_check_in_completed_at: :desc)
-        .index_by(&:aspiration_id)
+      @latest_aspiration_check_ins_by_id ||= AspirationCheckIn.latest_finalized_index_by(
+        AspirationCheckIn.where(company_teammate: teammate),
+        :aspiration_id
+      )
     end
 
     def assignments_by_id

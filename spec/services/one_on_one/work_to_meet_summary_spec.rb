@@ -87,6 +87,37 @@ RSpec.describe OneOnOne::WorkToMeetSummary do
     end
   end
 
+  describe "aspiration rows" do
+    it "uses the most recent finalized check-in when multiple exist" do
+      aspiration = create(:aspiration, company: organization, name: "Growth Mindset")
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: 6.months.ago,
+        employee_rating: "meeting",
+        manager_rating: "meeting",
+        official_rating: "meeting"
+      )
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: 1.week.ago,
+        employee_rating: "working_to_meet",
+        manager_rating: "working_to_meet",
+        official_rating: "working_to_meet"
+      )
+
+      summary = call_summary(viewing_person: nil)
+
+      expect(summary.essential_aspiration_rows.map { |row| row.associable }).to eq([aspiration])
+      expect(summary.essential_aspiration_rows.first.check_in.official_rating).to eq("working_to_meet")
+    end
+  end
+
   describe "OGO counts" do
     it "counts published OGOs visible to the viewing person where the teammate is observed and the object is rated" do
       assignment = create(:assignment, company: organization, title: "Rated Assignment")

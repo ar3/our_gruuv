@@ -200,9 +200,10 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
 
     assignment_check_ins = AssignmentCheckIn
       .where(company_teammate: @teammate)
-      .closed
-      .order(official_check_in_completed_at: :desc)
-    latest_assignment_check_ins = assignment_check_ins.index_by(&:assignment_id)
+    latest_assignment_check_ins = AssignmentCheckIn.latest_finalized_index_by(
+      assignment_check_ins,
+      :assignment_id
+    )
     @assignment_missing_goal_items = latest_assignment_check_ins.values.select do |check_in|
       check_in.official_rating == "working_to_meet" &&
         !active_goal_association_lookup[["Assignment", check_in.assignment_id]]
@@ -210,9 +211,10 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
 
     aspiration_check_ins = AspirationCheckIn
       .where(company_teammate: @teammate)
-      .closed
-      .order(official_check_in_completed_at: :desc)
-    latest_aspiration_check_ins = aspiration_check_ins.index_by(&:aspiration_id)
+    latest_aspiration_check_ins = AspirationCheckIn.latest_finalized_index_by(
+      aspiration_check_ins,
+      :aspiration_id
+    )
     @aspiration_missing_goal_items = latest_aspiration_check_ins.values.select do |check_in|
       check_in.official_rating == "working_to_meet" &&
         !active_goal_association_lookup[["Aspiration", check_in.aspiration_id]]

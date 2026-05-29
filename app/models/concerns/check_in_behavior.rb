@@ -56,6 +56,20 @@ module CheckInBehavior
       open.employee_completed.where(manager_completed_at: nil)
     }
   end
+
+  class_methods do
+    # When multiple finalized check-ins exist per associable, keep the most recent
+    # (index_by on DESC-ordered rows incorrectly keeps the oldest).
+    def latest_finalized_index_by(scope, group_key)
+      scope
+        .closed
+        .order(official_check_in_completed_at: :desc)
+        .each_with_object({}) do |check_in, memo|
+          key = check_in.public_send(group_key)
+          memo[key] ||= check_in
+        end
+    end
+  end
   
   # Status methods
   def open?
