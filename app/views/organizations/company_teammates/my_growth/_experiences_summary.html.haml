@@ -1,8 +1,13 @@
 - summary = local_assigns[:summary]
 - teammate = local_assigns[:teammate]
 - org = local_assigns[:organization]
+- chart_id_prefix = local_assigns.fetch(:chart_id_prefix, 'my-growth-experiences')
+- show_divider = local_assigns.fetch(:show_divider, true)
+- energy_chart_id = "#{chart_id_prefix}-energy-pie-chart"
+- rating_chart_id = "#{chart_id_prefix}-rating-pie-chart"
 
-%hr.my-4
+- if show_divider
+  %hr.my-4
 
 .row.mb-3
   .col-12
@@ -15,7 +20,7 @@
       .card-body
         %h6.mb-3 Energy allocation
         - if summary.chart_data_present?
-          #my-growth-experiences-energy-pie-chart{style: 'height: 300px;'}
+          %div{id: energy_chart_id, style: 'height: 300px;'}
         - else
           %p.text-muted.mb-0 No active assignments with energy allocated.
   .col-lg-6
@@ -23,22 +28,24 @@
       .card-body
         %h6.mb-3 Energy by latest check-in rating
         - if summary.chart_data_present?
-          #my-growth-experiences-rating-pie-chart{style: 'height: 300px;'}
+          %div{id: rating_chart_id, style: 'height: 300px;'}
         - else
           %p.text-muted.mb-0 No active assignments with energy allocated.
 
 - if summary.chart_data_present?
   :javascript
     (function() {
+      var energyChartId = #{energy_chart_id.to_json};
+      var ratingChartId = #{rating_chart_id.to_json};
       var energyData = #{summary.energy_by_assignment_chart.to_json};
       var ratingData = #{summary.energy_by_rating_chart.to_json};
 
-      function initMyGrowthExperiencesCharts() {
+      function initExperiencesSummaryCharts() {
         if (typeof Highcharts === 'undefined') return;
 
-        var energyEl = document.getElementById('my-growth-experiences-energy-pie-chart');
+        var energyEl = document.getElementById(energyChartId);
         if (energyEl && energyData.length > 0) {
-          Highcharts.chart('my-growth-experiences-energy-pie-chart', {
+          Highcharts.chart(energyChartId, {
             chart: { type: 'pie' },
             title: { text: null },
             accessibility: { enabled: false },
@@ -60,9 +67,9 @@
           });
         }
 
-        var ratingEl = document.getElementById('my-growth-experiences-rating-pie-chart');
+        var ratingEl = document.getElementById(ratingChartId);
         if (ratingEl && ratingData.length > 0) {
-          Highcharts.chart('my-growth-experiences-rating-pie-chart', {
+          Highcharts.chart(ratingChartId, {
             chart: { type: 'pie' },
             title: { text: null },
             accessibility: { enabled: false },
@@ -87,6 +94,6 @@
         }
       }
 
-      document.addEventListener('turbo:load', initMyGrowthExperiencesCharts);
-      document.addEventListener('DOMContentLoaded', initMyGrowthExperiencesCharts);
+      document.addEventListener('turbo:load', initExperiencesSummaryCharts);
+      document.addEventListener('DOMContentLoaded', initExperiencesSummaryCharts);
     })();

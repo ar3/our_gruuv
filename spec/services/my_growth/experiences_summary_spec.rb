@@ -25,6 +25,33 @@ RSpec.describe MyGrowth::ExperiencesSummary do
     )
   end
 
+  describe '.for_teammate' do
+    it 'loads latest finalized check-ins and builds summary data' do
+      check_in = create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: teammate,
+        assignment: assignment_a,
+        official_rating: 'exceeding'
+      )
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_a,
+        anticipated_energy_percentage: 100,
+        ended_at: nil
+      )
+
+      summary = described_class.for_teammate(teammate.reload)
+
+      expect(summary.total_energy_percentage).to eq(100)
+      expect(summary.alert_band).to eq(:success)
+      expect(summary.energy_by_rating_chart).to include(
+        hash_including(name: 'Exceeding Expectations', y: 100)
+      )
+    end
+  end
+
   describe 'alert_band' do
     it 'returns success at exactly 100%' do
       summary = build_summary(energy_by_assignment: { assignment_a => 60, assignment_b => 40 })

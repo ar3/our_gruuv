@@ -22,6 +22,26 @@ module MyGrowth
       ).tap(&:compute!)
     end
 
+    def self.for_teammate(teammate, organization: teammate.organization)
+      assignment_ids = teammate.active_assignment_tenures.pluck(:assignment_id)
+      latest_finalized_check_ins_by_assignment_id = {}
+      if assignment_ids.any?
+        AssignmentCheckIn
+          .where(company_teammate: teammate, assignment_id: assignment_ids)
+          .closed
+          .includes(:assignment, manager_completed_by_teammate: :person, finalized_by_teammate: :person)
+          .order(official_check_in_completed_at: :desc)
+          .each do |check_in|
+            latest_finalized_check_ins_by_assignment_id[check_in.assignment_id] ||= check_in
+          end
+      end
+
+      build(
+        teammate: teammate,
+        latest_finalized_check_ins_by_assignment_id: latest_finalized_check_ins_by_assignment_id
+      )
+    end
+
     def initialize(teammate:, latest_finalized_check_ins_by_assignment_id:)
       @teammate = teammate
       @latest_finalized_check_ins_by_assignment_id = latest_finalized_check_ins_by_assignment_id || {}

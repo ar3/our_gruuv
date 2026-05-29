@@ -61,6 +61,32 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response).to render_template("organizations/teammates/position_check_ins/show")
     end
 
+    context "Research: Latest Finalized Assignment Ratings" do
+      let(:assignment) { create(:assignment, company: organization, title: "Core Delivery") }
+
+      before do
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          anticipated_energy_percentage: 100,
+          ended_at: nil
+        )
+      end
+
+      it "renders the assignment ratings research section below existing cards" do
+        get position_check_in_organization_teammate_path(organization, teammate)
+
+        expect(response.body).to include("Research: Latest Finalized Assignment Ratings")
+        expect(response.body).to include("position-check-in-experiences-energy-pie-chart")
+        expect(response.body).to include("position-check-in-experiences-rating-pie-chart")
+        expect(response.body).to include("add up to 100%")
+        expect(response.body).to include(
+          "In order to have this up-to-date, finalize all assignment check-ins and come back to this page."
+        )
+      end
+    end
+
     context "when latest finalized is crystal clear and the open check-in is fresh on the employee side" do
       let!(:_finalized_position_check_in) do
         create(:position_check_in, :closed,

@@ -116,3 +116,16 @@
       = render "shared/single_item_check_in/prior_check_ins_table", check_ins: @check_ins, sentence_type: :position, employee_name: @teammate.person.casual_name
 
     = render "shared/single_item_check_in/current_period_observations"
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Research: Latest Finalized Assignment Ratings
+      .card-body
+        = render 'organizations/company_teammates/my_growth/experiences_summary',
+          summary: @my_growth_experiences_summary,
+          teammate: @teammate,
+          organization: @organization,
+          chart_id_prefix: 'position-check-in-experiences',
+          show_divider: false
+        %p.text-muted.mb-0.mt-3
+          In order to have this up-to-date, finalize all assignment check-ins and come back to this page.

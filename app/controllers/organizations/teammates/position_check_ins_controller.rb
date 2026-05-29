@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Organizations::Teammates::PositionCheckInsController < Organizations::OrganizationNamespaceBaseController
+  helper MyGrowthExperiencesHelper
+
   before_action :authenticate_person!
   before_action :set_teammate
   after_action :verify_authorized
@@ -78,6 +80,11 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
       observee_ids: [@teammate.id],
       return_url: position_check_in_return_path,
       return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
+    )
+
+    @my_growth_experiences_summary = MyGrowth::ExperiencesSummary.for_teammate(
+      @teammate,
+      organization: organization
     )
 
     render "organizations/teammates/position_check_ins/show"
