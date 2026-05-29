@@ -1118,6 +1118,11 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
     assignment_ids_for_goal_links = sorted_active.map(&:assignment_id).uniq
     @my_growth_assignment_goal_counts_by_id = my_growth_assignment_goal_counts_for_teammate(assignment_ids_for_goal_links)
+
+    @my_growth_experiences_summary = MyGrowth::ExperiencesSummary.build(
+      teammate: @teammate,
+      latest_finalized_check_ins_by_assignment_id: @latest_finalized_assignment_check_ins_by_assignment_id
+    )
   end
 
   def my_growth_experiences_position_maps(position)

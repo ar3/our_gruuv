@@ -32,6 +32,77 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response.body).to include('Growth')
       end
 
+      context 'Grow by experiences energy summary' do
+        let(:assignment_one) { create(:assignment, company: organization, title: 'Delivery Lead') }
+        let(:assignment_two) { create(:assignment, company: organization, title: 'Team Coach') }
+
+        before do
+          create(
+            :assignment_tenure,
+            teammate: employee_teammate,
+            assignment: assignment_one,
+            anticipated_energy_percentage: 60,
+            ended_at: nil
+          )
+          create(
+            :assignment_tenure,
+            teammate: employee_teammate,
+            assignment: assignment_two,
+            anticipated_energy_percentage: 40,
+            ended_at: nil
+          )
+        end
+
+        it 'shows success summary and chart containers at 100% energy' do
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('alert-success')
+          expect(response.body).to include('add up to 100%')
+          expect(response.body).to include('my-growth-experiences-energy-pie-chart')
+          expect(response.body).to include('my-growth-experiences-rating-pie-chart')
+          expect(response.body).to include('Delivery Lead')
+          expect(response.body).to include('Team Coach')
+        end
+
+        it 'shows warning summary and bypass link when energy is 95%' do
+          employee_teammate.assignment_tenures.active.find_by(assignment: assignment_two)
+            .update!(anticipated_energy_percentage: 35)
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('alert-warning')
+          expect(response.body).to include('add up to 95%')
+          expect(response.body).to include('assignment_tenure_check_in_bypass')
+        end
+
+        it 'shows danger summary when energy is 50%' do
+          employee_teammate.assignment_tenures.active.find_by(assignment: assignment_one)
+            .update!(anticipated_energy_percentage: 30)
+          employee_teammate.assignment_tenures.active.find_by(assignment: assignment_two)
+            .update!(anticipated_energy_percentage: 20)
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('alert-danger')
+          expect(response.body).to include('add up to 50%')
+        end
+
+        it 'includes rating bucket labels when check-ins exist' do
+          create(
+            :assignment_check_in,
+            :officially_completed,
+            teammate: employee_teammate,
+            assignment: assignment_one,
+            official_rating: 'meeting'
+          )
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('Meeting expectations')
+          expect(response.body).to include('No finalized check-in')
+        end
+      end
+
       it 'offers show/hide suggested assignments with query param and anchor id' do
         et = employee_teammate.employment_tenures.active.first
         position = et.position
@@ -248,6 +319,31 @@ RSpec.describe 'Company teammate My Growth', type: :request do
       it 'allows GET my_growth/position_change' do
         get my_growth_position_change_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
+      end
+    end
+
+    context 'when employee views own growth experiences' do
+      let(:own_assignment) { create(:assignment, company: organization, title: 'Solo Project') }
+
+      before do
+        sign_in_as_teammate_for_request(employee, organization)
+        create(
+          :assignment_tenure,
+          teammate: employee_teammate,
+          assignment: own_assignment,
+          anticipated_energy_percentage: 50,
+          ended_at: nil
+        )
+      end
+
+      it 'shows danger summary without bypass link' do
+        get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('alert-danger')
+        expect(response.body).to include('add up to 50%')
+        expect(response.body).not_to include('assignment_tenure_check_in_bypass')
+        expect(response.body).to include('managerial hierarchy')
       end
     end
 

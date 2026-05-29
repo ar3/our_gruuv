@@ -76,3 +76,8 @@
         latest_finalized_assignment_check_ins_by_assignment_id: @latest_finalized_assignment_check_ins_by_assignment_id,
         my_growth_assignment_goal_counts_by_id: @my_growth_assignment_goal_counts_by_id,
         target_position: @teammate.next_goal_position
+
+= render 'organizations/company_teammates/my_growth/experiences_summary',
+  summary: @my_growth_experiences_summary,
+  teammate: @teammate,
+  organization: organization

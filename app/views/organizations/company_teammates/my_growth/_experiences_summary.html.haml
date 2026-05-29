@@ -1,0 +1,92 @@
+- summary = local_assigns[:summary]
+- teammate = local_assigns[:teammate]
+- org = local_assigns[:organization]
+
+%hr.my-4
+
+.row.mb-3
+  .col-12
+    .alert.my-growth-experiences-summary-alert{class: my_growth_experiences_summary_alert_class(summary), role: 'status'}
+      %p.mb-0= my_growth_experiences_summary_alert_html(summary, teammate, org)
+
+.row.mb-3
+  .col-lg-6.mb-3.mb-lg-0
+    .card.h-100
+      .card-body
+        %h6.mb-3 Energy allocation
+        - if summary.chart_data_present?
+          #my-growth-experiences-energy-pie-chart{style: 'height: 300px;'}
+        - else
+          %p.text-muted.mb-0 No active assignments with energy allocated.
+  .col-lg-6
+    .card.h-100
+      .card-body
+        %h6.mb-3 Energy by latest check-in rating
+        - if summary.chart_data_present?
+          #my-growth-experiences-rating-pie-chart{style: 'height: 300px;'}
+        - else
+          %p.text-muted.mb-0 No active assignments with energy allocated.
+
+- if summary.chart_data_present?
+  :javascript
+    (function() {
+      var energyData = #{summary.energy_by_assignment_chart.to_json};
+      var ratingData = #{summary.energy_by_rating_chart.to_json};
+
+      function initMyGrowthExperiencesCharts() {
+        if (typeof Highcharts === 'undefined') return;
+
+        var energyEl = document.getElementById('my-growth-experiences-energy-pie-chart');
+        if (energyEl && energyData.length > 0) {
+          Highcharts.chart('my-growth-experiences-energy-pie-chart', {
+            chart: { type: 'pie' },
+            title: { text: null },
+            accessibility: { enabled: false },
+            plotOptions: {
+              pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                  enabled: true,
+                  format: '<b>{point.name}</b>: {point.y}% ({point.percentage:.1f}%)'
+                }
+              }
+            },
+            series: [{
+              name: 'Energy',
+              colorByPoint: true,
+              data: energyData
+            }]
+          });
+        }
+
+        var ratingEl = document.getElementById('my-growth-experiences-rating-pie-chart');
+        if (ratingEl && ratingData.length > 0) {
+          Highcharts.chart('my-growth-experiences-rating-pie-chart', {
+            chart: { type: 'pie' },
+            title: { text: null },
+            accessibility: { enabled: false },
+            plotOptions: {
+              pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                  enabled: true,
+                  format: '<b>{point.name}</b>: {point.y}% ({point.percentage:.1f}%)'
+                }
+              }
+            },
+            series: [{
+              name: 'Energy',
+              colorByPoint: false,
+              data: ratingData
+            }]
+          });
+        } else if (ratingEl) {
+          ratingEl.innerHTML = '<p class="text-muted mb-0">No rating data to chart.</p>';
+        }
+      }
+
+      document.addEventListener('turbo:load', initMyGrowthExperiencesCharts);
+      document.addEventListener('DOMContentLoaded', initMyGrowthExperiencesCharts);
+    })();
