@@ -60,6 +60,40 @@ module Organizations
       )
     end
 
+    def work_to_meet_add_ogo_path(associable)
+      new_quick_note_organization_observations_path(
+        organization,
+        observee_ids: [@teammate.id],
+        rateable_type: associable.class.name,
+        rateable_id: associable.id,
+        return_url: work_to_meet_return_url,
+        return_text: "Back to Work to Meet"
+      )
+    end
+
+    def work_to_meet_filtered_ogos_path(associable)
+      organization_observations_path(
+        organization,
+        observee_ids: [@teammate.id],
+        rateable_type: associable.class.name,
+        rateable_id: associable.id,
+        return_url: work_to_meet_return_url,
+        return_text: "Back to Work to Meet"
+      )
+    end
+
+    def work_to_meet_ogo_count_caption_for(row, casual_name)
+      object_name = row.associable.respond_to?(:title) ? row.associable.title : row.associable.name
+      phrase =
+        if row.ogo_count.zero?
+          "No OGOs where #{casual_name} is observed and #{object_name} is rated"
+        else
+          "#{pluralize(row.ogo_count, 'OGO')} where #{casual_name} is observed and #{object_name} is rated"
+        end
+
+      link_to phrase, work_to_meet_filtered_ogos_path(row.associable), class: "text-muted text-decoration-none"
+    end
+
     private
 
     def work_to_meet_tab_badge_aria_label(variant, count)

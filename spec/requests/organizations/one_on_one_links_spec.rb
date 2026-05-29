@@ -513,6 +513,28 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).to include("status=draft")
     end
 
+    it "shows Add OGO and a linked OGO count caption filtered by observee and rateable" do
+      assignment = create(:assignment, company: organization, title: "OGO Assignment")
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: employee_teammate, assignment: assignment)
+
+      observation = create(:observation, company: organization, observer: manager_person, published_at: Time.current)
+      observation.observees.destroy_all
+      create(:observee, observation: observation, company_teammate: employee_teammate)
+      create(:observation_rating, observation: observation, rateable: assignment)
+
+      get work_to_meet_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Add OGO")
+      expect(response.body).to include("new_quick_note")
+      expect(response.body).to include("observee_ids%5B%5D=#{employee_teammate.id}")
+      expect(response.body).to include("rateable_type=Assignment")
+      expect(response.body).to include("rateable_id=#{assignment.id}")
+      expect(response.body).to include("1 OGO where")
+      expect(response.body).to include("is observed and OGO Assignment is rated")
+    end
+
     it "shows danger badge on hub tabs when essential WTM areas lack active goals" do
       assignment = create(:assignment, company: organization, title: "Needs Goal")
       create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)

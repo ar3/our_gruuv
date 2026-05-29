@@ -9,7 +9,7 @@
       %tr
         %th Name
         %th Most recent check-in
-        %th Clarity
+        %th Observations
         %th Goals
     %tbody
       - rows.each do |row|
@@ -31,7 +31,8 @@
               %br
               %span.text-muted.small= send(rating_display_method, check_in.official_rating)
           %td
-            %span.text-muted.small= check_in.clarity_level.to_s.humanize
+            = link_to "Add OGO", work_to_meet_add_ogo_path(associable), class: "btn btn-sm btn-outline-secondary"
+            %p.text-muted.small.mb-0.mt-1= work_to_meet_ogo_count_caption_for(row, casual_name)
           %td
             - if row.has_active_goal
               %span.badge.text-bg-success

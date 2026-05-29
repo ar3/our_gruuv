@@ -10,7 +10,8 @@ module OneOnOne
       :check_in,
       :active_goal_count,
       :draft_goal_count,
-      :has_active_goal
+      :has_active_goal,
+      :ogo_count
     )
 
     Result = Data.define(
@@ -34,9 +35,9 @@ module OneOnOne
       essential_assignment_ids = essential_assignment_id_set
       goal_counts = goal_counts_by_associable
 
-      essential_aspiration_rows = build_aspiration_rows(goal_counts)
-      essential_assignment_rows = build_essential_assignment_rows(essential_assignment_ids, goal_counts)
-      non_essential_assignment_rows = build_non_essential_assignment_rows(essential_assignment_ids, goal_counts)
+      essential_aspiration_rows = attach_ogo_counts(build_aspiration_rows(goal_counts))
+      essential_assignment_rows = attach_ogo_counts(build_essential_assignment_rows(essential_assignment_ids, goal_counts))
+      non_essential_assignment_rows = attach_ogo_counts(build_non_essential_assignment_rows(essential_assignment_ids, goal_counts))
 
       essential_wtm_rows = essential_aspiration_rows + essential_assignment_rows
       missing_goal_count = essential_wtm_rows.count { |row| !row.has_active_goal }
@@ -115,7 +116,7 @@ module OneOnOne
       { active: active_counts, draft: draft_counts }
     end
 
-    def row_for(associable, check_in, goal_counts)
+    def row_for(associable, check_in, goal_counts, ogo_count: 0)
       key = [associable.class.name, associable.id]
       active_goal_count = goal_counts[:active][key] || 0
       draft_goal_count = goal_counts[:draft][key] || 0
@@ -125,8 +126,50 @@ module OneOnOne
         check_in: check_in,
         active_goal_count: active_goal_count,
         draft_goal_count: draft_goal_count,
-        has_active_goal: active_goal_count.positive?
+        has_active_goal: active_goal_count.positive?,
+        ogo_count: ogo_count
       )
+    end
+
+    def attach_ogo_counts(rows)
+      counts = ogo_counts_by_associable(rows.map(&:associable))
+      rows.map do |row|
+        key = [row.associable.class.name, row.associable.id]
+        row.with(ogo_count: counts[key] || 0)
+      end
+    end
+
+    def ogo_counts_by_associable(associables)
+      return {} if associables.empty?
+
+      assignment_ids = associables.grep(Assignment).map(&:id).uniq
+      aspiration_ids = associables.grep(Aspiration).map(&:id).uniq
+      counts = Hash.new(0)
+
+      base_scope = Observation
+        .joins(:observees, :observation_ratings)
+        .where(company: organization, deleted_at: nil)
+        .merge(Observation.published)
+        .merge(Observation.not_journal)
+        .where(observees: { teammate_id: teammate.id })
+
+      if assignment_ids.any?
+        base_scope
+          .where(observation_ratings: { rateable_type: "Assignment", rateable_id: assignment_ids })
+          .group("observation_ratings.rateable_id")
+          .count("DISTINCT observations.id")
+          .each { |id, count| counts[["Assignment", id]] = count }
+      end
+
+      if aspiration_ids.any?
+        base_scope
+          .where(observation_ratings: { rateable_type: "Aspiration", rateable_id: aspiration_ids })
+          .group("observation_ratings.rateable_id")
+          .count("DISTINCT observations.id")
+          .each { |id, count| counts[["Aspiration", id]] = count }
+      end
+
+      counts
     end
 
     def build_aspiration_rows(goal_counts)

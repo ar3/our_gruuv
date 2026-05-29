@@ -86,4 +86,22 @@ RSpec.describe OneOnOne::WorkToMeetSummary do
       expect(summary.tab_count).to eq(1)
     end
   end
+
+  describe "OGO counts" do
+    it "counts published OGOs where the teammate is observed and the object is rated" do
+      assignment = create(:assignment, company: organization, title: "Rated Assignment")
+      create(:assignment_tenure, teammate: teammate, assignment: assignment)
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: teammate, assignment: assignment)
+
+      observer = create(:person)
+      observation = create(:observation, company: organization, observer: observer, published_at: Time.current)
+      observation.observees.destroy_all
+      create(:observee, observation: observation, company_teammate: teammate)
+      create(:observation_rating, observation: observation, rateable: assignment)
+
+      summary = call_summary
+
+      expect(summary.essential_assignment_rows.first.ogo_count).to eq(1)
+    end
+  end
 end
