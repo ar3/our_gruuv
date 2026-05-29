@@ -1,8 +1,10 @@
--# Renders the same sentence structure as the audit page for a single check-in.
+-# Renders employee, manager, and finalized sentences for a single check-in (audit-style).
 -# Locals: check_in, employee_name, sentence_type (:position | :assignment | :aspiration)
-- sentence = case sentence_type
-- when :position then format_position_check_in_sentences(check_in, employee_name)
-- when :assignment then format_assignment_check_in_sentences(check_in, employee_name)
-- when :aspiration then format_aspiration_check_in_sentences(check_in, employee_name)
-- else ''
-.small{style: "white-space: pre-line;"}= sentence
+- sentence_lines = case sentence_type.to_sym
+- when :position then position_check_in_sentence_lines(check_in, employee_name)
+- when :assignment then assignment_check_in_sentence_lines(check_in, employee_name)
+- when :aspiration then aspiration_check_in_sentence_lines(check_in, employee_name)
+- else []
+.check-in-finalized-sentences
+  - sentence_lines.each do |line|
+    %p.small.mb-2= line

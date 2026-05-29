@@ -3,11 +3,14 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   include Organizations::AssignsManagersViewCardForTeammate
   include Organizations::OneOnOneExternalProjectSync
 
+  helper Organizations::OneOnOneLinksHelper
+  helper EmployeesHelper
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :set_one_on_one_link
-  before_action :assign_viewable_teammates_for_one_on_one, only: %i[show detailed create update]
-  before_action :assign_managers_view_card_for_teammate, only: %i[show detailed create update]
+  before_action :assign_viewable_teammates_for_one_on_one, only: %i[show detailed work_to_meet create update]
+  before_action :assign_managers_view_card_for_teammate, only: %i[show detailed work_to_meet create update]
 
   def show
     load_hub_state
@@ -15,6 +18,12 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
 
   def detailed
     load_hub_state
+  end
+
+  def work_to_meet
+    authorize @one_on_one_link
+    @person = @teammate.person
+    @work_to_meet_summary = load_work_to_meet_summary
   end
 
   def create
@@ -139,11 +148,16 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   end
 
   def load_one_on_one_hub_data
+    @work_to_meet_summary = load_work_to_meet_summary
     load_execute_metrics
     load_evolve_metrics
     load_teammate_growth_for_one_on_one_hub
     load_goals_confidence_chart_data
     load_one_thing_priority_carousel
+  end
+
+  def load_work_to_meet_summary
+    OneOnOne::WorkToMeetSummary.call(organization: organization, teammate: @teammate)
   end
 
   def load_teammate_growth_for_one_on_one_hub

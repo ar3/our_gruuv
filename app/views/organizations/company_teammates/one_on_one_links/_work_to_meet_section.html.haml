@@ -1,0 +1,18 @@
+- rows = local_assigns.fetch(:rows)
+- title = local_assigns.fetch(:title)
+- icon = local_assigns.fetch(:icon)
+- casual_name = local_assigns.fetch(:casual_name)
+- rating_display_method = local_assigns.fetch(:rating_display_method)
+- sentence_type = local_assigns.fetch(:sentence_type)
+
+.card.mb-4
+  .card-header
+    %h3.mb-0
+      %i{class: "#{icon} me-2"}
+      = title
+      %span.badge.text-bg-secondary.ms-2= rows.size
+  .card-body
+    - if rows.any?
+      = render "work_to_meet_table", rows: rows, casual_name: casual_name, rating_display_method: rating_display_method, sentence_type: sentence_type
+    - else
+      %p.text-muted.mb-0 None in this section.

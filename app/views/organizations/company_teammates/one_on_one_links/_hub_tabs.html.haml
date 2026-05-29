@@ -1,5 +1,7 @@
 - one_thing_active = local_assigns.fetch(:one_thing_active, false)
 - detailed_active = local_assigns.fetch(:detailed_active, false)
+- work_to_meet_active = local_assigns.fetch(:work_to_meet_active, false)
+- work_to_meet_summary = local_assigns[:work_to_meet_summary]
 
 %ul.nav.nav-tabs.mb-4
   %li.nav-item
@@ -12,3 +14,10 @@
       detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
       class: "nav-link #{'active' if detailed_active}",
       aria: { current: (detailed_active ? "page" : nil) }
+  %li.nav-item
+    = link_to work_to_meet_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
+      class: "nav-link d-inline-flex align-items-center #{'active' if work_to_meet_active}",
+      aria: { current: (work_to_meet_active ? "page" : nil) } do
+      %span Work to Meet
+      - if work_to_meet_summary
+        = one_on_one_hub_work_to_meet_tab_badge(work_to_meet_summary)

@@ -40,6 +40,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).to include("1:1 Hub")
       expect(response.body).to include("The One Thing")
       expect(response.body).to include("Detailed 1:1 Hub")
+      expect(response.body).to include("Work to Meet")
       expect(response.body).to include("How we choose the one thing")
       expect(response.body).to include("More detailed 1:1 hub")
       expect(response.body).to include(detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
@@ -474,6 +475,79 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
 
     it "requires authentication" do
       skip "Authentication is handled by Devise and tested at framework level"
+    end
+  end
+
+  describe "GET work_to_meet" do
+    it "renders the Work to Meet tab with aspirational and assignment sections" do
+      get work_to_meet_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Work to Meet")
+      expect(response.body).to include("Aspirational Values")
+      expect(response.body).to include("Assignments")
+    end
+
+    it "shows the non-essential assignments collapse when present" do
+      non_essential = create(:assignment, company: organization, title: "Side project")
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: employee_teammate, assignment: non_essential)
+
+      get work_to_meet_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response.body).to include("Non-essential Assignments that are Working to Meet Expectations")
+      expect(response.body).to include("Side project")
+    end
+
+    it "links draft goals to the goals index filtered by teammate and draft status" do
+      assignment = create(:assignment, company: organization, title: "Draft Goal Link")
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: employee_teammate, assignment: assignment)
+      draft_goal = create(:goal, owner: employee_teammate, creator: employee_teammate, company_id: organization.id, started_at: nil)
+      create(:goal_association, goal: draft_goal, associable: assignment)
+
+      get work_to_meet_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("1 draft goal")
+      expect(response.body).to include("owner_id=CompanyTeammate_#{employee_teammate.id}")
+      expect(response.body).to include("status=draft")
+    end
+
+    it "shows danger badge on hub tabs when essential WTM areas lack active goals" do
+      assignment = create(:assignment, company: organization, title: "Needs Goal")
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)
+      create(:assignment_check_in, :finalized, :working_to_meet, teammate: employee_teammate, assignment: assignment)
+
+      get work_to_meet_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("text-bg-danger")
+      expect(response.body).to include("Needs Goal")
+      expect(response.body).to include("No active goal")
+    end
+
+    it "shows a hover popover with full check-in sentences on the most recent check-in cell" do
+      assignment = create(:assignment, company: organization, title: "Popover Assignment")
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)
+      create(
+        :assignment_check_in,
+        :finalized,
+        :working_to_meet,
+        teammate: employee_teammate,
+        assignment: assignment,
+        employee_private_notes: "Employee note for popover",
+        manager_private_notes: "Manager note for popover",
+        shared_notes: "Shared note for popover"
+      )
+
+      get work_to_meet_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('class="check-in-summary-popover-trigger')
+      expect(response.body).to include("Employee note for popover")
+      expect(response.body).to include("Manager note for popover")
+      expect(response.body).to include("Shared note for popover")
+      expect(response.body).to include("they agreed")
     end
   end
 

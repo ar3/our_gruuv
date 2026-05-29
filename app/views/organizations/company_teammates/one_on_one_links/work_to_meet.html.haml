@@ -1,0 +1,77 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, "1:1 Hub — Work to Meet")
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { work_to_meet_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
+               switch_aria_label: "Switch teammate for Work to Meet"
+      %span= " - 1:1 Hub"
+
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)) }, { label: "Work to Meet", url: nil }])
+
+- casual_name = @teammate.person.casual_name
+- summary = @work_to_meet_summary
+- essential_rows = summary.essential_aspiration_rows + summary.essential_assignment_rows
+
+= render "hub_tabs", one_thing_active: false, detailed_active: false, work_to_meet_active: true, work_to_meet_summary: summary
+
+.container-fluid
+  .card.mb-4
+    .card-header
+      %h2.mb-0
+        %i.bi.bi-exclamation-triangle.me-2
+        Work to Meet
+    .card-body
+      %p.mb-0
+        Central place for
+        %strong aspirational values
+        and
+        %strong essential assignments
+        whose most recent finalized check-in is
+        %strong Working to Meet
+        — with goal coverage called out so the path forward stays clear.
+
+  - if essential_rows.empty?
+    .alert.alert-success
+      %i.bi.bi-check-circle.me-2
+      #{casual_name} has no essential aspirational values or assignments currently rated Working to Meet.
+
+  = render "work_to_meet_section",
+           title: "Aspirational Values",
+           icon: "bi-star",
+           rows: summary.essential_aspiration_rows,
+           casual_name: casual_name,
+           rating_display_method: :aspiration_rating_display,
+           sentence_type: :aspiration
+
+  = render "work_to_meet_section",
+           title: "Assignments",
+           icon: "bi-briefcase",
+           rows: summary.essential_assignment_rows,
+           casual_name: casual_name,
+           rating_display_method: :assignment_rating_display,
+           sentence_type: :assignment
+
+  - if summary.non_essential_assignment_rows.any?
+    %p.mb-2
+      %a.d-flex.align-items-center.justify-content-between.text-decoration-none.p-3.border.rounded.bg-light.text-body{"data-bs-toggle" => "collapse", href: "#nonEssentialWtmAssignments", role: "button", "aria-expanded" => "false", "aria-controls" => "nonEssentialWtmAssignments"}
+        %span.fw-semibold
+          %i.bi.bi-chevron-down.me-2
+          Non-essential Assignments that are Working to Meet Expectations
+          %span.badge.text-bg-secondary.ms-2= summary.non_essential_assignment_rows.size
+        %span.text-muted.small Not included in the tab count
+    .collapse#nonEssentialWtmAssignments
+      .border.border-top-0.rounded-bottom.p-3.bg-white
+        = render "work_to_meet_table",
+                 rows: summary.non_essential_assignment_rows,
+                 casual_name: casual_name,
+                 rating_display_method: :assignment_rating_display,
+                 sentence_type: :assignment

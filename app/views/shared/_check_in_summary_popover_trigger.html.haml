@@ -1,0 +1,10 @@
+-# Wraps check-in summary content with a hover/focus popover of full employee / manager / finalized sentences.
+-# Locals: check_in, employee_name, sentence_type (:position | :assignment | :aspiration), aria_label (optional), placement (optional)
+- check_in = local_assigns.fetch(:check_in)
+- employee_name = local_assigns.fetch(:employee_name)
+- sentence_type = local_assigns.fetch(:sentence_type)
+- aria_label = local_assigns.fetch(:aria_label, "Check-in details")
+- placement = local_assigns.fetch(:placement, "bottom")
+- popover_content = last_finalized_check_in_popover_content(check_in, employee_name, sentence_type)
+%span.check-in-summary-popover-trigger.d-inline-block{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => placement, "data-bs-html" => "true", "data-bs-content" => popover_content, tabindex: "0", role: "button", style: "cursor: pointer;", "aria-label" => aria_label}
+  = yield

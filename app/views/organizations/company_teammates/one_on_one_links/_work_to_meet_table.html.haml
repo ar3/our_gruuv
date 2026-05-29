@@ -1,0 +1,46 @@
+- rows = local_assigns.fetch(:rows)
+- casual_name = local_assigns.fetch(:casual_name)
+- rating_display_method = local_assigns.fetch(:rating_display_method)
+- sentence_type = local_assigns.fetch(:sentence_type)
+
+.table-responsive
+  %table.table.table-hover.align-middle.mb-0
+    %thead
+      %tr
+        %th Name
+        %th Most recent check-in
+        %th Clarity
+        %th Goals
+    %tbody
+      - rows.each do |row|
+        - associable = row.associable
+        - check_in = row.check_in
+        - object_name = associable.respond_to?(:title) ? associable.title : associable.name
+        - clarity_icon = about_me_clarity_icon_details(latest_finalized_check_in: check_in, casual_name: casual_name, object_name: object_name)
+        - goal_icon = about_me_goal_icon_details(has_active_goal: row.has_active_goal, latest_rating: check_in.official_rating, casual_name: casual_name, object_name: object_name)
+        %tr
+          %td
+            %i{class: "bi #{clarity_icon[:icon_class]} #{clarity_icon[:text_class]} me-1", "data-bs-toggle" => "tooltip", "data-bs-title" => clarity_icon[:tooltip]}
+            - if goal_icon
+              %i{class: "bi #{goal_icon[:icon_class]} #{goal_icon[:text_class]} me-1", "data-bs-toggle" => "tooltip", "data-bs-title" => goal_icon[:tooltip]}
+            = link_to object_name, work_to_meet_teammate_lens_path(associable), class: "text-decoration-none fw-semibold"
+          %td
+            = render layout: "shared/check_in_summary_popover_trigger",
+                     locals: { check_in: check_in, employee_name: casual_name, sentence_type: sentence_type, aria_label: "Full check-in details for #{object_name}" } do
+              = format_date_in_user_timezone(check_in.official_check_in_completed_at)
+              %br
+              %span.text-muted.small= send(rating_display_method, check_in.official_rating)
+          %td
+            %span.text-muted.small= check_in.clarity_level.to_s.humanize
+          %td
+            - if row.has_active_goal
+              %span.badge.text-bg-success
+                = pluralize(row.active_goal_count, "active goal")
+            - else
+              %span.badge.text-bg-danger No active goal
+              = link_to "Add goal", work_to_meet_add_goal_path(associable), class: "btn btn-sm btn-outline-primary ms-2"
+            - if row.draft_goal_count.positive?
+              %p.text-warning.small.mb-0.mt-1
+                %i.bi.bi-pencil-square.me-1
+                = link_to pluralize(row.draft_goal_count, "draft goal"), work_to_meet_draft_goals_path, class: "text-warning"
+                — start the #{"goal".pluralize(row.draft_goal_count)} to count toward coverage.

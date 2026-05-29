@@ -22,6 +22,10 @@ class OneOnOneLinkPolicy < ApplicationPolicy
     show?
   end
 
+  def work_to_meet?
+    show?
+  end
+
   def create?
     # Same as update - can create if they can view
     update?

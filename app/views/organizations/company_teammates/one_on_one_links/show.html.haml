@@ -17,7 +17,7 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: nil }])
 
-= render "hub_tabs", one_thing_active: true, detailed_active: false
+= render "hub_tabs", one_thing_active: true, detailed_active: false, work_to_meet_summary: @work_to_meet_summary
 
 .container-fluid
   .card.border-primary
