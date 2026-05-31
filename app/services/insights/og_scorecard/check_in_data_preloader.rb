@@ -4,46 +4,52 @@ module Insights
   module OgScorecard
     # Loads check-in and tenure data once for OG Scorecard check-in clarity metrics.
     class CheckInDataPreloader
-      def initialize(company)
+      def initialize(company, teammate_ids: nil)
         @company = company
+        @teammate_ids = teammate_ids
       end
 
       def load
-        teammate_ids = CompanyTeammate
-          .for_organization_hierarchy(company)
-          .where.not(first_employed_at: nil)
-          .pluck(:id)
+        teammate_ids_list = scoped_teammate_ids
 
         aspiration_ids = Aspiration.within_hierarchy(company).pluck(:id)
 
         {
           teammates: CompanyTeammate
-            .where(id: teammate_ids)
+            .where(id: teammate_ids_list)
             .pluck(:id, :first_employed_at, :last_terminated_at),
           employment_tenures: EmploymentTenure
-            .where(company: company, teammate_id: teammate_ids)
+            .where(company: company, teammate_id: teammate_ids_list)
             .pluck(:teammate_id, :started_at, :ended_at, :position_id),
           assignment_tenures: AssignmentTenure
             .joins(:assignment)
-            .where(teammate_id: teammate_ids, assignments: { company_id: company_ids_in_hierarchy })
+            .where(teammate_id: teammate_ids_list, assignments: { company_id: company_ids_in_hierarchy })
             .pluck(:teammate_id, :assignment_id, :started_at, :ended_at, :anticipated_energy_percentage),
           required_assignment_ids_by_position: required_assignment_ids_by_position_id,
           aspiration_ids: aspiration_ids,
           position_finalized_at: latest_check_in_times(
-            PositionCheckIn.where(teammate_id: teammate_ids).closed
+            PositionCheckIn.where(teammate_id: teammate_ids_list).closed
           ),
           assignment_finalized_at: latest_check_in_times_by_assignment(
-            AssignmentCheckIn.where(teammate_id: teammate_ids).closed
+            AssignmentCheckIn.where(teammate_id: teammate_ids_list).closed
           ),
           aspiration_finalized_at: latest_check_in_times_by_aspiration(
-            AspirationCheckIn.where(teammate_id: teammate_ids, aspiration_id: aspiration_ids).closed
+            AspirationCheckIn.where(teammate_id: teammate_ids_list, aspiration_id: aspiration_ids).closed
           )
         }
       end
 
       private
 
-      attr_reader :company
+      attr_reader :company, :teammate_ids
+
+      def scoped_teammate_ids
+        scope = CompanyTeammate
+          .for_organization_hierarchy(company)
+          .where.not(first_employed_at: nil)
+        scope = scope.where(id: teammate_ids) if teammate_ids
+        scope.pluck(:id)
+      end
 
       def company_ids_in_hierarchy
         @company_ids_in_hierarchy ||= company.self_and_descendants.pluck(:id)

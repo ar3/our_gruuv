@@ -4,13 +4,14 @@ module Insights
   module OgScorecard
     # Unique teammates who published or were named in a published OGO in the rolling 30 days ending each Sunday.
     class ObservationsThirtyDayWeekCounts
-      def self.call(company:, week_starts:)
-        new(company: company, week_starts: week_starts).call
+      def self.call(company:, week_starts:, teammate_ids: nil)
+        new(company: company, week_starts: week_starts, teammate_ids: teammate_ids).call
       end
 
-      def initialize(company:, week_starts:)
+      def initialize(company:, week_starts:, teammate_ids: nil)
         @company = company
         @week_starts = week_starts
+        @teammate_ids = teammate_ids
       end
 
       def call
@@ -22,7 +23,11 @@ module Insights
 
       private
 
-      attr_reader :company, :week_starts
+      attr_reader :company, :week_starts, :teammate_ids
+
+      def teammate_in_scope?(teammate_id)
+        teammate_id.present? && (teammate_ids.nil? || teammate_ids.include?(teammate_id))
+      end
 
       def counts_by_week(mode)
         week_starts.index_with do |week_start|
@@ -50,7 +55,8 @@ module Insights
         publisher_rows.filter_map do |published_at, observer_person_id|
           next unless in_window?(published_at, window_start, window_end)
 
-          teammate_id_by_person_id[observer_person_id]
+          teammate_id = teammate_id_by_person_id[observer_person_id]
+          teammate_id if teammate_in_scope?(teammate_id)
         end
       end
 
@@ -58,7 +64,7 @@ module Insights
         observee_rows.filter_map do |published_at, teammate_id|
           next unless in_window?(published_at, window_start, window_end)
 
-          teammate_id
+          teammate_id if teammate_in_scope?(teammate_id)
         end
       end
 

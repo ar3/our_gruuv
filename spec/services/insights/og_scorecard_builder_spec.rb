@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require 'set'
 
 RSpec.describe Insights::OgScorecardBuilder do
   let(:company) { create(:company) }
@@ -67,6 +68,25 @@ RSpec.describe Insights::OgScorecardBuilder do
 
       expect(publishers[:weekly_values]).to eq([1, 1])
       expect(observees[:weekly_values]).to eq([1, 1])
+    end
+
+    it 'limits metrics to filtered teammate ids' do
+      monday = Date.new(2026, 4, 6)
+      week_starts = [monday]
+      chart_range = monday.beginning_of_day..(monday + 6).end_of_day
+
+      included = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
+      create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
+
+      result = described_class.new(
+        company: company,
+        week_starts: week_starts,
+        chart_range: chart_range,
+        teammate_ids: Set[included.id]
+      ).call
+      row = result[:groups].find { |g| g[:title] == 'Teammates' }[:rows].first
+
+      expect(row[:weekly_values]).to eq([1])
     end
   end
 end

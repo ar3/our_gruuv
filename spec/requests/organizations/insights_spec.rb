@@ -129,6 +129,27 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to match(/data-controller=["']og-scorecard-thresholds["']/)
       expect(response.body).not_to include('og-scorecard-popover-source')
     end
+
+    it 'renders department and managed-by filter controls' do
+      get organization_insights_og_scorecard_path(organization)
+      expect(response.body).to include('Department')
+      expect(response.body).to include('Those managed by')
+      expect(response.body).to include('Apply filters')
+      expect(response.body).to include('ogScorecardFiltersCollapse')
+      expect(response.body).to include('bi-chevron-down')
+      expect(response.body).to include('All teammates')
+    end
+
+    it 'returns success with department and manager filters' do
+      get organization_insights_og_scorecard_path(
+        organization,
+        department_id: ['none'],
+        manager_id: ['just_me']
+      )
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('No department')
+      expect(response.body).to include('Just Me')
+    end
   end
 
   describe 'PATCH /organizations/:organization_id/insights/og_scorecard/thresholds' do

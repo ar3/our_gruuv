@@ -37,6 +37,16 @@
         %span.badge.bg-danger
         red when both thresholds are set; otherwise neutral gray until you configure them (accordion at bottom).
 
+    %h5.fw-semibold.mb-2 Filters
+    %ul.mb-2
+      %li
+        %strong Department
+        and
+        %strong Those managed by
+        narrow every metric to teammates matching your selections (using current position title department and manager assignment).
+      %li
+        Leave all checkboxes unchecked to see the full company. Select multiple options within a group to include any match; both groups together require a teammate to match both.
+
     %h5.fw-semibold.mb-2 Metric definitions
     %ul.mb-2
       %li
@@ -57,13 +67,42 @@
         %strong= "#{I18n.t('terminology.og_scorecard_goals_label')}:"
         = I18n.t('terminology.og_scorecard_goals_help')
 
-= render 'timeframe_selector',
-  timeframe: @timeframe,
-  path_for: ->(**opts) { organization_insights_og_scorecard_path(@organization, **opts) },
-  show_custom: true,
-  custom_from: @insights_custom_from,
-  custom_to: @insights_custom_to,
-  wrapper_class: 'mb-4'
+.og-scorecard-toolbar.mb-4
+  .d-flex.flex-wrap.align-items-center.gap-3
+    .og-scorecard-timeframe
+      .btn-group.flex-wrap{role: "group"}
+        - btn_class = ->(key) { "btn btn-sm #{@timeframe == key ? 'btn-primary' : 'btn-outline-primary'}" }
+        = link_to "Last 90 days", og_scorecard_path_with_filters(timeframe: '90_days'), class: btn_class.call(:'90_days')
+        = link_to "Last Year", og_scorecard_path_with_filters(timeframe: 'year'), class: btn_class.call(:year)
+        = link_to "All-Time", og_scorecard_path_with_filters(timeframe: 'all_time'), class: btn_class.call(:all_time)
+        = link_to "Custom", og_scorecard_path_with_filters(**{ timeframe: 'custom', from: @insights_custom_from, to: @insights_custom_to }.compact), class: btn_class.call(:custom)
+    = render 'og_scorecard_filter_toggle',
+      selected_department_ids: @og_scorecard_selected_department_ids,
+      selected_manager_ids: @og_scorecard_selected_manager_ids,
+      departments: @og_scorecard_departments,
+      manager_options: @og_scorecard_manager_options
+  - if @timeframe == :custom
+    = form_tag og_scorecard_path_with_filters(), method: :get, class: "row g-2 align-items-end mt-2" do
+      = hidden_field_tag :timeframe, 'custom'
+      - og_scorecard_filter_params.each do |name, value|
+        - Array(value).each do |item|
+          = hidden_field_tag "#{name}[]", item
+      .col-sm-auto
+        = label_tag :from, "From", class: "form-label small mb-0 d-block"
+        = date_field_tag :from, @insights_custom_from, class: "form-control form-control-sm", required: true
+      .col-sm-auto
+        = label_tag :to, "To", class: "form-label small mb-0 d-block"
+        = date_field_tag :to, @insights_custom_to, class: "form-control form-control-sm", required: true
+      .col-sm-auto
+        = submit_tag "Apply range", class: "btn btn-sm btn-primary"
+  = render 'og_scorecard_filters',
+    selected_department_ids: @og_scorecard_selected_department_ids,
+    selected_manager_ids: @og_scorecard_selected_manager_ids,
+    departments: @og_scorecard_departments,
+    manager_options: @og_scorecard_manager_options,
+    timeframe: @timeframe,
+    custom_from: @insights_custom_from,
+    custom_to: @insights_custom_to
 
 %p.text-muted.small.mb-2
   Period: #{@chart_title_period}
@@ -108,4 +147,6 @@
     thresholds_by_key: @thresholds_by_key,
     timeframe: @timeframe,
     custom_from: @insights_custom_from,
-    custom_to: @insights_custom_to
+    custom_to: @insights_custom_to,
+    selected_department_ids: @og_scorecard_selected_department_ids,
+    selected_manager_ids: @og_scorecard_selected_manager_ids

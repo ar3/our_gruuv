@@ -4,13 +4,14 @@ module Insights
   module OgScorecard
     # Weekly counts for ability milestones earned (this week and rolling 90 days ending Sunday).
     class MilestonesWeekCounts
-      def self.call(company:, week_starts:)
-        new(company: company, week_starts: week_starts).call
+      def self.call(company:, week_starts:, teammate_ids: nil)
+        new(company: company, week_starts: week_starts, teammate_ids: teammate_ids).call
       end
 
-      def initialize(company:, week_starts:)
+      def initialize(company:, week_starts:, teammate_ids: nil)
         @company = company
         @week_starts = week_starts
+        @teammate_ids = teammate_ids
       end
 
       def call
@@ -24,7 +25,11 @@ module Insights
 
       private
 
-      attr_reader :company, :week_starts
+      attr_reader :company, :week_starts, :teammate_ids
+
+      def teammate_in_scope?(teammate_id)
+        teammate_id.present? && (teammate_ids.nil? || teammate_ids.include?(teammate_id))
+      end
 
       def counts_by_week(mode)
         week_starts.index_with do |week_start|
@@ -66,12 +71,14 @@ module Insights
 
       def milestone_rows
         @milestone_rows ||= begin
-          teammate_ids = CompanyTeammate.for_organization_hierarchy(company).select(:id)
+          teammate_scope = CompanyTeammate.for_organization_hierarchy(company).select(:id)
+          teammate_scope = teammate_scope.where(id: teammate_ids) if teammate_ids
           TeammateMilestone
             .joins(:ability)
             .where(abilities: { company_id: company.id })
-            .where(teammate_id: teammate_ids)
+            .where(teammate_id: teammate_scope)
             .pluck(:teammate_id, :attained_at)
+            .select { |teammate_id, _attained_at| teammate_in_scope?(teammate_id) }
         end
       end
     end

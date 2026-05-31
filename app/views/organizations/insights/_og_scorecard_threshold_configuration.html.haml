@@ -14,6 +14,12 @@
           = hidden_field_tag :timeframe, timeframe if timeframe.present?
           = hidden_field_tag :from, custom_from if custom_from.present?
           = hidden_field_tag :to, custom_to if custom_to.present?
+          - selected_department_ids = local_assigns.fetch(:selected_department_ids, [])
+          - selected_manager_ids = local_assigns.fetch(:selected_manager_ids, [])
+          - selected_department_ids.each do |department_id|
+            = hidden_field_tag 'department_id[]', department_id
+          - selected_manager_ids.each do |manager_id|
+            = hidden_field_tag 'manager_id[]', manager_id
 
           - metric_registry_groups.each do |group|
             %h6.mt-3.mb-2= group[:title]

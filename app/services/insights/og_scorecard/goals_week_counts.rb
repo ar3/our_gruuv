@@ -4,13 +4,14 @@ module Insights
   module OgScorecard
     # Weekly goal metrics: active owners, goal check-ins, and recent completions.
     class GoalsWeekCounts
-      def self.call(company:, week_starts:)
-        new(company: company, week_starts: week_starts).call
+      def self.call(company:, week_starts:, teammate_ids: nil)
+        new(company: company, week_starts: week_starts, teammate_ids: teammate_ids).call
       end
 
-      def initialize(company:, week_starts:)
+      def initialize(company:, week_starts:, teammate_ids: nil)
         @company = company
         @week_starts = week_starts
+        @teammate_ids = teammate_ids
       end
 
       def call
@@ -23,7 +24,11 @@ module Insights
 
       private
 
-      attr_reader :company, :week_starts
+      attr_reader :company, :week_starts, :teammate_ids
+
+      def teammate_in_scope?(owner_id)
+        owner_id.present? && (teammate_ids.nil? || teammate_ids.include?(owner_id))
+      end
 
       def counts_by_week(mode)
         week_starts.index_with do |week_start|
@@ -44,6 +49,7 @@ module Insights
 
       def active_owner_ids(reference_time)
         goal_rows.filter_map do |owner_id, started_at, completed_at, deleted_at|
+          next unless teammate_in_scope?(owner_id)
           next unless goal_active_at?(started_at, completed_at, deleted_at, reference_time)
 
           owner_id
@@ -53,6 +59,7 @@ module Insights
       def owners_with_check_in_during_week(week_start, week_end_date, reference_time)
         week_range = week_start.beginning_of_day..week_end_date.end_of_day
         check_in_rows.filter_map do |owner_id, created_at, started_at, completed_at, deleted_at|
+          next unless teammate_in_scope?(owner_id)
           next unless created_at && week_range.cover?(created_at)
           next unless goal_active_at?(started_at, completed_at, deleted_at, reference_time)
 
@@ -63,6 +70,7 @@ module Insights
       def owners_with_completion_in_90_days(week_end_date)
         window_start = week_end_date - 89.days
         goal_rows.filter_map do |owner_id, _started_at, completed_at, _deleted_at|
+          next unless teammate_in_scope?(owner_id)
           next if completed_at.blank?
 
           completed_date = completed_at.to_date

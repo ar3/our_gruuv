@@ -4,14 +4,15 @@ module Insights
   module OgScorecard
     # Counts unique teammates in clear / blurred / obscured buckets per week (Sunday snapshot).
     class CheckInClarityWeekCounts
-      def self.call(company:, week_starts:, preloaded_data: nil)
-        new(company: company, week_starts: week_starts, preloaded_data: preloaded_data).call
+      def self.call(company:, week_starts:, preloaded_data: nil, teammate_ids: nil)
+        new(company: company, week_starts: week_starts, preloaded_data: preloaded_data, teammate_ids: teammate_ids).call
       end
 
-      def initialize(company:, week_starts:, preloaded_data: nil)
+      def initialize(company:, week_starts:, preloaded_data: nil, teammate_ids: nil)
         @company = company
         @week_starts = week_starts
-        @data = preloaded_data || CheckInDataPreloader.new(company).load
+        @teammate_ids = teammate_ids
+        @data = preloaded_data || CheckInDataPreloader.new(company, teammate_ids: teammate_ids).load
       end
 
       def call
@@ -24,7 +25,11 @@ module Insights
 
       private
 
-      attr_reader :company, :week_starts, :data
+      attr_reader :company, :week_starts, :data, :teammate_ids
+
+      def teammate_in_scope?(teammate_id)
+        teammate_ids.nil? || teammate_ids.include?(teammate_id)
+      end
 
       def counts_by_week(bucket)
         week_starts.index_with do |week_start|
@@ -37,6 +42,7 @@ module Insights
 
       def active_teammate_ids(reference_time)
         data[:teammates].filter_map do |id, first_employed_at, last_terminated_at|
+          next unless teammate_in_scope?(id)
           next unless employed?(first_employed_at, last_terminated_at, reference_time)
 
           id

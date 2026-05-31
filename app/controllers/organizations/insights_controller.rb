@@ -2,6 +2,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   include CheckInHealthCompletionRate
   include InsightsTimeframeSelection
 
+  helper OgScorecardHelper
+
   def index
     authorize company, :show?
     @insight_links = build_insight_links
@@ -20,11 +22,25 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @thresholds_by_key = Insights::OgScorecard::ThresholdsForCompany.call(company)
     @can_configure_thresholds = policy(organization).customize_company?
     @metric_registry_groups = Insights::OgScorecard::MetricRegistry.grouped
+    @og_scorecard_selected_department_ids = Array(params[:department_id]).map(&:to_s).reject(&:blank?)
+    @og_scorecard_selected_manager_ids = Array(params[:manager_id]).map(&:to_s).reject(&:blank?)
+    @og_scorecard_departments = Insights::OgScorecard::TeammateFilter.available_departments(company)
+    @og_scorecard_manager_options = Insights::OgScorecard::TeammateFilter.available_manager_options(
+      company: company,
+      current_company_teammate: current_company_teammate
+    )
+    filtered_teammate_ids = Insights::OgScorecard::TeammateFilter.call(
+      company: company,
+      current_company_teammate: current_company_teammate,
+      department_ids: @og_scorecard_selected_department_ids,
+      manager_ids: @og_scorecard_selected_manager_ids
+    )
     @scorecard = Insights::OgScorecardBuilder.new(
       company: company,
       week_starts: week_starts_asc,
       chart_range: chart_range,
-      thresholds_by_key: @thresholds_by_key
+      thresholds_by_key: @thresholds_by_key,
+      teammate_ids: filtered_teammate_ids
     ).call
   end
 
@@ -348,7 +364,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     {
       timeframe: params[:timeframe].presence,
       from: params[:from].presence,
-      to: params[:to].presence
+      to: params[:to].presence,
+      department_id: Array(params[:department_id]).reject(&:blank?).presence,
+      manager_id: Array(params[:manager_id]).reject(&:blank?).presence
     }.compact
   end
 

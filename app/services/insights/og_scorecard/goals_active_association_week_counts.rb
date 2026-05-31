@@ -10,14 +10,15 @@ module Insights
         ability: 'Ability'
       }.freeze
 
-      def self.call(company:, week_starts:, associable_type:)
-        new(company: company, week_starts: week_starts, associable_type: associable_type).call
+      def self.call(company:, week_starts:, associable_type:, teammate_ids: nil)
+        new(company: company, week_starts: week_starts, associable_type: associable_type, teammate_ids: teammate_ids).call
       end
 
-      def initialize(company:, week_starts:, associable_type:)
+      def initialize(company:, week_starts:, associable_type:, teammate_ids: nil)
         @company = company
         @week_starts = week_starts
         @associable_type = ASSOCIABLE_TYPES.fetch(associable_type.to_sym)
+        @teammate_ids = teammate_ids
       end
 
       def call
@@ -41,12 +42,14 @@ module Insights
 
       private
 
-      attr_reader :company, :week_starts, :associable_type
+      attr_reader :company, :week_starts, :associable_type, :teammate_ids
 
       def active_teammate_ids_at(reference_time)
-        CompanyTeammate
+        scope = CompanyTeammate
           .for_organization_hierarchy(company)
           .where.not(first_employed_at: nil)
+        scope = scope.where(id: teammate_ids) if teammate_ids
+        scope
           .pluck(:id, :first_employed_at, :last_terminated_at)
           .filter_map do |id, first_employed_at, last_terminated_at|
             next unless employed_at?(first_employed_at, last_terminated_at, reference_time)

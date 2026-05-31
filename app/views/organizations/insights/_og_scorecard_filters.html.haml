@@ -1,0 +1,43 @@
+- selected_department_ids = local_assigns.fetch(:selected_department_ids, [])
+- selected_manager_ids = local_assigns.fetch(:selected_manager_ids, [])
+- departments = local_assigns.fetch(:departments, [])
+- manager_options = local_assigns.fetch(:manager_options, [])
+- timeframe = local_assigns[:timeframe]
+- custom_from = local_assigns[:custom_from]
+- custom_to = local_assigns[:custom_to]
+
+.collapse#ogScorecardFiltersCollapse
+  = form_tag og_scorecard_path_with_filters(), method: :get, class: 'border rounded p-3 mt-2 bg-light-subtle' do
+    = hidden_field_tag :timeframe, timeframe if timeframe.present?
+    = hidden_field_tag :from, custom_from if custom_from.present?
+    = hidden_field_tag :to, custom_to if custom_to.present?
+
+    .row.g-3.align-items-start
+      .col-lg-6
+        %fieldset.mb-0
+          %legend.form-label.small.fw-semibold.mb-1 Department
+          .row.g-1
+            .col-md-6.col-sm-6
+              .form-check
+                = check_box_tag 'department_id[]', 'none', selected_department_ids.include?('none'), class: 'form-check-input', id: 'og_scorecard_department_none'
+                = label_tag 'og_scorecard_department_none', 'No department', class: 'form-check-label small'
+            - departments.each do |department|
+              .col-md-6.col-sm-6
+                .form-check
+                  = check_box_tag 'department_id[]', department.id, selected_department_ids.include?(department.id.to_s), class: 'form-check-input', id: "og_scorecard_department_#{department.id}"
+                  = label_tag "og_scorecard_department_#{department.id}", department.name, class: 'form-check-label small'
+
+      .col-lg-6
+        %fieldset.mb-0
+          %legend.form-label.small.fw-semibold.mb-1 Those managed by
+          .row.g-1
+            - manager_options.each do |label, value|
+              .col-md-6.col-sm-6
+                .form-check
+                  = check_box_tag 'manager_id[]', value, selected_manager_ids.include?(value), class: 'form-check-input', id: "og_scorecard_manager_#{value.parameterize(separator: '_')}"
+                  = label_tag "og_scorecard_manager_#{value.parameterize(separator: '_')}", label, class: 'form-check-label small'
+
+    .d-flex.flex-wrap.align-items-center.gap-2.mt-3
+      = submit_tag 'Apply filters', class: 'btn btn-sm btn-primary'
+      - if og_scorecard_filters_active?
+        = link_to 'Clear filters', organization_insights_og_scorecard_path(@organization, timeframe: timeframe, from: custom_from, to: custom_to), class: 'btn btn-sm btn-outline-secondary'

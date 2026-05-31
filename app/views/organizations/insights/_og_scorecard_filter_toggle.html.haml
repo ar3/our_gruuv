@@ -1,0 +1,18 @@
+- selected_department_ids = local_assigns.fetch(:selected_department_ids, [])
+- selected_manager_ids = local_assigns.fetch(:selected_manager_ids, [])
+- departments = local_assigns.fetch(:departments, [])
+- manager_options = local_assigns.fetch(:manager_options, [])
+- filter_pill_labels = og_scorecard_filter_pill_labels(departments: departments, manager_options: manager_options, selected_department_ids: selected_department_ids, selected_manager_ids: selected_manager_ids)
+
+%button.btn.btn-link.p-0.text-body.collapsed.d-inline-flex.align-items-center.gap-2.og-scorecard-filter-toggle.ms-auto{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#ogScorecardFiltersCollapse", "aria-expanded" => "false", "aria-controls" => "ogScorecardFiltersCollapse"}
+  %span.collapsed.d-inline-flex.flex-wrap.align-items-center.gap-1
+    - if filter_pill_labels.any?
+      - filter_pill_labels.each do |label|
+        %span.badge.rounded-pill.bg-primary-subtle.text-primary-emphasis.border.border-primary-subtle.small= label
+    - else
+      %span.text-muted.small All teammates
+  %span.small.fw-semibold Filters
+  %span.not-collapsed
+    %i.bi.bi-chevron-up
+  %span.collapsed
+    %i.bi.bi-chevron-down

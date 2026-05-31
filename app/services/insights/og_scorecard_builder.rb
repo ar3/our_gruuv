@@ -3,12 +3,13 @@
 module Insights
   # Weekly scorecard rows for Insights: OG Scorecard (metric metadata + per-week values).
   class OgScorecardBuilder
-    def initialize(company:, week_starts:, chart_range:, thresholds_by_key: {})
+    def initialize(company:, week_starts:, chart_range:, thresholds_by_key: {}, teammate_ids: nil)
       @company = company
       @week_starts = week_starts
       @chart_range = chart_range
       @thresholds_by_key = thresholds_by_key
-      @check_in_data = OgScorecard::CheckInDataPreloader.new(company).load
+      @teammate_ids = teammate_ids
+      @check_in_data = OgScorecard::CheckInDataPreloader.new(company, teammate_ids: teammate_ids).load
     end
 
     def call
@@ -16,30 +17,43 @@ module Insights
       publishers_by_week, observees_by_week = observation_distinct_sets_by_week
       observations_30_day_counts = OgScorecard::ObservationsThirtyDayWeekCounts.call(
         company: company,
-        week_starts: week_starts
+        week_starts: week_starts,
+        teammate_ids: teammate_ids
       )
       check_in_clarity = OgScorecard::CheckInClarityWeekCounts.call(
         company: company,
         week_starts: week_starts,
-        preloaded_data: @check_in_data
+        preloaded_data: @check_in_data,
+        teammate_ids: teammate_ids
       )
       goal_aspiration_by_week = OgScorecard::GoalsActiveAssociationWeekCounts.call(
         company: company,
         week_starts: week_starts,
-        associable_type: :aspiration
+        associable_type: :aspiration,
+        teammate_ids: teammate_ids
       )
       goal_assignment_by_week = OgScorecard::GoalsActiveAssociationWeekCounts.call(
         company: company,
         week_starts: week_starts,
-        associable_type: :assignment
+        associable_type: :assignment,
+        teammate_ids: teammate_ids
       )
-      milestone_counts = OgScorecard::MilestonesWeekCounts.call(company: company, week_starts: week_starts)
+      milestone_counts = OgScorecard::MilestonesWeekCounts.call(
+        company: company,
+        week_starts: week_starts,
+        teammate_ids: teammate_ids
+      )
       goal_ability_by_week = OgScorecard::GoalsActiveAssociationWeekCounts.call(
         company: company,
         week_starts: week_starts,
-        associable_type: :ability
+        associable_type: :ability,
+        teammate_ids: teammate_ids
       )
-      goals_counts = OgScorecard::GoalsWeekCounts.call(company: company, week_starts: week_starts)
+      goals_counts = OgScorecard::GoalsWeekCounts.call(
+        company: company,
+        week_starts: week_starts,
+        teammate_ids: teammate_ids
+      )
 
       groups = OgScorecard::MetricRegistry.grouped.map do |group|
         rows = group[:entries].map do |entry|
@@ -66,7 +80,11 @@ module Insights
 
     private
 
-    attr_reader :company, :week_starts, :chart_range, :thresholds_by_key
+    attr_reader :company, :week_starts, :chart_range, :thresholds_by_key, :teammate_ids
+
+    def teammate_in_scope?(teammate_id)
+      teammate_id.present? && (teammate_ids.nil? || teammate_ids.include?(teammate_id))
+    end
 
     def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, observations_30_day_counts:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:)
       case key
@@ -144,10 +162,9 @@ module Insights
     end
 
     def active_teammate_counts_by_week
-      rows = CompanyTeammate
-        .for_organization_hierarchy(company)
-        .where.not(first_employed_at: nil)
-        .pluck(:first_employed_at, :last_terminated_at)
+      scope = CompanyTeammate.for_organization_hierarchy(company).where.not(first_employed_at: nil)
+      scope = scope.where(id: teammate_ids) if teammate_ids
+      rows = scope.pluck(:first_employed_at, :last_terminated_at)
 
       week_starts.index_with do |week_start|
         week_end_time = (week_start + 6.days).in_time_zone.end_of_day
@@ -190,7 +207,7 @@ module Insights
         next unless week_set.include?(wk)
 
         tid = teammate_id_by_person_id[observer_person_id]
-        publishers_by_week[wk] << tid if tid
+        publishers_by_week[wk] << tid if teammate_in_scope?(tid)
       end
 
       observee_rows = Observee
@@ -204,7 +221,7 @@ module Insights
         wk = week_key_for(published_at)
         next unless week_set.include?(wk)
 
-        observees_by_week[wk] << teammate_id
+        observees_by_week[wk] << teammate_id if teammate_in_scope?(teammate_id)
       end
 
       [
