@@ -1,0 +1,17 @@
+- ability = local_assigns.fetch(:ability)
+- counts = (local_assigns[:ability_goal_counts_by_id] || {})[ability.id] || { draft: 0, active: 0, completed: 0 }
+.d-flex.flex-column.gap-1.small
+  - if counts[:draft].positive?
+    %span.text-muted
+      %i.bi.bi-pause-circle-fill.me-1{alignable: { hidden: true }}
+      = pluralize(counts[:draft], "draft goal")
+  - if counts[:active].positive?
+    %span
+      %i.bi.bi-bullseye.me-1{alignable: { hidden: true }}
+      = pluralize(counts[:active], "active goal")
+  - if counts[:completed].positive?
+    %span.text-muted
+      %i.bi.bi-trophy-fill.me-1{alignable: { hidden: true }}
+      = pluralize(counts[:completed], "completed goal")
+  - if counts.values.sum.zero?
+    %span.text-muted None

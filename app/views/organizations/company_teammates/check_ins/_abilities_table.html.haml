@@ -1,5 +1,6 @@
 -# Abilities Table View
 - main_form ||= nil
+- ability_goal_counts_by_id = local_assigns[:ability_goal_counts_by_id] || {}
 - if relevant_abilities&.any?
   .table-responsive
     %table.table.table-striped{data: {abilities_table: true}}
@@ -8,8 +9,8 @@
           %th Ability
           %th Why It's Relevant
           %th When Milestones Achieved
-          %th Notes
-          %th #{person.casual_name} is actively pursuing:
+          %th Goals
+          %th Observations
       %tbody
         - relevant_abilities.each do |ability_data|
           - ability = ability_data[:ability]
@@ -50,43 +51,18 @@
               - else
                 %span.text-muted None
             %td
-              %textarea.form-control.form-control-sm{rows: "2", placeholder: "Coming Soon... Ability notes..." }
-              - if main_form
-                .mt-2
-                  - since_date = 1.year.ago
-                  - teammate = local_assigns[:teammate].presence || person.teammates.find_by(organization: @organization)
-                  - if teammate
-                    - observations = visible_observations_for_person(current_person, @organization)
-                    - observations = observations.joins(:observed_teammates).where(teammates: { id: teammate.id })
-                    - observations = observations.joins(:observation_ratings).where(observation_ratings: { rateable_type: 'Ability', rateable_id: ability.id })
-                    - observations = observations.where('observed_at >= ?', since_date) if since_date.present?
-                    - observation_count = observations.count
-                    .d-flex.flex-column.gap-1
-                      - time_ago = time_ago_in_words(since_date)
-                      = hidden_field_tag "since_date", since_date
-                      = hidden_field_tag "teammate_id", teammate.id
-                      = main_form.submit "#{observation_count > 0 ? pluralize(observation_count, 'observation') : 'No notes'} on this since #{time_ago} ago",
-                                         class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent",
-                                         name: "save_and_view_observations_ability_#{ability.id}"
-                      = main_form.submit "Add Win / Challenge",
-                                         class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent",
-                                         name: "save_and_add_quick_note_ability_#{ability.id}"
+              = render "ability_goal_counts",
+                       ability: ability,
+                       ability_goal_counts_by_id: ability_goal_counts_by_id
             %td
-              .btn-group-vertical{role: "group", "aria-label": "Ability goal selection"}
-                = radio_button_tag "ability_goal[#{ability.id}]", "na", true, class: "btn-check", id: "ability_goal_#{ability.id}_na", disabled: true
-                = label_tag "ability_goal_#{ability.id}_na", "N/A", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_na"
-                = radio_button_tag "ability_goal[#{ability.id}]", "m1", false, class: "btn-check", id: "ability_goal_#{ability.id}_m1", disabled: true
-                = label_tag "ability_goal_#{ability.id}_m1", "M1: Demonstrated", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m1"
-                = radio_button_tag "ability_goal[#{ability.id}]", "m2", false, class: "btn-check", id: "ability_goal_#{ability.id}_m2", disabled: true
-                = label_tag "ability_goal_#{ability.id}_m2", "M2: Advanced", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m2"
-                = radio_button_tag "ability_goal[#{ability.id}]", "m3", false, class: "btn-check", id: "ability_goal_#{ability.id}_m3", disabled: true
-                = label_tag "ability_goal_#{ability.id}_m3", "M3: Expert", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m3"
-                = radio_button_tag "ability_goal[#{ability.id}]", "m4", false, class: "btn-check", id: "ability_goal_#{ability.id}_m4", disabled: true
-                = label_tag "ability_goal_#{ability.id}_m4", "M4: Distinguished", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m4"
-                = radio_button_tag "ability_goal[#{ability.id}]", "m5", false, class: "btn-check", id: "ability_goal_#{ability.id}_m5", disabled: true
-                = label_tag "ability_goal_#{ability.id}_m5", "M5: Industry-Recognized", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m5"
+              = render "ability_observations_actions",
+                       ability: ability,
+                       main_form: main_form,
+                       person: person,
+                       teammate: local_assigns[:teammate]
 - else
   .alert.alert-info{data: {abilities_empty_state: true}}
     %i.bi.bi-info-circle.me-2
     No relevant abilities found
+
 

@@ -40,6 +40,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     preload_aspiration_check_in_associations!
     @relevant_abilities = load_relevant_abilities || []
+    @ability_goal_counts_by_id = ability_goal_counts_by_id_for(@relevant_abilities)
     @active_required_assignment_check_ins = filter_active_required_assignment_check_ins
     @check_ins_fresh_banner = CheckIns::AllFreshBannerService.call(
       teammate: @teammate,
@@ -677,6 +678,11 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
   def load_relevant_abilities
     RelevantAbilitiesQuery.new(teammate: @teammate, organization: organization).call
+  end
+
+  def ability_goal_counts_by_id_for(relevant_abilities)
+    ability_ids = relevant_abilities.map { |data| data[:ability].id }
+    CheckIns::AbilityGoalCountsById.call(teammate: @teammate, ability_ids: ability_ids)
   end
 
   def preload_position_check_in_associations!
