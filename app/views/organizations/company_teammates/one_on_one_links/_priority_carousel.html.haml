@@ -68,8 +68,13 @@
             - explanation_markup = renderer.explanation_html
             - if explanation_markup.present?
               - reason_class = priority[:needs_attention] ? "text-dark" : "text-success"
-              %div.mb-2{class: reason_class}
-                != explanation_markup
+              - collapse_id = "oneThingPriorityExplanation-#{idx}"
+              %button.btn.btn-sm.btn-outline-secondary.mb-2{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id}
+                Why is this important
+                %i.bi.bi-info-circle.ms-1{"aria-hidden" => "true"}
+              .collapse.mb-2{id: collapse_id}
+                %div{class: reason_class}
+                  != explanation_markup
 
             - if renderer.items.any?
               %ul.mb-2.ps-3

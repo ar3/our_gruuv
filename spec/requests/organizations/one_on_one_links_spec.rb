@@ -60,6 +60,20 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "collapses carousel explanation copy behind Why is this important" do
+      aspiration = create(:aspiration, company: organization, name: "Team Value")
+      create(:aspiration_check_in, :ready_for_finalization, teammate: employee_teammate, aspiration: aspiration)
+      create(:one_on_one_link, teammate: employee_teammate, url: "https://example.com/1-1")
+
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Why is this important")
+      expect(response.body).to include('id="oneThingPriorityExplanation-1"')
+      expect(response.body).to include('data-bs-target="#oneThingPriorityExplanation-1"')
+      expect(response.body).to include("OG clarity check-ins are a three-step process")
+    end
+
     it "renders the one thing section with the priority algorithm collapse" do
       get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
 
