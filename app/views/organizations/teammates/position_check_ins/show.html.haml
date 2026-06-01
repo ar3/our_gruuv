@@ -3,22 +3,28 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "Position Check-In", url: nil }])
 
+- nav_title = "#{@single_item_name} Check-In"
+- research_sublinks = [{ id: "research-observations", label: "Observations", icon: "bi-eye" }, { id: "research-assignment-ratings", label: "Assignment ratings", icon: "bi-bar-chart" }]
+- research_sublinks.unshift({ id: "research-prior-check-ins", label: "Prior check-ins", icon: "bi-clock-history" }) if @check_ins.present?
+- nav_links = single_item_check_in_section_nav_links(check_in_type: :position, research_sublinks: research_sublinks)
+- initial_section = single_item_check_in_nav_initial_section(open_check_in: @open_check_in)
+
 .row.mb-3
   .col-12
     = render "shared/single_item_check_in/header_switcher"
 
-.row.justify-content-center
-  .col-lg-12
+= render layout: "shared/single_item_check_in/page_wrapper", locals: { nav_title: nav_title, nav_links: nav_links, initial_section: initial_section } do
+  %section#define.mb-5
     - if @position
       - pos = @position
       - collapse_id = "position_check_in_details_#{pos.id}"
       - pos_preview_raw = [pos.title&.external_title.to_s, pos.position_summary.to_s].reject(&:blank?).join(" ").strip
       - pos_preview = pos_preview_raw[0, 400]
       - pos_preview = "#{pos_preview}…" if pos_preview_raw.length > 400
-      .card.mb-4
+      .card
         .card-header.d-flex.align-items-center.justify-content-between
           %h2.mb-0.h5= pos.title&.external_title.presence || "Position"
-          %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", style: "cursor: pointer;"}
+          %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "true", style: "cursor: pointer;"}
             %span.not-collapsed
               %i.bi.bi-chevron-up.me-1
               %small.text-muted (Hide details)
@@ -28,7 +34,7 @@
         .card-body
           - if pos_preview.present?
             %p.mb-0.collapsed-preview= pos_preview
-          .collapse{id: collapse_id}
+          .collapse.show{id: collapse_id}
             .mt-2
               - if pos.title&.external_title.present?
                 %p.mb-1
@@ -60,72 +66,53 @@
                 = link_to "Position details", organization_position_path(@organization, pos), class: "btn btn-sm btn-outline-secondary"
                 = link_to "Go to #{@teammate.person.casual_name}'s seat management page", organization_teammate_position_path(@organization, @teammate), class: "btn btn-sm btn-outline-secondary"
     - else
-      .alert.alert-info No current position. Define position in seat management.
+      .alert.alert-info.mb-0 No current position. Define position in seat management.
 
-    - if @open_check_in
-      .card.mb-4
-        .card-header
-          %h5.mb-0 Current Check-in
-        .card-body
-          = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @single_item_name, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
-            - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
-            = render "shared/single_item_check_in/perspective_context",
+  = render "shared/single_item_check_in/check_in_section",
+      open_check_in: @open_check_in,
+      start_check_in_path: start_position_check_in_organization_teammate_path(@organization, @teammate),
+      object_name: @single_item_name do
+    = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @single_item_name, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
+      - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+      = render "shared/single_item_check_in/perspective_context",
+        check_in: @open_check_in,
+        teammate: @teammate,
+        object_name: @single_item_name,
+        is_complete: is_complete
+      = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
+        data: { controller: "check-in-autosave",
+                check_in_autosave_debounce_ms_value: 2500,
+                action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit" } do |form|
+        = render "shared/check_in_autosave_status"
+        = form.hidden_field :current_url, value: position_check_in_organization_teammate_path(@organization, @teammate), id: nil
+        = form.hidden_field :current_type, value: "position", id: nil
+        = form.hidden_field :current_id, value: "", id: nil
+        = form.fields_for :position_check_in, @open_check_in do |pf|
+          - if current_person == @teammate.person
+            .mb-3
+              %label.form-label Employee Rating
+              = pf.select :employee_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.employee_rating }, class: "form-select"
+            .mb-3
+              %label.form-label Private Notes
+              = pf.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+          - else
+            .mb-3
+              %label.form-label Manager Rating
+              = pf.select :manager_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.manager_rating }, class: "form-select"
+            .mb-3
+              %label.form-label Manager Notes
+              = pf.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+          .row
+            = render "shared/single_item_check_in/form_save_actions",
+              form: form,
+              fields_builder: pf,
               check_in: @open_check_in,
               teammate: @teammate,
-              object_name: @single_item_name,
-              is_complete: is_complete
-            = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
-              data: { controller: "check-in-autosave",
-                      check_in_autosave_debounce_ms_value: 2500,
-                      action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit" } do |form|
-              = render "shared/check_in_autosave_status"
-              = form.hidden_field :current_url, value: position_check_in_organization_teammate_path(@organization, @teammate), id: nil
-              = form.hidden_field :current_type, value: "position", id: nil
-              = form.hidden_field :current_id, value: "", id: nil
-              = form.fields_for :position_check_in, @open_check_in do |pf|
-                - if current_person == @teammate.person
-                  .mb-3
-                    %label.form-label Employee Rating
-                    = pf.select :employee_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.employee_rating }, class: "form-select"
-                  .mb-3
-                    %label.form-label Private Notes
-                    = pf.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                - else
-                  .mb-3
-                    %label.form-label Manager Rating
-                    = pf.select :manager_rating, position_rating_options, { include_blank: "Select rating", selected: @open_check_in.manager_rating }, class: "form-select"
-                  .mb-3
-                    %label.form-label Manager Notes
-                    = pf.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                .row
-                  = render "shared/single_item_check_in/form_save_actions",
-                    form: form,
-                    fields_builder: pf,
-                    check_in: @open_check_in,
-                    teammate: @teammate,
-                    organization: @organization,
-                    is_complete: is_complete,
-                    next_requires_check_in: @single_item_next_requires_check_in,
-                    next_item: @single_item_next_item,
-                    next_url: @single_item_next_url,
-                    show_check_in_status_done: @single_item_show_check_in_status_done
-    - else
-      .alert.alert-info= position_check_in_from_clarity_hub_label
+              organization: @organization,
+              is_complete: is_complete,
+              next_requires_check_in: @single_item_next_requires_check_in,
+              next_item: @single_item_next_item,
+              next_url: @single_item_next_url,
+              show_check_in_status_done: @single_item_show_check_in_status_done
 
-    - if @check_ins.present?
-      = render "shared/single_item_check_in/prior_check_ins_table", check_ins: @check_ins, sentence_type: :position, employee_name: @teammate.person.casual_name
-
-    = render "shared/single_item_check_in/current_period_observations"
-
-    .card.mb-4
-      .card-header
-        %h5.mb-0 Research: Latest Finalized Assignment Ratings
-      .card-body
-        = render 'organizations/company_teammates/my_growth/experiences_summary',
-          summary: @my_growth_experiences_summary,
-          teammate: @teammate,
-          organization: @organization,
-          chart_id_prefix: 'position-check-in-experiences',
-          show_divider: false
-        %p.text-muted.mb-0.mt-3
-          In order to have this up-to-date, finalize all assignment check-ins and come back to this page.
+  = render "organizations/teammates/position_check_ins/research_sections"

@@ -1,0 +1,16 @@
+-# Locals: nav_title, nav_links, initial_section — yields main column content (sections)
+- content_for :head do
+  = render "shared/single_item_check_in/section_nav_styles"
+
+.container-fluid.single-item-check-in-page.px-0.px-md-2{
+  data: {
+    controller: "in-page-section-nav",
+    in_page_section_nav_initial_section_value: initial_section
+  }
+}
+  = render "shared/single_item_check_in/section_nav_mobile", nav_title: nav_title, nav_links: nav_links
+  .row
+    .col-md-3.col-lg-2.d-none.d-md-block
+      = render "shared/single_item_check_in/section_nav_desktop", nav_title: nav_title, nav_links: nav_links
+    .col-md-9.col-lg-10
+      = yield

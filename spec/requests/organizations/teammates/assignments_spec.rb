@@ -17,8 +17,8 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
     employee_teammate.update!(first_employed_at: 1.year.ago) if employee_teammate.respond_to?(:first_employed_at)
   end
 
-  def assignment_show_path
-    organization_teammate_assignment_path(organization, employee_teammate, assignment)
+  def assignment_show_path(**options)
+    organization_teammate_assignment_path(organization, employee_teammate, assignment, **options)
   end
 
   describe "GET show" do
@@ -255,14 +255,14 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
 
       post start_path
 
-      expect(response).to redirect_to(assignment_show_path)
+      expect(response).to redirect_to(assignment_show_path(anchor: "check-in"))
       expect(flash[:notice]).to eq("Check-in started.")
       open = AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first
       expect(open).to be_present
 
       follow_redirect!
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Current Check-in")
+      expect(response.body).to include("Your check-in")
     end
 
     it "is idempotent when an open check-in already exists" do
@@ -278,7 +278,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         post start_path
       end.not_to change { AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).count }
 
-      expect(response).to redirect_to(assignment_show_path)
+      expect(response).to redirect_to(assignment_show_path(anchor: "check-in"))
       expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first).to eq(existing)
     end
   end

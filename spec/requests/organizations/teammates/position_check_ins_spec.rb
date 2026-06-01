@@ -31,6 +31,13 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
   end
 
   describe "GET position_check_in_organization_teammate_path" do
+    let!(:open_position_check_in) do
+      create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        check_in_started_on: Date.current)
+    end
+
     it "returns http success" do
       get position_check_in_organization_teammate_path(organization, teammate)
       expect(response).to have_http_status(:success)
@@ -61,6 +68,44 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response).to render_template("organizations/teammates/position_check_ins/show")
     end
 
+    it "renders in-page section navigation" do
+      get position_check_in_organization_teammate_path(organization, teammate)
+
+      expect(response.body).to include("data-controller=\"in-page-section-nav\"")
+      expect(response.body).to include("About this position")
+      expect(response.body).to include("Your check-in")
+      expect(response.body).to include("Context for your rating")
+      expect(response.body).to include('id="define"')
+      expect(response.body).to include('id="check-in"')
+      expect(response.body).to include('id="research"')
+    end
+
+    context "when no open check-in exists" do
+      before { open_position_check_in.destroy! }
+
+      it "shows start check-in CTA in the check-in section" do
+        get position_check_in_organization_teammate_path(organization, teammate)
+
+        expect(response.body).to include("No open check-in")
+        expect(response.body).to include("No open check-in — start one?")
+        expect(response.body).to include(start_position_check_in_organization_teammate_path(organization, teammate))
+      end
+    end
+
+    describe "POST start_position_check_in" do
+      before { open_position_check_in.destroy! }
+
+      it "creates an open check-in and redirects to #check-in" do
+        expect {
+          post start_position_check_in_organization_teammate_path(organization, teammate)
+        }.to change { PositionCheckIn.where(company_teammate: teammate).open.count }.by(1)
+
+        expect(response).to redirect_to(
+          position_check_in_organization_teammate_path(organization, teammate, anchor: "check-in")
+        )
+      end
+    end
+
     context "Research: Latest Finalized Assignment Ratings" do
       let(:assignment) { create(:assignment, company: organization, title: "Core Delivery") }
 
@@ -88,6 +133,8 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
     end
 
     context "when latest finalized is crystal clear and the open check-in is fresh on the employee side" do
+      before { open_position_check_in.destroy! }
+
       let!(:_finalized_position_check_in) do
         create(:position_check_in, :closed,
           teammate: teammate,

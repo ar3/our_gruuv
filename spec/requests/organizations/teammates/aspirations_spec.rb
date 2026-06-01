@@ -18,8 +18,8 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
     employee_teammate.update!(first_employed_at: 1.year.ago) if employee_teammate.respond_to?(:first_employed_at)
   end
 
-  def aspiration_show_path
-    organization_teammate_aspiration_path(organization, employee_teammate, aspiration)
+  def aspiration_show_path(**options)
+    organization_teammate_aspiration_path(organization, employee_teammate, aspiration, **options)
   end
 
   describe "GET show (teammate aspiration / values page)" do
@@ -61,14 +61,14 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
       it "creates an open check-in and redirects back with notice" do
         post start_path
 
-        expect(response).to redirect_to(aspiration_show_path)
+        expect(response).to redirect_to(aspiration_show_path(anchor: "check-in"))
         expect(flash[:notice]).to eq("Check-in started.")
         open = AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).open.first
         expect(open).to be_present
 
         follow_redirect!
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("Current Check-in")
+        expect(response.body).to include("Your check-in")
       end
     end
 
@@ -84,7 +84,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response.body).to include('data-controller="check-in-autosave"')
         expect(response.body).to match(/check-in-autosave#markDirty/)
         expect(response.body).to include('data-check-in-autosave-target="status"')
-        expect(response.body).to include("Current Check-in")
+        expect(response.body).to include("Your check-in")
         expect(response.body).to include("Save as Draft and stay here")
       end
 
@@ -305,10 +305,10 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(open_check_ins.first.id).not_to eq(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).closed.first.id)
       end
 
-      it "shows Current Check-in form so a new check-in can be started and saved" do
+      it "shows Your check-in form so a new check-in can be started and saved" do
         get aspiration_show_path
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("Current Check-in")
+        expect(response.body).to include("Your check-in")
       end
     end
   end
@@ -366,7 +366,7 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         follow_redirect!
         expect(response).to have_http_status(:success)
         expect(response.body).to include(aspiration.name)
-        expect(response.body).to include("Current Check-in")
+        expect(response.body).to include("Your check-in")
       end
     end
   end

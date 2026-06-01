@@ -115,7 +115,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
 
     AssignmentCheckIn.find_or_create_open_for(@teammate, @assignment)
-    redirect_to assignment_show_path, notice: "Check-in started."
+    redirect_to assignment_show_path(anchor: "check-in"), notice: "Check-in started."
   end
 
   def destroy_open_check_in
@@ -152,8 +152,8 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     @assignment = Assignment.find(params[:id])
   end
 
-  def assignment_show_path
-    organization_teammate_assignment_path(organization, @teammate, @assignment)
+  def assignment_show_path(**options)
+    organization_teammate_assignment_path(organization, @teammate, @assignment, **options)
   end
 end
 

@@ -1,0 +1,6 @@
+-# Locals: nav_links (array of { id:, label:, icon:, primary: })
+- nav_links.each do |link|
+  - css_class = "nav-link#{' nav-link--sublink' unless link[:primary]}"
+  %a{class: css_class, href: "##{link[:id]}", data: { in_page_section_nav_target: "navLink" }}
+    %i.bi{class: "#{link[:icon]} me-2", aria: { hidden: true }}
+    = link[:label]

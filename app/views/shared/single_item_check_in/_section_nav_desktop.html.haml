@@ -1,0 +1,10 @@
+-# Locals: nav_title, nav_links
+.d-none.d-md-block.position-sticky{style: "top: 2rem;"}
+  .card
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-compass.me-2{aria: { hidden: true }}
+        = nav_title
+    .card-body.p-0
+      %nav.nav.flex-column.single-item-check-in-nav{aria: { label: nav_title }}
+        = render "shared/single_item_check_in/section_nav_links", nav_links: nav_links

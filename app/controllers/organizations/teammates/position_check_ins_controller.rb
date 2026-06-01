@@ -27,7 +27,7 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
       .includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure)
       .order(official_check_in_completed_at: :desc)
 
-    @open_check_in = PositionCheckIn.find_or_create_open_for(@teammate)
+    @open_check_in = PositionCheckIn.where(company_teammate: @teammate).open.first
     @latest_finalized = PositionCheckIn.latest_finalized_for(@teammate)
 
     # Header: switcher items and next-item (for button state)
@@ -88,6 +88,14 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
     )
 
     render "organizations/teammates/position_check_ins/show"
+  end
+
+  def start_check_in
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    PositionCheckIn.find_or_create_open_for(@teammate)
+    redirect_to position_check_in_organization_teammate_path(organization, @teammate, anchor: "check-in"),
+      notice: "Check-in started."
   end
 
   private

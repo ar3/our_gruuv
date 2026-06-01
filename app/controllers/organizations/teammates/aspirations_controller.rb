@@ -96,7 +96,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
     authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
 
     AspirationCheckIn.find_or_create_open_for(@teammate, @aspiration)
-    redirect_to aspiration_show_path, notice: "Check-in started."
+    redirect_to aspiration_show_path(anchor: "check-in"), notice: "Check-in started."
   end
 
   def destroy_open_check_in
@@ -133,8 +133,8 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
     @aspiration = Aspiration.find(params[:id])
   end
 
-  def aspiration_show_path
-    organization_teammate_aspiration_path(organization, @teammate, @aspiration)
+  def aspiration_show_path(**options)
+    organization_teammate_aspiration_path(organization, @teammate, @aspiration, **options)
   end
 end
 

@@ -57,4 +57,31 @@ module SingleItemCheckInHelper
     end_str = end_date ? end_date.strftime("%Y-%m-%d") : "—"
     "Started #{start_str} – Finalized #{end_str}"
   end
+
+  DEFINE_SECTION_LABELS = {
+    assignment: "About this assignment",
+    aspiration: "About this value",
+    position: "About this position"
+  }.freeze
+
+  CHECK_IN_SECTION_LABEL = "Your check-in"
+  RESEARCH_SECTION_LABEL = "Context for your rating"
+
+  def single_item_check_in_define_section_label(check_in_type)
+    DEFINE_SECTION_LABELS.fetch(check_in_type.to_sym)
+  end
+
+  def single_item_check_in_nav_initial_section(open_check_in:)
+    open_check_in.present? ? "check-in" : "define"
+  end
+
+  # Primary phase links plus optional Research sub-anchors (id, label, icon).
+  def single_item_check_in_section_nav_links(check_in_type:, research_sublinks: [])
+    [
+      { id: "define", label: single_item_check_in_define_section_label(check_in_type), icon: "bi-info-circle", primary: true },
+      { id: "check-in", label: CHECK_IN_SECTION_LABEL, icon: "bi-pencil-square", primary: true },
+      { id: "research", label: RESEARCH_SECTION_LABEL, icon: "bi-journal-text", primary: true },
+      *research_sublinks.map { |link| link.merge(primary: false) }
+    ]
+  end
 end

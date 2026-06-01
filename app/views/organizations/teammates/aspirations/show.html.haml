@@ -9,188 +9,81 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: @aspiration.name, url: nil }])
 
+- nav_title = "#{@aspiration.name} Check-In"
+- research_sublinks = [{ id: "research-all-check-ins", label: "All check-ins", icon: "bi-list-check" }, { id: "research-observations", label: "Observations", icon: "bi-eye" }, { id: "research-goals", label: "Linked goals", icon: "bi-bullseye" }]
+- nav_links = single_item_check_in_section_nav_links(check_in_type: :aspiration, research_sublinks: research_sublinks)
+- initial_section = single_item_check_in_nav_initial_section(open_check_in: @open_check_in)
+
 .row.mb-3
   .col-12
     = render "shared/single_item_check_in/header_switcher"
 
-.row.justify-content-center
-  .col-lg-12
-    / Aspiration Details Section
-    .card.mb-4
+= render layout: "shared/single_item_check_in/page_wrapper", locals: { nav_title: nav_title, nav_links: nav_links, initial_section: initial_section } do
+  %section#define.mb-5
+    .card
       .card-header
         .d-flex.align-items-center.gap-2
-          %h2.mb-0= @aspiration.name
+          %h2.mb-0.h5= @aspiration.name
           = link_to organization_aspiration_path(@organization, @aspiration), target: "_blank", rel: "noopener", class: "text-muted text-decoration-none", title: "Open aspiration page in new tab", "aria-label" => "Open aspiration page in new tab" do
             %i.bi.bi-box-arrow-up-right
       .card-body
         - if @aspiration.description.present?
           .markdown-content.mb-0= render_markdown(@aspiration.description)
+        - else
+          %p.text-muted.mb-0 No description available.
 
-    / Open check-in form (above All Check-ins)
-    - if @open_check_in
-      .card.mb-4
-        .card-header
-          %h5.mb-0 Current Check-in
-        .card-body
-          = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @aspiration.name, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
-            - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
-            = render "shared/single_item_check_in/perspective_context",
+  = render "shared/single_item_check_in/check_in_section",
+      open_check_in: @open_check_in,
+      start_check_in_path: start_check_in_organization_teammate_aspiration_path(@organization, @teammate, @aspiration),
+      object_name: @aspiration.name do
+    = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @aspiration.name, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
+      - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+      = render "shared/single_item_check_in/perspective_context",
+        check_in: @open_check_in,
+        teammate: @teammate,
+        object_name: @aspiration.name,
+        is_complete: is_complete
+      = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
+        data: { controller: "check-in-autosave",
+                check_in_autosave_debounce_ms_value: 2500,
+                action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit" } do |form|
+        = render "shared/check_in_autosave_status"
+        = form.hidden_field :current_url, value: organization_teammate_aspiration_path(@organization, @teammate, @aspiration), id: nil
+        = form.hidden_field :current_type, value: "aspiration", id: nil
+        = form.hidden_field :current_id, value: @aspiration.id, id: nil
+        = form.fields_for :aspiration_check_ins, @open_check_in, index: @open_check_in.id do |af|
+          - if current_person == @teammate.person
+            .row
+              .col-md-6
+                .mb-3
+                  %label.form-label My Rating
+                  = af.select :employee_rating, aspiration_rating_options, { include_blank: 'Select rating', selected: @open_check_in.employee_rating }, { class: "form-select" }
+              .col-md-6
+                .mb-3
+                  %label.form-label Private Notes
+                  = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+          - if current_person != @teammate.person
+            .row
+              .col-md-6
+                .mb-3
+                  %label.form-label Manager Rating
+                  = af.select :manager_rating, aspiration_rating_options, { include_blank: 'Select rating', selected: @open_check_in.manager_rating }, { class: "form-select" }
+              .col-md-6
+                .mb-3
+                  %label.form-label Manager Notes
+                  = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+          = af.hidden_field :aspiration_id, value: @aspiration.id
+          .row
+            = render "shared/single_item_check_in/form_save_actions",
+              form: form,
+              fields_builder: af,
               check_in: @open_check_in,
               teammate: @teammate,
-              object_name: @aspiration.name,
-              is_complete: is_complete
-            = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
-              data: { controller: "check-in-autosave",
-                      check_in_autosave_debounce_ms_value: 2500,
-                      action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit" } do |form|
-              = render "shared/check_in_autosave_status"
-              = form.hidden_field :current_url, value: organization_teammate_aspiration_path(@organization, @teammate, @aspiration), id: nil
-              = form.hidden_field :current_type, value: "aspiration", id: nil
-              = form.hidden_field :current_id, value: @aspiration.id, id: nil
-              = form.fields_for :aspiration_check_ins, @open_check_in, index: @open_check_in.id do |af|
-                - if current_person == @teammate.person
-                  .row
-                    .col-md-6
-                      .mb-3
-                        %label.form-label My Rating
-                        = af.select :employee_rating, aspiration_rating_options, { include_blank: 'Select rating', selected: @open_check_in.employee_rating }, { class: "form-select" }
-                    .col-md-6
-                      .mb-3
-                        %label.form-label Private Notes
-                        = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                - if current_person != @teammate.person
-                  .row
-                    .col-md-6
-                      .mb-3
-                        %label.form-label Manager Rating
-                        = af.select :manager_rating, aspiration_rating_options, { include_blank: 'Select rating', selected: @open_check_in.manager_rating }, { class: "form-select" }
-                    .col-md-6
-                      .mb-3
-                        %label.form-label Manager Notes
-                        = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                = af.hidden_field :aspiration_id, value: @aspiration.id
-                .row
-                  = render "shared/single_item_check_in/form_save_actions",
-                    form: form,
-                    fields_builder: af,
-                    check_in: @open_check_in,
-                    teammate: @teammate,
-                    organization: @organization,
-                    is_complete: is_complete,
-                    next_requires_check_in: @single_item_next_requires_check_in,
-                    next_item: @single_item_next_item,
-                    next_url: @single_item_next_url,
-                    show_check_in_status_done: @single_item_show_check_in_status_done
+              organization: @organization,
+              is_complete: is_complete,
+              next_requires_check_in: @single_item_next_requires_check_in,
+              next_item: @single_item_next_item,
+              next_url: @single_item_next_url,
+              show_check_in_status_done: @single_item_show_check_in_status_done
 
-    / Check-in History Table
-    .card.mb-4
-      .card-header
-        %h5.mb-0 All Check-ins
-        %small.text-muted Complete history of check-ins for this aspiration
-      .card-body
-        - if @check_ins.any?
-          .table-responsive
-            %table.table.table-hover
-              %thead.table-light
-                %tr
-                  %th Started
-                  %th Employee Completion
-                  %th Manager Completion
-                  %th Finalization
-                  %th Status
-                  %th Actions
-              %tbody
-                - latest_finalized_at = @latest_finalized&.official_check_in_completed_at
-                - @check_ins.each do |check_in|
-                  - both_complete = check_in.employee_completed? && check_in.manager_completed?
-                  - open_both_incomplete = check_in.open? && !both_complete
-                  %tr{class: check_in.officially_completed? ? 'table-success' : check_in.ready_for_finalization? ? 'table-warning' : ''}
-                    %td
-                      Started: #{check_in.check_in_started_on.strftime('%B %d, %Y')}
-                      %br
-                      - if check_in.officially_completed?
-                        Reviewed: #{format_time_in_user_timezone(check_in.official_check_in_completed_at, format: '%B %d, %Y')}
-                    %td
-                      - if check_in.employee_completed?
-                        - if !both_complete
-                          %span.badge.bg-success.me-1 ✓ Complete
-                          %br
-                        - if both_complete
-                          %small.text-muted= aspiration_rating_display(check_in.employee_rating)
-                        - else
-                          %small.text-muted Waiting for #{aspiration_check_in_waiting_for_name(check_in, @teammate)}
-                        %br
-                        %small.text-muted= format_time_in_user_timezone(check_in.employee_completed_at, format: '%m/%d/%Y %I:%M %p')
-                      - else
-                        %span.badge.bg-warning Pending
-                    %td
-                      - if check_in.manager_completed?
-                        - if !both_complete
-                          %span.badge.bg-success.me-1 ✓ Complete
-                          %br
-                        - if both_complete
-                          %small.text-muted= aspiration_rating_display(check_in.manager_rating)
-                          %br
-                        %small.text-muted= format_time_in_user_timezone(check_in.manager_completed_at, format: '%m/%d/%Y %I:%M %p')
-                        - if check_in.manager_completed_by_teammate
-                          %br
-                          %small.text-muted by #{check_in.manager_completed_by_teammate.person.display_name}
-                        - if !both_complete
-                          %br
-                          %small.text-muted Waiting for #{aspiration_check_in_waiting_for_name(check_in, @teammate)}
-                      - else
-                        %span.badge.bg-warning Pending
-                    %td
-                      - if check_in.officially_completed?
-                        %small.text-muted= aspiration_rating_display(check_in.official_rating)
-                        %br
-                        %small.text-muted= format_time_in_user_timezone(check_in.official_check_in_completed_at, format: '%m/%d/%Y %I:%M %p')
-                        - if check_in.finalized_by_teammate
-                          %br
-                          %small.text-muted by #{check_in.finalized_by_teammate.person.display_name}
-                      - elsif check_in.ready_for_finalization?
-                        %span.badge.bg-warning Ready for Finalization
-                      - else
-                        %span.badge.bg-secondary In Progress
-                    - if open_both_incomplete
-                      %td{colspan: 2}= aspiration_check_in_status_label(check_in, latest_finalized_at, @teammate)
-                    - else
-                      %td
-                        = aspiration_check_in_status_label(check_in, latest_finalized_at, @teammate)
-                      %td
-                        - if both_complete && check_in.officially_completed?
-                          %a.btn.btn-sm.btn-outline-primary.aspiration-check-in-toggle{"aria-expanded" => "false", "aria-controls" => "check_in_details_#{check_in.id}", "data-bs-toggle" => "collapse", "data-bs-target" => "#check_in_details_#{check_in.id}", href: "#check_in_details_#{check_in.id}", role: "button"}
-                            %span.details-collapsed
-                              %i.bi.bi-chevron-down.me-1
-                              Show details
-                            %span.details-expanded
-                              %i.bi.bi-chevron-up.me-1
-                              Hide details
-                        - elsif check_in.ready_for_finalization?
-                          = link_to "Review", organization_company_teammate_finalization_path(@organization, @teammate), class: "btn btn-sm btn-warning"
-                        - else
-                          = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-primary"
-                  - if both_complete && check_in.officially_completed?
-                    %tr.collapse{id: "check_in_details_#{check_in.id}"}
-                      %td.text-muted.small{colspan: 6, style: "background: var(--bs-table-bg);"}
-                        = render "shared/check_in_finalized_sentences", check_in: check_in, employee_name: @teammate.person.casual_name, sentence_type: :aspiration
-        - else
-          .alert.alert-info.text-center
-            %h6.mb-2
-              %i.bi.bi-info-circle.me-2
-              No Check-ins Found
-            %p.mb-3 No check-ins have been created for this aspiration yet.
-            = button_to "Start a check-in", start_check_in_organization_teammate_aspiration_path(@organization, @teammate, @aspiration), method: :post, class: "btn btn-primary btn-sm"
-
-    = render "shared/single_item_check_in/current_period_observations"
-
-    = render 'organizations/shared/goals/associable_associated_goals_card',
-        organization: @organization,
-        associable: @aspiration,
-        teammate: @teammate,
-        linked_goals: @associated_linked_goals,
-        linked_goal_check_ins: @associated_linked_goal_check_ins,
-        association_by_goal_id: @associated_goal_association_by_goal_id,
-        return_url: request.url
-
-
+  = render "organizations/teammates/aspirations/research_sections"
