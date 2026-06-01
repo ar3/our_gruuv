@@ -28,6 +28,10 @@ class UserPreference < ApplicationRecord
   def preference(key)
     preferences[key.to_s] || DEFAULT_PREFERENCES[key.to_sym]
   end
+
+  def weekly_digest_enabled?(key)
+    preference(key) == 'on'
+  end
   
   # Set preference value
   def update_preference(key, value)

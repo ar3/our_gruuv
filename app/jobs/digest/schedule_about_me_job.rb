@@ -26,13 +26,13 @@ module Digest
         week_key = local_time.strftime('%G-%V')
 
         unless prefs.preference(:about_me_last_sent_week).to_s == week_key
-          next unless weekly_digest_enabled?(prefs, :about_me_digest_enabled)
+          next unless prefs.weekly_digest_enabled?(:about_me_digest_enabled)
 
           Digest::SendAboutMeJob.perform_later(teammate.id, week_key)
         end
 
         unless prefs.preference(:one_on_one_last_sent_week).to_s == week_key
-          next unless weekly_digest_enabled?(prefs, :one_on_one_digest_enabled)
+          next unless prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)
 
           Digest::SendOneOnOneDigestJob.perform_later(teammate.id, week_key)
         end
@@ -40,12 +40,6 @@ module Digest
     end
 
     private
-
-    def weekly_digest_enabled?(prefs, key)
-      return true unless prefs.preferences.key?(key.to_s)
-
-      prefs.preferences[key.to_s] == 'on'
-    end
 
     def slack_enabled_for_employee_or_manager?(employee_teammate, employee_prefs)
       return true if employee_prefs.effective_digest_slack(nil) == 'on'

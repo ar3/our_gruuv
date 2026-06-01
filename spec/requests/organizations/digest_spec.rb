@@ -195,6 +195,18 @@ RSpec.describe 'Organizations::Digest', type: :request do
       expect(flash[:notice]).to include('1:1 guide')
     end
 
+    it 'queues only 1:1 when toggle keys are absent (matches UI defaults)' do
+      prefs = UserPreference.for_person(person)
+      prefs.preferences.except!('about_me_digest_enabled', 'one_on_one_digest_enabled')
+      prefs.save!
+
+      expect {
+        post send_weekly_digests_now_organization_digest_path(company), params: { teammate_id: teammate.id }
+      }.to have_enqueued_job(Digest::SendOneOnOneDigestJob).with(teammate.id)
+
+      expect(enqueued_jobs.map { |j| j[:job] }).not_to include(Digest::SendAboutMeJob)
+    end
+
     it 'does not queue when no digest is selected' do
       prefs = UserPreference.for_person(person)
       prefs.update_preference('one_on_one_digest_enabled', 'off')

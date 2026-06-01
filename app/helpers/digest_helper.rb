@@ -51,9 +51,7 @@ module DigestHelper
   end
 
   def weekly_digest_enabled_in_prefs?(prefs, key)
-    return prefs.preferences[key.to_s] == 'on' if prefs.preferences.key?(key.to_s)
-
-    true
+    prefs.weekly_digest_enabled?(key)
   end
 
   def digest_popover_data_attributes(content_html)
