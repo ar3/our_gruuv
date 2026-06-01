@@ -481,6 +481,20 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(assigns(:active_teammates_with_visit)).to eq(1)
       expect(assigns(:active_teammates_without_visit)).to eq(0)
     end
+
+    it 'assigns weekly_digest_type_distribution by digest toggle combination' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('one_on_one_digest_enabled', 'on')
+      prefs.update_preference('about_me_digest_enabled', 'off')
+
+      get :who_is_doing_what, params: { organization_id: company.id }
+
+      expect(assigns(:weekly_digest_type_distribution)).to be_a(Hash)
+      expect(assigns(:weekly_digest_type_distribution)['one_on_one_only']).to eq(1)
+      expect(assigns(:weekly_digest_type_distribution)['about_me_only']).to eq(0)
+      expect(assigns(:weekly_digest_type_distribution)['both']).to eq(0)
+      expect(assigns(:weekly_digest_type_distribution)['none']).to eq(0)
+    end
   end
 
   describe 'GET #prompts' do

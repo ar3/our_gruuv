@@ -189,6 +189,65 @@ RSpec.describe InsightsHelper, type: :helper do
     end
   end
 
+  describe '#who_is_doing_what_gsd_medium_series' do
+    it 'places off last and colors it grey' do
+      helper.instance_variable_set(:@gsd_digest_medium_combinations, {
+        'off' => 4,
+        'slack' => 2,
+        'slack+email' => 1
+      })
+
+      series = helper.who_is_doing_what_gsd_medium_series
+
+      expect(series.map { |s| s[:name] }).to eq(%w[slack slack+email off])
+      expect(series.last[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
+      expect(series.first[:color]).to be_nil
+    end
+  end
+
+  describe '#who_is_doing_what_about_me_day_series' do
+    it 'places No 1:1s last and colors it grey' do
+      helper.instance_variable_set(:@about_me_digest_day_distribution, {
+        'off' => 2,
+        '1' => 3,
+        '3' => 1
+      })
+
+      series = helper.who_is_doing_what_about_me_day_series
+
+      expect(series.map { |s| s[:name] }).to eq(['Monday', 'Wednesday', 'No 1:1s'])
+      expect(series.last[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
+    end
+  end
+
+  describe '#who_is_doing_what_weekly_digest_type_series' do
+    it 'returns stacked series in fixed order with labels' do
+      helper.instance_variable_set(:@weekly_digest_type_distribution, {
+        'one_on_one_only' => 2,
+        'about_me_only' => 1,
+        'both' => 0,
+        'none' => 3
+      })
+
+      series = helper.who_is_doing_what_weekly_digest_type_series
+
+      expect(series.map { |s| s[:name] }).to eq([
+        '1:1 guide only',
+        'About Me reminder only',
+        'Both digests',
+        'No weekly digests'
+      ])
+      expect(series.map { |s| s[:data] }).to eq([[2], [1], [0], [3]])
+      expect(series.last[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
+    end
+
+    it 'returns empty array when there are no active teammates' do
+      helper.instance_variable_set(:@weekly_digest_type_distribution, {})
+
+      expect(helper.who_is_doing_what_weekly_digest_type_series).to eq([])
+    end
+  end
+
   describe '#og_scorecard_weekly_cell_class' do
     it 'maps statuses to Bootstrap table classes' do
       expect(helper.og_scorecard_weekly_cell_class(:success)).to eq('table-success')

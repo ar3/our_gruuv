@@ -104,21 +104,57 @@ module InsightsHelper
     @teammate_visit_counts.map { |h| h[:count] }
   end
 
+  WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR = '#6c757d'.freeze
+
   def who_is_doing_what_gsd_medium_series
     return [] if @gsd_digest_medium_combinations.values.sum.to_i.zero?
 
-    @gsd_digest_medium_combinations.map do |label, count|
-      { name: label, data: [count.to_i] }
-    end
+    @gsd_digest_medium_combinations
+      .sort_by { |label, _count| label == 'off' ? 1 : 0 }
+      .map do |label, count|
+        who_is_doing_what_digest_stacked_series_entry(label, count, inactive: label == 'off')
+      end
   end
 
   def who_is_doing_what_about_me_day_series
     return [] if @about_me_digest_day_distribution.values.sum.to_i.zero?
 
     day_labels = { '0' => 'Sunday', '1' => 'Monday', '2' => 'Tuesday', '3' => 'Wednesday', '4' => 'Thursday', '5' => 'Friday', '6' => 'Saturday', 'off' => 'No 1:1s' }
-    @about_me_digest_day_distribution.map do |day, count|
-      { name: day_labels[day.to_s] || day.to_s, data: [count.to_i] }
+    @about_me_digest_day_distribution
+      .sort_by { |day, _count| day.to_s == 'off' ? [1, 0] : [0, day.to_i] }
+      .map do |day, count|
+        name = day_labels[day.to_s] || day.to_s
+        who_is_doing_what_digest_stacked_series_entry(name, count, inactive: day.to_s == 'off')
+      end
+  end
+
+  WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_ORDER = %w[one_on_one_only about_me_only both none].freeze
+  WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_LABELS = {
+    'one_on_one_only' => '1:1 guide only',
+    'about_me_only' => 'About Me reminder only',
+    'both' => 'Both digests',
+    'none' => 'No weekly digests'
+  }.freeze
+
+  def who_is_doing_what_weekly_digest_type_series
+    return [] unless @weekly_digest_type_distribution.is_a?(Hash)
+
+    total = WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_ORDER.sum { |key| @weekly_digest_type_distribution[key].to_i }
+    return [] if total.zero?
+
+    WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_ORDER.map do |key|
+      who_is_doing_what_digest_stacked_series_entry(
+        WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_LABELS[key],
+        @weekly_digest_type_distribution.fetch(key, 0),
+        inactive: key == 'none'
+      )
     end
+  end
+
+  def who_is_doing_what_digest_stacked_series_entry(name, count, inactive: false)
+    entry = { name: name, data: [count.to_i] }
+    entry[:color] = WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR if inactive
+    entry
   end
 
   def og_scorecard_weekly_cell_class(status)

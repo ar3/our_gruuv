@@ -323,6 +323,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     prefs_by_person_id = UserPreference.where(person_id: teammate_person_ids).index_by(&:person_id)
     combinations = Hash.new(0)
     about_me_days = Hash.new(0)
+    weekly_digest_types = Hash.new(0)
     active_teammates.each do |tm|
       prefs = prefs_by_person_id[tm.person_id] || UserPreference.for_person(tm.person)
       enabled = []
@@ -333,9 +334,23 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
       day = prefs.preference(:about_me_weekly_day).presence || 'off'
       about_me_days[day] += 1
+
+      one_on_one_on = prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)
+      about_me_on = prefs.weekly_digest_enabled?(:about_me_digest_enabled)
+      weekly_digest_category = if one_on_one_on && about_me_on
+                                 'both'
+                               elsif one_on_one_on
+                                 'one_on_one_only'
+                               elsif about_me_on
+                                 'about_me_only'
+                               else
+                                 'none'
+                               end
+      weekly_digest_types[weekly_digest_category] += 1
     end
     @gsd_digest_medium_combinations = combinations
     @about_me_digest_day_distribution = about_me_days
+    @weekly_digest_type_distribution = weekly_digest_types
   end
 
   def check_ins_progress

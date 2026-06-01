@@ -30,6 +30,7 @@
         .card-body
           #who-is-doing-what-gsd-digest-chart{style: "height: 220px;"}
           #who-is-doing-what-about-me-day-chart{style: "height: 220px;"}
+          #who-is-doing-what-weekly-digest-type-chart{style: "height: 220px;"}
 
   %hr.my-5
 
@@ -123,6 +124,7 @@
     var histData = #{who_is_doing_what_histogram_data.to_json};
     var gsdDigestSeries = #{who_is_doing_what_gsd_medium_series.to_json};
     var aboutMeDaySeries = #{who_is_doing_what_about_me_day_series.to_json};
+    var weeklyDigestTypeSeries = #{who_is_doing_what_weekly_digest_type_series.to_json};
 
     function initializePieChart() {
       if (typeof Highcharts === 'undefined') return;
@@ -182,12 +184,23 @@
     function initializeDigestCoverageCharts() {
       if (typeof Highcharts === 'undefined') return;
 
+      function digestStackedBarXAxis(categories) {
+        return { categories: categories, reversedStacks: false };
+      }
+
+      var digestStackedBarYAxis = {
+        min: 0,
+        title: { text: 'Active teammate count' },
+        stackLabels: { enabled: true },
+        reversedStacks: false
+      };
+
       if (document.getElementById('who-is-doing-what-gsd-digest-chart')) {
         Highcharts.chart('who-is-doing-what-gsd-digest-chart', {
           chart: { type: 'bar' },
           title: { text: 'Active teammates by GSD digest medium combination' },
-          xAxis: { categories: ['Active teammates'] },
-          yAxis: { min: 0, title: { text: 'Active teammate count' }, stackLabels: { enabled: true } },
+          xAxis: digestStackedBarXAxis(['Active teammates']),
+          yAxis: digestStackedBarYAxis,
           plotOptions: { series: { stacking: 'normal' } },
           accessibility: { enabled: false },
           series: gsdDigestSeries
@@ -198,11 +211,23 @@
         Highcharts.chart('who-is-doing-what-about-me-day-chart', {
           chart: { type: 'bar' },
           title: { text: 'About Me weekly digest day distribution' },
-          xAxis: { categories: ['About Me digest day'] },
-          yAxis: { min: 0, title: { text: 'Active teammate count' }, stackLabels: { enabled: true } },
+          xAxis: digestStackedBarXAxis(['About Me digest day']),
+          yAxis: digestStackedBarYAxis,
           plotOptions: { series: { stacking: 'normal' } },
           accessibility: { enabled: false },
           series: aboutMeDaySeries
+        });
+      }
+
+      if (document.getElementById('who-is-doing-what-weekly-digest-type-chart')) {
+        Highcharts.chart('who-is-doing-what-weekly-digest-type-chart', {
+          chart: { type: 'bar' },
+          title: { text: 'Active teammates by weekly digest selection' },
+          xAxis: digestStackedBarXAxis(['Weekly digest selection']),
+          yAxis: digestStackedBarYAxis,
+          plotOptions: { series: { stacking: 'normal' } },
+          accessibility: { enabled: false },
+          series: weeklyDigestTypeSeries
         });
       }
     }
