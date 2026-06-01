@@ -63,6 +63,35 @@ class PositionAssignment < ApplicationRecord
     end
   end
 
+  def required?
+    assignment_type == 'required'
+  end
+
+  def suggested?
+    assignment_type == 'suggested'
+  end
+
+  # Phrase for "usually allocate {phrase} of their overall energy" on assignment check-in pages.
+  def blueprint_energy_allocation_phrase
+    min_e = min_estimated_energy
+    max_e = max_estimated_energy
+    if min_e.present? && max_e.present?
+      if min_e == max_e
+        "exactly #{min_e}%"
+      else
+        "between #{min_e}% - #{max_e}%"
+      end
+    elsif max_e.present?
+      "up to #{max_e}%"
+    elsif min_e.present?
+      "at least #{min_e}%"
+    end
+  end
+
+  def blueprint_energy_allocation_sentence?
+    (required? || suggested?) && blueprint_energy_allocation_phrase.present?
+  end
+
   private
 
   def max_energy_greater_than_min_energy

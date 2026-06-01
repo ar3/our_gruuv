@@ -127,9 +127,9 @@
                         = tenure.assignment.tagline
                     
                     - if tenure.assignment.required_activities.present?
-                      %p
+                      %div
                         %strong Required Activities:
-                        = tenure.assignment.required_activities
+                        = render "shared/assignments/required_activities", content: tenure.assignment.required_activities
                     
                     / Assignment Outcomes
                     - outcomes = tenure.assignment.assignment_outcomes

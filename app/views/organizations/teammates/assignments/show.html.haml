@@ -5,6 +5,7 @@
     .assignment-check-in-toggle .details-expanded { display: none; }
     .assignment-check-in-toggle[aria-expanded="true"] .details-expanded { display: inline; }
     .assignment-check-in-toggle[aria-expanded="true"] .details-collapsed { display: none; }
+    .position-connection-key { font-weight: 700; font-size: 1.075rem; }
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: @assignment.title, url: nil }])
@@ -46,20 +47,15 @@
               .card.card-body.bg-light.mt-3
                 .row
                   .col-md-6
-                    - if @current_employment
+                    - if @current_employment&.position
                       .mb-3
                         %label.form-label.fw-bold Position Connection
-                        - if @position_assignment
-                          .form-control-plaintext
-                            %span.badge.bg-primary.me-2= @position_assignment.assignment_type.titleize
-                            Connected to #{@current_employment.position.title.external_title}
-                            - if @position_assignment.min_estimated_energy.present? || @position_assignment.max_estimated_energy.present?
-                              %br
-                              %small.text-muted= @position_assignment.energy_range_display
-                        - else
-                          .form-control-plaintext
-                            %span.badge.bg-secondary.me-2 Unconnected
-                            Not connected to #{@current_employment.position.title.external_title}
+                        .form-control-plaintext
+                          = render "organizations/teammates/assignments/position_connection",
+                            assignment: @assignment,
+                            position_assignment: @position_assignment,
+                            current_employment: @current_employment,
+                            organization: @organization
                     - if @assignment_outcomes.any?
                       .mb-3
                         %label.form-label.fw-bold Expected Outcomes
@@ -77,7 +73,8 @@
                     - if @assignment.required_activities.present?
                       .mb-3
                         %label.form-label.fw-bold Required Activities
-                        .form-control-plaintext= @assignment.required_activities
+                        .form-control-plaintext
+                          = render "shared/assignments/required_activities", content: @assignment.required_activities
 
                     - if @assignment.handbook.present?
                       .mb-3

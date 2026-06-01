@@ -90,6 +90,22 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("required assignment for this position")
         expect(response.body).not_to include(destroy_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment))
       end
+
+      it "renders position connection as narrative copy with blueprint energy" do
+        PositionAssignment.find_by!(position: req_position, assignment: assignment).update!(
+          min_estimated_energy: 20,
+          max_estimated_energy: 40
+        )
+        get assignment_show_path
+        doc = Nokogiri::HTML(response.body)
+        connection = doc.at_css(".position-connection")
+        expect(connection).to be_present
+        normalized = connection.text.squish
+        expect(normalized).to include("#{assignment.title} is required for #{req_title.external_title}")
+        expect(normalized).to include("between 20% - 40%")
+        expect(normalized).to include("According to the position blueprint")
+        expect(connection.at_css("a.position-connection-key[href*='#{req_position.id}'][target='_blank']")).to be_present
+      end
     end
 
     context "when latest finalized is crystal clear and the open check-in is fresh on the employee side" do

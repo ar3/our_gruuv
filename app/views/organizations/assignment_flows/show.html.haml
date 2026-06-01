@@ -63,7 +63,7 @@
                             %small.text-muted Show the #{required_activities_lines} #{'line'.pluralize(required_activities_lines)} of required activities
                         .collapse{ id: req_activities_id }
                           - if assignment.required_activities.present?
-                            = simple_format(assignment.required_activities, {}, wrapper_tag: 'div')
+                            = render "shared/assignments/required_activities", content: assignment.required_activities
                           - else
                             %span.text-muted —
                         - required_titles = assignment.required_by_titles

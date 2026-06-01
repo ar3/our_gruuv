@@ -1,0 +1,4 @@
+-# locals: content (String), bordered: false
+- bordered = local_assigns.fetch(:bordered, false)
+.markdown-content{class: bordered ? "markdown-content--bordered" : nil}
+  = render_markdown(content)

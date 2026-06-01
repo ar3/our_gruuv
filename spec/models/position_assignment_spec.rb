@@ -171,6 +171,32 @@ RSpec.describe PositionAssignment, type: :model do
       expect(suggested.display_name).to eq("#{assignment.title} (suggested)")
     end
 
+    describe 'blueprint_energy_allocation_phrase' do
+      it 'returns a range when min and max differ' do
+        position_assignment.min_estimated_energy = 25
+        position_assignment.max_estimated_energy = 75
+        expect(position_assignment.blueprint_energy_allocation_phrase).to eq('between 25% - 75%')
+      end
+
+      it 'returns exactly when min and max match' do
+        position_assignment.min_estimated_energy = 40
+        position_assignment.max_estimated_energy = 40
+        expect(position_assignment.blueprint_energy_allocation_phrase).to eq('exactly 40%')
+      end
+
+      it 'returns up to when only max is present' do
+        position_assignment.min_estimated_energy = nil
+        position_assignment.max_estimated_energy = 60
+        expect(position_assignment.blueprint_energy_allocation_phrase).to eq('up to 60%')
+      end
+
+      it 'returns at least when only min is present' do
+        position_assignment.min_estimated_energy = 30
+        position_assignment.max_estimated_energy = nil
+        expect(position_assignment.blueprint_energy_allocation_phrase).to eq('at least 30%')
+      end
+    end
+
     describe 'energy_range_display' do
       it 'displays range when both min and max are present' do
         position_assignment.min_estimated_energy = 25

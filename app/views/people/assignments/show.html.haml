@@ -46,7 +46,8 @@
                     - if @assignment.required_activities.present?
                       .mb-3
                         %label.form-label.fw-bold Required Activities
-                        .form-control-plaintext= @assignment.required_activities
+                        .form-control-plaintext
+                          = render "shared/assignments/required_activities", content: @assignment.required_activities
                     
                     - if @assignment.handbook.present?
                       .mb-3

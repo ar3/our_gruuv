@@ -106,8 +106,7 @@
                 - if @assignment.required_activities.present?
                   .mb-3
                     %h6.text-muted Required Activities
-                    .markdown-content.markdown-content--bordered
-                      = render_markdown(@assignment.required_activities)
+                    = render "shared/assignments/required_activities", content: @assignment.required_activities, bordered: true
 
                 - if @assignment.published_url.present? || @assignment.draft_url.present?
                   .mb-3

@@ -40,7 +40,7 @@
           - if object.required_activities.present?
             .mb-2
               %strong Required Activities
-              %p.mb-0= object.required_activities
+              = render "shared/assignments/required_activities", content: object.required_activities
           - if object.handbook.present?
             .mb-2
               %strong Handbook

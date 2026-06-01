@@ -1,0 +1,23 @@
+- position = current_employment.position
+- position_title = position.title.external_title
+- position_url = organization_position_path(organization, position)
+
+.position-connection
+  %p.mb-0
+    %span.position-connection-key= assignment.title
+    is
+    - if position_assignment&.required?
+      %span.position-connection-key required
+      for
+    - elsif position_assignment&.suggested?
+      %span.position-connection-key suggested
+      for
+    - else
+      %span.position-connection-key not a requirement of
+    = link_to position_title, position_url, target: "_blank", rel: "noopener", class: "position-connection-key text-decoration-none"
+
+  - if position_assignment&.blueprint_energy_allocation_sentence?
+    %p.mb-0.mt-2
+      According to the position blueprint, those who take on this assignment usually allocate
+      %span.position-connection-key= position_assignment.blueprint_energy_allocation_phrase
+      of their overall energy to this.
