@@ -45,13 +45,13 @@
           %i.bi.bi-link-45deg.me-2
           My 1:1
     %li
-      = link_to about_me_organization_company_teammate_path(current_organization, current_company_teammate), class: "dropdown-item" do
+      = link_to my_growth_experiences_organization_company_teammate_path(current_organization, current_company_teammate), class: "dropdown-item" do
         %i.bi.bi-person-badge.me-2
-        About Me
+        My Growth
     %li
       = link_to organization_start_here_path(current_organization), class: "dropdown-item" do
         %i.bi.bi-house-door.me-2
-        Home Dashboard
+        My Dashboard
   %li
     %hr.dropdown-divider
   - if current_organization
