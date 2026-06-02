@@ -5,6 +5,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   include Organizations::AssignsViewableTeammates
 
   helper EmployeesHelper
+  helper AssignmentEnergyAllocationHelper
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -50,6 +51,14 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       aspiration_check_ins: @aspiration_check_ins,
       assignment_check_ins: @active_required_assignment_check_ins
     )
+
+    if @view_mode == :employee
+      @assignment_energy_allocation = CheckIns::AssignmentEnergyAllocationSummary.for_bulk_check_in(
+        teammate: @teammate,
+        reflection_check_ins: @assignment_check_ins,
+        organization: organization
+      )
+    end
   end
 
   def review_most_recent

@@ -403,9 +403,35 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       end
     end
 
+    context "employee viewing own bulk check-in" do
+      before do
+        sign_in_as_teammate_for_request(employee_person, organization)
+        assignment_tenure.update!(anticipated_energy_percentage: 70)
+      end
+
+      it "shows the assignment energy allocation panel" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="assignment-energy-allocation"')
+        expect(response.body).to include('bulk-assignment-check-in-energy-section')
+        expect(response.body).to include('Planned Assignment-energy split')
+        expect(response.body).to include('How you actually spent your energy')
+        expect(response.body).to include('assignment-energy-allocation-panel')
+      end
+    end
+
     context "manager viewing employee check-ins" do
       before do
         sign_in_as_teammate_for_request(manager_person, organization)
+      end
+
+      it "does not show the assignment energy allocation panel" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include('data-controller="assignment-energy-allocation"')
+        expect(response.body).not_to include('Planned Assignment-energy split')
       end
 
       it "uses save_and_view_position on the position name submit" do

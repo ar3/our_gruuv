@@ -1,0 +1,66 @@
+-# Locals: summary (CheckIns::AssignmentEnergyAllocationSummary), employee_name, manager_name
+- summary = local_assigns[:summary]
+- employee_name = local_assigns[:employee_name]
+- manager_name = local_assigns[:manager_name]
+- planned_layout = assignment_energy_allocation_bar_layout(summary.planned_bar_payload[:segments], summary.planned_total)
+- reflection_layout = assignment_energy_allocation_bar_layout(summary.reflection_bar_payload[:segments], summary.reflection_total)
+- reflection_alert_class = assignment_energy_allocation_reflection_alert_class(summary.reflection_alert_band)
+- legend_html = assignment_energy_allocation_legend_html(summary.legend_entries)
+
+.assignment-energy-allocation-panel.mb-2.py-1.px-2.border.rounded.bg-body{class: reflection_alert_class, data: { assignment_energy_allocation_target: 'panel' }}
+  .row.g-2.align-items-center
+    .col-12.col-lg-5
+      .assignment-energy-allocation-bar
+        .d-flex.flex-wrap.align-items-baseline.justify-content-between.gap-1.mb-1
+          %span.assignment-energy-allocation-bar__label.small.fw-semibold{
+            tabindex: '0',
+            data: {
+              bs_toggle: 'popover',
+              bs_trigger: 'hover focus',
+              bs_placement: 'top',
+              bs_content: summary.planned_popover_text(employee_name: employee_name, manager_name: manager_name)
+            }
+          } Planned Assignment-energy split
+          %span.small.text-muted{ data: { assignment_energy_allocation_target: 'plannedTotal' } }
+            = assignment_energy_allocation_total_label(summary.planned_total, over_hundred: planned_layout[:over_hundred])
+        = render 'organizations/company_teammates/check_ins/assignment_energy_allocation_bar',
+                 layout: planned_layout,
+                 bar_key: :planned
+
+    .col-12.col-lg-2.assignment-energy-allocation-legend-col
+      %button.btn.btn-link.btn-sm.p-0.text-muted.text-decoration-none.assignment-energy-allocation-legend-trigger{
+        type: 'button',
+        data: {
+          bs_toggle: 'popover',
+          bs_trigger: 'hover focus',
+          bs_placement: 'bottom',
+          bs_html: 'true',
+          bs_content: legend_html
+        },
+        title: 'Legend'
+      } Legend
+
+    .col-12.col-lg-5
+      .assignment-energy-allocation-bar
+        .d-flex.flex-wrap.align-items-baseline.justify-content-between.gap-1.mb-1
+          %span.assignment-energy-allocation-bar__label.small.fw-semibold{
+            tabindex: '0',
+            data: {
+              bs_toggle: 'popover',
+              bs_trigger: 'hover focus',
+              bs_placement: 'top',
+              bs_content: summary.reflection_popover_text(employee_name: employee_name)
+            }
+          } How you actually spent your energy
+          %span.small.text-muted{ data: { assignment_energy_allocation_target: 'reflectionTotal' } }
+            = assignment_energy_allocation_total_label(summary.reflection_total, over_hundred: reflection_layout[:over_hundred])
+        %div{ data: { assignment_energy_allocation_target: 'reflectionBar' } }
+          - if summary.reflection_empty?
+            .assignment-energy-allocation-bar__empty.small.text-muted.py-1{
+              data: { assignment_energy_allocation_target: 'reflectionEmpty' }
+            }
+              Set a percentage on assignments below to see how your time adds up.
+          - else
+            = render 'organizations/company_teammates/check_ins/assignment_energy_allocation_bar',
+                     layout: reflection_layout,
+                     bar_key: :reflection

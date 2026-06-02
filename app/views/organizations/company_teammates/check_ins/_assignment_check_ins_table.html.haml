@@ -31,7 +31,13 @@
           - partial_name = "assignment_check_ins_table_#{view_mode}_#{display_mode}"
           
           = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
-            %tr{data: {check_in_id: check_in.id}}
+            %tr{
+              data: {
+                check_in_id: check_in.id,
+                assignment_id: check_in.assignment_id,
+                assignment_title: check_in.assignment.title
+              }
+            }
               %td
                 - latest_finalized = check_in.instance_variable_get(:@latest_finalized_check_in) || AssignmentCheckIn.latest_finalized_for(check_in.teammate, check_in.assignment)
                 = form.submit check_in.assignment.title,

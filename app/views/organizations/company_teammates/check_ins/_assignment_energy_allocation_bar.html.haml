@@ -1,0 +1,21 @@
+-# Locals: layout (from helper), bar_key (:planned | :reflection)
+- layout = local_assigns[:layout]
+- bar_key = local_assigns[:bar_key]
+- track_classes = ['assignment-energy-allocation-bar__track']
+- track_classes << 'assignment-energy-allocation-bar__track--over' if layout[:over_hundred]
+%div.assignment-energy-allocation-bar__track-wrap
+  %div{class: track_classes.join(' '), data: { assignment_energy_allocation_target: "#{bar_key}Track" }}
+    - layout[:segments].each do |segment|
+      %div.assignment-energy-allocation-bar__segment{
+        style: "flex: 0 0 #{segment[:flex_percent]}%; background-color: #{segment[:color]};",
+        tabindex: '0',
+        data: {
+          assignment_id: segment[:assignment_id],
+          assignment_name: segment[:name]
+        }
+      }
+    - if layout[:unallocated_percent].positive?
+      %div.assignment-energy-allocation-bar__segment.assignment-energy-allocation-bar__segment--unallocated{
+        style: "flex: 0 0 #{layout[:unallocated_percent]}%;",
+        title: 'Unallocated'
+      }

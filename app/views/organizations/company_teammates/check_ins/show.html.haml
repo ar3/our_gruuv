@@ -213,46 +213,66 @@
         = f.submit save_all_proceed_review_clarity_check_ins_label, class: 'btn btn-primary btn-lg'
 
   -# Assignment Section
-  = render 'shared/section_header', 
-           title: 'Assignments/Outcomes', 
-           icon: 'bi-clipboard-check', 
-           description: 'Evaluate project contributions and energy',
-           action_link: { url: assignment_selection_organization_company_teammate_path(organization, @teammate), icon: 'bi-plus-circle', text: '', title: 'Manage assignments' }
-  
-  = render 'assignment_check_ins_table',
-           assignment_check_ins: @active_assignment_check_ins,
-           form: f,
-           view_mode: @view_mode
+  - employee_energy_allocation = @view_mode == :employee && @assignment_energy_allocation
+  - allocation_colors_json = employee_energy_allocation ? @assignment_energy_allocation.color_by_assignment_id.to_json : nil
+  - allocation_planned_json = employee_energy_allocation ? @assignment_energy_allocation.planned_by_assignment_id.to_json : nil
+  - allocation_metadata_json = employee_energy_allocation ? @assignment_energy_allocation.assignment_metadata_by_id.to_json : nil
+  %div#bulk-assignment-check-in-energy-section{
+    class: (employee_energy_allocation ? 'bulk-assignment-check-in-energy-section' : nil),
+    data: (employee_energy_allocation ? {
+      controller: 'assignment-energy-allocation',
+      assignment_energy_allocation_colors_value: allocation_colors_json,
+      assignment_energy_allocation_planned_by_assignment_value: allocation_planned_json,
+      assignment_energy_allocation_assignments_value: allocation_metadata_json
+    } : {})
+  }
+    = render 'shared/section_header',
+             title: 'Assignments/Outcomes',
+             icon: 'bi-clipboard-check',
+             description: 'Evaluate project contributions and energy',
+             action_link: { url: assignment_selection_organization_company_teammate_path(organization, @teammate), icon: 'bi-plus-circle', text: '', title: 'Manage assignments' }
 
-  -# Recently added assignments (non-active, non-required, added within last 7 days) — outside Unique-to-You
-  - if @recently_added_assignment_check_ins&.any?
-    .card.mb-4.mt-4
-      .card-header
-        %h5.mb-0
-          %i.bi.bi-clock-history.me-2
-          Recently added assignments (check-in in progress)
-        %p.text-muted.caption-text.mb-0 Added in the last 7 days and not yet active; kept here so you can check in on them.
-      .card-body
-        = render 'assignment_check_ins_table',
-                 assignment_check_ins: @recently_added_assignment_check_ins,
-                 form: f,
-                 view_mode: @view_mode
-  
-  -# Collapsible section for Unique-to-You assignments (non-active, required or added more than 7 days ago)
-  - if @non_active_assignment_check_ins&.any?
-    .card.mb-4.mt-4
-      .card-header
-        %button.btn.btn-link.text-start.w-100.p-0.text-decoration-none{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#nonActiveAssignmentsSection", "aria-expanded" => "false", "aria-controls" => "nonActiveAssignmentsSection"}
+    - if employee_energy_allocation
+      .assignment-energy-allocation-sticky-wrap
+        = render 'organizations/company_teammates/check_ins/assignment_energy_allocation_panel',
+                 summary: @assignment_energy_allocation,
+                 employee_name: @teammate.person.casual_name,
+                 manager_name: (@teammate.current_manager&.casual_name.presence || 'your manager')
+
+    = render 'assignment_check_ins_table',
+             assignment_check_ins: @active_assignment_check_ins,
+             form: f,
+             view_mode: @view_mode
+
+    -# Recently added assignments (non-active, non-required, added within last 7 days) — outside Unique-to-You
+    - if @recently_added_assignment_check_ins&.any?
+      .card.mb-4.mt-4
+        .card-header
           %h5.mb-0
-            %i.bi.bi-chevron-down.me-2
-            Check-in on "Unique-to-You" Assignments #{@teammate.person.casual_name} may be starting/started
-            %p.text-muted.caption-text (assignments added more than 7 days ago, or required for position but not yet active, or ones they used to have active)
-      .collapse#nonActiveAssignmentsSection
+            %i.bi.bi-clock-history.me-2
+            Recently added assignments (check-in in progress)
+          %p.text-muted.caption-text.mb-0 Added in the last 7 days and not yet active; kept here so you can check in on them.
         .card-body
           = render 'assignment_check_ins_table',
-                   assignment_check_ins: @non_active_assignment_check_ins,
+                   assignment_check_ins: @recently_added_assignment_check_ins,
                    form: f,
                    view_mode: @view_mode
+
+    -# Collapsible section for Unique-to-You assignments (non-active, required or added more than 7 days ago)
+    - if @non_active_assignment_check_ins&.any?
+      .card.mb-4.mt-4
+        .card-header
+          %button.btn.btn-link.text-start.w-100.p-0.text-decoration-none{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#nonActiveAssignmentsSection", "aria-expanded" => "false", "aria-controls" => "nonActiveAssignmentsSection"}
+            %h5.mb-0
+              %i.bi.bi-chevron-down.me-2
+              Check-in on "Unique-to-You" Assignments #{@teammate.person.casual_name} may be starting/started
+              %p.text-muted.caption-text (assignments added more than 7 days ago, or required for position but not yet active, or ones they used to have active)
+        .collapse#nonActiveAssignmentsSection
+          .card-body
+            = render 'assignment_check_ins_table',
+                     assignment_check_ins: @non_active_assignment_check_ins,
+                     form: f,
+                     view_mode: @view_mode
   
   .row.mt-4
     .col-12
