@@ -422,6 +422,41 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/observations/:id/add_assignments' do
+    let(:draft) do
+      build(:observation, observer: person, company: organization, published_at: nil).tap(&:save!)
+    end
+    let!(:engineering_department) { create(:department, company: organization, name: 'Engineering') }
+    let!(:assignment_one) { create(:assignment, company: organization, title: 'Alpha Assignment', department: nil) }
+    let!(:assignment_two) do
+      create(:assignment, company: organization, title: 'Beta Assignment', department: engineering_department)
+    end
+
+    it 'renders the add assignments page with selection toolbar' do
+      get add_assignments_organization_observation_path(organization, draft)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Add Assignments to Observation')
+      expect(response.body).to include('Select Assignments to Add')
+      expect(response.body).to include('placeholder="Search assignments by name or department..."')
+      expect(response.body).to include('data-controller="selection-toolbar options-filter"')
+      expect(response.body).to include('selection-page-columns')
+      expect(response.body).to include('None selected')
+      expect(response.body).to include(assignment_one.title)
+      expect(response.body).to include('Company-wide')
+      expect(response.body).to include('Engineering')
+      assert_select 'input[type="submit"][value="Add Selected Assignments"]', count: 2
+    end
+
+    it 'lists company-wide assignments before departmental assignments' do
+      get add_assignments_organization_observation_path(organization, draft)
+
+      alpha_index = response.body.index('Alpha Assignment')
+      beta_index = response.body.index('Beta Assignment')
+      expect(alpha_index).to be < beta_index
+    end
+  end
+
   describe 'POST /organizations/:organization_id/observations/:id/add_rateables' do
     let(:assignment) { create(:assignment, company: organization) }
 

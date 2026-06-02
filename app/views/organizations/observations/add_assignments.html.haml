@@ -14,35 +14,45 @@
       Select Assignments to Add
   .card-body
     = form_with url: add_rateables_organization_observation_path(organization, @observation), method: :post, local: true do |form|
-      / Explicitly include CSRF token for ngrok compatibility
       = hidden_field_tag :authenticity_token, form_authenticity_token
       = hidden_field_tag :return_url, params[:return_url]
       = hidden_field_tag :return_text, params[:return_text]
-      = hidden_field_tag :rateable_type, 'Assignment'
+      = hidden_field_tag :rateable_type, "Assignment"
       - if @observation.observable_moment_id.present?
         = hidden_field_tag "observation[observable_moment_id]", @observation.observable_moment_id
-      
-      .mb-3
-        %label.form-label Select Assignments
-        .list-group
-          - @assignments.each do |assignment|
-            - checked = @observation.assignments.include?(assignment)
-            .list-group-item
-              .form-check
-                = check_box_tag 'rateable_ids[]', assignment.id, checked, 
-                              class: 'form-check-input',
-                              id: "assignment_#{assignment.id}"
-                = label_tag "assignment_#{assignment.id}", class: 'form-check-label' do
-                  %strong= assignment.title
-                  - if assignment.tagline.present?
-                    %br
-                    %small.text-muted= assignment.tagline
-      
-      = hidden_field_tag :return_url, params[:return_url]
-      = hidden_field_tag :return_text, params[:return_text]
-      .d-flex.gap-2.mt-3
-        = link_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: 'btn btn-outline-secondary' do
-          %i.bi.bi-arrow-left.me-1
-          = params[:return_text] || 'Draft'
-        = form.submit 'Add Selected Assignments', class: 'btn btn-primary'
 
+      - if @assignments.any?
+        .mb-3{data: {controller: "selection-toolbar options-filter"}}
+          = render "shared/selection_pages/toolbar",
+            form: form,
+            save_label: "Add Selected Assignments",
+            can_manage: true,
+            search_placeholder: "Search assignments by name or department...",
+            search_aria_label: "Filter assignments by name or department"
+
+          .selection-page-columns{data: {options_filter_target: "list"}}
+            - @assignments.each do |assignment|
+              - checked = @observation.assignments.include?(assignment)
+              - department_label = assignment.department&.display_name || "Company-wide"
+              .filterable-option
+                .form-check
+                  = check_box_tag "rateable_ids[]",
+                    assignment.id,
+                    checked,
+                    class: "form-check-input",
+                    id: "assignment_#{assignment.id}",
+                    data: {selection_toolbar_label: assignment.title}
+                  = label_tag "assignment_#{assignment.id}", class: "form-check-label" do
+                    %strong= assignment.title
+                    %br
+                    %small.text-muted= department_label
+      - else
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          No assignments found in this organization.
+
+      .d-flex.gap-2.mt-3
+        = link_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: "btn btn-outline-secondary" do
+          %i.bi.bi-arrow-left.me-1
+          = params[:return_text] || "Draft"
+        = render "shared/selection_pages/save_button", form: form, label: "Add Selected Assignments", can_manage: true

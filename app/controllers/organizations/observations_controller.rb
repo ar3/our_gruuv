@@ -1479,10 +1479,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def add_assignments
     @observation = Observation.find(params[:id])
     authorize @observation, :update?
-    
-    # Load available assignments
-    @assignments = organization.assignments.unarchived.ordered
-    
+
+    @assignments = organization.assignments.unarchived
+                               .includes(:department)
+                               .to_a
+                               .sort_by do |assignment|
+                                 dept_sort = assignment.department ? [1, assignment.department.display_name.downcase] : [0, ""]
+                                 [dept_sort, assignment.title.downcase]
+                               end
+
     # Store return context
     @return_url = params[:return_url] || typed_observation_path_for(@observation)
     @return_text = params[:return_text] || 'Back'

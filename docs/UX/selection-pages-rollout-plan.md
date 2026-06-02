@@ -39,7 +39,7 @@ Do **not** batch multiple pages unless you ask for it.
 
 | # | Page | View | Notes |
 |---|------|------|-------|
-| C1 | Add Assignments to Observation | `observations/add_assignments` | `rateable_ids[]`, Assignment |
+| C1 | Add Assignments to Observation ✅ | `observations/add_assignments` | Done |
 | C2 | Teammate assignment selection | `company_teammates/assignment_selection` | Table; required/assigned rows disabled — pills only for changeable rows |
 | C3 | People assignment selection | `people/assignment_selection` | Mirror C2 if still separate |
 | C4 | Associate Assignments (department) | `departments/associate_assignments` | Table + select-all; consider keeping bulk-select |
