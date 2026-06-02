@@ -1508,7 +1508,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @observation = Observation.find(params[:id])
     authorize @observation, :update?
     
-    @abilities = organization.abilities.unarchived.order(:name)
+    @abilities = organization.abilities.unarchived
+                              .includes(:department)
+                              .to_a
+                              .sort_by do |ability|
+                                dept_sort = ability.department ? [1, ability.department.display_name.downcase] : [0, ""]
+                                [dept_sort, ability.name.downcase]
+                              end
     
     @return_url = params[:return_url] || typed_observation_path_for(@observation)
     @return_text = params[:return_text] || 'Back'

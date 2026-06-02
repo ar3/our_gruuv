@@ -53,7 +53,7 @@ Then add the class (or selector) you set to each option element instead of `filt
 - if @eligible_teammates.any?
   .mb-3{ data: { controller: "options-filter" } }
     %input.form-control.form-control-lg.mb-3{ type: "search", placeholder: "Search teammates...", "data-options-filter-target": "input", "aria-label": "Filter teammates" }
-    .teammate-columns{ "data-options-filter-target": "list" }
+    .selection-page-columns{ "data-options-filter-target": "list" }
       - @eligible_teammates.each do |teammate|
         = link_to some_path(teammate), class: "card text-decoration-none h-100 filterable-option" do
           .card-body
@@ -65,9 +65,10 @@ Then add the class (or selector) you set to each option element instead of `filt
 ```haml
 .mb-3{ data: { controller: "options-filter" } }
   %input.form-control.mb-3{ type: "search", placeholder: "Search...", "data-options-filter-target": "input", "aria-label": "Filter options" }
-  .list-group{ "data-options-filter-target": "list" }
+  .selection-page-columns{ "data-options-filter-target": "list" }
     - @items.each do |item|
-      %label.list-group-item.filterable-option
+      .filterable-option
+        %label.list-group-item
         = check_box_tag "ids[]", item.id
         = item.name
 ```

@@ -10,30 +10,6 @@
 - content_for :return_text do
   = params[:return_text] || 'Draft'
 
-:css
-  .teammate-columns {
-    column-count: 1;
-    column-gap: 1rem;
-  }
-
-  @media (min-width: 576px) {
-    .teammate-columns {
-      column-count: 2;
-    }
-  }
-
-  @media (min-width: 992px) {
-    .teammate-columns {
-      column-count: 3;
-    }
-  }
-
-  .teammate-columns > * {
-    break-inside: avoid;
-    page-break-inside: avoid;
-    margin-bottom: 1rem;
-  }
-
 .card.mb-3
   .card-header
     %h5.mb-0
@@ -54,7 +30,7 @@
             search_placeholder: "Search teammates...",
             search_aria_label: "Filter teammates"
 
-          .teammate-columns{data: {options_filter_target: "list"}}
+          .selection-page-columns{data: {options_filter_target: "list"}}
             - @teammates.each do |teammate|
               - checked = @selected_observee_ids.include?(teammate.id)
               - display_name = teammate.person.preferred_first_then_last_display_name

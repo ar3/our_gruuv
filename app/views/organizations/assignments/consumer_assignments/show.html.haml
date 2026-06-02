@@ -38,27 +38,25 @@
                 disabled_tooltip: "Requires manage MAAP permission",
                 large_save: true
 
-              .row{data: {options_filter_target: "list"}}
-                - @assignments.each_slice((@assignments.count.to_f / 3).ceil) do |slice|
-                  .col-md-4
-                    - slice.each do |assignment|
-                      .mb-2.filterable-option
-                        .form-check
-                          = check_box_tag "consumer_assignment_ids[]",
-                            assignment.id,
-                            @existing_consumer_assignment_ids.include?(assignment.id),
-                            class: "form-check-input",
-                            id: "consumer_assignment_#{assignment.id}",
-                            disabled: !can_manage,
-                            data: {selection_toolbar_label: assignment.title}
-                          = label_tag "consumer_assignment_#{assignment.id}", class: "form-check-label" do
-                            %strong= assignment.title
-                            - if assignment.department
-                              %br
-                              %small.text-muted= assignment.department.display_name
-                            - else
-                              %br
-                              %small.text-muted= assignment.company.name
+              .selection-page-columns{data: {options_filter_target: "list"}}
+                - @assignments.each do |assignment|
+                  .filterable-option
+                    .form-check
+                      = check_box_tag "consumer_assignment_ids[]",
+                        assignment.id,
+                        @existing_consumer_assignment_ids.include?(assignment.id),
+                        class: "form-check-input",
+                        id: "consumer_assignment_#{assignment.id}",
+                        disabled: !can_manage,
+                        data: {selection_toolbar_label: assignment.title}
+                      = label_tag "consumer_assignment_#{assignment.id}", class: "form-check-label" do
+                        %strong= assignment.title
+                        - if assignment.department
+                          %br
+                          %small.text-muted= assignment.department.display_name
+                        - else
+                          %br
+                          %small.text-muted= assignment.company.name
           - else
             .alert.alert-info
               %i.bi.bi-info-circle.me-2

@@ -2,34 +2,10 @@
 - content_for :return_text, @return_text
 - content_for :header, "Select Teammate"
 
-:css
-  .teammate-columns {
-    column-count: 1;
-    column-gap: 1rem;
-  }
-  
-  @media (min-width: 576px) {
-    .teammate-columns {
-      column-count: 2;
-    }
-  }
-  
-  @media (min-width: 992px) {
-    .teammate-columns {
-      column-count: 3;
-    }
-  }
-  
-  .teammate-columns > * {
-    break-inside: avoid;
-    page-break-inside: avoid;
-    margin-bottom: 1rem;
-  }
-
 - if @eligible_teammates.any?
   .mb-3{ data: { controller: "options-filter" } }
     %input.form-control.form-control-lg.mb-3{ type: "search", placeholder: "Search teammates...", "data-options-filter-target": "input", "aria-label": "Filter teammates" }
-    .teammate-columns{ "data-options-filter-target": "list" }
+    .selection-page-columns{ "data-options-filter-target": "list" }
       - @eligible_teammates.each do |teammate|
         = link_to new_organization_teammate_milestone_path(organization, teammate_id: teammate.id),
                  class: "card text-decoration-none h-100 filterable-option" do

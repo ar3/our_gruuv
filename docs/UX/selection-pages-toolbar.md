@@ -69,8 +69,8 @@ Both Stimulus controllers go on **one wrapper** around the toolbar and the list:
 ```haml
 .mb-3{ data: { controller: "selection-toolbar options-filter" } }
   = render "shared/selection_pages/toolbar", ...
-  .row{ data: { options_filter_target: "list" } }
-    -# options with .filterable-option
+  .selection-page-columns{ data: { options_filter_target: "list" } }
+    -# each direct child: .filterable-option (see Column layout below)
 ```
 
 ---
@@ -134,6 +134,27 @@ If `selection_toolbar_label` is omitted, the controller uses the first `<strong>
 
 Client-side only. `options-filter` hides options whose **`textContent`** does not include the query (case-insensitive). Subtitle text in the row is included automatically. No server round-trip.
 
+## Column layout (multi-select lists)
+
+Use the shared **CSS column** layout so long lists use horizontal space without department headers or Bootstrap row slicing.
+
+| Viewport | Columns |
+|----------|---------|
+| default (&lt;576px) | 1 |
+| `sm+` (≥576px) | 2 |
+| `lg+` (≥992px) | 3 |
+
+- **Class:** `selection-page-columns` on the `options-filter` list container (`data-options-filter-target="list"`).
+- **Each option:** direct child with `filterable-option` (e.g. `.form-check` wrapper or `.card.filterable-option` for rich rows like observees).
+- **Styles:** `app/assets/stylesheets/application.bootstrap.scss` (`.selection-page-columns`).
+- **Do not** use `row` / `col-md-4` + `each_slice` for new selection pages — column flow handles balance automatically.
+
+**Reference:** Manage Observees (cards), Add Abilities (compact checkboxes), Manage Consumer Assignments (compact checkboxes).
+
+## Secondary metadata (department, tagline, etc.)
+
+When users need to **see** and **filter** by more than the primary name (e.g. ability + department), follow **[selection-pages-list-metadata.md](./selection-pages-list-metadata.md)**. Default: subtitle on each row + sort by department then name; pills stay primary-name-only. Avoid department section headers unless you add section-aware filtering.
+
 ---
 
 ## Permissions
@@ -146,5 +167,6 @@ For MAAP-style pages, users without permission are **redirected** — do not bui
 
 - **Manage Consumer Assignments** — `organizations/assignments/:id/consumer_assignments`
 - **Manage Observees** — `organizations/observations/:id/manage_observees`
+- **Add Abilities to Observation** — `organizations/observations/:id/add_abilities`
 
 When you add this pattern to another page, add it here and in [selection-pages-rollout-plan.md](./selection-pages-rollout-plan.md).

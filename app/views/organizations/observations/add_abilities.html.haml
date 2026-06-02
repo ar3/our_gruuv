@@ -17,27 +17,42 @@
       = hidden_field_tag :authenticity_token, form_authenticity_token
       = hidden_field_tag :return_url, params[:return_url]
       = hidden_field_tag :return_text, params[:return_text]
-      = hidden_field_tag :rateable_type, 'Ability'
+      = hidden_field_tag :rateable_type, "Ability"
       - if @observation.observable_moment_id.present?
         = hidden_field_tag "observation[observable_moment_id]", @observation.observable_moment_id
 
-      .mb-3
-        %label.form-label Select Abilities
-        .list-group
-          - @abilities.each do |ability|
-            - checked = @observation.abilities.include?(ability)
-            .list-group-item
-              .form-check
-                = check_box_tag 'rateable_ids[]', ability.id, checked,
-                              class: 'form-check-input',
-                              id: "ability_#{ability.id}"
-                = label_tag "ability_#{ability.id}", class: 'form-check-label' do
-                  %strong= ability.name
+      - if @abilities.any?
+        .mb-3{data: {controller: "selection-toolbar options-filter"}}
+          = render "shared/selection_pages/toolbar",
+            form: form,
+            save_label: "Add Selected Abilities",
+            can_manage: true,
+            search_placeholder: "Search abilities by name or department...",
+            search_aria_label: "Filter abilities by name or department"
+
+          .selection-page-columns{data: {options_filter_target: "list"}}
+            - @abilities.each do |ability|
+              - checked = @observation.abilities.include?(ability)
+              - department_label = ability.department&.display_name || "Company-wide"
+              .filterable-option
+                .form-check
+                  = check_box_tag "rateable_ids[]",
+                    ability.id,
+                    checked,
+                    class: "form-check-input",
+                    id: "ability_#{ability.id}",
+                    data: {selection_toolbar_label: ability.name}
+                  = label_tag "ability_#{ability.id}", class: "form-check-label" do
+                    %strong= ability.name
+                    %br
+                    %small.text-muted= department_label
+      - else
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          No abilities found in this organization.
 
       .d-flex.gap-2.mt-3
-        = link_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: 'btn btn-outline-secondary' do
+        = link_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: "btn btn-outline-secondary" do
           %i.bi.bi-arrow-left.me-1
-          = params[:return_text] || 'Draft'
-        = form.submit 'Add Selected Abilities', class: 'btn btn-primary'
-
-
+          = params[:return_text] || "Draft"
+        = render "shared/selection_pages/save_button", form: form, label: "Add Selected Abilities", can_manage: true

@@ -388,6 +388,40 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/observations/:id/add_abilities' do
+    let(:draft) do
+      build(:observation, observer: person, company: organization, published_at: nil).tap(&:save!)
+    end
+    let!(:engineering_department) { create(:department, company: organization, name: 'Engineering') }
+    let!(:ability_one) { create(:ability, company: organization, name: 'Alpha Ability', department: nil) }
+    let!(:ability_two) do
+      create(:ability, company: organization, name: 'Beta Ability', department: engineering_department)
+    end
+
+    it 'renders the add abilities page with selection toolbar' do
+      get add_abilities_organization_observation_path(organization, draft)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Add Abilities to Observation')
+      expect(response.body).to include('Select Abilities to Add')
+      expect(response.body).to include('placeholder="Search abilities by name or department..."')
+      expect(response.body).to include('data-controller="selection-toolbar options-filter"')
+      expect(response.body).to include('None selected')
+      expect(response.body).to include(ability_one.name)
+      expect(response.body).to include('Company-wide')
+      expect(response.body).to include('Engineering')
+      assert_select 'input[type="submit"][value="Add Selected Abilities"]', count: 2
+    end
+
+    it 'lists company-wide abilities before departmental abilities' do
+      get add_abilities_organization_observation_path(organization, draft)
+
+      alpha_index = response.body.index('Alpha Ability')
+      beta_index = response.body.index('Beta Ability')
+      expect(alpha_index).to be < beta_index
+    end
+  end
+
   describe 'POST /organizations/:organization_id/observations/:id/add_rateables' do
     let(:assignment) { create(:assignment, company: organization) }
 
