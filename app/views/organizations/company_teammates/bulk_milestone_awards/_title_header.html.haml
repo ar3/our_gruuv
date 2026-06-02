@@ -1,0 +1,17 @@
+-# locals: page_title_suffix, page_help_collapse_id, page_help_tooltip
+- page_title_suffix = local_assigns.fetch(:page_title_suffix)
+- page_help_collapse_id = local_assigns.fetch(:page_help_collapse_id)
+- page_help_tooltip = local_assigns.fetch(:page_help_tooltip)
+- content_for :header do
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render 'shared/teammate_context/title_dropdown',
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { new_bulk_milestone_award_organization_company_teammate_path(organization, tm) },
+               switch_aria_label: 'Switch teammate for bulk award milestones'
+      %span= page_title_suffix
+    %span.d-inline-flex.align-items-center.ms-1{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => page_help_tooltip}
+      %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{page_help_collapse_id}", "aria-expanded" => "false", "aria-controls" => page_help_collapse_id, "aria-label" => "Show page explanation"}
+        %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}

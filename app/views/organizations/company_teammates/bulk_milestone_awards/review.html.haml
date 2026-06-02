@@ -3,21 +3,13 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: 'Celebrate milestones', url: celebrate_milestones_organization_path(organization) }, { label: 'Bulk award milestones', url: new_bulk_milestone_award_organization_company_teammate_path(organization, @teammate) }, { label: 'Review', url: nil }])
 
-- content_for :header do
-  .d-flex.align-items-center.flex-wrap.gap-2
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      = render 'shared/teammate_context/title_dropdown',
-               organization: organization,
-               selected_teammate: @selected_teammate,
-               viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: ->(tm) { new_bulk_milestone_award_organization_company_teammate_path(organization, tm) },
-               switch_aria_label: 'Switch teammate for bulk award milestones'
-      %span= " - Bulk Award Milestones - Review"
-    %span.badge.text-bg-danger
-      This is dangerous… milestone awarding is usually done one at a time
-    %span.badge.text-bg-warning
-      %i.bi.bi-flask.me-1
-      Beta
+= render 'organizations/company_teammates/bulk_milestone_awards/title_header',
+  page_title_suffix: ' - Bulk Award Milestones - Review',
+  page_help_collapse_id: 'bulkMilestoneAwardReviewPageInfo',
+  page_help_tooltip: 'Confirm bulk milestone selections before saving. Click for details.'
+
+.collapse.mb-4#bulkMilestoneAwardReviewPageInfo
+  = render 'organizations/company_teammates/bulk_milestone_awards/review_page_help'
 
 .row.justify-content-center.mt-3
   .col-12.col-xl-11

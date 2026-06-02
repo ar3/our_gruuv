@@ -64,3 +64,10 @@
   summary: @my_growth_mileage_summary,
   organization: organization,
   target_position: @teammate.next_goal_position
+
+.row.mb-3
+  .col-lg-4
+    %p.small.text-muted.mb-0
+      Visit the
+      = link_to 'bulk award page', new_bulk_milestone_award_organization_company_teammate_path(organization, @teammate), class: 'text-decoration-none'
+      to award multiple milestones to #{@teammate.person.casual_name} at once.
