@@ -1499,9 +1499,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def add_aspirations
     @observation = Observation.find(params[:id])
     authorize @observation, :update?
-    
+
     @aspirations = organization.aspirations
-    
+                                .includes(:department)
+                                .to_a
+                                .sort_by do |aspiration|
+                                  dept_sort = aspiration.department ? [1, aspiration.department.display_name.downcase] : [0, ""]
+                                  [dept_sort, aspiration.sort_order, aspiration.name.downcase]
+                                end
+
     @return_url = params[:return_url] || typed_observation_path_for(@observation)
     @return_text = params[:return_text] || 'Back'
     

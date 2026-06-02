@@ -166,3 +166,4 @@ Goals may use category/privacy in subtitle instead of department — same **Opti
 | UX decision doc | Approved (Option A, Company-wide, nil dept first) |
 | Add Abilities implementation | Done |
 | Add Assignments implementation | Done |
+| Add Aspirations implementation | Done |

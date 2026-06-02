@@ -53,7 +53,7 @@ Do **not** batch multiple pages unless you ask for it.
 | # | Page | View | Notes |
 |---|------|------|-------|
 | D1 | Add Abilities to Observation ✅ | `observations/add_abilities` | Done |
-| D2 | Add Aspirations to Observation | `observations/add_aspirations` | Same shape as C1 |
+| D2 | Add Aspirations to Observation ✅ | `observations/add_aspirations` | Done |
 | D3 | Associate Abilities (department) | `departments/associate_abilities` | |
 | D4 | Associate Aspirations (department) | `departments/associate_aspirations` | |
 

@@ -17,30 +17,42 @@
       = hidden_field_tag :authenticity_token, form_authenticity_token
       = hidden_field_tag :return_url, params[:return_url]
       = hidden_field_tag :return_text, params[:return_text]
-      = hidden_field_tag :rateable_type, 'Aspiration'
+      = hidden_field_tag :rateable_type, "Aspiration"
       - if @observation.observable_moment_id.present?
         = hidden_field_tag "observation[observable_moment_id]", @observation.observable_moment_id
 
-      .mb-3
-        %label.form-label Select Aspirations
-        .list-group
-          - @aspirations.each do |aspiration|
-            - checked = @observation.aspirations.include?(aspiration)
-            .list-group-item
-              .form-check
-                = check_box_tag 'rateable_ids[]', aspiration.id, checked,
-                              class: 'form-check-input',
-                              id: "aspiration_#{aspiration.id}"
-                = label_tag "aspiration_#{aspiration.id}", class: 'form-check-label' do
-                  %strong= aspiration.name
-                  - if aspiration.description.present?
+      - if @aspirations.any?
+        .mb-3{data: {controller: "selection-toolbar options-filter"}}
+          = render "shared/selection_pages/toolbar",
+            form: form,
+            save_label: "Add Selected Aspirations",
+            can_manage: true,
+            search_placeholder: "Search aspirations by name or department...",
+            search_aria_label: "Filter aspirations by name or department"
+
+          .selection-page-columns{data: {options_filter_target: "list"}}
+            - @aspirations.each do |aspiration|
+              - checked = @observation.aspirations.include?(aspiration)
+              - department_label = aspiration.department&.display_name || "Company-wide"
+              .filterable-option
+                .form-check
+                  = check_box_tag "rateable_ids[]",
+                    aspiration.id,
+                    checked,
+                    class: "form-check-input",
+                    id: "aspiration_#{aspiration.id}",
+                    data: {selection_toolbar_label: aspiration.name}
+                  = label_tag "aspiration_#{aspiration.id}", class: "form-check-label" do
+                    %strong= aspiration.name
                     %br
-                    %small.text-muted= aspiration.description.truncate(100)
+                    %small.text-muted= department_label
+      - else
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          No aspirations found in this organization.
 
       .d-flex.gap-2.mt-3
-        = link_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: 'btn btn-outline-secondary' do
+        = link_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: "btn btn-outline-secondary" do
           %i.bi.bi-arrow-left.me-1
-          = params[:return_text] || 'Draft'
-        = form.submit 'Add Selected Aspirations', class: 'btn btn-primary'
-
-
+          = params[:return_text] || "Draft"
+        = render "shared/selection_pages/save_button", form: form, label: "Add Selected Aspirations", can_manage: true
