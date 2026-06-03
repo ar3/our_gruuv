@@ -33,12 +33,38 @@
   = render 'organizations/finalizations/aspiration_finalization_table', form: f, view_mode: @view_mode
   
   -# Assignment Section
-  = render 'shared/section_header', 
-           title: 'Assignments/Outcomes', 
-           icon: 'bi-clipboard-check', 
+  - employee_name = @teammate.person.casual_name
+  - manager_name = @teammate.current_manager&.casual_name.presence || 'Manager'
+  - energy_allocation = @assignment_energy_allocation
+  - show_energy_allocation = energy_allocation&.contexts? || false
+  = render 'shared/section_header',
+           title: 'Assignments/Outcomes',
+           icon: 'bi-clipboard-check',
            description: 'Finalize individual assignment ratings and energy'
-  
-  = render 'organizations/finalizations/assignment_finalization_table', form: f, view_mode: @view_mode
+
+  - if show_energy_allocation
+    = render 'organizations/company_teammates/finalizations/assignment_energy_allocation_section_help',
+             employee_name: employee_name,
+             manager_name: manager_name
+    %div#finalization-assignment-energy-section.finalization-assignment-energy-section{
+      data: {
+        controller: 'assignment-energy-allocation-finalization',
+        assignment_energy_allocation_finalization_colors_value: energy_allocation.color_by_assignment_id.to_json,
+        assignment_energy_allocation_finalization_current_forecast_value: energy_allocation.current_forecast_by_assignment_id.to_json,
+        assignment_energy_allocation_finalization_employee_actual_value: energy_allocation.employee_actual_by_assignment_id.transform_values { |v| v.nil? ? '' : v }.to_json,
+        assignment_energy_allocation_finalization_updated_forecast_value: energy_allocation.updated_forecast_by_assignment_id.to_json,
+        assignment_energy_allocation_finalization_assignments_value: energy_allocation.assignment_metadata_by_id.to_json,
+        assignment_energy_allocation_finalization_employee_name_value: employee_name
+      }
+    }
+      .assignment-energy-allocation-sticky-wrap
+        = render 'organizations/company_teammates/finalizations/assignment_energy_allocation_panel',
+                 summary: energy_allocation,
+                 employee_name: employee_name,
+                 manager_name: manager_name
+      = render 'organizations/finalizations/assignment_finalization_table', form: f, view_mode: @view_mode
+  - else
+    = render 'organizations/finalizations/assignment_finalization_table', form: f, view_mode: @view_mode
   
   
   -# Position Section

@@ -1,5 +1,14 @@
 -# Assignment Finalization Row - Ready to Finalize
-%tr
+- row_data = assignment_energy_allocation_finalization_row_data(check_in)
+%tr{
+  data: {
+    assignment_id: row_data[:assignment_id],
+    assignment_title: row_data[:assignment_title],
+    current_forecast: row_data[:current_forecast],
+    employee_actual: row_data[:employee_actual],
+    initial_updated_forecast: row_data[:initial_updated_forecast]
+  }
+}
   %td
     %strong= check_in.assignment.title
     = link_to organization_teammate_assignment_path(organization, teammate, check_in.assignment), target: '_blank', rel: 'noopener noreferrer', class: 'ms-2', title: 'View assignment' do

@@ -9,17 +9,21 @@ module AssignmentEnergyAllocationHelper
     end
   end
 
-  def assignment_energy_allocation_reflection_alert_class(alert_band)
+  def assignment_energy_allocation_alert_class(alert_band)
     case alert_band
-    when CheckIns::AssignmentEnergyAllocationSummary::ALERT_SUCCESS
+    when CheckIns::EnergyAllocationConstants::ALERT_SUCCESS
       'assignment-energy-allocation-panel--success'
-    when CheckIns::AssignmentEnergyAllocationSummary::ALERT_WARNING
+    when CheckIns::EnergyAllocationConstants::ALERT_WARNING
       'assignment-energy-allocation-panel--warning'
-    when CheckIns::AssignmentEnergyAllocationSummary::ALERT_DANGER
+    when CheckIns::EnergyAllocationConstants::ALERT_DANGER
       'assignment-energy-allocation-panel--danger'
     else
       ''
     end
+  end
+
+  def assignment_energy_allocation_reflection_alert_class(alert_band)
+    assignment_energy_allocation_alert_class(alert_band)
   end
 
   # Returns { segments: [{ flex_percent, color, name, value, assignment_id }], unallocated_percent:, over_hundred: }
@@ -66,6 +70,39 @@ module AssignmentEnergyAllocationHelper
     end
 
     { segments: laid_out, unallocated_percent: unallocated_percent, over_hundred: false }
+  end
+
+  def assignment_energy_allocation_finalization_row_data(check_in)
+    tenure = check_in.assignment_tenure
+    forecast = tenure&.anticipated_energy_percentage
+    forecast_int = forecast.present? ? forecast.to_i : nil
+
+    actual = nil
+    if check_in.open? && check_in.employee_completed? && check_in.actual_energy_percentage.present?
+      val = check_in.actual_energy_percentage.to_i
+      actual = val if val.positive?
+    end
+
+    left_value = if actual.present?
+                   actual
+                 else
+                   forecast_int
+                 end
+
+    initial_updated =
+      if check_in.ready_for_finalization?
+        (check_in.actual_energy_percentage.presence || forecast).to_i
+      else
+        left_value || 0
+      end
+
+    {
+      assignment_id: check_in.assignment_id,
+      assignment_title: check_in.assignment.title,
+      current_forecast: forecast_int,
+      employee_actual: actual,
+      initial_updated_forecast: initial_updated
+    }
   end
 
   def assignment_energy_allocation_legend_html(legend_entries)

@@ -234,7 +234,7 @@
 
     - if employee_energy_allocation
       .assignment-energy-allocation-sticky-wrap
-        = render 'organizations/company_teammates/check_ins/assignment_energy_allocation_panel',
+        = render 'organizations/company_teammates/check_ins/assignment_energy_allocation_panel_bulk',
                  summary: @assignment_energy_allocation,
                  employee_name: @teammate.person.casual_name,
                  manager_name: (@teammate.current_manager&.casual_name.presence || 'your manager')

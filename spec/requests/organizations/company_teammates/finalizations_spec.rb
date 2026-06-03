@@ -61,6 +61,27 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
       expect(body).to include(assignment_url)
       expect(body).to include(aspiration_url)
     end
+
+    it "shows assignment energy allocation bars when assignment check-ins are present" do
+      assignment = create(:assignment, company: organization, title: "Energy Bar Assignment")
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 60, ended_at: nil)
+      create(
+        :assignment_check_in,
+        :ready_for_finalization,
+        teammate: employee_teammate,
+        assignment: assignment,
+        manager_completed_by_teammate: manager_teammate,
+        actual_energy_percentage: 40
+      )
+
+      get organization_company_teammate_finalization_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('data-controller="assignment-energy-allocation-finalization"')
+      expect(response.body).to include('Current Assignment-energy split')
+      expect(response.body).to include('Updated forecast')
+      expect(response.body).to include('Energy bar guide')
+    end
   end
 
   describe "POST /organizations/:org_id/company_teammates/:company_teammate_id/finalization" do

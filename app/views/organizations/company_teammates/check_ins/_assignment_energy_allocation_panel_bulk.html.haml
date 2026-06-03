@@ -4,7 +4,7 @@
 - manager_name = local_assigns[:manager_name]
 - planned_layout = assignment_energy_allocation_bar_layout(summary.planned_bar_payload[:segments], summary.planned_total)
 - reflection_layout = assignment_energy_allocation_bar_layout(summary.reflection_bar_payload[:segments], summary.reflection_total)
-- reflection_alert_class = assignment_energy_allocation_reflection_alert_class(summary.reflection_alert_band)
+- reflection_alert_class = assignment_energy_allocation_alert_class(summary.reflection_alert_band)
 - legend_html = assignment_energy_allocation_legend_html(summary.legend_entries)
 
 .assignment-energy-allocation-panel.mb-2.py-1.px-2.border.rounded.bg-body{class: reflection_alert_class, data: { assignment_energy_allocation_target: 'panel' }}

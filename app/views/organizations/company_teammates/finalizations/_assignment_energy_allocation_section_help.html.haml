@@ -1,0 +1,39 @@
+-# Locals: employee_name, manager_name, collapse_id (optional)
+- employee_name = local_assigns[:employee_name]
+- manager_name = local_assigns[:manager_name]
+- collapse_id = local_assigns.fetch(:collapse_id, 'finalizationAssignmentEnergyHelp')
+
+.row.mb-2
+  .col-12
+    %span.d-inline-flex.align-items-center.gap-1.small.text-muted
+      %span{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "How to read the energy bars. Click for details."}
+        %button.btn.btn-link.btn-sm.p-0.text-body{type: 'button', "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, "aria-label" => "Show energy bar explanation"}
+          %i.bi.bi-info-circle
+      Energy bar guide
+
+.collapse.mb-2{id: collapse_id}
+  .alert.alert-light.border.mb-0.small
+    %p.mb-2
+      %strong Goal:
+      See how #{employee_name}'s Assignment-energy is split across active tenures today and how the updated forecast will look after finalization.
+    %p.mb-2
+      %strong Example:
+      If #{employee_name} reflected 40% on one assignment and 30% on another, the
+      %strong current
+      bar shows that reflection. If a third assignment still uses only the tenure forecast (20%), that slice appears from the forecast until #{employee_name} completes a reflection.
+    %ul.mb-2
+      %li
+        %strong Current Assignment-energy split (left):
+        Starts with every active tenure assignment; replaces a slice with #{employee_name}'s completed reflection when an open check-in overrides that assignment.
+      %li
+        %strong Updated forecast (right):
+        Matches the left bar unless an assignment is ready for finalization—then uses the finalization energy % #{manager_name} sets below. Totals should land near 100%.
+      %li
+        %span.d-inline-block.me-1{style: 'width: 0.75rem; height: 0.75rem; background: var(--bs-success); border-radius: 2px;'}
+        Border at 100% —
+        %span.d-inline-block.me-1{style: 'width: 0.75rem; height: 0.75rem; background: var(--bs-warning); border-radius: 2px;'}
+        near 90–110% —
+        %span.d-inline-block.me-1{style: 'width: 0.75rem; height: 0.75rem; background: var(--bs-danger); border-radius: 2px;'}
+        otherwise.
+    %p.mb-0.text-muted
+      Hover a colored slice for assignment name, current forecast, #{employee_name}'s actual reflection, and new forecast. The right bar updates when forecast % selects change below; values save when you finalize.

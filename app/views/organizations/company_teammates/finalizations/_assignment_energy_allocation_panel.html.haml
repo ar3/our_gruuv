@@ -1,0 +1,64 @@
+-# Locals: summary (CheckIns::FinalizationAssignmentEnergyAllocationSummary), employee_name, manager_name
+- summary = local_assigns[:summary]
+- employee_name = local_assigns[:employee_name]
+- manager_name = local_assigns[:manager_name]
+- current_layout = assignment_energy_allocation_bar_layout(summary.current_bar_payload[:segments], summary.current_total)
+- updated_layout = assignment_energy_allocation_bar_layout(summary.updated_bar_payload[:segments], summary.updated_total)
+- updated_alert_class = assignment_energy_allocation_alert_class(summary.updated_alert_band)
+- legend_html = assignment_energy_allocation_legend_html(summary.legend_entries)
+
+.assignment-energy-allocation-panel.mb-2.py-1.px-2.border.rounded.bg-body{class: updated_alert_class, data: { assignment_energy_allocation_finalization_target: 'panel' }}
+  .row.g-2.align-items-center
+    .col-12.col-lg-5
+      .assignment-energy-allocation-bar
+        .d-flex.flex-wrap.align-items-baseline.justify-content-between.gap-1.mb-1
+          %span.assignment-energy-allocation-bar__label.small.fw-semibold{
+            tabindex: '0',
+            data: {
+              bs_toggle: 'popover',
+              bs_trigger: 'hover focus',
+              bs_placement: 'top',
+              bs_content: summary.current_popover_text(employee_name: employee_name, manager_name: manager_name)
+            }
+          } Current Assignment-energy split
+          %span.small.text-muted
+            = assignment_energy_allocation_total_label(summary.current_total, over_hundred: current_layout[:over_hundred])
+        = render 'organizations/company_teammates/check_ins/assignment_energy_allocation_bar',
+                 layout: current_layout,
+                 bar_key: :current
+
+    .col-12.col-lg-2.assignment-energy-allocation-legend-col
+      %button.btn.btn-link.btn-sm.p-0.text-muted.text-decoration-none.assignment-energy-allocation-legend-trigger{
+        type: 'button',
+        data: {
+          bs_toggle: 'popover',
+          bs_trigger: 'hover focus',
+          bs_placement: 'bottom',
+          bs_html: 'true',
+          bs_content: legend_html
+        },
+        title: 'Legend'
+      } Legend
+
+    .col-12.col-lg-5
+      .assignment-energy-allocation-bar
+        .d-flex.flex-wrap.align-items-baseline.justify-content-between.gap-1.mb-1
+          %span.assignment-energy-allocation-bar__label.small.fw-semibold{
+            tabindex: '0',
+            data: {
+              bs_toggle: 'popover',
+              bs_trigger: 'hover focus',
+              bs_placement: 'top',
+              bs_content: summary.updated_popover_text(employee_name: employee_name, manager_name: manager_name)
+            }
+          } Updated forecast
+          %span.small.text-muted{ data: { assignment_energy_allocation_finalization_target: 'updatedTotal' } }
+            = assignment_energy_allocation_total_label(summary.updated_total, over_hundred: updated_layout[:over_hundred])
+        %div{ data: { assignment_energy_allocation_finalization_target: 'updatedBar' } }
+          - if summary.updated_empty?
+            .assignment-energy-allocation-bar__empty.small.text-muted.py-1
+              No forecasted energy to display yet.
+          - else
+            = render 'organizations/company_teammates/check_ins/assignment_energy_allocation_bar',
+                     layout: updated_layout,
+                     bar_key: :updated

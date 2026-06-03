@@ -1,6 +1,8 @@
 class Organizations::CompanyTeammates::FinalizationsController < Organizations::OrganizationNamespaceBaseController
   include Organizations::AssignsViewableTeammates
 
+  helper AssignmentEnergyAllocationHelper
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :authorize_finalization
@@ -56,6 +58,13 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
     
     # Load already finalized check-ins for acknowledgment view
     @finalized_position_check_in = PositionCheckIn.where(company_teammate: @teammate).closed.order(:official_check_in_completed_at).last
+
+    assignment_check_ins_for_energy = (@ready_assignment_check_ins || []) + (@incomplete_assignment_check_ins || [])
+    @assignment_energy_allocation = CheckIns::FinalizationAssignmentEnergyAllocationSummary.for_finalization(
+      teammate: @teammate,
+      assignment_check_ins: assignment_check_ins_for_energy,
+      organization: organization
+    )
   end
   
   def create
