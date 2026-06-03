@@ -1,16 +1,10 @@
 - content_for :title, "Assignments - #{@teammate.person.display_name}"
-- page_help_collapse_id = 'assignmentSingleItemCheckInPageHelp'
+- assignment_single_item_page_help_id = 'assignmentSingleItemCheckInPageHelp'
 - content_for :header do
   .d-flex.align-items-center.flex-wrap.gap-2
     %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
       %span= "#{@assignment.title} — clarity check-in"
-    %span.d-inline-flex.align-items-center{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "What this page is for and how to use it. Click for details."}
-      %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{page_help_collapse_id}", "aria-expanded" => "false", "aria-controls" => page_help_collapse_id, "aria-label" => "Show page explanation"}
-        %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
-  = render 'organizations/teammates/assignments/single_item_check_in_page_help',
-           employee_name: @teammate.person.casual_name,
-           assignment_title: @assignment.title,
-           collapse_id: page_help_collapse_id
+      = render 'shared/page_help/header_info_button', collapse_id: assignment_single_item_page_help_id
 
 - content_for :head do
   :css
@@ -21,6 +15,12 @@
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: @assignment.title, url: nil }])
+
+.collapse.mb-4{id: assignment_single_item_page_help_id}
+  = render 'organizations/teammates/assignments/single_item_check_in_page_help',
+           organization: @organization,
+           teammate: @teammate,
+           assignment_title: @assignment.title
 
 - nav_title = "#{@assignment.title} Check-In"
 - research_sublinks = [{ id: "research-tenure-history", label: "Tenure history", icon: "bi-clock-history" }, { id: "research-all-check-ins", label: "All check-ins", icon: "bi-list-check" }, { id: "research-observations", label: "Observations", icon: "bi-eye" }, { id: "research-goals", label: "Linked goals", icon: "bi-bullseye" }]

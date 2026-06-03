@@ -128,6 +128,10 @@ module PeopleHelper
   def people_current_view_name
     return 'Manage Profile Mode' unless action_name
     
+    if controller_name == 'company_teammates' && action_name == 'assignment_tenure_check_in_bypass'
+      return set_assignments_view_label
+    end
+
     if (controller_name == 'check_ins' && %w[hub show review_most_recent].include?(action_name)) ||
        (controller_name == 'finalizations' && action_name == 'show') ||
        (controller_name == 'employees' && action_name == 'audit')

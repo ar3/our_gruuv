@@ -1,0 +1,34 @@
+-# Locals: organization, teammate, employee_name (optional)
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- employee_name = local_assigns[:employee_name].presence || teammate.person.casual_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Set how #{employee_name} splits day-to-day Assignment-energy across the organization’s assignments without running a full check-in cycle—while recording a MAAP snapshot for audit.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+  = render 'shared/check_ins/three_step_clarity_flow', organization: organization, teammate: teammate, employee_name: employee_name
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 This page
+  %p.mb-2
+    %strong= set_day_to_day_assignments_title
+    is a manager/HR tool outside the normal reflect-and-review rhythm (#{set_day_to_day_assignments_subtitle}). Use it to correct tenure forecasts, add assignments, or end active tenure (0% on a row).
+  %ul.mb-2
+    %li
+      %strong Anticipated Energy %
+      — live preview on the right energy bar; 0% is omitted from the bar and ends tenure when saved.
+    %li
+      %strong Save Changes
+      — writes tenures and logs the change in MAAP.
+    %li
+      Assignment links open 1-by-1 check-in context when you need the full reflect flow instead.
+  %p.mb-0.text-muted.small
+    Prefer the standard flow when possible—use
+    = link_to 'Reflect Apart', organization_company_teammate_check_ins_path(organization, teammate)
+    and
+    = link_to 'Review Together', organization_company_teammate_finalization_path(organization, teammate)
+    so both sides reflect before forecasts change.

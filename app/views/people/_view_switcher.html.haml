@@ -80,6 +80,24 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
       
     %li
+      - set_assignments_active = controller_name == 'company_teammates' && action_name == 'assignment_tenure_check_in_bypass'
+      - can_set_assignments = @teammate && (policy(@teammate).manager? || policy(current_organization).manage_employment?)
+      - if set_assignments_active
+        .dropdown-item.text-muted
+          %i.bi.bi-lightning-charge.me-2
+          = "#{set_assignments_view_label} (Active)"
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif can_set_assignments
+        = link_to assignment_tenure_check_in_bypass_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-lightning-charge.me-2
+          = set_assignments_view_label
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-lightning-charge.me-2
+          = set_assignments_view_label
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be in this teammate's managerial hierarchy or have the manage employment permission."}
+
+    %li
       - my_check_ins_active = (controller_name == 'check_ins' && %w[hub show review_most_recent].include?(action_name)) || (controller_name == 'finalizations' && action_name == 'show') || (controller_name == 'employees' && action_name == 'audit')
       - if my_check_ins_active
         .dropdown-item.text-muted

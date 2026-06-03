@@ -506,7 +506,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     else
       authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
     end
-    
+
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     @current_organization = organization
     
     # Load all assignments for the organization

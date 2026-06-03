@@ -118,13 +118,13 @@ module MyGrowthExperiencesHelper
   def my_growth_experiences_bypass_allocation_fragment(teammate, organization, leading_capitalize: false)
     if can_link_to_assignment_tenure_bypass?(teammate, organization)
       link_to(
-        'adjust energy allocation on the Assignment Tenure Check-in Bypass page',
+        "adjust energy allocation on the #{set_day_to_day_assignments_label} page",
         assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, teammate),
         class: 'alert-link'
       )
     else
       text = 'ask someone in your managerial hierarchy or with employment administration access to adjust energy ' \
-             'allocation on the Assignment Tenure Check-in Bypass page'
+             "allocation on the #{set_day_to_day_assignments_label} page"
       leading_capitalize ? text.capitalize : text
     end
   end

@@ -1,0 +1,27 @@
+-# Locals: organization, teammate — optional employee_name for copy
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- employee_name = local_assigns[:employee_name].presence || teammate.person.casual_name
+- step1_path = organization_company_teammate_check_ins_path(organization, teammate)
+- step2_path = organization_company_teammate_finalization_path(organization, teammate)
+- step3_path = audit_organization_employee_path(organization, teammate)
+
+%h5.fw-semibold.mb-2 The three-step clarity check-in flow
+%p.mb-2
+  Clarity check-ins in OG follow the same rhythm whether you use bulk check-in, one assignment at a time, or manager tools. Both the employee and the manager need room to reflect before you compare notes.
+%ol.mb-0
+  %li.mb-2
+    %strong
+      Step One:
+      = link_to 'Reflect Apart', step1_path
+    — Each person reflects on how #{employee_name} is doing while assignments and aspirational values are clear enough that, when definitions are sharp, employee and manager can reach the same conclusions.
+  %li.mb-2
+    %strong
+      Step Two:
+      = link_to 'Review Together', step2_path
+    — Continuous calibration is a core MAAP idea. Talk through check-ins together so unstated expectations surface. When something is misaligned, OG Admins should update Assignments, Abilities, Positions, and Aspirational Values—not leave confusion in side conversations.
+  %li.mb-0
+    %strong
+      Step Three:
+      = link_to 'Acknowledge/Observe', step3_path
+    — The audit trail shows what conversations happened so the employee, manager, and people team stay aligned. Non-OG organizations often keep “secret files” on employees; strong OG companies share these statuses to discourage politics, reduce toxic judgments, and increase fairness.

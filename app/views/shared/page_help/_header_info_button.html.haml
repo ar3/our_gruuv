@@ -1,0 +1,7 @@
+-# Locals: collapse_id, tooltip (optional)
+- collapse_id = local_assigns.fetch(:collapse_id)
+- tooltip = local_assigns.fetch(:tooltip, 'What this page is for and how to use it. Click for details.')
+
+%span.d-inline-flex.align-items-center{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => tooltip}
+  %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, "aria-label" => "Show page explanation"}
+    %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}

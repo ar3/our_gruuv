@@ -365,7 +365,7 @@
           .mt-3
             = link_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate), class: "btn btn-sm btn-outline-secondary" do
               %i.bi.bi-lightning-charge.me-1
-              Assignment Tenure Check-in Bypass
+              = set_day_to_day_assignments_label
 
 / Ability milestones: required by position + required assignments + active tenures; earned trophies per ability
 - total_earned_milestone_count = @complete_picture_ability_milestone_cards.sum { |c| c[:earned_milestones].size }

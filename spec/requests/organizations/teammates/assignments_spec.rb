@@ -111,7 +111,8 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("data-assignment-id=\"#{assignment.id}\"")
         expect(response.body).to include("data-assignment-energy-row")
         expect(response.body).to include('assignmentSingleItemCheckInPageHelp')
-        expect(response.body).to include("Three-step process")
+        expect(response.body).to include('What is MAAP?')
+        expect(response.body).to include('Reflect Apart')
       end
 
       it "shows an enabled delete link when other side is empty and assignment is not required" do

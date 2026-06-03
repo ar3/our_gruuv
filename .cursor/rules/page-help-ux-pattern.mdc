@@ -15,13 +15,27 @@ When editing page-level views, use this pattern by default:
   - click to expand/collapse a hidden full-width help alert below the header
 - Keep helper text concise, practical, and adapted to the current page.
 
+## Expanded help structure (required)
+
+Inside `.alert.alert-light.border`, use **three `%h3.fw-semibold.mb-2` sections** in this order:
+
+1. **Goal of this page** — one paragraph: ultimate goal for this screen.
+2. **Context** — shared explainers only:
+   - `= render 'shared/maap/definition'` when MAAP/clarity-related
+   - `= render 'shared/check_ins/three_step_clarity_flow', organization:, teammate:` on check-in / finalization / tenure-bypass / single-assignment check-in pages
+3. **Specifics of this page** — route-specific bullets and behavior; subsection titles use **`%h5.fw-semibold.mb-2`** (not `%h6`).
+
+Shared partials (`maap/definition`, `three_step_clarity_flow`) already use `%h5` for their titles so they nest under Context.
+
 ## Expanded Help Content
 
-- Start with the page's **ultimate goal** in one sentence.
-- Include a concrete **example** of page content (table row/card/etc.).
+- Put page-only copy only under **Specifics of this page**.
+- Include a concrete **example** of page content (table row/card/etc.) when it helps.
 - Explain how to read the page's primary UI signals (status bars, badges, states).
 - Include state legends with visual color markers (small dots/chips) matching real UI colors.
 - If refresh/recompute controls exist, state when users should (and should not) use them.
+
+See also: `docs/page-help-pattern.md`
 
 ## Style Guidance
 

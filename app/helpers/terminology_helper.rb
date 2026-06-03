@@ -61,6 +61,22 @@ module TerminologyHelper
     terminology(:bulk_clarity_check_in)
   end
 
+  def set_day_to_day_assignments_label
+    terminology(:set_day_to_day_assignments)
+  end
+
+  def set_day_to_day_assignments_title
+    terminology(:set_day_to_day_assignments_title)
+  end
+
+  def set_day_to_day_assignments_subtitle
+    terminology(:set_day_to_day_assignments_subtitle)
+  end
+
+  def set_assignments_view_label
+    terminology(:set_assignments_view)
+  end
+
   def clarity_check_in_one_at_a_time_label
     terminology(:clarity_check_in_one_at_a_time)
   end

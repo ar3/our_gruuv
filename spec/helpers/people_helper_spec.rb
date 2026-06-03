@@ -31,6 +31,12 @@ RSpec.describe PeopleHelper, type: :helper do
       end
     end
 
+    it 'returns Set Assignments for assignment_tenure_check_in_bypass action' do
+      allow(helper).to receive(:action_name).and_return('assignment_tenure_check_in_bypass')
+      allow(helper).to receive(:controller_name).and_return('company_teammates')
+      expect(helper.people_current_view_name).to eq('Set Assignments')
+    end
+
     it 'returns Clarity Check-Ins for check_ins review_most_recent action' do
       allow(helper).to receive(:action_name).and_return('review_most_recent')
       allow(helper).to receive(:controller_name).and_return('check_ins')

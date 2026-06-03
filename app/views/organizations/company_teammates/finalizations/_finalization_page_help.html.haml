@@ -1,0 +1,22 @@
+-# Locals: organization, teammate, employee_name (optional)
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- employee_name = local_assigns[:employee_name].presence || teammate.person.casual_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    After both sides finish reflecting, align on official ratings and updated assignment-energy forecasts, then record the outcome in MAAP.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+  = render 'shared/check_ins/three_step_clarity_flow', organization: organization, teammate: teammate, employee_name: employee_name
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 Review and finalization
+  %p.mb-2
+    This screen is Step Two (
+    = link_to 'Review Together', organization_company_teammate_finalization_path(organization, teammate)
+    ). Compare employee and manager input, set finalization energy % where assignments are ready, and save to create snapshots.
+  %p.mb-0
+    Assignment energy bars show current split (left) vs updated forecast (right). The right bar follows forecast selects on ready rows.

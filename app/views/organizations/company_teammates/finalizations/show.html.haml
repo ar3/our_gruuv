@@ -1,5 +1,6 @@
 - finalize_page_label = review_finalize_clarity_check_ins_together_label
 - content_for :title, teammate_context_page_title(@selected_teammate, finalize_page_label)
+- finalization_page_help_id = 'finalizationClarityPageHelp'
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -11,6 +12,9 @@
                path_for_teammate: ->(tm) { organization_company_teammate_finalization_path(organization, tm) },
                switch_aria_label: "Switch teammate for review and finalization"
       %span= " - #{finalize_page_label}"
+      = render 'shared/page_help/header_info_button',
+               collapse_id: finalization_page_help_id,
+               tooltip: 'Review and finalization purpose and MAAP flow. Click for details.'
 
 - content_for :header_action do
   = render 'people/view_switcher'
@@ -21,6 +25,11 @@
 -# Only prompt "did you save?" when there is an editable form (manager with check-ins ready to finalize)
 - finalize_confirm_leave = @view_mode == :manager && (@ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?)
 - finalization_form_data = finalize_confirm_leave ? { controller: "confirm-leave", action: "input->confirm-leave#markDirty change->confirm-leave#markDirty turbo:submit-end->confirm-leave#markCleanOnSuccess" } : {}
+.collapse.mb-4{id: finalization_page_help_id}
+  = render 'organizations/company_teammates/finalizations/finalization_page_help',
+           organization: organization,
+           teammate: @teammate
+
 = render 'shared/check_in_wizard_header', organization: @organization, teammate: @teammate, current_step: 2
 
 = form_with url: organization_company_teammate_finalization_path(organization, @teammate), method: :post, local: true, data: finalization_form_data do |f|

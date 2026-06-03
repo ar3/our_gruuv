@@ -51,7 +51,7 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
 
       expect(response).to have_http_status(:ok)
       body = response.body
-      expect(body).to include(" - Review/Finalize Check-ins Together")
+      expect(body).to include(" - Review check-ins together")
       position_url = organization_teammate_position_path(organization, employee_teammate)
       assignment_url = organization_teammate_assignment_path(organization, employee_teammate, assignment)
       aspiration_url = organization_teammate_aspiration_path(organization, employee_teammate, aspiration)

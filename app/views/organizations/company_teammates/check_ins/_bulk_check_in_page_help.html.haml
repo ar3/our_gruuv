@@ -1,0 +1,22 @@
+-# Locals: organization, teammate, employee_name (optional)
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- employee_name = local_assigns[:employee_name].presence || teammate.person.casual_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Capture how #{employee_name} is doing on position, assignments, and aspirational values in one pass—and see how assignment energy splits across the whole role (~100% total).
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+  = render 'shared/check_ins/three_step_clarity_flow', organization: organization, teammate: teammate, employee_name: employee_name
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 Bulk clarity check-in
+  %p.mb-2
+    This screen is Step One (
+    = link_to 'Reflect Apart', organization_company_teammate_check_ins_path(organization, teammate)
+    ) for everything at once. Employee and manager each work their side; view mode shows whose draft you are editing.
+  %p.mb-0
+    Use the assignment energy bars in the Assignments section to see planned tenure split (left) vs reflection % (right). The right bar updates as you change energy dropdowns.

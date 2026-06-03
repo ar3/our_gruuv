@@ -1,25 +1,33 @@
-- content_for :title, "Assignment Tenure Check-in Bypass - #{@teammate.person.full_name}"
-- page_help_collapse_id = 'tenureBypassAssignmentEnergyPageHelp'
-- employee_name = @assignment_energy_employee_name || @teammate.person.casual_name
-- manager_name = @assignment_energy_manager_name || 'Manager'
-- energy_allocation = @assignment_energy_allocation
+- day_to_day_title = set_day_to_day_assignments_title
+- content_for :title, teammate_context_page_title(@teammate, day_to_day_title)
+- set_day_to_day_page_help_id = 'setDayToDayAssignmentsPageHelp'
 
 - content_for :header do
-  .d-flex.align-items-center.flex-wrap.gap-2
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      %i.bi.bi-clipboard-check.me-2
-      %span Assignment Tenure Check-in Bypass
-    %span.d-inline-flex.align-items-center{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "What this page is for and how to use it. Click for details."}
-      %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{page_help_collapse_id}", "aria-expanded" => "false", "aria-controls" => page_help_collapse_id, "aria-label" => "Show page explanation"}
-        %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
-  %small.text-muted.d-block= @teammate.person.full_name
-  = render 'organizations/company_teammates/assignment_tenure_check_in_bypass_page_help',
-           employee_name: employee_name,
-           manager_name: manager_name,
-           collapse_id: page_help_collapse_id
+  .d-flex.flex-column.gap-1
+    .d-flex.align-items-center.gap-2.flex-wrap
+      %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+        = render "shared/teammate_context/title_dropdown",
+                 organization: @current_organization,
+                 selected_teammate: @selected_teammate,
+                 viewable_teammate_groups: @viewable_teammate_groups,
+                 path_for_teammate: ->(tm) { assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, tm) },
+                 switch_aria_label: "Switch teammate for set day-to-day assignments"
+        %span= " - #{day_to_day_title}"
+        = render 'shared/page_help/header_info_button',
+                 collapse_id: set_day_to_day_page_help_id,
+                 tooltip: 'Set day-to-day assignment energy and MAAP flow. Click for details.'
+    %p.text-muted.mb-0= set_day_to_day_assignments_subtitle
+
+- content_for :header_action do
+  = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammate View", url: internal_organization_company_teammate_path(@current_organization, @teammate) }, { label: "Assignment Tenure Check-in Bypass", url: nil }])
+  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammate View", url: internal_organization_company_teammate_path(@current_organization, @teammate) }, { label: day_to_day_title, url: nil }])
+
+.collapse.mb-4{id: set_day_to_day_page_help_id}
+  = render 'organizations/company_teammates/set_day_to_day_assignments_page_help',
+           organization: @current_organization,
+           teammate: @teammate
 
 .row
   .col-12
@@ -37,8 +45,11 @@
           Setting energy percentage to 0% will end the active tenure. Setting it to any other value will update or create a tenure as needed.
 
 = form_with url: update_assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, @teammate), method: :patch, local: true do |form|
-  - show_energy_bars = energy_allocation&.contexts?
+  - show_energy_bars = @assignment_energy_allocation&.contexts?
   - energy_select_data = show_energy_bars ? { action: "change->assignment-energy-allocation-finalization#refreshUpdatedFromDom" } : {}
+  - employee_name = @assignment_energy_employee_name || @teammate.person.casual_name
+  - manager_name = @assignment_energy_manager_name || 'Manager'
+  - energy_allocation = @assignment_energy_allocation
   %div#tenure-bypass-assignment-energy-section{
     class: (show_energy_bars ? 'tenure-bypass-assignment-energy-section' : nil),
     data: (show_energy_bars ? {
