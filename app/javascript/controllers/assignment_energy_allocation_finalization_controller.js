@@ -43,9 +43,14 @@ export default class extends Controller {
   }
 
   collectUpdatedSegments() {
+    const tableAssignmentIds = Array.from(
+      this.element.querySelectorAll("tr[data-assignment-id]")
+    ).map((row) => row.dataset.assignmentId)
+
     const assignmentIds = new Set([
       ...Object.keys(this.colorsValue || {}),
-      ...Object.keys(this.updatedForecastValue || {})
+      ...Object.keys(this.updatedForecastValue || {}),
+      ...tableAssignmentIds
     ])
 
     const segments = []
@@ -79,9 +84,10 @@ export default class extends Controller {
   }
 
   readUpdatedForecastFromRow(row) {
-    const select = row.querySelector(
-      'select[name*="assignment_check_ins"][name*="anticipated_energy_percentage"]'
-    )
+    const select =
+      row.querySelector(
+        'select[name*="assignment_check_ins"][name*="anticipated_energy_percentage"]'
+      ) || row.querySelector('select[name^="assignment_tenures["]')
     if (select && select.value !== "") {
       const parsed = parseInt(select.value, 10)
       return Number.isNaN(parsed) ? null : parsed

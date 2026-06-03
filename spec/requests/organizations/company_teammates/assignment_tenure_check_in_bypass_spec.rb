@@ -44,6 +44,28 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         expect(response).to render_template(:assignment_tenure_check_in_bypass)
       end
 
+      it 'shows assignment energy allocation bars with page and section help' do
+        create(:assignment_tenure,
+          teammate: employee_teammate,
+          assignment: assignment1,
+          started_at: 1.month.ago,
+          ended_at: nil,
+          anticipated_energy_percentage: 50)
+
+        get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="assignment-energy-allocation-finalization"')
+        expect(response.body).to include('tenure-bypass-assignment-energy-section')
+        expect(response.body).to include('assignment-energy-allocation-sticky-wrap')
+        expect(response.body).to include('Current Assignment-energy split')
+        expect(response.body).to include('Updated forecast')
+        expect(response.body).to include('tenureBypassAssignmentEnergyPageHelp')
+        expect(response.body).to include('tenureBypassEnergyBarGuide')
+        expect(response.body).to include('name="assignment_tenures[')
+        expect(response.body).to include("data-assignment-id=\"#{assignment1.id}\"")
+      end
+
       it 'loads all assignments for the organization' do
         get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate)
         expect(assigns(:assignments)).to include(assignment1, assignment2, assignment3)

@@ -1,0 +1,38 @@
+-# Locals: employee_name, manager_name, collapse_id (optional)
+- employee_name = local_assigns[:employee_name]
+- manager_name = local_assigns[:manager_name]
+- collapse_id = local_assigns.fetch(:collapse_id, 'tenureBypassAssignmentEnergyPageHelp')
+
+.collapse.mt-2.mb-3{id: collapse_id}
+  .alert.alert-light.border.mb-0
+    %p.mb-2
+      %strong Goal:
+      Update how
+      %strong= employee_name
+      splits their Assignment-energy across assignments without running a full check-in—while keeping an audit trail in MAAP.
+    %p.mb-2
+      %strong When to use this page:
+      Managers or HR need to correct tenure forecasts, onboard assignments, or end an assignment (set 0%) outside the normal check-in cycle.
+    %p.mb-2
+      %strong How to use the table:
+    %ul.mb-2
+      %li
+        Set
+        %strong Anticipated Energy %
+        per assignment (0% ends the active tenure; any other value updates or creates tenure).
+      %li
+        Use assignment links to open 1-by-1 check-in context when needed.
+      %li
+        %strong Save Changes
+        applies all rows and records a MAAP snapshot.
+    %p.mb-2
+      %strong Energy bars (above the table):
+    %ul.mb-0
+      %li
+        %strong Current Assignment-energy split (left):
+        Active tenures today; if #{employee_name} completed their side of an open check-in, that reflection replaces the tenure % for that assignment.
+      %li
+        %strong Updated forecast (right):
+        Live preview of the % you are setting in the table (omits 0%). Aim for ~100% total before saving.
+      %li
+        Border colors on the right bar: green at 100%, yellow near 90–110%, red otherwise.

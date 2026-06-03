@@ -1721,7 +1721,8 @@ body:has(.vertical-nav.open) .floating-toggle {
 
 // Bulk check-in: planned vs. reflection energy bars (employee)
 .bulk-assignment-check-in-energy-section,
-.finalization-assignment-energy-section {
+.finalization-assignment-energy-section,
+.tenure-bypass-assignment-energy-section {
   .assignment-energy-allocation-sticky-wrap {
     position: sticky;
     top: 0.75rem;

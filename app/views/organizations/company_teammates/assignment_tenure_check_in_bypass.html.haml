@@ -1,10 +1,22 @@
 - content_for :title, "Assignment Tenure Check-in Bypass - #{@teammate.person.full_name}"
+- page_help_collapse_id = 'tenureBypassAssignmentEnergyPageHelp'
+- employee_name = @assignment_energy_employee_name || @teammate.person.casual_name
+- manager_name = @assignment_energy_manager_name || 'Manager'
+- energy_allocation = @assignment_energy_allocation
 
 - content_for :header do
-  %h1.mb-0
-    %i.bi.bi-clipboard-check.me-2
-    Assignment Tenure Check-in Bypass
-  %small.text-muted= @teammate.person.full_name
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %i.bi.bi-clipboard-check.me-2
+      %span Assignment Tenure Check-in Bypass
+    %span.d-inline-flex.align-items-center{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "What this page is for and how to use it. Click for details."}
+      %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{page_help_collapse_id}", "aria-expanded" => "false", "aria-controls" => page_help_collapse_id, "aria-label" => "Show page explanation"}
+        %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
+  %small.text-muted.d-block= @teammate.person.full_name
+  = render 'organizations/company_teammates/assignment_tenure_check_in_bypass_page_help',
+           employee_name: employee_name,
+           manager_name: manager_name,
+           collapse_id: page_help_collapse_id
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammate View", url: internal_organization_company_teammate_path(@current_organization, @teammate) }, { label: "Assignment Tenure Check-in Bypass", url: nil }])
@@ -25,59 +37,90 @@
           Setting energy percentage to 0% will end the active tenure. Setting it to any other value will update or create a tenure as needed.
 
 = form_with url: update_assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, @teammate), method: :patch, local: true do |form|
-  .row
-    .col-12
-      .card
-        .card-body
-          %table.table.table-hover
-            %thead
-              %tr
-                %th Assignment Name
-                %th Latest Tenure
-                %th Anticipated Energy %
-                %th Status
-            %tbody
-              - @assignments.each do |assignment|
-                - data = @assignment_data[assignment.id]
-                - latest_tenure = data[:latest_tenure]
-                - row_class = assignment_row_class(latest_tenure)
-                - active_tenure = latest_tenure&.ended_at.nil? ? latest_tenure : nil
-                
-                %tr{class: row_class}
-                  %td
-                    - if latest_tenure
-                      - assignment_org = assignment.company
-                      - teammate_for_assignment = @teammate.person.teammates.find_by(organization: assignment_org)
-                      - if teammate_for_assignment
-                        = link_to assignment_full_name(assignment), organization_teammate_assignment_path(assignment_org, teammate_for_assignment, assignment), class: "text-decoration-none"
+  - show_energy_bars = energy_allocation&.contexts?
+  - energy_select_data = show_energy_bars ? { action: "change->assignment-energy-allocation-finalization#refreshUpdatedFromDom" } : {}
+  %div#tenure-bypass-assignment-energy-section{
+    class: (show_energy_bars ? 'tenure-bypass-assignment-energy-section' : nil),
+    data: (show_energy_bars ? {
+      controller: 'assignment-energy-allocation-finalization',
+      assignment_energy_allocation_finalization_colors_value: energy_allocation.color_by_assignment_id.to_json,
+      assignment_energy_allocation_finalization_current_forecast_value: energy_allocation.current_forecast_by_assignment_id.to_json,
+      assignment_energy_allocation_finalization_employee_actual_value: energy_allocation.employee_actual_by_assignment_id.transform_values { |v| v.nil? ? '' : v }.to_json,
+      assignment_energy_allocation_finalization_updated_forecast_value: energy_allocation.updated_forecast_by_assignment_id.to_json,
+      assignment_energy_allocation_finalization_assignments_value: energy_allocation.assignment_metadata_by_id.to_json,
+      assignment_energy_allocation_finalization_employee_name_value: employee_name
+    } : {})
+  }
+    - if show_energy_bars
+      = render 'organizations/company_teammates/assignment_tenure_bypass_energy_section_help',
+               employee_name: employee_name,
+               manager_name: manager_name
+      .assignment-energy-allocation-sticky-wrap
+        = render 'organizations/company_teammates/finalizations/assignment_energy_allocation_panel',
+                 summary: energy_allocation,
+                 employee_name: employee_name,
+                 manager_name: manager_name
+    .row
+      .col-12
+        .card
+          .card-body
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Assignment Name
+                  %th Latest Tenure
+                  %th Anticipated Energy %
+                  %th Status
+              %tbody
+                - @assignments.each do |assignment|
+                  - data = @assignment_data[assignment.id]
+                  - latest_tenure = data[:latest_tenure]
+                  - row_class = assignment_row_class(latest_tenure)
+                  - active_tenure = latest_tenure&.ended_at.nil? ? latest_tenure : nil
+                  - initial_forecast = active_tenure&.anticipated_energy_percentage
+
+                  %tr{
+                    class: row_class,
+                    data: {
+                      assignment_id: assignment.id,
+                      assignment_title: assignment.title,
+                      initial_updated_forecast: initial_forecast
+                    }
+                  }
+                    %td
+                      - if latest_tenure
+                        - assignment_org = assignment.company
+                        - teammate_for_assignment = @teammate.person.teammates.find_by(organization: assignment_org)
+                        - if teammate_for_assignment
+                          = link_to assignment_full_name(assignment), organization_teammate_assignment_path(assignment_org, teammate_for_assignment, assignment), class: "text-decoration-none"
+                        - else
+                          = assignment_full_name(assignment)
                       - else
                         = assignment_full_name(assignment)
-                    - else
-                      = assignment_full_name(assignment)
-                  %td
-                    - if latest_tenure
-                      %small
-                        = latest_tenure.started_at.strftime("%B %d, %Y")
-                        to
-                        - if latest_tenure.ended_at.present?
-                          = latest_tenure.ended_at.strftime("%B %d, %Y")
-                        - else
-                          Now
-                        - if latest_tenure.anticipated_energy_percentage.present?
-                          |  (#{latest_tenure.anticipated_energy_percentage}%)
-                    - else
-                      %span.text-muted -
-                  %td
-                    - options = (0..20).map { |i| ["#{i * 5}%", i * 5] }
-                    = form.select "assignment_tenures[#{assignment.id}]",
-                                  options_for_select(options, active_tenure&.anticipated_energy_percentage),
-                                  {},
-                                  { class: "form-select form-select-sm" }
-                  %td
-                    - if active_tenure
-                      %span.badge.bg-success Active Tenure
-                    - elsif latest_tenure
-                      %span.badge.bg-info Previous Tenure
+                    %td
+                      - if latest_tenure
+                        %small
+                          = latest_tenure.started_at.strftime("%B %d, %Y")
+                          to
+                          - if latest_tenure.ended_at.present?
+                            = latest_tenure.ended_at.strftime("%B %d, %Y")
+                          - else
+                            Now
+                          - if latest_tenure.anticipated_energy_percentage.present?
+                            |  (#{latest_tenure.anticipated_energy_percentage}%)
+                      - else
+                        %span.text-muted -
+                    %td
+                      - options = (0..20).map { |i| ["#{i * 5}%", i * 5] }
+                      = form.select "assignment_tenures[#{assignment.id}]",
+                                    options_for_select(options, active_tenure&.anticipated_energy_percentage),
+                                    {},
+                                    { class: "form-select form-select-sm", data: energy_select_data }
+                    %td
+                      - if active_tenure
+                        %span.badge.bg-success Active Tenure
+                      - elsif latest_tenure
+                        %span.badge.bg-info Previous Tenure
 
   .row.mt-4
     .col-12

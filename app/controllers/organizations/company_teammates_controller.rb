@@ -4,6 +4,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   helper MyGrowthExperiencesHelper
   helper MyGrowthAbilitiesHelper
+  helper AssignmentEnergyAllocationHelper
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -555,6 +556,15 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       
       path.join(' > ')
     end
+
+    @assignment_energy_allocation = CheckIns::TenureBypassAssignmentEnergyAllocationSummary.for_tenure_bypass(
+      teammate: @teammate,
+      assignments: @assignments,
+      assignment_data: @assignment_data,
+      organization: organization
+    )
+    @assignment_energy_employee_name = @teammate.person.casual_name
+    @assignment_energy_manager_name = current_company_teammate&.person&.casual_name.presence || "Manager"
   end
 
   def update_assignment_tenure_check_in_bypass

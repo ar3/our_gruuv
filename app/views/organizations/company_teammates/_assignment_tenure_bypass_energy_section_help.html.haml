@@ -1,0 +1,23 @@
+-# Locals: employee_name, manager_name, collapse_id (optional)
+- employee_name = local_assigns[:employee_name]
+- manager_name = local_assigns[:manager_name]
+- collapse_id = local_assigns.fetch(:collapse_id, 'tenureBypassEnergyBarGuide')
+
+.row.mb-2
+  .col-12
+    %span.d-inline-flex.align-items-center.gap-1.small.text-muted
+      %span{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "How to read the energy bars. Click for details."}
+        %button.btn.btn-link.btn-sm.p-0.text-body{type: 'button', "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, "aria-label" => "Show energy bar explanation"}
+          %i.bi.bi-info-circle
+      Energy bar guide
+
+.collapse.mb-2{id: collapse_id}
+  .alert.alert-light.border.mb-0.small
+    %p.mb-2
+      %strong Left (current):
+      Every active tenure for #{employee_name}. Open check-ins where #{employee_name} has finished their side use reflection % instead of the saved tenure forecast.
+    %p.mb-2
+      %strong Right (updated forecast):
+      Sums every Anticipated Energy % in the table that is above 0—updates as you change dropdowns. Saving writes those values to tenure (0% ends tenure).
+    %p.mb-0.text-muted
+      Hover a slice for assignment name, current forecast, #{employee_name}'s reflection (if any), and the value in the row.
