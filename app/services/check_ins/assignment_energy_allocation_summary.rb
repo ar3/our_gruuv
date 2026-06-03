@@ -100,6 +100,14 @@ module CheckIns
       metadata
     end
 
+    # Persisted reflection % per assignment (for pages with a single live select).
+    def reflection_by_assignment_id
+      @reflection_check_ins.each_with_object({}) do |check_in, hash|
+        value = reflection_value_for(check_in)
+        hash[check_in.assignment_id] = value if value.present?
+      end
+    end
+
     private
 
     def load_active_tenures

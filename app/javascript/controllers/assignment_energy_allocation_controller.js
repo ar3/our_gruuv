@@ -19,7 +19,8 @@ export default class extends Controller {
   static values = {
     colors: Object,
     plannedByAssignment: Object,
-    assignments: Object
+    assignments: Object,
+    reflectionByAssignment: Object
   }
 
   connect() {
@@ -48,18 +49,16 @@ export default class extends Controller {
   }
 
   collectReflectionSegments() {
-    const rows = this.element.querySelectorAll("tr[data-assignment-id]")
+    const assignmentIds = new Set(Object.keys(this.colorsValue || {}))
     const segments = []
 
-    rows.forEach((row) => {
-      const assignmentId = row.dataset.assignmentId
-      const name = row.dataset.assignmentTitle
-      const value = this.readActualEnergyFromRow(row)
+    assignmentIds.forEach((assignmentId) => {
+      const value = this.readReflectionForAssignment(assignmentId)
       if (value == null || value <= 0) return
 
       segments.push({
         assignment_id: assignmentId,
-        name: name || `Assignment ${assignmentId}`,
+        name: this.titleForAssignment(assignmentId) || `Assignment ${assignmentId}`,
         value,
         display_weight: value,
         color: this.colorForAssignment(assignmentId)
@@ -67,6 +66,54 @@ export default class extends Controller {
     })
 
     return segments.sort((a, b) => a.name.localeCompare(b.name))
+  }
+
+  readReflectionForAssignment(assignmentId) {
+    const fromDom = this.readReflectionFromEnergySelect(assignmentId)
+    if (fromDom != null) return fromDom
+
+    const energyRow = this.element.querySelector(
+      `[data-assignment-energy-row][data-assignment-id="${assignmentId}"]`
+    )
+    if (energyRow) {
+      const fromRow = this.readActualEnergyFromRow(energyRow)
+      if (fromRow != null) return fromRow
+    }
+
+    const tableRow = this.element.querySelector(`tr[data-assignment-id="${assignmentId}"]`)
+    if (tableRow) {
+      const fromTable = this.readActualEnergyFromRow(tableRow)
+      if (fromTable != null) return fromTable
+    }
+
+    const key = String(assignmentId)
+    const raw =
+      this.reflectionByAssignmentValue[assignmentId] ??
+      this.reflectionByAssignmentValue[key]
+    if (raw == null || raw === "") return null
+
+    const parsed = parseInt(raw, 10)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+
+  readReflectionFromEnergySelect(assignmentId) {
+    const id = String(assignmentId)
+    const selects = this.element.querySelectorAll(
+      'select[name*="[actual_energy_percentage]"]'
+    )
+
+    for (const select of selects) {
+      const row = select.closest("[data-assignment-id]")
+      if (!row || String(row.dataset.assignmentId) !== id) continue
+      if (row.classList.contains("assignment-energy-allocation-bar__segment")) continue
+
+      if (select.value === "") return null
+
+      const parsed = parseInt(select.value, 10)
+      return Number.isNaN(parsed) ? null : parsed
+    }
+
+    return null
   }
 
   readActualEnergyFromRow(row) {
@@ -288,6 +335,9 @@ export default class extends Controller {
   }
 
   actualPercentFor(assignmentId) {
+    const fromSelect = this.readReflectionFromEnergySelect(assignmentId)
+    if (fromSelect != null) return fromSelect
+
     const row = this.element.querySelector(`tr[data-assignment-id="${assignmentId}"]`)
     if (!row) return null
     return this.readActualEnergyFromRow(row)
@@ -299,6 +349,18 @@ export default class extends Controller {
       this.assignmentsValue[String(assignmentId)] ||
       null
     )
+  }
+
+  titleForAssignment(assignmentId) {
+    const meta = this.assignmentMeta(assignmentId)
+    if (meta?.name) return meta.name
+
+    const id = String(assignmentId)
+    const row = this.element.querySelector(
+      `[data-assignment-energy-row][data-assignment-id="${id}"], tr[data-assignment-id="${id}"]`
+    )
+    const fromDom = row?.dataset?.assignmentTitle
+    return fromDom || null
   }
 
   colorForAssignment(assignmentId) {

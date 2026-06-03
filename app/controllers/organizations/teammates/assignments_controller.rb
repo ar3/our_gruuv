@@ -1,6 +1,8 @@
 class Organizations::Teammates::AssignmentsController < Organizations::OrganizationNamespaceBaseController
   include Organizations::LoadAssociableGoalsDisplay
 
+  helper AssignmentEnergyAllocationHelper
+
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :set_assignment
@@ -99,6 +101,22 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       return_url: organization_teammate_assignment_path(organization, @teammate, @assignment),
       return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
+
+    @show_assignment_energy_bars = current_person == @teammate.person
+    if @show_assignment_energy_bars
+      reflection_check_ins = AssignmentCheckIn
+        .joins(:assignment)
+        .where(company_teammate: @teammate, assignments: { company: organization })
+        .open
+        .includes(:assignment)
+      @assignment_energy_allocation = CheckIns::AssignmentEnergyAllocationSummary.for_bulk_check_in(
+        teammate: @teammate,
+        reflection_check_ins: reflection_check_ins,
+        organization: organization
+      )
+      @assignment_energy_manager_name = @teammate.current_manager&.casual_name.presence || "your manager"
+    end
+
     @observations_new_observation_url = new_organization_observation_path(
       organization,
       observee_ids: [@teammate.id],

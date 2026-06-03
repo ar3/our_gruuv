@@ -1,4 +1,16 @@
 - content_for :title, "Assignments - #{@teammate.person.display_name}"
+- page_help_collapse_id = 'assignmentSingleItemCheckInPageHelp'
+- content_for :header do
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span= "#{@assignment.title} — clarity check-in"
+    %span.d-inline-flex.align-items-center{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "What this page is for and how to use it. Click for details."}
+      %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{page_help_collapse_id}", "aria-expanded" => "false", "aria-controls" => page_help_collapse_id, "aria-label" => "Show page explanation"}
+        %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
+  = render 'organizations/teammates/assignments/single_item_check_in_page_help',
+           employee_name: @teammate.person.casual_name,
+           assignment_title: @assignment.title,
+           collapse_id: page_help_collapse_id
 
 - content_for :head do
   :css
@@ -109,74 +121,107 @@
                           %strong Draft:
                           = link_to @assignment.draft_external_reference.url, @assignment.draft_external_reference.url, target: "_blank", class: "text-decoration-none"
 
-  = render "shared/single_item_check_in/check_in_section",
-      open_check_in: @open_check_in,
+  - assignment_energy_panel_html = nil
+  - if @show_assignment_energy_bars && @assignment_energy_allocation
+    - assignment_energy_panel_html = capture do
+      = render 'organizations/company_teammates/check_ins/assignment_energy_allocation_single_item',
+               summary: @assignment_energy_allocation,
+               employee_name: @teammate.person.casual_name,
+               manager_name: @assignment_energy_manager_name,
+               organization: @organization,
+               teammate: @teammate,
+               bulk_check_in_path: organization_company_teammate_check_ins_path(@organization, @teammate)
+  - check_in_section_locals = { open_check_in: @open_check_in,
       start_check_in_path: start_check_in_organization_teammate_assignment_path(@organization, @teammate, @assignment),
-      object_name: @assignment.title do
-    = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @assignment.title, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
-      - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
-      = render "shared/single_item_check_in/perspective_context",
-        check_in: @open_check_in,
-        teammate: @teammate,
-        object_name: @assignment.title,
-        is_complete: is_complete
-      = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
-        data: { controller: "check-in-autosave",
-                check_in_autosave_debounce_ms_value: 2500,
-                action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit" } do |form|
-        = render "shared/check_in_autosave_status"
-        = form.hidden_field :current_url, value: organization_teammate_assignment_path(@organization, @teammate, @assignment), id: nil
-        = form.hidden_field :current_type, value: "assignment", id: nil
-        = form.hidden_field :current_id, value: @assignment.id, id: nil
-        = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
-          .row
-            .col-12
-              .mb-1
+      object_name: @assignment.title,
+      before_body: (@open_check_in.blank? ? assignment_energy_panel_html : nil) }
+  - assignment_check_in_body_html = nil
+  - if @open_check_in.present?
+    - assignment_check_in_body_html = capture do
+      = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @assignment.title, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
+        - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+        = render "shared/single_item_check_in/perspective_context",
+          check_in: @open_check_in,
+          teammate: @teammate,
+          object_name: @assignment.title,
+          is_complete: is_complete
+        - if assignment_energy_panel_html.present?
+          != assignment_energy_panel_html
+        = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
+          data: { controller: "check-in-autosave",
+                  check_in_autosave_debounce_ms_value: 2500,
+                  action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit" } do |form|
+          = render "shared/check_in_autosave_status"
+          = form.hidden_field :current_url, value: organization_teammate_assignment_path(@organization, @teammate, @assignment), id: nil
+          = form.hidden_field :current_type, value: "assignment", id: nil
+          = form.hidden_field :current_id, value: @assignment.id, id: nil
+          = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
+            .row
+              .col-12.mb-3
                 Reflect on the past
-            - if current_person == @teammate.person
-              .col-md-6
-                .mb-3
-                  %label.form-label When I think about how much of my energy I spent on #{@assignment.title} since the last check-in, I spent about...
-                  = af.select :actual_energy_percentage, energy_percentage_options, { include_blank: 'Select percentage...', selected: @open_check_in.actual_energy_percentage }, { class: "form-select" }
+              - if current_person == @teammate.person
+                .col-md-6{data: { assignment_id: @assignment.id, assignment_title: @assignment.title, assignment_energy_row: true }}
+                  .mb-3
+                    %label.form-label When I think about how much of my energy I spent on #{@assignment.title} since the last check-in, I spent about...
+                    = af.select :actual_energy_percentage, energy_percentage_options, { include_blank: 'Select percentage...', selected: @open_check_in&.actual_energy_percentage }, { class: "form-select", data: { action: "change->assignment-energy-allocation#refreshReflectionFromDom" } }
 
-              .col-md-6
-                .mb-3
-                  %label.form-label When I think about taking on #{@assignment.title} in the future, the pharse that best describes how I feel is...
-                  = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
+                .col-md-6
+                  .mb-3
+                    %label.form-label When I think about taking on #{@assignment.title} in the future, the pharse that best describes how I feel is...
+                    = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
 
-              .col-md-6
-                .mb-3
-                  %label.form-label When I think about the outcomes of #{@assignment.title}, since the last check-in I would rate my performance against the expectations as...
-                  = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+                .col-md-6
+                  .mb-3
+                    %label.form-label When I think about the outcomes of #{@assignment.title}, since the last check-in I would rate my performance against the expectations as...
+                    = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
 
-              .col-md-6
-                .mb-3
-                  %label.form-label Notes
-                  = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                .col-md-6
+                  .mb-3
+                    %label.form-label Notes
+                    = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
 
-            - if current_person != @teammate.person
-              .col-md-6
-                .mb-3
-                  %label.form-label Manager Rating
-                  = af.select :manager_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+              - if current_person != @teammate.person
+                .col-md-6
+                  .mb-3
+                    %label.form-label Manager Rating
+                    = af.select :manager_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
 
-              .col-md-6
-                .mb-3
-                  %label.form-label Notes
-                  = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                .col-md-6
+                  .mb-3
+                    %label.form-label Notes
+                    = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
 
-            = af.hidden_field :assignment_id, value: @assignment.id
+              = af.hidden_field :assignment_id, value: @assignment.id
 
-            = render "shared/single_item_check_in/form_save_actions",
-              form: form,
-              fields_builder: af,
-              check_in: @open_check_in,
-              teammate: @teammate,
-              organization: @organization,
-              is_complete: is_complete,
-              next_requires_check_in: @single_item_next_requires_check_in,
-              next_item: @single_item_next_item,
-              next_url: @single_item_next_url,
-              show_check_in_status_done: @single_item_show_check_in_status_done
+              = render "shared/single_item_check_in/form_save_actions",
+                form: form,
+                fields_builder: af,
+                check_in: @open_check_in,
+                teammate: @teammate,
+                organization: @organization,
+                is_complete: is_complete,
+                next_requires_check_in: @single_item_next_requires_check_in,
+                next_item: @single_item_next_item,
+                next_url: @single_item_next_url,
+                show_check_in_status_done: @single_item_show_check_in_status_done
+  - if @show_assignment_energy_bars && @assignment_energy_allocation
+    - allocation_colors_json = @assignment_energy_allocation.color_by_assignment_id.to_json
+    - allocation_planned_json = @assignment_energy_allocation.planned_by_assignment_id.to_json
+    - allocation_metadata_json = @assignment_energy_allocation.assignment_metadata_by_id.to_json
+    - allocation_reflection_json = @assignment_energy_allocation.reflection_by_assignment_id.to_json
+    %div.single-item-check-in-energy-allocation{
+      data: {
+        controller: 'assignment-energy-allocation',
+        assignment_energy_allocation_colors_value: allocation_colors_json,
+        assignment_energy_allocation_planned_by_assignment_value: allocation_planned_json,
+        assignment_energy_allocation_assignments_value: allocation_metadata_json,
+        assignment_energy_allocation_reflection_by_assignment_value: allocation_reflection_json
+      }
+    }
+      = render "shared/single_item_check_in/check_in_section", **check_in_section_locals do
+        != assignment_check_in_body_html
+  - else
+    = render "shared/single_item_check_in/check_in_section", **check_in_section_locals do
+      != assignment_check_in_body_html
 
   = render "organizations/teammates/assignments/research_sections"

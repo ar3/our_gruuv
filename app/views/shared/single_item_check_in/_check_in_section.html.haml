@@ -1,9 +1,11 @@
--# Locals: open_check_in, start_check_in_path, object_name — yields form body when open_check_in present
+-# Locals: open_check_in, start_check_in_path, object_name, before_body (optional HTML) — yields form body when open_check_in present
 %section#check-in.mb-5
   .card
     .card-header
       %h5.mb-0 Your check-in
     .card-body
+      - if local_assigns[:before_body].present?
+        != local_assigns[:before_body]
       - if open_check_in
         = yield
       - else

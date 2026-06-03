@@ -1,0 +1,15 @@
+-# Locals: summary, employee_name, manager_name, organization, teammate, bulk_check_in_path
+- summary = local_assigns[:summary]
+- employee_name = local_assigns[:employee_name]
+- manager_name = local_assigns[:manager_name]
+- organization = local_assigns[:organization]
+- teammate = local_assigns[:teammate]
+- bulk_check_in_path = local_assigns[:bulk_check_in_path]
+
+= render 'organizations/company_teammates/check_ins/assignment_energy_allocation_panel_bulk',
+         summary: summary,
+         employee_name: employee_name,
+         manager_name: manager_name
+%p.small.text-muted.mt-1.mb-4
+  = link_to bulk_check_in_path, class: 'text-muted' do
+    See and edit all assignments on bulk check-in

@@ -1,0 +1,50 @@
+-# Locals: employee_name, assignment_title, collapse_id (optional)
+- employee_name = local_assigns[:employee_name]
+- assignment_title = local_assigns[:assignment_title]
+- collapse_id = local_assigns.fetch(:collapse_id, 'assignmentSingleItemCheckInPageHelp')
+
+.collapse.mt-2.mb-3{id: collapse_id}
+  .alert.alert-light.border.mb-0
+    %p.mb-2
+      %strong Goal:
+      Complete your clarity check-in for
+      %strong= assignment_title
+      —how you are doing on this assignment and how your energy is split across everything you are working on.
+    %p.mb-2
+      %strong What is an assignment?
+      An assignment is a defined piece of work (outcomes, activities, and expectations) that #{employee_name} is accountable for. This page focuses on one assignment at a time.
+    %p.mb-2
+      %strong Three-step process:
+    %ol.mb-2
+      %li
+        %strong Define
+        — read the assignment details and research (tenure, past check-ins, observations).
+      %li
+        %strong Check in
+        — rate performance, reflect on energy spent, and add notes (this section).
+      %li
+        %strong Finalize together
+        — after #{employee_name} and their manager both finish, they review and lock in official ratings and updated energy forecasts on the finalization page.
+    %p.mb-2
+      %strong Three sections on this page:
+    %ul.mb-2
+      %li
+        %strong Assignment details
+        — what the work is (outcomes, abilities, links).
+      %li
+        %strong Your check-in
+        — your draft ratings and reflection; use the energy bars to see how this assignment fits your whole role.
+      %li
+        %strong Research
+        — history and context to inform your answers.
+    %p.mb-2
+      %strong Energy bars (in Your check-in):
+    %ul.mb-0
+      %li
+        %strong Planned Assignment-energy split (left):
+        How active tenure assignments are forecast today.
+      %li
+        %strong How you actually spent your energy (right):
+        Your reflection % across assignments; updating the dropdown below changes this assignment’s slice. Aim for ~100% total.
+      %li
+        Use the link below the bars to open bulk check-in if you want to edit several assignments at once.

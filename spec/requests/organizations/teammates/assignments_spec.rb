@@ -22,6 +22,50 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
   end
 
   describe "GET show" do
+    context "when the employee has no open check-in" do
+      before { sign_in_as_teammate_for_request(employee_person, organization) }
+
+      it "still shows assignment energy allocation bars and page help" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="assignment-energy-allocation"')
+        expect(response.body).to include("Planned Assignment-energy split")
+        expect(response.body).to include("See and edit all assignments on bulk check-in")
+        expect(response.body).to include("No open check-in")
+        expect(response.body).not_to include('data-controller="check-in-autosave"')
+      end
+    end
+
+    context "when a manager views the employee assignment page" do
+      let(:manager_person) { create(:person) }
+      let!(:manager_teammate) do
+        create(:company_teammate, person: manager_person, organization: organization, can_manage_employment: true)
+      end
+
+      before do
+        create(:employment_tenure,
+          teammate: manager_teammate,
+          company: organization,
+          started_at: 1.year.ago,
+          ended_at: nil)
+        EmploymentTenure.find_by!(company_teammate: employee_teammate, company: organization).update!(manager_teammate: manager_teammate)
+        create(:assignment_check_in,
+          teammate: employee_teammate,
+          assignment: assignment,
+          check_in_started_on: Date.new(2026, 3, 15),
+          employee_completed_at: nil,
+          manager_completed_at: nil)
+        sign_in_as_teammate_for_request(manager_person, organization)
+      end
+
+      it "does not show assignment energy allocation bars" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include('data-controller="assignment-energy-allocation"')
+        expect(response.body).not_to include("See and edit all assignments on bulk check-in")
+      end
+    end
+
     context "when there is an open check-in" do
       before do
         create(:assignment_check_in,
@@ -53,6 +97,21 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("March 15, 2026")
         expect(response.body).to include("Your check-in on #{employee_person.casual_name} and #{assignment.title} is currently:")
         expect(response.body).to include("draft")
+      end
+
+      it "shows assignment energy allocation bars and bulk check-in link for the employee" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="assignment-energy-allocation"')
+        expect(response.body).to include("data-assignment-energy-allocation-reflection-by-assignment-value")
+        expect(response.body).to include("Planned Assignment-energy split")
+        expect(response.body).to include("How you actually spent your energy")
+        expect(response.body).to include("See and edit all assignments on bulk check-in")
+        expect(response.body).to include(organization_company_teammate_check_ins_path(organization, employee_teammate))
+        expect(response.body).to include("data-assignment-id=\"#{assignment.id}\"")
+        expect(response.body).to include("data-assignment-energy-row")
+        expect(response.body).to include('assignmentSingleItemCheckInPageHelp')
+        expect(response.body).to include("Three-step process")
       end
 
       it "shows an enabled delete link when other side is empty and assignment is not required" do
