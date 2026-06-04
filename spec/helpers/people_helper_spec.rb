@@ -49,6 +49,18 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
     end
 
+    it 'returns Clarity Check-Ins for check_ins up_next action' do
+      allow(helper).to receive(:action_name).and_return('up_next')
+      allow(helper).to receive(:controller_name).and_return('check_ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+    end
+
+    it 'reports clarity check-ins view active for up_next' do
+      allow(helper).to receive(:action_name).and_return('up_next')
+      allow(helper).to receive(:controller_name).and_return('check_ins')
+      expect(helper.clarity_check_ins_view_active?).to eq(true)
+    end
+
     it 'returns One on One Hub for one_on_one_links show action' do
       allow(helper).to receive(:action_name).and_return('show')
       allow(helper).to receive(:controller_name).and_return('one_on_one_links')

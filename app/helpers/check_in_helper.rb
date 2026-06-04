@@ -152,6 +152,28 @@ module CheckInHelper
     last_finalized_pill_class(latest_check_in) == 'bg-success'
   end
 
+  # Up Next queue: Bootstrap classes for the per-perspective status pill (green / yellow / red buckets).
+  def up_next_status_pill_class(bucket)
+    case bucket&.to_sym
+    when :green then "bg-success"
+    when :yellow then "bg-warning text-dark"
+    else "bg-danger"
+    end
+  end
+
+  # Up Next queue: copy for the per-perspective status pill.
+  def up_next_status_pill_message(bucket, person_name:)
+    name = person_name.presence || "They"
+    case bucket&.to_sym
+    when :green
+      "#{name} doesn't need to do anything with this right now"
+    when :yellow
+      "if #{name} wants to do an early check-in they could, but doesn't need to do anything with this right now"
+    else
+      "#{name} should do a check-in right now"
+    end
+  end
+
   # True Day-to-Day spotlight: time until clarity deadline from last finalized (matches _last_finalized_pill branches).
   # Returns "now" when there is no anchor finalized time or the deadline has passed.
   def complete_picture_next_check_in_word(official_check_in_completed_at)

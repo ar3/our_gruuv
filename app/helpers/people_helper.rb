@@ -125,6 +125,14 @@ module PeopleHelper
     end
   end
 
+  CLARITY_CHECK_INS_VIEW_ACTIONS = %w[hub show review_most_recent up_next].freeze
+
+  def clarity_check_ins_view_active?
+    (controller_name == 'check_ins' && CLARITY_CHECK_INS_VIEW_ACTIONS.include?(action_name)) ||
+      (controller_name == 'finalizations' && action_name == 'show') ||
+      (controller_name == 'employees' && action_name == 'audit')
+  end
+
   def people_current_view_name
     return 'Manage Profile Mode' unless action_name
     
@@ -132,9 +140,7 @@ module PeopleHelper
       return set_assignments_view_label
     end
 
-    if (controller_name == 'check_ins' && %w[hub show review_most_recent].include?(action_name)) ||
-       (controller_name == 'finalizations' && action_name == 'show') ||
-       (controller_name == 'employees' && action_name == 'audit')
+    if clarity_check_ins_view_active?
       return clarity_hub_label
     end
 

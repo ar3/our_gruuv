@@ -21,6 +21,22 @@ module TerminologyHelper
     terminology(:clarity_hub_description)
   end
 
+  def clarity_hub_five_ways_intro_label(teammate_name:)
+    terminology(:clarity_hub_five_ways_intro, teammate_name: teammate_name)
+  end
+
+  def clarity_hub_see_up_next_description_label
+    terminology(:clarity_hub_see_up_next_description)
+  end
+
+  def clarity_hub_see_up_next_link_label(employee_name:, manager_name:)
+    terminology(:clarity_hub_see_up_next_link, employee_name: employee_name, manager_name: manager_name)
+  end
+
+  def clarity_hub_see_full_queue_and_why_label
+    terminology(:clarity_hub_see_full_queue_and_why)
+  end
+
   def switch_teammate_for_clarity_hub_label
     terminology(:switch_teammate_for_clarity_hub)
   end

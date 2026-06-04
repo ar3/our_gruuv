@@ -1,0 +1,50 @@
+-# Locals: organization, teammate, employee_name, manager_name
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- employee_name = local_assigns.fetch(:employee_name)
+- manager_name = local_assigns.fetch(:manager_name)
+- teammate_name = teammate.person.casual_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Choose how to move #{teammate_name} toward clarity on where they stand—one item at a time, in bulk, together at finalization, or by reviewing history—and see what is up next for #{employee_name} and #{manager_name}.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+  = render 'shared/check_ins/three_step_clarity_flow', organization: organization, teammate: teammate, employee_name: employee_name
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 Clarity health at a glance
+  %p.mb-2
+    The percentage beside the intro line counts how many required 1-by-1 areas are in a
+    %strong crystal-clear
+    window (recent check-in activity or finalization). Hover the number for a breakdown by position, assignments, and aspirations.
+
+  %h5.fw-semibold.mb-2 Five ways to check in
+  %ul.mb-3
+    %li
+      %strong Clarity check-in, one at a time
+      — primary card; opens the top prioritized aspiration, assignment, or position. Use
+      %strong See full queue &amp; why
+      on that card for the dual-perspective explainer (
+      = link_to 'Up Next', up_next_organization_company_teammate_check_ins_path(organization, teammate)
+      ).
+    %li
+      %strong Bulk clarity check-in
+      — rate many areas in one pass (Reflect Apart for everything at once).
+    %li
+      %strong View latest clarity check-ins
+      — spreadsheet-style snapshot of the most recent finalized and open rows.
+    %li
+      %strong Review together
+      — Step Two finalization when both sides have marked ready on the same open check-in (card highlights when any are waiting).
+    %li
+      %strong Audit / acknowledgements
+      — Step Three: MAAP snapshots #{teammate_name} may still need to acknowledge.
+
+  %h5.fw-semibold.mb-2 See what is up next
+  %p.mb-0
+    The panel at the bottom opens
+    = link_to 'Clarity Check-ins... Up Next', up_next_organization_company_teammate_check_ins_path(organization, teammate)
+    with side-by-side queues, status pills (hover for why each item ranks where it does), and links when something is ready for #{employee_name} and #{manager_name} to review together.

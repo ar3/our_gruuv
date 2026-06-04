@@ -704,6 +704,13 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(" - Clarity Check-Ins")
       expect(response.body).to include("Clarity Check-Ins (Active)")
+      expect(response.body).to include("Goal of this page")
+      expect(response.body).to include("Five ways to check in")
+      expect(response.body).to include("Five ways to check in below")
+      expect(response.body).not_to include("Choose one of these 5 actions")
+      expect(response.body).to include("See full queue")
+      expect(response.body).to include("up next for #{employee_person.casual_name} and #{manager_person.casual_name}")
+      expect(response.body).to include(up_next_organization_company_teammate_check_ins_path(organization, employee_teammate))
       expect(response.body).to include(organization_company_teammate_check_ins_path(organization, employee_teammate))
       expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate))
       expect(response.body).to include(organization_company_teammate_finalization_path(organization, employee_teammate))
@@ -729,13 +736,48 @@ RSpec.describe "Organizations::CheckIns", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(" - Clarity Check-ins... Up Next")
+      expect(response.body).to include("Clarity Check-Ins (Active)")
+      expect(response.body).to include("Goal of this page")
+      expect(response.body).to include("Status pill on each item")
       expect(response.body).to include("#{employee_person.casual_name} perspective")
       expect(response.body).to include("#{manager_person.casual_name} perspective")
+      expect(response.body).to include("#{employee_person.casual_name} should do a check-in right now")
+      expect(response.body).to include("#{manager_person.casual_name} should do a check-in right now")
+      expect(response.body).to include('badge rounded-pill')
+      expect(response.body).not_to match(/1\. Up Next Aspiration/)
       expect(response.body).to include("Therefore this is")
       expect(response.body).to include("Required status:")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/assignments/#{assignment.id}")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/aspirations/#{aspiration.id}")
       expect(response.body).to include(position_check_in_organization_teammate_path(organization, employee_teammate))
+      expect(response.body).to include(
+        "Don't see an Assignment that you are ready to start / do a check-in on?"
+      )
+      expect(response.body).to include(
+        assignment_selection_organization_company_teammate_path(organization, employee_teammate)
+      )
+    end
+
+    it "shows a review-together button when an open check-in is ready for finalization" do
+      aspiration = create(:aspiration, company: organization, name: "Ready Aspiration")
+      create(
+        :aspiration_check_in,
+        :ready_for_finalization,
+        teammate: employee_teammate,
+        aspiration: aspiration,
+        manager_completed_by_teammate: manager_teammate
+      )
+
+      get up_next_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(
+        "Ready Aspiration is ready for #{employee_person.casual_name} and #{manager_person.casual_name} to review together"
+      )
+      expect(response.body).to include(
+        organization_company_teammate_finalization_path(organization, employee_teammate)
+      )
+      expect(response.body).to include("bi-box-arrow-up-right")
     end
   end
 end

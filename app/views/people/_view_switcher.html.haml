@@ -98,7 +98,7 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be in this teammate's managerial hierarchy or have the manage employment permission."}
 
     %li
-      - my_check_ins_active = (controller_name == 'check_ins' && %w[hub show review_most_recent].include?(action_name)) || (controller_name == 'finalizations' && action_name == 'show') || (controller_name == 'employees' && action_name == 'audit')
+      - my_check_ins_active = clarity_check_ins_view_active?
       - if my_check_ins_active
         .dropdown-item.text-muted
           %i.bi.bi-chat-square-text.me-2

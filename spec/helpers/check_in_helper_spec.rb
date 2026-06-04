@@ -61,6 +61,26 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
+  describe '#up_next_status_pill_message' do
+    it 'returns green-bucket copy' do
+      expect(helper.up_next_status_pill_message(:green, person_name: 'Nesha')).to eq(
+        "Nesha doesn't need to do anything with this right now"
+      )
+    end
+
+    it 'returns yellow-bucket copy' do
+      expect(helper.up_next_status_pill_message(:yellow, person_name: 'Tulay')).to eq(
+        "if Tulay wants to do an early check-in they could, but doesn't need to do anything with this right now"
+      )
+    end
+
+    it 'returns red-bucket copy' do
+      expect(helper.up_next_status_pill_message(:red, person_name: 'Nesha')).to eq(
+        'Nesha should do a check-in right now'
+      )
+    end
+  end
+
   describe '#last_finalized_recent?' do
     it 'returns false when latest_check_in is nil' do
       expect(helper.last_finalized_recent?(nil)).to eq(false)

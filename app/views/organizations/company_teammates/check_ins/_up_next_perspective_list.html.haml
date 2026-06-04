@@ -1,0 +1,17 @@
+-# Locals: items (explainer rows), person_name (employee or manager for this column)
+%ol.ps-3.mb-0
+  - items.each do |row|
+    %li.mb-3
+      = link_to row.dig(:item, :name), row[:url], class: "fw-semibold text-decoration-none d-block mb-1"
+      %ul.mb-0
+        %li.mb-1
+          = render "organizations/company_teammates/check_ins/up_next_status_pill",
+                   bucket: row.dig(:item, :bucket),
+                   person_name: person_name,
+                   therefore_line: row[:therefore_line]
+        %li= row[:finalized_line]
+        %li= row[:current_open_line]
+        - if row[:ready_for_joint_review].present?
+          = render "organizations/company_teammates/check_ins/up_next_ready_for_joint_review",
+                   ready_for_joint_review: row[:ready_for_joint_review]
+        %li= row[:required_line]

@@ -108,6 +108,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
     @person = @teammate.person
     assign_viewable_teammates_context!(selected_teammate: @teammate)
+    @employee_name = @teammate.person.casual_name.presence || "Employee"
+    @manager_name = @teammate.current_manager&.casual_name.presence || "Manager"
 
     @ready_for_review_count =
       PositionCheckIn.where(company_teammate: @teammate).ready_for_finalization.count +
@@ -1138,11 +1140,11 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       latest_open = latest_open_by_key[item_key]
       {
         item: item,
-        rank: index + 1,
         url: check_in_hub_item_url(item),
         finalized_line: up_next_finalized_line(latest_finalized),
         current_open_line: up_next_current_open_line(latest_open),
         therefore_line: up_next_therefore_line(item, index, ordered_items),
+        ready_for_joint_review: up_next_ready_for_joint_review(item, latest_open),
         required_line: up_next_required_line(item)
       }
     end
@@ -1208,6 +1210,15 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     "#{item_type}:#{item_id || 'none'}"
   end
 
+  def up_next_ready_for_joint_review(item, latest_open)
+    return nil unless latest_open&.ready_for_finalization?
+
+    {
+      label: "#{item[:name]} is ready for #{@employee_name} and #{@manager_name} to review together",
+      url: organization_company_teammate_finalization_path(organization, @teammate)
+    }
+  end
+
   def up_next_finalized_line(latest_finalized)
     if latest_finalized&.official_check_in_completed_at.present?
       "Last finalized #{view_context.time_ago_in_words(latest_finalized.official_check_in_completed_at)} ago."
@@ -1257,11 +1268,30 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
   def up_next_rank_reason(item, index, ordered_items)
     current_completed_at = item[:my_side_completed_at]
-    return "ranked first because your side has not been completed yet" if index.zero? && current_completed_at.blank?
+    if index.zero? && current_completed_at.blank?
+      return "ranked first because your side has not been completed yet on the open check-in"
+    end
     return "ranked first because it has the oldest completed date on your side" if index.zero?
 
     previous_item = ordered_items[index - 1]
     previous_completed_at = previous_item[:my_side_completed_at]
+    if current_completed_at.blank? && previous_completed_at.blank?
+      prev_bucket_rank = up_next_bucket_urgency_rank(previous_item[:bucket])
+      curr_bucket_rank = up_next_bucket_urgency_rank(item[:bucket])
+      if curr_bucket_rank > prev_bucket_rank
+        return "ordered after items with a more urgent clarity bucket (red before yellow before green)"
+      end
+      if curr_bucket_rank == prev_bucket_rank &&
+           item[:bucket_activity_at].present? &&
+           previous_item[:bucket_activity_at].present? &&
+           item[:bucket_activity_at] > previous_item[:bucket_activity_at]
+        return "ordered by oldest clarity activity among items where your side has not been completed yet"
+      end
+      if curr_bucket_rank == prev_bucket_rank
+        return "ordered by type then name among items with the same clarity urgency where your side has not been completed yet"
+      end
+      return "ordered among items where your side has not been completed yet"
+    end
     if current_completed_at.blank?
       "ordered among items where your side has not been completed yet"
     elsif previous_completed_at.blank?
@@ -1270,6 +1300,15 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       "ordered by type then name when completion timing ties"
     else
       "ordered by your side's completion date from oldest to newest"
+    end
+  end
+
+  def up_next_bucket_urgency_rank(bucket)
+    case bucket&.to_sym
+    when :red then 0
+    when :yellow then 1
+    when :green then 2
+    else 3
     end
   end
 

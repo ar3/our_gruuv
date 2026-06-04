@@ -2,13 +2,15 @@
 
 Synthesized from a recorded check-in walkthrough (Christina, employee). Use the priority column for top-3 focus; mark complete with ✅ when shipped.
 
+**Current top 3:** (1) manager-done ≠ employee-done messaging, (2) pre-fill % labeled as from last check-in, (3) notification **Review** vs bulk check-in path. Former priority 2 (assignment % sum to 100%) is ✅ shipped — see [Priority 2 — shipped](#priority-2--shipped-dual-energy-bars) below.
+
 | Struggle | Success criteria | Potential solutions | Priority |
 | --- | --- | --- | --- |
 | I am an employee, and I got a Slack message that my manager completed their check-in, so I assumed there was nothing left for me to do until my manager told me I still owed mine. | I know immediately that my self check-in is still required when my manager finishes theirs. | Slack/in-app copy: “[Manager] checked in — **your turn**”; employee notification when manager side is done and report side is open; link to my check-in task. | 1 |
-| I am an employee, and I thought each assignment’s time percentage was “out of 100%” on its own, not that all assignments should add up to 100% of my role. | I understand that assignment percentages represent how I split **all** of my job time across assignments. | Short helper on the assignments step (“These should total ~100%”); inline validation or soft warning if totals are far off; link to a one-line explainer. | 2 |
-| I am an employee, and I thought the pre-filled time percentages were what I *should* be spending now, not values carried over from our last finalized check-in. | I can tell at a glance whether a number is a **default from last time** vs my new input for this period. | Label pre-fills (“From last check-in on [date]”); empty or editable state on first visit after finalize; tooltip on the % field. | 3 |
+| I am an employee, and I thought each assignment’s time percentage was “out of 100%” on its own, not that all assignments should add up to 100% of my role. | I understand that assignment percentages represent how I split **all** of my job time across assignments. | Short helper on the assignments step (“These should total ~100%”); inline validation or soft warning if totals are far off; link to a one-line explainer. Dual stacked energy bars with totals/unallocated messaging (shipped 2026-06). | ✅ 2 |
+| I am an employee, and I thought the pre-filled time percentages were what I *should* be spending now, not values carried over from our last finalized check-in. | I can tell at a glance whether a number is a **default from last time** vs my new input for this period. | Label pre-fills (“From last check-in on [date]”); empty or editable state on first visit after finalize; tooltip on the % field; tie copy to planned vs live bar on dual-bar surfaces. | 2 |
+| I am an employee, and from the in-app notifications I tapped **Review** and got a page that looked nothing like the bulk check-in page, so I didn’t know what I was supposed to do. | I understand whether I should use review (one-by-one) or bulk check-in, and what happens when I choose each. | Short explainer on the review screen; cross-link to bulk flow; match headings/CTAs across both paths (“Continue check-in” / “3 of 8 remaining”). | 3 |
 | I am an employee, and I opened OurGruuv from the homepage instead of the Slack link, then used the bell notifications and wasn’t sure I was in the right place to do my check-in. | From any entry point (home, Slack, bell), I land on a clear “do your check-in” destination with one obvious next step. | Consistent deep links; post-login banner or About Me CTA when I have an open check-in; notification copy that names the action. | |
-| I am an employee, and from the in-app notifications I tapped **Review** and got a page that looked nothing like the bulk check-in page, so I didn’t know what I was supposed to do. | I understand whether I should use review (one-by-one) or bulk check-in, and what happens when I choose each. | Short explainer on the review screen; cross-link to bulk flow; match headings/CTAs across both paths (“Continue check-in” / “3 of 8 remaining”). | |
 | I am an employee, and I wasn’t sure if I should see my manager’s ratings and notes before I do mine, or only when we finalize together. | I know the intended order: I rate for myself first; we compare manager vs self at finalization. | Workflow copy on check-in start and review screens; hide or clearly label manager-only content until the right phase if that’s the product rule. | |
 | I am an employee, and I couldn’t say what an assignment required without clicking into it—I forget outcomes and activities between check-ins. | I can rate an assignment with enough context on the list row without always opening details. | Show tagline + key outcome on the row; expand “Show details” inline; optional “remind me what this is” on infrequent assignments. | |
 | I am an employee, and I didn’t notice that hovering the blue bar under a value showed how I was rated last time until someone pointed it out. | I can see prior check-in context without discovering a hidden hover affordance. | Visible “Last time: …” text or icon; always-on snapshot for values/assignments; legend on first check-in of a cycle. | |
@@ -23,3 +25,20 @@ Synthesized from a recorded check-in walkthrough (Christina, employee). Use the 
 | I am an employee giving private feedback, and I didn’t realize notifying the person, their manager, and their director would put us all in the same Slack thread—awkward for sensitive notes. | Before I send, I see who will be notified and how (including whether a shared Slack thread will be created). | Pre-send summary of recipients; option to notify in-app only; warn when multiple leaders join one thread. | |
 | I am an employee, and I wasn’t sure what the notes field was for or what time period my note should cover. | I know notes are optional context for this check-in period and who will see them when. | Placeholder with period (“Notes for the last ~60 days since …”); helper tying notes to self-rating, not manager visibility yet. | |
 | I am an employee with new assignments after a role change, and I didn’t realize I needed to read them carefully before rating—I might be rating the wrong definition of the job. | New or changed assignments are obvious, and I’m prompted to read outcomes/activities before first rating. | “New” badge; block or warn on first rating until details viewed; link to give feedback if the assignment doesn’t match my work. | |
+
+## Priority 2 — shipped (dual energy bars)
+
+**Status:** Complete (2026-06). Addresses the ✅ 2 row above.
+
+**What shipped**
+
+- **Dual stacked energy bars** (planned tenure on the left, live reflection/forecast on the right) with numeric totals, unallocated/overflow messaging, and section-scoped sticky placement where applicable.
+- **Surfaces with live % inputs:** bulk employee check-in (`check_ins/show`), review/finalization (`finalizations/show`), 1-by-1 assignment check-in (`teammates/assignments/show`), manager set day-to-day assignments (`assignment_tenure_check_in_bypass`).
+- **Explicitly excluded:** `review_most_recent` (no live % controls); manager-only bulk check-in view (employee-only bars on bulk).
+- **Supporting UX (same initiative):** page-help panels (Goal / Context / Specifics), Set Day-to-Day header + subtitle + “Set Assignments” view switcher, finalization header “Review check-ins together”.
+
+**Still open (now in current top 3)**
+
+- **1:** Slack/in-app “your turn” when manager finishes first.
+- **2:** Label pre-fills / planned vs live so % aren’t read as “what I should do now.”
+- **3:** Review vs bulk check-in clarity from notifications (pairs with entry-point/deep-link work in unprioritized rows).

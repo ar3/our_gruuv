@@ -75,6 +75,70 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
     end
   end
 
+  describe "bucket recency with latest finalized fallback" do
+    it "uses crystal-clear bucket when open side is incomplete but item was finalized recently" do
+      aspiration = create(:aspiration, company: organization, name: "Be Kind")
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: aspiration,
+        employee_completed_at: nil,
+        manager_completed_at: nil,
+        official_check_in_completed_at: nil
+      )
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: 6.days.ago
+      )
+
+      result = described_class.call(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :aspiration,
+        current_id: aspiration.id
+      )
+
+      item = result[:ordered_items].find { |i| i[:name] == "Be Kind" }
+      expect(item[:my_side_completed_at]).to be_nil
+      expect(item[:bucket]).to eq(described_class::BUCKET_GREEN)
+    end
+  end
+
+  describe "ordering among incomplete open sides" do
+    it "ranks a more urgent clarity bucket before a recently finalized item with the same incomplete open side" do
+      be_kind = create(:aspiration, company: organization, name: "Be Kind")
+      keep_growing = create(:aspiration, company: organization, name: "Keep Growing")
+
+      create(:aspiration_check_in, teammate: teammate, aspiration: be_kind, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: be_kind, official_check_in_completed_at: 6.days.ago)
+
+      create(:aspiration_check_in, teammate: teammate, aspiration: keep_growing, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: keep_growing,
+        official_check_in_completed_at: (CheckInBehavior::CLARITY_CLEAR_DAYS + 5).days.ago
+      )
+
+      result = described_class.call(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :position,
+        current_id: nil
+      )
+
+      aspiration_names = result[:ordered_items].select { |i| i[:type] == :aspiration }.map { |i| i[:name] }
+      expect(aspiration_names.first).to eq("Keep Growing")
+      expect(aspiration_names.second).to eq("Be Kind")
+    end
+  end
+
   describe "ordering by viewing side completion timing" do
     it "orders nil my-side completion first, then oldest to newest, then type and name" do
       position_major_level = create(:position_major_level)

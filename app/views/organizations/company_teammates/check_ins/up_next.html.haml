@@ -1,4 +1,5 @@
 - content_for :title, teammate_context_page_title(@selected_teammate, @up_next_page_title)
+- up_next_page_help_id = 'upNextPageHelp'
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -10,16 +11,9 @@
                path_for_teammate: ->(tm) { up_next_organization_company_teammate_check_ins_path(organization, tm) },
                switch_aria_label: switch_teammate_for_clarity_hub_label
       %span= " - #{@up_next_page_title}"
-    %button.btn.btn-outline-info.btn-sm.rounded-circle.p-0.d-inline-flex.align-items-center.justify-content-center{
-      type: "button",
-      style: "width: 28px; height: 28px;",
-      "data-bs-toggle" => "collapse",
-      "data-bs-target" => "#up-next-help",
-      "aria-expanded" => "false",
-      "aria-controls" => "up-next-help",
-      title: "How this ordering works. Click for details."
-    }
-      %i.bi.bi-info-lg
+      = render 'shared/page_help/header_info_button',
+               collapse_id: up_next_page_help_id,
+               tooltip: 'How 1-by-1 check-in queues are ordered for employee and manager. Click for details.'
 
 - content_for :header_action do
   = render "people/view_switcher"
@@ -27,18 +21,15 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: @up_next_page_title, url: nil }])
 
-#up-next-help.alert.alert-info.collapse.mb-3{ role: "region", "aria-label" => "How up-next ordering works" }
-  %p.mb-2
-    The goal of this page is to explain why each 1-by-1 check-in appears where it does in the queue for each perspective.
-  %p.mb-2
-    Example: an item where your side has never been completed ranks above one you completed recently, because this queue is based on your side's completion timing.
-  %ul.mb-0
-    %li First, items where your side is not completed yet (never completed on this open check-in).
-    %li Then, items where your side is completed, ordered oldest completion to newest.
-    %li Ties break by type (aspiration, assignment, position), then alphabetical name.
+.collapse.mb-4{id: up_next_page_help_id}
+  = render 'organizations/company_teammates/check_ins/up_next_page_help',
+           organization: organization,
+           teammate: @teammate,
+           employee_name: @employee_name,
+           manager_name: @manager_name
 
 %p.text-muted.mb-3
-  Two live lists of 1-by-1 check-ins sorted by urgency: one from the employee perspective, one from the manager perspective.
+  Two live lists sorted by urgency—one from #{@employee_name}'s perspective, one from #{@manager_name}'s.
 
 .row.g-4
   .col-12.col-lg-6
@@ -46,27 +37,22 @@
       .card-header
         %h5.mb-0= "#{@employee_name} perspective"
       .card-body
-        %ol.ps-3.mb-0
-          - @employee_up_next_items.each do |row|
-            %li.mb-3
-              = link_to "#{row[:rank]}. #{row.dig(:item, :name)}", row[:url], class: "fw-semibold text-decoration-none"
-              %ul.mb-0
-                %li= row[:finalized_line]
-                %li= row[:current_open_line]
-                %li= row[:therefore_line]
-                %li= row[:required_line]
+        = render "organizations/company_teammates/check_ins/up_next_perspective_list",
+                 items: @employee_up_next_items,
+                 person_name: @employee_name
 
   .col-12.col-lg-6
     .card.h-100
       .card-header
         %h5.mb-0= "#{@manager_name} perspective"
       .card-body
-        %ol.ps-3.mb-0
-          - @manager_up_next_items.each do |row|
-            %li.mb-3
-              = link_to "#{row[:rank]}. #{row.dig(:item, :name)}", row[:url], class: "fw-semibold text-decoration-none"
-              %ul.mb-0
-                %li= row[:finalized_line]
-                %li= row[:current_open_line]
-                %li= row[:therefore_line]
-                %li= row[:required_line]
+        = render "organizations/company_teammates/check_ins/up_next_perspective_list",
+                 items: @manager_up_next_items,
+                 person_name: @manager_name
+
+.row.mt-4
+  .col-12.col-sm-10.offset-sm-1
+    = link_to assignment_selection_organization_company_teammate_path(organization, @teammate),
+              class: "btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 text-muted text-start w-100 w-sm-auto" do
+      %span Don't see an Assignment that you are ready to start / do a check-in on?
+      %i.bi.bi-box-arrow-up-right.flex-shrink-0{aria: {hidden: true}}

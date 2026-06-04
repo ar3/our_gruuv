@@ -1,0 +1,6 @@
+-# Locals: ready_for_joint_review ({ label:, url: })
+- review = local_assigns.fetch(:ready_for_joint_review)
+%li
+  = link_to review[:url], class: "btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1 text-start" do
+    %span= review[:label]
+    %i.bi.bi-box-arrow-up-right.flex-shrink-0{aria: {hidden: true}}
