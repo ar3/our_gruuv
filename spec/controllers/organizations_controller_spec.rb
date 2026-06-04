@@ -278,11 +278,20 @@ RSpec.describe OrganizationsController, type: :controller do
   end
 
   describe 'GET #dashboard' do
-    it 'redirects to about_me page' do
+    it 'redirects to the preferred start page (default About Me)' do
       teammate = person.teammates.find_by(organization: organization)
       get :dashboard, params: { id: organization.id }
-      
+
       expect(response).to redirect_to(about_me_organization_company_teammate_path(organization, teammate))
+    end
+
+    it 'redirects to Start Here when that is the start page preference' do
+      teammate = person.teammates.find_by(organization: organization)
+      UserPreference.for_person(person).update_preference("start_page_#{organization.id}", 'start_here')
+
+      get :dashboard, params: { id: organization.id }
+
+      expect(response).to redirect_to(organization_start_here_path(organization))
     end
 
     context 'when current_company_teammate is nil' do

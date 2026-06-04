@@ -14,6 +14,7 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
     @gsd_pending_items_count = GetShitDoneQueryService.new(teammate: @teammate).all_pending_items[:total_pending].to_i
     @return_url = params[:return_url].presence
     @return_text = params[:return_text].presence
+    assign_digest_status_presenters
   end
 
   def sync_all_mediums
@@ -66,6 +67,7 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
     @about_me_teammates = organization_employees_for_about_me_settings
     @return_url = params[:return_url].presence
     @return_text = params[:return_text].presence
+    assign_digest_status_presenters
     flash.now[:alert] = 'Failed to save digest preferences.'
     render :edit, status: :unprocessable_entity
   end
@@ -88,6 +90,45 @@ class Organizations::DigestController < Organizations::OrganizationNamespaceBase
       .includes(:person)
       .order('people.last_name ASC, people.first_name ASC')
       .references(:people)
+  end
+
+  def assign_digest_status_presenters
+    gsd_label = helpers.company_label_for('get_shit_done', 'Get Shit Done')
+    teammate_ids = (@about_me_teammates.map(&:id) + [@teammate.id]).uniq
+    notifications_by_teammate_id = digest_root_notifications_for_teammates(teammate_ids)
+
+    @digest_status_by_teammate_id = @about_me_teammates.index_by(&:id).transform_values do |employee|
+      Digest::TeammateDigestStatusService.new(
+        teammate: employee,
+        organization: @organization,
+        gsd_label: gsd_label,
+        gsd_pending_count: employee.id == @teammate.id ? @gsd_pending_items_count : nil,
+        recent_notifications: notifications_by_teammate_id[employee.id]
+      )
+    end
+    @gsd_digest_status = @digest_status_by_teammate_id[@teammate.id] ||
+      Digest::TeammateDigestStatusService.new(
+        teammate: @teammate,
+        organization: @organization,
+        gsd_label: gsd_label,
+        gsd_pending_count: @gsd_pending_items_count,
+        recent_notifications: notifications_by_teammate_id[@teammate.id]
+      )
+  end
+
+  def digest_root_notifications_for_teammates(teammate_ids)
+    return {} if teammate_ids.empty?
+
+    Notification
+      .where(
+        notifiable_type: 'CompanyTeammate',
+        notifiable_id: teammate_ids,
+        notification_type: Digest::TeammateDigestStatusService::ROOT_DIGEST_TYPES,
+        main_thread_id: nil
+      )
+      .where(created_at: 3.weeks.ago..)
+      .order(created_at: :desc)
+      .group_by(&:notifiable_id)
   end
 
   def update_digest_mediums!(prefs)

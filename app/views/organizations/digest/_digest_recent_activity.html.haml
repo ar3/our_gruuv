@@ -1,0 +1,14 @@
+-# locals: events_by_week:, weeks:, empty_message:
+- if events_by_week.any?
+  - events_by_week.sort_by { |week_key, _| week_key }.reverse.first(weeks).each do |week_key, events|
+    .mb-2
+      %div.small.fw-semibold.text-muted= digest_week_key_label(week_key)
+      %ul.list-unstyled.mb-0.small
+        - events.sort_by(&:sent_at).reverse.each do |event|
+          %li
+            - status_class = event.status == 'sent_successfully' ? 'text-success' : (event.status == 'send_failed' ? 'text-danger' : 'text-muted')
+            %span{class: status_class}= digest_event_status_label(event.status)
+            = " · #{event.label} (#{event.medium}) · "
+            = l(event.sent_at.in_time_zone, format: :short)
+- else
+  %p.text-muted.small.mb-0= empty_message

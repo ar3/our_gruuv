@@ -62,9 +62,8 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   end
   
   def dashboard
-    # Redirect to about_me page instead of rendering dashboard
     if current_company_teammate && current_organization
-      redirect_to about_me_organization_company_teammate_path(current_organization, current_company_teammate)
+      redirect_to helpers.preferred_start_page_path(current_organization, current_company_teammate)
     elsif current_organization
       # If we have an organization but no teammate, redirect to root
       flash[:alert] = "Unable to access dashboard. Please log in again."

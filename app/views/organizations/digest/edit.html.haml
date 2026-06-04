@@ -44,6 +44,19 @@
               = "Send test (#{gsd_label})"
             %span.ms-2.text-muted.small{ data: { bs_toggle: 'tooltip', bs_placement: 'top' }, title: "Add an item to your #{gsd_label} list, then you can send a test." }
               %i.bi.bi-info-circle
+          - if @gsd_digest_status
+            .mt-3.pt-3.border-top
+              %div.small.fw-semibold.mb-1 Scheduling & delivery
+              %p.text-muted.small.mb-2= @gsd_digest_status.gsd_schedule_summary
+              = render 'organizations/digest/digest_blockers',
+                       blockers: @gsd_digest_status.gsd_blockers,
+                       ready_summary: (@gsd_digest_status.gsd_blockers.empty? ? "Ready to send when #{gsd_label} has pending items." : nil)
+              %div.small.fw-semibold.mb-1.mt-3 Recent sends (last 3 weeks)
+              - gsd_events_by_week = @gsd_digest_status.recent_events_by_week(weeks: 3).transform_values { |events| events.select { |e| e.digest_key == 'gsd_digest' } }.reject { |_k, v| v.empty? }
+              = render 'organizations/digest/digest_recent_activity',
+                       events_by_week: gsd_events_by_week,
+                       weeks: 3,
+                       empty_message: "No #{gsd_label} digest notifications recorded in this period (SMS sends are not logged here)."
       .col-12.col-lg-6
         .border.rounded.p-3.h-100
           %h6.mb-2 Weekly Slack digests (1:1 + About Me)
@@ -110,7 +123,7 @@
       %hr.my-4
       %h5.mb-3 Weekly reminder day
       %p.text-muted.small
-        Applies to each employee listed. Sent at 8:00 AM in that employee's timezone.
+        Applies to each employee listed. Sent at 8:00 AM in that employee's timezone. Expand each row for recent Slack activity and reasons a digest might not send.
       .table-responsive
         %table.table.table-sm.align-middle
           %thead
@@ -123,6 +136,7 @@
               - pref = UserPreference.for_person(employee.person)
               - selected_day = pref.preference(:about_me_weekly_day).presence || 'off'
               - manager_name = employee.active_employment_tenure&.manager_teammate&.person&.casual_name
+              - employee_status = @digest_status_by_teammate_id&.dig(employee.id)
               %tr
                 %td
                   .d-flex.align-items-center.gap-2
@@ -140,6 +154,10 @@
                 - [['0'], ['1'], ['2'], ['3'], ['4'], ['5'], ['6'], ['off']].flatten.each do |value|
                   %td.text-center
                     = radio_button_tag "about_me_days[#{employee.id}]", value, selected_day.to_s == value.to_s, class: 'form-check-input'
+              - if employee_status
+                %tr
+                  %td{ colspan: 9, class: 'p-0 border-0' }
+                    = render 'organizations/digest/teammate_weekly_digest_status', status: employee_status, weeks: 3
 
       .d-flex.flex-wrap.gap-2.align-items-center.mt-4
         = f.submit "Save preferences", class: "btn btn-primary"

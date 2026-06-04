@@ -9,21 +9,21 @@ RSpec.describe 'Organization Dashboard Redirect', type: :system do
     sign_in_as(person, organization)
   end
 
-  describe 'Dashboard redirects to about_me' do
-    it 'redirects to about_me page' do
+  describe 'Dashboard redirects to preferred start page' do
+    it 'redirects to About Me by default' do
       visit dashboard_organization_path(organization)
 
       expect(current_path).to eq(about_me_organization_company_teammate_path(organization, teammate))
-      # Heading is "About Me"; casual name appears elsewhere on the page (may also exist in non-visible nav duplicates).
       expect(page).to have_content('About Me')
       expect(page).to have_content(person.casual_name)
     end
 
-    it 'redirects correctly when accessed via URL' do
+    it 'redirects to Start Here when configured as start page' do
+      UserPreference.for_person(person).update_preference("start_page_#{organization.id}", 'start_here')
+
       visit dashboard_organization_path(organization)
 
-      # Should be redirected to about_me
-      expect(page).to have_current_path(about_me_organization_company_teammate_path(organization, teammate))
+      expect(page).to have_current_path(organization_start_here_path(organization))
     end
   end
 end

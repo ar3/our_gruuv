@@ -20,6 +20,20 @@ RSpec.describe 'Organizations::Digest', type: :request do
       expect(response.body).to include('Digest settings')
       expect(response.body).to include('Slack')
       expect(response.body).to include('Send test (Get Shit Done)')
+      expect(response.body).to include('Recent sends (last 3 weeks)')
+      expect(response.body).to include('Scheduling & delivery')
+    end
+
+    it 'shows digest blockers when weekly day is not set' do
+      create(:employment_tenure, company_teammate: teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+      teammate.update!(first_employed_at: 1.year.ago, last_terminated_at: nil)
+      UserPreference.for_person(person).update_preference('about_me_weekly_day', 'off')
+      UserPreference.for_person(person).update_preference('digest_slack', 'off')
+
+      get edit_organization_digest_path(company)
+
+      expect(response.body).to include('weekly reminder day')
+      expect(response.body).to include('Turn on Slack digest')
     end
 
     it 'shows back link when return_url and return_text are provided' do

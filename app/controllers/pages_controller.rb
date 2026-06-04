@@ -9,8 +9,7 @@ class PagesController < ApplicationController
         return
       end
       
-      # If logged in with current organization, redirect to organization dashboard
-      redirect_to dashboard_organization_path(current_organization)
+      redirect_to helpers.preferred_start_page_path(current_organization, current_company_teammate)
       return
     end
     

@@ -1,0 +1,11 @@
+-# locals: blockers:, ready_summary: nil
+- if blockers.any?
+  %ul.list-unstyled.mb-0.small.text-warning
+    - blockers.each do |message|
+      %li
+        %i.bi.bi-exclamation-triangle.me-1
+        = message
+- elsif ready_summary.present?
+  %p.text-muted.small.mb-0
+    %i.bi.bi-check-circle.text-success.me-1
+    = ready_summary

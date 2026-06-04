@@ -71,4 +71,23 @@ module DigestHelper
   def about_me_digest_popover_content
     ABOUT_ME_DIGEST_POPOVER
   end
+
+  def digest_week_key_label(week_key)
+    year, week = week_key.to_s.split('-').map(&:to_i)
+    return "Week #{week_key}" if year.zero? || week.zero?
+
+    start = Date.commercial(year, week, 1)
+    "Week of #{start.strftime('%b %-d, %Y')}"
+  rescue ArgumentError
+    "Week #{week_key}"
+  end
+
+  def digest_event_status_label(status)
+    case status.to_s
+    when 'sent_successfully' then 'Sent'
+    when 'send_failed' then 'Failed'
+    when 'preparing_to_send' then 'Queued'
+    else 'Unknown'
+    end
+  end
 end
