@@ -78,7 +78,7 @@
                 .check-in-inline.mt-1.p-1.bg-light.rounded
                   .goal-check-in-inline-layout{class: ('goal-check-in-inline-layout--with-rail' if can_update_goal)}
                     .goal-check-in-inline-layout__main
-                      = form_with url: check_in_organization_goal_path(@organization, goal), method: :post, local: true, html: { class: 'd-flex flex-column gap-1' } do |f|
+                      = form_with url: check_in_organization_goal_path(@organization, goal), method: :post, local: true, html: { class: 'd-flex flex-column gap-1 goal-check-in-form' } do |f|
                         = hidden_field_tag :return_url, request.fullpath
                         .d-flex.flex-wrap.align-items-center.gap-2
                           %span.small I'm

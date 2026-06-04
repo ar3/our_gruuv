@@ -25,7 +25,8 @@
           %i.bi.bi-arrows-collapse.me-1
           Collapse All
   
-  .tree-visualization{style: "padding: 10px 0;"}
+  - goals_check_in_confirm_leave_data = { controller: 'confirm-leave', confirm_leave_single_active_form_value: true, action: 'input->confirm-leave#markDirty change->confirm-leave#markDirty focusin->confirm-leave#guardSecondForm' }
+  .tree-visualization{style: "padding: 10px 0;", data: goals_check_in_confirm_leave_data}
     - if root_goals.empty?
       / No hierarchy found, display flat list
       - @goals.each do |goal|

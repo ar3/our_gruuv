@@ -934,6 +934,18 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Active Goal')
       expect(response.body).to include('Child Goal')
       expect(response.body).to include('tree-node')
+      expect(response.body).to include('data-controller="confirm-leave"')
+    end
+
+    it 'does not wire confirm-leave on table view' do
+      get organization_goals_path(organization), params: {
+        view: 'table',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('data-confirm-leave-single-active-form-value')
     end
 
     it 'shows expand/collapse buttons' do
@@ -981,6 +993,9 @@ RSpec.describe 'Organizations::Goals', type: :request do
       # Check-in form uses sentence: "I'm [dropdown] confident this'll be hit by [date]."
       expect(response.body).to include('confident this\'ll be hit by')
       expect(response.body).to include('Check In')
+      expect(response.body).to include('data-controller="confirm-leave"')
+      expect(response.body).to include('goal-check-in-form')
+      expect(response.body).to include('data-confirm-leave-single-active-form-value')
     end
 
     it 'does not show View button for vision goals (only view would be shown)' do
