@@ -428,19 +428,21 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def assignment_selection
     authorize @teammate, :manage_assignments?, policy_class: CompanyTeammatePolicy
-    
-    @assignments = organization.assignments.unarchived.includes(:position_assignments).ordered
+
     @current_employment = @teammate&.employment_tenures&.active&.first
-    
-    # Get required assignment IDs from position
-    @required_assignment_ids = if @current_employment&.position
-      @current_employment.position.assignments.pluck(:id)
-    else
-      []
-    end
-    
-    # Get already assigned assignment IDs (active tenures)
+    position = @current_employment&.position
+
+    @required_assignment_ids = position ? position.required_assignments.pluck(:assignment_id) : []
+    @suggested_assignment_ids = position ? position.suggested_assignments.pluck(:assignment_id) : []
     @assigned_assignment_ids = @teammate.assignment_tenures.active.pluck(:assignment_id)
+
+    @assignments = organization.assignments.unarchived
+                                .includes(:department)
+                                .to_a
+                                .sort_by do |assignment|
+                                  dept_sort = assignment.department ? [1, assignment.department.display_name.downcase] : [0, ""]
+                                  [dept_sort, assignment.title.downcase]
+                                end
   end
 
   def update_assignments

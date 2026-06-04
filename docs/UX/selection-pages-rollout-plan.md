@@ -40,8 +40,8 @@ Do **not** batch multiple pages unless you ask for it.
 | # | Page (route) | View | Notes |
 |---|--------------|------|-------|
 | C1 | Add Assignments to Observation ✅ (`GET …/observations/:id/add_assignments`, `POST …/add_rateables`) | `observations/add_assignments` | Done |
-| C2 | Teammate assignment selection (`GET/POST …/company_teammates/:id/assignment_selection`) | `company_teammates/assignment_selection` | Required/assigned rows disabled |
-| C3 | People assignment selection (`GET/POST …/company_teammates/:id/assignment_selection`) | `people/assignment_selection` | Same route as C2 if still separate view |
+| C2 | Teammate assignment selection ✅ (`GET/POST …/company_teammates/:id/assignment_selection`) | `company_teammates/assignment_selection` | Done; tagline + status badges; suggested enabled/unchecked |
+| C3 | ~~People assignment selection~~ | ~~`people/assignment_selection`~~ | **Removed** — unused duplicate view; route always rendered `company_teammates/assignment_selection` |
 | C4 | Associate Assignments — department (`GET/PATCH …/departments/:id/associate_assignments`) | `departments/associate_assignments` | Table + select-all |
 | — | Manage Consumer Assignments ✅ (`GET/PATCH …/assignments/:id/consumer_assignments`) | `assignments/consumer_assignments/show` | Reference (pre–Phase A) |
 

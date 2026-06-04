@@ -170,5 +170,6 @@ For MAAP-style pages, users without permission are **redirected** — do not bui
 - **Add Abilities to Observation** — `organizations/observations/:id/add_abilities`
 - **Add Assignments to Observation** — `organizations/observations/:id/add_assignments`
 - **Add Aspirations to Observation** — `organizations/observations/:id/add_aspirations`
+- **Teammate assignment selection** — `organizations/company_teammates/:id/assignment_selection`
 
 When you add this pattern to another page, add it here and in [selection-pages-rollout-plan.md](./selection-pages-rollout-plan.md).

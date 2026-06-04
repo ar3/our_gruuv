@@ -18,7 +18,11 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
   let!(:optional_assignment1) { create(:assignment, company: organization, title: 'Optional Assignment 1') }
   let!(:optional_assignment2) { create(:assignment, company: organization, title: 'Optional Assignment 2') }
   
-  let!(:position_assignment) { create(:position_assignment, position: position, assignment: required_assignment) }
+  let!(:position_assignment) { create(:position_assignment, position: position, assignment: required_assignment, assignment_type: 'required') }
+  let!(:suggested_assignment) { create(:assignment, company: organization, title: 'Suggested Assignment') }
+  let!(:suggested_position_assignment) do
+    create(:position_assignment, position: position, assignment: suggested_assignment, assignment_type: 'suggested')
+  end
 
   before do
     # Set first_employed_at for teammates
@@ -56,7 +60,33 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
         get assignment_selection_organization_company_teammate_path(organization, person_teammate)
         
         expect(assigns(:required_assignment_ids)).to include(required_assignment.id)
-        expect(assigns(:required_assignment_ids)).not_to include(optional_assignment1.id)
+        expect(assigns(:required_assignment_ids)).not_to include(optional_assignment1.id, suggested_assignment.id)
+      end
+
+      it 'identifies suggested assignments separately from required' do
+        employment_tenure.update!(position: position)
+
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
+
+        expect(assigns(:suggested_assignment_ids)).to include(suggested_assignment.id)
+        expect(assigns(:suggested_assignment_ids)).not_to include(required_assignment.id)
+      end
+
+      it 'renders selection toolbar and leaves suggested assignments unchecked and enabled' do
+        employment_tenure.update!(position: position)
+
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
+
+        expect(response.body).to include('data-controller="selection-toolbar options-filter"')
+        expect(response.body).to include('Required and active assignments are automatically added')
+        expect(response.body).to include('Suggested')
+
+        assert_select "input#assignment_ids_#{suggested_assignment.id}[type=checkbox]" do |inputs|
+          expect(inputs.first[:disabled]).to be_nil
+          expect(inputs.first[:checked]).to be_nil
+        end
+
+        assert_select "input#assignment_ids_#{required_assignment.id}[type=checkbox][disabled][checked]"
       end
 
       it 'identifies assignments with active tenures' do
