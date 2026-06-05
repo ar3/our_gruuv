@@ -387,6 +387,47 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response).to have_http_status(:success)
         expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first).to be_nil
       end
+
+      it "also destroys a same-day 0% active tenure created with the check-in" do
+        assignment_tenure.update!(
+          anticipated_energy_percentage: 0,
+          started_at: open_check_in.check_in_started_on
+        )
+
+        expect do
+          delete delete_path
+        end.to change { AssignmentCheckIn.where(id: open_check_in.id).count }.from(1).to(0)
+          .and change { AssignmentTenure.where(id: assignment_tenure.id).count }.from(1).to(0)
+
+        expect(response).to redirect_to(assignment_show_path)
+        expect(flash[:notice]).to eq("That open check-in was deleted.")
+        expect(employee_teammate.assignment_tenures.active.where(assignment: assignment)).to be_empty
+      end
+
+      it "does not destroy an active tenure that started on a different day" do
+        assignment_tenure.update!(
+          anticipated_energy_percentage: 0,
+          started_at: open_check_in.check_in_started_on - 1.day
+        )
+
+        expect do
+          delete delete_path
+        end.to change { AssignmentCheckIn.where(id: open_check_in.id).count }.from(1).to(0)
+
+        expect(AssignmentTenure.where(id: assignment_tenure.id).count).to eq(1)
+        expect(assignment_tenure.reload).to be_active
+      end
+
+      it "does not destroy an active tenure with non-zero energy" do
+        assignment_tenure.update!(started_at: open_check_in.check_in_started_on)
+
+        expect do
+          delete delete_path
+        end.to change { AssignmentCheckIn.where(id: open_check_in.id).count }.from(1).to(0)
+
+        expect(AssignmentTenure.where(id: assignment_tenure.id).count).to eq(1)
+        expect(assignment_tenure.reload).to be_active
+      end
     end
 
     context "when the assignment is required on the teammate's position" do

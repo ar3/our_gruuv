@@ -152,7 +152,16 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
         alert: "This check-in cannot be deleted yet because the other person still has values entered."
     end
 
-    if open_check_in.destroy
+    deleted = false
+    ActiveRecord::Base.transaction do
+      orphan_tenure = orphan_placeholder_tenure_for(open_check_in)
+      raise ActiveRecord::Rollback unless open_check_in.destroy
+      raise ActiveRecord::Rollback if orphan_tenure && !orphan_tenure.destroy
+
+      deleted = true
+    end
+
+    if deleted
       redirect_to assignment_show_path, notice: "That open check-in was deleted."
     else
       redirect_to assignment_show_path,
@@ -161,6 +170,15 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
   end
 
   private
+
+  def orphan_placeholder_tenure_for(open_check_in)
+    tenure = @teammate.assignment_tenures.active.find_by(assignment: @assignment)
+    return nil unless tenure
+    return nil unless tenure.anticipated_energy_percentage == 0
+    return nil unless tenure.started_at == open_check_in.check_in_started_on
+
+    tenure
+  end
 
   def set_teammate
     @teammate = find_organization_teammate!(params[:teammate_id])
