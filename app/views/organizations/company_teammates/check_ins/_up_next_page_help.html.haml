@@ -50,9 +50,23 @@
   %h5.fw-semibold.mb-2 How items are ordered
   %ul.mb-3
     %li Items where that person’s open side is not completed yet come first.
-    %li Among those, more urgent clarity buckets first (red, then yellow, then green), then oldest clarity activity.
+    %li Among those, more urgent clarity buckets first (red, then yellow, then green).
+    %li Then by type (aspiration, assignment, position), oldest clarity activity, and name.
     %li Then items where that side is completed, oldest completion to newest on the open check-in.
-    %li Ties break by type (aspiration, assignment, position), then name.
+    %li Ties on completed sides break by type, then name.
+
+  %h5.fw-semibold.mb-2 Clarity actions
+  %p.mb-2
+    Each list item ends with how many clarity actions that person still needs on that item.
+  %ul.mb-3
+    %li
+      %strong Employee:
+      0 or 1 action—check in when the status pill says they should do a check-in right now and their open side is not completed yet.
+    %li
+      %strong Manager:
+      up to 2 actions per item—the same check-in rule, plus finalize/review when the last finalized check-in for that item is blurred or obscured.
+    %li
+      Joint review (ready to finalize together) is shown separately and is not counted here.
 
   %h5.fw-semibold.mb-2 Example list item
   %p.mb-2.text-muted.small
@@ -66,4 +80,5 @@
         %span.text-muted (hover pill on the live page for this detail)
       %li Last finalized 2 months ago.
       %li= "#{employee_name}: not completed yet · #{manager_name}: not completed yet"
-      %li Required status: required — aspirations are always included for 1-by-1 clarity check-ins.
+      %li This aspirational value is on the list because aspirational values are always included for 1-by-1 clarity check-ins.
+      %li= "1 action needed from #{employee_name}"

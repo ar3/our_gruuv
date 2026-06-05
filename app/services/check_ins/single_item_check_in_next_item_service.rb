@@ -189,8 +189,8 @@ module CheckIns
           [
             0,
             bucket_urgency_rank(i[:bucket]),
-            i[:bucket_activity_at] || Time.zone.at(0),
             type_rank,
+            i[:bucket_activity_at] || Time.zone.at(0),
             name_key
           ]
         end

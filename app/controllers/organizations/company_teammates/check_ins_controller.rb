@@ -163,6 +163,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
     @employee_up_next_items = build_up_next_explainer_items_for(@employee_perspective_person)
     @manager_up_next_items = build_up_next_explainer_items_for(@manager_perspective_person)
+    assign_up_next_actions_spotlight!
   end
   
   def update
@@ -1123,6 +1124,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   end
 
   def build_up_next_explainer_items_for(perspective_person)
+    manager_perspective = up_next_manager_perspective?(perspective_person)
+    person_name = manager_perspective ? @manager_name : @employee_name
     next_result = CheckIns::SingleItemCheckInNextItemService.call(
       teammate: @teammate,
       organization: organization,
@@ -1138,6 +1141,12 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       item_key = up_next_item_key(item)
       latest_finalized = latest_finalized_by_key[item_key]
       latest_open = latest_open_by_key[item_key]
+      actions_needed_count = up_next_actions_needed_count(
+        item: item,
+        latest_finalized: latest_finalized,
+        manager_perspective: manager_perspective
+      )
+      actions_total_count = manager_perspective ? 2 : 1
       {
         item: item,
         url: check_in_hub_item_url(item),
@@ -1145,9 +1154,45 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         current_open_line: up_next_current_open_line(latest_open),
         therefore_line: up_next_therefore_line(item, index, ordered_items),
         ready_for_joint_review: up_next_ready_for_joint_review(item, latest_open),
-        required_line: up_next_required_line(item)
+        required_line: up_next_required_line(item),
+        actions_needed_count: actions_needed_count,
+        actions_total_count: actions_total_count,
+        actions_line: up_next_actions_needed_line(actions_needed_count, person_name)
       }
     end
+  end
+
+  def assign_up_next_actions_spotlight!
+    @employee_up_next_actions_needed = @employee_up_next_items.sum { |row| row[:actions_needed_count] }
+    @employee_up_next_actions_total = @employee_up_next_items.sum { |row| row[:actions_total_count] }
+    @manager_up_next_actions_needed = @manager_up_next_items.sum { |row| row[:actions_needed_count] }
+    @manager_up_next_actions_total = @manager_up_next_items.sum { |row| row[:actions_total_count] }
+    @up_next_actions_needed = @employee_up_next_actions_needed + @manager_up_next_actions_needed
+    @up_next_actions_total = @employee_up_next_actions_total + @manager_up_next_actions_total
+  end
+
+  def up_next_manager_perspective?(perspective_person)
+    perspective_person.id != @employee_perspective_person.id
+  end
+
+  def up_next_actions_needed_count(item:, latest_finalized:, manager_perspective:)
+    count = up_next_check_in_action_needed?(item) ? 1 : 0
+    count += 1 if manager_perspective && up_next_finalize_action_needed?(latest_finalized)
+    count
+  end
+
+  def up_next_check_in_action_needed?(item)
+    item[:bucket]&.to_sym == :red && item[:my_side_completed_at].blank?
+  end
+
+  def up_next_finalize_action_needed?(latest_finalized)
+    level = latest_finalized&.clarity_level || :obscured
+    level.in?(%i[blurred obscured])
+  end
+
+  def up_next_actions_needed_line(count, person_name)
+    action_word = count == 1 ? "action" : "actions"
+    "#{count} #{action_word} needed from #{person_name}"
   end
 
   def build_latest_finalized_by_item_key(items)
@@ -1281,14 +1326,20 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       if curr_bucket_rank > prev_bucket_rank
         return "ordered after items with a more urgent clarity bucket (red before yellow before green)"
       end
+      prev_type_rank = up_next_type_rank(previous_item[:type])
+      curr_type_rank = up_next_type_rank(item[:type])
+      if curr_bucket_rank == prev_bucket_rank && curr_type_rank > prev_type_rank
+        return "ordered after items of an earlier type (aspiration before assignment before position)"
+      end
       if curr_bucket_rank == prev_bucket_rank &&
+           curr_type_rank == prev_type_rank &&
            item[:bucket_activity_at].present? &&
            previous_item[:bucket_activity_at].present? &&
            item[:bucket_activity_at] > previous_item[:bucket_activity_at]
-        return "ordered by oldest clarity activity among items where your side has not been completed yet"
+        return "ordered by oldest clarity activity among items with the same bucket and type where your side has not been completed yet"
       end
-      if curr_bucket_rank == prev_bucket_rank
-        return "ordered by type then name among items with the same clarity urgency where your side has not been completed yet"
+      if curr_bucket_rank == prev_bucket_rank && curr_type_rank == prev_type_rank
+        return "ordered by name among items with the same clarity urgency and type where your side has not been completed yet"
       end
       return "ordered among items where your side has not been completed yet"
     end
@@ -1303,6 +1354,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
   end
 
+  def up_next_type_rank(type)
+    { aspiration: 0, assignment: 1, position: 2 }[type&.to_sym] || 99
+  end
+
   def up_next_bucket_urgency_rank(bucket)
     case bucket&.to_sym
     when :red then 0
@@ -1313,25 +1368,34 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   end
 
   def up_next_required_line(item)
+    prefix = up_next_list_reason_prefix(item)
     case item[:type]&.to_sym
     when :position
-      "Required status: required — this is the teammate's current position check-in."
+      "#{prefix} this is the teammate's current position check-in."
     when :assignment
       assignment_id = item[:id].to_i
       on_position = @up_next_required_assignment_ids.include?(assignment_id)
       active_tenure = @up_next_active_tenure_assignment_ids.include?(assignment_id)
 
       if on_position && active_tenure
-        "Required status: required — this assignment is required on the current position and has an active assignment tenure."
+        "#{prefix} it is required on the current position and the teammate currently has it as an active assignment tenure."
       elsif on_position
-        "Required status: required — this assignment is required on the current position."
+        "#{prefix} it is required on the current position."
       elsif active_tenure
-        "Required status: required — this assignment is on the list because the teammate currently has it as an active assignment tenure."
+        "#{prefix} the teammate currently has it as an active assignment tenure."
       else
-        "Required status: not required — included because this item exists in the 1-by-1 check-in scope."
+        "#{prefix} this item exists in the 1-by-1 check-in scope."
       end
     else
-      "Required status: required — aspirations are always included for 1-by-1 clarity check-ins."
+      "#{prefix} aspirational values are always included for 1-by-1 clarity check-ins."
+    end
+  end
+
+  def up_next_list_reason_prefix(item)
+    case item[:type]&.to_sym
+    when :position then "This position check-in is on the list because"
+    when :assignment then "This assignment is on the list because"
+    else "This aspirational value is on the list because"
     end
   end
 

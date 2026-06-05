@@ -137,6 +137,32 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
       expect(aspiration_names.first).to eq("Keep Growing")
       expect(aspiration_names.second).to eq("Be Kind")
     end
+
+    it "ranks type before oldest clarity activity within the same bucket" do
+      aspiration = create(:aspiration, company: organization, name: "Older Value")
+      assignment = create(:assignment, company: organization, title: "Newer Assignment")
+      create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 6.months.ago, ended_at: nil)
+
+      old_activity = (CheckInBehavior::CLARITY_CLEAR_DAYS + 5).days.ago
+      new_activity = 6.days.ago
+
+      create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: old_activity)
+
+      create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(:assignment_check_in, :finalized, teammate: teammate, assignment: assignment, official_check_in_completed_at: new_activity)
+
+      result = described_class.call(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :position,
+        current_id: nil
+      )
+
+      names = result[:ordered_items].first(2).map { |i| i[:name] }
+      expect(names).to eq(["Older Value", "Newer Assignment"])
+    end
   end
 
   describe "ordering by viewing side completion timing" do

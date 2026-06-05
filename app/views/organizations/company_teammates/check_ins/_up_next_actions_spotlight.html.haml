@@ -1,0 +1,35 @@
+-# Locals: actions_needed, actions_total, label (optional heading override), compact (optional, smaller variant)
+- actions_needed = local_assigns.fetch(:actions_needed)
+- actions_total = local_assigns.fetch(:actions_total)
+- actions_completed = actions_total - actions_needed
+- label = local_assigns[:label]
+- compact = local_assigns.fetch(:compact, false)
+- wrapper_class = compact ? "py-2 px-3 rounded border mb-0" : "card border mb-4"
+- body_class = compact ? "mb-0" : "card-body py-4"
+- heading_class = compact ? "h6 mb-1" : "h3 mb-2"
+- stat_class = compact ? "h5 mb-1" : "display-6 mb-1"
+- caption_class = compact ? "small text-muted mb-0" : "text-muted small mb-0"
+
+%div{class: wrapper_class, role: "region"}
+  - unless compact
+    .card-header.bg-light
+      %h6.mb-0.text-uppercase.text-muted Spotlight
+  %div{class: body_class}
+    - if label.present?
+      %p{class: "#{heading_class} fw-semibold"}
+        = label
+    %p{class: stat_class}
+      %span.text-success= actions_completed
+      %span.text-muted
+        of
+        = actions_total
+        clarifying #{"action".pluralize(actions_total)}
+        completed
+    %p{class: caption_class}
+      %span ... meaning;
+      %span.text-danger= actions_needed
+      %span.text-muted
+        of
+        = actions_total
+        #{"action".pluralize(actions_total)}
+        needed for clarity

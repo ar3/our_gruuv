@@ -31,11 +31,20 @@
 %p.text-muted.mb-3
   Two live lists sorted by urgency—one from #{@employee_name}'s perspective, one from #{@manager_name}'s.
 
+= render "organizations/company_teammates/check_ins/up_next_actions_spotlight",
+         actions_needed: @up_next_actions_needed,
+         actions_total: @up_next_actions_total,
+         label: "Overall clarity actions"
+
 .row.g-4
   .col-12.col-lg-6
     .card.h-100
       .card-header
-        %h5.mb-0= "#{@employee_name} perspective"
+        %h5.mb-2= "#{@employee_name} perspective"
+        = render "organizations/company_teammates/check_ins/up_next_actions_spotlight",
+                 actions_needed: @employee_up_next_actions_needed,
+                 actions_total: @employee_up_next_actions_total,
+                 compact: true
       .card-body
         = render "organizations/company_teammates/check_ins/up_next_perspective_list",
                  items: @employee_up_next_items,
@@ -44,7 +53,11 @@
   .col-12.col-lg-6
     .card.h-100
       .card-header
-        %h5.mb-0= "#{@manager_name} perspective"
+        %h5.mb-2= "#{@manager_name} perspective"
+        = render "organizations/company_teammates/check_ins/up_next_actions_spotlight",
+                 actions_needed: @manager_up_next_actions_needed,
+                 actions_total: @manager_up_next_actions_total,
+                 compact: true
       .card-body
         = render "organizations/company_teammates/check_ins/up_next_perspective_list",
                  items: @manager_up_next_items,
