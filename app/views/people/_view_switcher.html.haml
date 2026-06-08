@@ -115,6 +115,24 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => clarity_check_in_features_tooltip}
 
     %li
+      - ogos_active = controller_name == 'ogos' && %w[about from feedback_requests].include?(action_name)
+      - ogos_label = @teammate ? "#{@teammate.person.casual_name}'s OGOs" : "OGOs"
+      - if ogos_active
+        .dropdown-item.text-muted
+          %i.bi.bi-chat-quote.me-2
+          = "#{ogos_label} (Active)"
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif @teammate && policy(@teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)).ogos?
+        = link_to ogos_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-chat-quote.me-2
+          = ogos_label
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-chat-quote.me-2
+          = ogos_label
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can view OGOs for yourself, people in your managerial hierarchy, or if you have manage employment permission."}
+
+    %li
       - one_on_one_active = controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
       - one_on_one_link = @teammate&.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
       - if one_on_one_active

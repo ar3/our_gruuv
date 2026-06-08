@@ -1,0 +1,17 @@
+= render "page_header"
+
+= render "observation_health", observation_health: @observation_health
+= render "tabs"
+= render "open_respondent_banner"
+
+.card.border-0.shadow-sm
+  .card-header.bg-transparent.border-0.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+    %h5.mb-0
+      %i.bi.bi-send.me-2
+      Feedback requests about #{@casual_name}
+    - if policy(FeedbackRequest.new(company: organization.root_company || organization, subject_of_feedback_teammate: @teammate)).create?
+      = link_to new_organization_feedback_request_path(organization, subject_of_feedback_teammate_id: @teammate.id), class: "btn btn-sm btn-primary" do
+        %i.bi.bi-plus.me-1
+        Request feedback about #{@casual_name}
+  .card-body
+    = render "feedback_requests_table"

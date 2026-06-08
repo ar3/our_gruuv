@@ -91,6 +91,18 @@ class FeedbackRequestPolicy < ApplicationPolicy
     viewing_teammate == record.requestor_teammate
   end
 
+  def view_in_teammate_story?
+    return false unless viewing_teammate
+    return false if viewing_teammate.terminated?
+    return true if show?
+
+    subject_teammate = record.subject_of_feedback_teammate
+    return false unless subject_teammate
+
+    return true if viewing_teammate.can_manage_employment?
+    viewing_teammate.in_managerial_hierarchy_of?(subject_teammate)
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate

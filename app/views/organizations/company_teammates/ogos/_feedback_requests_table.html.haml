@@ -1,0 +1,70 @@
+- casual = @casual_name
+
+- if @feedback_requests.any?
+  .table-responsive
+    %table.table.table-hover
+      %thead
+        %tr
+          %th Requestor
+          %th Focus
+          %th Questions
+          %th Responses
+          %th Status
+          %th Created
+          %th Actions
+      %tbody
+        - @feedback_request_rows.each do |row|
+          - request = row.feedback_request
+          %tr{class: "#{'text-muted' if request.archived?}"}
+            %td= request.requestor_teammate.person.display_name
+            %td
+              - rateable = request.feedback_request_questions.first&.rateable
+              - if rateable
+                - case rateable.class.name
+                - when "Assignment"
+                  %span.badge.bg-primary= rateable.title
+                - when "Ability"
+                  %span.badge.bg-info= rateable.name
+                - when "Aspiration"
+                  %span.badge.bg-success= rateable.name
+                - when "Position"
+                  %span.badge.bg-dark= rateable.display_name
+              - else
+                %span.text-muted Generic
+            %td
+              %span.badge.bg-secondary= request.feedback_request_questions.size
+            %td
+              %span= row.responses_label
+              - if row.show_responder_details? && row.visible_responders.any?
+                %ul.list-unstyled.mb-0.mt-1.small
+                  - row.visible_responders.each do |responder|
+                    %li
+                      = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
+              - if row.show_responder_details? && row.awaiting_responders.any?
+                %small.text-muted.d-block.mt-1
+                  No visible response yet:
+                  = row.awaiting_responders.map { |r| r.person.display_name }.join(", ")
+            %td
+              - if request.archived?
+                %span.badge.bg-secondary Archived
+              - else
+                %span.badge.bg-success= request.state.humanize
+            %td= format_time_in_user_timezone(request.created_at)
+            %td
+              .btn-group.btn-group-sm
+                - if policy(request).view_in_teammate_story?
+                  = link_to organization_feedback_request_path(organization, request), class: "btn btn-outline-primary", title: "View" do
+                    %i.bi.bi-eye
+                - if policy(request).answer?
+                  = link_to answer_organization_feedback_request_path(organization, request), class: "btn btn-outline-success", title: "Respond" do
+                    %i.bi.bi-reply
+- else
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No feedback requests about #{casual}
+    %p.mb-2 No one has requested feedback about #{casual} yet.
+    - if policy(FeedbackRequest.new(company: organization.root_company || organization, subject_of_feedback_teammate: @teammate)).create?
+      = link_to new_organization_feedback_request_path(organization, subject_of_feedback_teammate_id: @teammate.id), class: "btn btn-primary" do
+        %i.bi.bi-plus.me-1
+        Request feedback about #{casual}

@@ -1,0 +1,18 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, "#{@casual_name}'s OGOs")
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { ogos_organization_company_teammate_path(organization, teammate_route_param(tm)) },
+               switch_aria_label: "Switch teammate for OGOs"
+      %span= " - #{@casual_name}'s OGOs"
+
+- content_for :header_action do
+  = render "people/view_switcher"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "#{@casual_name}'s OGOs", url: nil }])

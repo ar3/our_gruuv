@@ -144,6 +144,10 @@ module PeopleHelper
       return clarity_hub_label
     end
 
+    if controller_name == 'ogos' && %w[about from feedback_requests].include?(action_name)
+      return @teammate ? "#{@teammate.person.casual_name}'s OGOs" : "OGOs"
+    end
+
     if controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
       return 'One on One Hub'
     end

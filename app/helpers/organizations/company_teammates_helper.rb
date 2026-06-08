@@ -81,6 +81,13 @@ module Organizations::CompanyTeammatesHelper
         tooltip: hierarchy_check_ins
       },
       {
+        title: "#{person.casual_name}'s OGOs",
+        description: "OGO health, feedback about this teammate, and feedback requests.",
+        path: ogos_organization_company_teammate_path(organization, tm),
+        enabled: policy(one_on_one_link).ogos?,
+        tooltip: one_on_one_tooltip
+      },
+      {
         title: "Kudos Points",
         description: "Recognition points and awards involving this teammate.",
         path: kudos_points_organization_company_teammate_path(organization, tm),

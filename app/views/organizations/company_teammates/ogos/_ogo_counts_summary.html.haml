@@ -1,0 +1,23 @@
+- counts = local_assigns[:counts] || {}
+- tab_label = local_assigns[:tab_label] || "this view"
+- casual = @casual_name
+- last_30 = counts[:last_30_days].to_i
+- older = counts[:older_than_30_days].to_i
+- total = counts[:total].to_i
+
+.card.mb-4.border-0.shadow-sm
+  .card-body.py-3
+    .d-flex.flex-wrap.align-items-center.justify-content-between.gap-3
+      .d-flex.flex-wrap.align-items-center.gap-3
+        %span
+          %strong= last_30
+          OGO#{'s' unless last_30 == 1} in the last 30 days
+        %span.text-muted
+          %strong= older
+          older than 30 days
+        %span.text-muted
+          (#{total} total visible on #{tab_label})
+      - if @observations_involving_url.present?
+        = link_to @observations_involving_url, class: "btn btn-sm btn-outline-primary" do
+          %i.bi.bi-box-arrow-up-right.me-1
+          All OGOs involving #{casual}

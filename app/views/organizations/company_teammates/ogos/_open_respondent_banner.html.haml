@@ -1,0 +1,12 @@
+- if @open_respondent_requests&.any?
+  .alert.alert-warning.mb-4
+    %h6.mb-2
+      %i.bi.bi-reply.me-2
+      You have open feedback requests to answer
+    %ul.mb-2.ps-3
+      - @open_respondent_requests.each do |request|
+        %li
+          Feedback on
+          %strong= request.subject_of_feedback_teammate.person.display_name
+          from #{request.requestor_teammate.person.display_name}
+          = link_to "Respond", answer_organization_feedback_request_path(organization, request), class: "btn btn-sm btn-outline-primary ms-2"

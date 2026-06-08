@@ -1,0 +1,68 @@
+- priorities = observation_health[:priorities]
+- needs_attention_count = observation_health[:needs_attention_count]
+- total_count = observation_health[:total_count]
+
+.card.mb-4.border-0.shadow-sm
+  .card-header.bg-transparent.border-0.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+    %h5.mb-0
+      %i.bi.bi-heart-pulse.me-2
+      OGO health (last 30 days)
+    %span.badge{class: needs_attention_count.positive? ? "bg-warning text-dark" : "bg-success"}
+      = "#{needs_attention_count} of #{total_count} need attention"
+  .card-body
+    .row.g-3
+      - priorities.each_with_index do |priority, idx|
+        - renderer = OneOnOne::PriorityRenderer.new(priority: priority, organization: organization, teammate: @teammate, hub_return_url: request.fullpath, route_teammate_param: teammate_route_param(@teammate))
+        .col-12.col-lg-4
+          .card.h-100{class: (priority[:needs_attention] ? "border-warning" : (priority[:not_applicable] ? "border-secondary" : "border-success"))}
+            .card-body
+              .d-flex.align-items-center.justify-content-between.mb-2
+                %span.badge.bg-secondary= "Check #{priority[:position]} of #{priority[:total]}"
+                - if priority[:needs_attention]
+                  %span.badge.bg-warning.text-dark Needs attention
+                - elsif priority[:not_applicable]
+                  %span.badge.bg-secondary N/A
+                - else
+                  %span.badge.bg-success All set
+              %h6.fw-semibold.mb-2= priority[:title]
+              - explanation_markup = renderer.explanation_html
+              - if explanation_markup.present?
+                - collapse_id = "ogoHealthExplanation-#{idx}"
+                %button.btn.btn-sm.btn-outline-secondary.mb-2{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id}
+                  Why this matters
+                  %i.bi.bi-info-circle.ms-1{"aria-hidden" => "true"}
+                .collapse.mb-2{id: collapse_id}
+                  %div{class: priority[:needs_attention] ? "text-dark" : "text-success"}
+                    != explanation_markup
+              - if renderer.items.any?
+                %ul.mb-2.ps-3.small
+                  - renderer.items.each do |item|
+                    - case renderer.items_render_mode
+                    - when :html
+                      %li!= renderer.item_html(item)
+                    - when :link
+                      - attrs = renderer.item_label_url(item)
+                      %li
+                        - if attrs.is_a?(Hash) && attrs[:url].present?
+                          = link_to attrs[:label], attrs[:url]
+                        - elsif attrs.is_a?(Hash)
+                          = attrs[:label]
+                        - else
+                          = attrs
+              - elsif priority[:concrete_items].any?
+                %ul.mb-2.ps-3.small
+                  - priority[:concrete_items].each do |item|
+                    %li
+                      - if item.is_a?(Hash) && item[:url].present?
+                        = link_to item[:label], item[:url]
+                      - else
+                        = item
+              - if priority[:remaining_count].to_i.positive?
+                %p.small.text-muted.mb-2= "+#{priority[:remaining_count]} more"
+              - primary_action = renderer.primary_action
+              - if primary_action.present?
+                = link_to primary_action[:label], primary_action[:path], class: "btn btn-sm btn-primary"
+              - elsif !priority[:needs_attention]
+                %p.small.mb-0.text-muted
+                  %i.bi.bi-stars.me-1
+                  No action needed right now.

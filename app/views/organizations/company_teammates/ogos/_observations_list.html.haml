@@ -1,0 +1,15 @@
+- empty_message = local_assigns[:empty_message] || "No OGOs to show in this view yet."
+
+- if @observations.any?
+  .list-group.list-group-flush
+    - @observations.each do |observation|
+      = render "organizations/observations/observation_large_list_item", observation: observation, organization: organization
+  - if @observations.size >= TeammateOgos::PageLoader::LIST_LIMIT
+    %p.text-muted.small.mt-3.mb-0
+      Showing the #{TeammateOgos::PageLoader::LIST_LIMIT} most recent.
+      - if @observations_involving_url.present?
+        = link_to "View all OGOs involving #{@casual_name}", @observations_involving_url
+- else
+  .alert.alert-info.mb-0
+    %i.bi.bi-info-circle.me-2
+    = empty_message

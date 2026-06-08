@@ -13,6 +13,8 @@ module OneOnOne
 
     def self.call(...) = new(...).call
 
+    def self.observation_health(...) = new(...).call_observation_health
+
     def initialize(organization:, teammate:, one_on_one_link:, viewing_company_teammate: nil)
       @organization = organization
       @teammate = teammate
@@ -37,7 +39,30 @@ module OneOnOne
       }
     end
 
+    def call_observation_health
+      priorities = build_observation_health_priorities
+      needs_attention_count = priorities.count { |row| row[:needs_attention] && !row[:not_applicable] }
+      first_attention_index = priorities.index { |row| row[:needs_attention] } || 0
+
+      {
+        priorities: priorities,
+        needs_attention_count: needs_attention_count,
+        total_count: priorities.count,
+        first_attention_index: first_attention_index
+      }
+    end
+
     private
+
+    def build_observation_health_priorities
+      [
+        priority_no_observation_given_30d,
+        priority_no_observation_received_30d,
+        priority_no_wtm_observation_received_30d
+      ].each_with_index.map do |row, idx|
+        row.merge(position: idx + 1, total: 3)
+      end
+    end
 
     def build_priorities
       [

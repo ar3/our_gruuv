@@ -26,6 +26,10 @@ class OneOnOneLinkPolicy < ApplicationPolicy
     show?
   end
 
+  def ogos?
+    show?
+  end
+
   def create?
     # Same as update - can create if they can view
     update?

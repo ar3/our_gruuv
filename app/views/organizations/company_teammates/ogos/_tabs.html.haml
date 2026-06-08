@@ -1,0 +1,21 @@
+- about_active = @active_tab == :about
+- from_active = @active_tab == :from
+- requests_active = @active_tab == :feedback_requests
+- casual = @casual_name
+
+%ul.nav.nav-tabs.mb-3{role: "tablist"}
+  %li.nav-item{role: "presentation"}
+    = link_to ogos_organization_company_teammate_path(organization, teammate_route_param(@teammate)),
+              class: "nav-link #{'active' if about_active}",
+              role: "tab" do
+      About #{casual}
+  %li.nav-item{role: "presentation"}
+    = link_to ogos_from_organization_company_teammate_path(organization, teammate_route_param(@teammate)),
+              class: "nav-link #{'active' if from_active}",
+              role: "tab" do
+      From #{casual}
+  %li.nav-item{role: "presentation"}
+    = link_to ogos_feedback_requests_organization_company_teammate_path(organization, teammate_route_param(@teammate)),
+              class: "nav-link #{'active' if requests_active}",
+              role: "tab" do
+      Feedback Requests

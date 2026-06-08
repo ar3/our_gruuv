@@ -1,0 +1,13 @@
+= render "page_header"
+
+= render "observation_health", observation_health: @observation_health
+= render "tabs"
+= render "ogo_counts_summary", counts: @about_counts, tab_label: "About #{@casual_name}"
+
+.card.border-0.shadow-sm
+  .card-header.bg-transparent.border-0
+    %h5.mb-0
+      %i.bi.bi-chat-text.me-2
+      OGOs about #{@casual_name}
+  .card-body
+    = render "observations_list", empty_message: "No published OGOs about #{@casual_name} are visible to you yet."
