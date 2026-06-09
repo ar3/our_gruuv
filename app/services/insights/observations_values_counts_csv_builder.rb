@@ -17,7 +17,7 @@ module Insights
     PRIVATE_LEVELS = %w[observed_only managers_only observed_and_managers].freeze
     PUBLIC_LEVELS = %w[public_to_company public_to_world].freeze
 
-    IDENTIFIER_HEADERS = %w[all_names_display_name email department].freeze
+    IDENTIFIER_HEADERS = %w[all_names_display_name email OGO\ URL department].freeze
 
     def initialize(company, published_at_range: nil, show_private_counts: true)
       @company = company
@@ -72,6 +72,7 @@ module Insights
       identifier_values = [
         person&.all_names_display_name.to_s,
         person&.email.to_s,
+        ogo_url_for(teammate),
         department_name
       ]
 
@@ -136,6 +137,14 @@ module Insights
 
           totals[[teammate_id, aspiration_id, privacy_bucket, label]] = count
         end
+    end
+
+    def ogo_url_for(teammate)
+      path = Rails.application.routes.url_helpers.organization_observations_path(
+        company,
+        involving_teammate_id: teammate.id
+      )
+      SlackAbsoluteUrls.absolute(path)
     end
 
     def load_teammates(teammate_ids)

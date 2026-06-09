@@ -48,7 +48,9 @@ RSpec.describe Insights::ObservationsValuesCountsCsvBuilder do
     csv = described_class.new(company, published_at_range: 30.days.ago..Time.current).call
     rows = parse_csv(csv)
 
-    expect(rows.headers).to include('all_names_display_name', 'email', 'department')
+    expect(rows.headers).to include('all_names_display_name', 'email', 'OGO URL', 'department')
+    expect(rows.first['OGO URL']).to include("/organizations/#{company.to_param}/observations")
+    expect(rows.first['OGO URL']).to include("involving_teammate_id=#{observee_teammate.id}")
     expect(rows.headers).to include('Integrity : Private : Exceptional')
     expect(rows.headers).to include('Integrity : Public : Solid')
     expect(rows.headers).not_to include('Integrity : Public : Misaligned')

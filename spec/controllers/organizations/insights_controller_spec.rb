@@ -367,6 +367,7 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(response.content_type).to include('text/csv')
       expect(response.body).to include('all_names_display_name')
       expect(response.body).to include('email')
+      expect(response.body).to include('OGO URL')
       expect(response.body).to include('department')
     end
 
