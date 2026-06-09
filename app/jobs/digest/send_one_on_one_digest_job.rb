@@ -8,8 +8,16 @@ module Digest
 
     def perform(teammate_id, week_key = nil)
       teammate = CompanyTeammate.find_by(id: teammate_id)
+      unless teammate
+        Rails.logger.warn "Digest::SendOneOnOneDigestJob: teammate #{teammate_id} not found"
+        return
+      end
+
       channel = open_weekly_digest_slack_channel(teammate)
-      return unless channel
+      unless channel
+        Rails.logger.warn "Digest::SendOneOnOneDigestJob: could not open Slack channel for teammate #{teammate_id}"
+        return
+      end
 
       Digest::SyncOneOnOneAsanaForAboutMe.call(
         employee_teammate: teammate,
@@ -32,7 +40,12 @@ module Digest
       )
 
       result = slack_service.post_message(main_notification.id)
-      return unless result[:success] && main_notification.reload.message_id.present?
+      unless result[:success] && main_notification.reload.message_id.present?
+        Rails.logger.warn(
+          "Digest::SendOneOnOneDigestJob: main Slack post failed for teammate #{teammate_id}: #{result[:error]}"
+        )
+        return
+      end
 
       thread_notification = Notification.create!(
         notifiable: teammate,

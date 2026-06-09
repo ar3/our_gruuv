@@ -87,6 +87,70 @@ module Digest
       end
     end
 
+    # Reasons ScheduleAboutMeJob would skip this teammate right now (or at 8am today).
+    def schedule_diagnosis(at: Time.current)
+      lines = []
+      unless @teammate.employed?
+        lines << 'Teammate is not employed (scheduler only iterates CompanyTeammate.employed).'
+      end
+      if @person.timezone.blank?
+        lines << 'Person timezone is blank — scheduler skips (does not use Eastern default).'
+      end
+
+      weekly_day = @prefs.preference(:about_me_weekly_day).to_s
+      if weekly_day == 'off' || weekly_day.blank?
+        lines << 'Weekly reminder day is off.'
+      elsif !weekly_day.match?(/\A[0-6]\z/)
+        lines << "Weekly reminder day #{weekly_day.inspect} is invalid."
+      end
+
+      unless weekly_slack_scheduling_enabled?
+        lines << 'Neither employee nor manager has digest_slack on.'
+      end
+
+      local = at.in_time_zone(person_timezone)
+      if local.hour != Digest::ScheduleAboutMeJob::DIGEST_HOUR
+        lines << "Scheduler only enqueues during the 8:00 local hour (now #{local.strftime('%-I:%M %p %Z')})."
+      end
+
+      if weekly_day.match?(/\A[0-6]\z/) && local.wday != weekly_day.to_i
+        today = DigestHelper::WEEKLY_DIGEST_DAY_LABELS[local.wday.to_s]
+        scheduled = DigestHelper::WEEKLY_DIGEST_DAY_LABELS[weekly_day]
+        lines << "Today is #{today}; digest is scheduled for #{scheduled}."
+      end
+
+      week_key = local.strftime('%G-%V')
+      if @prefs.preference(:one_on_one_last_sent_week).to_s == week_key
+        lines << "one_on_one_last_sent_week is #{week_key} — scheduler will not re-enqueue 1:1 this week."
+      end
+      unless @prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)
+        lines << 'one_on_one_digest_enabled is off for this employee (not the manager viewing digest settings).'
+      end
+
+      lines
+    end
+
+    def next_weekly_send_label(digest_key)
+      weekly_day = @prefs.preference(:about_me_weekly_day).to_s
+      return 'Not scheduled — no weekly day selected.' unless weekly_day.match?(/\A[0-6]\z/)
+
+      day_name = DigestHelper::WEEKLY_DIGEST_DAY_LABELS[weekly_day]
+      tz = @person.timezone.presence || 'UTC'
+      toggle_ok =
+        case digest_key
+        when :one_on_one then @prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)
+        when :about_me then @prefs.weekly_digest_enabled?(:about_me_digest_enabled)
+        else true
+        end
+      return "Not scheduled — #{digest_key} digest toggle is off for this employee." unless toggle_ok
+
+      local = Time.current.in_time_zone(tz)
+      days_ahead = (weekly_day.to_i - local.wday) % 7
+      days_ahead = 7 if days_ahead.zero? && local.hour >= Digest::ScheduleAboutMeJob::DIGEST_HOUR
+      next_date = local.to_date + days_ahead
+      "Next window: #{day_name}, #{next_date.strftime('%b %-d, %Y')} at 8:00 AM #{tz}"
+    end
+
     private
 
     def root_notifications

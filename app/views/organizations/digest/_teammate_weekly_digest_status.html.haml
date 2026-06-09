@@ -4,6 +4,14 @@
     .col-md-6
       %div.small.fw-semibold.mb-1 Scheduling
       %p.text-muted.small.mb-2= status.weekly_schedule_summary
+      %p.text-muted.small.mb-2= status.next_weekly_send_label(:one_on_one)
+      - schedule_notes = status.schedule_diagnosis
+      - if schedule_notes.any?
+        %ul.list-unstyled.mb-2.small.text-muted
+          - schedule_notes.each do |note|
+            %li
+              %i.bi.bi-clock.me-1
+              = note
       .mb-2
         %span.small.fw-semibold 1:1 guide
         = render 'organizations/digest/digest_blockers', blockers: status.one_on_one_blockers, ready_summary: (status.one_on_one_blockers.empty? ? 'Configured to schedule.' : nil)

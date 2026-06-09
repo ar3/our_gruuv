@@ -80,6 +80,22 @@ RSpec.describe Digest::TeammateDigestStatusService do
     end
   end
 
+  describe '#schedule_diagnosis' do
+    include ActiveSupport::Testing::TimeHelpers
+
+    it 'notes wrong weekday and missing toggle' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('about_me_weekly_day', '2')
+      prefs.update_preference('one_on_one_digest_enabled', 'off')
+      prefs.update_preference('digest_slack', 'on')
+
+      travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do # Tuesday 8am Pacific
+        diagnosis = service.schedule_diagnosis
+        expect(diagnosis).to include(a_string_matching(/one_on_one_digest_enabled is off/))
+      end
+    end
+  end
+
   describe '#already_sent_this_week?' do
     include ActiveSupport::Testing::TimeHelpers
 

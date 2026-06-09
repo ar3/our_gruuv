@@ -110,7 +110,9 @@
       %hr.my-4
       %h5.mb-3 Your weekly digest toggles
       %p.text-muted.small.mb-2
-        Both digests use the same weekday below. Turn on one or both.
+        Both digests use the same weekday below. These toggles apply to
+        %strong= @teammate.person.display_name
+        only. Scheduled sends use each employee's own toggles — check the status row under each person in the table.
       = hidden_field_tag :one_on_one_digest_enabled, 'off'
       .form-check.mb-2
         = check_box_tag :one_on_one_digest_enabled, 'on', one_on_one_digest_on, class: 'form-check-input'
