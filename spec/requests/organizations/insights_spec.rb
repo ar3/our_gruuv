@@ -99,6 +99,32 @@ RSpec.describe 'Organizations::Insights', type: :request do
       get organization_insights_observations_path(organization, timeframe: 'year')
       expect(response).to have_http_status(:success)
     end
+
+    it 'includes Values counts download button' do
+      get organization_insights_observations_path(organization)
+      expect(response.body).to include('Values counts')
+      expect(response.body).to include('observations/values_counts/download')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/insights/observations/values_counts/download' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_observations?).and_return(true)
+    end
+
+    it 'returns CSV with identifier and value count headers' do
+      get organization_insights_observations_values_counts_download_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.content_type).to include('text/csv')
+      expect(response.body).to include('all_names_display_name')
+      expect(response.body).to include('email')
+      expect(response.body).to include('department')
+    end
+
+    it 'sets Content-Disposition to attachment with filename' do
+      get organization_insights_observations_values_counts_download_path(organization)
+      expect(response.headers['Content-Disposition']).to match(/attachment.*observation_values_counts_.*\.csv/)
+    end
   end
 
   describe 'GET /organizations/:organization_id/insights/og_scorecard' do

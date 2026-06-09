@@ -356,6 +356,42 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     end
   end
 
+  describe 'GET #observations_values_counts_download' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_observations?).and_return(true)
+    end
+
+    it 'returns http success and CSV with identifier headers' do
+      get :observations_values_counts_download, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.content_type).to include('text/csv')
+      expect(response.body).to include('all_names_display_name')
+      expect(response.body).to include('email')
+      expect(response.body).to include('department')
+    end
+
+    it 'sets Content-Disposition to attachment with filename' do
+      get :observations_values_counts_download, params: { organization_id: company.id }
+      expect(response.headers['Content-Disposition']).to match(/attachment.*observation_values_counts_.*\.csv/)
+    end
+
+    it 'passes show_private_counts to the CSV builder based on manage_employment' do
+      aspiration = create(:aspiration, company: company, name: 'Integrity', sort_order: 1)
+      observee_person = create(:person, first_name: 'Bob', last_name: 'Observee', email: 'bob@example.com')
+      observee_teammate = create(:teammate, person: observee_person, organization: company, first_employed_at: 1.year.ago)
+      obs = build(:observation, observer: person, company: company, privacy_level: :observed_only, published_at: 5.days.ago, observed_at: 5.days.ago)
+      obs.observees.destroy_all
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      create(:observation_rating, observation: obs, rateable: aspiration, rating: :strongly_agree)
+
+      allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(false)
+      get :observations_values_counts_download, params: { organization_id: company.id }
+      expect(response.body).to include('Integrity : Private : Exceptional')
+      expect(response.body).to include(',X,')
+    end
+  end
+
   describe 'GET #check_ins_progress' do
     before do
       allow_any_instance_of(OrganizationPolicy).to receive(:check_ins_health?).and_return(true)

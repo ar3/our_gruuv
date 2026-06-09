@@ -209,6 +209,24 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @top_abilities_feedback_requested = top_abilities_feedback_requested_for_insights(range)
   end
 
+  def observations_values_counts_download
+    authorize company, :view_observations?
+
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, = insights_date_range_and_custom_fields
+
+    csv_content = Insights::ObservationsValuesCountsCsvBuilder.new(
+      company,
+      published_at_range: range,
+      show_private_counts: policy(company).manage_employment?
+    ).call
+    filename = "observation_values_counts_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
+    send_data csv_content,
+              filename: filename,
+              type: 'text/csv',
+              disposition: 'attachment'
+  end
+
   def observations
     authorize company, :view_observations?
 

@@ -595,6 +595,7 @@ Rails.application.routes.draw do
       get '/', to: 'insights#index'
       get 'og_scorecard', to: 'insights#og_scorecard'
       patch 'og_scorecard/thresholds', to: 'insights#update_og_scorecard_thresholds', as: :og_scorecard_thresholds
+      get 'observations/values_counts/download', to: 'insights#observations_values_counts_download', as: :observations_values_counts_download
       get 'observations', to: 'insights#observations'
       get 'feedback_requests', to: 'insights#feedback_requests'
       get 'prompts/download', to: 'insights#prompts_download'

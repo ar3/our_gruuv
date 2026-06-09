@@ -29,6 +29,15 @@
             Observations by Week (#{@insights_chart_period_label})
         .card-body
           #observations-by-privacy-chart{style: "height: 400px;"}
+          .row.my-3
+            .col-12.d-flex.flex-wrap.gap-2
+              - values_counts_download_params = { timeframe: (@timeframe == :'90_days' ? '90_days' : @timeframe.to_s) }
+              - if @timeframe == :custom
+                - values_counts_download_params[:from] = @insights_custom_from
+                - values_counts_download_params[:to] = @insights_custom_to
+              = link_to organization_insights_observations_values_counts_download_path(@organization, **values_counts_download_params), class: 'btn btn-outline-primary' do
+                %i.bi.bi-download.me-2
+                Values counts
           %hr.my-4
           %p.small.text-muted.mb-2
             Total observations in this period by privacy level (same categories as the chart above).
