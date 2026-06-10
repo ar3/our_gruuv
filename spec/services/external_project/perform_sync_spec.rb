@@ -37,6 +37,20 @@ RSpec.describe ExternalProject::PerformSync do
     expect(cache.sync_error).to be_nil
   end
 
+  it "does not touch cache status when update_ui_status is false" do
+    allow(ExternalProjectCacheService).to receive(:sync_project).and_return(success: true, cache: cache)
+
+    result = described_class.call(
+      cacheable: link,
+      source: "asana",
+      sync_teammates: [employee],
+      update_ui_status: false
+    )
+
+    expect(result[:success]).to be true
+    expect(cache.reload.sync_status).to eq("pending")
+  end
+
   it "marks the cache failed with a message when sync fails" do
     allow(ExternalProjectCacheService).to receive(:sync_project).and_return(
       success: false,

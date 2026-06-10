@@ -53,6 +53,20 @@ RSpec.describe Digest::ScheduleAboutMeJob, type: :job do
     end
   end
 
+  it 'still enqueues 1:1 when About Me toggle is off' do
+    prefs = UserPreference.for_person(person)
+    prefs.update_preference('digest_slack', 'on')
+    prefs.update_preference('about_me_weekly_day', '2')
+    prefs.update_preference('about_me_digest_enabled', 'off')
+    prefs.update_preference('one_on_one_digest_enabled', 'on')
+
+    travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
+      expect { described_class.perform_now }
+        .to have_enqueued_job(Digest::SendOneOnOneDigestJob).with(teammate.id, '2025-10')
+      expect(Digest::SendAboutMeJob).not_to have_been_enqueued
+    end
+  end
+
   it 'respects weekly digest toggle preferences' do
     prefs = UserPreference.for_person(person)
     prefs.update_preference('about_me_digest_enabled', 'off')

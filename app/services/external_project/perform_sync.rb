@@ -102,6 +102,8 @@ module ExternalProject
     end
 
     def mark_completed!
+      return unless @update_ui_status && @cache
+
       @cache.mark_sync_completed!
     end
 

@@ -8,6 +8,8 @@ module Digest
 
     def perform
       now_utc = Time.current
+      enqueued_about_me = 0
+      enqueued_one_on_one = 0
 
       CompanyTeammate.employed.includes(:person).find_each do |teammate|
         person = teammate.person
@@ -25,18 +27,23 @@ module Digest
 
         week_key = local_time.strftime('%G-%V')
 
-        unless prefs.preference(:about_me_last_sent_week).to_s == week_key
-          next unless prefs.weekly_digest_enabled?(:about_me_digest_enabled)
-
+        if prefs.preference(:about_me_last_sent_week).to_s != week_key &&
+           prefs.weekly_digest_enabled?(:about_me_digest_enabled)
           Digest::SendAboutMeJob.perform_later(teammate.id, week_key)
+          enqueued_about_me += 1
         end
 
-        unless prefs.preference(:one_on_one_last_sent_week).to_s == week_key
-          next unless prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)
-
+        if prefs.preference(:one_on_one_last_sent_week).to_s != week_key &&
+           prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)
           Digest::SendOneOnOneDigestJob.perform_later(teammate.id, week_key)
+          enqueued_one_on_one += 1
         end
       end
+
+      Rails.logger.info(
+        "Digest::ScheduleAboutMeJob: at #{now_utc.iso8601} enqueued " \
+        "#{enqueued_one_on_one} one_on_one and #{enqueued_about_me} about_me digests"
+      )
     end
 
     private
