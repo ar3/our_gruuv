@@ -13,10 +13,23 @@ module Organizations
 
     private
 
-    def assign_viewable_teammates_context!(selected_teammate:)
+    def assign_viewable_teammates_context!(selected_teammate:, all_active_in_organization: false)
       @selected_teammate = selected_teammate
-      @viewable_teammates = load_viewable_teammates_relation.to_a
+      @viewable_teammates = if all_active_in_organization
+        load_all_active_teammates_in_organization.to_a
+      else
+        load_viewable_teammates_relation.to_a
+      end
       @viewable_teammate_groups = group_viewable_teammates_by_department(@viewable_teammates)
+    end
+
+    def load_all_active_teammates_in_organization
+      CompanyTeammate
+        .for_organization_hierarchy(organization)
+        .joins(:person)
+        .includes(:person, employment_tenures: { position: { title: :department } })
+        .where(last_terminated_at: nil)
+        .order('people.last_name ASC NULLS LAST, people.first_name ASC, people.preferred_name ASC NULLS LAST')
     end
 
     def load_viewable_teammates_relation

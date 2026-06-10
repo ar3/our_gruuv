@@ -51,7 +51,9 @@ RSpec.describe 'Internal Teammate Page - Set Default Assignments', type: :reques
           expect(assigns(:can_set_default_assignments)).to be true
           expect(response.body).to include('Set 2 default assignments')
           expect(response.body).to include(set_default_assignments_organization_company_teammate_path(organization, employee_teammate))
-          expect(response.body).not_to include('data-bs-title')
+          expect(response.body).to include(assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate))
+          expect(response.body).not_to include('managerial hierarchy or have the manage employment permission to set default assignments')
+          expect(response.body).not_to include('managerial hierarchy or have the manage employment permission to set day to day assignments')
         end
 
         it 'does not show disabled button or warning icon' do
@@ -105,6 +107,8 @@ RSpec.describe 'Internal Teammate Page - Set Default Assignments', type: :reques
           expect(response.body).to include('bi-exclamation-triangle')
           # Tooltip text (apostrophe may be HTML-escaped as &#39;)
           expect(response.body).to include('managerial hierarchy or have the manage employment permission to set default assignments')
+          expect(response.body).to include('managerial hierarchy or have the manage employment permission to set day to day assignments')
+          expect(response.body).not_to include(assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate))
         end
       end
     end
@@ -120,8 +124,8 @@ RSpec.describe 'Internal Teammate Page - Set Default Assignments', type: :reques
         get internal_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
         expect(assigns(:required_assignments_without_active_tenure)).to be_empty
-        expect(response.body).not_to include('Set ')
-        expect(response.body).not_to include('default assignment')
+        expect(response.body).not_to include('Set 2 default assignments')
+        expect(response.body).not_to include(set_default_assignments_organization_company_teammate_path(organization, employee_teammate))
       end
     end
   end

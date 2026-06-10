@@ -1,0 +1,34 @@
+-# Locals: organization, teammate
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- casual_name = teammate.person.casual_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    See #{casual_name}'s current role, assignments, teams, recent OGOs, and public goals in one teammate-facing overview—then jump to other views (profile, clarity check-ins, growth, and more) from the Home section.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-3
+    Teammate View is visible to any active employee in the same organization. It shows company-wide or public OGOs and goals marked visible to everyone in the company—not private drafts or manager-only content. Use the header switcher to compare Public View, Teammate View, and Complete Picture for #{casual_name}.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 Home
+  %p.mb-2
+    Employment Information summarizes title, manager, and earliest start date. The views grid links to other teammate pages (profile, clarity check-ins, growth paths, and more).
+
+  %h5.fw-semibold.mb-2 Assignments
+  %p.mb-2
+    Active assignment tenures list what #{casual_name} is working on now, sorted by forecasted energy. Managers with the right permissions can set default assignments from the position or open #{set_day_to_day_assignments_label}.
+
+  %h5.fw-semibold.mb-2= "OGOs Received and Given"
+  %p.mb-2
+    Large-list rows show From/To, type, privacy, story excerpt, and ratings. Use
+    %strong View
+    on a row to open the full OGO; the link icon in the section header opens the filtered OGO index.
+
+  %h5.fw-semibold.mb-2= "Public goals"
+  %p.mb-0
+    Goals owned by #{casual_name} with
+    %em everyone in company
+    privacy, including the latest confidence check-in when one exists.

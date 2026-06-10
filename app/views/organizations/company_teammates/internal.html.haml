@@ -1,16 +1,40 @@
-- content_for :title, "#{@teammate.person.casual_name} - Teammate View"
+- casual_name = @teammate.person.casual_name
+- content_for :title, "#{casual_name} - Teammate View"
+- internal_page_help_id = 'teammateViewPageHelp'
+:ruby
+  internal_nav_links = [
+    { id: 'home', label: 'Home', icon: 'bi-house', primary: true },
+    { id: 'assignments', label: 'Assignments', icon: 'bi-clipboard-check', primary: true },
+    { id: 'teams', label: 'Teams', icon: 'bi-diagram-3', primary: true },
+    { id: 'ogos-received', label: 'OGOs Received', icon: 'bi-chat-text', primary: true },
+    { id: 'ogos-given', label: 'OGOs Given', icon: 'bi-pencil-square', primary: true },
+    { id: 'public-goals', label: 'Public goals', icon: 'bi-bullseye', primary: true }
+  ]
 
 - content_for :header do
-  %h1.mb-0
-    %i.bi.bi-people.me-2
-    = @teammate.person.casual_name
-    %small.text-muted.ms-2 (Teammate View)
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: @current_organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { internal_organization_company_teammate_path(@current_organization, tm) },
+               switch_aria_label: "Switch teammate for Teammate View"
+      %span= " - Teammate View"
+      = render 'shared/page_help/header_info_button',
+               collapse_id: internal_page_help_id,
+               tooltip: 'Teammate overview: role, assignments, teams, OGOs, and public goals. Click for details.'
 
 - content_for :header_action do
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: "Teammate View", url: nil }])
+
+.collapse.mb-4{id: internal_page_help_id}
+  = render 'organizations/company_teammates/internal_page_help',
+           organization: @current_organization,
+           teammate: @teammate
 
 - if @debug_mode
   .row.mb-4
@@ -276,105 +300,111 @@
                       %i.bi.bi-check-circle.me-2
                       No issues detected!
 
-/ Employment Information + teammate views navigation
-.row.mb-4.g-3
-  .col-12.col-lg-5
-    .card.h-100
-      .card-header
-        %h5.mb-0
-          %i.bi.bi-briefcase.me-2
-          Employment Information
-      .card-body
-        - if @active_employment_tenure
-          %p.mb-2
-            %strong Active Title:
-            - if @active_employment_tenure.position&.title
-              = link_to @active_employment_tenure.position.title.external_title, organization_title_path(@current_organization, @active_employment_tenure.position.title), class: "text-decoration-none"
-            - else
-              %span.text-muted Not set
-          %p.mb-2
-            %strong Manager:
-            - if @active_employment_tenure.manager_teammate
-              = link_to @active_employment_tenure.manager_teammate.person.display_name, internal_organization_company_teammate_path(@current_organization, @active_employment_tenure.manager_teammate), class: "text-decoration-none"
-            - else
-              %span.text-muted Not set
-          %p.mb-0
-            %strong Earliest start date:
-            - if @earliest_start_date
-              = format_date_in_user_timezone(@earliest_start_date)
-            - else
-              %span.text-muted Not available
-        - else
-          %p.text-muted.mb-0 No active employment tenure in this organization.
+- show_set_default_assignments = @required_assignments_without_active_tenure&.any?
+- set_day_to_day_disabled_tooltip = "You must be in this teammate's managerial hierarchy or have the manage employment permission to set day to day assignments."
 
-  .col-12.col-lg-7
-    .card.h-100
-      .card-header
-        %h5.mb-0
-          %i.bi.bi-grid-3x3-gap.me-2
-          Views for #{@teammate.person.casual_name}
-      .card-body.p-0
-        = render "internal_views_navigation", organization: @current_organization, teammate: @teammate
+= render 'shared/single_item_check_in/page_wrapper',
+         nav_title: "#{casual_name} — Teammate View",
+         nav_links: internal_nav_links,
+         initial_section: 'home' do
+  %section#home.mb-4{role: "region", "aria-labelledby": "teammate-home-heading"}
+    .row.g-3
+      .col-12.col-lg-5
+        .card.h-100
+          .card-header
+            %h5.mb-0{ id: "teammate-home-heading" }
+              %i.bi.bi-briefcase.me-2
+              Employment Information
+          .card-body
+            - if @active_employment_tenure
+              %p.mb-2
+                %strong Active Title:
+                - if @active_employment_tenure.position&.title
+                  = link_to @active_employment_tenure.position.title.external_title, organization_title_path(@current_organization, @active_employment_tenure.position.title), class: "text-decoration-none"
+                - else
+                  %span.text-muted Not set
+              %p.mb-2
+                %strong Manager:
+                - if @active_employment_tenure.manager_teammate
+                  = link_to @active_employment_tenure.manager_teammate.person.display_name, internal_organization_company_teammate_path(@current_organization, @active_employment_tenure.manager_teammate), class: "text-decoration-none"
+                - else
+                  %span.text-muted Not set
+              %p.mb-0
+                %strong Earliest start date:
+                - if @earliest_start_date
+                  = format_date_in_user_timezone(@earliest_start_date)
+                - else
+                  %span.text-muted Not available
+            - else
+              %p.text-muted.mb-0 No active employment tenure in this organization.
 
-/ Active Assignment Tenures Section
-.row.mb-4
-  .col-12
+      .col-12.col-lg-7
+        .card.h-100
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-grid-3x3-gap.me-2
+              Views for #{casual_name}
+          .card-body.p-0
+            = render "internal_views_navigation", organization: @current_organization, teammate: @teammate
+
+  %section#assignments.mb-4{role: "region", "aria-labelledby": "teammate-assignments-heading"}
     .card
       .card-header
-        %h5.mb-0
+        %h5.mb-0{ id: "teammate-assignments-heading" }
           %i.bi.bi-clipboard-check.me-2
-          Active Assignment Tenures
+          = "#{casual_name}'s Assignments"
       .card-body
         - if @active_assignment_tenures.any?
           .list-group
             - @active_assignment_tenures.each do |tenure|
               .list-group-item
-                .d-flex.justify-content-between.align-items-start
-                  .flex-grow-1
-                    %h6.mb-1
-                      = link_to tenure.assignment.title, organization_assignment_path(@current_organization, tenure.assignment), class: "text-decoration-none"
-                    - if tenure.assignment.tagline.present?
-                      %p.mb-1.text-muted.small= tenure.assignment.tagline
-                    %small.text-muted
-                      Started: #{tenure.started_at.strftime("%B %d, %Y")}
-                      - if tenure.anticipated_energy_percentage.present?
-                        %span.ms-2
-                          | Energy: 
-                          %strong= "#{tenure.anticipated_energy_percentage}%"
-                  .ms-3
-                    = link_to organization_assignment_path(@current_organization, tenure.assignment), class: "btn btn-sm btn-outline-primary" do
-                      %i.bi.bi-eye
+                %h6.mb-1
+                  = link_to tenure.assignment.title, organization_assignment_path(@current_organization, tenure.assignment), class: "text-decoration-none"
+                - if tenure.assignment.tagline.present?
+                  %p.mb-1.text-muted.small= tenure.assignment.tagline
+                %small.text-muted
+                  Started: #{tenure.started_at.strftime("%B %d, %Y")}
+                  - if tenure.anticipated_energy_percentage.present?
+                    %span.ms-2
+                      | Energy:
+                      %strong= "#{tenure.anticipated_energy_percentage}%"
         - else
           %p.text-muted No active assignment tenures.
-        
-        - if @required_assignments_without_active_tenure&.any?
-          .mt-3.d-flex.align-items-center.gap-2
-            - n = @required_assignments_without_active_tenure.size
+
+        .row.mt-3.g-2.align-items-center
+          .col-12.col-md-2
+            %span.fw-semibold Manager Actions:
+          .col-12.col-md-5
+            - if show_set_default_assignments
+              - n = @required_assignments_without_active_tenure.size
+              - if @can_set_default_assignments
+                = button_to set_default_assignments_organization_company_teammate_path(@current_organization, @teammate), method: :post, class: "btn btn-sm btn-outline-secondary" do
+                  %i.bi.bi-plus-circle.me-1
+                  Set #{n} default assignment#{'s' if n != 1}
+              - else
+                %span.d-inline-flex.align-items-center
+                  = button_tag type: "button", disabled: true, class: "btn btn-sm btn-outline-secondary" do
+                    %i.bi.bi-plus-circle.me-1
+                    Set #{n} default assignment#{'s' if n != 1}
+                  %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be in this teammate's managerial hierarchy or have the manage employment permission to set default assignments.", "data-bs-placement" => "top"}
+          .col-12.col-md-5
             - if @can_set_default_assignments
-              = button_to set_default_assignments_organization_company_teammate_path(@current_organization, @teammate), method: :post, class: "btn btn-sm btn-outline-secondary" do
-                %i.bi.bi-plus-circle.me-1
-                Set #{n} default assignment#{'s' if n != 1}
+              = link_to assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, @teammate), class: "btn btn-sm btn-outline-secondary" do
+                %i.bi.bi-lightning-charge.me-1
+                = set_day_to_day_assignments_label
             - else
               %span.d-inline-flex.align-items-center
                 = button_tag type: "button", disabled: true, class: "btn btn-sm btn-outline-secondary" do
-                  %i.bi.bi-plus-circle.me-1
-                  Set #{n} default assignment#{'s' if n != 1}
-                %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be in this teammate's managerial hierarchy or have the manage employment permission to set default assignments.", "data-bs-placement" => "top"}
-        
-        - if policy(@teammate).manager? || policy(@current_organization).manage_employment?
-          .mt-3
-            = link_to assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, @teammate), class: "btn btn-sm btn-outline-secondary" do
-              %i.bi.bi-lightning-charge.me-1
-              = set_day_to_day_assignments_label
+                  %i.bi.bi-lightning-charge.me-1
+                  = set_day_to_day_assignments_label
+                %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => set_day_to_day_disabled_tooltip, "data-bs-placement" => "top"}
 
-/ Departments & Teams Section
-.row.mb-4
-  .col-12
+  %section#teams.mb-4{role: "region", "aria-labelledby": "teammate-teams-heading"}
     .card
       .card-header
-        %h5.mb-0
+        %h5.mb-0{ id: "teammate-teams-heading" }
           %i.bi.bi-diagram-3.me-2
-          Active Departments & Teams
+          Active Teams
       .card-body
         - if @active_departments_and_teams.any?
           .list-group
@@ -384,80 +414,42 @@
                   = link_to dept_team_teammate.organization.name, organization_department_path(@current_organization, dept_team_teammate.organization), class: "text-decoration-none"
                 %span.badge.bg-info.ms-2 Organization
         - else
-          %p.text-muted No active departments or teams.
+          %p.text-muted No active teams.
 
-/ Observations as Observee Section
-.row.mb-4
-  .col-12
+  %section#ogos-received.mb-4{role: "region", "aria-labelledby": "teammate-ogos-received-heading"}
     .card
       .card-header.d-flex.align-items-center.justify-content-between
-        %h5.mb-0
+        %h5.mb-0{ id: "teammate-ogos-received-heading" }
           %i.bi.bi-chat-text.me-2
-          Recent Observations About #{@teammate.person.display_name}
-        = link_to @observations_about_url, class: "btn btn-sm btn-outline-primary", title: "View all observations about #{@teammate.person.casual_name}" do
+          OGOs Received
+        = link_to @observations_about_url, class: "btn btn-sm btn-outline-primary", title: "View all OGOs about #{casual_name}" do
           %i.bi.bi-link-45deg
       .card-body
         - if @observations_as_observee.any?
-          .list-group
-            - @observations_as_observee.each do |observation|
-              .list-group-item
-                .d-flex.justify-content-between.align-items-start
-                  .flex-grow-1
-                    = link_to organization_observation_path(@current_organization, observation), class: "text-decoration-none" do
-                      %strong= truncate(observation.story, length: 150)
-                    %br
-                    %small.text-muted
-                      By #{observation.observer.display_name} on #{format_date_in_user_timezone(observation.observed_at)}
-                      - if observation.privacy_level == 'public_to_world'
-                        %span.badge.bg-success.ms-2 Public
-                      - else
-                        %span.badge.bg-info.ms-2 Company
-                  .ms-3
-                    = link_to organization_observation_path(@current_organization, observation), class: "btn btn-sm btn-outline-primary" do
-                      %i.bi.bi-eye
+          = render 'organizations/observations/large_list_view', observations: @observations_as_observee, organization: @current_organization
         - else
-          %p.text-muted No recent company or public observations about this teammate.
+          %p.text-muted.mb-0 No recent company or public OGOs about this teammate.
 
-/ Observations as Observer Section
-.row.mb-4
-  .col-12
+  %section#ogos-given.mb-4{role: "region", "aria-labelledby": "teammate-ogos-given-heading"}
     .card
       .card-header.d-flex.align-items-center.justify-content-between
-        %h5.mb-0
+        %h5.mb-0{ id: "teammate-ogos-given-heading" }
           %i.bi.bi-pencil-square.me-2
-          Recent Observations By #{@teammate.person.display_name}
-        = link_to @observations_by_url, class: "btn btn-sm btn-outline-primary", title: "View all observations by #{@teammate.person.casual_name}" do
+          OGOs Given
+        = link_to @observations_by_url, class: "btn btn-sm btn-outline-primary", title: "View all OGOs by #{casual_name}" do
           %i.bi.bi-link-45deg
       .card-body
         - if @observations_as_observer.any?
-          .list-group
-            - @observations_as_observer.each do |observation|
-              .list-group-item
-                .d-flex.justify-content-between.align-items-start
-                  .flex-grow-1
-                    = link_to organization_observation_path(@current_organization, observation), class: "text-decoration-none" do
-                      %strong= truncate(observation.story, length: 150)
-                    %br
-                    %small.text-muted
-                      On #{format_date_in_user_timezone(observation.observed_at)}
-                      - if observation.privacy_level == 'public_to_world'
-                        %span.badge.bg-success.ms-2 Public
-                      - else
-                        %span.badge.bg-info.ms-2 Company
-                  .ms-3
-                    = link_to organization_observation_path(@current_organization, observation), class: "btn btn-sm btn-outline-primary" do
-                      %i.bi.bi-eye
+          = render 'organizations/observations/large_list_view', observations: @observations_as_observer, organization: @current_organization
         - else
-          %p.text-muted No recent company or public observations by this teammate.
+          %p.text-muted.mb-0 No recent company or public OGOs by this teammate.
 
-/ Public Goals Section
-.row.mb-4
-  .col-12
+  %section#public-goals.mb-4{role: "region", "aria-labelledby": "teammate-public-goals-heading"}
     .card
       .card-header
-        %h5.mb-0
+        %h5.mb-0{ id: "teammate-public-goals-heading" }
           %i.bi.bi-bullseye.me-2
-          Publicly Visible Active Goals
+          Public goals
       .card-body
         - if @public_goals.any?
           .table-responsive

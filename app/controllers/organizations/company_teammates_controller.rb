@@ -225,6 +225,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def internal
     authorize @teammate, :internal?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate, all_active_in_organization: true)
     # Internal view - organization-specific data for teammates (active, inactive, or not yet active)
     @current_organization = organization
     @employment_tenures = @teammate&.employment_tenures&.includes(:company, :manager_teammate, position: :title)
@@ -258,13 +259,15 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @active_departments_and_teams = []
 
     # Recent observations where teammate is observee (company or fully public)
+    observation_includes = [:observer, :company, observees: { company_teammate: :person }]
+
     @observations_as_observee = Observation
       .where(id: @teammate.observees.select(:observation_id))
       .where(company: organization)
       .where(privacy_level: ['public_to_company', 'public_to_world'])
       .where.not(published_at: nil)
       .where("deleted_at IS NULL")
-      .includes(:observer, :company)
+      .includes(*observation_includes)
       .order(observed_at: :desc)
       .limit(10)
 
@@ -274,7 +277,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       .where(privacy_level: ['public_to_company', 'public_to_world'])
       .where.not(published_at: nil)
       .where("deleted_at IS NULL")
-      .includes(:company)
+      .includes(*observation_includes)
       .order(observed_at: :desc)
       .limit(10)
 
