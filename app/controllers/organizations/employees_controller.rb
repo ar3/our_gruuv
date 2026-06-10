@@ -1,7 +1,6 @@
 class Organizations::EmployeesController < Organizations::OrganizationNamespaceBaseController
   include TeammateHelper
   include Organizations::AssignsViewableTeammates
-  include Organizations::ObservationsInvolvingTeammateCount
 
   before_action :require_authentication
   after_action :verify_authorized
@@ -177,11 +176,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         @check_in_health_caches_by_teammate = {}
       end
 
-      @managers_view_observations_involving_counts_by_teammate_id =
+      @managers_view_row_data_by_teammate_id =
         if query.current_view == 'managers_view' && @filtered_and_paginated_teammates.any?
-          @filtered_and_paginated_teammates.each_with_object({}) do |teammate, counts|
-            counts[teammate.id] = observations_involving_teammate_total_count(teammate)
-          end
+          ManagersViewCardDataService.load(
+            teammates: @filtered_and_paginated_teammates,
+            organization: @organization,
+            viewing_teammate: current_company_teammate
+          )
         else
           {}
         end
