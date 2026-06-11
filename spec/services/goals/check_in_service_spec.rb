@@ -367,6 +367,94 @@ RSpec.describe Goals::CheckInService, type: :service do
       end
     end
 
+    context 'when only the target date changes' do
+      it 'is a no-op when confidence, reason, and date are unchanged' do
+        original_date = goal.most_likely_target_date
+
+        expect {
+          result = described_class.call(
+            goal: goal,
+            current_person: person,
+            most_likely_target_date: original_date.to_s
+          )
+
+          expect(result.ok?).to be true
+          expect(result.value[:no_changes]).to be true
+        }.not_to change { GoalCheckIn.count }
+
+        goal.reload
+        expect(goal.most_likely_target_date).to eq(original_date)
+      end
+
+      it 'creates a check-in with inherited confidence and auto reason on first date-only save' do
+        create(:goal_check_in,
+          goal: goal,
+          check_in_week_start: week_start - 1.week,
+          confidence_percentage: 80,
+          confidence_reporter: person
+        )
+        new_target_date = goal.most_likely_target_date + 2.weeks
+
+        result = described_class.call(
+          goal: goal,
+          current_person: person,
+          most_likely_target_date: new_target_date.to_s
+        )
+
+        expect(result.ok?).to be true
+        check_in = result.value[:check_in]
+        expect(check_in.confidence_percentage).to eq(80)
+        expect(check_in.confidence_reason).to eq("#{person.casual_name} updated the most likely date.")
+        goal.reload
+        expect(goal.most_likely_target_date).to eq(new_target_date)
+      end
+
+      it 'defaults confidence to 5% on first-ever date-only save' do
+        new_target_date = goal.most_likely_target_date + 2.weeks
+
+        result = described_class.call(
+          goal: goal,
+          current_person: person,
+          most_likely_target_date: new_target_date.to_s
+        )
+
+        expect(result.ok?).to be true
+        check_in = result.value[:check_in]
+        expect(check_in.confidence_percentage).to eq(5)
+        expect(check_in.confidence_reason).to eq("#{person.casual_name} updated the most likely date.")
+      end
+
+      it 'updates an existing weekly check-in with inherited confidence and blank reason' do
+        create(:goal_check_in,
+          goal: goal,
+          check_in_week_start: week_start,
+          confidence_percentage: 60,
+          confidence_reason: 'Prior note',
+          confidence_reporter: person
+        )
+        create(:goal_check_in,
+          goal: goal,
+          check_in_week_start: week_start - 1.week,
+          confidence_percentage: 70,
+          confidence_reporter: person
+        )
+        new_target_date = goal.most_likely_target_date + 2.weeks
+
+        result = described_class.call(
+          goal: goal,
+          current_person: person,
+          most_likely_target_date: new_target_date.to_s
+        )
+
+        expect(result.ok?).to be true
+        check_in = result.value[:check_in]
+        expect(check_in.confidence_percentage).to eq(70)
+        expect(check_in.confidence_reason).to be_nil
+        goal.reload
+        expect(goal.most_likely_target_date).to eq(new_target_date)
+      end
+    end
+
     context 'when updating target date' do
       it 'updates most_likely_target_date when provided' do
         new_target_date = Date.today + 60.days

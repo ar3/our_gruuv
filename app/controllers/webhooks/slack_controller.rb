@@ -252,6 +252,11 @@ class Webhooks::SlackController < ApplicationController
     )
     
     if result.ok?
+      if result.value[:no_changes]
+        incoming_webhook.mark_processed!
+        return { response_action: 'clear' }
+      end
+
       check_in = result.value[:check_in]
       
       # Link the webhook to the created check-in

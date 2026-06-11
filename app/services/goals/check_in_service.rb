@@ -16,35 +16,35 @@ module Goals
       teammate = @current_company_teammate || CompanyTeammate.find_by(person: @current_person, organization: @goal.company)
       PaperTrail.request.whodunnit = teammate&.id&.to_s
 
-      # Parse target date if provided
-      most_likely_target_date = nil
-      if @most_likely_target_date_param.present?
-        most_likely_target_date = Date.parse(@most_likely_target_date_param.to_s)
+      parsed_target_date = parse_target_date
+      previous_target_date = @goal.most_likely_target_date
+      date_changed = parsed_target_date.present? && parsed_target_date != previous_target_date
+
+      if @confidence_percentage.nil? && @confidence_reason.nil? && !date_changed
+        return Result.ok(
+          no_changes: true,
+          goal: @goal,
+          target_date_updated: false
+        )
       end
 
-      # Handle target date update if provided
       target_date_updated = false
-      if most_likely_target_date.present?
-        @goal.sync_most_likely_target_date!(most_likely_target_date)
+      if date_changed
+        @goal.sync_most_likely_target_date!(parsed_target_date)
         target_date_updated = true
       end
 
-      # If only reason is provided without confidence, use last check-in's confidence or default to 5%
-      if @confidence_percentage.nil? && @confidence_reason.present?
-        # Get the most recent check-in, excluding the current week (if it exists)
-        last_check_in = @goal.goal_check_ins
-          .where.not(check_in_week_start: @week_start)
-          .recent
-          .first
-        # Use last check-in's confidence if it exists and is not nil, otherwise default to 5%
-        @confidence_percentage = (last_check_in&.confidence_percentage || 5)
-      end
-
-      # Find or initialize check-in for the week
       check_in = GoalCheckIn.find_or_initialize_by(
         goal: @goal,
         check_in_week_start: @week_start
       )
+
+      if @confidence_percentage.nil? && @confidence_reason.nil? && date_changed
+        @confidence_percentage = confidence_from_last_check_in
+        @confidence_reason = date_change_auto_reason if check_in.new_record?
+      elsif @confidence_percentage.nil? && @confidence_reason.present?
+        @confidence_percentage = confidence_from_last_check_in
+      end
 
       check_in.assign_attributes(
         confidence_percentage: @confidence_percentage,
@@ -107,6 +107,24 @@ module Goals
     end
 
     private
+
+    def parse_target_date
+      return nil unless @most_likely_target_date_param.present?
+
+      Date.parse(@most_likely_target_date_param.to_s)
+    end
+
+    def confidence_from_last_check_in
+      last_check_in = @goal.goal_check_ins
+        .where.not(check_in_week_start: @week_start)
+        .recent
+        .first
+      last_check_in&.confidence_percentage || 5
+    end
+
+    def date_change_auto_reason
+      "#{@current_person.casual_name} updated the most likely date."
+    end
 
     def start_unstarted_parent_objectives_with_due_date
       @goal.linking_goals.each do |parent|

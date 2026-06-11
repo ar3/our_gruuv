@@ -539,9 +539,13 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     return_url = goal_check_in_redirect_url(params[:return_url])
 
     if result.ok?
-      notice = I18n.t('terminology.confidence_check_saved_successfully')
-      notice += ' Target date updated.' if result.value[:target_date_updated]
-      redirect_to return_url, notice: notice
+      if result.value[:no_changes]
+        redirect_to return_url
+      else
+        notice = I18n.t('terminology.confidence_check_saved_successfully')
+        notice += ' Target date updated.' if result.value[:target_date_updated]
+        redirect_to return_url, notice: notice
+      end
     else
       redirect_to return_url, alert: "#{I18n.t('terminology.failed_to_save_confidence_check')}: #{result.error}"
     end

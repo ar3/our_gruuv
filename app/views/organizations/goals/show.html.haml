@@ -359,7 +359,7 @@
                         = f.select :confidence_percentage,
                             options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
                             { include_blank: 'Select confidence...' },
-                            { class: 'form-select d-inline-block w-auto mx-1', style: 'vertical-align: baseline;', required: true, disabled: !can_save_check_in }
+                            { class: 'form-select d-inline-block w-auto mx-1', style: 'vertical-align: baseline;', disabled: !can_save_check_in }
                         confidence we will achieve
                         %strong= @goal.title
                         by
