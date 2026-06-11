@@ -50,6 +50,14 @@ class AssignmentPolicy < ApplicationPolicy
     update?
   end
 
+  def bulk_remove_from_positions?
+    bulk_assignment_archive_action?
+  end
+
+  def bulk_close_assignment_tenures?
+    bulk_assignment_archive_action?
+  end
+
   def run_clarity?
     update?
   end
@@ -72,6 +80,13 @@ class AssignmentPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless record&.company_id
     viewing_teammate.organization_id == record.company_id && viewing_teammate.can_manage_maap?
+  end
+
+  def bulk_assignment_archive_action?
+    return true if admin_bypass?
+    return false unless user_has_maap_permission_for_record?
+    return false unless record&.company
+    Pundit.policy(pundit_user, record.company).manage_employment?
   end
 
   class Scope < ApplicationPolicy::Scope

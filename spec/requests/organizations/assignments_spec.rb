@@ -560,6 +560,105 @@ RSpec.describe 'Organizations::Assignments', type: :request do
           expect(assignment.reload.archived?).to be false
         end
       end
+
+      describe 'bulk archive actions' do
+        let!(:position_assignment) do
+          position_major_level = create(:position_major_level)
+          title = create(:title, company: organization, position_major_level: position_major_level)
+          position_level = create(:position_level, position_major_level: position_major_level)
+          position = create(:position, title: title, position_level: position_level)
+          create(:position_assignment, position: position, assignment: assignment)
+        end
+        let!(:active_tenure) do
+          teammate = create(:teammate, organization: organization)
+          create(:assignment_tenure, assignment: assignment, teammate: teammate, started_at: 1.week.ago, ended_at: nil)
+        end
+
+        describe 'GET archive danger zone' do
+          it 'shows bulk action forms when blockers exist' do
+            get archive_organization_assignment_path(organization, assignment)
+            expect(response).to have_http_status(:success)
+            expect(response.body).to include('Danger zone')
+            expect(response.body).to include('Bulk remove from positions')
+            expect(response.body).to include('Bulk close assignment tenures')
+          end
+        end
+
+        describe 'PATCH bulk_remove_from_positions' do
+          it 'removes position assignments and redirects back to archive' do
+            patch bulk_remove_from_positions_organization_assignment_path(organization, assignment),
+                  params: { confirm_bulk_remove_from_positions: '1' }
+
+            expect(response).to redirect_to(archive_organization_assignment_path(organization, assignment))
+            expect(flash[:notice]).to include('Removed this assignment from 1 position')
+            expect(assignment.position_assignments.reload).to be_empty
+          end
+
+          it 'requires confirmation checkbox' do
+            patch bulk_remove_from_positions_organization_assignment_path(organization, assignment)
+
+            expect(response).to redirect_to(archive_organization_assignment_path(organization, assignment))
+            expect(flash[:alert]).to include('Confirmation required')
+            expect(assignment.position_assignments.reload).to be_present
+          end
+        end
+
+        describe 'PATCH bulk_close_assignment_tenures' do
+          it 'closes active tenures, creates snapshots, and redirects back to archive' do
+            expect do
+              patch bulk_close_assignment_tenures_organization_assignment_path(organization, assignment),
+                    params: { confirm_bulk_close_assignment_tenures: '1' }
+            end.to change(MaapSnapshot, :count).by(1)
+
+            expect(response).to redirect_to(archive_organization_assignment_path(organization, assignment))
+            expect(flash[:notice]).to include('Closed 1 active tenure')
+            expect(active_tenure.reload.ended_at).to be_present
+          end
+
+          it 'requires confirmation checkbox' do
+            patch bulk_close_assignment_tenures_organization_assignment_path(organization, assignment)
+
+            expect(response).to redirect_to(archive_organization_assignment_path(organization, assignment))
+            expect(flash[:alert]).to include('Confirmation required')
+            expect(active_tenure.reload.ended_at).to be_nil
+          end
+        end
+      end
+
+      context 'when user has MAAP but not employment management permissions' do
+        let(:maap_only_teammate) do
+          create(:teammate, :unassigned_employee, person: create(:person), organization: organization,
+                 can_manage_maap: true, can_manage_employment: false)
+        end
+        let!(:position_assignment) do
+          position_major_level = create(:position_major_level)
+          title = create(:title, company: organization, position_major_level: position_major_level)
+          position_level = create(:position_level, position_major_level: position_major_level)
+          position = create(:position, title: title, position_level: position_level)
+          create(:position_assignment, position: position, assignment: assignment)
+        end
+
+        before do
+          maap_only_teammate
+          sign_in_as_teammate_for_request(maap_only_teammate.person, organization)
+        end
+
+        it 'shows disabled bulk buttons with permission tooltip' do
+          get archive_organization_assignment_path(organization, assignment)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('Bulk remove from positions')
+          expect(response.body).to include('employment management permissions')
+          expect(response.body).not_to include('confirm_bulk_remove_from_positions')
+        end
+
+        it 'denies bulk remove request' do
+          patch bulk_remove_from_positions_organization_assignment_path(organization, assignment),
+                params: { confirm_bulk_remove_from_positions: '1' }
+
+          expect(response).to have_http_status(:redirect)
+          expect(assignment.position_assignments.reload).to be_present
+        end
+      end
     end
 
     context 'when assignment is archived' do

@@ -5,7 +5,7 @@ class Organizations::AssignmentsController < ApplicationController
 
   before_action :authenticate_person!
   before_action :set_organization
-  before_action :set_assignment, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :restore, :choose_manage_goals, :manage_goals, :associate_existing_goals]
+  before_action :set_assignment, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :bulk_remove_from_positions, :bulk_close_assignment_tenures, :restore, :choose_manage_goals, :manage_goals, :associate_existing_goals]
 
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
@@ -359,6 +359,51 @@ class Organizations::AssignmentsController < ApplicationController
     redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully archived.'
   end
 
+  def bulk_remove_from_positions
+    authorize @assignment, :bulk_remove_from_positions?
+    unless params[:confirm_bulk_remove_from_positions] == '1'
+      redirect_to archive_organization_assignment_path(@organization, @assignment),
+                  alert: 'Confirmation required to remove position assignments.'
+      return
+    end
+
+    result = Assignments::BulkRemoveFromPositionsService.call(assignment: @assignment)
+    if result.ok?
+      redirect_to archive_organization_assignment_path(@organization, @assignment),
+                  notice: "Removed this assignment from #{result.value[:count]} #{'position'.pluralize(result.value[:count])}."
+    else
+      redirect_to archive_organization_assignment_path(@organization, @assignment), alert: result.error
+    end
+  end
+
+  def bulk_close_assignment_tenures
+    authorize @assignment, :bulk_close_assignment_tenures?
+    unless params[:confirm_bulk_close_assignment_tenures] == '1'
+      redirect_to archive_organization_assignment_path(@organization, @assignment),
+                  alert: 'Confirmation required to close assignment tenures.'
+      return
+    end
+
+    unless current_company_teammate
+      redirect_to archive_organization_assignment_path(@organization, @assignment),
+                  alert: 'Unable to identify your teammate record for this organization.'
+      return
+    end
+
+    result = Assignments::BulkCloseAssignmentTenuresService.call(
+      assignment: @assignment,
+      creator_teammate: current_company_teammate,
+      request_info: build_request_info
+    )
+    if result.ok?
+      count = result.value[:closed_count]
+      redirect_to archive_organization_assignment_path(@organization, @assignment),
+                  notice: "Closed #{count} active #{'tenure'.pluralize(count)} for this assignment."
+    else
+      redirect_to archive_organization_assignment_path(@organization, @assignment), alert: result.error
+    end
+  end
+
   def restore
     authorize @assignment, :restore?
     @assignment.restore!
@@ -510,5 +555,13 @@ class Organizations::AssignmentsController < ApplicationController
         change_context: 'Outcomes updated on assignment form'
       )
     end
+  end
+
+  def build_request_info
+    {
+      ip_address: request.remote_ip,
+      user_agent: request.user_agent,
+      timestamp: Time.current.iso8601
+    }
   end
 end

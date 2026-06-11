@@ -149,6 +149,38 @@ RSpec.describe AssignmentPolicy, type: :policy do
     end
   end
 
+  describe 'bulk_remove_from_positions? and bulk_close_assignment_tenures?' do
+    let(:employment_maap_teammate) do
+      CompanyTeammate.create!(person: maap_user, organization: organization, can_manage_maap: true, can_manage_employment: true)
+    end
+    let(:pundit_user_employment_maap) { OpenStruct.new(user: employment_maap_teammate, impersonating_teammate: nil) }
+
+    it 'allows when user has MAAP and employment management permissions' do
+      policy = AssignmentPolicy.new(pundit_user_employment_maap, assignment)
+      expect(policy.bulk_remove_from_positions?).to be true
+      expect(policy.bulk_close_assignment_tenures?).to be true
+    end
+
+    it 'denies when user has MAAP but not employment management permissions' do
+      policy = AssignmentPolicy.new(pundit_user_maap, assignment)
+      expect(policy.bulk_remove_from_positions?).to be false
+      expect(policy.bulk_close_assignment_tenures?).to be false
+    end
+
+    it 'denies when user lacks MAAP permissions' do
+      employment_only_teammate = CompanyTeammate.create!(
+        person: person,
+        organization: organization,
+        can_manage_maap: false,
+        can_manage_employment: true
+      )
+      pundit_user = OpenStruct.new(user: employment_only_teammate, impersonating_teammate: nil)
+      policy = AssignmentPolicy.new(pundit_user, assignment)
+      expect(policy.bulk_remove_from_positions?).to be false
+      expect(policy.bulk_close_assignment_tenures?).to be false
+    end
+  end
+
   describe 'manage_consumer_assignments?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do

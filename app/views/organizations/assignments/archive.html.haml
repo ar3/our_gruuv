@@ -4,6 +4,9 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @assignment.title, url: organization_assignment_path(@organization, @assignment) }, { label: "Archive", url: nil }])
 
+- can_bulk_actions = policy(@assignment).bulk_remove_from_positions?
+- bulk_employment_tooltip = "You need employment management permissions to perform this bulk action"
+
 .row.justify-content-center
   .col-lg-10
     .card.mb-4
@@ -57,6 +60,56 @@
                     = link_to tenure.teammate.person.display_name, internal_organization_company_teammate_path(tenure.teammate.organization, tenure.teammate), class: 'text-decoration-none'
                     %span.text-muted.ms-1
                       (teammate internal view)
+
+    - if @position_assignments_count.positive? || @active_tenures_count.positive?
+      .card.mb-4.border-danger
+        .card-header.bg-danger.text-white
+          %h5.mb-0
+            %i.bi.bi-exclamation-octagon.me-2
+            Danger zone — bulk actions
+        .card-body
+          %p.text-danger.fw-semibold.mb-2
+            These actions are destructive and cannot be undone.
+          %p.mb-4
+            Use these only when you need to clear blockers before archiving. They affect live employment data across the organization.
+
+          - if @position_assignments_count.positive?
+            %h6.fw-semibold Remove from all positions
+            %p.text-muted
+              Permanently deletes this assignment from #{pluralize(@position_assignments_count, 'position')} blueprint (required and suggested). This does
+              %strong not
+              end anyone's active assignment tenure.
+            - if can_bulk_actions
+              = form_with url: bulk_remove_from_positions_organization_assignment_path(@organization, @assignment), method: :patch, local: true, class: 'mb-4' do |f|
+                .form-check.mb-3
+                  = check_box_tag :confirm_bulk_remove_from_positions, '1', false, class: 'form-check-input', id: 'confirm_bulk_remove_from_positions', required: true
+                  = label_tag 'confirm_bulk_remove_from_positions', "I understand this will permanently remove this assignment from all #{pluralize(@position_assignments_count, 'position')} and cannot be undone.", class: 'form-check-label'
+                = f.submit 'Bulk remove from positions', class: 'btn btn-danger', onclick: "return confirm('Remove this assignment from all #{@position_assignments_count} #{'position'.pluralize(@position_assignments_count)}? This cannot be undone.');"
+            - else
+              .d-flex.align-items-center.gap-2.mb-4
+                %button.btn.btn-danger{type: 'button', disabled: true}
+                  Bulk remove from positions
+                %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => bulk_employment_tooltip, tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+                  %i.bi.bi-exclamation-triangle
+
+          - if @active_tenures_count.positive?
+            %h6.fw-semibold Close all active assignment tenures
+            %p.text-muted
+              Ends every active assignment tenure for this assignment across #{pluralize(@active_tenures_count, 'person')}. Each affected person receives a MAAP snapshot audit record. Open check-ins are left unchanged. This does
+              %strong not
+              remove position blueprint links.
+            - if can_bulk_actions
+              = form_with url: bulk_close_assignment_tenures_organization_assignment_path(@organization, @assignment), method: :patch, local: true do |f|
+                .form-check.mb-3
+                  = check_box_tag :confirm_bulk_close_assignment_tenures, '1', false, class: 'form-check-input', id: 'confirm_bulk_close_assignment_tenures', required: true
+                  = label_tag 'confirm_bulk_close_assignment_tenures', "I understand this will close all #{pluralize(@active_tenures_count, 'active tenure')} for this assignment and cannot be undone.", class: 'form-check-label'
+                = f.submit 'Bulk close assignment tenures', class: 'btn btn-danger', onclick: "return confirm('Close all #{@active_tenures_count} active #{'tenure'.pluralize(@active_tenures_count)} for this assignment? This cannot be undone.');"
+            - else
+              .d-flex.align-items-center.gap-2
+                %button.btn.btn-danger{type: 'button', disabled: true}
+                  Bulk close assignment tenures
+                %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => bulk_employment_tooltip, tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+                  %i.bi.bi-exclamation-triangle
 
     - if @archivable
       .card.mb-4

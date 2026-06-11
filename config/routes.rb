@@ -298,6 +298,8 @@ Rails.application.routes.draw do
         get 'maap_clarity/status', to: 'assignments/maap_clarity#status', as: :maap_clarity_status
         get :archive
         patch :execute_archive
+        patch :bulk_remove_from_positions
+        patch :bulk_close_assignment_tenures
         patch :restore
         get :choose_manage_goals
         get :manage_goals
