@@ -1,0 +1,131 @@
+- bulk_check_in_goals = local_assigns[:bulk_check_in_goals] || []
+- bulk_check_in_hierarchy = local_assigns[:bulk_check_in_hierarchy] || {}
+- root_goals = bulk_check_in_hierarchy[:root_goals] || []
+- current_week_start = Date.current.beginning_of_week(:monday)
+- current_week_end = current_week_start.end_of_week(:sunday)
+- my_growth_goals_casual = teammate.person.casual_name.presence || teammate.person.display_name
+- bulk_return_url = my_growth_goals_organization_company_teammate_path(organization, teammate, timeframe: params[:timeframe])
+- draft_goals_url = organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}", status: 'draft', view: 'hierarchical-collapsible', return_url: bulk_return_url, return_text: weekly_goal_confidence_check_in_bulk_label)
+- new_goal_url = new_organization_goal_path(organization, owner_id: "CompanyTeammate_#{teammate.id}", return_url: bulk_return_url, return_text: weekly_goal_confidence_check_in_bulk_label)
+
+= render 'shared/section_header',
+  title: weekly_goal_confidence_check_in_bulk_label,
+  icon: 'bi-bullseye',
+  description: weekly_goal_confidence_check_in_bulk_description,
+  include_top_header_margin: true
+
+- if bulk_check_in_goals.empty?
+  .alert.alert-info
+    %p.mb-0
+      = no_active_goals_for_bulk_confidence_check_html(draft_goals_url: draft_goals_url, new_goal_url: new_goal_url, name: my_growth_goals_casual)
+- else
+  .alert.alert-light.mb-4
+    .d-flex.align-items-center.justify-content-between
+      .d-flex.align-items-center
+        %i.bi.bi-calendar-event.me-2
+        %span
+          %strong= "#{current_confidence_check_week_label}:"
+          = "#{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}"
+      .d-flex.align-items-center.gap-2
+        %button.btn.btn-outline-secondary.btn-sm#bulk-expand-all-goals{type: "button"}
+          %i.bi.bi-arrows-expand.me-1
+          Expand All
+        %button.btn.btn-outline-secondary.btn-sm#bulk-collapse-all-goals{type: "button"}
+          %i.bi.bi-arrows-collapse.me-1
+          Collapse All
+
+  = form_with url: bulk_update_check_ins_organization_goals_path(organization), method: :post, local: true, html: { class: 'bulk-confidence-check-form', data: { controller: 'confirm-leave', confirm_leave_single_active_form_value: true, action: 'input->confirm-leave#markDirty change->confirm-leave#markDirty' } } do
+    = hidden_field_tag :return_url, bulk_return_url
+    = hidden_field_tag :return_text, weekly_goal_confidence_check_in_bulk_label
+
+    .d-grid.mb-4
+      = submit_tag save_all_confidence_checks_label, class: 'btn btn-primary btn-lg'
+
+    .tree-visualization.bulk-goals-tree-visualization{style: "padding: 10px 0;"}
+      - if root_goals.empty?
+        - bulk_check_in_goals.each do |goal|
+          - node = { goal: goal, children: [], direct_children_count: 0, total_descendants_count: 0, most_recent_check_in: bulk_check_in_hierarchy[:most_recent_check_ins_by_goal]&.[](goal.id), current_week_check_in: bulk_check_in_hierarchy[:current_week_check_ins_by_goal]&.[](goal.id), can_check_in: bulk_check_in_hierarchy[:can_check_in_goals]&.include?(goal.id) }
+          = render 'organizations/company_teammates/my_growth/bulk_goal_node', node: node, depth: 0, organization: organization
+      - else
+        - root_goals.each do |root_node|
+          = render 'organizations/company_teammates/my_growth/bulk_goal_node', node: root_node, depth: 0, organization: organization
+
+    .d-grid.mt-4
+      = submit_tag save_all_confidence_checks_label, class: 'btn btn-primary btn-lg'
+
+  :javascript
+    function initializeBulkGoalsHierarchyControls() {
+      const container = document.querySelector('.bulk-goals-tree-visualization');
+      if (!container) return;
+
+      const toggleButtons = container.querySelectorAll('.toggle-children');
+
+      toggleButtons.forEach(function(button) {
+        if (button.dataset.bulkGoalsHierarchyBound === 'true') {
+          return;
+        }
+        const targetId = button.getAttribute('data-bs-target');
+        const target = document.querySelector(targetId);
+        const icon = button.querySelector('.toggle-icon');
+
+        if (target) {
+          if (target.classList.contains('show')) {
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+          } else {
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+          }
+
+          target.addEventListener('show.bs.collapse', function() {
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+          });
+
+          target.addEventListener('hide.bs.collapse', function() {
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+          });
+        }
+        button.dataset.bulkGoalsHierarchyBound = 'true';
+      });
+
+      const expandAllBtn = document.getElementById('bulk-expand-all-goals');
+      if (expandAllBtn && expandAllBtn.dataset.bulkGoalsHierarchyBound !== 'true') {
+        expandAllBtn.addEventListener('click', function() {
+          container.querySelectorAll('.collapse').forEach(function(el) {
+            el.classList.add('show');
+            const button = container.querySelector('[data-bs-target="#' + el.id + '"]');
+            if (button) {
+              const icon = button.querySelector('.toggle-icon');
+              if (icon) {
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-up');
+              }
+            }
+          });
+        });
+        expandAllBtn.dataset.bulkGoalsHierarchyBound = 'true';
+      }
+
+      const collapseAllBtn = document.getElementById('bulk-collapse-all-goals');
+      if (collapseAllBtn && collapseAllBtn.dataset.bulkGoalsHierarchyBound !== 'true') {
+        collapseAllBtn.addEventListener('click', function() {
+          container.querySelectorAll('.collapse.show').forEach(function(el) {
+            el.classList.remove('show');
+            const button = container.querySelector('[data-bs-target="#' + el.id + '"]');
+            if (button) {
+              const icon = button.querySelector('.toggle-icon');
+              if (icon) {
+                icon.classList.remove('bi-chevron-up');
+                icon.classList.add('bi-chevron-down');
+              }
+            }
+          });
+        });
+        collapseAllBtn.dataset.bulkGoalsHierarchyBound = 'true';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeBulkGoalsHierarchyControls);
+    document.addEventListener('turbo:load', initializeBulkGoalsHierarchyControls);

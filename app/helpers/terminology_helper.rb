@@ -295,6 +295,18 @@ module TerminologyHelper
     terminology(:save_confidence_check)
   end
 
+  def save_all_confidence_checks_label
+    terminology(:save_all_confidence_checks)
+  end
+
+  def weekly_goal_confidence_check_in_bulk_label
+    terminology(:weekly_goal_confidence_check_in_bulk)
+  end
+
+  def weekly_goal_confidence_check_in_bulk_description
+    terminology(:weekly_goal_confidence_check_in_bulk_description)
+  end
+
   def current_confidence_check_week_label
     terminology(:current_confidence_check_week)
   end

@@ -193,6 +193,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     graph_goal_ids = goals_scope.active.pluck(:id)
     @goals_for_network_graph = graph_goal_ids.any? ? Goal.where(id: graph_goal_ids).includes(:owner, :creator).order(:title) : []
     @goal_links_for_network_graph = graph_goal_ids.any? ? GoalLink.where(parent_id: graph_goal_ids, child_id: graph_goal_ids).includes(:parent, :child) : []
+    load_bulk_confidence_check_goals
   end
 
   def my_growth_position_change
@@ -1262,6 +1263,27 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       .includes(:title, :position_level)
       .ordered
     @positions_by_department = positions.group_by { |pos| pos.title.department || co }
+  end
+
+  def load_bulk_confidence_check_goals
+    viewing_teammate = current_company_teammate
+    return unless viewing_teammate
+
+    @bulk_check_in_goals = Goals::BulkCheckInGoalsScopeQuery.new(
+      teammate: @teammate,
+      organization: organization,
+      viewing_teammate: viewing_teammate
+    ).call
+
+    @bulk_check_in_hierarchy = if @bulk_check_in_goals.any?
+      Goals::HierarchyWithCheckInsQuery.new(
+        goals: @bulk_check_in_goals,
+        current_person: current_person,
+        organization: organization
+      ).call
+    else
+      { root_goals: [], most_recent_check_ins_by_goal: {}, current_week_check_ins_by_goal: {}, can_check_in_goals: Set.new }
+    end
   end
 
   def my_growth_parse_timeframe(param)

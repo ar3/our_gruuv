@@ -314,8 +314,64 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('draft + active')
-        expect(response.body).to include('Go check-in on')
+        expect(response.body).to include('Go add confidence checks on')
         expect(response.body).to include('draft goals')
+        expect(response.body).to include('Weekly goal confidence check (in bulk)')
+        expect(response.body).to include('No active goals')
+      end
+
+      context 'bulk confidence check section' do
+        let!(:active_goal) do
+          create(:goal,
+            creator: employee_teammate,
+            owner: employee_teammate,
+            company: organization,
+            started_at: 1.week.ago,
+            most_likely_target_date: 1.month.from_now,
+            title: 'Bulk check-in goal')
+        end
+
+        it 'renders bulk check-in fields for active goals' do
+          get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('Bulk check-in goal')
+          expect(response.body).to include("goal_check_ins[#{active_goal.id}][confidence_percentage]")
+          expect(response.body).to include(bulk_update_check_ins_organization_goals_path(organization))
+          expect(response.body).to include('Save all confidence checks')
+        end
+
+        it 'saves bulk check-ins and returns to grow by goals' do
+          sign_in_as_teammate_for_request(employee, organization)
+          return_url = my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
+
+          post bulk_update_check_ins_organization_goals_path(organization),
+               params: {
+                 return_url: return_url,
+                 goal_check_ins: {
+                   active_goal.id => {
+                     confidence_percentage: '80',
+                     confidence_reason: 'On track'
+                   }
+                 }
+               }
+
+          expect(response).to redirect_to(return_url)
+          follow_redirect!
+          expect(response.body).to include('Successfully saved 1 confidence check')
+
+          check_in = GoalCheckIn.find_by(goal: active_goal)
+          expect(check_in.confidence_percentage).to eq(80)
+          expect(check_in.confidence_reason).to eq('On track')
+        end
+
+        it 'shows note/win CTA for manager when goal is creator-owner only check-in' do
+          active_goal.update!(edit_check_in_permission: 'only_creator_and_owner')
+
+          get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('Add a note/win/challenge about this goal')
+          expect(response.body).not_to include("goal_check_ins[#{active_goal.id}][confidence_percentage]")
+        end
       end
 
       it 'allows GET my_growth/position_change' do

@@ -130,6 +130,31 @@ module GoalsHelper
     end
   end
 
+  def bulk_goal_check_in_form?(goal:, can_check_in:, viewer_is_goal_owner:)
+    return false unless goal.started_at.present?
+    return false unless goal.most_likely_target_date.present? && goal.completed_at.nil?
+
+    if goal.edit_check_in_permission_anyone_who_can_view?
+      can_check_in
+    else
+      viewer_is_goal_owner || policy(goal).update?
+    end
+  end
+
+  def bulk_goal_note_win_cta?(goal:, show_form:)
+    return false if show_form
+    return false unless goal.owner_type == 'CompanyTeammate'
+    return false unless goal.most_likely_target_date.present? && goal.completed_at.nil?
+
+    goal.edit_check_in_permission_only_creator_and_owner?
+  end
+
+  def no_active_goals_for_bulk_confidence_check_html(draft_goals_url:, new_goal_url:, name:)
+    draft_link = link_to('start a draft goal', draft_goals_url)
+    new_link = link_to('create a new goal', new_goal_url)
+    "No active goals for #{h(name)}. Either #{draft_link} or #{new_link}.".html_safe
+  end
+
   def goal_no_edit_access_tooltip(_goal)
     "Only the goal creator or owner can edit this goal."
   end

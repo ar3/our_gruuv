@@ -74,3 +74,9 @@
   second_highcharts_title: '',
   hide_second_chart: true,
   wrap_class: 'container-fluid px-0'
+
+= render 'organizations/company_teammates/my_growth/bulk_confidence_check_section',
+  organization: organization,
+  teammate: @teammate,
+  bulk_check_in_goals: @bulk_check_in_goals,
+  bulk_check_in_hierarchy: @bulk_check_in_hierarchy

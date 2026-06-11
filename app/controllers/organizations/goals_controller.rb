@@ -705,20 +705,21 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       goal_check_ins_params: params[:goal_check_ins] || {},
       week_start: week_start
     )
+    redirect_target = bulk_update_check_ins_redirect_url
     
     if result.ok?
       if result.value[:failure_count] > 0
-        redirect_to organization_goals_path(@organization, params.except(:controller, :action, :goal_check_ins, :authenticity_token, :commit).permit!.to_h),
+        redirect_to redirect_target,
                     alert: I18n.t('terminology.some_confidence_checks_failed_save',
                                    success_count: result.value[:success_count],
                                    failure_count: result.value[:failure_count])
       else
-        redirect_to organization_goals_path(@organization, params.except(:controller, :action, :goal_check_ins, :authenticity_token, :commit).permit!.to_h),
+        redirect_to redirect_target,
                     notice: I18n.t('terminology.successfully_saved_confidence_checks_count',
                                    count: result.value[:success_count])
       end
     else
-      redirect_to organization_goals_path(@organization, params.except(:controller, :action, :goal_check_ins, :authenticity_token, :commit).permit!.to_h),
+      redirect_to redirect_target,
                   alert: "#{I18n.t('terminology.failed_to_save_confidence_checks')}: #{result.error}"
     end
   end
@@ -857,6 +858,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   def goal_check_in_redirect_url(return_url_param)
     base = return_url_param.presence || organization_goal_path(@organization, @goal)
     base.to_s.sub(/#.*/, '') + '#check-in'
+  end
+
+  def bulk_update_check_ins_redirect_url
+    if params[:return_url].present?
+      params[:return_url]
+    else
+      organization_goals_path(
+        @organization,
+        params.except(:controller, :action, :goal_check_ins, :authenticity_token, :commit, :return_url, :return_text).permit!.to_h
+      )
+    end
   end
 
   def parent_hierarchy_ids_for(goal)
