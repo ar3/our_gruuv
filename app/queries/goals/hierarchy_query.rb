@@ -1,8 +1,10 @@
 module Goals
   class HierarchyQuery
-    def initialize(goals:)
+    def initialize(goals:, sort: 'most_likely_target_date', direction: 'asc')
       @goals = goals.to_a
       @goal_ids = @goals.map(&:id).to_set
+      @sort = sort
+      @direction = direction
     end
 
     def call
@@ -26,7 +28,7 @@ module Goals
 
     private
 
-    attr_reader :goals, :goal_ids
+    attr_reader :goals, :goal_ids, :sort, :direction
 
     def build_hierarchy
       # Load all relevant links
@@ -74,7 +76,9 @@ module Goals
         end
       end
 
-      parent_child_map
+      parent_child_map.transform_values do |children|
+        Goals::CollectionSorter.call(children, sort: sort, direction: direction)
+      end
     end
 
     def find_root_goals(links)

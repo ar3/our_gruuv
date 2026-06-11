@@ -1,15 +1,17 @@
 module Goals
   class HierarchyWithCheckInsQuery
-    def initialize(goals:, current_person:, organization:)
+    def initialize(goals:, current_person:, organization:, sort: 'most_likely_target_date', direction: 'asc')
       @goals = goals.to_a
       @goal_ids = @goals.map(&:id).to_set
       @current_person = current_person
       @organization = organization
+      @sort = sort
+      @direction = direction
     end
 
     def call
       # Build basic hierarchy
-      hierarchy = Goals::HierarchyQuery.new(goals: @goals).call
+      hierarchy = Goals::HierarchyQuery.new(goals: @goals, sort: @sort, direction: @direction).call
       
       # Load check-in data
       load_check_in_data

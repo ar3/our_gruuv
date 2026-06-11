@@ -1,4 +1,4 @@
-- hierarchy = Goals::HierarchyQuery.new(goals: @goals).call
+- hierarchy = Goals::HierarchyQuery.new(goals: @goals, sort: @goal_child_sort, direction: @goal_child_sort_direction).call
 - root_goals = hierarchy[:root_goals]
 - parent_child_map = hierarchy[:parent_child_map]
 

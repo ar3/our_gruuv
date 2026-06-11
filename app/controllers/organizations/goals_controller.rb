@@ -158,12 +158,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         .transform_values { |check_ins| check_ins.first }
     end
     
+    @goal_child_sort = params[:sort].presence || 'most_likely_target_date'
+    @goal_child_sort_direction = params[:direction]
+
     # For hierarchical-collapsible view, build hierarchy with check-ins and permissions
     if @view_style == 'hierarchical-collapsible'
       @goal_hierarchy = Goals::HierarchyWithCheckInsQuery.new(
         goals: @goals,
         current_person: current_person,
-        organization: @organization
+        organization: @organization,
+        sort: @goal_child_sort,
+        direction: @goal_child_sort_direction
       ).call
       
       # Also expose individual maps for fallback rendering

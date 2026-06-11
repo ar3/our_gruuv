@@ -1,4 +1,4 @@
-- hierarchy = @goal_hierarchy || Goals::HierarchyWithCheckInsQuery.new(goals: @goals, current_person: current_person, organization: @organization).call
+- hierarchy = @goal_hierarchy || Goals::HierarchyWithCheckInsQuery.new(goals: @goals, current_person: current_person, organization: @organization, sort: @goal_child_sort, direction: @goal_child_sort_direction).call
 - root_goals = hierarchy[:root_goals]
 - current_week_start = Date.current.beginning_of_week(:monday)
 - current_week_end = current_week_start.end_of_week(:sunday)

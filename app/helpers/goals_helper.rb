@@ -464,6 +464,14 @@ module GoalsHelper
     end
   end
   
+  def sort_goals_for_display(goals, sort: nil, direction: nil)
+    Goals::CollectionSorter.call(
+      goals,
+      sort: sort || @goal_child_sort || @current_filters&.dig(:sort) || 'most_likely_target_date',
+      direction: direction || @goal_child_sort_direction || @current_filters&.dig(:direction)
+    )
+  end
+
   def render_hierarchical_indented_goal(goal, depth, parent_child_map, organization, most_recent_check_ins_by_goal = {})
     children = (parent_child_map[goal.id] || []).compact
     indent_px = depth * 30

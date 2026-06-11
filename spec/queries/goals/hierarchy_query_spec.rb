@@ -42,6 +42,15 @@ RSpec.describe Goals::HierarchyQuery do
         expect(result[:root_goals]).to contain_exactly(goal_14)
       end
 
+      it 'sorts children by most likely date then title' do
+        goal_15.update_columns(most_likely_target_date: Date.new(2026, 6, 20), title: 'Bravo child')
+        goal_16.update_columns(most_likely_target_date: Date.new(2026, 6, 10), title: 'Zulu child')
+        goal_17.update_columns(most_likely_target_date: Date.new(2026, 6, 10), title: 'Alpha child')
+
+        result = query.call
+        expect(result[:parent_child_map][goal_14.id]).to eq([goal_17, goal_16, goal_15])
+      end
+
       it 'builds correct parent-child map' do
         result = query.call
         parent_child_map = result[:parent_child_map]
