@@ -73,7 +73,7 @@
           = gsd_label
       .card-body
         %p.text-muted.small
-          Notify #{@teammate.person.casual_name} when there are things in the #{gsd_label} list.
+          Notify #{@teammate.person.casual_name} when there are things in the #{link_to gsd_label, organization_get_shit_done_path(organization)} list.
         = form_with url: notifications_url, method: :patch, local: true, id: 'gsd-toggle-form' do
           .btn-group{role: 'group', 'aria-label': "#{gsd_label} notification on or off"}
             %input.btn-check{type: 'radio', name: 'gsd_digest_enabled', value: 'on', id: 'gsd_digest_on', checked: gsd_on, onchange: 'this.form.submit()'}
@@ -115,7 +115,7 @@
           Interesting Things
       .card-body
         %p.text-muted.small
-          Notify #{@teammate.person.casual_name} when there are things they might be interested in.
+          Notify #{@teammate.person.casual_name} when there are things #{link_to 'they might be interested in', something_interesting_organization_get_shit_done_path(organization)}.
         = form_with url: notifications_url, method: :patch, local: true, id: 'interesting-toggle-form' do
           .btn-group{role: 'group', 'aria-label': 'Interesting Things notification on or off'}
             %input.btn-check{type: 'radio', name: 'interesting_things_digest_enabled', value: 'on', id: 'interesting_digest_on', checked: interesting_on, onchange: 'this.form.submit()'}
@@ -161,8 +161,9 @@
           Send Weekly Digests
       .card-body
         %p.text-muted.small
-          Pick the day of the week to receive a weekly recap, sent to a Slack group DM with #{@teammate.person.casual_name} and their manager.
-        = form_with url: notifications_url, method: :patch, local: true, id: 'weekly-digest-form'
+          Pick the day of the week to receive a #{link_to 'weekly recap', organization_company_teammate_one_on_one_link_path(organization, @teammate)}, sent to a Slack group DM with #{@teammate.person.casual_name} and their manager.
+        = form_with url: notifications_url, method: :patch, local: true, id: 'weekly-digest-form' do
+          %div.d-none{aria: { hidden: true }}
         = render 'shared/digest/weekly_reminder_day_button_group', teammate_id: @teammate.id, weekly_day: weekly_day, form_id: 'weekly-digest-form'
         - if weekly_day_selected
           .mt-3

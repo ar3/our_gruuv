@@ -21,9 +21,13 @@ RSpec.describe 'Notifications tab', type: :request do
       expect(response.body).to include('How do you want these notifications?')
       # Auto-save forms exist and the day button group inputs are bound to the weekly form
       expect(response.body).to include('id="weekly-digest-form"')
+      expect(response.body).to include('</form>')
       expect(response.body).to include("about_me_days[#{teammate.id}]")
       expect(response.body).to include('gsd_digest_enabled')
       expect(response.body).to include('interesting_things_digest_enabled')
+      weekly_form = response.body[/form[^>]*id="weekly-digest-form"[^>]*>.*?<\/form>/m]
+      expect(weekly_form).to be_present
+      expect(weekly_form).to end_with('</form>')
     end
 
     it 'shows the weekly style multi-select once a day is selected, defaulting 1:1 on' do
