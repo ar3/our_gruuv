@@ -1,0 +1,42 @@
+-# locals: records (assignments or abilities), title, icon, description, collapse_id, summary, row_path (lambda record -> path), type_label
+- records = local_assigns.fetch(:records)
+- title = local_assigns.fetch(:title)
+- icon = local_assigns.fetch(:icon)
+- description = local_assigns.fetch(:description)
+- collapse_id = local_assigns.fetch(:collapse_id)
+- summary = local_assigns.fetch(:summary)
+- row_path = local_assigns.fetch(:row_path)
+- type_label = local_assigns.fetch(:type_label)
+
+= render 'shared/section_header',
+         title: title,
+         icon: icon,
+         description: description,
+         collapsible: true,
+         collapse_target: collapse_id,
+         status_indicator: :info
+
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:info)}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:info)} #{status_indicator_badge_class(:info)} me-2"}
+    = summary
+
+.collapse{id: collapse_id}
+  .card.mb-4
+    .card-body
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th= type_label
+              %th Updated
+              %th Action
+          %tbody
+            - records.each do |record|
+              %tr
+                %td
+                  %strong= record.try(:title) || record.try(:name)
+                %td
+                  %small.text-muted= "#{time_ago_in_words(record.updated_at)} ago"
+                %td
+                  = link_to 'View', row_path.call(record), class: 'btn btn-outline-primary btn-sm'

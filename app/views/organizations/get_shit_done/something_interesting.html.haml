@@ -1,0 +1,120 @@
+- content_for :title, "Something Interesting - #{@teammate.person.casual_name}"
+- page_help_id = 'somethingInterestingPageHelp'
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0 Something Interesting
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+    = render 'shared/page_help/header_info_button',
+             collapse_id: page_help_id,
+             tooltip: 'Things other people have done since your last visit. Click for details.'
+  %p.text-muted.mb-0 Someone else has done something interesting since you last checked
+
+.collapse.mb-4{id: page_help_id}
+  = render 'organizations/get_shit_done/something_interesting_page_help'
+
+= render 'organizations/get_shit_done/tabs',
+         active_tab: :something_interesting,
+         interesting_count: @something_interesting_count
+
+.card.mb-4
+  .card-body.py-3
+    = form_with url: something_interesting_organization_get_shit_done_path(organization), method: :get, class: 'd-flex flex-wrap align-items-center gap-2 mb-0' do |f|
+      %span.text-muted Showing things that happened since
+      = f.date_field :since, value: @since.to_date, class: 'form-control form-control-sm w-auto'
+      = f.submit 'Update', class: 'btn btn-sm btn-outline-primary'
+      - if @last_visited_at
+        %small.text-muted= "Defaults to your last visit, #{@last_visited_at.strftime('%b %-d, %Y at %-l:%M %p')}."
+      - else
+        %small.text-muted This is your first visit, so we default to the last 7 days.
+
+- quiet_categories = []
+
+- if @goals_by_those_i_serve.any?
+  = render 'organizations/get_shit_done/interesting_goals_section',
+           activities: @goals_by_those_i_serve,
+           title: 'Goals updated by those I serve',
+           icon: 'bi-bullseye',
+           description: 'Goal changes and new confidence check-ins from your direct reports',
+           collapse_id: 'goalsByThoseIServeSection',
+           summary: "#{pluralize(@goals_by_those_i_serve.size, 'goal')} updated by those you serve"
+- else
+  - quiet_categories << { title: 'Goals updated by those I serve', icon: 'bi-bullseye', description: 'Goal changes and new confidence check-ins from your direct reports' }
+
+- if @goals_on_my_teams.any?
+  = render 'organizations/get_shit_done/interesting_goals_section',
+           activities: @goals_on_my_teams,
+           title: "Goals updated on teams I'm on",
+           icon: 'bi-people',
+           description: 'Changes to goals owned by your teams',
+           collapse_id: 'goalsOnMyTeamsSection',
+           summary: "#{pluralize(@goals_on_my_teams.size, 'goal')} updated on your teams"
+- else
+  - quiet_categories << { title: "Goals updated on teams I'm on", icon: 'bi-people', description: 'Changes to goals owned by your teams' }
+
+- if @assignments_updated.any?
+  = render 'organizations/get_shit_done/interesting_resources_section',
+           records: @assignments_updated,
+           title: "Assignments updated that I'm interested in",
+           icon: 'bi-briefcase',
+           description: 'Changes to assignments you hold or that are on your position',
+           collapse_id: 'assignmentsUpdatedSection',
+           summary: "#{pluralize(@assignments_updated.size, 'assignment')} you're interested in updated",
+           type_label: 'Assignment',
+           row_path: ->(assignment) { organization_assignment_path(organization, assignment) }
+- else
+  - quiet_categories << { title: "Assignments updated that I'm interested in", icon: 'bi-briefcase', description: 'Changes to assignments you hold or that are on your position' }
+
+- if @abilities_updated.any?
+  = render 'organizations/get_shit_done/interesting_resources_section',
+           records: @abilities_updated,
+           title: "Abilities updated that I'm interested in",
+           icon: 'bi-mortarboard',
+           description: 'Changes to abilities tied to your assignments, position, or milestones',
+           collapse_id: 'abilitiesUpdatedSection',
+           summary: "#{pluralize(@abilities_updated.size, 'ability')} you're interested in updated",
+           type_label: 'Ability',
+           row_path: ->(ability) { organization_ability_path(organization, ability) }
+- else
+  - quiet_categories << { title: "Abilities updated that I'm interested in", icon: 'bi-mortarboard', description: 'Changes to abilities tied to your assignments, position, or milestones' }
+
+- if @observations_about_those_i_serve.any?
+  = render 'organizations/get_shit_done/interesting_observations_section',
+           observations: @observations_about_those_i_serve,
+           title: 'Observations made about those I serve',
+           icon: 'bi-eye',
+           description: 'Published observations about your direct reports',
+           collapse_id: 'observationsAboutThoseIServeSection',
+           summary: "#{pluralize(@observations_about_those_i_serve.count, 'observation')} made about those you serve"
+- else
+  - quiet_categories << { title: 'Observations made about those I serve', icon: 'bi-eye', description: 'Published observations about your direct reports' }
+
+- if @observations_about_me.any?
+  = render 'organizations/get_shit_done/interesting_observations_section',
+           observations: @observations_about_me,
+           title: 'Observations made about me',
+           icon: 'bi-chat-heart',
+           description: 'Published observations where you are an observee',
+           collapse_id: 'observationsAboutMeSection',
+           summary: "#{pluralize(@observations_about_me.count, 'observation')} made about you"
+- else
+  - quiet_categories << { title: 'Observations made about me', icon: 'bi-chat-heart', description: 'Published observations where you are an observee' }
+
+- if quiet_categories.any?
+  .row.mt-5.pt-4
+    .col-12
+      %hr.border-secondary.mb-4
+      %p.text-center.text-muted.mb-4
+        Below are categories where nothing interesting has happened since
+        = @since.strftime('%b %-d, %Y')
+        %i.bi.bi-check-circle-fill.text-success
+  - quiet_categories.each_with_index do |category, index|
+    = render 'shared/section_header',
+            title: category[:title],
+            icon: category[:icon],
+            description: category[:description],
+            collapsible: false,
+            status_indicator: :success,
+            include_top_header_margin: index.zero?

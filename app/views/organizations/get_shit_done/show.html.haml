@@ -9,6 +9,10 @@
       Configure digest
   %p.text-muted.mb-0 Items that need your attention
 
+= render 'organizations/get_shit_done/tabs',
+         active_tab: :get_shit_done,
+         interesting_count: @something_interesting_count
+
 - completed_categories = []
 - if @observable_moments.any?
   = render partial: 'organizations/get_shit_done/observable_moments_section'

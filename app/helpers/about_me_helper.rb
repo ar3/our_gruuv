@@ -335,6 +335,8 @@ module AboutMeHelper
       'text-warning'
     when :green, :success
       'text-success'
+    when :info
+      'text-info'
     else
       'text-muted'
     end
@@ -348,6 +350,8 @@ module AboutMeHelper
       'bi-exclamation-circle-fill'
     when :green, :success
       'bi-check-circle-fill'
+    when :info
+      'bi-info-circle-fill'
     else
       'bi-circle'
     end
@@ -361,6 +365,8 @@ module AboutMeHelper
       'alert-warning'
     when :green, :success
       'alert-success'
+    when :info
+      'alert-info'
     else
       'alert-secondary'
     end

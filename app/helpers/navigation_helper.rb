@@ -474,6 +474,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Something Interesting',
+            icon: 'bi-stars',
+            path: something_interesting_organization_get_shit_done_path(current_organization),
+            policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
+            coming_soon: false
+          },
+          {
             label: 'Meeting transcripts',
             icon: 'bi-file-earmark-text',
             path: organization_possible_observation_transcripts_path(current_organization),

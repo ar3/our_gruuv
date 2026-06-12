@@ -1,0 +1,39 @@
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Catch up on what other people have done since you last checked—goal progress from those you serve and your teams,
+    changes to the assignments and abilities you care about, and new observations about your people and about you.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 What "since you last checked" means
+  %p.mb-2
+    Each visit to this page is remembered. The next time you come back, the page defaults to showing only things
+    that happened after your previous visit. If you've never visited, it shows the last 7 days. Use the date control
+    at the top to look further back.
+  %h5.fw-semibold.mb-2 The tab pill
+  %p.mb-2
+    The
+    %span.badge.rounded-pill.text-bg-info 3
+    pill on the Something Interesting tab counts how many interesting things have happened since your last visit.
+    Visiting this page resets that baseline.
+  %h5.fw-semibold.mb-2 What counts as interesting
+  %ul.mb-3
+    %li
+      %strong Goals updated by those I serve:
+      goals owned by your direct reports that changed or got a new confidence check-in.
+    %li
+      %strong Goals updated on teams I'm on:
+      goals owned by a team you're a member of.
+    %li
+      %strong Assignments / Abilities I'm interested in:
+      assignments you actively hold or that are on your position, and the abilities tied to them or to your milestones.
+    %li
+      %strong Observations:
+      newly published observations about your direct reports or about you (only ones you're allowed to see).
+  %p.mb-0
+    Your own activity is left out wherever we can tell it was you—this page is about what
+    %em someone else
+    has done.

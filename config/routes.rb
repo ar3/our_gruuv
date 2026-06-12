@@ -99,7 +99,9 @@ Rails.application.routes.draw do
     get 'value_billing', to: 'organizations/value_billing#show', as: :value_billing
 
     # Get Shit Done Dashboard
-    resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done'
+    resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done' do
+      get :something_interesting
+    end
 
     # PaperTrail version history for auditable records (authorization uses each record's show? policy)
     get 'paper_trail', to: 'organizations/paper_trail#show', as: :paper_trail

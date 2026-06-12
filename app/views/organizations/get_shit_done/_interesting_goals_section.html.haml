@@ -1,0 +1,56 @@
+-# locals: activities ([SomethingInterestingQueryService::GoalActivity]), title, icon, description, collapse_id, summary
+- activities = local_assigns.fetch(:activities)
+- title = local_assigns.fetch(:title)
+- icon = local_assigns.fetch(:icon)
+- description = local_assigns.fetch(:description)
+- collapse_id = local_assigns.fetch(:collapse_id)
+- summary = local_assigns.fetch(:summary)
+
+= render 'shared/section_header',
+         title: title,
+         icon: icon,
+         description: description,
+         collapsible: true,
+         collapse_target: collapse_id,
+         status_indicator: :info
+
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:info)}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:info)} #{status_indicator_badge_class(:info)} me-2"}
+    = summary
+
+.collapse{id: collapse_id}
+  .card.mb-4
+    .card-body
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Goal
+              %th Owner
+              %th What's new
+              %th Latest activity
+              %th Action
+          %tbody
+            - activities.each do |activity|
+              - goal = activity.goal
+              %tr
+                %td
+                  %strong= goal.title
+                  %br
+                  %small.text-muted= goal.goal_type.humanize
+                %td
+                  - if goal.owner.is_a?(CompanyTeammate)
+                    = goal.owner.person.casual_name
+                  - else
+                    = goal.owner.try(:name) || goal.owner_type
+                %td
+                  - if activity.new_check_ins.any?
+                    %span.badge.text-bg-info.me-1= pluralize(activity.new_check_ins.size, 'new check-in')
+                    %small.text-muted= "latest confidence #{activity.new_check_ins.first.confidence_percentage}%"
+                  - if activity.record_updated
+                    %span.badge.text-bg-secondary Goal updated
+                %td
+                  %small.text-muted= "#{time_ago_in_words(activity.latest_activity_at)} ago"
+                %td
+                  = link_to 'View', organization_goal_path(organization, goal), class: 'btn btn-outline-primary btn-sm'
