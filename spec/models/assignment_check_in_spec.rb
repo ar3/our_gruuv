@@ -180,10 +180,16 @@ RSpec.describe AssignmentCheckIn, type: :model do
       expect(check_in.actual_energy_percentage).to eq(80)
     end
 
-    it 'returns nil when no assignment tenure exists' do
+    it 'creates a check-in with blank energy when no assignment tenure exists' do
       assignment_tenure.destroy
-      result = AssignmentCheckIn.find_or_create_open_for(teammate, assignment)
-      expect(result).to be_nil
+
+      expect {
+        AssignmentCheckIn.find_or_create_open_for(teammate, assignment)
+      }.to change(AssignmentCheckIn, :count).by(1)
+
+      check_in = AssignmentCheckIn.find_or_create_open_for(teammate, assignment)
+      expect(check_in.actual_energy_percentage).to be_nil
+      expect(AssignmentTenure.where(company_teammate: teammate, assignment: assignment)).to be_empty
     end
   end
 

@@ -131,21 +131,19 @@ class AssignmentCheckIn < ApplicationRecord
     @assignment_tenure
   end
 
-  # Find or create open check-in for a teammate and assignment
+  # Find or create open check-in for a teammate and assignment.
+  # Tenure is optional: when none exists, energy is left blank (same as bulk check-in).
   def self.find_or_create_open_for(teammate, assignment)
-    tenure = AssignmentTenure.most_recent_for(teammate, assignment)
-    return nil unless tenure
-    
-    # Find existing open check-in for this teammate/assignment
     open_check_in = where(company_teammate: teammate, assignment: assignment).open.first
     return open_check_in if open_check_in
-    
-    # Create new open check-in if none exists
+
+    tenure = AssignmentTenure.most_recent_for(teammate, assignment)
+
     create!(
       company_teammate: teammate,
       assignment: assignment,
       check_in_started_on: Date.current,
-      actual_energy_percentage: tenure.anticipated_energy_percentage
+      actual_energy_percentage: tenure&.anticipated_energy_percentage
     )
   end
 

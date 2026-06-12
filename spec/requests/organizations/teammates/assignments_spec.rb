@@ -357,6 +357,27 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       expect(response).to redirect_to(assignment_show_path(anchor: "check-in"))
       expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first).to eq(existing)
     end
+
+    context "when the teammate has no assignment tenure" do
+      before { assignment_tenure.destroy }
+
+      it "creates an open check-in without creating a tenure" do
+        expect(AssignmentTenure.where(company_teammate: employee_teammate, assignment: assignment)).to be_empty
+
+        post start_path
+
+        expect(response).to redirect_to(assignment_show_path(anchor: "check-in"))
+        expect(flash[:notice]).to eq("Check-in started.")
+        open = AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first
+        expect(open).to be_present
+        expect(open.actual_energy_percentage).to be_nil
+        expect(AssignmentTenure.where(company_teammate: employee_teammate, assignment: assignment)).to be_empty
+
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Your check-in")
+      end
+    end
   end
 
   describe "DELETE destroy_open_check_in" do
