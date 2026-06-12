@@ -48,6 +48,71 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
   end
 
   describe '.call' do
+    context 'when tenure is scheduled for the future' do
+      let(:future_start) { 4.days.from_now.beginning_of_day }
+      let(:scheduled_tenure) do
+        EmploymentTenure.create!(
+          teammate: teammate,
+          company: company,
+          position: current_position,
+          manager_teammate: current_manager_teammate,
+          seat: current_seat,
+          employment_type: 'full_time',
+          started_at: future_start
+        )
+      end
+
+      it 'updates the scheduled tenure in place when position changes' do
+        seat_for_new_position = create(:seat, title: new_title, seat_needed_by: Date.current + 3.months)
+        params = {
+          manager_teammate_id: current_manager_teammate.id,
+          position_id: new_position.id,
+          employment_type: 'full_time',
+          seat_id: seat_for_new_position.id
+        }
+
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: scheduled_tenure,
+          params: params,
+          created_by: created_by
+        )
+
+        expect(result.ok?).to be true
+        expect(EmploymentTenure.where(company_teammate: teammate, company: company).count).to eq(1)
+
+        scheduled_tenure.reload
+        expect(scheduled_tenure.ended_at).to be_nil
+        expect(scheduled_tenure.started_at).to be_within(1.second).of(future_start)
+        expect(scheduled_tenure.position).to eq(new_position)
+        expect(scheduled_tenure.seat).to eq(seat_for_new_position)
+      end
+
+      it 'updates the scheduled tenure in place when manager changes' do
+        new_manager_teammate
+        params = {
+          manager_teammate_id: new_manager_teammate.id,
+          position_id: current_position.id,
+          employment_type: 'full_time',
+          seat_id: current_seat.id
+        }
+
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: scheduled_tenure,
+          params: params,
+          created_by: created_by
+        )
+
+        expect(result.ok?).to be true
+        expect(EmploymentTenure.where(company_teammate: teammate, company: company).count).to eq(1)
+
+        scheduled_tenure.reload
+        expect(scheduled_tenure.ended_at).to be_nil
+        expect(scheduled_tenure.manager_teammate).to eq(new_manager_teammate)
+      end
+    end
+
     context 'when manager changes' do
       it 'ends current tenure and creates new tenure with manager change' do
         new_manager_teammate

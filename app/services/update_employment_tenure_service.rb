@@ -77,12 +77,19 @@ class UpdateEmploymentTenureService
         
         # Update current tenure's ended_at (convert Date to Time for timestamp)
         ended_at_time = parsed_date.is_a?(Time) ? parsed_date : parsed_date.to_time
+        ended_at_time = @current_tenure.effective_end_time(ended_at_time)
         @current_tenure.update!(ended_at: ended_at_time)
         updated_tenure = @current_tenure
       elsif needs_new_tenure
-        # End current tenure and create new one
-        @current_tenure.update!(ended_at: Time.current)
-        updated_tenure = create_new_tenure
+        if @current_tenure.scheduled?
+          # Scheduled employment has not started — update in place instead of closing
+          # with Time.current (which would violate ended_at > started_at).
+          updated_tenure = update_scheduled_tenure_in_place
+        else
+          # End current tenure and create new one
+          @current_tenure.update!(ended_at: Time.current)
+          updated_tenure = create_new_tenure
+        end
       elsif seat_changed
         # Just update the seat
         # Handle empty string as "clear seat" (nil)
@@ -151,32 +158,16 @@ class UpdateEmploymentTenureService
     current_tenure.seat_id.to_s != new_seat_id.to_s
   end
 
+  def update_scheduled_tenure_in_place
+    @current_tenure.update!(tenure_attribute_updates)
+    @current_tenure
+  end
+
   def create_new_tenure
-    # Copy all attributes from current tenure, then update with new values
-    # Handle empty strings as nil (to clear fields)
-    manager_teammate_id_value = if params[:manager_teammate_id].present?
-                                   params[:manager_teammate_id].to_s == '' ? nil : params[:manager_teammate_id]
-                                 else
-                                   current_tenure.manager_teammate_id
-                                 end
-    
-    # Check if seat_id was explicitly provided in params (even if nil/empty)
-    # This allows clearing the seat even when creating a new tenure
-    seat_id_value = if params.key?(:seat_id)
-                      # Explicitly provided - use it (convert empty string to nil)
-                      params[:seat_id].to_s == '' ? nil : params[:seat_id]
-                    else
-                      # Not provided - keep current seat
-                      current_tenure.seat_id
-                    end
-    
     new_tenure = EmploymentTenure.new(
       teammate: current_tenure.teammate,
       company: current_tenure.company,
-      position_id: params[:position_id] || current_tenure.position_id,
-      manager_teammate_id: manager_teammate_id_value,
-      employment_type: params[:employment_type].presence || current_tenure.employment_type,
-      seat_id: seat_id_value,
+      **tenure_attribute_updates,
       started_at: Time.current,
       ended_at: nil,
       official_position_rating: current_tenure.official_position_rating
@@ -192,6 +183,27 @@ class UpdateEmploymentTenureService
     )
     
     new_tenure
+  end
+
+  def tenure_attribute_updates
+    manager_teammate_id_value = if params[:manager_teammate_id].present?
+                                   params[:manager_teammate_id].to_s == '' ? nil : params[:manager_teammate_id]
+                                 else
+                                   current_tenure.manager_teammate_id
+                                 end
+
+    seat_id_value = if params.key?(:seat_id)
+                      params[:seat_id].to_s == '' ? nil : params[:seat_id]
+                    else
+                      current_tenure.seat_id
+                    end
+
+    {
+      position_id: params[:position_id] || current_tenure.position_id,
+      manager_teammate_id: manager_teammate_id_value,
+      employment_type: params[:employment_type].presence || current_tenure.employment_type,
+      seat_id: seat_id_value
+    }
   end
 
   def create_maap_snapshot(tenure)

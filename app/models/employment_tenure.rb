@@ -50,6 +50,19 @@ class EmploymentTenure < ApplicationRecord
     !active?
   end
 
+  # Employment was scheduled with a future start date and has not begun yet.
+  def scheduled?
+    started_at.present? && started_at > Time.current
+  end
+
+  # ended_at must be strictly after started_at; adjust when ending before a scheduled start.
+  def effective_end_time(desired_end_time)
+    return desired_end_time unless scheduled?
+    return desired_end_time if desired_end_time > started_at
+
+    started_at + 1.second
+  end
+
   def self.most_recent_for(company_teammate, company)
     most_recent_for_teammate_and_company(company_teammate, company).first
   end

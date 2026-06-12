@@ -36,6 +36,34 @@ RSpec.describe EmploymentTenure, type: :model do
     end
   end
 
+  describe '#scheduled?' do
+    it 'returns true when started_at is in the future' do
+      tenure = build(:employment_tenure, started_at: 4.days.from_now, ended_at: nil)
+      expect(tenure).to be_scheduled
+    end
+
+    it 'returns false when employment has already started' do
+      tenure = build(:employment_tenure, started_at: 1.day.ago, ended_at: nil)
+      expect(tenure).not_to be_scheduled
+    end
+  end
+
+  describe '#effective_end_time' do
+    it 'returns the desired end time for started employment' do
+      tenure = build(:employment_tenure, started_at: 1.month.ago)
+      desired_end = 1.day.ago
+      expect(tenure.effective_end_time(desired_end)).to eq(desired_end)
+    end
+
+    it 'bumps the end time past started_at for scheduled employment' do
+      started_at = 4.days.from_now
+      tenure = build(:employment_tenure, started_at: started_at, ended_at: nil)
+      desired_end = Time.current
+
+      expect(tenure.effective_end_time(desired_end)).to eq(started_at + 1.second)
+    end
+  end
+
   describe 'overlapping tenures validation' do
     let!(:existing_tenure) do
       create(:employment_tenure, 

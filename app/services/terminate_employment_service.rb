@@ -18,7 +18,8 @@ class TerminateEmploymentService
       
       # Convert Date to Time for ended_at (timestamp field)
       ended_at_time = parsed_date.is_a?(Time) ? parsed_date : parsed_date.to_time
-      
+      ended_at_time = @current_tenure.effective_end_time(ended_at_time)
+
       # Update employment tenure's ended_at
       @current_tenure.update!(ended_at: ended_at_time)
       

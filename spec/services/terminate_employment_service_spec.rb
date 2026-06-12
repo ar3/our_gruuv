@@ -147,6 +147,34 @@ RSpec.describe TerminateEmploymentService, type: :service do
       end
     end
 
+    context 'when tenure is scheduled for the future' do
+      let(:future_start) { 4.days.from_now.beginning_of_day }
+      let(:scheduled_tenure) do
+        EmploymentTenure.create!(
+          teammate: teammate,
+          company: company,
+          position: position,
+          manager_teammate: manager_teammate,
+          seat: seat,
+          employment_type: 'full_time',
+          started_at: future_start
+        )
+      end
+
+      it 'ends the tenure using an effective end time after the scheduled start' do
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: scheduled_tenure,
+          termination_date: Date.current,
+          created_by: created_by,
+          reason: 'Canceled before start'
+        )
+
+        expect(result.ok?).to be true
+        expect(scheduled_tenure.reload.ended_at).to eq(future_start + 1.second)
+      end
+    end
+
     context 'when teammate is not a CompanyTeammate' do
       let(:department) { create(:department, company: company) }
       let(:dept_teammate) { create(:company_teammate, person: person, organization: company) }
