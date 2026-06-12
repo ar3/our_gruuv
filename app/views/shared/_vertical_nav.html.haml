@@ -47,6 +47,11 @@
                   - if item[:coming_soon]
                     %span.badge.bg-secondary.ms-2 Coming Soon
     
+      - if current_organization
+        = link_to organization_sitemap_path(current_organization), class: "nav-link #{'active' if controller_path == 'organizations/sitemap' && action_name == 'show'}" do
+          %i.bi.bi-map
+          Sitemap
+
       / Recently Visited section (last nav section)
       - if current_person && recent_page_visits.any?
         - recent_visits_has_active = recent_page_visits.any? { |visit| nav_item_active?(visit.url) }

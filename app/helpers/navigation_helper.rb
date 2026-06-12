@@ -18,6 +18,13 @@ module NavigationHelper
     
     [
       {
+        label: 'Start Here',
+        icon: 'bi-house-door',
+        path: organization_start_here_path(current_organization),
+        section: nil,
+        policy_check: -> { policy(current_organization).show? }
+      },
+      {
         label: 'About Me',
         icon: 'bi-person',
         section: 'about_me',
@@ -76,6 +83,30 @@ module NavigationHelper
             path: current_company_teammate ? organization_goals_path(current_organization, owner_id: "CompanyTeammate_#{current_company_teammate.id}") : organization_goals_path(current_organization),
             policy_check: -> { policy(current_company).view_goals? },
             active_check: -> { nav_goals_item_active? },
+            coming_soon: false
+          },
+          {
+            label: 'Something Interesting',
+            icon: 'bi-stars',
+            path: something_interesting_organization_get_shit_done_path(current_organization),
+            policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
+            active_check: -> { controller_path == 'organizations/get_shit_done' && action_name == 'something_interesting' },
+            coming_soon: false
+          },
+          {
+            label: 'Notifications',
+            icon: 'bi-bell',
+            path: current_company_teammate ? organization_company_teammate_notifications_path(current_organization, current_company_teammate) : '#',
+            policy_check: -> { current_company_teammate.present? },
+            active_check: -> { controller_path == 'organizations/company_teammates/notifications' },
+            coming_soon: false
+          },
+          {
+            label: 'My Growth',
+            icon: 'bi-flask',
+            path: my_growth_experiences_organization_company_teammate_path(current_organization, current_company_teammate),
+            policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
+            active_check: -> { controller_path == 'organizations/company_teammates' && action_name.start_with?('my_growth') },
             coming_soon: false
           },
           {
@@ -163,9 +194,35 @@ module NavigationHelper
       {
         label: 'Celebrate Milestones',
         icon: 'bi-trophy',
-        path: celebrate_milestones_organization_path(current_organization),
-        section: nil,
-        policy_check: -> { policy(current_organization).show? }
+        section: 'celebrate_milestones',
+        items: [
+          {
+            label: 'Celebrate Milestones',
+            icon: 'bi-trophy',
+            path: celebrate_milestones_organization_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
+            label: 'Bulk award milestones',
+            icon: 'bi-trophy',
+            path: begin
+              if current_company_teammate.present?
+                new_bulk_milestone_award_organization_company_teammate_path(current_organization, current_company_teammate)
+              else
+                celebrate_milestones_organization_path(current_organization)
+              end
+            end,
+            policy_check: lambda {
+              current_company_teammate.present? &&
+                policy(TeammateMilestone).create?
+            },
+            active_check: lambda {
+              controller_path == 'organizations/company_teammates/bulk_milestone_awards'
+            },
+            coming_soon: false
+          }
+        ]
       },
       {
         label: 'Huddles',
@@ -460,13 +517,6 @@ module NavigationHelper
         section: 'beta',
         items: [
           {
-            label: 'Start Here',
-            icon: 'bi-house-door',
-            path: organization_start_here_path(current_organization),
-            policy_check: -> { policy(current_organization).show? },
-            coming_soon: false
-          },
-          {
             label: 'Insights',
             icon: 'bi-bar-chart-line',
             path: organization_insights_path(current_organization),
@@ -474,24 +524,10 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Something Interesting',
-            icon: 'bi-stars',
-            path: something_interesting_organization_get_shit_done_path(current_organization),
-            policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
-            coming_soon: false
-          },
-          {
             label: 'Meeting transcripts',
             icon: 'bi-file-earmark-text',
             path: organization_possible_observation_transcripts_path(current_organization),
             policy_check: -> { policy(::PossibleObservationTranscript).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Notifications',
-            icon: 'bi-bell',
-            path: current_company_teammate ? organization_company_teammate_notifications_path(current_organization, current_company_teammate) : '#',
-            policy_check: -> { current_company_teammate.present? },
             coming_soon: false
           },
           {
@@ -506,32 +542,6 @@ module NavigationHelper
             icon: 'bi-layout-split',
             path: organization_position_comparison_path(current_organization),
             policy_check: -> { policy(:eligibility_requirement).index? },
-            coming_soon: false
-          },
-          {
-            label: 'My Growth',
-            icon: 'bi-flask',
-            path: my_growth_experiences_organization_company_teammate_path(current_organization, current_company_teammate),
-            policy_check: -> { current_company_teammate.present? && policy(current_company_teammate).view_check_ins? },
-            coming_soon: false
-          },
-          {
-            label: 'Bulk award milestones',
-            icon: 'bi-trophy',
-            path: begin
-              if current_company_teammate.present?
-                new_bulk_milestone_award_organization_company_teammate_path(current_organization, current_company_teammate)
-              else
-                celebrate_milestones_organization_path(current_organization)
-              end
-            end,
-            policy_check: lambda {
-              current_company_teammate.present? &&
-                policy(TeammateMilestone).create?
-            },
-            active_check: lambda {
-              controller_path == 'organizations/company_teammates/bulk_milestone_awards'
-            },
             coming_soon: false
           }
         ]

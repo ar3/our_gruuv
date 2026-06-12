@@ -166,6 +166,7 @@ RSpec.describe 'Organizations::Search', type: :request do
             assignments: [],
             abilities: [searchable_ability],
             titles: [],
+            go_to: [],
             total_count: 1
           }
           query_double = instance_double(GlobalSearchQuery, call: search_results)

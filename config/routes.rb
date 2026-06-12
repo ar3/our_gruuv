@@ -664,6 +664,7 @@ Rails.application.routes.draw do
     
     # Search functionality
     resource :search, only: [:show], module: :organizations, controller: 'search'
+    get 'sitemap', to: 'organizations/sitemap#show', as: :sitemap
     
     # Slack integration nested under organizations
     resource :slack, only: [:show], module: :organizations, controller: 'slack' do

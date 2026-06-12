@@ -4,9 +4,6 @@
 - content_for :header do
   .d-flex.flex-wrap.align-items-center.gap-2
     %h1.mb-0 Something Interesting
-    %span.badge.text-bg-warning
-      %i.bi.bi-flask.me-1
-      Beta
     = render 'shared/page_help/header_info_button',
              collapse_id: page_help_id,
              tooltip: 'Things other people have done since your last visit. Click for details.'

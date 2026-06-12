@@ -11,7 +11,8 @@ class Organizations::SearchController < Organizations::OrganizationNamespaceBase
       search_query = GlobalSearchQuery.new(
         query: @query,
         current_organization: @organization,
-        current_teammate: current_company_teammate
+        current_teammate: current_company_teammate,
+        impersonating_teammate: impersonating_teammate
       )
       
       @results = search_query.call
@@ -23,6 +24,7 @@ class Organizations::SearchController < Organizations::OrganizationNamespaceBase
         assignments: [],
         abilities: [],
         titles: [],
+        go_to: [],
         total_count: 0
       }
     end

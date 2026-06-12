@@ -11,12 +11,12 @@ RSpec.describe 'Organizations::GetShitDone something_interesting', type: :reques
   end
 
   describe 'GET /organizations/:organization_id/get_shit_done/something_interesting' do
-    it 'renders the page with a Beta badge and tabs' do
+    it 'renders the page with tabs' do
       get path
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Something Interesting')
-      expect(response.body).to include('Beta')
+      expect(response.body).not_to include('badge text-bg-warning')
       expect(response.body).to include(organization_get_shit_done_path(company))
     end
 

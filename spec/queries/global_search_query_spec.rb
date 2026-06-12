@@ -24,12 +24,24 @@ RSpec.describe GlobalSearchQuery, type: :query do
         expect(results[:assignments]).to be_empty
         expect(results[:abilities]).to be_empty
         expect(results[:titles]).to be_empty
+        expect(results[:go_to]).to be_empty
         expect(results[:total_count]).to eq(0)
       end
 
       it 'includes titles key in results' do
         results = query.call
         expect(results).to have_key(:titles)
+        expect(results).to have_key(:go_to)
+      end
+    end
+
+    context "searching sitemap pages" do
+      let(:query) { GlobalSearchQuery.new(query: "abilities", current_organization: organization, current_teammate: teammate) }
+
+      it "returns Go To matches from the sitemap" do
+        results = query.call
+        labels = results[:go_to].map(&:label)
+        expect(labels).to include("Milestones & Abilities")
       end
     end
 
@@ -43,6 +55,7 @@ RSpec.describe GlobalSearchQuery, type: :query do
         expect(results).to have_key(:assignments)
         expect(results).to have_key(:abilities)
         expect(results).to have_key(:titles)
+        expect(results).to have_key(:go_to)
         expect(results).to have_key(:total_count)
       end
     end

@@ -1,9 +1,10 @@
 class GlobalSearchQuery
-  def initialize(query:, current_organization:, current_teammate:)
+  def initialize(query:, current_organization:, current_teammate:, impersonating_teammate: nil)
     @query = query.to_s.strip
     @current_organization = current_organization
     @current_teammate = current_teammate
     @current_person = current_teammate&.person
+    @impersonating_teammate = impersonating_teammate
   end
 
   def call
@@ -23,6 +24,7 @@ class GlobalSearchQuery
       assignments: [],
       abilities: [],
       titles: [],
+      go_to: [],
       total_count: 0
     }
   end
@@ -35,6 +37,7 @@ class GlobalSearchQuery
       assignments: [],
       abilities: [],
       titles: [],
+      go_to: search_go_to_pages,
       total_count: 0
     }
 
@@ -83,10 +86,20 @@ class GlobalSearchQuery
 
     preload_display_associations!(results)
 
-    # Calculate total count
-    results[:total_count] = results.values.sum(&:size)
+    results[:total_count] = results.except(:total_count).values.sum(&:size)
 
     results
+  end
+
+  def search_go_to_pages
+    return [] unless @current_organization && @current_teammate
+
+    context = OrganizationSitemap::Context.new(
+      organization: @current_organization,
+      teammate: @current_teammate,
+      impersonating_teammate: @impersonating_teammate
+    )
+    OrganizationSitemap::Builder.new(context: context).search(@query)
   end
 
   def preload_display_associations!(results)
