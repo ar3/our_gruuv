@@ -2,8 +2,8 @@
 
 module Digest
   # Runs every hour; finds teammates for whom it is 8:00 AM in their timezone and
-  # enqueues SendDigestJob for teammates who have at least one enabled medium and
-  # at least one GSD item.
+  # enqueues SendDigestJob for teammates who turned on the GSD notification and
+  # have at least one GSD item.
   class ScheduleDigestsJob < ApplicationJob
     queue_as :default
 
@@ -20,7 +20,7 @@ module Digest
         next if tz.blank?
 
         prefs = UserPreference.for_person(person)
-        next unless digest_enabled_for_any_medium?(prefs)
+        next unless prefs.gsd_digest_enabled?
 
         local_time = now_utc.in_time_zone(tz)
         next unless local_time.hour == DIGEST_HOUR
@@ -32,10 +32,6 @@ module Digest
     end
 
     private
-
-    def digest_enabled_for_any_medium?(prefs)
-      [prefs.effective_digest_slack(nil), prefs.effective_digest_email, prefs.effective_digest_sms(nil)].include?('on')
-    end
 
     def weekday?(time)
       time.wday.between?(1, 5) # Monday-Friday

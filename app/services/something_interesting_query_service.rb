@@ -11,6 +11,20 @@ class SomethingInterestingQueryService
 
   attr_reader :teammate, :person, :company, :since
 
+  # Last visit to the Something Interesting page (with or without query params).
+  def self.last_visited_at(teammate)
+    path = Rails.application.routes.url_helpers
+                .something_interesting_organization_get_shit_done_path(teammate.organization)
+    PageVisit.where(person: teammate.person)
+             .where('url = ? OR url LIKE ?', path, "#{path}?%")
+             .maximum(:visited_at)
+  end
+
+  # Default window: everything since the last page visit, or the past 7 days if never visited.
+  def self.baseline(teammate)
+    last_visited_at(teammate) || 7.days.ago
+  end
+
   def initialize(teammate:, since:)
     @teammate = teammate
     @person = teammate&.person

@@ -1,0 +1,23 @@
+-# locals: organization, teammate
+- nudge_prefs = UserPreference.for_person(teammate.person)
+- gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
+- enabled_items = notification_nudge_enabled_items(prefs: nudge_prefs, gsd_label: gsd_label)
+- enabled_count = enabled_items.size
+- notifications_url = organization_company_teammate_notifications_path(organization, teammate)
+- subject_name = teammate.person.casual_name
+
+- if enabled_count.zero?
+  .alert.alert-danger.py-2.px-3.mb-3.small.d-flex.align-items-center.gap-2{role: 'alert'}
+    %i.bi.bi-bell-slash.flex-shrink-0
+    %span.flex-grow-1 No notifications turned on.
+    = link_to 'Turn on', notifications_url, class: 'alert-link flex-shrink-0'
+- elsif enabled_count == 1
+  .alert.alert-warning.py-2.px-3.mb-3.small.d-flex.align-items-center.gap-2{role: 'alert'}
+    %i.bi.bi-bell.flex-shrink-0
+    %span.flex-grow-1= notification_nudge_partial_sentence(casual_name: subject_name, prefs: nudge_prefs, gsd_label: gsd_label)
+    = link_to 'Review', notifications_url, class: 'alert-link flex-shrink-0'
+- else
+  .alert.alert-light.border.py-2.px-3.mb-3.small.d-flex.align-items-center.gap-2{role: 'status'}
+    %i.bi.bi-check-circle.text-success.flex-shrink-0
+    %span.flex-grow-1= notification_nudge_summary_sentence(casual_name: subject_name, prefs: nudge_prefs, gsd_label: gsd_label)
+    = link_to 'Edit', notifications_url, class: 'text-muted flex-shrink-0 small text-nowrap'

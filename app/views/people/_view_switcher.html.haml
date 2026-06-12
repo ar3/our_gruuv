@@ -202,7 +202,8 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat management"}
       
     %li
-      - if action_name == 'show' && (controller_name == 'people' || controller_name == 'company_teammates')
+      - manage_profile_active = (action_name == 'show' && (controller_name == 'people' || controller_name == 'company_teammates' || controller_name == 'notifications'))
+      - if manage_profile_active
         .dropdown-item.text-muted
           %i.bi.bi-gear.me-2
           Manage Profile Mode (Active)

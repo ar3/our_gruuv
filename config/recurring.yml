@@ -24,6 +24,11 @@ production:
     queue: default
     schedule: every hour
 
+  schedule_interesting_things_digests:
+    class: Digest::ScheduleInterestingThingsJob
+    queue: default
+    schedule: every hour
+
   check_in_health_cache_process_schedules:
     class: CheckInHealthCacheProcessSchedulesJob
     queue: default

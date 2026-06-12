@@ -4,6 +4,8 @@ module Digest
   # Sends the GSD + About Me digest to a teammate's configured channels.
   # Call with teammate_id. "On" means enabled medium.
   class SendDigestJob < ApplicationJob
+    include SendsDigestSms
+
     queue_as :default
 
     def perform(teammate_id)
@@ -15,15 +17,17 @@ module Digest
       person = teammate.person
       prefs = UserPreference.for_person(person)
 
-      send_slack(teammate, organization, prefs) if should_send_slack?(teammate, prefs)
-      send_sms(teammate, organization, prefs) if should_send_sms?(person, prefs)
+      send_slack(teammate, organization, prefs) if should_send_slack?(teammate)
+      send_digest_sms(person, prefs, type: 'gsd_digest_sms') do
+        SlackMessageBuilderService.new(teammate: teammate, organization: organization).short_summary_for_sms
+      end
     end
 
     private
 
-    def should_send_slack?(teammate, prefs)
-      return false unless teammate.has_slack_identity? && teammate.slack_user_id.present?
-      prefs.effective_digest_slack(teammate) == 'on'
+    # Slack is the always-on channel; deliverability only depends on a connected identity.
+    def should_send_slack?(teammate)
+      teammate.has_slack_identity? && teammate.slack_user_id.present?
     end
 
     # Digest bot name so the message appears in a DM between the user and ourgruuvbot
@@ -75,29 +79,5 @@ module Digest
       end
     end
 
-    def should_send_sms?(person, prefs)
-      return false if person.unique_textable_phone_number.blank?
-      prefs.effective_digest_sms(person) == 'on'
-    end
-
-    def send_sms(teammate, organization, prefs)
-      person = teammate.person
-      return if person.unique_textable_phone_number.blank?
-
-      client_id = ENV['NOTIFICATION_API_CLIENT_ID']
-      client_secret = ENV['NOTIFICATION_API_CLIENT_SECRET']
-      return if client_id.blank? || client_secret.blank?
-
-      message = SlackMessageBuilderService.new(teammate: teammate, organization: organization).short_summary_for_sms
-      service = NotificationApiService.new(client_id: client_id, client_secret: client_secret)
-      result = service.send_notification(
-        type: 'gsd_digest_sms',
-        to: { id: person.email, number: person.unique_textable_phone_number },
-        sms: { message: message }
-      )
-      unless result[:success]
-        Rails.logger.warn "Digest::SendDigestJob: SMS failed for teammate #{teammate.id}: #{result[:error]}"
-      end
-    end
   end
 end

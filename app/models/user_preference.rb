@@ -13,6 +13,8 @@ class UserPreference < ApplicationRecord
     digest_email: 'off',
     digest_sms: 'off',
     digest_weekly_day: nil,
+    gsd_digest_enabled: 'off',
+    interesting_things_digest_enabled: 'off',
     about_me_weekly_day: 'off',
     about_me_last_sent_week: nil,
     one_on_one_last_sent_week: nil,
@@ -31,6 +33,14 @@ class UserPreference < ApplicationRecord
 
   def weekly_digest_enabled?(key)
     preference(key) == 'on'
+  end
+
+  def gsd_digest_enabled?
+    preference(:gsd_digest_enabled) == 'on'
+  end
+
+  def interesting_things_digest_enabled?
+    preference(:interesting_things_digest_enabled) == 'on'
   end
   
   # Set preference value

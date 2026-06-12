@@ -391,10 +391,10 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include('--no observees--')
     end
 
-    it 'includes a link to configure digest' do
+    it 'includes a link to configure notifications' do
       get "/organizations/#{company.to_param}/get_shit_done"
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Configure digest')
+      expect(response.body).to include('Configure notifications')
     end
 
     it 'requires authentication' do

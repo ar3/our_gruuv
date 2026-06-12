@@ -125,5 +125,5 @@
 
   .mb-5
     .alert.alert-info.mb-0
-      Digest timing and delivery preferences moved to Digest settings.
-      = link_to "Open digest settings", edit_organization_digest_path(current_organization, return_url: organization_start_here_path(current_organization), return_text: "Back to Start Here"), class: "alert-link ms-1"
+      Notification timing and delivery preferences moved to the Notifications tab on your profile.
+      = link_to "Open notification settings", organization_company_teammate_notifications_path(current_organization, current_company_teammate), class: "alert-link ms-1"

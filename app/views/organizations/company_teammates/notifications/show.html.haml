@@ -1,0 +1,282 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, "Notifications")
+- page_help_id = 'notificationsPageHelp'
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2{id: "person-title"}
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { organization_company_teammate_notifications_path(organization, tm) },
+               switch_aria_label: "Switch teammate for notifications"
+      %span= " - Notifications"
+    = render 'shared/page_help/header_info_button',
+             collapse_id: page_help_id,
+             tooltip: 'Configure which notifications you receive and how. Click for details.'
+
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "Notifications", url: nil }])
+
+- gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
+- prefs = @user_preference
+- gsd_on = prefs.gsd_digest_enabled?
+- interesting_on = prefs.interesting_things_digest_enabled?
+- weekly_day = prefs.preference(:about_me_weekly_day).presence || 'off'
+- weekly_day_selected = weekly_day.to_s.match?(/\A[0-6]\z/)
+- one_on_one_on = prefs.preference(:one_on_one_digest_enabled) == 'on'
+- about_me_on = prefs.preference(:about_me_digest_enabled) == 'on'
+- has_slack = @teammate.has_slack_identity?
+- has_phone = @teammate.person.unique_textable_phone_number.present?
+- sms_on = prefs.effective_digest_sms(@teammate.person) == 'on'
+- notifications_url = organization_company_teammate_notifications_path(organization, @teammate)
+- events_by_week = @digest_status.recent_events_by_week(weeks: 3)
+- recent_events_for = ->(*keys) { events_by_week.transform_values { |events| events.select { |e| keys.include?(e.digest_key) } }.reject { |_k, v| v.empty? } }
+
+.collapse.mb-4{id: page_help_id}
+  .alert.alert-light.border
+    %h3.fw-semibold.mb-2 Goal of this page
+    %p
+      Decide which notifications #{@teammate.person.casual_name} receives from OurGruuv and how they are delivered.
+      Managers and admins can configure this page for the teammates they serve.
+    %h3.fw-semibold.mb-2 Context
+    %p.mb-2
+      All notifications send at 8:00 AM in the teammate's timezone via the OurGruuv Slack bot.
+      Daily notifications only send when there is something to show — quiet days stay quiet.
+    %h3.fw-semibold.mb-2 Specifics of this page
+    %ul.mb-0
+      %li
+        %strong= gsd_label
+        — sends each weekday when the #{gsd_label} list has at least one pending item.
+      %li
+        %strong Interesting Things
+        — sends each weekday when other people have done something interesting since the last visit to the Interesting Things page.
+      %li
+        %strong Weekly digests
+        — pick a day of the week, then pick which style to receive (1:1 guide and/or About Me reminder). Sent to a Slack group DM with the teammate and their manager. If no style is picked, the 1:1 guide is used.
+      %li
+        Use the
+        %em more details
+        section in each column to send a test now and to see recent sends.
+
+= render 'organizations/company_teammates/profile_tabs', organization: organization, teammate: @teammate, active_tab: :notifications
+
+.row.g-3.mb-4
+  .col-12.col-lg-3
+    .card.h-100
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-list-check.me-2
+          = gsd_label
+      .card-body
+        %p.text-muted.small
+          Notify #{@teammate.person.casual_name} when there are things in the #{gsd_label} list.
+        = form_with url: notifications_url, method: :patch, local: true, id: 'gsd-toggle-form' do
+          .btn-group{role: 'group', 'aria-label': "#{gsd_label} notification on or off"}
+            %input.btn-check{type: 'radio', name: 'gsd_digest_enabled', value: 'on', id: 'gsd_digest_on', checked: gsd_on, onchange: 'this.form.submit()'}
+            %label.btn.btn-outline-success{for: 'gsd_digest_on'} On
+            %input.btn-check{type: 'radio', name: 'gsd_digest_enabled', value: 'off', id: 'gsd_digest_off', checked: !gsd_on, onchange: 'this.form.submit()'}
+            %label.btn.btn-outline-secondary{for: 'gsd_digest_off'} Off
+        - if gsd_on
+          .mt-3
+            = render 'shared/digest/digest_blockers',
+                     blockers: @digest_status.gsd_blockers,
+                     ready_summary: "Ready to send when #{gsd_label} has pending items."
+        .mt-3
+          %button.btn.btn-link.btn-sm.text-decoration-none.p-0{type: 'button', 'data-bs-toggle': 'collapse', 'data-bs-target': '#gsd-more-details', 'aria-expanded': 'false', 'aria-controls': 'gsd-more-details'}
+            More details
+            %i.bi.bi-chevron-down.ms-1
+          .collapse#gsd-more-details
+            .pt-3.border-top.mt-2
+              %p.text-muted.small.mb-2= @digest_status.gsd_schedule_summary
+              - if @gsd_pending_items_count.positive?
+                = button_to send_gsd_test_organization_company_teammate_notifications_path(organization, @teammate), method: :post, class: 'btn btn-outline-primary btn-sm' do
+                  %i.bi.bi-send.me-1
+                  Test by sending now
+              - else
+                %span.d-inline-block{data: { bs_toggle: 'tooltip', bs_placement: 'top' }, title: "Add an item to the #{gsd_label} list, then you can send a test."}
+                  %button.btn.btn-outline-primary.btn-sm{type: 'button', disabled: true}
+                    %i.bi.bi-send.me-1
+                    Test by sending now
+              .small.fw-semibold.mt-3.mb-1 Recent sends (last 3 weeks)
+              = render 'shared/digest/digest_recent_activity',
+                       events_by_week: recent_events_for.call('gsd_digest'),
+                       weeks: 3,
+                       empty_message: "No #{gsd_label} notifications recorded in this period (SMS sends are not logged here)."
+
+  .col-12.col-lg-3
+    .card.h-100
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-stars.me-2
+          Interesting Things
+      .card-body
+        %p.text-muted.small
+          Notify #{@teammate.person.casual_name} when there are things they might be interested in.
+        = form_with url: notifications_url, method: :patch, local: true, id: 'interesting-toggle-form' do
+          .btn-group{role: 'group', 'aria-label': 'Interesting Things notification on or off'}
+            %input.btn-check{type: 'radio', name: 'interesting_things_digest_enabled', value: 'on', id: 'interesting_digest_on', checked: interesting_on, onchange: 'this.form.submit()'}
+            %label.btn.btn-outline-success{for: 'interesting_digest_on'} On
+            %input.btn-check{type: 'radio', name: 'interesting_things_digest_enabled', value: 'off', id: 'interesting_digest_off', checked: !interesting_on, onchange: 'this.form.submit()'}
+            %label.btn.btn-outline-secondary{for: 'interesting_digest_off'} Off
+        - if interesting_on
+          .mt-3
+            = render 'shared/digest/digest_blockers',
+                     blockers: @digest_status.interesting_things_blockers,
+                     ready_summary: "Ready to send when there are interesting things to notify #{@teammate.person.casual_name} about."
+        .mt-3
+          %button.btn.btn-link.btn-sm.text-decoration-none.p-0{type: 'button', 'data-bs-toggle': 'collapse', 'data-bs-target': '#interesting-more-details', 'aria-expanded': 'false', 'aria-controls': 'interesting-more-details'}
+            More details
+            %i.bi.bi-chevron-down.ms-1
+          .collapse#interesting-more-details
+            .pt-3.border-top.mt-2
+              %p.text-muted.small.mb-2= @digest_status.interesting_things_schedule_summary
+              %p.text-muted.small.mb-2
+                Shows the same things as the
+                = link_to 'Interesting Things page', something_interesting_organization_get_shit_done_path(organization)
+                — everything since the last visit, or the past 7 days if never visited. It never sends when there is nothing to show.
+              - if @interesting_pending_count.positive?
+                = button_to send_interesting_things_test_organization_company_teammate_notifications_path(organization, @teammate), method: :post, class: 'btn btn-outline-primary btn-sm' do
+                  %i.bi.bi-send.me-1
+                  Test by sending now
+              - else
+                %span.d-inline-block{data: { bs_toggle: 'tooltip', bs_placement: 'top' }, title: 'Nothing new on the Interesting Things page right now, so there is nothing to test with.'}
+                  %button.btn.btn-outline-primary.btn-sm{type: 'button', disabled: true}
+                    %i.bi.bi-send.me-1
+                    Test by sending now
+              .small.fw-semibold.mt-3.mb-1 Recent sends (last 3 weeks)
+              = render 'shared/digest/digest_recent_activity',
+                       events_by_week: recent_events_for.call('interesting_things_digest'),
+                       weeks: 3,
+                       empty_message: 'No Interesting Things notifications recorded in this period (SMS sends are not logged here).'
+
+  .col-12.col-lg-6
+    .card.h-100
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-calendar-week.me-2
+          Send Weekly Digests
+      .card-body
+        %p.text-muted.small
+          Pick the day of the week to receive a weekly recap, sent to a Slack group DM with #{@teammate.person.casual_name} and their manager.
+        = form_with url: notifications_url, method: :patch, local: true, id: 'weekly-digest-form'
+        = render 'shared/digest/weekly_reminder_day_button_group', teammate_id: @teammate.id, weekly_day: weekly_day, form_id: 'weekly-digest-form'
+        - if weekly_day_selected
+          .mt-3
+            .small.fw-semibold.mb-2 Which style to send
+            .d-flex.flex-wrap.gap-3
+              = hidden_field_tag :one_on_one_digest_enabled, 'off', form: 'weekly-digest-form'
+              .form-check
+                = check_box_tag :one_on_one_digest_enabled, 'on', one_on_one_on, class: 'form-check-input', id: 'weekly_one_on_one_digest', form: 'weekly-digest-form', onchange: 'this.form.submit()'
+                = label_tag :weekly_one_on_one_digest, class: 'form-check-label d-inline-flex align-items-center gap-1' do
+                  %span 1:1 guide
+                  %i.bi.bi-info-circle.text-muted.ms-1{role: 'button', tabindex: '0', style: 'cursor: help;', data: digest_popover_data_attributes(one_on_one_digest_popover_content)}
+              = hidden_field_tag :about_me_digest_enabled, 'off', form: 'weekly-digest-form'
+              .form-check
+                = check_box_tag :about_me_digest_enabled, 'on', about_me_on, class: 'form-check-input', id: 'weekly_about_me_digest', form: 'weekly-digest-form', onchange: 'this.form.submit()'
+                = label_tag :weekly_about_me_digest, class: 'form-check-label d-inline-flex align-items-center gap-1' do
+                  %span About Me reminder
+                  %i.bi.bi-info-circle.text-muted.ms-1{role: 'button', tabindex: '0', style: 'cursor: help;', data: digest_popover_data_attributes(about_me_digest_popover_content)}
+            %p.text-muted.small.mt-2.mb-0
+              Both serve the same purpose in different styles — pick whichever fits best. If neither is selected, the 1:1 guide is used.
+        %p.fw-semibold.small.mt-3.mb-0= weekly_digest_summary_sentence(one_on_one_on: one_on_one_on, about_me_on: about_me_on, weekly_day: weekly_day)
+        - if weekly_day_selected && (one_on_one_on || about_me_on)
+          .mt-2
+            = render 'shared/digest/digest_blockers',
+                     blockers: @digest_status.weekly_blockers,
+                     ready_summary: nil
+        .mt-3
+          %button.btn.btn-link.btn-sm.text-decoration-none.p-0{type: 'button', 'data-bs-toggle': 'collapse', 'data-bs-target': '#weekly-more-details', 'aria-expanded': 'false', 'aria-controls': 'weekly-more-details'}
+            More details
+            %i.bi.bi-chevron-down.ms-1
+          .collapse#weekly-more-details
+            .pt-3.border-top.mt-2
+              - primary_weekly_key = (about_me_on && !one_on_one_on) ? :about_me : :one_on_one
+              %p.text-muted.small.mb-2= @digest_status.weekly_schedule_summary
+              %p.text-muted.small.mb-2= @digest_status.next_weekly_send_label(primary_weekly_key)
+              - if one_on_one_on || about_me_on
+                = button_to send_weekly_digests_now_organization_company_teammate_notifications_path(organization, @teammate), method: :post, class: 'btn btn-outline-primary btn-sm' do
+                  %i.bi.bi-send.me-1
+                  Test by sending now
+              - else
+                %span.d-inline-block{data: { bs_toggle: 'tooltip', bs_placement: 'top' }, title: 'Select at least one weekly digest style to send now.'}
+                  %button.btn.btn-outline-primary.btn-sm{type: 'button', disabled: true}
+                    %i.bi.bi-send.me-1
+                    Test by sending now
+              .small.fw-semibold.mt-3.mb-1 Recent sends (last 3 weeks)
+              = render 'shared/digest/digest_recent_activity',
+                       events_by_week: recent_events_for.call('one_on_one_digest', 'about_me_digest'),
+                       weeks: 3,
+                       empty_message: 'No weekly digest notifications recorded in this period.'
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-send-check.me-2
+      How do you want these notifications?
+  .card-body
+    .d-flex.flex-column.gap-3
+      .form-check.form-switch.mb-0
+        %input.form-check-input{type: 'checkbox', id: 'channel_slack', checked: true, disabled: true}
+        %label.form-check-label{for: 'channel_slack'}
+          Slack
+        %p.text-muted.small.mb-0 All notifications are delivered via the OurGruuv Slack bot.
+        - unless has_slack
+          %p.small.text-warning.mb-0
+            %i.bi.bi-exclamation-triangle.me-1
+            No Slack account connected — connect Slack in Slack Settings so these notifications can be delivered.
+      = form_with url: notifications_url, method: :patch, local: true, id: 'sms-channel-form' do
+        = hidden_field_tag :digest_sms, 'off'
+        .form-check.form-switch.mb-0
+          = check_box_tag :digest_sms, 'on', sms_on, class: 'form-check-input', id: 'channel_sms', disabled: !has_phone, onchange: 'this.form.submit()'
+          %label.form-check-label{for: 'channel_sms'}
+            SMS
+            %span.badge.text-bg-warning.ms-1 Beta
+          - if has_phone
+            %p.text-muted.small.mb-0 Short text summaries of the notifications above.
+          - else
+            %p.text-muted.small.mb-0
+              Add a phone number in
+              = link_to 'the profile', about_me_organization_company_teammate_path(organization, @teammate)
+              to enable SMS.
+      .form-check.form-switch.mb-0
+        %input.form-check-input{type: 'checkbox', id: 'channel_email', checked: false, disabled: true}
+        %label.form-check-label.text-muted{for: 'channel_email'}
+          Email
+        %p.text-muted.small.mb-0 Being considered.
+
+- if @direct_reports.any?
+  .card.mb-4
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-people.me-2
+        Notifications for the #{pluralize(@direct_reports.size, 'teammate')} #{@teammate.person.casual_name} serves
+    .card-body
+      .table-responsive
+        %table.table.table-sm.align-middle.mb-0
+          %thead
+            %tr
+              %th Teammate
+              %th= gsd_label
+              %th Interesting Things
+              %th Weekly digest
+              %th
+          %tbody
+            - @direct_reports.each do |report|
+              - report_prefs = UserPreference.for_person(report.person)
+              - report_weekly_day = report_prefs.preference(:about_me_weekly_day).presence || 'off'
+              %tr
+                %td= report.person.display_name
+                %td
+                  %span.badge{class: report_prefs.gsd_digest_enabled? ? 'text-bg-success' : 'text-bg-secondary'}= report_prefs.gsd_digest_enabled? ? 'On' : 'Off'
+                %td
+                  %span.badge{class: report_prefs.interesting_things_digest_enabled? ? 'text-bg-success' : 'text-bg-secondary'}= report_prefs.interesting_things_digest_enabled? ? 'On' : 'Off'
+                %td.small= weekly_digest_summary_sentence(one_on_one_on: report_prefs.preference(:one_on_one_digest_enabled) == 'on', about_me_on: report_prefs.preference(:about_me_digest_enabled) == 'on', weekly_day: report_weekly_day)
+                %td.text-end
+                  - if policy(report).update?
+                    = link_to organization_company_teammate_notifications_path(organization, report), class: 'btn btn-outline-primary btn-sm' do
+                      %i.bi.bi-sliders.me-1
+                      Configure

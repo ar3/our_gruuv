@@ -725,19 +725,6 @@ module ApplicationHelper
     %w[vertical horizontal].include?(prefs.layout.to_s)
   end
 
-  # When Slack, email, and SMS digest settings all match on/off, that unified value; else "custom".
-  def og_digest_unified_mode(prefs, company_teammate)
-    return "off" unless company_teammate
-
-    slack = prefs.effective_digest_slack(company_teammate)
-    email = prefs.effective_digest_email
-    sms = prefs.effective_digest_sms(company_teammate.person)
-    if slack.to_s == email.to_s && email.to_s == sms.to_s && slack.to_s.in?(%w[off on])
-      slack.to_s
-    else
-      "custom"
-    end
-  end
 
   # Authenticated header brand: no-nav layout always links to Start Here.
   def organization_header_brand_path(organization, company_teammate)

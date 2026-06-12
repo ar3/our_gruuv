@@ -48,8 +48,8 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(response.body).to include('Vertical nav behavior')
       expect(response.body).to include('Lock the vertical nav bar open')
       expect(response.body).to include('Keep the vertical nav bar closed unless I open it')
-      expect(response.body).to include('Digest timing and delivery preferences moved to Digest settings.')
-      expect(response.body).to include('Open digest settings')
+      expect(response.body).to include('Notification timing and delivery preferences moved to the Notifications tab on your profile.')
+      expect(response.body).to include('Open notification settings')
       expect(response.body).to include('Clean/No Navigation')
     end
 

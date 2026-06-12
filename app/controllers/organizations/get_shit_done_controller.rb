@@ -46,16 +46,12 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
   
   private
 
-  # Last visit to the Something Interesting page (with or without query params).
   def something_interesting_last_visited_at
-    path = something_interesting_organization_get_shit_done_path(organization)
-    PageVisit.where(person: current_person)
-             .where('url = ? OR url LIKE ?', path, "#{path}?%")
-             .maximum(:visited_at)
+    SomethingInterestingQueryService.last_visited_at(@teammate)
   end
 
   def something_interesting_baseline
-    something_interesting_last_visited_at || 7.days.ago
+    SomethingInterestingQueryService.baseline(@teammate)
   end
 
   def parsed_since_param

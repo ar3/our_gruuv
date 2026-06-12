@@ -10,12 +10,6 @@ module Digest
       return nil unless teammate&.organization
 
       manager_teammate = teammate.active_employment_tenure&.manager_teammate
-      employee_prefs = UserPreference.for_person(teammate.person)
-      employee_slack_enabled = employee_prefs.effective_digest_slack(nil) == 'on'
-      manager_slack_enabled =
-        manager_teammate.present? &&
-        UserPreference.for_person(manager_teammate.person).effective_digest_slack(nil) == 'on'
-      return nil unless employee_slack_enabled || manager_slack_enabled
 
       user_ids = []
       user_ids << teammate.slack_user_id if teammate.has_slack_identity? && teammate.slack_user_id.present?

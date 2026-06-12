@@ -3,17 +3,19 @@
 module Digest
   # Explains why scheduled digests may not send and summarizes recent digest notifications.
   class TeammateDigestStatusService
-    ROOT_DIGEST_TYPES = %w[gsd_digest about_me_digest one_on_one_digest].freeze
+    ROOT_DIGEST_TYPES = %w[gsd_digest about_me_digest one_on_one_digest interesting_things_digest].freeze
 
     DigestEvent = Struct.new(:digest_key, :label, :sent_at, :status, :medium, keyword_init: true)
 
-    def initialize(teammate:, organization:, gsd_label: 'Get Shit Done', gsd_pending_count: nil, recent_notifications: nil)
+    def initialize(teammate:, organization:, gsd_label: 'Get Shit Done', gsd_pending_count: nil,
+                   interesting_pending_count: nil, recent_notifications: nil)
       @teammate = teammate
       @organization = organization
       @person = teammate.person
       @prefs = UserPreference.for_person(@person)
       @gsd_label = gsd_label
       @gsd_pending_count = gsd_pending_count
+      @interesting_pending_count = interesting_pending_count
       @recent_notifications = recent_notifications
       @manager_teammate = teammate.active_employment_tenure&.manager_teammate
       @manager_prefs = @manager_teammate ? UserPreference.for_person(@manager_teammate.person) : nil
@@ -30,25 +32,24 @@ module Digest
 
     def gsd_blockers
       blockers = []
-      if @person.timezone.blank?
-        blockers << 'Add a timezone in the profile so weekday 8:00 AM sends can be scheduled.'
-      end
-      unless gsd_medium_enabled?
-        blockers << 'Turn on Slack or SMS in delivery mediums.'
-      end
-      if slack_medium_on? && !employee_slack_deliverable?
-        blockers << 'Connect Slack for this teammate (Slack Settings) to receive Slack digests.'
-      end
-      if slack_medium_on? && employee_slack_deliverable? && !organization_slack_configured?
-        blockers << 'Organization Slack is not configured — Slack digests cannot be delivered.'
-      end
-      if sms_medium_on? && @person.unique_textable_phone_number.blank?
-        blockers << 'Add a phone number in the profile to receive SMS digests.'
-      end
+      blockers << 'This notification is turned off.' unless @prefs.gsd_digest_enabled?
+      blockers.concat(daily_delivery_blockers)
       if @gsd_pending_count&.zero?
-        blockers << "No items in #{@gsd_label} — the digest only sends when there is at least one pending item."
+        blockers << "No items in #{@gsd_label} — this only sends when there is at least one pending item."
       end
       blockers
+    end
+
+    def interesting_things_blockers
+      blockers = []
+      blockers << 'This notification is turned off.' unless @prefs.interesting_things_digest_enabled?
+      blockers.concat(daily_delivery_blockers)
+      blockers
+    end
+
+    # Weekly delivery blockers independent of which style (1:1 / About Me) is selected.
+    def weekly_blockers
+      weekly_schedule_blockers + weekly_slack_delivery_blockers
     end
 
     def one_on_one_blockers
@@ -64,6 +65,11 @@ module Digest
     def gsd_schedule_summary
       tz_label = @person.timezone.presence || 'timezone not set'
       "Weekdays at 8:00 AM (#{tz_label}) when #{@gsd_label} has pending items."
+    end
+
+    def interesting_things_schedule_summary
+      tz_label = @person.timezone.presence || 'timezone not set'
+      "Weekdays at 8:00 AM (#{tz_label}) when there are new things on the Interesting Things page since the last visit."
     end
 
     def weekly_schedule_summary
@@ -102,10 +108,6 @@ module Digest
         lines << 'Weekly reminder day is off.'
       elsif !weekly_day.match?(/\A[0-6]\z/)
         lines << "Weekly reminder day #{weekly_day.inspect} is invalid."
-      end
-
-      unless weekly_slack_scheduling_enabled?
-        lines << 'Neither employee nor manager has digest_slack on.'
       end
 
       local = at.in_time_zone(person_timezone)
@@ -182,8 +184,27 @@ module Digest
       when 'gsd_digest' then @gsd_label
       when 'one_on_one_digest' then '1:1 guide'
       when 'about_me_digest' then 'About Me reminder'
+      when 'interesting_things_digest' then 'Interesting Things'
       else notification_type
       end
+    end
+
+    # Slack is the always-on channel: deliverability depends on a connected identity, not a preference.
+    def daily_delivery_blockers
+      blockers = []
+      if @person.timezone.blank?
+        blockers << 'Add a timezone in the profile so weekday 8:00 AM sends can be scheduled.'
+      end
+      unless employee_slack_deliverable?
+        blockers << 'Connect Slack for this teammate (Slack Settings) to receive Slack notifications.'
+      end
+      if employee_slack_deliverable? && !organization_slack_configured?
+        blockers << 'Organization Slack is not configured — Slack notifications cannot be delivered.'
+      end
+      if sms_medium_on? && @person.unique_textable_phone_number.blank?
+        blockers << 'Add a phone number in the profile to receive SMS notifications.'
+      end
+      blockers
     end
 
     def weekly_schedule_blockers
@@ -200,20 +221,13 @@ module Digest
 
     def weekly_slack_delivery_blockers
       blockers = []
-      unless weekly_slack_scheduling_enabled?
-        blockers << 'Turn on Slack digest for this employee or their manager (delivery mediums / profile).'
-      end
-      if weekly_slack_scheduling_enabled? && weekly_slack_user_ids.empty?
+      if weekly_slack_user_ids.empty?
         blockers << 'Connect Slack for the employee and/or manager so a group DM can be opened.'
       end
-      if weekly_slack_scheduling_enabled? && weekly_slack_user_ids.any? && !organization_slack_configured?
+      if weekly_slack_user_ids.any? && !organization_slack_configured?
         blockers << 'Organization Slack is not configured — weekly Slack digests cannot be delivered.'
       end
       blockers
-    end
-
-    def weekly_slack_scheduling_enabled?
-      employee_slack_medium_on? || manager_slack_medium_on?
     end
 
     def weekly_slack_user_ids
@@ -229,24 +243,8 @@ module Digest
       @prefs.weekly_digest_enabled?(pref_key) ? [] : [message]
     end
 
-    def gsd_medium_enabled?
-      slack_medium_on? || sms_medium_on? || @prefs.effective_digest_email == 'on'
-    end
-
-    def slack_medium_on?
-      @prefs.effective_digest_slack(nil) == 'on'
-    end
-
     def sms_medium_on?
       @prefs.effective_digest_sms(nil) == 'on'
-    end
-
-    def employee_slack_medium_on?
-      slack_medium_on?
-    end
-
-    def manager_slack_medium_on?
-      @manager_prefs&.effective_digest_slack(nil) == 'on'
     end
 
     def employee_slack_deliverable?

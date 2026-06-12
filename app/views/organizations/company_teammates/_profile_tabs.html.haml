@@ -1,0 +1,16 @@
+-# locals: organization, teammate, active_tab (:profile or :notifications)
+- active_tab = local_assigns.fetch(:active_tab)
+
+%ul.nav.nav-tabs.mb-4
+  %li.nav-item
+    = link_to organization_company_teammate_path(organization, teammate),
+      class: "nav-link d-inline-flex align-items-center #{'active' if active_tab == :profile}",
+      aria: { current: (active_tab == :profile ? 'page' : nil) } do
+      %i.bi.bi-person-gear.me-1
+      %span Profile
+  %li.nav-item
+    = link_to organization_company_teammate_notifications_path(organization, teammate),
+      class: "nav-link d-inline-flex align-items-center #{'active' if active_tab == :notifications}",
+      aria: { current: (active_tab == :notifications ? 'page' : nil) } do
+      %i.bi.bi-bell.me-1
+      %span Notifications

@@ -488,9 +488,9 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Daily / Weekly Digest',
+            label: 'Notifications',
             icon: 'bi-bell',
-            path: edit_organization_digest_path(current_organization),
+            path: current_company_teammate ? organization_company_teammate_notifications_path(current_organization, current_company_teammate) : '#',
             policy_check: -> { current_company_teammate.present? },
             coming_soon: false
           },

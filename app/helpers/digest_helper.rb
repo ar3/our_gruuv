@@ -50,6 +50,59 @@ module DigestHelper
     weekly_day.to_s != 'off' && weekly_day.present? && (one_on_one_on || about_me_on)
   end
 
+  # Human-readable list of notification types turned on (for nudge summaries).
+  def notification_nudge_enabled_items(prefs:, gsd_label: 'Get Shit Done')
+    items = []
+    items << gsd_label if prefs.gsd_digest_enabled?
+    items << 'Interesting Things' if prefs.interesting_things_digest_enabled?
+
+    weekly_day = prefs.preference(:about_me_weekly_day).presence || 'off'
+    one_on_one_on = prefs.preference(:one_on_one_digest_enabled) == 'on'
+    about_me_on = prefs.preference(:about_me_digest_enabled) == 'on'
+    if weekly_reminder_configured?(one_on_one_on:, about_me_on:, weekly_day:)
+      items << weekly_digest_nudge_phrase(one_on_one_on:, about_me_on:, weekly_day:)
+    end
+    items
+  end
+
+  def notification_nudge_disabled_items(prefs:, gsd_label: 'Get Shit Done')
+    weekly_day = prefs.preference(:about_me_weekly_day).presence || 'off'
+    one_on_one_on = prefs.preference(:one_on_one_digest_enabled) == 'on'
+    about_me_on = prefs.preference(:about_me_digest_enabled) == 'on'
+
+    items = []
+    items << "daily #{gsd_label} reminders" unless prefs.gsd_digest_enabled?
+    items << 'Interesting Things updates' unless prefs.interesting_things_digest_enabled?
+    items << 'weekly recap digests' unless weekly_reminder_configured?(one_on_one_on:, about_me_on:, weekly_day:)
+    items
+  end
+
+  def notification_nudge_partial_sentence(casual_name:, prefs:, gsd_label: 'Get Shit Done')
+    disabled = notification_nudge_disabled_items(prefs: prefs, gsd_label: gsd_label)
+    return nil if disabled.empty?
+
+    list = disabled.to_sentence(two_words_connector: ' and ', last_word_connector: ', and ')
+    "Still off for #{casual_name}: #{list}."
+  end
+
+  def notification_nudge_summary_sentence(casual_name:, prefs:, gsd_label: 'Get Shit Done')
+    items = notification_nudge_enabled_items(prefs: prefs, gsd_label: gsd_label)
+    return nil if items.empty?
+
+    list = items.to_sentence(two_words_connector: ' and ', last_word_connector: ', and ')
+    "#{casual_name} has notifications configured for #{list}."
+  end
+
+  def weekly_digest_nudge_phrase(one_on_one_on:, about_me_on:, weekly_day:)
+    day = weekly_digest_day_label(weekly_day)
+    digest_names = weekly_digest_names_for_prefs(one_on_one_on: one_on_one_on, about_me_on: about_me_on)
+    if digest_names.size == 1
+      "weekly #{digest_names.first.downcase} on #{day}s"
+    else
+      "weekly #{digest_names.first.downcase} and #{digest_names.last.downcase} on #{day}s"
+    end
+  end
+
   def weekly_digest_enabled_in_prefs?(prefs, key)
     prefs.weekly_digest_enabled?(key)
   end

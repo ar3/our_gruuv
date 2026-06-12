@@ -22,14 +22,14 @@ RSpec.describe Digest::TeammateDigestStatusService do
   end
 
   describe '#gsd_blockers' do
-    it 'lists blockers when mediums and prerequisites are missing' do
+    it 'lists blockers when prerequisites are missing' do
       person.update!(timezone: nil)
-      UserPreference.for_person(person).update_preference('digest_slack', 'off')
-      UserPreference.for_person(person).update_preference('digest_sms', 'off')
+      UserPreference.for_person(person).update_preference('gsd_digest_enabled', 'off')
 
       expect(service.gsd_blockers).to include(
         a_string_matching(/timezone/),
-        a_string_matching(/Turn on Slack or SMS/)
+        a_string_matching(/turned off/),
+        a_string_matching(/Connect Slack/)
       )
     end
 
@@ -44,13 +44,35 @@ RSpec.describe Digest::TeammateDigestStatusService do
       prefs = UserPreference.for_person(person)
       prefs.update_preference('about_me_weekly_day', 'off')
       prefs.update_preference('one_on_one_digest_enabled', 'off')
-      prefs.update_preference('digest_slack', 'off')
 
       expect(service.one_on_one_blockers).to include(
         a_string_matching(/weekly reminder day/),
         a_string_matching(/1:1 guide digest is turned off/),
-        a_string_matching(/Turn on Slack digest/)
+        a_string_matching(/Connect Slack/)
       )
+    end
+  end
+
+  describe '#interesting_things_blockers' do
+    it 'notes when the notification is off' do
+      empty = described_class.new(
+        teammate: teammate,
+        organization: organization,
+        interesting_pending_count: 0
+      )
+      expect(empty.interesting_things_blockers).to include(a_string_matching(/turned off/))
+    end
+
+    it 'does not treat an empty interesting-things list as a blocker when enabled' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('interesting_things_digest_enabled', 'on')
+
+      with_counts = described_class.new(
+        teammate: teammate,
+        organization: organization,
+        interesting_pending_count: 0
+      )
+      expect(with_counts.interesting_things_blockers).not_to include(a_string_matching(/Nothing new/))
     end
   end
 

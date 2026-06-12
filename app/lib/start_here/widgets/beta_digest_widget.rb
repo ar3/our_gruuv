@@ -5,11 +5,11 @@ class StartHere::Widgets::BetaDigestWidget < StartHere::Widget::Base
     id: "beta_digest",
     group: "Beta",
     icon: "bi-bell",
-    selection_title: "Daily / Weekly Digest",
-    selection_description: "Digest notification preferences.",
-    label: "Daily / Weekly Digest",
-    path: ->(c) { c.view.edit_organization_digest_path(c.organization) },
-    description: "Digest notification preferences.",
-    button_label: "Digest settings"
+    selection_title: "Notifications",
+    selection_description: "Notification preferences.",
+    label: "Notifications",
+    path: ->(c) { c.view.organization_company_teammate_notifications_path(c.organization, c.view.current_company_teammate) },
+    description: "Notification preferences.",
+    button_label: "Notification settings"
   }.freeze
 end

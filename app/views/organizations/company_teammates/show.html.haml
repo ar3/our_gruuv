@@ -17,73 +17,13 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "Profile", url: nil }])
 
+= render 'organizations/company_teammates/profile_tabs', organization: organization, teammate: @teammate, active_tab: :profile
+
 / About Me Section
 .row
   .col-12
     = render 'people/show/about_me'
 
-.row
-  .col-12
-    .card.mb-4{role: "region", "aria-labelledby": "digest-section"}
-      .card-header
-        %h5.mb-0{id: "digest-section"}
-          %i.bi.bi-bell.me-2
-          Digest
-      .card-body
-        - digest_prefs = UserPreference.for_person(@teammate.person)
-        - gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
-        - can_configure_digest = current_company_teammate == @teammate
-        - direct_reports_count = EmploymentTenure.where(company: organization, manager_teammate: @teammate, ended_at: nil).distinct.count(:teammate_id)
-        - about_me_digest_on = digest_prefs.preference(:about_me_digest_enabled) == 'on'
-        - one_on_one_digest_on = digest_prefs.preference(:one_on_one_digest_enabled) == 'on'
-        = form_with url: organization_digest_path(organization), method: :patch, local: true, class: "mt-2" do
-          .row.g-3
-            .col-12.col-lg-8
-              %p.text-muted.mb-2
-                Get reminders for your #{gsd_label} list through your selected mediums.
-              .small.fw-semibold.mb-2 Notification preferences
-              .d-flex.flex-wrap.gap-3.mb-2
-                .form-check
-                  = check_box_tag :digest_slack, 'on', digest_prefs.effective_digest_slack(@teammate) == 'on', class: 'form-check-input', id: "profile_digest_slack", onchange: "this.form.submit()"
-                  = label_tag :profile_digest_slack, 'Slack', class: 'form-check-label'
-                .form-check
-                  = check_box_tag :digest_sms, 'on', digest_prefs.effective_digest_sms(@teammate.person) == 'on', class: 'form-check-input', id: "profile_digest_sms", onchange: "this.form.submit()"
-                  = label_tag :profile_digest_sms, 'SMS', class: 'form-check-label'
-              %hr.my-3
-              .small.fw-semibold.mb-2 Weekly Slack digests
-              %p.text-muted.small.mb-2 Both use the same weekday below.
-              = hidden_field_tag :one_on_one_digest_enabled, 'off'
-              .form-check.mb-2
-                = check_box_tag :one_on_one_digest_enabled, 'on', one_on_one_digest_on, class: 'form-check-input', id: 'profile_one_on_one_digest', onchange: 'this.form.submit()'
-                = label_tag :profile_one_on_one_digest, 'Weekly 1:1 guide digest', class: 'form-check-label'
-              = hidden_field_tag :about_me_digest_enabled, 'off'
-              .form-check.mb-2
-                = check_box_tag :about_me_digest_enabled, 'on', about_me_digest_on, class: 'form-check-input', id: 'profile_about_me_digest', onchange: 'this.form.submit()'
-                = label_tag :profile_about_me_digest, 'Weekly About Me reminder digest', class: 'form-check-label'
-              .small.fw-semibold.mb-2.mt-2 Weekly reminder day
-              - about_me_day = digest_prefs.preference(:about_me_weekly_day).presence || 'off'
-              .d-flex.flex-wrap.gap-2
-                - [['Sun', '0'], ['Mon', '1'], ['Tue', '2'], ['Wed', '3'], ['Thu', '4'], ['Fri', '5'], ['Sat', '6'], ['No weekly reminder', 'off']].each do |label, value|
-                  .form-check.form-check-inline
-                    = radio_button_tag "about_me_days[#{@teammate.id}]", value, about_me_day.to_s == value.to_s, class: 'form-check-input', onchange: "this.form.submit()"
-                    = label_tag nil, label, class: 'form-check-label'
-            .col-12.col-lg-4
-              .d-grid.gap-2
-                - configure_digest_text = direct_reports_count.positive? ? "Configure digest for you and your 1:1 cadence for the #{direct_reports_count} teammates you serve" : "Configure digest"
-                - if can_configure_digest
-                  = link_to edit_organization_digest_path(organization, return_url: organization_company_teammate_path(organization, @teammate), return_text: "Back to Profile"), class: "btn btn-outline-primary" do
-                    %i.bi.bi-sliders.me-2
-                    = configure_digest_text
-                - else
-                  %button.btn.btn-outline-primary.text-start{ type: "button", disabled: true }
-                    %i.bi.bi-sliders.me-2
-                    = configure_digest_text
-                  %span.text-muted.small{ data: { bs_toggle: 'tooltip', bs_placement: 'top' }, title: "You can only configure digest settings from your own profile page." }
-                    %i.bi.bi-exclamation-triangle-fill.me-1
-                    Configure digest is disabled
-          = hidden_field_tag :digest_email, 'off'
-          = hidden_field_tag :return_url, organization_company_teammate_path(organization, @teammate, anchor: 'digest-section')
-          = hidden_field_tag :return_text, "Back to Profile"
 - if current_company_teammate == @teammate
   .row
     .col-12

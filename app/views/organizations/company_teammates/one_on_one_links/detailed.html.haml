@@ -46,14 +46,9 @@
 - latest_goal_check_in_dates = @active_goals.filter_map { |goal| goal.goal_check_ins.map(&:check_in_week_start).compact.max }
 - most_recent_goal_check_in = latest_goal_check_in_dates.max
 
-- digest_return_url = detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "weekly-digest-settings-one_on_one")
 = render "shared/teammate_context/manager_lite_and_weekly_digest",
          organization: organization,
-         teammate: @teammate,
-         return_url: digest_return_url,
-         return_text: "Back to Detailed 1:1 Hub",
-         editable: policy(@teammate).update?,
-         anchor_key: "one_on_one"
+         teammate: @teammate
 
 = render "hub_tabs", one_thing_active: false, detailed_active: true, work_to_meet_summary: @work_to_meet_summary
 

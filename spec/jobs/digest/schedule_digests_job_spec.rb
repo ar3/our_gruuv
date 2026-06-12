@@ -27,7 +27,7 @@ RSpec.describe Digest::ScheduleDigestsJob, type: :job do
     end
 
     it 'enqueues SendDigestJob for teammate with digest enabled when it is 8am in their timezone' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'on')
+      UserPreference.for_person(person).update_preference('gsd_digest_enabled', 'on')
       # Tuesday 8am Pacific = 2025-03-04 16:00 UTC
       travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
         expect { described_class.perform_now }.to have_enqueued_job(Digest::SendDigestJob).with(teammate.id)
@@ -35,7 +35,7 @@ RSpec.describe Digest::ScheduleDigestsJob, type: :job do
     end
 
     it 'does not enqueue digest on Saturday even when enabled and teammate has items' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'on')
+      UserPreference.for_person(person).update_preference('gsd_digest_enabled', 'on')
       # Saturday 8am Pacific: 2025-03-08 16:00 UTC
       travel_to Time.zone.parse('2025-03-08 16:00:00 UTC') do
         expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
@@ -43,7 +43,7 @@ RSpec.describe Digest::ScheduleDigestsJob, type: :job do
     end
 
     it 'does not enqueue when enabled but teammate has no GSD items' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'on')
+      UserPreference.for_person(person).update_preference('gsd_digest_enabled', 'on')
       allow_any_instance_of(GetShitDoneQueryService).to receive(:all_pending_items).and_return({ total_pending: 0 })
       # Sunday 8am Pacific: 2025-03-09 16:00 UTC
       travel_to Time.zone.parse('2025-03-09 16:00:00 UTC') do
@@ -53,16 +53,14 @@ RSpec.describe Digest::ScheduleDigestsJob, type: :job do
 
     it 'skips teammate with blank timezone' do
       person.update!(timezone: nil)
-      UserPreference.for_person(person).update_preference('digest_slack', 'on')
+      UserPreference.for_person(person).update_preference('gsd_digest_enabled', 'on')
       travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
         expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
       end
     end
 
-    it 'skips when all digest channels are off' do
-      UserPreference.for_person(person).update_preference('digest_slack', 'off')
-      UserPreference.for_person(person).update_preference('digest_email', 'off')
-      UserPreference.for_person(person).update_preference('digest_sms', 'off')
+    it 'skips when the GSD notification is turned off' do
+      UserPreference.for_person(person).update_preference('gsd_digest_enabled', 'off')
       travel_to Time.zone.parse('2025-03-04 16:00:00 UTC') do
         expect { described_class.perform_now }.not_to have_enqueued_job(Digest::SendDigestJob)
       end

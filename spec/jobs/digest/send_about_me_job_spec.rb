@@ -16,8 +16,6 @@ RSpec.describe Digest::SendAboutMeJob, type: :job do
     create(:teammate_identity, :slack, teammate: employee, uid: 'UEMP')
     create(:teammate_identity, :slack, teammate: manager, uid: 'UMGR')
     allow_any_instance_of(Organization).to receive(:calculated_slack_config).and_return(double('SlackConfig', configured?: true))
-    UserPreference.for_person(employee_person).update_preference('digest_slack', 'on')
-    UserPreference.for_person(manager_person).update_preference('digest_slack', 'on')
   end
 
   it 'opens a group dm and posts main plus About Me section thread' do
@@ -53,9 +51,9 @@ RSpec.describe Digest::SendAboutMeJob, type: :job do
     expect(slack_service).not_to have_received(:open_or_create_group_dm)
   end
 
-  it 'does not send when neither employee nor manager has slack enabled' do
-    UserPreference.for_person(employee_person).update_preference('digest_slack', 'off')
-    UserPreference.for_person(manager_person).update_preference('digest_slack', 'off')
+  it 'does not send when neither employee nor manager has a slack identity' do
+    employee.teammate_identities.where(provider: 'slack').delete_all
+    manager.teammate_identities.where(provider: 'slack').delete_all
 
     expect(SlackService).not_to receive(:new)
     expect {

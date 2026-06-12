@@ -93,6 +93,18 @@ module Digest
       end
     end
 
+    def one_on_one_short_summary_for_sms
+      org_name = @company.name.presence || @organization.name.presence
+      prefix = org_name.present? ? "#{org_name}: " : ''
+      "#{prefix}Your weekly 1:1 guide is ready. View it by logging into OurGruuv (dot) com."
+    end
+
+    def about_me_short_summary_for_sms
+      org_name = @company.name.presence || @organization.name.presence
+      prefix = org_name.present? ? "#{org_name}: " : ''
+      "#{prefix}About Me reminder — #{about_me_summary_sentence} View it by logging into OurGruuv (dot) com."
+    end
+
     CHECK_IN_SECTION_KEYS = %i[aspirations_check_in assignments_check_in position_check_in].freeze
 
     def thread2_about_me
@@ -268,8 +280,8 @@ module Digest
     end
 
     def digest_config_url_for_organization
-      url = slack_app_url(:edit_organization_digest_url, @organization)
-      "<#{url}|Digest settings>"
+      url = slack_app_url(:organization_company_teammate_notifications_url, @organization, @teammate)
+      "<#{url}|Notification settings>"
     end
 
     # Formats one section for the About Me thread: link (and optional explanation). Check-in sections use ":" before explanation; others use ". ".

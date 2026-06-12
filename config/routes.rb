@@ -106,15 +106,6 @@ Rails.application.routes.draw do
     # PaperTrail version history for auditable records (authorization uses each record's show? policy)
     get 'paper_trail', to: 'organizations/paper_trail#show', as: :paper_trail
 
-    # Digest (user digest preferences; per-organization URL, edits current user's preferences)
-    resource :digest, only: [:edit, :update], controller: 'organizations/digest' do
-      post :sync_all_mediums, on: :member
-      post :send_gsd_test, on: :member
-      post :send_about_me_test, on: :member
-      post :send_one_on_one_test, on: :member
-      post :send_weekly_digests_now, on: :member
-    end
-    
     # Observable Moments
     resources :observable_moments, only: [], module: :organizations do
       member do
@@ -369,6 +360,15 @@ Rails.application.routes.draw do
         post 'bulk_milestone_awards', to: 'company_teammates/bulk_milestone_awards#create', as: :bulk_milestone_awards
       end
       
+      # Notifications tab on the profile (digest preferences; editable by self, management chain, admins)
+      resource :notifications, controller: 'company_teammates/notifications', only: [:show, :update] do
+        post :send_gsd_test, on: :member
+        post :send_interesting_things_test, on: :member
+        post :send_about_me_test, on: :member
+        post :send_one_on_one_test, on: :member
+        post :send_weekly_digests_now, on: :member
+      end
+
       # Unified check-ins page (spreadsheet-style giant form)
       resource :check_ins, controller: 'company_teammates/check_ins', only: [:show, :update] do
         post :save_and_redirect, on: :member
