@@ -1,0 +1,8 @@
+-# locals: groups
+- groups = local_assigns.fetch(:groups)
+- groups.each do |group|
+  %h6.fw-semibold.text-muted.mb-2.mt-1= group[:label]
+  .row.g-3.mb-3
+    - group[:entries].each do |entry|
+      .col-12.col-md-4
+        = render "organizations/company_teammates/internal_view_nav_entry", entry: entry

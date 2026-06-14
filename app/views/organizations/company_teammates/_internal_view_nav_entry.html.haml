@@ -1,0 +1,18 @@
+-# locals: entry
+- entry = local_assigns.fetch(:entry)
+.internal-teammate-views-nav__item.h-100
+  - if entry[:enabled]
+    = link_to entry[:path], class: "internal-teammate-views-nav__link btn btn-outline-primary w-100 h-100 text-start d-flex flex-column align-items-stretch" do
+      .fw-semibold.mb-1
+        = entry[:title]
+      %small.text-body-secondary
+        = entry[:description]
+  - else
+    %span.d-inline-block.w-100.h-100{ tabindex: 0, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => entry[:tooltip] }
+      = button_tag type: "button", disabled: true, class: "internal-teammate-views-nav__link internal-teammate-views-nav__link--disabled btn btn-outline-secondary w-100 h-100 text-start d-flex flex-column align-items-stretch" do
+        .d-flex.align-items-start.gap-2.mb-1
+          .fw-semibold.text-body-secondary.flex-grow-1
+            = entry[:title]
+          %i.bi.bi-exclamation-triangle.text-warning.flex-shrink-0.mt-1{ aria: { hidden: true } }
+        %small.text-body-secondary
+          = entry[:description]

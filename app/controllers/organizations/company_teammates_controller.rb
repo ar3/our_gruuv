@@ -8,7 +8,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   before_action :authenticate_person!
   before_action :set_teammate
-  before_action :assign_managers_view_card_for_teammate, only: :about_me
+  before_action :assign_managers_view_card_for_teammate, only: %i[about_me internal]
   after_action :verify_authorized
 
   def show

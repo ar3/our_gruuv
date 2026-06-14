@@ -1,25 +1,32 @@
--# locals: organization:, teammate:, for_one_on_one_hub: false
+-# locals: organization:, teammate:, for_one_on_one_hub: false, row_data: nil
 - for_one_on_one_hub = local_assigns.fetch(:for_one_on_one_hub, false)
-- entries = internal_teammate_views_navigation_entries(organization, teammate, for_one_on_one_hub: for_one_on_one_hub)
-.table-responsive
-  %table.table.table-bordered.mb-0.internal-teammate-views-grid
-    %tbody
-      - entries.each_slice(3) do |row|
-        %tr
-          - row.each do |entry|
-            %td.p-0.align-top
-              - if entry[:enabled]
-                = link_to entry[:path], class: "btn btn-outline-primary internal-teammate-views-grid__btn w-100 h-100 rounded-0 border-0 text-start d-flex flex-column align-items-stretch" do
-                  .fw-semibold.mb-1.pe-1
-                    = entry[:title]
-                  %small.text-body-secondary.pe-1
-                    = entry[:description]
-              - else
-                %span.d-inline-block.w-100.h-100{ tabindex: 0, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => entry[:tooltip] }
-                  = button_tag type: "button", disabled: true, class: "btn btn-outline-secondary internal-teammate-views-grid__btn internal-teammate-views-grid__btn--disabled w-100 h-100 rounded-0 border-0 text-start d-flex flex-column align-items-stretch" do
-                    .d-flex.align-items-start.gap-2.mb-1
-                      .fw-semibold.text-body-secondary.flex-grow-1
-                        = entry[:title]
-                      %i.bi.bi-exclamation-triangle.text-warning.flex-shrink-0.mt-1{ aria: { hidden: true } }
-                    %small.text-body-secondary
-                      = entry[:description]
+- row_data = local_assigns[:row_data]
+- row_data ||= (@managers_view_row_data_by_teammate_id || {})[teammate.id]
+- navigation_groups = internal_teammate_views_navigation_groups(organization, teammate, row_data: row_data, for_one_on_one_hub: for_one_on_one_hub)
+- visible_groups = navigation_groups.first(2)
+- collapsed_groups = navigation_groups.drop(2)
+- more_views_collapse_id = "internalTeammateViewsMore#{teammate.id}"
+- expand_prompt_label = internal_teammate_views_more_expand_label(collapsed_groups, casual_name: teammate.person.casual_name)
+
+.internal-teammate-views-nav
+  = render "organizations/company_teammates/internal_views_navigation_group_list", groups: visible_groups
+
+  - if collapsed_groups.any?
+    .text-center.mb-3.internal-teammate-views-nav__expand-prompt-wrap
+      %button.btn.btn-link.text-decoration-none.internal-teammate-views-nav__expand-prompt.d-inline-flex.align-items-center.justify-content-center.gap-2{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{more_views_collapse_id}", "aria-expanded" => "false", "aria-controls" => more_views_collapse_id}
+        %i.bi.bi-chevron-down{ aria: { hidden: true } }
+        %span= expand_prompt_label
+        %i.bi.bi-chevron-down{ aria: { hidden: true } }
+
+    .collapse{id: more_views_collapse_id}
+      = render "organizations/company_teammates/internal_views_navigation_group_list", groups: collapsed_groups
+
+:javascript
+  (function() {
+    document.querySelectorAll('.internal-teammate-views-nav__expand-prompt').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var promptWrap = button.closest('.internal-teammate-views-nav__expand-prompt-wrap');
+        if (promptWrap) promptWrap.remove();
+      }, { once: true });
+    });
+  })();

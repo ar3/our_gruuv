@@ -1442,20 +1442,11 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
-// Internal teammate page: flush 3×3 navigation (no gaps between cells; generous padding inside)
-.internal-teammate-views-grid {
-  border-collapse: collapse;
-  table-layout: fixed;
-
-  th,
-  td {
-    border-width: 1px;
-    vertical-align: top;
-  }
-
-  .internal-teammate-views-grid__btn {
-    --internal-views-nav-pad-y: 1.35rem;
-    --internal-views-nav-pad-x: 1.25rem;
+// Internal teammate page: manager-lite style navigation tiles
+.internal-teammate-views-nav {
+  &__link {
+    --internal-views-nav-pad-y: 1.1rem;
+    --internal-views-nav-pad-x: 1.1rem;
 
     min-height: 100%;
     padding: var(--internal-views-nav-pad-y) var(--internal-views-nav-pad-x);
@@ -1463,9 +1454,16 @@ body:has(.vertical-nav.open) .floating-toggle {
     white-space: normal;
   }
 
-  .internal-teammate-views-grid__btn--disabled {
+  &__link--disabled {
     opacity: 1;
     cursor: not-allowed;
+  }
+
+  &__expand-prompt {
+    font-size: 1.2rem;
+    line-height: 1.45;
+    max-width: 44rem;
+    white-space: normal;
   }
 }
 

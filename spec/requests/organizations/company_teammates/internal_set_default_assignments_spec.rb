@@ -120,10 +120,12 @@ RSpec.describe 'Internal Teammate Page - Set Default Assignments', type: :reques
         sign_in_as_teammate_for_request(manager_person, organization)
       end
 
-      it 'does not show Set default assignments button' do
+      it 'shows disabled button indicating all required assignments are met' do
         get internal_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
         expect(assigns(:required_assignments_without_active_tenure)).to be_empty
+        expect(response.body).to include('has all required assignments')
+        expect(response.body).to include('disabled')
         expect(response.body).not_to include('Set 2 default assignments')
         expect(response.body).not_to include(set_default_assignments_organization_company_teammate_path(organization, employee_teammate))
       end

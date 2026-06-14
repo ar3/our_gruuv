@@ -28,13 +28,21 @@ RSpec.describe 'Teammate View Security', type: :request do
         expect(response).to have_http_status(:success)
       end
 
-      it 'renders the teammate views navigation card (3×3 grid, 1:1 first, public link when present)' do
+      it 'renders the teammate views navigation (manager-lite rows, 1:1 hub first, public link when present)' do
         get internal_organization_company_teammate_path(organization, person_teammate)
         expect(response.body).to include("Views for #{person.casual_name}")
-        expect(response.body).to include('internal-teammate-views-grid')
-        expect(response.body).to include('1:1 Area')
+        expect(response.body).to include('internal-teammate-views-nav')
+        expect(response.body).to include('next most important thing')
+        expect(response.body).to include('1:1, about &amp; growth')
+        expect(response.body).to include('Clarity check-ins')
         expect(response.body).to include('Public view')
         expect(response.body).to include(public_person_path(person))
+        expect(response.body).to include('internal-teammate-views-nav__expand-prompt')
+        expect(response.body).to include('views and actions you can take for')
+        expect(response.body).to include('OGOs, Goals, Grow by')
+        expect(response.body).to include('Grow by experiences')
+        expect(response.body).to include('Grow by Abilities')
+        expect(response.body).to include('Position / Title Change')
       end
 
       it 'includes link to observation index filtered by observations about the teammate' do
