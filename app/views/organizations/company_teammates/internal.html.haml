@@ -358,18 +358,29 @@
       .card-body
         - if @active_assignment_tenures.any?
           .list-group
+            - assignments_return_url = internal_organization_company_teammate_path(@current_organization, @teammate, anchor: 'assignments')
+            - assignments_return_text = "Back to #{casual_name}'s assignments"
             - @active_assignment_tenures.each do |tenure|
-              .list-group-item
-                %h6.mb-1
-                  = link_to tenure.assignment.title, organization_assignment_path(@current_organization, tenure.assignment), class: "text-decoration-none"
-                - if tenure.assignment.tagline.present?
-                  %p.mb-1.text-muted.small= tenure.assignment.tagline
-                %small.text-muted
-                  Started: #{tenure.started_at.strftime("%B %d, %Y")}
-                  - if tenure.anticipated_energy_percentage.present?
-                    %span.ms-2
-                      | Energy:
-                      %strong= "#{tenure.anticipated_energy_percentage}%"
+              - assignment = tenure.assignment
+              - add_observation_path = my_growth_observation_new_for_associable_path(@current_organization, @teammate, assignment, return_url: assignments_return_url, return_text: assignments_return_text)
+              .list-group-item.d-flex.align-items-start.justify-content-between.gap-3
+                .flex-grow-1.min-w-0
+                  %h6.mb-1
+                    = link_to assignment.title, organization_assignment_path(@current_organization, assignment), class: "text-decoration-none"
+                  - if assignment.tagline.present?
+                    %p.mb-1.text-muted.small= assignment.tagline
+                  %small.text-muted
+                    Started: #{tenure.started_at.strftime("%B %d, %Y")}
+                    - if tenure.anticipated_energy_percentage.present?
+                      %span.ms-2
+                        | Energy:
+                        %strong= "#{tenure.anticipated_energy_percentage}%"
+                .flex-shrink-0.align-self-center.text-end
+                  = link_to add_observation_path, class: "btn btn-sm btn-outline-primary text-wrap text-start", target: "_blank", rel: "noopener", data: { turbo: false } do
+                    %i.bi.bi-plus-circle.me-1
+                    New OGO about #{casual_name}
+                    %br
+                    and #{assignment.title}
         - else
           %p.text-muted No active assignment tenures.
 

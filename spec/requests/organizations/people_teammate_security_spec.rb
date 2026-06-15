@@ -61,6 +61,35 @@ RSpec.describe 'Teammate View Security', type: :request do
         expect(response.body).to include(observations_by_path)
         expect(response.body).to include('OGOs Given')
       end
+
+      context 'with active assignment tenures' do
+        let!(:assignment) { create(:assignment, company: organization, title: 'Ship the feature') }
+
+        before do
+          create(:assignment_tenure, teammate: person_teammate, assignment: assignment, started_at: 1.week.ago, ended_at: nil, anticipated_energy_percentage: 40)
+        end
+
+        it 'links to add an observation about the teammate taking on each assignment' do
+          get internal_organization_company_teammate_path(organization, person_teammate)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include("New OGO about #{person.casual_name}")
+          expect(response.body).to include("and #{assignment.title}")
+
+          doc = Nokogiri::HTML(response.body)
+          add_link = doc.at_xpath("//a[contains(., 'New OGO about')]")
+          expect(add_link).to be_present
+
+          href = add_link['href']
+          uri = URI.parse(href)
+          params = Rack::Utils.parse_nested_query(uri.query)
+          expect(uri.path).to eq(new_organization_observation_path(organization))
+          expect(params['observee_ids']).to eq([person_teammate.id.to_s])
+          expect(params['rateable_type']).to eq('Assignment')
+          expect(params['rateable_id']).to eq(assignment.id.to_s)
+          expect(params['return_text']).to eq("Back to #{person.casual_name}'s assignments")
+          expect(params['return_url']).to include('#assignments')
+        end
+      end
     end
 
     context 'when user is unauthenticated' do
