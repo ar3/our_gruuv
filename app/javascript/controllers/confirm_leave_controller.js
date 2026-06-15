@@ -50,16 +50,6 @@ export default class extends Controller {
     this.dirty = true
   }
 
-  guardSecondForm(event) {
-    if (!this.singleActiveFormValue || !this.dirty || !this.activeForm) return
-
-    const form = event.target.closest("form.goal-check-in-form")
-    if (!form || form === this.activeForm) return
-
-    event.target.blur()
-    alert(this.blockedDirtyMessageValue)
-  }
-
   handleSubmit(event) {
     if (!this.singleActiveFormValue || !this.dirty || !this.activeForm) return
 
