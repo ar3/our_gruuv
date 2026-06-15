@@ -57,9 +57,9 @@
 
             .collapse.show{"id" => "assignment-details"}
               .card.card-body.bg-light.mt-3
-                .row
-                  .col-md-6
-                    - if @current_employment&.position
+                - if @current_employment&.position
+                  .row
+                    .col-12
                       .mb-3
                         %label.form-label.fw-bold Position Connection
                         .form-control-plaintext
@@ -68,6 +68,8 @@
                             position_assignment: @position_assignment,
                             current_employment: @current_employment,
                             organization: @organization
+                .row
+                  .col-md-6
                     - if @assignment_outcomes.any?
                       .mb-3
                         %label.form-label.fw-bold Expected Outcomes
@@ -88,11 +90,6 @@
                         .form-control-plaintext
                           = render "shared/assignments/required_activities", content: @assignment.required_activities
 
-                    - if @assignment.handbook.present?
-                      .mb-3
-                        %label.form-label.fw-bold Handbook
-                        .form-control-plaintext= @assignment.handbook
-
                     - if @assignment_abilities.any?
                       .mb-3
                         %label.form-label.fw-bold Required Abilities
@@ -105,6 +102,13 @@
                       .mb-3
                         %label.form-label.fw-bold Required Abilities
                         .form-control-plaintext.text-muted No ability requirements defined
+
+                - if @assignment.handbook.present?
+                  .row.mt-3
+                    .col-12
+                      %label.form-label.fw-bold Handbook
+                      .markdown-content
+                        = render_markdown(@assignment.handbook)
 
                 - if @assignment.published_external_reference.present? || @assignment.draft_external_reference.present?
                   .row.mt-3

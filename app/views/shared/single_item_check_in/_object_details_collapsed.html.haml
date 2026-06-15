@@ -44,7 +44,7 @@
           - if object.handbook.present?
             .mb-2
               %strong Handbook
-              %p.mb-0= object.handbook
+              .markdown-content.mb-0= render_markdown(object.handbook)
           - if object.assignment_outcomes.any?
             .mb-2
               %strong Expected Outcomes
