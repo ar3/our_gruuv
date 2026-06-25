@@ -8,6 +8,12 @@ RSpec.describe ApplicationJob, type: :job do
     end
   end
 
+  class KeywordArgTestJob < ApplicationJob
+    def perform(first_arg, second_arg = nil, third_arg = nil, existing_id: nil)
+      { first_arg: first_arg, second_arg: second_arg, third_arg: third_arg, existing_id: existing_id }
+    end
+  end
+
   describe 'job execution methods' do
     it 'demonstrates the difference between perform_now and perform_and_get_result' do
       # perform_and_get_result is the reliable way to get the return value of perform
@@ -30,5 +36,16 @@ RSpec.describe ApplicationJob, type: :job do
       expect(result[:success]).to be true
       expect(result[:test_arg]).to eq("bypass_test")
     end
+
+    it 'forwards keyword arguments to perform' do
+      result = KeywordArgTestJob.perform_and_get_result(1, [], nil, existing_id: 42)
+
+      expect(result).to eq({
+        first_arg: 1,
+        second_arg: [],
+        third_arg: nil,
+        existing_id: 42
+      })
+    end
   end
-end 
+end

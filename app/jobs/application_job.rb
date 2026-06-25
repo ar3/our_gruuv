@@ -20,8 +20,7 @@ class ApplicationJob < ActiveJob::Base
   end
 
   # Helper method to get the actual result from a job
-  def self.perform_and_get_result(*args)
-    job = new
-    job.perform(*args)
+  def self.perform_and_get_result(*args, **kwargs)
+    new.perform(*args, **kwargs)
   end
 end
