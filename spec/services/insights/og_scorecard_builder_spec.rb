@@ -250,6 +250,26 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(separator_index).to eq(2)
     end
 
+    it 'includes a separator between Gruuv Health and goal activity rows in the Goals section' do
+      monday = Date.current.beginning_of_week(:monday)
+      week_starts = [monday]
+      chart_range = monday.beginning_of_day..(monday + 6).end_of_day
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      goals_group = result[:groups].find { |g| g[:title] == 'Goals' }
+
+      expect(goals_group[:rows].count { |row| row[:separator] }).to eq(1)
+      first_gruuv_index = goals_group[:rows].index do |row|
+        row[:key]&.start_with?(Insights::OgScorecard::GruuvHealthWeekCounts::METRIC_KEY_PREFIX)
+      end
+      separator_index = goals_group[:rows].index { |row| row[:separator] }
+      first_activity_index = goals_group[:rows].index { |row| row[:key] == 'unique_teammates_active_goal' }
+
+      expect(first_gruuv_index).to eq(0)
+      expect(separator_index).to eq(3)
+      expect(first_activity_index).to eq(4)
+    end
+
     it 'includes a Gruuv Health group with population rows from EngagementHealth' do
       monday = Date.current.beginning_of_week(:monday)
       week_starts = [monday]

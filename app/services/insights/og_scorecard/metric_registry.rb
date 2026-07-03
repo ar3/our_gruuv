@@ -243,6 +243,7 @@ module Insights
           group: 'Goals'
         ) +
         [
+          separator(group: 'Goals'),
           metric(
             key: 'unique_teammates_active_goal',
             label: 'Teammates with an active goal',
