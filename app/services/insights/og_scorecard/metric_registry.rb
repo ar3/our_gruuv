@@ -30,10 +30,6 @@ module Insights
         )
       end
 
-      CC = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS
-      C = CheckInBehavior::CLARITY_CLEAR_DAYS
-      B = CheckInBehavior::CLARITY_BLURRED_DAYS
-
       GROUP_ORDER = ['Teammates', 'Observations', 'Check-ins', 'Ability Milestones', 'Goals'].freeze
 
       class << self
@@ -168,34 +164,28 @@ module Insights
           separator(group: 'Observations')
         ] +
         gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_RECEIVED, metric_name: 'OGOs Received', group: 'Observations') +
-        gruuv_health_entries(
-          category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
-          metric_name: 'Required Clarity',
-          group: 'Check-ins'
-        ) +
         [
           metric(
-            key: 'all_check_ins_clear',
-            label: "Teammates with Healthy Clarity (checked-in within #{C} days)",
+            key: 'unique_teammates_check_in_finalized_this_week',
+            label: 'Teammates that had a check-in finalized this week',
             direction: :more,
             supports_percent: true,
             group: 'Check-ins'
           ),
           metric(
-            key: 'all_check_ins_blurred',
-            label: "Teammates with diminishing clarity (checked-in between #{C + 1}–#{B} days ago)",
-            direction: :less,
+            key: 'unique_teammates_check_in_finalized_all_time',
+            label: 'Teammates that have had a check-in finalized all-time',
+            direction: :more,
             supports_percent: true,
             group: 'Check-ins'
           ),
-          metric(
-            key: 'all_check_ins_obscured',
-            label: "Teammates with a lack of clarity (at least one required check-in older than #{B} days ago)",
-            direction: :less,
-            supports_percent: true,
-            group: 'Check-ins'
-          )
+          separator(group: 'Check-ins')
         ] +
+        gruuv_health_entries(
+          category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+          metric_name: 'Required Clarity',
+          group: 'Check-ins'
+        ) +
         gruuv_health_entries(
           category: EngagementHealth::CATEGORY_MILESTONES,
           metric_name: 'Milestones',

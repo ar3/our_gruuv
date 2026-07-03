@@ -186,7 +186,7 @@ en:
     start_here_clarity_check_in_status_description: "How clear your clarity check-ins are across values, assignments, and position."
     start_here_open_clarity_check_ins: "Open Clarity Check-Ins"
     og_scorecard_clarity_check_ins_label: "Clarity check-ins"
-    og_scorecard_clarity_check_ins_help: "required position, assignment, and aspirational value clarity check-ins evaluated as of each Sunday using the same clarity windows as Clarity check-ins Health (30 / 60 / 90 days). See each row label for rollup rules."
+    og_scorecard_clarity_check_ins_help: "“This week” counts unique teammates who finalized a position, assignment, or aspirational value clarity check-in during that Mon–Sun week. All-time counts teammates employed during that week who had ever finalized one on or before that Sunday. Gruuv Health Required Clarity rows below use Healthy ≤ 60 days, At Risk 61–89 days, Needs Attention ≥ 90 days or never."
     og_scorecard_ability_milestones_label: "Ability Milestones"
     og_scorecard_ability_milestones_help: "milestone attained_at in the Mon–Sun week, or in the rolling 90 calendar days ending that Sunday."
     og_scorecard_goals_label: "Goals"

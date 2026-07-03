@@ -196,6 +196,31 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(row[:weekly_values]).to eq([1])
     end
 
+    it 'includes activity rows, a separator, and Gruuv Health rows in the Check-ins section' do
+      monday = Date.current.beginning_of_week(:monday)
+      week_starts = [monday]
+      chart_range = monday.beginning_of_day..(monday + 6).end_of_day
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      check_ins_group = result[:groups].find { |g| g[:title] == 'Check-ins' }
+
+      expect(check_ins_group[:rows].count { |row| row[:separator] }).to eq(1)
+      data_rows = check_ins_group[:rows].reject { |row| row[:separator] }
+      expect(data_rows.size).to eq(5)
+      expect(data_rows[0][:key]).to eq('unique_teammates_check_in_finalized_this_week')
+      expect(data_rows[1][:key]).to eq('unique_teammates_check_in_finalized_all_time')
+
+      gruuv_keys = data_rows.last(3).map { |row| row[:key] }
+      expect(gruuv_keys).to contain_exactly(
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::HEALTHY),
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::AT_RISK),
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::NEEDS_ATTENTION)
+      )
+
+      separator_index = check_ins_group[:rows].index { |row| row[:separator] }
+      expect(separator_index).to eq(2)
+    end
+
     it 'includes a Gruuv Health group with population rows from EngagementHealth' do
       monday = Date.current.beginning_of_week(:monday)
       week_starts = [monday]

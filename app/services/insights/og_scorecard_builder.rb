@@ -9,17 +9,15 @@ module Insights
       @chart_range = chart_range
       @thresholds_by_key = thresholds_by_key
       @teammate_ids = teammate_ids
-      @check_in_data = OgScorecard::CheckInDataPreloader.new(company, teammate_ids: teammate_ids).load
     end
 
     def call
       active_by_week = active_teammate_counts_by_week
       publishers_this_week_by_week, observees_this_week_by_week = observation_this_week_counts_by_week
       publishers_by_week, observees_by_week = observation_all_time_counts_by_week
-      check_in_clarity = OgScorecard::CheckInClarityWeekCounts.call(
+      clarity_check_in_counts = OgScorecard::ClarityCheckInWeekCounts.call(
         company: company,
         week_starts: week_starts,
-        preloaded_data: @check_in_data,
         teammate_ids: teammate_ids
       )
       goal_aspiration_by_week = OgScorecard::GoalsActiveAssociationWeekCounts.call(
@@ -68,7 +66,7 @@ module Insights
               observees_this_week_by_week: observees_this_week_by_week,
               publishers_by_week: publishers_by_week,
               observees_by_week: observees_by_week,
-              check_in_clarity: check_in_clarity,
+              clarity_check_in_counts: clarity_check_in_counts,
               goal_aspiration_by_week: goal_aspiration_by_week,
               goal_assignment_by_week: goal_assignment_by_week,
               milestone_counts: milestone_counts,
@@ -93,16 +91,15 @@ module Insights
       teammate_id.present? && (teammate_ids.nil? || teammate_ids.include?(teammate_id))
     end
 
-    def counts_for(key, active_by_week:, publishers_this_week_by_week:, observees_this_week_by_week:, publishers_by_week:, observees_by_week:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:, gruuv_health_counts:)
+    def counts_for(key, active_by_week:, publishers_this_week_by_week:, observees_this_week_by_week:, publishers_by_week:, observees_by_week:, clarity_check_in_counts:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:, gruuv_health_counts:)
       case key
       when 'active_teammates' then active_by_week
       when 'unique_ogo_publishers_this_week' then publishers_this_week_by_week
       when 'unique_ogo_publishers' then publishers_by_week
       when 'unique_ogo_observees_this_week' then observees_this_week_by_week
       when 'unique_ogo_observees' then observees_by_week
-      when 'all_check_ins_clear' then check_in_clarity[:all_check_ins_clear]
-      when 'all_check_ins_blurred' then check_in_clarity[:all_check_ins_blurred]
-      when 'all_check_ins_obscured' then check_in_clarity[:all_check_ins_obscured]
+      when 'unique_teammates_check_in_finalized_this_week' then clarity_check_in_counts[:unique_teammates_check_in_finalized_this_week]
+      when 'unique_teammates_check_in_finalized_all_time' then clarity_check_in_counts[:unique_teammates_check_in_finalized_all_time]
       when 'active_goal_aspiration' then goal_aspiration_by_week
       when 'active_goal_assignment' then goal_assignment_by_week
       when 'unique_teammates_milestone_this_week' then milestone_counts[:unique_teammates_milestone_this_week]
