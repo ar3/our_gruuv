@@ -35,11 +35,17 @@ module EngagementHealth
     # --- OGO given / received (single signal: item and category match) ---
 
     def last_ogo_given
-      Observations::HealthScopes.given_scope(teammate, organization).order(published_at: :desc).first
+      last_observation_before(
+        Observations::HealthScopes.given_scope(teammate, organization),
+        :published_at
+      )
     end
 
     def last_ogo_received
-      Observations::HealthScopes.received_scope(teammate, organization).order(published_at: :desc).first
+      last_observation_before(
+        Observations::HealthScopes.received_scope(teammate, organization),
+        :published_at
+      )
     end
 
     def ogo_rows(category, last_observation, signal_name)
@@ -72,7 +78,9 @@ module EngagementHealth
     def goal_confidence_rows
       goals = goal_confidence_goals
       items = goals.map do |goal|
-        last_check_in = goal.goal_check_ins.max_by(&:updated_at)
+        last_check_in = goal.goal_check_ins
+          .select { |check_in| check_in.updated_at <= reference_time }
+          .max_by(&:updated_at)
         last_check_in_at = last_check_in&.updated_at
         status = Thresholds.status_for_last_event(
           last_check_in_at,
@@ -114,7 +122,11 @@ module EngagementHealth
     def goal_confidence_goals
       window_start = reference_time - Thresholds::COMPLETED_GOAL_WINDOW_DAYS.days
       Goal.where(owner_type: "CompanyTeammate", owner_id: teammate.id, deleted_at: nil)
-        .where("(completed_at IS NULL AND started_at IS NOT NULL) OR completed_at >= ?", window_start)
+        .where(
+          "(started_at IS NOT NULL AND started_at <= ? AND (completed_at IS NULL OR completed_at > ?)) " \
+          "OR (completed_at >= ? AND completed_at <= ?)",
+          reference_time, reference_time, window_start, reference_time
+        )
         .includes(:goal_check_ins)
         .order(:created_at)
     end
@@ -142,6 +154,7 @@ module EngagementHealth
 
       latest = PositionCheckIn.where(company_teammate: teammate)
         .closed
+        .where("official_check_in_completed_at <= ?", reference_time)
         .order(official_check_in_completed_at: :desc)
         .first
       [clarity_item("Position", position.id, position.display_name, latest)]
@@ -156,6 +169,7 @@ module EngagementHealth
       latest_by_assignment_id = AssignmentCheckIn
         .where(company_teammate: teammate, assignment_id: assignment_ids)
         .closed
+        .where("official_check_in_completed_at <= ?", reference_time)
         .order(official_check_in_completed_at: :desc)
         .group_by(&:assignment_id)
         .transform_values(&:first)
@@ -176,6 +190,7 @@ module EngagementHealth
       latest_by_aspiration_id = AspirationCheckIn
         .where(company_teammate: teammate, aspiration_id: aspirations.map(&:id))
         .closed
+        .where("official_check_in_completed_at <= ?", reference_time)
         .order(official_check_in_completed_at: :desc)
         .group_by(&:aspiration_id)
         .transform_values(&:first)
@@ -304,6 +319,13 @@ module EngagementHealth
     end
 
     # --- Shared helpers ---
+
+    def last_observation_before(scope, timestamp_column)
+      scope
+        .where(scope.arel_table[timestamp_column].lteq(reference_time))
+        .order(timestamp_column => :desc)
+        .first
+    end
 
     def goal_check_in_summary(check_in)
       summary = "Confidence check: #{check_in.confidence_percentage}%"

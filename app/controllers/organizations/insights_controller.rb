@@ -42,6 +42,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       thresholds_by_key: @thresholds_by_key,
       teammate_ids: filtered_teammate_ids
     ).call
+    @gruuv_health_backfill_enqueued = @scorecard[:gruuv_health_backfill_enqueued]
   end
 
   def update_og_scorecard_thresholds

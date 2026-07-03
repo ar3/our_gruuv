@@ -23,7 +23,8 @@ module EngagementHealth
     def days_since(time, reference_time: Time.current)
       return nil if time.blank?
 
-      (reference_time.to_date - time.to_date).to_i
+      days = (reference_time.to_date - time.to_date).to_i
+      days.negative? ? nil : days
     end
 
     # MECE by construction: Needs Attention when never or >= needs_attention_at

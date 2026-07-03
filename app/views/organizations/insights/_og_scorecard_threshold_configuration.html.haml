@@ -28,7 +28,7 @@
               - mode = thresh[:mode] || 'absolute'
               .card.mb-2
                 .card-body.py-2
-                  %label.form-label.small.fw-semibold.mb-2= entry.label
+                  %label.form-label.small.fw-semibold.mb-2= og_scorecard_metric_label({ label: entry.label, threshold_hint: entry.threshold_hint })
                   .row.g-2.align-items-end
                     .col-md-3
                       = label_tag "thresholds_#{entry.key}_yellow", 'Yellow threshold', class: 'form-label small mb-0'

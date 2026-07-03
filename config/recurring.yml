@@ -19,6 +19,11 @@ production:
     queue: default
     schedule: at 5am every day
 
+  snapshot_engagement_health_weekly_rollups:
+    class: SnapshotEngagementHealthWeeklyRollupsJob
+    queue: default
+    schedule: at 5:30am every day
+
   schedule_gsd_digests:
     class: Digest::ScheduleDigestsJob
     queue: default

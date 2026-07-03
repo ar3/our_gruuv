@@ -3,6 +3,7 @@
 module Insights
   module OgScorecard
     # Unique teammates who published or were named in a published OGO in the rolling 30 days ending each Sunday.
+    # Scoped to match Engagement Health OGO rules: non-journal, employed during the week, 30-day window inclusive.
     class ObservationsThirtyDayWeekCounts
       def self.call(company:, week_starts:, teammate_ids: nil)
         new(company: company, week_starts: week_starts, teammate_ids: teammate_ids).call
@@ -32,6 +33,9 @@ module Insights
       def counts_by_week(mode)
         week_starts.index_with do |week_start|
           window_start, window_end = thirty_day_window_for(week_start)
+          week_ending_on = week_start + 6.days
+          employed_ids = employed_teammate_ids_for_week(week_ending_on)
+
           ids = case mode
                 when :publishers
                   publisher_teammate_ids_in_window(window_start, window_end)
@@ -40,13 +44,19 @@ module Insights
                 else
                   []
                 end
-          ids.uniq.size
+          ids.select { |id| employed_ids.include?(id) }.uniq.size
         end
+      end
+
+      def employed_teammate_ids_for_week(week_ending_on)
+        EngagementHealth::WeeklyRollupTeammateScope
+          .active_teammate_ids(organization: company, week_ending_on: week_ending_on, teammate_ids: teammate_ids)
+          .to_set
       end
 
       def thirty_day_window_for(week_start)
         week_end_date = week_start + 6.days
-        window_start = (week_end_date - 29.days).in_time_zone.beginning_of_day
+        window_start = (week_end_date - 30.days).in_time_zone.beginning_of_day
         window_end = week_end_date.in_time_zone.end_of_day
         [window_start, window_end]
       end
@@ -87,6 +97,7 @@ module Insights
         @observation_scope ||= Observation
           .for_company(company)
           .not_soft_deleted
+          .not_journal
           .published
           .where(published_at: preload_range)
       end
@@ -94,7 +105,7 @@ module Insights
       def preload_range
         first_week = week_starts.min
         last_week = week_starts.max
-        range_start = (first_week + 6.days - 29.days).in_time_zone.beginning_of_day
+        range_start = (first_week + 6.days - 30.days).in_time_zone.beginning_of_day
         range_end = (last_week + 6.days).in_time_zone.end_of_day
         range_start..range_end
       end

@@ -54,6 +54,11 @@ module Insights
         week_starts: week_starts,
         teammate_ids: teammate_ids
       )
+      gruuv_health_result = OgScorecard::GruuvHealthWeekCounts.call(
+        company: company,
+        week_starts: week_starts,
+        teammate_ids: teammate_ids
+      )
 
       groups = OgScorecard::MetricRegistry.grouped.map do |group|
         rows = group[:entries].map do |entry|
@@ -68,14 +73,15 @@ module Insights
             goal_assignment_by_week: goal_assignment_by_week,
             milestone_counts: milestone_counts,
             goal_ability_by_week: goal_ability_by_week,
-            goals_counts: goals_counts
+            goals_counts: goals_counts,
+            gruuv_health_counts: gruuv_health_result.counts
           )
           build_row(entry, counts, active_by_week)
         end
         { title: group[:title], rows: rows }
       end
 
-      { groups: groups }
+      { groups: groups, gruuv_health_backfill_enqueued: gruuv_health_result.backfill_enqueued }
     end
 
     private
@@ -86,7 +92,7 @@ module Insights
       teammate_id.present? && (teammate_ids.nil? || teammate_ids.include?(teammate_id))
     end
 
-    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, observations_30_day_counts:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:)
+    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, observations_30_day_counts:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:, gruuv_health_counts:)
       case key
       when 'active_teammates' then active_by_week
       when 'unique_ogo_publishers' then publishers_by_week
@@ -107,7 +113,11 @@ module Insights
       when 'unique_teammates_goal_check_in_this_week' then goals_counts[:unique_teammates_goal_check_in_this_week]
       when 'unique_teammates_completed_goal_90_days' then goals_counts[:unique_teammates_completed_goal_90_days]
       else
-        week_starts.index_with { 0 }
+        if key.start_with?(OgScorecard::GruuvHealthWeekCounts::METRIC_KEY_PREFIX)
+          gruuv_health_counts[key] || week_starts.index_with { 0 }
+        else
+          week_starts.index_with { 0 }
+        end
       end
     end
 
@@ -128,6 +138,7 @@ module Insights
       {
         key: entry.key,
         label: entry.label,
+        threshold_hint: entry.threshold_hint,
         direction: entry.direction,
         supports_percent: entry.supports_percent,
         yellow: threshold[:yellow],

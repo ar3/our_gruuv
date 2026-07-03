@@ -53,6 +53,15 @@
         %strong Active teammates:
         teammates with a hire date still employed at the end of that week (Sunday).
       %li
+        %strong Gruuv Health rows
+        appear at the top of each section (Observations, Check-ins, Ability Milestones, Goals). Each row counts teammates whose category status is
+        %strong Healthy
+        ,
+        %strong At Risk
+        , or
+        %strong Needs Attention
+        using the same rules as the 1:1 Hub Overview; the parenthetical on each row states the threshold. Activity rows below measure weekly velocity separately.
+      %li
         %strong Observations:
         published OGOs bucketed by
         %code published_at
@@ -107,6 +116,11 @@
 %p.text-muted.small.mb-2
   Period: #{@chart_title_period}
 
+- if @gruuv_health_backfill_enqueued
+  .alert.alert-info.mb-3{role: "alert"}
+    %i.bi.bi-hourglass-split.me-2
+    Some Gruuv Health history is still being calculated in the background. Refresh this page in a minute or so for complete weekly counts.
+
 .og-scorecard-scope.og-scorecard--thresholds-hidden{data: { controller: 'og-scorecard-thresholds' }}
   .form-check.form-switch.mb-3
     %input#og_scorecard_show_thresholds.form-check-input{type: 'checkbox', role: 'switch', data: { 'og-scorecard-thresholds-target': 'toggle', action: 'change->og-scorecard-thresholds#thresholdsToggled' }}
@@ -132,7 +146,7 @@
           - group[:rows].each do |row|
             %tr
               %td.sticky-col
-                %span.og-scorecard-metric-cell= row[:label]
+                %span.og-scorecard-metric-cell= og_scorecard_metric_label(row)
               %td.text-end= row[:six_week_avg].nil? ? "—" : row[:six_week_avg]
               %td.text-end.og-scorecard-th-col= row[:yellow_display].presence || "—"
               %td.text-end.og-scorecard-th-col= row[:green_display].presence || "—"

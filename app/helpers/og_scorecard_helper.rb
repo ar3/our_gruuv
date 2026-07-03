@@ -41,4 +41,12 @@ module OgScorecardHelper
 
     labels.compact
   end
+
+  def og_scorecard_metric_label(row)
+    label = row[:label]
+    hint = row[:threshold_hint]
+    return label if hint.blank?
+
+    safe_join([label, content_tag(:span, " (#{hint})", class: 'text-muted')], '')
+  end
 end

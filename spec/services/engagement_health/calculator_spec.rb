@@ -54,6 +54,19 @@ RSpec.describe EngagementHealth::Calculator do
         EngagementHealth::Thresholds.status_for_last_event(nil, healthy_within: 30, needs_attention_at: 90)
       ).to eq(EngagementHealth::NEEDS_ATTENTION)
     end
+
+    it 'treats events after reference_time as never (negative days_since)' do
+      days = EngagementHealth::Thresholds.days_since(1.day.from_now, reference_time: Time.current)
+      expect(days).to be_nil
+      expect(
+        EngagementHealth::Thresholds.status_for_last_event(
+          1.day.from_now,
+          healthy_within: 30,
+          needs_attention_at: 90,
+          reference_time: Time.current
+        )
+      ).to eq(EngagementHealth::NEEDS_ATTENTION)
+    end
   end
 
   describe 'OGO given and received' do
@@ -84,6 +97,51 @@ RSpec.describe EngagementHealth::Calculator do
       expect(rows_for('ogo_received', level: 'item').first[:status]).to eq(EngagementHealth::HEALTHY)
       # Not authored by this teammate, so given is still off track/never
       expect(rows_for('ogo_given', level: 'item').first[:inputs]['never']).to be(true)
+    end
+  end
+
+  describe 'historical reference_time (point-in-time events)' do
+    let(:reference_time) { Time.zone.parse('2025-06-08 23:59:59') }
+
+    it 'ignores OGOs published after reference_time and rates by the prior event' do
+      old_obs = create(:observation, observer: person, company: organization)
+      old_obs.update!(published_at: reference_time - 120.days)
+
+      future_obs = create(:observation, observer: person, company: organization)
+      future_obs.update!(published_at: reference_time + 60.days)
+
+      item = rows_for('ogo_given', level: 'item').first
+      expect(item[:inputs]['last_event_id']).to eq(old_obs.id)
+      expect(item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+      expect(item[:inputs]['days_since_last_event']).to eq(120)
+    end
+
+    it 'is Needs Attention when the only OGO was published after reference_time' do
+      obs = create(:observation, observer: person, company: organization)
+      obs.update!(published_at: reference_time + 1.day)
+
+      item = rows_for('ogo_given', level: 'item').first
+      expect(item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+      expect(item[:inputs]['never']).to be(true)
+    end
+
+    it 'ignores goal check-ins updated after reference_time' do
+      goal = create_goal(:active, owner: teammate, creator: teammate, started_at: reference_time - 30.days)
+      old_check_in = create(:goal_check_in, goal: goal)
+      old_check_in.update_column(:updated_at, reference_time - 10.days)
+      new_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.from_now.to_date.beginning_of_week(:monday))
+      new_check_in.update_column(:updated_at, reference_time + 30.days)
+
+      item = rows_for('goal_confidence', level: 'item').first
+      expect(item[:inputs]['last_event_id']).to eq(old_check_in.id)
+      expect(item[:status]).to eq(EngagementHealth::HEALTHY)
+    end
+
+    it 'excludes goals started after reference_time from the item set' do
+      create_goal(:active, owner: teammate, creator: teammate, started_at: reference_time + 1.day)
+
+      expect(rows_for('goal_confidence', level: 'item')).to be_empty
+      expect(rollup_for('goal_confidence')[:inputs]['empty_reason']).to eq('never_started_or_completed_a_goal')
     end
   end
 

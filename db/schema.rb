@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_03_140000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_03_153000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -452,6 +452,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_03_140000) do
     t.index ["teammate_id", "category", "level"], name: "index_engagement_health_statuses_on_teammate_category_level"
     t.index ["teammate_id", "organization_id"], name: "index_engagement_health_statuses_on_teammate_and_organization"
     t.index ["teammate_id"], name: "index_engagement_health_statuses_on_teammate_id"
+  end
+
+  create_table "engagement_health_weekly_rollups", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.date "week_ending_on", null: false
+    t.string "category", null: false
+    t.string "status", null: false
+    t.datetime "computed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "week_ending_on"], name: "index_eh_weekly_rollups_on_organization_and_week"
+    t.index ["organization_id"], name: "index_engagement_health_weekly_rollups_on_organization_id"
+    t.index ["teammate_id", "organization_id", "week_ending_on", "category"], name: "index_eh_weekly_rollups_on_teammate_org_week_category", unique: true
+    t.index ["teammate_id"], name: "index_engagement_health_weekly_rollups_on_teammate_id"
   end
 
   create_table "enm_assessments", force: :cascade do |t|
@@ -1696,6 +1711,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_03_140000) do
   add_foreign_key "employment_tenures", "teammates", column: "manager_teammate_id"
   add_foreign_key "engagement_health_statuses", "organizations"
   add_foreign_key "engagement_health_statuses", "teammates"
+  add_foreign_key "engagement_health_weekly_rollups", "organizations"
+  add_foreign_key "engagement_health_weekly_rollups", "teammates"
   add_foreign_key "external_project_caches", "teammates", column: "last_synced_by_teammate_id"
   add_foreign_key "feedback_request_questions", "feedback_requests"
   add_foreign_key "feedback_request_responders", "feedback_requests"

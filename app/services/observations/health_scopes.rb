@@ -6,7 +6,7 @@ module Observations
     module_function
 
     def company_ids_for(organization)
-      organization.self_and_descendants.pluck(:id)
+      [organization.id]
     end
 
     def given_scope(teammate, organization)

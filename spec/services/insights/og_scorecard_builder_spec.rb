@@ -88,5 +88,40 @@ RSpec.describe Insights::OgScorecardBuilder do
 
       expect(row[:weekly_values]).to eq([1])
     end
+
+    it 'includes a Gruuv Health group with population rows from EngagementHealth' do
+      monday = Date.current.beginning_of_week(:monday)
+      week_starts = [monday]
+      chart_range = monday.beginning_of_day..(monday + 6).end_of_day
+
+      teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: "category",
+        category: EngagementHealth::CATEGORY_OGO_GIVEN,
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: {},
+        computed_at: Time.current
+      )
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      group = result[:groups].find { |g| g[:title] == 'Observations' }
+
+      expect(group).to be_present
+      gruuv_rows = group[:rows].select { |row| row[:key].start_with?('gruuv_health_') }
+      expect(gruuv_rows.size).to eq(6)
+      expect(result[:gruuv_health_backfill_enqueued]).to be(false)
+
+      ogo_given_needs_attention = group[:rows].find do |row|
+        row[:key] == Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(
+          EngagementHealth::CATEGORY_OGO_GIVEN,
+          EngagementHealth::NEEDS_ATTENTION
+        )
+      end
+      expect(ogo_given_needs_attention[:weekly_values]).to eq([1])
+      expect(ogo_given_needs_attention[:label]).to eq('Teammates that have Needs Attention OGOs Given')
+      expect(ogo_given_needs_attention[:threshold_hint]).to include('90 days ago or never')
+    end
   end
 end

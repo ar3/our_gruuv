@@ -77,5 +77,71 @@ RSpec.describe Insights::OgScorecard::ObservationsThirtyDayWeekCounts do
       expect(result[:unique_ogo_publishers_30_days][monday]).to eq(1)
       expect(result[:unique_ogo_observees_30_days][monday + 7]).to eq(1)
     end
+
+    it 'includes observations published exactly 30 days before Sunday' do
+      observer_person = create(:person)
+      observee_person = create(:person)
+      create(:teammate, organization: company, person: observer_person, first_employed_at: monday - 1.year)
+      observee = create(:teammate, organization: company, person: observee_person, first_employed_at: monday - 1.year)
+      sunday = monday + 6.days
+
+      publish_observation(
+        observer_person: observer_person,
+        observee_teammate: observee,
+        published_at: (sunday - 30.days).to_time + 12.hours
+      )
+
+      result = described_class.call(company: company, week_starts: week_starts)
+
+      expect(result[:unique_ogo_publishers_30_days][monday]).to eq(1)
+    end
+
+    it 'excludes journal (observer-only) observations' do
+      observer_person = create(:person)
+      observee_person = create(:person)
+      create(:teammate, organization: company, person: observer_person, first_employed_at: monday - 1.year)
+      observee = create(:teammate, organization: company, person: observee_person, first_employed_at: monday - 1.year)
+      sunday = monday + 6.days
+
+      obs = build(
+        :observation,
+        company: company,
+        observer: observer_person,
+        story: 'A' * 20,
+        privacy_level: :observer_only
+      )
+      obs.observees.destroy_all
+      obs.observees.build(teammate: observee)
+      obs.save!(validate: false)
+      obs.update_columns(published_at: sunday.to_time, observed_at: sunday.to_time)
+
+      result = described_class.call(company: company, week_starts: week_starts)
+
+      expect(result[:unique_ogo_publishers_30_days][monday]).to eq(0)
+    end
+
+    it 'excludes publishers who were not employed during the week' do
+      observer_person = create(:person)
+      observee_person = create(:person)
+      create(
+        :teammate,
+        organization: company,
+        person: observer_person,
+        first_employed_at: monday - 1.year,
+        last_terminated_at: monday - 1.day
+      )
+      observee = create(:teammate, organization: company, person: observee_person, first_employed_at: monday - 1.year)
+      sunday = monday + 6.days
+
+      publish_observation(
+        observer_person: observer_person,
+        observee_teammate: observee,
+        published_at: sunday.to_time
+      )
+
+      result = described_class.call(company: company, week_starts: week_starts)
+
+      expect(result[:unique_ogo_publishers_30_days][monday]).to eq(0)
+    end
   end
 end
