@@ -1,4 +1,5 @@
 - one_thing_active = local_assigns.fetch(:one_thing_active, false)
+- overview_active = local_assigns.fetch(:overview_active, false)
 - detailed_active = local_assigns.fetch(:detailed_active, false)
 - work_to_meet_active = local_assigns.fetch(:work_to_meet_active, false)
 - work_to_meet_summary = local_assigns[:work_to_meet_summary]
@@ -9,6 +10,11 @@
       organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
       class: "nav-link #{'active' if one_thing_active}",
       aria: { current: (one_thing_active ? "page" : nil) }
+  %li.nav-item
+    = link_to "Overview",
+      overview_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
+      class: "nav-link #{'active' if overview_active}",
+      aria: { current: (overview_active ? "page" : nil) }
   %li.nav-item
     = link_to "Detailed 1:1 Hub",
       detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),

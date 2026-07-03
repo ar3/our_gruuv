@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_12_113554) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_03_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -434,6 +434,24 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_12_113554) do
     t.index ["seat_id"], name: "index_employment_tenures_on_seat_id"
     t.index ["teammate_id"], name: "index_employment_tenures_on_teammate_id"
     t.check_constraint "official_position_rating IS NULL OR official_position_rating >= '-3'::integer AND official_position_rating <= 3", name: "valid_position_rating_range"
+  end
+
+  create_table "engagement_health_statuses", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.string "level", null: false
+    t.string "category", null: false
+    t.string "entity_type"
+    t.bigint "entity_id"
+    t.string "status", null: false
+    t.jsonb "inputs", default: {}, null: false
+    t.datetime "computed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_engagement_health_statuses_on_organization_id"
+    t.index ["teammate_id", "category", "level"], name: "index_engagement_health_statuses_on_teammate_category_level"
+    t.index ["teammate_id", "organization_id"], name: "index_engagement_health_statuses_on_teammate_and_organization"
+    t.index ["teammate_id"], name: "index_engagement_health_statuses_on_teammate_id"
   end
 
   create_table "enm_assessments", force: :cascade do |t|
@@ -1676,6 +1694,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_12_113554) do
   add_foreign_key "employment_tenures", "seats"
   add_foreign_key "employment_tenures", "teammates"
   add_foreign_key "employment_tenures", "teammates", column: "manager_teammate_id"
+  add_foreign_key "engagement_health_statuses", "organizations"
+  add_foreign_key "engagement_health_statuses", "teammates"
   add_foreign_key "external_project_caches", "teammates", column: "last_synced_by_teammate_id"
   add_foreign_key "feedback_request_questions", "feedback_requests"
   add_foreign_key "feedback_request_responders", "feedback_requests"

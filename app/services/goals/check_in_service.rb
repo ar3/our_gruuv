@@ -95,6 +95,8 @@ module Goals
         created_by: @current_person
       )
 
+      EngagementHealth.schedule_refresh_for_goal(@goal)
+
       Result.ok(
         check_in: check_in,
         goal: @goal,
@@ -156,6 +158,8 @@ module Goals
         if parent_goal.objective? && parent_goal.started_at.nil? && parent_goal.deleted_at.nil? && parent_goal.completed_at.nil?
           parent_goal.update!(started_at: Time.current)
         end
+
+        EngagementHealth.schedule_refresh_for_goal(parent_goal)
       end
     end
 

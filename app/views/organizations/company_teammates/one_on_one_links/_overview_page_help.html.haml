@@ -1,0 +1,53 @@
+-# Locals: casual_name
+- casual_name = local_assigns.fetch(:casual_name)
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    See #{casual_name}'s complete engagement health at a glance — five independent categories, each rated
+    %strong Healthy / At Risk / Needs Attention
+    — with every underlying input shown so any rating can be hand-verified against the rules. This page reads directly from the engagement-health cache, making it the place to verify the algorithm is correct.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 The status vocabulary
+  %p.mb-2
+    These statuses describe the freshness and coverage of engagement signals — deliberately not "on/off track", which already describes a goal's outcome trajectory.
+  %ul.mb-3
+    %li
+      %span.badge.text-bg-success.me-1 Healthy
+      — recent enough activity (see thresholds below).
+    %li
+      %span.badge.text-bg-warning.me-1 At Risk
+      — not Healthy and not Needs Attention; the in-between window.
+    %li
+      %span.badge.text-bg-danger.me-1 Needs Attention
+      — too long since the last relevant event, or it
+      %strong never
+      happened.
+
+  %h5.fw-semibold.mb-2 Categories and thresholds
+  %ul.mb-3
+    %li
+      %strong OGOs Given / OGOs Received
+      — one signal each: days since the last published OGO. Healthy ≤ 30 days; Needs Attention ≥ 90 days or never.
+    %li
+      %strong Goal Confidence
+      — one row per active goal, plus goals completed in the last 90 days. Rated on days since the last confidence check. Healthy ≤ 30 days; Needs Attention ≥ 90 days or never. Never having started or completed a goal is itself Needs Attention.
+    %li
+      %strong Required Clarity Check-Ins
+      — one row per required item (position, required or actively-tenured assignments, and aspirations). Rated on days since the last finalized check-in. Stricter window because these are required: Healthy ≤ 60 days; Needs Attention ≥ 90 days or never.
+    %li
+      %strong Milestones
+      — one row per ability required by the current position and active assignments. Healthy when the required milestone level is earned or an active goal targets the ability; At Risk when an earlier milestone is earned or only a draft goal is attached; Needs Attention when there is no milestone and no goal.
+
+  %h5.fw-semibold.mb-2 How category ratings roll up
+  %p.mb-3
+    %strong Worst status wins.
+    Any Needs Attention item makes its category Needs Attention; otherwise any At Risk item makes it At Risk. Each section's info icon lists exactly which items determined the rating. Categories with zero items are vacuously Healthy (except Goal Confidence, where zero goals means Needs Attention).
+
+  %h5.fw-semibold.mb-2 Recalculate now
+  %p.mb-0
+    Reruns the centralized calculation and compares it against the cache. Rows that differ are highlighted — statuses are updated immediately after every qualifying action and recalculated daily (they decay with time alone), so a mismatch here means one of those update paths has a bug worth reporting.

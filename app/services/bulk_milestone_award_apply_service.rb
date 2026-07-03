@@ -51,6 +51,7 @@ class BulkMilestoneAwardApplyService
       end
 
       CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
+      EngagementHealth.schedule_refresh_for(@teammate.id)
       Result.ok(:applied)
     end
   rescue ActiveRecord::RecordInvalid => e

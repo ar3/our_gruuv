@@ -116,7 +116,10 @@ class UpdateEmploymentTenureService
       if (termination_date_provided || needs_new_tenure) && teammate.is_a?(CompanyTeammate)
         CheckIns::ReconcileOpenPositionCheckInsService.call(teammate: teammate)
       end
-      
+
+      # Position/tenure changes redefine required check-in items and milestone requirements.
+      EngagementHealth.schedule_refresh_for(teammate.id) if teammate.is_a?(CompanyTeammate)
+
       Result.ok(updated_tenure)
     end
   rescue ActiveRecord::RecordInvalid => e

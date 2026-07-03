@@ -262,6 +262,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
         raise StandardError, sync_result.error
       end
 
+      EngagementHealth.schedule_refresh_for(@teammate.id)
+
       redirect_to organization_teammate_position_path(organization, @teammate),
                   notice: 'Employment was successfully started.'
     else

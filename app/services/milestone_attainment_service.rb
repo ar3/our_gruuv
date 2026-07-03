@@ -36,6 +36,8 @@ class MilestoneAttainmentService
         created_by: @certifying_teammate.person
       )
 
+      EngagementHealth.schedule_refresh_for(@teammate.id)
+
       Result.ok(milestone)
     end
   rescue ActiveRecord::RecordInvalid => e

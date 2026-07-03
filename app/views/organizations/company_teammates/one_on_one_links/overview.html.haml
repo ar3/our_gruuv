@@ -1,0 +1,151 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, "1:1 Hub — Overview")
+- overview_page_help_id = 'engagementHealthOverviewPageHelp'
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { overview_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
+               switch_aria_label: "Switch teammate for Overview"
+      %span= " - 1:1 Hub"
+      = render 'shared/page_help/header_info_button',
+               collapse_id: overview_page_help_id,
+               tooltip: 'Engagement health: every cached Healthy / At Risk / Needs Attention status with the inputs behind it. Click for details.'
+
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)) }, { label: "Overview", url: nil }])
+
+.collapse.mb-4{id: overview_page_help_id}
+  = render 'overview_page_help', casual_name: @teammate.person.casual_name
+
+= render "hub_tabs", one_thing_active: false, overview_active: true, detailed_active: false, work_to_meet_summary: @work_to_meet_summary
+
+:ruby
+  records = @engagement_health_records
+  mismatches = @engagement_health_mismatches
+  by_category = records.group_by(&:category)
+  rollups_by_category = by_category.transform_values { |rows| rows.find { |record| record.level == 'category' } }
+  computed_at = records.map(&:computed_at).max
+  casual_name = @teammate.person.casual_name
+
+.container-fluid
+  .d-flex.justify-content-between.align-items-center.mb-3.gap-3.flex-wrap
+    %h2.mb-0
+      %i.bi.bi-heart-pulse.me-2
+      Engagement Health
+    = button_to "Recalculate now",
+      recalculate_engagement_health_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
+      method: :post,
+      class: "btn btn-outline-primary btn-sm",
+      form_class: "d-inline"
+
+  .card.mb-4
+    .card-header
+      %h3.mb-0.h5
+        %i.bi.bi-heart-pulse.me-2
+        Gruuv Health
+    .card-body
+      .row.text-center.g-3
+        - EngagementHealth::CATEGORIES.each do |category|
+          - rollup = rollups_by_category[category]
+          .col-6.col-md
+            %a.text-decoration-none{href: "##{engagement_health_section_anchor(category)}"}
+              %div
+                - if rollup
+                  = engagement_health_status_badge(rollup.status, size: :lg)
+                - else
+                  %span.badge.text-bg-secondary.fs-6 No data
+              .small.text-muted.mt-1= engagement_health_category_label(category)
+      - if computed_at
+        .text-center.mt-3
+          %span.text-muted.small{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: format_time_in_user_timezone(computed_at)}
+            Computed #{time_ago_in_words(computed_at)} ago
+
+  - EngagementHealth::CATEGORIES.each do |category|
+    :ruby
+      category_records = by_category.fetch(category, [])
+      rollup = rollups_by_category[category]
+      items = engagement_health_sorted_items(category_records.select { |record| record.level == 'item' })
+      rollup_mismatch = rollup && mismatches[rollup.row_key]
+      section_help_id = "#{engagement_health_section_anchor(category)}-help"
+      determining_names = rollup ? Array(rollup.inputs['determined_by']).filter_map { |d| d['name'] } : []
+
+    .card.mb-4{id: engagement_health_section_anchor(category), class: (rollup_mismatch ? "border-warning" : nil)}
+      .card-header.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+        %h3.mb-0.d-flex.align-items-center.gap-2.flex-wrap
+          = engagement_health_category_label(category)
+          - if rollup
+            = engagement_health_status_badge(rollup.status, size: :lg)
+          - else
+            %span.badge.text-bg-secondary.fs-6 No data cached
+          %span.d-inline-flex.align-items-center{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "How this section is rated. Click for details."}
+            %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_help_id}", "aria-expanded" => "false", "aria-controls" => section_help_id, "aria-label" => "Show section explanation"}
+              %i.bi.bi-info-circle.fs-5.lh-1.align-middle
+        - if rollup_mismatch
+          %span.badge.text-bg-warning{title: "Cache had #{rollup_mismatch['cached_status'].to_s.humanize}, fresh calculation produced #{rollup_mismatch['fresh_status'].to_s.humanize}"}
+            %i.bi.bi-exclamation-triangle.me-1
+            Cache mismatch
+      .collapse{id: section_help_id}
+        .card-body.bg-body-tertiary.border-bottom.small
+          %p.mb-2= engagement_health_section_help(category, casual_name)
+          %p.mb-0
+            %strong Worst status wins:
+            the section rating equals the worst rating among its items.
+            - if determining_names.any?
+              This rating was determined by:
+              %strong= determining_names.join(", ")
+      .card-body
+        - if rollup.nil?
+          %p.text-muted.mb-0 No cached rows for this category. Use "Recalculate now" above.
+        - elsif items.empty? && rollup.inputs['item_count'].to_i.zero?
+          - case rollup.inputs['empty_reason']
+          - when 'never_started_or_completed_a_goal'
+            %p.mb-0
+              %span.badge.text-bg-danger.me-2 Never
+              #{casual_name} has never started or completed a goal — "never" always evaluates to
+              %strong Needs Attention.
+          - else
+            %p.mb-0
+              %span.badge.text-bg-secondary.me-2 0 items
+              No items exist in this category, so it is vacuously
+              %strong Healthy.
+        - else
+          .table-responsive
+            %table.table.table-sm.align-middle.mb-0
+              %thead
+                %tr
+                  %th Item
+                  %th Status
+                  - if category == EngagementHealth::CATEGORY_MILESTONES
+                    %th Required level
+                    %th Earned level
+                    %th Goals attached
+                    %th Why
+                  - else
+                    %th Last relevant event
+              %tbody
+                - items.each do |item|
+                  - mismatch = mismatches[item.row_key]
+                  %tr{class: (mismatch ? "table-warning" : nil)}
+                    %td= engagement_health_item_link(item)
+                    %td
+                      = engagement_health_status_badge(item.status)
+                      - if mismatch
+                        .small.text-warning-emphasis
+                          %i.bi.bi-exclamation-triangle.me-1
+                          Cache had #{mismatch['cached_status'].to_s.humanize}
+                    - if category == EngagementHealth::CATEGORY_MILESTONES
+                      %td= item.inputs['required_level']
+                      %td= item.inputs['earned_level']
+                      %td
+                        #{item.inputs['active_goal_count']} active,
+                        #{item.inputs['draft_goal_count']} draft
+                      %td.small= item.inputs['reason'].to_s.humanize
+                    - else
+                      %td= engagement_health_last_event_display(item)

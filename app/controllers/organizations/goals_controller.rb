@@ -352,6 +352,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     goal_params = params[:goal] || {}
     
     if @form.validate(goal_params) && @form.save
+      EngagementHealth.schedule_refresh_for_goal(@goal)
       redirect_to organization_goal_path(@organization, @goal, anchor: 'check-in'),
         return_text: 'Edit Goal / Add Child Goals',
         notice: 'Goal was successfully created.'
@@ -470,6 +471,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     goal_params = params[:goal] || {}
     
     if @form.validate(goal_params) && @form.save
+      EngagementHealth.schedule_refresh_for_goal(@goal)
       redirect_to organization_goal_path(@organization, @goal), 
                   notice: 'Goal was successfully updated.'
     else
@@ -481,6 +483,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     authorize @goal
     
     @goal.soft_delete!
+    EngagementHealth.schedule_refresh_for_goal(@goal)
     redirect_to organization_goals_path(@organization), 
                 notice: 'Goal was successfully deleted.'
   end
@@ -489,6 +492,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     authorize @goal, :update?
     
     @goal.update!(deleted_at: nil)
+    EngagementHealth.schedule_refresh_for_goal(@goal)
     redirect_to organization_goal_path(@organization, @goal),
                 notice: 'Goal was successfully restored.'
   end
@@ -506,6 +510,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
     
     if @goal.update(started_at: Time.current)
+      EngagementHealth.schedule_refresh_for_goal(@goal)
       redirect_path = params[:parent_goal_id].present? ? 
         organization_goal_path(@organization, params[:parent_goal_id]) : 
         organization_goal_path(@organization, @goal)
@@ -785,6 +790,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     )
     
     if check_in.save && @goal.update(completed_at: Time.current)
+      EngagementHealth.schedule_refresh_for_goal(@goal)
       redirect_url = params[:return_url] || organization_goal_path(@organization, @goal)
       redirect_to redirect_url,
                   notice: 'Goal marked as done successfully.'

@@ -7,6 +7,7 @@ module Observations
       def enqueue_for_observation(observation)
         teammate_ids_for(observation).each do |teammate_id|
           ObservationHealthCacheRefreshJob.perform_later(teammate_id)
+          EngagementHealth.schedule_refresh_for(teammate_id)
         end
       end
 

@@ -695,6 +695,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
 
     @observation.soft_delete!
+    Observations::HealthCacheRefresh.enqueue_for_observation(@observation)
     redirect_to organization_observation_path(organization, @observation), 
                 notice: 'Observation was successfully archived.'
   end
@@ -709,6 +710,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
     
     @observation.restore!
+    Observations::HealthCacheRefresh.enqueue_for_observation(@observation)
     redirect_to organization_observation_path(organization, @observation), 
                 notice: 'Observation was successfully restored.'
   end

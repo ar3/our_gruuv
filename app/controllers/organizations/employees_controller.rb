@@ -376,6 +376,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       )
       
       teammate = @person.teammates.find_by(organization: @organization)
+      EngagementHealth.schedule_refresh_for(teammate.id) if teammate
       redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employee was successfully created.'
     end
   rescue ActiveRecord::RecordInvalid

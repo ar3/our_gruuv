@@ -379,6 +379,8 @@ Rails.application.routes.draw do
       
       resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :create, :update] do
         member do
+          get :overview
+          post :recalculate_engagement_health
           get :detailed
           get :work_to_meet
           post 'sync', to: 'company_teammates/one_on_one_links#sync', as: :sync

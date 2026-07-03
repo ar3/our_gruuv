@@ -53,6 +53,7 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
 
       if ga.save
         success_count += 1
+        schedule_engagement_health_refresh_for_association(ga)
       else
         errors.concat(ga.errors.full_messages)
       end
@@ -103,6 +104,7 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
 
           if ga.save
             success_count += 1
+            schedule_engagement_health_refresh_for_association(ga)
           else
             errors.concat(ga.errors.full_messages)
           end
@@ -137,6 +139,7 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
     redirect_url = params[:return_url].presence || default_return_after_goal_association
 
     if @goal_association.destroy
+      schedule_engagement_health_refresh_for_association(@goal_association)
       redirect_to redirect_url, notice: 'Goal association was successfully removed.'
     else
       redirect_to redirect_url, alert: 'Failed to remove goal association.'
@@ -144,6 +147,13 @@ class Organizations::AssociableGoalAssociationsBaseController < Organizations::O
   end
 
   private
+
+  # Goals attached to abilities feed the milestones engagement-health category.
+  def schedule_engagement_health_refresh_for_association(goal_association)
+    return unless goal_association.associable_type == 'Ability'
+
+    EngagementHealth.schedule_refresh_for_goal(goal_association.goal)
+  end
 
   def associable
     @associable

@@ -69,6 +69,8 @@ module Organizations
         authorize ga, :create?
         if ga.save
           success_count += 1
+          # Goals attached to abilities feed the milestones engagement-health category.
+          EngagementHealth.schedule_refresh_for_goal(goal) if ga.associable_type == 'Ability'
         else
           errors.concat(ga.errors.full_messages)
         end

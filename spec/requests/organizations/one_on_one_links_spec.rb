@@ -492,6 +492,72 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     end
   end
 
+  describe "GET overview" do
+    it "renders the Overview tab with all five engagement health categories" do
+      get overview_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Engagement Health")
+      expect(response.body).to include("OGOs Given")
+      expect(response.body).to include("OGOs Received")
+      expect(response.body).to include("Goal Confidence")
+      expect(response.body).to include("Required Clarity Check-Ins")
+      expect(response.body).to include("Milestones")
+      expect(response.body).to include("Recalculate now")
+    end
+
+    it "computes and caches engagement health on first view" do
+      expect {
+        get overview_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      }.to change { EngagementHealthStatus.where(teammate: employee_teammate).count }.from(0)
+
+      expect(EngagementHealthStatus.where(teammate: employee_teammate, level: "category").count).to eq(5)
+    end
+
+    it "surfaces never edge cases as Needs Attention" do
+      get overview_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response.body).to include("Never")
+      expect(response.body).to include("never started or completed a goal")
+    end
+
+    it "requires authorization" do
+      unauthorized_person = create(:person)
+      unauthorized_teammate = create(:teammate, person: unauthorized_person, organization: organization)
+      unauthorized_teammate.update!(first_employed_at: 1.year.ago)
+      create(:employment_tenure, teammate: unauthorized_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      sign_in_as_teammate_for_request(unauthorized_person, organization)
+
+      get overview_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe "POST recalculate_engagement_health" do
+    it "recalculates the cache and redirects to the overview" do
+      post recalculate_engagement_health_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to redirect_to(overview_organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+      expect(EngagementHealthStatus.where(teammate: employee_teammate)).to be_present
+      follow_redirect!
+      expect(response.body).to include("Recalculated")
+    end
+
+    it "highlights rows where the cached status differs from the fresh calculation" do
+      # Prime the cache, then tamper with a cached status to simulate an update-path bug
+      EngagementHealth::Refresher.call(employee_teammate)
+      record = EngagementHealthStatus.items.for_category("ogo_given").find_by(teammate: employee_teammate)
+      record.update!(status: EngagementHealth::HEALTHY)
+
+      post recalculate_engagement_health_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      follow_redirect!
+
+      expect(response.body).to include("differed from the cache")
+      expect(response.body).to include("table-warning")
+    end
+  end
+
   describe "GET work_to_meet" do
     it "renders the Work to Meet tab with aspirational and assignment sections" do
       get work_to_meet_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)

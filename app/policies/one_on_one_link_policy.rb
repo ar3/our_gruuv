@@ -22,6 +22,14 @@ class OneOnOneLinkPolicy < ApplicationPolicy
     show?
   end
 
+  def overview?
+    show?
+  end
+
+  def recalculate_engagement_health?
+    show?
+  end
+
   def work_to_meet?
     show?
   end

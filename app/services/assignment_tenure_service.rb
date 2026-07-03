@@ -25,6 +25,10 @@ class AssignmentTenureService
     else
       handle_energy_change
     end
+
+    # Assignment tenure changes redefine required check-in items and milestone requirements.
+    teammate = person.teammates.find_by(organization: assignment.company)
+    EngagementHealth.schedule_refresh_for(teammate.id) if teammate
   end
 
   private

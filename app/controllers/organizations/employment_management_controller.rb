@@ -87,6 +87,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
     @employment_tenure.company = @organization
     
     if @employment_tenure.save
+      EngagementHealth.schedule_refresh_for(teammate.id)
       redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employment was successfully created.'
     else
       @potential_employees = load_potential_employees
@@ -115,7 +116,9 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
         employment_tenure: @employment_tenure,
         created_by: current_person
       )
-      
+
+      EngagementHealth.schedule_refresh_for(teammate.id)
+
       if params[:save_and_continue] == 'true'
         redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employee was successfully created.'
       else

@@ -85,7 +85,9 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
         )
 
         CheckIns::ReconcileOpenPositionCheckInsService.call(teammate: target_teammate)
-        
+
+        EngagementHealth.schedule_refresh_for(target_teammate.id)
+
         redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       end
     else
@@ -99,7 +101,9 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
           employment_tenure: @employment_tenure,
           created_by: current_person
         )
-        
+
+        EngagementHealth.schedule_refresh_for(target_teammate.id)
+
         redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       else
         @company = @employment_tenure.company

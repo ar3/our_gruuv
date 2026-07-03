@@ -9,8 +9,8 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :set_one_on_one_link
-  before_action :assign_viewable_teammates_for_one_on_one, only: %i[show detailed work_to_meet create update]
-  before_action :assign_managers_view_card_for_teammate, only: %i[show detailed work_to_meet create update]
+  before_action :assign_viewable_teammates_for_one_on_one, only: %i[show detailed work_to_meet overview create update]
+  before_action :assign_managers_view_card_for_teammate, only: %i[show detailed work_to_meet overview create update]
 
   def show
     load_hub_state
@@ -24,6 +24,51 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     authorize @one_on_one_link
     @person = @teammate.person
     @work_to_meet_summary = load_work_to_meet_summary
+  end
+
+  def overview
+    authorize @one_on_one_link
+    @person = @teammate.person
+    @work_to_meet_summary = load_work_to_meet_summary
+    @engagement_health_records = load_engagement_health_records
+    @engagement_health_mismatches = Array(flash[:engagement_health_mismatches])
+      .index_by { |mismatch| mismatch["key"] }
+  end
+
+  def recalculate_engagement_health
+    authorize @one_on_one_link
+
+    cached_statuses = EngagementHealthStatus
+      .where(teammate: @teammate, organization: organization)
+      .each_with_object({}) { |record, memo| memo[record.row_key] = record.status }
+
+    fresh_rows = EngagementHealth::Refresher.call(@teammate, organization)
+    fresh_statuses = fresh_rows.each_with_object({}) do |row, memo|
+      key = EngagementHealth.row_key(
+        category: row[:category], level: row[:level],
+        entity_type: row[:entity_type], entity_id: row[:entity_id]
+      )
+      memo[key] = row[:status]
+    end
+
+    # An empty cache means this is the first computation, not an update-path bug.
+    mismatches = if cached_statuses.empty?
+      []
+    else
+      (cached_statuses.keys | fresh_statuses.keys).filter_map do |key|
+        next if cached_statuses[key] == fresh_statuses[key]
+
+        { "key" => key, "cached_status" => cached_statuses[key], "fresh_status" => fresh_statuses[key] }
+      end
+    end
+
+    flash[:engagement_health_mismatches] = mismatches
+    notice = if mismatches.empty?
+      "Recalculated. The fresh calculation matches the cached statuses."
+    else
+      "Recalculated. #{mismatches.size} #{'row'.pluralize(mismatches.size)} differed from the cache (highlighted below) — this indicates a bug in an update path."
+    end
+    redirect_to overview_organization_company_teammate_one_on_one_link_path(organization, @teammate), notice: notice
   end
 
   def create
@@ -154,6 +199,15 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     load_teammate_growth_for_one_on_one_hub
     load_goals_confidence_chart_data
     load_one_thing_priority_carousel
+  end
+
+  def load_engagement_health_records
+    records = EngagementHealthStatus.where(teammate: @teammate, organization: organization).to_a
+    if records.empty?
+      EngagementHealth::Refresher.call(@teammate, organization)
+      records = EngagementHealthStatus.where(teammate: @teammate, organization: organization).to_a
+    end
+    records
   end
 
   def load_work_to_meet_summary

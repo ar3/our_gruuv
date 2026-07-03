@@ -475,7 +475,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         )
       end
     end
-    
+
+    EngagementHealth.schedule_refresh_for(@teammate.id) if new_assignment_ids.any?
+
     redirect_to organization_company_teammate_check_ins_path(organization, @teammate), notice: 'Assignments updated successfully.'
   end
 
@@ -670,6 +672,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     end
     
     if changes_made
+      EngagementHealth.schedule_refresh_for(@teammate.id)
       redirect_to complete_picture_organization_company_teammate_path(organization, @teammate),
                   notice: 'Assignment tenures updated successfully.'
     else
@@ -756,6 +759,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       snapshot.effective_date = Date.current
       snapshot.save!
     end
+
+    EngagementHealth.schedule_refresh_for(@teammate.id)
 
     redirect_to internal_organization_company_teammate_path(organization, @teammate),
                 notice: "Created #{missing.size} assignment tenure(s). Recorded as Assignment tenure check-in bypass."
