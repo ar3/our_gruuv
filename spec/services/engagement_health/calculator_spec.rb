@@ -127,6 +127,7 @@ RSpec.describe EngagementHealth::Calculator do
 
     it 'ignores goal check-ins updated after reference_time' do
       goal = create_goal(:active, owner: teammate, creator: teammate, started_at: reference_time - 30.days)
+      goal.update_columns(created_at: reference_time - 40.days)
       old_check_in = create(:goal_check_in, goal: goal)
       old_check_in.update_column(:updated_at, reference_time - 10.days)
       new_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.from_now.to_date.beginning_of_week(:monday))
@@ -137,11 +138,128 @@ RSpec.describe EngagementHealth::Calculator do
       expect(item[:status]).to eq(EngagementHealth::HEALTHY)
     end
 
+    it 'excludes goals created after reference_time from the item set' do
+      goal = create_goal(:active, owner: teammate, creator: teammate, started_at: reference_time - 10.days)
+      goal.update_columns(created_at: reference_time + 1.day)
+
+      expect(rows_for('goal_confidence', level: 'item')).to be_empty
+    end
+
     it 'excludes goals started after reference_time from the item set' do
-      create_goal(:active, owner: teammate, creator: teammate, started_at: reference_time + 1.day)
+      goal = create_goal(:active, owner: teammate, creator: teammate, started_at: reference_time + 1.day)
+      goal.update_columns(created_at: reference_time - 10.days)
 
       expect(rows_for('goal_confidence', level: 'item')).to be_empty
       expect(rollup_for('goal_confidence')[:inputs]['empty_reason']).to eq('never_started_or_completed_a_goal')
+    end
+
+    it 'ignores OGOs received published after reference_time' do
+      observation = create(:observation, company: organization)
+      observation.observees.destroy_all
+      create(:observee, observation: observation, company_teammate: teammate)
+      observation.update!(published_at: reference_time + 10.days)
+
+      item = rows_for('ogo_received', level: 'item').first
+      expect(item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+      expect(item[:inputs]['never']).to be(true)
+    end
+
+    context 'required clarity' do
+      let!(:employment_tenure) do
+        create(
+          :employment_tenure,
+          teammate: teammate,
+          company: organization,
+          started_at: reference_time - 1.year,
+          ended_at: nil
+        )
+      end
+      let!(:aspiration) { create(:aspiration, company: organization, created_at: reference_time - 1.year) }
+
+      it 'ignores position check-ins finalized after reference_time' do
+        check_in = create(:position_check_in, :closed, teammate: teammate, employment_tenure: employment_tenure)
+        check_in.update_column(:official_check_in_completed_at, reference_time + 5.days)
+
+        position_item = rows_for('required_clarity', level: 'item').find { |item| item[:entity_type] == 'Position' }
+        expect(position_item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+        expect(position_item[:inputs]['never']).to be(true)
+      end
+
+      it 'omits position requirements when the teammate had no employment tenure at reference_time' do
+        employment_tenure.update!(ended_at: reference_time - 10.days)
+
+        items = rows_for('required_clarity', level: 'item')
+        expect(items.map { |item| item[:entity_type] }).not_to include('Position')
+        expect(items.map { |item| item[:entity_type] }).to include('Aspiration')
+      end
+
+      it 'excludes aspirations created after reference_time' do
+        aspiration.update_column(:created_at, reference_time + 1.day)
+
+        aspiration_items = rows_for('required_clarity', level: 'item').select { |item| item[:entity_type] == 'Aspiration' }
+        expect(aspiration_items).to be_empty
+      end
+    end
+
+    context 'milestones' do
+      let!(:employment_tenure) do
+        create(
+          :employment_tenure,
+          teammate: teammate,
+          company: organization,
+          started_at: reference_time - 1.year,
+          ended_at: nil
+        )
+      end
+
+      def require_ability(level: 2)
+        ability = create(:ability, company: organization)
+        create(:position_ability, position: employment_tenure.position, ability: ability, milestone_level: level)
+        ability
+      end
+
+      it 'ignores milestones attained after reference_time' do
+        ability = require_ability(level: 2)
+        create(
+          :teammate_milestone,
+          company_teammate: teammate,
+          ability: ability,
+          milestone_level: 2,
+          attained_at: reference_time + 5.days
+        )
+
+        item = rows_for('milestones', level: 'item').find { |row| row[:entity_id] == ability.id }
+        expect(item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+      end
+
+      it 'does not count goals created after reference_time when evaluating attached goals' do
+        ability = require_ability
+        goal = create_goal(:active, owner: teammate, creator: teammate)
+        goal.update_columns(created_at: reference_time + 1.day, started_at: reference_time + 2.days)
+        create(:goal_association, goal: goal, associable: ability)
+
+        item = rows_for('milestones', level: 'item').find { |row| row[:entity_id] == ability.id }
+        expect(item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+      end
+
+      it 'treats goals not yet started at reference_time as draft attachments' do
+        ability = require_ability
+        goal = create_goal(:draft, owner: teammate, creator: teammate)
+        goal.update_columns(created_at: reference_time - 10.days, started_at: nil)
+        create(:goal_association, goal: goal, associable: ability)
+
+        item = rows_for('milestones', level: 'item').find { |row| row[:entity_id] == ability.id }
+        expect(item[:status]).to eq(EngagementHealth::AT_RISK)
+        expect(item[:inputs]['reason']).to eq('draft_goal_attached')
+      end
+
+      it 'is vacuously Healthy when the teammate had no employment tenure at reference_time' do
+        employment_tenure.update!(ended_at: reference_time - 10.days)
+        require_ability
+
+        expect(rows_for('milestones', level: 'item')).to be_empty
+        expect(rollup_for('milestones')[:status]).to eq(EngagementHealth::HEALTHY)
+      end
     end
   end
 

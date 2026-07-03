@@ -90,7 +90,7 @@ module EngagementHealth
         )
         inputs = {
           "name" => goal.title,
-          "goal_state" => goal.completed_at.present? ? "completed" : "active",
+          "goal_state" => goal_state_at_reference_time(goal),
           "completed_at" => goal.completed_at&.iso8601,
           "last_event_at" => last_check_in_at&.iso8601,
           "days_since_last_event" => Thresholds.days_since(last_check_in_at, reference_time: reference_time),
@@ -121,7 +121,10 @@ module EngagementHealth
     # the window; completed goals then drop out. Drafts are not items.
     def goal_confidence_goals
       window_start = reference_time - Thresholds::COMPLETED_GOAL_WINDOW_DAYS.days
-      Goal.where(owner_type: "CompanyTeammate", owner_id: teammate.id, deleted_at: nil)
+      Goal.unscoped
+        .where(owner_type: "CompanyTeammate", owner_id: teammate.id)
+        .where("goals.created_at <= ?", reference_time)
+        .where("goals.deleted_at IS NULL OR goals.deleted_at > ?", reference_time)
         .where(
           "(started_at IS NOT NULL AND started_at <= ? AND (completed_at IS NULL OR completed_at > ?)) " \
           "OR (completed_at >= ? AND completed_at <= ?)",
@@ -132,9 +135,9 @@ module EngagementHealth
     end
 
     # --- Required clarity check-ins ---
-    # Item set matches the required_check_ins definition used by check-in
-    # health: current position, assignments required by the position or
-    # actively tenured, and all aspirations in the org hierarchy.
+    # Item set matches required_check_ins at reference_time: position from the
+    # employment tenure active then, assignments from that position plus active
+    # assignment tenures, and aspirations that existed in the org.
 
     def required_clarity_rows
       items = required_position_items + required_assignment_items + required_aspiration_items
@@ -149,7 +152,7 @@ module EngagementHealth
     end
 
     def required_position_items
-      position = active_position
+      position = position_at_reference_time
       return [] unless position
 
       latest = PositionCheckIn.where(company_teammate: teammate)
@@ -161,8 +164,9 @@ module EngagementHealth
     end
 
     def required_assignment_items
-      required_position_assignment_ids = active_position ? active_position.required_assignments.pluck(:assignment_id) : []
-      assignment_ids = (required_position_assignment_ids + active_assignment_tenure_assignment_ids).uniq
+      position = position_at_reference_time
+      required_position_assignment_ids = position ? position.required_assignments.pluck(:assignment_id) : []
+      assignment_ids = (required_position_assignment_ids + assignment_tenure_assignment_ids_at_reference_time).uniq
       return [] if assignment_ids.empty?
 
       assignments_by_id = Assignment.where(id: assignment_ids).index_by(&:id)
@@ -184,7 +188,7 @@ module EngagementHealth
     end
 
     def required_aspiration_items
-      aspirations = Aspiration.within_hierarchy(organization).to_a
+      aspirations = ReferenceTime.aspirations_for(organization: organization, reference_time: reference_time).to_a
       return [] if aspirations.empty?
 
       latest_by_aspiration_id = AspirationCheckIn
@@ -226,11 +230,9 @@ module EngagementHealth
     end
 
     # --- Milestones ---
-    # Items: abilities required by the current position (direct + required
-    # assignments) and by active assignment tenures, at the max required level.
-    # Healthy: earned >= required OR an active teammate-owned goal is attached.
-    # At Risk: some earned level below required OR a draft goal attached.
-    # Needs Attention: no earned milestone and no active/draft goal attached.
+    # Items: abilities required by the position and assignment tenures active at
+    # reference_time. Earned milestones and attached goals are also evaluated as
+    # of reference_time.
 
     def milestone_rows
       required_levels = milestone_required_levels
@@ -244,6 +246,7 @@ module EngagementHealth
       abilities_by_id = Ability.where(id: required_levels.keys).index_by(&:id)
       earned_levels = TeammateMilestone
         .where(company_teammate: teammate, ability_id: required_levels.keys)
+        .where("attained_at <= ?", reference_time)
         .group(:ability_id)
         .maximum(:milestone_level)
       goal_counts = ability_goal_counts(required_levels.keys)
@@ -280,13 +283,14 @@ module EngagementHealth
 
     def milestone_required_levels
       required_levels = Hash.new(0)
+      position = position_at_reference_time
 
-      if active_position
-        active_position.position_abilities.each do |position_ability|
+      if position
+        position.position_abilities.each do |position_ability|
           ability_id = position_ability.ability_id
           required_levels[ability_id] = [required_levels[ability_id], position_ability.milestone_level.to_i].max
         end
-        active_position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+        position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
           position_assignment.assignment&.assignment_abilities&.each do |assignment_ability|
             ability_id = assignment_ability.ability_id
             required_levels[ability_id] = [required_levels[ability_id], assignment_ability.milestone_level.to_i].max
@@ -294,7 +298,7 @@ module EngagementHealth
         end
       end
 
-      active_assignment_tenures.includes(assignment: :assignment_abilities).each do |tenure|
+      assignment_tenures_at_reference_time.includes(assignment: :assignment_abilities).each do |tenure|
         tenure.assignment.assignment_abilities.each do |assignment_ability|
           ability_id = assignment_ability.ability_id
           required_levels[ability_id] = [required_levels[ability_id], assignment_ability.milestone_level.to_i].max
@@ -307,14 +311,21 @@ module EngagementHealth
     # Only goals owned by this teammate count as attached; completed and
     # soft-deleted goals never count.
     def ability_goal_counts(ability_ids)
-      rows = Goal.joins(:goal_associations)
-        .where(owner_type: "CompanyTeammate", owner_id: teammate.id, deleted_at: nil, completed_at: nil)
+      rows = Goal.unscoped.joins(:goal_associations)
+        .where(owner_type: "CompanyTeammate", owner_id: teammate.id)
         .where(goal_associations: { associable_type: "Ability", associable_id: ability_ids })
+        .where("goals.created_at <= ?", reference_time)
+        .where("goals.deleted_at IS NULL OR goals.deleted_at > ?", reference_time)
+        .where("goals.completed_at IS NULL OR goals.completed_at > ?", reference_time)
         .pluck("goal_associations.associable_id", :started_at)
 
       rows.each_with_object({}) do |(ability_id, started_at), counts|
         counts[ability_id] ||= { active: 0, draft: 0 }
-        counts[ability_id][started_at.present? ? :active : :draft] += 1
+        if started_at.present? && started_at <= reference_time
+          counts[ability_id][:active] += 1
+        else
+          counts[ability_id][:draft] += 1
+        end
       end
     end
 
@@ -333,21 +344,36 @@ module EngagementHealth
       reason.present? ? "#{summary} — #{reason.truncate(60)}" : summary
     end
 
-    def active_position
-      return @active_position if defined?(@active_position)
-
-      @active_position = teammate.active_employment_tenure&.position
+    def goal_state_at_reference_time(goal)
+      if goal.completed_at.present? && goal.completed_at <= reference_time
+        "completed"
+      else
+        "active"
+      end
     end
 
-    def active_assignment_tenure_assignment_ids
-      active_assignment_tenures.distinct.pluck(:assignment_id)
+    def position_at_reference_time
+      return @position_at_reference_time if defined?(@position_at_reference_time)
+
+      @position_at_reference_time = ReferenceTime.employment_tenure_for(
+        teammate: teammate,
+        organization: organization,
+        reference_time: reference_time
+      )&.position
     end
 
-    def active_assignment_tenures
-      teammate.assignment_tenures
-        .active
-        .joins(:assignment)
-        .where(assignments: { company: organization.self_and_descendants })
+    def assignment_tenures_at_reference_time
+      return @assignment_tenures_at_reference_time if defined?(@assignment_tenures_at_reference_time)
+
+      @assignment_tenures_at_reference_time = ReferenceTime.assignment_tenures_for(
+        teammate: teammate,
+        organization: organization,
+        reference_time: reference_time
+      )
+    end
+
+    def assignment_tenure_assignment_ids_at_reference_time
+      assignment_tenures_at_reference_time.distinct.pluck(:assignment_id)
     end
 
     def item_row(category, entity_type, entity_id, status, inputs)

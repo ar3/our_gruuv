@@ -51,4 +51,27 @@ RSpec.describe EngagementHealth::WeeklyRollupSnapshotter do
     )
     expect(rollup.status).to eq(EngagementHealth::HEALTHY)
   end
+
+  it 'snapshots required_clarity using only check-ins on or before that Sunday' do
+    teammate = create(:company_teammate, organization: organization, first_employed_at: week_ending_on - 1.year)
+    tenure = create(
+      :employment_tenure,
+      teammate: teammate,
+      company: organization,
+      started_at: week_ending_on - 1.year,
+      ended_at: nil
+    )
+    check_in = create(:position_check_in, :closed, teammate: teammate, employment_tenure: tenure)
+    check_in.update_column(:official_check_in_completed_at, week_ending_on.in_time_zone.end_of_day + 5.days)
+
+    described_class.call(organization: organization, week_ending_on: week_ending_on)
+
+    rollup = EngagementHealthWeeklyRollup.find_by!(
+      teammate: teammate,
+      organization: organization,
+      week_ending_on: week_ending_on,
+      category: EngagementHealth::CATEGORY_REQUIRED_CLARITY
+    )
+    expect(rollup.status).to eq(EngagementHealth::NEEDS_ATTENTION)
+  end
 end
