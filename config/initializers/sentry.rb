@@ -1,8 +1,8 @@
 Sentry.init do |config|
   config.dsn = ENV['SENTRY_DSN'] || 'https://26aee5ad1168a832412c32f9c3d646a1@o83164.ingest.us.sentry.io/4509712954884096'
   
-  # Only send errors in production and staging
-#   config.enabled_environments = %w[production staging]
+  # Only send errors in production and development (exclude test/CI)
+  config.enabled_environments = %w[production development]
   
   # Set the environment
   config.environment = Rails.env
