@@ -55,6 +55,11 @@ gem "thruster", require: false
 gem "sentry-ruby", "~> 5.0"
 gem "sentry-rails", "~> 5.0"
 
+# APM: production monitoring (free tier) + DevTrace in local development.
+# Activates only when SCOUT_KEY is set; see config/scout_apm.yml
+gem "scout_apm"
+gem 'scout_apm_logging'
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri mswin mingw x64_mingw ], require: "debug/prelude"

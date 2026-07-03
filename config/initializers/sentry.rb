@@ -14,8 +14,31 @@ Sentry.init do |config|
   config.breadcrumbs_logger = [:active_support_logger, :http_logger]
   config.send_default_pii = true
   
-  # Configure sampling (only send a percentage of errors in high-traffic environments)
-  config.traces_sample_rate = 0.1
+  # Trace sampling: 0.5 gives good p95 accuracy at current traffic while staying
+  # well inside the 5M span/month quota. Noisy low-value transactions are
+  # downsampled further in before_send_transaction below.
+  config.traces_sample_rate = 0.5
+
+  # Transactions that flood the quota without providing insight:
+  # - MissingResourcesController#show: the 404 catch-all, mostly bot traffic
+  #   (~40K requests per 14 days, more than all real pages combined)
+  # - health checks, PWA manifest, and high-frequency recurring jobs
+  # Keep 2% of them for baseline visibility instead of dropping entirely.
+  noisy_transactions = [
+    'MissingResourcesController#show',
+    'Rails::HealthController#show',
+    'Rails::PwaController#manifest',
+    'CheckInHealthCacheProcessSchedulesJob',
+    'PageVisitJob'
+  ].freeze
+
+  config.before_send_transaction = lambda do |event, _hint|
+    name = event.transaction.to_s
+    if noisy_transactions.include?(name) || name.start_with?('HealthcheckController')
+      next nil unless rand < 0.02
+    end
+    event
+  end
   
   # Configure error sampling - capture 100% of exceptions
   config.sample_rate = 1.0
