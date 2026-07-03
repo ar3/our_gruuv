@@ -196,6 +196,35 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(row[:weekly_values]).to eq([1])
     end
 
+    it 'includes activity rows, teammate rows, separators, and Gruuv Health rows in the Ability Milestones section' do
+      monday = Date.current.beginning_of_week(:monday)
+      week_starts = [monday]
+      chart_range = monday.beginning_of_day..(monday + 6).end_of_day
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      milestones_group = result[:groups].find { |g| g[:title] == 'Ability Milestones' }
+
+      expect(milestones_group[:rows].count { |row| row[:separator] }).to eq(2)
+      data_rows = milestones_group[:rows].reject { |row| row[:separator] }
+      expect(data_rows.size).to eq(9)
+      expect(data_rows[0][:key]).to eq('milestones_earned_this_week')
+      expect(data_rows[1][:key]).to eq('milestones_earned_90_days')
+      expect(data_rows[2][:key]).to eq('milestones_earned_all_time')
+      expect(data_rows[3][:key]).to eq('unique_teammates_milestone_this_week')
+      expect(data_rows[4][:key]).to eq('unique_teammates_milestone_90_days')
+      expect(data_rows[5][:key]).to eq('unique_teammates_milestone_all_time')
+
+      gruuv_keys = data_rows.last(3).map { |row| row[:key] }
+      expect(gruuv_keys).to contain_exactly(
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_MILESTONES, EngagementHealth::HEALTHY),
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_MILESTONES, EngagementHealth::AT_RISK),
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_MILESTONES, EngagementHealth::NEEDS_ATTENTION)
+      )
+
+      separator_indices = milestones_group[:rows].each_index.select { |i| milestones_group[:rows][i][:separator] }
+      expect(separator_indices).to eq([3, 7])
+    end
+
     it 'includes activity rows, a separator, and Gruuv Health rows in the Check-ins section' do
       monday = Date.current.beginning_of_week(:monday)
       week_starts = [monday]

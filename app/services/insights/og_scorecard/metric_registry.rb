@@ -186,26 +186,34 @@ module Insights
           metric_name: 'Required Clarity',
           group: 'Check-ins'
         ) +
-        gruuv_health_entries(
-          category: EngagementHealth::CATEGORY_MILESTONES,
-          metric_name: 'Milestones',
-          group: 'Ability Milestones'
-        ) +
         [
           metric(
-            key: 'unique_teammates_milestone_this_week',
-            label: 'Teammates with a milestone earned this week ' \
-                   '(ability milestone attained in that Mon–Sun week, for abilities in this company)',
+            key: 'milestones_earned_this_week',
+            label: 'Milestones earned this week',
             direction: :more,
-            supports_percent: true,
+            supports_percent: false,
             group: 'Ability Milestones'
           ),
           metric(
-            key: 'milestones_earned_this_week',
-            label: 'Number of milestones earned this week ' \
-                   '(count of ability milestone records with attained_at in that Mon–Sun week)',
+            key: 'milestones_earned_90_days',
+            label: 'Milestones earned within the past 90 days',
             direction: :more,
             supports_percent: false,
+            group: 'Ability Milestones'
+          ),
+          metric(
+            key: 'milestones_earned_all_time',
+            label: 'Milestones earned all-time',
+            direction: :more,
+            supports_percent: false,
+            group: 'Ability Milestones'
+          ),
+          separator(group: 'Ability Milestones'),
+          metric(
+            key: 'unique_teammates_milestone_this_week',
+            label: 'Teammates with a milestone earned this week',
+            direction: :more,
+            supports_percent: true,
             group: 'Ability Milestones'
           ),
           metric(
@@ -216,13 +224,19 @@ module Insights
             group: 'Ability Milestones'
           ),
           metric(
-            key: 'milestones_earned_90_days',
-            label: 'Milestones earned within the past 90 days',
+            key: 'unique_teammates_milestone_all_time',
+            label: 'Teammates with a milestone earned all-time',
             direction: :more,
-            supports_percent: false,
+            supports_percent: true,
             group: 'Ability Milestones'
-          )
+          ),
+          separator(group: 'Ability Milestones')
         ] +
+        gruuv_health_entries(
+          category: EngagementHealth::CATEGORY_MILESTONES,
+          metric_name: 'Milestones',
+          group: 'Ability Milestones'
+        ) +
         gruuv_health_entries(
           category: EngagementHealth::CATEGORY_GOAL_CONFIDENCE,
           metric_name: 'Goal Confidence',

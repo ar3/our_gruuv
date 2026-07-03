@@ -188,7 +188,7 @@ en:
     og_scorecard_clarity_check_ins_label: "Clarity check-ins"
     og_scorecard_clarity_check_ins_help: "“This week” counts unique teammates who finalized a position, assignment, or aspirational value clarity check-in during that Mon–Sun week. All-time counts teammates employed during that week who had ever finalized one on or before that Sunday. Gruuv Health Required Clarity rows below use Healthy ≤ 60 days, At Risk 61–89 days, Needs Attention ≥ 90 days or never."
     og_scorecard_ability_milestones_label: "Ability Milestones"
-    og_scorecard_ability_milestones_help: "milestone attained_at in the Mon–Sun week, or in the rolling 90 calendar days ending that Sunday."
+    og_scorecard_ability_milestones_help: "Milestone totals count ability milestone records for this company. “This week” and 90-day rows use attained_at in that Mon–Sun week or the rolling 90 calendar days ending that Sunday; all-time totals count every record on or before that Sunday. Teammate rows count unique people employed during that week who earned at least one such milestone in the same window. Gruuv Health Milestones rows below use the same rules as the 1:1 Hub Overview."
     og_scorecard_goals_label: "Goals"
     og_scorecard_goals_help: "active owned goals as of each Sunday, including rows for goals linked to an Aspirational Value, Assignment, or Ability; goal check-ins bucketed by GoalCheckIn created_at in that Mon–Sun week; completed goals use completed_at in the rolling 90 calendar days ending that Sunday (owner only)."
     priority_clarity_ready_for_review_title: "Are there clarity check-ins ready for review together?"

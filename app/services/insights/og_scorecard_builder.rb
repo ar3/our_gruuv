@@ -102,10 +102,12 @@ module Insights
       when 'unique_teammates_check_in_finalized_all_time' then clarity_check_in_counts[:unique_teammates_check_in_finalized_all_time]
       when 'active_goal_aspiration' then goal_aspiration_by_week
       when 'active_goal_assignment' then goal_assignment_by_week
-      when 'unique_teammates_milestone_this_week' then milestone_counts[:unique_teammates_milestone_this_week]
       when 'milestones_earned_this_week' then milestone_counts[:milestones_earned_this_week]
-      when 'unique_teammates_milestone_90_days' then milestone_counts[:unique_teammates_milestone_90_days]
       when 'milestones_earned_90_days' then milestone_counts[:milestones_earned_90_days]
+      when 'milestones_earned_all_time' then milestone_counts[:milestones_earned_all_time]
+      when 'unique_teammates_milestone_this_week' then milestone_counts[:unique_teammates_milestone_this_week]
+      when 'unique_teammates_milestone_90_days' then milestone_counts[:unique_teammates_milestone_90_days]
+      when 'unique_teammates_milestone_all_time' then milestone_counts[:unique_teammates_milestone_all_time]
       when 'active_goal_ability' then goal_ability_by_week
       when 'unique_teammates_active_goal' then goals_counts[:unique_teammates_active_goal]
       when 'unique_teammates_goal_check_in_this_week' then goals_counts[:unique_teammates_goal_check_in_this_week]
