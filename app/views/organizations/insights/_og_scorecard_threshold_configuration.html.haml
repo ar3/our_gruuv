@@ -23,7 +23,7 @@
 
           - metric_registry_groups.each do |group|
             %h6.mt-3.mb-2= group[:title]
-            - group[:entries].each do |entry|
+            - group[:entries].reject(&:separator).each do |entry|
               - thresh = thresholds_by_key[entry.key] || {}
               - mode = thresh[:mode] || 'absolute'
               .card.mb-2

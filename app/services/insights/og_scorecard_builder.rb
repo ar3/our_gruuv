@@ -14,12 +14,8 @@ module Insights
 
     def call
       active_by_week = active_teammate_counts_by_week
-      publishers_by_week, observees_by_week = observation_distinct_sets_by_week
-      observations_30_day_counts = OgScorecard::ObservationsThirtyDayWeekCounts.call(
-        company: company,
-        week_starts: week_starts,
-        teammate_ids: teammate_ids
-      )
+      publishers_this_week_by_week, observees_this_week_by_week = observation_this_week_counts_by_week
+      publishers_by_week, observees_by_week = observation_all_time_counts_by_week
       check_in_clarity = OgScorecard::CheckInClarityWeekCounts.call(
         company: company,
         week_starts: week_starts,
@@ -61,22 +57,27 @@ module Insights
       )
 
       groups = OgScorecard::MetricRegistry.grouped.map do |group|
-        rows = group[:entries].map do |entry|
-          counts = counts_for(
-            entry.key,
-            active_by_week: active_by_week,
-            publishers_by_week: publishers_by_week,
-            observees_by_week: observees_by_week,
-            observations_30_day_counts: observations_30_day_counts,
-            check_in_clarity: check_in_clarity,
-            goal_aspiration_by_week: goal_aspiration_by_week,
-            goal_assignment_by_week: goal_assignment_by_week,
-            milestone_counts: milestone_counts,
-            goal_ability_by_week: goal_ability_by_week,
-            goals_counts: goals_counts,
-            gruuv_health_counts: gruuv_health_result.counts
-          )
-          build_row(entry, counts, active_by_week)
+        rows = group[:entries].filter_map do |entry|
+          if entry.separator
+            { separator: true }
+          else
+            counts = counts_for(
+              entry.key,
+              active_by_week: active_by_week,
+              publishers_this_week_by_week: publishers_this_week_by_week,
+              observees_this_week_by_week: observees_this_week_by_week,
+              publishers_by_week: publishers_by_week,
+              observees_by_week: observees_by_week,
+              check_in_clarity: check_in_clarity,
+              goal_aspiration_by_week: goal_aspiration_by_week,
+              goal_assignment_by_week: goal_assignment_by_week,
+              milestone_counts: milestone_counts,
+              goal_ability_by_week: goal_ability_by_week,
+              goals_counts: goals_counts,
+              gruuv_health_counts: gruuv_health_result.counts
+            )
+            build_row(entry, counts, active_by_week)
+          end
         end
         { title: group[:title], rows: rows }
       end
@@ -92,13 +93,13 @@ module Insights
       teammate_id.present? && (teammate_ids.nil? || teammate_ids.include?(teammate_id))
     end
 
-    def counts_for(key, active_by_week:, publishers_by_week:, observees_by_week:, observations_30_day_counts:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:, gruuv_health_counts:)
+    def counts_for(key, active_by_week:, publishers_this_week_by_week:, observees_this_week_by_week:, publishers_by_week:, observees_by_week:, check_in_clarity:, goal_aspiration_by_week:, goal_assignment_by_week:, milestone_counts:, goal_ability_by_week:, goals_counts:, gruuv_health_counts:)
       case key
       when 'active_teammates' then active_by_week
+      when 'unique_ogo_publishers_this_week' then publishers_this_week_by_week
       when 'unique_ogo_publishers' then publishers_by_week
+      when 'unique_ogo_observees_this_week' then observees_this_week_by_week
       when 'unique_ogo_observees' then observees_by_week
-      when 'unique_ogo_publishers_30_days' then observations_30_day_counts[:unique_ogo_publishers_30_days]
-      when 'unique_ogo_observees_30_days' then observations_30_day_counts[:unique_ogo_observees_30_days]
       when 'all_check_ins_clear' then check_in_clarity[:all_check_ins_clear]
       when 'all_check_ins_blurred' then check_in_clarity[:all_check_ins_blurred]
       when 'all_check_ins_obscured' then check_in_clarity[:all_check_ins_obscured]
@@ -196,7 +197,7 @@ module Insights
       last_terminated_at.nil? || last_terminated_at.to_time.in_time_zone > week_end_time
     end
 
-    def observation_distinct_sets_by_week
+    def observation_this_week_counts_by_week
       publishers_by_week = week_starts.index_with { Set.new }
       observees_by_week = week_starts.index_with { Set.new }
       week_set = week_starts.to_set
@@ -224,7 +225,7 @@ module Insights
       observee_rows = Observee
         .joins(:observation)
         .merge(obs_scope)
-        .pluck('observations.published_at', 'observees.teammate_id')
+        .pluck("observations.published_at", "observees.teammate_id")
 
       observee_rows.each do |published_at, teammate_id|
         next if published_at.blank? || teammate_id.blank?
@@ -243,6 +244,73 @@ module Insights
 
     def week_key_for(time)
       time.in_time_zone.to_date.beginning_of_week(:monday)
+    end
+
+    def observation_all_time_counts_by_week
+      publishers_by_week = week_starts.index_with { Set.new }
+      observees_by_week = week_starts.index_with { Set.new }
+      return [publishers_by_week.transform_values(&:size), observees_by_week.transform_values(&:size)] if week_starts.empty?
+
+      active_ids_by_week = week_starts.index_with { |week_start|
+        active_teammate_ids_for_week(week_start + 6.days)
+      }
+      max_week_end = (week_starts.max + 6.days).in_time_zone.end_of_day
+
+      obs_scope = Observation
+        .for_company(company)
+        .not_soft_deleted
+        .published
+        .where("published_at <= ?", max_week_end)
+
+      obs_rows = obs_scope.pluck(:published_at, :observer_id)
+      observer_person_ids = obs_rows.map(&:last).compact.uniq
+      teammate_id_by_person_id = teammate_id_by_person(observer_person_ids)
+
+      obs_rows.each do |published_at, observer_person_id|
+        next if published_at.blank? || observer_person_id.blank?
+
+        tid = teammate_id_by_person_id[observer_person_id]
+        next unless teammate_in_scope?(tid)
+
+        week_starts.each do |week_start|
+          week_end = (week_start + 6.days).in_time_zone.end_of_day
+          next if published_at > week_end
+          next unless active_ids_by_week[week_start].include?(tid)
+
+          publishers_by_week[week_start] << tid
+        end
+      end
+
+      observee_rows = Observee
+        .joins(:observation)
+        .merge(obs_scope)
+        .pluck("observations.published_at", "observees.teammate_id")
+
+      observee_rows.each do |published_at, teammate_id|
+        next if published_at.blank? || teammate_id.blank?
+        next unless teammate_in_scope?(teammate_id)
+
+        week_starts.each do |week_start|
+          week_end = (week_start + 6.days).in_time_zone.end_of_day
+          next if published_at > week_end
+          next unless active_ids_by_week[week_start].include?(teammate_id)
+
+          observees_by_week[week_start] << teammate_id
+        end
+      end
+
+      [
+        publishers_by_week.transform_values(&:size),
+        observees_by_week.transform_values(&:size)
+      ]
+    end
+
+    def active_teammate_ids_for_week(week_ending_on)
+      EngagementHealth::WeeklyRollupTeammateScope.active_teammate_ids(
+        organization: company,
+        week_ending_on: week_ending_on,
+        teammate_ids: teammate_ids
+      )
     end
 
     def teammate_id_by_person(person_ids)

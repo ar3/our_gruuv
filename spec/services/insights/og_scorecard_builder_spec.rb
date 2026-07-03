@@ -39,7 +39,7 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(row[:six_week_avg]).to eq(0.5)
     end
 
-    it 'counts unique publishers and observees by published_at week' do
+    it 'counts unique all-time publishers and observees employed during each week' do
       monday = Date.new(2026, 3, 2)
       week_starts = [monday, monday + 7]
       chart_range = monday.beginning_of_day..(monday + 13).end_of_day
@@ -63,11 +63,118 @@ RSpec.describe Insights::OgScorecardBuilder do
 
       result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
       obs_group = result[:groups].find { |g| g[:title] == 'Observations' }
-      publishers = obs_group[:rows].find { |r| r[:key] == 'unique_ogo_publishers' }
-      observees = obs_group[:rows].find { |r| r[:key] == 'unique_ogo_observees' }
+      data_rows = obs_group[:rows].reject { |r| r[:separator] }
+      publishers_this_week = data_rows.find { |r| r[:key] == 'unique_ogo_publishers_this_week' }
+      publishers = data_rows.find { |r| r[:key] == 'unique_ogo_publishers' }
+      observees_this_week = data_rows.find { |r| r[:key] == 'unique_ogo_observees_this_week' }
+      observees = data_rows.find { |r| r[:key] == 'unique_ogo_observees' }
+
+      expect(publishers_this_week[:label]).to eq('Teammates that published an OGO this week')
+      expect(publishers[:label]).to eq('Teammates that published an OGO all-time')
+      expect(observees_this_week[:label]).to eq('Teammates named as observees in an OGO this week')
+      expect(observees[:label]).to eq('Teammates named as observees in an OGO all-time')
+      expect(publishers_this_week[:weekly_values]).to eq([1, 1])
+      expect(publishers[:weekly_values]).to eq([1, 1])
+      expect(observees_this_week[:weekly_values]).to eq([1, 1])
+      expect(observees[:weekly_values]).to eq([1, 1])
+    end
+
+    it 'shows zero for this week when activity happened only in an earlier week' do
+      monday = Date.new(2026, 5, 4)
+      week_starts = [monday, monday + 7]
+      chart_range = monday.beginning_of_day..(monday + 13).end_of_day
+
+      observer_person = create(:person)
+      create(:teammate, organization: company, person: observer_person, first_employed_at: monday - 1.year, last_terminated_at: nil)
+
+      obs = build(:observation, company: company, observer: observer_person, story: 'A' * 20)
+      obs.save!(validate: false)
+      obs.update_columns(published_at: monday.to_time + 12.hours, observed_at: monday.to_time + 12.hours)
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      publishers_this_week = result[:groups].find { |g| g[:title] == 'Observations' }[:rows]
+        .reject { |r| r[:separator] }
+        .find { |r| r[:key] == 'unique_ogo_publishers_this_week' }
+      publishers_all_time = result[:groups].find { |g| g[:title] == 'Observations' }[:rows]
+        .reject { |r| r[:separator] }
+        .find { |r| r[:key] == 'unique_ogo_publishers' }
+
+      expect(publishers_this_week[:weekly_values]).to eq([1, 0])
+      expect(publishers_all_time[:weekly_values]).to eq([1, 1])
+    end
+
+    it 'carries all-time publisher counts into later weeks when they published earlier but not that week' do
+      monday = Date.new(2026, 5, 4)
+      week_starts = [monday, monday + 7]
+      chart_range = monday.beginning_of_day..(monday + 13).end_of_day
+
+      observer_person = create(:person)
+      observee_person = create(:person)
+      create(:teammate, organization: company, person: observer_person, first_employed_at: monday - 1.year, last_terminated_at: nil)
+      observee_tm = create(:teammate, organization: company, person: observee_person, first_employed_at: monday - 1.year, last_terminated_at: nil)
+
+      obs = build(:observation, company: company, observer: observer_person, story: 'A' * 20)
+      obs.observees.destroy_all
+      obs.observees.build(teammate: observee_tm)
+      obs.save!(validate: false)
+      obs.update_columns(published_at: monday.to_time + 12.hours, observed_at: monday.to_time + 12.hours)
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      obs_group = result[:groups].find { |g| g[:title] == 'Observations' }
+      publishers = obs_group[:rows].reject { |r| r[:separator] }.find { |r| r[:key] == 'unique_ogo_publishers' }
+      observees = obs_group[:rows].reject { |r| r[:separator] }.find { |r| r[:key] == 'unique_ogo_observees' }
 
       expect(publishers[:weekly_values]).to eq([1, 1])
       expect(observees[:weekly_values]).to eq([1, 1])
+    end
+
+    it 'drops all-time counts when a teammate is no longer employed during a later week' do
+      monday = Date.new(2026, 6, 1)
+      week_starts = [monday, monday + 7]
+      chart_range = monday.beginning_of_day..(monday + 13).end_of_day
+
+      observer_person = create(:person)
+      publisher = create(
+        :teammate,
+        organization: company,
+        person: observer_person,
+        first_employed_at: monday - 1.year,
+        last_terminated_at: monday + 3.days
+      )
+
+      obs = build(:observation, company: company, observer: observer_person, story: 'A' * 20)
+      obs.save!(validate: false)
+      obs.update_columns(published_at: monday.to_time + 12.hours, observed_at: monday.to_time + 12.hours)
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      publishers = result[:groups].find { |g| g[:title] == 'Observations' }[:rows]
+        .reject { |r| r[:separator] }
+        .find { |r| r[:key] == 'unique_ogo_publishers' }
+
+      expect(publishers[:weekly_values]).to eq([1, 0])
+    end
+
+    it 'includes separator rows in the Observations section between activity and Gruuv Health blocks' do
+      monday = Date.current.beginning_of_week(:monday)
+      week_starts = [monday]
+      chart_range = monday.beginning_of_day..(monday + 6).end_of_day
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      obs_group = result[:groups].find { |g| g[:title] == 'Observations' }
+
+      expect(obs_group[:rows].count { |row| row[:separator] }).to eq(3)
+      publishers_this_week_index = obs_group[:rows].index { |row| row[:key] == 'unique_ogo_publishers_this_week' }
+      publishers_all_time_index = obs_group[:rows].index { |row| row[:key] == 'unique_ogo_publishers' }
+      observees_this_week_index = obs_group[:rows].index { |row| row[:key] == 'unique_ogo_observees_this_week' }
+      first_gruuv_index = obs_group[:rows].index do |row|
+        row[:key]&.start_with?(Insights::OgScorecard::GruuvHealthWeekCounts::METRIC_KEY_PREFIX)
+      end
+      expect(publishers_this_week_index).to eq(0)
+      expect(publishers_all_time_index).to eq(1)
+      expect(obs_group[:rows][publishers_all_time_index + 1][:separator]).to be(true)
+      expect(observees_this_week_index).to eq(publishers_all_time_index + 2)
+      expect(obs_group[:rows][observees_this_week_index + 2][:separator]).to be(true)
+      expect(first_gruuv_index).to eq(observees_this_week_index + 3)
     end
 
     it 'limits metrics to filtered teammate ids' do
@@ -95,25 +202,27 @@ RSpec.describe Insights::OgScorecardBuilder do
       chart_range = monday.beginning_of_day..(monday + 6).end_of_day
 
       teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
-      EngagementHealthStatus.create!(
-        teammate: teammate,
-        organization: company,
-        level: "category",
-        category: EngagementHealth::CATEGORY_OGO_GIVEN,
-        status: EngagementHealth::NEEDS_ATTENTION,
-        inputs: {},
-        computed_at: Time.current
-      )
+      EngagementHealth::CATEGORIES.each do |category|
+        EngagementHealthStatus.create!(
+          teammate: teammate,
+          organization: company,
+          level: "category",
+          category: category,
+          status: category == EngagementHealth::CATEGORY_OGO_GIVEN ? EngagementHealth::NEEDS_ATTENTION : EngagementHealth::HEALTHY,
+          inputs: {},
+          computed_at: Time.current
+        )
+      end
 
       result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
       group = result[:groups].find { |g| g[:title] == 'Observations' }
 
       expect(group).to be_present
-      gruuv_rows = group[:rows].select { |row| row[:key].start_with?('gruuv_health_') }
+      gruuv_rows = group[:rows].reject { |row| row[:separator] }.select { |row| row[:key].start_with?('gruuv_health_') }
       expect(gruuv_rows.size).to eq(6)
       expect(result[:gruuv_health_backfill_enqueued]).to be(false)
 
-      ogo_given_needs_attention = group[:rows].find do |row|
+      ogo_given_needs_attention = group[:rows].reject { |row| row[:separator] }.find do |row|
         row[:key] == Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(
           EngagementHealth::CATEGORY_OGO_GIVEN,
           EngagementHealth::NEEDS_ATTENTION

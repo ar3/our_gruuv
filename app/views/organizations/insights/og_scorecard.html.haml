@@ -54,18 +54,18 @@
         teammates with a hire date still employed at the end of that week (Sunday).
       %li
         %strong Gruuv Health rows
-        appear at the top of each section (Observations, Check-ins, Ability Milestones, Goals). Each row counts teammates whose category status is
+        in Observations, Check-ins, Ability Milestones, and Goals count teammates by
         %strong Healthy
         ,
         %strong At Risk
         , or
         %strong Needs Attention
-        using the same rules as the 1:1 Hub Overview; the parenthetical on each row states the threshold. Activity rows below measure weekly velocity separately.
+        using the same rules as the 1:1 Hub Overview; the parenthetical on each row states the threshold. All-time and weekly activity rows are grouped separately within each section.
       %li
         %strong Observations:
-        published OGOs bucketed by
-        %code published_at
-        for that Mon–Sun week, or in the rolling 30 calendar days ending that Sunday for the 30-day rows.
+        “This week” rows count unique teammates who published or were named in an OGO during that Mon–Sun week.
+        All-time rows count teammates employed during that week who had ever done so on or before that Sunday.
+        Gruuv Health rows measure recency of last OGO activity as of each Sunday.
       %li
         %strong= "#{I18n.t('terminology.og_scorecard_clarity_check_ins_label')}:"
         = I18n.t('terminology.og_scorecard_clarity_check_ins_help')
@@ -119,7 +119,7 @@
 - if @gruuv_health_backfill_enqueued
   .alert.alert-info.mb-3{role: "alert"}
     %i.bi.bi-hourglass-split.me-2
-    Some Gruuv Health history is still being calculated in the background. Refresh this page in a minute or so for complete weekly counts.
+    Some Gruuv Health counts are still being calculated in the background. Refresh this page in a minute or so for complete weekly counts.
 
 .og-scorecard-scope.og-scorecard--thresholds-hidden{data: { controller: 'og-scorecard-thresholds' }}
   .form-check.form-switch.mb-3
@@ -144,15 +144,19 @@
           %tr.table-secondary
             %td.sticky-col.fw-semibold{colspan: 5 + @week_labels.size}= group[:title]
           - group[:rows].each do |row|
-            %tr
-              %td.sticky-col
-                %span.og-scorecard-metric-cell= og_scorecard_metric_label(row)
-              %td.text-end= row[:six_week_avg].nil? ? "—" : row[:six_week_avg]
-              %td.text-end.og-scorecard-th-col= row[:yellow_display].presence || "—"
-              %td.text-end.og-scorecard-th-col= row[:green_display].presence || "—"
-              %td.og-scorecard-th-col= og_scorecard_direction_label(row[:direction])
-              - row[:weekly_values].reverse.zip(row[:weekly_cell_statuses].reverse).each do |v, status|
-                %td.text-end{class: og_scorecard_weekly_cell_class(status)}= v
+            - if row[:separator]
+              %tr.og-scorecard-separator
+                %td{colspan: 5 + @week_labels.size}
+            - else
+              %tr
+                %td.sticky-col
+                  %span.og-scorecard-metric-cell= og_scorecard_metric_label(row)
+                %td.text-end= row[:six_week_avg].nil? ? "—" : row[:six_week_avg]
+                %td.text-end.og-scorecard-th-col= row[:yellow_display].presence || "—"
+                %td.text-end.og-scorecard-th-col= row[:green_display].presence || "—"
+                %td.og-scorecard-th-col= og_scorecard_direction_label(row[:direction])
+                - row[:weekly_values].reverse.zip(row[:weekly_cell_statuses].reverse).each do |v, status|
+                  %td.text-end{class: og_scorecard_weekly_cell_class(status)}= v
 
   = render 'og_scorecard_threshold_configuration',
     organization: @organization,

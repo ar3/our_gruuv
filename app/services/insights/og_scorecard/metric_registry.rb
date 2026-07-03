@@ -4,7 +4,31 @@ module Insights
   module OgScorecard
     # Central registry of OG Scorecard metrics (metadata + defaults). Threshold values live in DB.
     class MetricRegistry
-      Entry = Data.define(:key, :label, :direction, :supports_percent, :group, :threshold_hint)
+      Entry = Data.define(:key, :label, :direction, :supports_percent, :group, :threshold_hint, :separator)
+
+      def self.metric(key:, label:, direction:, supports_percent:, group:, threshold_hint: nil)
+        Entry.new(
+          key: key,
+          label: label,
+          direction: direction,
+          supports_percent: supports_percent,
+          group: group,
+          threshold_hint: threshold_hint,
+          separator: false
+        )
+      end
+
+      def self.separator(group:)
+        Entry.new(
+          key: nil,
+          label: nil,
+          direction: :more,
+          supports_percent: false,
+          group: group,
+          threshold_hint: nil,
+          separator: true
+        )
+      end
 
       CC = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS
       C = CheckInBehavior::CLARITY_CLEAR_DAYS
@@ -64,7 +88,8 @@ module Insights
               direction: (status == EngagementHealth::HEALTHY ? :more : :less),
               supports_percent: true,
               group: group,
-              threshold_hint: gruuv_threshold_hint(category, status)
+              threshold_hint: gruuv_threshold_hint(category, status),
+              separator: false
             )
           end
         end
@@ -74,7 +99,7 @@ module Insights
         end
 
         def keys
-          ENTRIES.map(&:key)
+          ENTRIES.reject(&:separator).map(&:key)
         end
 
         def key?(key)
@@ -82,7 +107,7 @@ module Insights
         end
 
         def find(key)
-          ENTRIES.find { |e| e.key == key.to_s }
+          ENTRIES.find { |e| !e.separator && e.key == key.to_s }
         end
 
         def grouped
@@ -98,80 +123,77 @@ module Insights
 
       ENTRIES = (
         [
-          Entry.new(
+          metric(
             key: 'active_teammates',
             label: 'Active teammates',
             direction: :more,
             supports_percent: true,
-            group: 'Teammates',
-            threshold_hint: nil
+            group: 'Teammates'
           )
+        ] +
+        [
+          metric(
+            key: 'unique_ogo_publishers_this_week',
+            label: 'Teammates that published an OGO this week',
+            direction: :more,
+            supports_percent: true,
+            group: 'Observations'
+          ),
+          metric(
+            key: 'unique_ogo_publishers',
+            label: 'Teammates that published an OGO all-time',
+            direction: :more,
+            supports_percent: true,
+            group: 'Observations'
+          ),
+          separator(group: 'Observations'),
+          metric(
+            key: 'unique_ogo_observees_this_week',
+            label: 'Teammates named as observees in an OGO this week',
+            direction: :more,
+            supports_percent: true,
+            group: 'Observations'
+          ),
+          metric(
+            key: 'unique_ogo_observees',
+            label: 'Teammates named as observees in an OGO all-time',
+            direction: :more,
+            supports_percent: true,
+            group: 'Observations'
+          ),
+          separator(group: 'Observations')
         ] +
         gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_GIVEN, metric_name: 'OGOs Given', group: 'Observations') +
-        gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_RECEIVED, metric_name: 'OGOs Received', group: 'Observations') +
         [
-          Entry.new(
-            key: 'unique_ogo_publishers',
-            label: 'Teammates that published an OGO',
-            direction: :more,
-            supports_percent: true,
-            group: 'Observations',
-            threshold_hint: nil
-          ),
-          Entry.new(
-            key: 'unique_ogo_observees',
-            label: 'Teammates named as observees in an OGO',
-            direction: :more,
-            supports_percent: true,
-            group: 'Observations',
-            threshold_hint: nil
-          ),
-          Entry.new(
-            key: 'unique_ogo_publishers_30_days',
-            label: 'Teammates that published an OGO within 30 days of this week',
-            direction: :more,
-            supports_percent: true,
-            group: 'Observations',
-            threshold_hint: nil
-          ),
-          Entry.new(
-            key: 'unique_ogo_observees_30_days',
-            label: 'Teammates mentioned in a published OGO within 30 days of this week',
-            direction: :more,
-            supports_percent: true,
-            group: 'Observations',
-            threshold_hint: nil
-          )
+          separator(group: 'Observations')
         ] +
+        gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_RECEIVED, metric_name: 'OGOs Received', group: 'Observations') +
         gruuv_health_entries(
           category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
           metric_name: 'Required Clarity',
           group: 'Check-ins'
         ) +
         [
-          Entry.new(
+          metric(
             key: 'all_check_ins_clear',
             label: "Teammates with Healthy Clarity (checked-in within #{C} days)",
             direction: :more,
             supports_percent: true,
-            group: 'Check-ins',
-            threshold_hint: nil
+            group: 'Check-ins'
           ),
-          Entry.new(
+          metric(
             key: 'all_check_ins_blurred',
             label: "Teammates with diminishing clarity (checked-in between #{C + 1}–#{B} days ago)",
             direction: :less,
             supports_percent: true,
-            group: 'Check-ins',
-            threshold_hint: nil
+            group: 'Check-ins'
           ),
-          Entry.new(
+          metric(
             key: 'all_check_ins_obscured',
             label: "Teammates with a lack of clarity (at least one required check-in older than #{B} days ago)",
             direction: :less,
             supports_percent: true,
-            group: 'Check-ins',
-            threshold_hint: nil
+            group: 'Check-ins'
           )
         ] +
         gruuv_health_entries(
@@ -180,39 +202,35 @@ module Insights
           group: 'Ability Milestones'
         ) +
         [
-          Entry.new(
+          metric(
             key: 'unique_teammates_milestone_this_week',
             label: 'Teammates with a milestone earned this week ' \
                    '(ability milestone attained in that Mon–Sun week, for abilities in this company)',
             direction: :more,
             supports_percent: true,
-            group: 'Ability Milestones',
-            threshold_hint: nil
+            group: 'Ability Milestones'
           ),
-          Entry.new(
+          metric(
             key: 'milestones_earned_this_week',
             label: 'Number of milestones earned this week ' \
                    '(count of ability milestone records with attained_at in that Mon–Sun week)',
             direction: :more,
             supports_percent: false,
-            group: 'Ability Milestones',
-            threshold_hint: nil
+            group: 'Ability Milestones'
           ),
-          Entry.new(
+          metric(
             key: 'unique_teammates_milestone_90_days',
             label: 'Teammates with a milestone earned within the past 90 days',
             direction: :more,
             supports_percent: true,
-            group: 'Ability Milestones',
-            threshold_hint: nil
+            group: 'Ability Milestones'
           ),
-          Entry.new(
+          metric(
             key: 'milestones_earned_90_days',
             label: 'Milestones earned within the past 90 days',
             direction: :more,
             supports_percent: false,
-            group: 'Ability Milestones',
-            threshold_hint: nil
+            group: 'Ability Milestones'
           )
         ] +
         gruuv_health_entries(
@@ -221,53 +239,47 @@ module Insights
           group: 'Goals'
         ) +
         [
-          Entry.new(
+          metric(
             key: 'unique_teammates_active_goal',
             label: 'Teammates with an active goal',
             direction: :more,
             supports_percent: true,
-            group: 'Goals',
-            threshold_hint: nil
+            group: 'Goals'
           ),
-          Entry.new(
+          metric(
             key: 'active_goal_aspiration',
             label: 'Teammates with an active goal attached to an Aspirational Value',
             direction: :more,
             supports_percent: true,
-            group: 'Goals',
-            threshold_hint: nil
+            group: 'Goals'
           ),
-          Entry.new(
+          metric(
             key: 'active_goal_assignment',
             label: 'Teammates with an active goal attached to an Assignment',
             direction: :more,
             supports_percent: true,
-            group: 'Goals',
-            threshold_hint: nil
+            group: 'Goals'
           ),
-          Entry.new(
+          metric(
             key: 'active_goal_ability',
             label: 'Teammates with an active goal attached to an Ability',
             direction: :more,
             supports_percent: true,
-            group: 'Goals',
-            threshold_hint: nil
+            group: 'Goals'
           ),
-          Entry.new(
+          metric(
             key: 'unique_teammates_goal_check_in_this_week',
             label: 'Teammates with at least one goal confidence check-in this week',
             direction: :more,
             supports_percent: true,
-            group: 'Goals',
-            threshold_hint: nil
+            group: 'Goals'
           ),
-          Entry.new(
+          metric(
             key: 'unique_teammates_completed_goal_90_days',
             label: 'Teammates with a completed goal in the past 90 days',
             direction: :more,
             supports_percent: true,
-            group: 'Goals',
-            threshold_hint: nil
+            group: 'Goals'
           )
         ]
       ).freeze

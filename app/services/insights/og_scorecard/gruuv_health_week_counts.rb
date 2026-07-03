@@ -21,6 +21,7 @@ module Insights
       def call
         counts = empty_counts
         backfill_weeks = []
+        live_cache_backfill_enqueued = false
 
         week_starts.each do |week_start|
           week_ending_on = week_start + 6.days
@@ -28,7 +29,7 @@ module Insights
           next if active_ids.empty?
 
           if live_week?(week_ending_on)
-            apply_live_counts(counts, week_start, active_ids)
+            live_cache_backfill_enqueued ||= apply_live_counts(counts, week_start, active_ids)
           else
             if rollup_week_incomplete?(week_ending_on)
               backfill_weeks << week_ending_on
@@ -37,7 +38,7 @@ module Insights
           end
         end
 
-        backfill_enqueued = enqueue_backfill(backfill_weeks)
+        backfill_enqueued = enqueue_backfill(backfill_weeks) || live_cache_backfill_enqueued
 
         Result.new(counts: counts, backfill_enqueued: backfill_enqueued)
       end
@@ -79,16 +80,56 @@ module Insights
       end
 
       def apply_live_counts(counts, week_start, active_ids)
-        grouped = EngagementHealthStatus
+        statuses_by_teammate, backfill_enqueued = live_category_statuses_for(active_ids)
+
+        EngagementHealth::CATEGORIES.each do |category|
+          EngagementHealth::STATUSES.each do |status|
+            count = active_ids.count { |teammate_id| statuses_by_teammate.dig(teammate_id, category) == status }
+            key = metric_key(category, status)
+            counts[key][week_start] = count if counts.key?(key)
+          end
+        end
+
+        backfill_enqueued
+      end
+
+      def live_category_statuses_for(active_ids)
+        rows = EngagementHealthStatus
           .category_rollups
           .where(organization: company, teammate_id: active_ids)
-          .group(:category, :status)
-          .count
+          .pluck(:teammate_id, :category, :status)
 
-        grouped.each do |(category, status), count|
-          key = metric_key(category, status)
-          counts[key][week_start] += count if counts.key?(key)
+        statuses_by_teammate = rows.each_with_object({}) do |(teammate_id, category, status), memo|
+          (memo[teammate_id] ||= {})[category] = status
         end
+
+        missing_ids = EngagementHealth::LiveCacheCompleteness.missing_teammate_ids(
+          organization: company,
+          teammate_ids: active_ids
+        )
+        return [statuses_by_teammate, false] if missing_ids.empty?
+
+        backfill_enqueued = enqueue_live_cache_backfill(missing_ids)
+
+        CompanyTeammate.where(id: missing_ids).find_each do |teammate|
+          EngagementHealth::Calculator
+            .call(teammate: teammate, organization: company)
+            .each do |row|
+              next unless row[:level] == "category"
+
+              (statuses_by_teammate[teammate.id] ||= {})[row[:category]] = row[:status]
+            end
+        end
+
+        [statuses_by_teammate, backfill_enqueued]
+      end
+
+      def enqueue_live_cache_backfill(teammate_ids)
+        ids = teammate_ids.uniq
+        return false if ids.empty?
+
+        EngagementHealthLiveCacheBackfillJob.perform_later(company.id, ids)
+        true
       end
 
       def apply_rollup_counts(counts, week_start, week_ending_on, active_ids)

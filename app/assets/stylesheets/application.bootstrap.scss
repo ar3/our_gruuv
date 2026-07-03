@@ -1649,6 +1649,15 @@ body:has(.vertical-nav.open) .floating-toggle {
   tbody tr.table-secondary .sticky-col {
     background-color: var(--bs-secondary-bg);
   }
+
+  tr.og-scorecard-separator td {
+    padding: 0 !important;
+    height: 0.35rem;
+    line-height: 0;
+    background-color: var(--bs-secondary-bg);
+    border-top: none;
+    border-bottom: none;
+  }
 }
 
 // OG Scorecard: optional threshold / direction columns

@@ -37,20 +37,46 @@ RSpec.describe Insights::OgScorecard::GruuvHealthWeekCounts do
 
       it 'reads category rollups from the live engagement_health_statuses cache' do
         teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
-        EngagementHealthStatus.create!(
-          teammate: teammate,
-          organization: company,
-          level: "category",
-          category: EngagementHealth::CATEGORY_OGO_GIVEN,
-          status: EngagementHealth::NEEDS_ATTENTION,
-          inputs: {},
-          computed_at: Time.current
-        )
+        EngagementHealth::CATEGORIES.each do |category|
+          EngagementHealthStatus.create!(
+            teammate: teammate,
+            organization: company,
+            level: "category",
+            category: category,
+            status: category == EngagementHealth::CATEGORY_OGO_GIVEN ? EngagementHealth::NEEDS_ATTENTION : EngagementHealth::HEALTHY,
+            inputs: {},
+            computed_at: Time.current
+          )
+        end
 
         result = counts_result(week_starts: week_starts)
 
         expect(result.backfill_enqueued).to be(false)
         expect(result.counts[metric_key(EngagementHealth::CATEGORY_OGO_GIVEN, EngagementHealth::NEEDS_ATTENTION)][monday]).to eq(1)
+      end
+
+      it 'counts every employed teammate for the current week, computing missing live cache rows on read' do
+        cached_teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
+        uncached_teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
+
+        EngagementHealth::CATEGORIES.each do |category|
+          EngagementHealthStatus.create!(
+            teammate: cached_teammate,
+            organization: company,
+            level: "category",
+            category: category,
+            status: category == EngagementHealth::CATEGORY_OGO_GIVEN ? EngagementHealth::HEALTHY : EngagementHealth::NEEDS_ATTENTION,
+            inputs: {},
+            computed_at: Time.current
+          )
+        end
+
+        expect {
+          result = counts_result(week_starts: week_starts)
+          expect(result.counts[metric_key(EngagementHealth::CATEGORY_OGO_GIVEN, EngagementHealth::HEALTHY)][monday]).to eq(1)
+          expect(result.counts[metric_key(EngagementHealth::CATEGORY_OGO_GIVEN, EngagementHealth::NEEDS_ATTENTION)][monday]).to eq(1)
+          expect(result.backfill_enqueued).to be(true)
+        }.to have_enqueued_job(EngagementHealthLiveCacheBackfillJob).with(company.id, [uncached_teammate.id])
       end
     end
 
