@@ -13,8 +13,6 @@ class CompanyTeammate < ApplicationRecord
   has_many :assignments, through: :assignment_tenures
   has_many :employment_tenures, foreign_key: 'teammate_id', dependent: :nullify
   has_many :position_check_ins, through: :employment_tenures
-  has_many :check_in_health_caches, class_name: 'CheckInHealthCache', foreign_key: 'teammate_id', dependent: :destroy
-  has_one :check_in_health_cache_refresh_schedule, foreign_key: 'teammate_id', dependent: :destroy
   has_many :observation_health_caches, class_name: "ObservationHealthCache", foreign_key: "teammate_id", dependent: :destroy
   has_many :observees, foreign_key: 'teammate_id', dependent: :destroy
   has_many :observations, through: :observees

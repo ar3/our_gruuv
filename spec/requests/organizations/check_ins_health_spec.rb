@@ -149,7 +149,6 @@ RSpec.describe 'Check-ins Health', type: :request do
 
       job_classes = enqueued_jobs.map { |job| job[:job] }
       expect(job_classes).to include(EngagementHealthRefreshJob)
-      expect(job_classes).not_to include(CheckInHealthCacheRefreshJob)
 
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(organization_check_ins_health_path(company))
@@ -166,7 +165,6 @@ RSpec.describe 'Check-ins Health', type: :request do
 
       job_classes = enqueued_jobs.map { |job| job[:job] }
       expect(job_classes).to include(EngagementHealthRefreshJob)
-      expect(job_classes).not_to include(CheckInHealthCacheRefreshJob)
 
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(organization_check_ins_health_path(company, manager_id: 'just_me'))

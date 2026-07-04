@@ -324,27 +324,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_221443) do
     t.index ["organization_id"], name: "idx_on_organization_id_8c776f246c"
   end
 
-  create_table "check_in_health_cache_refresh_schedules", force: :cascade do |t|
-    t.bigint "teammate_id", null: false
-    t.datetime "refresh_at", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["refresh_at"], name: "index_check_in_health_cache_refresh_schedules_on_refresh_at"
-    t.index ["teammate_id"], name: "index_check_in_health_cache_refresh_schedules_on_teammate_id", unique: true
-  end
-
-  create_table "check_in_health_caches", force: :cascade do |t|
-    t.bigint "teammate_id", null: false
-    t.bigint "organization_id", null: false
-    t.datetime "refreshed_at"
-    t.jsonb "payload", default: {}, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["organization_id"], name: "index_check_in_health_caches_on_organization_id"
-    t.index ["teammate_id", "organization_id"], name: "index_check_in_health_caches_on_teammate_and_organization", unique: true
-    t.index ["teammate_id"], name: "index_check_in_health_caches_on_teammate_id"
-  end
-
   create_table "comments", force: :cascade do |t|
     t.string "commentable_type", null: false
     t.bigint "commentable_id", null: false
@@ -1615,9 +1594,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_221443) do
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "action_taker_teammate_id"
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "employee_teammate_id"
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "manager_teammate_id"
-  add_foreign_key "check_in_health_cache_refresh_schedules", "teammates"
-  add_foreign_key "check_in_health_caches", "organizations"
-  add_foreign_key "check_in_health_caches", "teammates"
   add_foreign_key "comments", "organizations"
   add_foreign_key "comments", "people", column: "creator_id"
   add_foreign_key "company_label_preferences", "organizations", column: "company_id"

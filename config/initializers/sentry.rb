@@ -28,7 +28,6 @@ Sentry.init do |config|
     'MissingResourcesController#show',
     'Rails::HealthController#show',
     'Rails::PwaController#manifest',
-    'CheckInHealthCacheProcessSchedulesJob',
     'PageVisitJob'
   ].freeze
 

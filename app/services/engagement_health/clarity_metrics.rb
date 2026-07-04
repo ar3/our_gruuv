@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 module EngagementHealth
-  # Required-clarity rollups for dashboards, managers view, CSV exports, and
-  # legacy completion-rate call sites migrated off check_in_health_caches.
+  # Required-clarity rollups for dashboards, managers view, CSV exports, and check-in health UIs.
   module ClarityMetrics
     module_function
 
