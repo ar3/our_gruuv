@@ -21,13 +21,14 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response.body).to include('Check-ins Health')
       expect(response.body).to include('checkInsHealthPageInfo')
       expect(response.body).to include('Ultimate goal')
-      expect(response.body).to include('Top bar states')
-      expect(response.body).to include('Bottom bar states')
+      expect(response.body).to include('Top bar (Gruuv Health Required Clarity)')
+      expect(response.body).to include('Bottom bar (action-based)')
+      expect(response.body).to include('Gruuv Health Required Clarity')
       expect(response.body).to include('Who to show')
       expect(response.body).to include('Aspirations')
       expect(response.body).to include('Assignments')
       expect(response.body).to include('Position')
-      expect(response.body).to include('Milestones')
+      expect(response.body).not_to include('>Milestones<')
     end
 
     it "shows health dashboard switcher with links to goals and observations health" do
@@ -57,7 +58,7 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it 'shows secondary required clarity and refresh control when cache exists' do
+    it 'shows secondary Gruuv Health alert and refresh control when engagement health exists' do
       create(
         :check_in_health_cache,
         teammate: teammate,
@@ -67,13 +68,32 @@ RSpec.describe 'Check-ins Health', type: :request do
           'position' => { 'category' => 'green' },
           'assignments' => [],
           'aspirations' => [],
-          'milestones' => { 'total_required' => 0, 'earned_count' => 0 },
-          'required_check_ins' => {
-            'position' => [ { 'type' => 'position', 'item_id' => 123, 'name' => 'Role', 'clarity_level' => 'clear', 'latest_finalized_rating' => 'meeting' } ],
-            'assignments' => [ { 'type' => 'assignment', 'item_id' => 456, 'name' => 'Task', 'clarity_level' => 'obscured', 'latest_finalized_rating' => 'working_to_meet' } ],
-            'aspirations' => []
-          }
+          'milestones' => { 'total_required' => 0, 'earned_count' => 0 }
         }
+      )
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Assignment',
+        entity_id: 456,
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: {
+          'name' => 'Task',
+          'action_bar_color' => 'red',
+          'open_check_in_present' => false
+        },
+        computed_at: Time.current
+      )
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'category',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: { 'item_count' => 1 },
+        computed_at: Time.current
       )
 
       get organization_check_ins_health_path(company)
@@ -134,10 +154,14 @@ RSpec.describe 'Check-ins Health', type: :request do
   describe 'POST /organizations/:organization_id/check_ins_health_refresh' do
     include ActiveJob::TestHelper
 
-    it 'enqueues a refresh job for the teammate' do
+    it 'enqueues a Gruuv Health refresh job for the teammate' do
       expect do
         post organization_check_ins_health_refresh_path(company), params: { teammate_id: teammate.id }
-      end.to have_enqueued_job(CheckInHealthCacheRefreshJob).with(teammate.id)
+      end.to have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
+
+      job_classes = enqueued_jobs.map { |job| job[:job] }
+      expect(job_classes).to include(EngagementHealthRefreshJob)
+      expect(job_classes).not_to include(CheckInHealthCacheRefreshJob)
 
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(organization_check_ins_health_path(company))
@@ -147,10 +171,14 @@ RSpec.describe 'Check-ins Health', type: :request do
   describe 'POST /organizations/:organization_id/check_ins_health_refresh_all' do
     include ActiveJob::TestHelper
 
-    it 'enqueues refresh jobs for the current filtered teammates' do
+    it 'enqueues Gruuv Health refresh jobs for the current filtered teammates' do
       expect do
         post organization_check_ins_health_refresh_all_path(company), params: { manager_id: 'just_me' }
-      end.to have_enqueued_job(CheckInHealthCacheRefreshJob).with(teammate.id)
+      end.to have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
+
+      job_classes = enqueued_jobs.map { |job| job[:job] }
+      expect(job_classes).to include(EngagementHealthRefreshJob)
+      expect(job_classes).not_to include(CheckInHealthCacheRefreshJob)
 
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(organization_check_ins_health_path(company, manager_id: 'just_me'))

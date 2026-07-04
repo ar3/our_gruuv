@@ -155,12 +155,13 @@ module EngagementHealth
       position = position_at_reference_time
       return [] unless position
 
-      latest = PositionCheckIn.where(company_teammate: teammate)
-        .closed
-        .where("official_check_in_completed_at <= ?", reference_time)
-        .order(official_check_in_completed_at: :desc)
-        .first
-      [clarity_item("Position", position.id, position.display_name, latest)]
+      latest = latest_closed_check_in(
+        PositionCheckIn.where(company_teammate: teammate)
+      )
+      open_ci = open_check_in_at_reference(
+        PositionCheckIn.where(company_teammate: teammate)
+      )
+      [clarity_item("Position", position.id, position.display_name, latest, open_check_in: open_ci)]
     end
 
     def required_assignment_items
@@ -178,12 +179,24 @@ module EngagementHealth
         .group_by(&:assignment_id)
         .transform_values(&:first)
 
+      open_by_assignment_id = AssignmentCheckIn
+        .where(company_teammate: teammate, assignment_id: assignment_ids)
+        .order(assignment_id: :asc, created_at: :desc)
+        .group_by(&:assignment_id)
+        .transform_values { |check_ins| open_check_in_at_reference(check_ins) }
+
       assignment_ids.filter_map do |assignment_id|
         assignment = assignments_by_id[assignment_id]
         next unless assignment
 
         latest = latest_by_assignment_id[assignment_id]
-        clarity_item("Assignment", assignment.id, assignment.title, latest)
+        clarity_item(
+          "Assignment",
+          assignment.id,
+          assignment.title,
+          latest,
+          open_check_in: open_by_assignment_id[assignment_id]
+        )
       end
     end
 
@@ -199,14 +212,27 @@ module EngagementHealth
         .group_by(&:aspiration_id)
         .transform_values(&:first)
 
+      open_by_aspiration_id = AspirationCheckIn
+        .where(company_teammate: teammate, aspiration_id: aspirations.map(&:id))
+        .order(aspiration_id: :asc, created_at: :desc)
+        .group_by(&:aspiration_id)
+        .transform_values { |check_ins| open_check_in_at_reference(check_ins) }
+
       aspirations.map do |aspiration|
         latest = latest_by_aspiration_id[aspiration.id]
-        clarity_item("Aspiration", aspiration.id, aspiration.name, latest)
+        clarity_item(
+          "Aspiration",
+          aspiration.id,
+          aspiration.name,
+          latest,
+          open_check_in: open_by_aspiration_id[aspiration.id]
+        )
       end
     end
 
-    def clarity_item(entity_type, entity_id, name, last_check_in)
+    def clarity_item(entity_type, entity_id, name, last_check_in, open_check_in: nil)
       last_finalized_at = last_check_in&.official_check_in_completed_at
+      days_since = Thresholds.days_since(last_finalized_at, reference_time: reference_time)
       status = Thresholds.status_for_last_event(
         last_finalized_at,
         healthy_within: Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
@@ -216,7 +242,7 @@ module EngagementHealth
       inputs = {
         "name" => name,
         "last_event_at" => last_finalized_at&.iso8601,
-        "days_since_last_event" => Thresholds.days_since(last_finalized_at, reference_time: reference_time),
+        "days_since_last_event" => days_since,
         "never" => last_finalized_at.nil?,
         "healthy_within_days" => Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
         "needs_attention_at_days" => Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
@@ -226,7 +252,30 @@ module EngagementHealth
         inputs["last_event_id"] = last_check_in.id
         inputs["last_event_summary"] = "Finalized #{name} check-in"
       end
+      inputs.merge!(
+        WorkflowSnapshot.call(
+          status: status,
+          open_check_in: open_check_in,
+          last_closed_check_in: last_check_in,
+          reference_time: reference_time,
+          days_since_last_event: days_since
+        )
+      )
       item_row(CATEGORY_REQUIRED_CLARITY, entity_type, entity_id, status, inputs)
+    end
+
+    def latest_closed_check_in(scope)
+      scope
+        .where.not(official_check_in_completed_at: nil)
+        .where("official_check_in_completed_at <= ?", reference_time)
+        .order(official_check_in_completed_at: :desc)
+        .first
+    end
+
+    def open_check_in_at_reference(check_ins)
+      Array(check_ins)
+        .select { |check_in| check_in.created_at <= reference_time }
+        .find { |check_in| check_in.official_check_in_completed_at.nil? || check_in.official_check_in_completed_at > reference_time }
     end
 
     # --- Milestones ---

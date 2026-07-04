@@ -1130,15 +1130,117 @@ body:has(.vertical-nav.open) .floating-toggle {
 }
 
 // ===== CHECK-INS HEALTH STACKED BARS =====
-// No outline on bar segments; distinct neon green
 .check-in-health-bar {
-  .flex-grow-0 {
+  .flex-grow-0,
+  .check-in-health-bar__segment {
     border: none !important;
     outline: none !important;
+    min-width: 2px;
   }
 }
+
+.check-in-health-bar--per-item {
+  .check-in-health-bar__segment {
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+
+    &:hover,
+    &:focus-visible {
+      filter: brightness(0.95);
+      outline: 2px solid rgba(255, 255, 255, 0.65);
+      outline-offset: -2px;
+    }
+  }
+
+  .check-in-health-bar__segment--labeled {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+}
+
+.check-in-health-bar__initials {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.55);
+  user-select: none;
+  pointer-events: none;
+}
+
+.check-in-health-eh-at-risk .check-in-health-bar__initials {
+  color: rgba(33, 37, 41, 0.9);
+  text-shadow: none;
+}
+
+.check-in-health-bar--action {
+  opacity: 0.92;
+}
+
+.check-in-health-eh-healthy {
+  background-color: #198754 !important;
+}
+
+.check-in-health-eh-at-risk {
+  background-color: #ffc107 !important;
+}
+
+.check-in-health-eh-needs-attention {
+  background-color: #dc3545 !important;
+}
+
+.check-in-health-action-light-green {
+  background-color: #8fd19e !important;
+}
+
+.check-in-health-action-light-blue {
+  background-color: #9ec5fe !important;
+}
+
+.check-in-health-action-light-purple {
+  background-color: #d0bfff !important;
+}
+
+.check-in-health-action-orange {
+  background-color: #fd7e14 !important;
+}
+
+.check-in-health-action-red {
+  background-color: #dc3545 !important;
+}
+
+.check-in-health-action-green-striped {
+  background-color: #198754 !important;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(255, 255, 255, 0.28) 6px,
+    rgba(255, 255, 255, 0.28) 8px
+  );
+}
+
+.check-in-health-action-neon-green-striped {
+  background-color: #00e676 !important;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(108, 117, 125, 0.22) 6px,
+    rgba(108, 117, 125, 0.22) 8px
+  );
+}
+
+.check-in-health-action-anomaly-gray {
+  background-color: #6c757d !important;
+}
+
 .check-in-health-neon-green {
-  background-color: #00e676 !important; // Bright neon/lime green (Material green A400)
+  background-color: #00e676 !important;
 }
 
 // Assignments index: positions column uses <details> for expand/collapse

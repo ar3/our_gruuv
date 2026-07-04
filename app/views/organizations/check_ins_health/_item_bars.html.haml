@@ -1,0 +1,29 @@
+-# Locals: segments, bar_key (:eh | :action), height_px, show_initials (optional)
+- segments = Array(local_assigns[:segments])
+- bar_key = local_assigns[:bar_key]
+- height_px = local_assigns[:height_px]
+- show_initials = local_assigns.fetch(:show_initials, false)
+- if segments.any?
+  .check-in-health-bar.check-in-health-bar--per-item.d-flex.rounded.overflow-hidden{
+    class: [bar_key == :action ? "check-in-health-bar--action mt-1" : "check-in-health-bar--eh"].compact.join(" "),
+    style: "height: #{height_px}px; min-width: 60px;",
+    data: { check_ins_health_bars_target: "#{bar_key}Bar" }
+  }
+    - segments.each do |segment|
+      - css_class = bar_key == :action ? segment[:action_css] : segment[:eh_css]
+      - segment_classes = ["check-in-health-bar__segment", css_class]
+      - segment_classes << "check-in-health-bar__segment--labeled" if show_initials && bar_key == :eh && segment[:initials].present?
+      %a.check-in-health-bar__segment{
+        class: segment_classes.join(" "),
+        href: segment[:url],
+        style: "flex: 0 0 #{segment[:flex_percent]}%;",
+        aria: { label: "View #{segment[:name]} check-in" },
+        data: {
+          check_ins_health_bars_target: "segment",
+          popover_html: segment[:popover_html]
+        }
+      }
+        - if show_initials && bar_key == :eh && segment[:initials].present?
+          %span.check-in-health-bar__initials{aria: { hidden: "true" }}= segment[:initials]
+- else
+  %span.text-muted= local_assigns.fetch(:empty_label, "—")

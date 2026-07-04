@@ -342,6 +342,8 @@ RSpec.describe EngagementHealth::Calculator do
 
         position_item = rows_for('required_clarity', level: 'item').find { |item| item[:entity_type] == 'Position' }
         expect(position_item[:status]).to eq(EngagementHealth::HEALTHY)
+        expect(position_item[:inputs]['action_bar_color']).to be_present
+        expect(position_item[:inputs]['days_until_at_risk']).to eq(11)
       end
     end
   end

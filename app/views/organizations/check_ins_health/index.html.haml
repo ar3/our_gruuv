@@ -18,8 +18,8 @@
     %p.mb-3 Give a manager a quick view at where they should focus in order to keep their folks 100% clear.
     %p.mb-2
       %strong How to read each row:
-      the top bar shows what state you and your employees are in for current check-ins; the bottom bar shows how long ago the last check-in was completed.
-    %p.mb-3 Use refresh controls only when you believe the data is out-of-date and want to queue a background refresh.
+      the top bar shows Gruuv Health Required Clarity per item (Healthy, At Risk, Needs Attention); the bottom bar shows what action to take next on each check-in.
+    %p.mb-3 Hover any segment for details. Use refresh controls when data seems stale — they queue a Gruuv Health recalculation.
 
     .card.mb-3
       .card-header.py-2
@@ -33,7 +33,6 @@
                 %th Aspirations
                 %th Assignments
                 %th Position
-                %th Milestones
             %tbody
               %tr
                 %td
@@ -42,58 +41,54 @@
                   %small.text-muted Casey Manager
                 %td
                   .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
-                    .flex-grow-0.bg-warning{style: "width: 100%;"}
+                    .flex-grow-0.check-in-health-eh-at-risk{style: "width: 100%;"}
                   .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
-                    .flex-grow-0.bg-danger{style: "width: 100%;"}
+                    .flex-grow-0.check-in-health-action-red{style: "width: 100%;"}
                 %td
                   .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
-                    .flex-grow-0.bg-success{style: "width: 55%;"}
-                    .flex-grow-0.bg-warning{style: "width: 45%;"}
+                    .flex-grow-0.check-in-health-eh-healthy{style: "width: 50%;"}
+                    .flex-grow-0.check-in-health-eh-at-risk{style: "width: 50%;"}
                   .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
-                    .flex-grow-0.bg-success{style: "width: 50%;"}
-                    .flex-grow-0.bg-warning{style: "width: 50%;"}
+                    .flex-grow-0.check-in-health-action-green-striped{style: "width: 50%;"}
+                    .flex-grow-0.check-in-health-action-orange{style: "width: 50%;"}
                 %td
                   .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 60px;"}
-                    .flex-grow-0.bg-success{style: "width: 100%;"}
+                    .flex-grow-0.check-in-health-eh-healthy{style: "width: 100%;"}
                   .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 60px;"}
-                    .flex-grow-0.check-in-health-neon-green{style: "width: 100%;"}
-                %td
-                  .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 60px;"}
-                    .flex-grow-0.bg-success{style: "width: 70%;"}
-                    .flex-grow-0.bg-danger{style: "width: 30%;"}
+                    .flex-grow-0.check-in-health-action-neon-green-striped{style: "width: 100%;"}
         .row.g-2.small
           .col-12.col-lg-6
             %div
               %i.bi.bi-arrow-up-right.me-1
-              Top bars (taller bars) explain current check-in workflow status.
+              Top bars (taller) show Gruuv Health per required item.
             %div
               %i.bi.bi-arrow-up-right.me-1
-              Bottom bars (shorter bars) explain recency of completed check-ins.
+              Bottom bars (shorter) show the recommended next action for each item.
           .col-12.col-lg-6
             %div
               %i.bi.bi-arrow-up-right.me-1
-              Row alert text points to the most urgent thing to check in on next.
+              Hover a segment for status, last finalized date, and next steps.
             %div
               %i.bi.bi-arrow-up-right.me-1
               Refresh controls should be used only when data seems stale/incorrect.
 
     .row
       .col-12.col-lg-6
-        %h6.fw-semibold.mb-2 Top bar states (check-in workflow state)
+        %h6.fw-semibold.mb-2 Top bar (Gruuv Health Required Clarity)
         %ul.mb-0
-          - CheckInHealthHelper::CHECK_IN_HEALTH_BAR_ORDER.each do |category|
+          - [EngagementHealth::NEEDS_ATTENTION, EngagementHealth::AT_RISK, EngagementHealth::HEALTHY].each do |status|
             %li
-              %span.d-inline-block.rounded-circle.me-2.align-middle{class: check_in_health_category_css(category), style: "width: 10px; height: 10px;"}
-              %strong= category.humanize
-              = " - #{check_in_health_category_meaning(category)}"
+              %span.d-inline-block.rounded-circle.me-2.align-middle{class: check_ins_health_eh_status_swatch_css(status), style: "width: 10px; height: 10px;"}
+              %strong= EngagementHealth::STATUS_LABELS.fetch(status)
+              = " - #{check_ins_health_engagement_status_meaning(status)}"
       .col-12.col-lg-6
-        %h6.fw-semibold.mb-2 Bottom bar states (last completed recency)
+        %h6.fw-semibold.mb-2 Bottom bar (action-based)
         %ul.mb-0
-          - %w[crystal_clear clear blurred obscured].each do |clarity_level|
+          - check_ins_health_action_bar_legend_items.each do |legend|
             %li
-              %span.d-inline-block.rounded-circle.me-2.align-middle{class: required_check_in_category_css(clarity_level), style: "width: 10px; height: 10px;"}
-              %strong= clarity_level.humanize
-              = " - #{required_check_in_clarity_meaning(clarity_level)}"
+              %span.d-inline-block.rounded-circle.me-2.align-middle{class: legend[:css], style: "width: 10px; height: 10px;"}
+              %strong= legend[:color].humanize
+              = " - #{legend[:label]}"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-ins Health Dashboard", url: nil }])
@@ -103,26 +98,22 @@
   .col-lg-12
     .card.border-0.shadow-sm
       .card-body
-        .row
-          .col-md-8
-            .row.text-center
-              .col-3
-                .h3.text-primary= @spotlight_stats[:total_employees]
-                %small.text-muted Total Active Employees
-              .col-3
-                .h3.text-success= @spotlight_stats[:all_healthy]
-                %small.text-muted All Healthy
-              .col-3
-                .h3.text-warning= @spotlight_stats[:needing_attention]
-                %small.text-muted Need Attention
-              .col-3
-                .h3.text-info= "#{@spotlight_stats[:completion_rate]}%"
-                %small.text-muted Completion Rate
-          .col-md-4
-            - if @spotlight_stats[:needing_attention] > 0
-              .alert.alert-warning.small
-                %i.bi.bi-exclamation-triangle.me-2
-                %strong #{@spotlight_stats[:needing_attention]} employee#{'s' if @spotlight_stats[:needing_attention] != 1} need#{'s' if @spotlight_stats[:needing_attention] == 1} attention
+        .row.text-center.g-2
+          .col
+            .h3.text-primary.mb-0= @spotlight_stats[:total_employees]
+            %small.text-muted Total Active Employees
+          .col
+            .h3.text-success.mb-0= @spotlight_stats[:healthy_count]
+            %small.text-muted Healthy
+          .col
+            .h3.text-warning.mb-0= @spotlight_stats[:at_risk_count]
+            %small.text-muted At Risk
+          .col
+            .h3.text-danger.mb-0= @spotlight_stats[:needs_attention_count]
+            %small.text-muted Needs Attention
+          .col
+            .h3.text-info.mb-0= "#{@spotlight_stats[:ok_percentage]}%"
+            %small.text-muted "% Ok"
       .card-footer.bg-light
         .row.align-items-center
           .col-md-6
@@ -132,7 +123,7 @@
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-clipboard-check.me-1
-              Bar colors: Red (none) → Orange → Light Blue/Purple → Light Green → Green → Neon Green (finalized & acknowledged)
+              Bar colors: top = Gruuv Health; bottom = next action per item
 
 / Filter (below spotlight, above table)
 .row.justify-content-center.mb-4
@@ -180,17 +171,16 @@
     .d-flex.justify-content-between.align-items-center
       %small.text-muted= raw pagy_info(@pagy)
 
-/ Main table: Employee (20%) | Aspirations (20%) | Assignments (30%) | Position (15%) | Milestones (15%)
+/ Main table: Employee | Aspirations | Assignments | Position
 .row.justify-content-center
   .col-lg-12
     - if @employee_health_data.any?
       .table-responsive
         %table.table.table-hover.table-layout-fixed
           %colgroup
-            %col{style: "width: 20%"}
-            %col{style: "width: 20%"}
-            %col{style: "width: 30%"}
-            %col{style: "width: 15%"}
+            %col{style: "width: 25%"}
+            %col{style: "width: 25%"}
+            %col{style: "width: 35%"}
             %col{style: "width: 15%"}
           %thead
             %tr
@@ -208,18 +198,18 @@
               %th Aspirations
               %th Assignments
               %th Position
-              %th Milestones
           %tbody
             - @employee_health_data.each do |data|
               - person = data[:person]
               - teammate = data[:teammate]
               - cache = data[:cache]
+              - engagement_records = data[:engagement_health_records]
               - manager_teammate = teammate.employment_tenures.active.where(company: @organization).first&.manager_teammate
               %tr
-                %td.align-top{style: "width: 20%", rowspan: 2}
+                %td.align-top{style: "width: 25%", rowspan: 2}
                   .d-flex.align-items-center.gap-2
                     = link_to person.display_name, organization_company_teammate_check_ins_path(@organization, teammate), class: "text-decoration-none fw-bold"
-                    - refreshed_tooltip = cache&.refreshed_at ? "Last refreshed #{time_ago_in_words(cache.refreshed_at)} ago" : "Cache has not been refreshed yet"
+                    - refreshed_tooltip = check_ins_health_engagement_refreshed_tooltip(engagement_records)
                     = button_to organization_check_ins_health_refresh_path(@organization, teammate_id: teammate.id), method: :post, class: "btn btn-link btn-sm p-0 text-muted", title: refreshed_tooltip, form: { class: "d-inline" } do
                       %i.bi.bi-arrow-clockwise
                   - if manager_teammate
@@ -228,83 +218,37 @@
                   - else
                     %small.text-muted —
                 
-                %td{style: "width: 20%"}
-                  - if cache
-                    - segments = check_in_health_stacked_bar_segments(check_in_health_category_counts(cache.payload_aspirations))
-                    - if segments.any?
-                      - total = segments.sum { |s| s[:count] }
-                      .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
-                        - segments.each do |seg|
-                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "aspirations")}
-                    - else
-                      %span.text-muted No aspirations
-                    - required_items = required_check_in_items_for(cache, :aspirations)
-                    - required_segments = required_check_in_stacked_bar_segments(required_check_in_category_counts(required_items))
-                    - if required_segments.any?
-                      - total_required = required_segments.sum { |s| s[:count] }
-                      .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 8px; min-width: 80px; opacity: 0.85;"}
-                        - required_segments.each do |seg|
-                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => required_check_in_segment_tooltip(seg, total_required, "aspirations")}
+                %td{style: "width: 25%"}
+                  - if engagement_records.any?
+                    - aspiration_segments = check_ins_health_item_bar_segments(records: engagement_records, entity_type: "Aspiration", teammate: teammate, organization: @organization)
+                    .check-ins-health-bars{data: { controller: "check-ins-health-bars" }}
+                      = render "organizations/check_ins_health/item_bars", segments: aspiration_segments, bar_key: :eh, height_px: 24, empty_label: "No aspirations", show_initials: true
+                      = render "organizations/check_ins_health/item_bars", segments: aspiration_segments, bar_key: :action, height_px: 8, empty_label: "No aspirations"
                   - else
                     %span.text-muted Pending
                 
-                %td{style: "width: 30%"}
-                  - if cache
-                    - segments = check_in_health_stacked_bar_segments(check_in_health_category_counts(cache.payload_assignments))
-                    - if segments.any?
-                      - total = segments.sum { |s| s[:count] }
-                      .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
-                        - segments.each do |seg|
-                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "assignments")}
-                    - else
-                      %span.text-muted No assignments
-                    - required_items = required_check_in_items_for(cache, :assignments)
-                    - required_segments = required_check_in_stacked_bar_segments(required_check_in_category_counts(required_items))
-                    - if required_segments.any?
-                      - total_required = required_segments.sum { |s| s[:count] }
-                      .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 8px; min-width: 80px; opacity: 0.85;"}
-                        - required_segments.each do |seg|
-                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => required_check_in_segment_tooltip(seg, total_required, "assignments")}
+                %td{style: "width: 35%"}
+                  - if engagement_records.any?
+                    - assignment_segments = check_ins_health_item_bar_segments(records: engagement_records, entity_type: "Assignment", teammate: teammate, organization: @organization)
+                    .check-ins-health-bars{data: { controller: "check-ins-health-bars" }}
+                      = render "organizations/check_ins_health/item_bars", segments: assignment_segments, bar_key: :eh, height_px: 24, empty_label: "No assignments", show_initials: true
+                      = render "organizations/check_ins_health/item_bars", segments: assignment_segments, bar_key: :action, height_px: 8, empty_label: "No assignments"
                   - else
                     %span.text-muted Pending
                 
                 %td{style: "width: 15%"}
-                  - if cache
-                    - segments = check_in_health_stacked_bar_segments(check_in_health_position_segment(cache.payload_position))
-                    - if segments.any?
-                      - total = segments.sum { |s| s[:count] }
-                      .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
-                        - segments.each do |seg|
-                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_segment_tooltip(seg, total, "position")}
-                    - else
-                      %span.text-muted —
-                    - required_items = required_check_in_items_for(cache, :position)
-                    - required_segments = required_check_in_stacked_bar_segments(required_check_in_category_counts(required_items))
-                    - if required_segments.any?
-                      - total_required = required_segments.sum { |s| s[:count] }
-                      .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 8px; min-width: 60px; opacity: 0.85;"}
-                        - required_segments.each do |seg|
-                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => required_check_in_segment_tooltip(seg, total_required, "position")}
+                  - if engagement_records.any?
+                    - position_segments = check_ins_health_item_bar_segments(records: engagement_records, entity_type: "Position", teammate: teammate, organization: @organization)
+                    .check-ins-health-bars{data: { controller: "check-ins-health-bars" }}
+                      = render "organizations/check_ins_health/item_bars", segments: position_segments, bar_key: :eh, height_px: 24, empty_label: "—"
+                      = render "organizations/check_ins_health/item_bars", segments: position_segments, bar_key: :action, height_px: 8, empty_label: "—"
                   - else
                     %span.text-muted Pending
                 
-                %td{style: "width: 15%"}
-                  - if cache
-                    - ms = cache.payload_milestones
-                    - total_req = ms['total_required'].to_i
-                    - if total_req.positive?
-                      - segments = check_in_health_stacked_bar_segments(check_in_health_milestone_segments(ms))
-                      .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
-                        - segments.each do |seg|
-                          .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_in_health_milestone_segment_tooltip(seg, total_req)}
-                    - else
-                      %span.text-muted No milestones
-                  - else
-                    %span.text-muted Pending
               %tr
-                %td{colspan: 3}
-                  - if cache
-                    - alert_data = required_check_in_alert_data(cache: cache, organization: @organization, teammate: teammate)
+                %td{colspan: 4}
+                  - if engagement_records.any? || cache
+                    - alert_data = check_ins_health_engagement_alert_data(records: engagement_records, organization: @organization, teammate: teammate)
                     - if alert_data[:all_clear]
                       .alert.alert-success.py-1.mb-0.small
                         %i.bi.bi-check-circle-fill.me-1
@@ -319,9 +263,7 @@
                   - else
                     .alert.alert-secondary.py-1.mb-0.small
                       %i.bi.bi-hourglass-split.me-1
-                      Waiting for check-in health cache refresh.
-                %td
-      
+                      Waiting for Gruuv Health data refresh.
       .d-flex.justify-content-center.mt-4
         - if @pagy.pages > 1
           = raw pagy_nav(@pagy)

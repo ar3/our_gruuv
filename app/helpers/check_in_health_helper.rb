@@ -1,4 +1,6 @@
 module CheckInHealthHelper
+  include CheckInsHealthEngagementHealthHelper
+  include CheckInsHealthBarsHelper
   # Position health cell helpers
   def position_health_cell_class(status)
     case status

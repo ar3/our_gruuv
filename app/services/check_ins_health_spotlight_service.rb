@@ -19,73 +19,80 @@ class CheckInsHealthSpotlightService
 
   def rows_and_spotlight_for(manager_id)
     teammates = filtered_teammates(manager_id).to_a
+    teammate_ids = teammates.map(&:id)
     caches_by_teammate_id = CheckInHealthCache
-      .where(organization: organization, teammate_id: teammates.map(&:id))
+      .where(organization: organization, teammate_id: teammate_ids)
       .index_by(&:teammate_id)
+    engagement_health_by_teammate_id = CheckInsHealthEngagementHealthSupport.records_by_teammate_id(
+      organization: organization,
+      teammate_ids: teammate_ids
+    )
     employee_health_data = teammates.map do |teammate|
-      { teammate: teammate, person: teammate.person, cache: caches_by_teammate_id[teammate.id] }
+      {
+        teammate: teammate,
+        person: teammate.person,
+        cache: caches_by_teammate_id[teammate.id],
+        engagement_health_records: engagement_health_by_teammate_id[teammate.id] || []
+      }
     end
-    { rows: employee_health_data, spotlight_stats: spotlight_stats_from_cache(employee_health_data) }
+    { rows: employee_health_data, spotlight_stats: spotlight_stats_from_rows(employee_health_data) }
   end
 
   def spotlight_stats_for(manager_id)
     rows_and_spotlight_for(manager_id).fetch(:spotlight_stats)
   end
 
-  # Stats for the full Check-ins Health page (includes completion rate).
-  def spotlight_stats_from_cache(employee_health_data)
+  # Stats for the full Check-ins Health page from Required Clarity Gruuv Health rollups.
+  def spotlight_stats_from_rows(employee_health_data)
     total_employees = employee_health_data.count
-    all_healthy = 0
-    needing_attention = 0
-    total_points = 0.0
-    max_points = 0.0
+    healthy_count = 0
+    at_risk_count = 0
+    needs_attention_count = 0
 
     employee_health_data.each do |data|
-      cache = data[:cache]
-      unless cache
-        needing_attention += 1
-        next
-      end
-      points = cache.completion_points
-      pos_pts = points[:position].to_f
-      assign_pts = points[:assignments].to_f
-      aspir_pts = points[:aspirations].to_f
-      pos_max = 4.0
-      assign_max = (cache.payload_assignments.size * 4).to_f
-      assign_max = 4.0 if cache.payload_assignments.empty?
-      aspir_max = (cache.payload_aspirations.size * 4).to_f
-      aspir_max = 4.0 if cache.payload_aspirations.empty?
-      total_max = pos_max + assign_max + aspir_max
-      total_points += pos_pts + assign_pts + aspir_pts
-      max_points += total_max
-      if pos_pts >= 4 && assign_pts >= assign_max && aspir_pts >= aspir_max
-        all_healthy += 1
-      elsif pos_pts < 2 || assign_pts < assign_max * 0.5 || aspir_pts < aspir_max * 0.5
-        needing_attention += 1
+      case CheckInsHealthEngagementHealthSupport.clarity_rollup_status(data[:engagement_health_records])
+      when EngagementHealth::HEALTHY
+        healthy_count += 1
+      when EngagementHealth::AT_RISK
+        at_risk_count += 1
+      when EngagementHealth::NEEDS_ATTENTION
+        needs_attention_count += 1
+      else
+        needs_attention_count += 1
       end
     end
 
-    completion_rate = max_points.positive? ? (total_points / max_points * 100).round(1) : 0
+    ok_percentage = if total_employees.positive?
+                        ((healthy_count + at_risk_count).to_f / total_employees * 100).round(1)
+                      else
+                        0
+                      end
 
     {
       total_employees: total_employees,
-      all_healthy: all_healthy,
-      needing_attention: needing_attention,
-      completion_rate: completion_rate
+      healthy_count: healthy_count,
+      at_risk_count: at_risk_count,
+      needs_attention_count: needs_attention_count,
+      ok_percentage: ok_percentage
     }
+  end
+
+  # Backward-compatible entry point for specs and callers that only pass cache rows.
+  def spotlight_stats_from_cache(employee_health_data)
+    normalized = Array(employee_health_data).map do |data|
+      data.merge(engagement_health_records: data.fetch(:engagement_health_records, []))
+    end
+    spotlight_stats_from_rows(normalized)
   end
 
   # Three-tier counts aligned with Goals/Observations Health Start Here widgets.
   def compact_spotlight_stats(manager_id)
     full = spotlight_stats_for(manager_id)
-    total = full[:total_employees]
-    healthy = full[:all_healthy]
-    concerning = full[:needing_attention]
     {
-      total_employees: total,
-      healthy_count: healthy,
-      ok_count: [ total - healthy - concerning, 0 ].max,
-      concerning_count: concerning
+      total_employees: full[:total_employees],
+      healthy_count: full[:healthy_count],
+      ok_count: full[:at_risk_count],
+      concerning_count: full[:needs_attention_count]
     }
   end
 end

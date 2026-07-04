@@ -17,52 +17,89 @@ RSpec.describe CheckInsHealthSpotlightService do
   end
 
   describe "#spotlight_stats_from_cache" do
-    it "counts employees without cache as needing attention" do
-      data = [{ teammate: teammate, person: person, cache: nil }]
+    it "counts employees without Gruuv Health data as needs attention" do
+      data = [{ teammate: teammate, person: person, cache: nil, engagement_health_records: [] }]
       stats = service.spotlight_stats_from_cache(data)
 
       expect(stats[:total_employees]).to eq(1)
-      expect(stats[:all_healthy]).to eq(0)
-      expect(stats[:needing_attention]).to eq(1)
-      expect(stats[:completion_rate]).to eq(0)
+      expect(stats[:healthy_count]).to eq(0)
+      expect(stats[:at_risk_count]).to eq(0)
+      expect(stats[:needs_attention_count]).to eq(1)
+      expect(stats[:ok_percentage]).to eq(0)
     end
 
-    it "counts all-healthy employees when position, assignments, and aspirations are complete" do
-      cache = create(
-        :check_in_health_cache,
-        teammate: teammate,
-        organization: organization,
-        payload: {
-          "position" => { "category" => "green" },
-          "assignments" => [{ "category" => "green" }],
-          "aspirations" => [{ "category" => "green" }],
-          "milestones" => { "total_required" => 0, "earned_count" => 0 }
-        }
-      )
-      data = [{ teammate: teammate, person: person, cache: cache }]
+    it "counts employees by required clarity rollup status" do
+      engagement_health_records = [
+        EngagementHealthStatus.create!(
+          teammate: teammate,
+          organization: organization,
+          level: "category",
+          category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+          status: EngagementHealth::HEALTHY,
+          inputs: { "item_count" => 0, "empty_reason" => "no_required_items_vacuously_healthy" },
+          computed_at: Time.current
+        )
+      ]
+      data = [{ teammate: teammate, person: person, cache: nil, engagement_health_records: engagement_health_records }]
       stats = service.spotlight_stats_from_cache(data)
 
-      expect(stats[:all_healthy]).to eq(1)
-      expect(stats[:needing_attention]).to eq(0)
+      expect(stats[:healthy_count]).to eq(1)
+      expect(stats[:at_risk_count]).to eq(0)
+      expect(stats[:needs_attention_count]).to eq(0)
+      expect(stats[:ok_percentage]).to eq(100.0)
+    end
+
+    it "counts ok percentage as healthy plus at risk" do
+      at_risk_teammate = create(:teammate, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+      needs_attention_teammate = create(:teammate, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+
+      [
+        [teammate, EngagementHealth::HEALTHY],
+        [at_risk_teammate, EngagementHealth::AT_RISK],
+        [needs_attention_teammate, EngagementHealth::NEEDS_ATTENTION]
+      ].each do |tm, status|
+        EngagementHealthStatus.create!(
+          teammate: tm,
+          organization: organization,
+          level: "category",
+          category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+          status: status,
+          inputs: {},
+          computed_at: Time.current
+        )
+      end
+
+      data = [
+        { teammate: teammate, person: teammate.person, cache: nil, engagement_health_records: EngagementHealthStatus.where(teammate: teammate).to_a },
+        { teammate: at_risk_teammate, person: at_risk_teammate.person, cache: nil, engagement_health_records: EngagementHealthStatus.where(teammate: at_risk_teammate).to_a },
+        { teammate: needs_attention_teammate, person: needs_attention_teammate.person, cache: nil, engagement_health_records: EngagementHealthStatus.where(teammate: needs_attention_teammate).to_a }
+      ]
+      stats = service.spotlight_stats_from_cache(data)
+
+      expect(stats[:healthy_count]).to eq(1)
+      expect(stats[:at_risk_count]).to eq(1)
+      expect(stats[:needs_attention_count]).to eq(1)
+      expect(stats[:ok_percentage]).to eq(66.7)
     end
   end
 
   describe "#compact_spotlight_stats" do
     it "maps page stats to three-tier Start Here counts" do
       allow(service).to receive(:spotlight_stats_for).and_return(
-        total_employees: 3,
-        all_healthy: 1,
-        needing_attention: 1,
-        completion_rate: 50.0
+        total_employees: 4,
+        healthy_count: 1,
+        at_risk_count: 1,
+        needs_attention_count: 2,
+        ok_percentage: 50.0
       )
 
       stats = service.compact_spotlight_stats(nil)
 
       expect(stats).to eq(
-        total_employees: 3,
+        total_employees: 4,
         healthy_count: 1,
         ok_count: 1,
-        concerning_count: 1
+        concerning_count: 2
       )
     end
   end

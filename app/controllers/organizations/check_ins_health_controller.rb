@@ -67,8 +67,8 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
       return
     end
 
-    CheckInHealthCacheRefreshJob.perform_later(teammate.id)
-    redirect_back fallback_location: organization_check_ins_health_path(@organization), notice: "Refresh queued for #{teammate.person.display_name}."
+    EngagementHealth.schedule_refresh_for(teammate.id)
+    redirect_back fallback_location: organization_check_ins_health_path(@organization), notice: "Gruuv Health refresh queued for #{teammate.person.display_name}."
   end
 
   def refresh_all
@@ -76,10 +76,12 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     apply_filter_default_if_needed
 
     teammate_ids = check_ins_health_spotlight_service.filtered_teammates(params[:manager_id]).pluck(:id)
-    teammate_ids.each { |teammate_id| CheckInHealthCacheRefreshJob.perform_later(teammate_id) }
+    teammate_ids.each do |teammate_id|
+      EngagementHealth.schedule_refresh_for(teammate_id)
+    end
 
     redirect_to organization_check_ins_health_path(@organization, manager_id: params[:manager_id]),
-                notice: "Refresh queued for #{teammate_ids.size} teammate#{'s' if teammate_ids.size != 1}."
+                notice: "Gruuv Health refresh queued for #{teammate_ids.size} teammate#{'s' if teammate_ids.size != 1}."
   end
 
   private
