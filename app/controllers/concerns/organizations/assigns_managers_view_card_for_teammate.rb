@@ -11,9 +11,10 @@ module Organizations
       return unless @teammate
 
       @filtered_and_paginated_teammates = [@teammate]
-      @check_in_health_caches_by_teammate = CheckInHealthCache
-        .where(teammate_id: @teammate.id, organization_id: organization.id)
-        .index_by(&:teammate_id)
+      @engagement_health_by_teammate_id = EngagementHealth::ClarityMetrics.records_by_teammate_id(
+        organization: organization,
+        teammate_ids: [@teammate.id]
+      )
       @managers_view_row_data_by_teammate_id = ManagersViewCardDataService.load(
         teammates: [@teammate],
         organization: organization,

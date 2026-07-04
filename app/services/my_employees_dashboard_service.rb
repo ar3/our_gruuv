@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Start Here "My Employees" widget: direct report counts, crystal-clear count, and averaged check-in clarity %.
+# Start Here "My Employees" widget: direct report counts, fully-healthy count, and averaged Gruuv Health clarity %.
 class MyEmployeesDashboardService
   class << self
     def summary(manager_teammate:, organization:)
@@ -32,19 +32,19 @@ class MyEmployeesDashboardService
       return empty.merge(pill_class: "bg-secondary")
     end
 
-    caches_by_id = CheckInHealthCache.where(
-      teammate_id: direct_report_ids,
-      organization_id: @organization.id
-    ).index_by(&:teammate_id)
+    records_by_teammate_id = EngagementHealth::ClarityMetrics.records_by_teammate_id(
+      organization: @organization,
+      teammate_ids: direct_report_ids
+    )
 
-    crystal_clear = direct_report_ids.count do |tid|
-      cache = caches_by_id[tid]
-      cache && CheckInHealthCompletionRate.teammate_fully_clear_on_check_ins?(cache)
-    end
+    crystal_clear = EngagementHealth::ClarityMetrics.crystal_clear_count(
+      records_by_teammate_id,
+      direct_report_ids
+    )
 
-    overall = CheckInHealthCompletionRate.average_completion_rate_per_teammate(
-      direct_report_ids,
-      @organization.id
+    overall = EngagementHealth::ClarityMetrics.average_healthy_percentage_for_teammates(
+      records_by_teammate_id,
+      direct_report_ids
     )
 
     {

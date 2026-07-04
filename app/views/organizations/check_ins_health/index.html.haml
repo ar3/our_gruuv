@@ -202,7 +202,6 @@
             - @employee_health_data.each do |data|
               - person = data[:person]
               - teammate = data[:teammate]
-              - cache = data[:cache]
               - engagement_records = data[:engagement_health_records]
               - manager_teammate = teammate.employment_tenures.active.where(company: @organization).first&.manager_teammate
               %tr
@@ -247,7 +246,7 @@
                 
               %tr
                 %td{colspan: 4}
-                  - if engagement_records.any? || cache
+                  - if engagement_records.any?
                     - alert_data = check_ins_health_engagement_alert_data(records: engagement_records, organization: @organization, teammate: teammate)
                     - if alert_data[:all_clear]
                       .alert.alert-success.py-1.mb-0.small

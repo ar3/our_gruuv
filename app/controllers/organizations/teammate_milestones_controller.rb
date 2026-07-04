@@ -111,7 +111,6 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       created_by: current_person
     )
 
-    CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
     EngagementHealth.schedule_refresh_for(@teammate.id)
 
     redirect_to organization_teammate_milestone_path(organization, teammate_milestone),

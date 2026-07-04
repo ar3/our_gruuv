@@ -10,22 +10,17 @@ RSpec.describe CheckInsHealthEmployeeSummaryCsvBuilder do
   end
 
   describe '#call' do
-    it 'returns a CSV string with employee summary headers' do
+    it 'returns a CSV string with Gruuv Health summary headers' do
       csv = described_class.new(company, [teammate]).call
       parsed = CSV.parse(csv, headers: true)
 
       expect(parsed.headers).to include(
         'Name',
         'Email',
-        'Position',
-        'Title',
-        'Department',
-        'Manager Name',
-        'Manager Email',
-        'Total Percentage Clear',
-        'Aspirational Values Total Percentage Clear',
-        'Required Assignments Total Percentage Clear',
-        'Position Total Percentage Clear'
+        'Total Percentage Healthy',
+        'Aspirations Percentage Healthy',
+        'Assignments Percentage Healthy',
+        'Position Percentage Healthy'
       )
     end
 
@@ -39,54 +34,50 @@ RSpec.describe CheckInsHealthEmployeeSummaryCsvBuilder do
       expect(row['Email']).to eq(person.email)
     end
 
-    it 'computes percentages from cache payload timestamps' do
-      create(:check_in_health_cache, teammate: teammate, organization: company, payload: {
-               'position' => {
-                 'category' => 'green',
-                 'employee_completed_at' => 30.days.ago.iso8601,
-                 'manager_completed_at' => 20.days.ago.iso8601,
-                 'official_check_in_completed_at' => 10.days.ago.iso8601,
-                 'acknowledged_at' => 5.days.ago.iso8601
-               },
-               'assignments' => [
-                 {
-                   'item_id' => 1,
-                   'category' => 'green',
-                   'employee_completed_at' => 10.days.ago.iso8601,
-                   'manager_completed_at' => 10.days.ago.iso8601,
-                   'official_check_in_completed_at' => 10.days.ago.iso8601,
-                   'acknowledged_at' => 10.days.ago.iso8601
-                 },
-                 {
-                   'item_id' => 2,
-                   'category' => 'red',
-                   'employee_completed_at' => nil,
-                   'manager_completed_at' => nil,
-                   'official_check_in_completed_at' => nil,
-                   'acknowledged_at' => nil
-                 }
-               ],
-               'aspirations' => [
-                 {
-                   'item_id' => 11,
-                   'category' => 'green',
-                   'employee_completed_at' => 20.days.ago.iso8601,
-                   'manager_completed_at' => 20.days.ago.iso8601,
-                   'official_check_in_completed_at' => 20.days.ago.iso8601,
-                   'acknowledged_at' => 20.days.ago.iso8601
-                 }
-               ],
-               'milestones' => { 'total_required' => 0, 'earned_count' => 0 }
-             })
+    it 'computes percentages from engagement health statuses' do
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Position',
+        entity_id: 1,
+        status: EngagementHealth::HEALTHY,
+        inputs: { 'name' => 'Engineer' },
+        computed_at: Time.current
+      )
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Assignment',
+        entity_id: 2,
+        status: EngagementHealth::AT_RISK,
+        inputs: { 'name' => 'Support' },
+        computed_at: Time.current
+      )
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Aspiration',
+        entity_id: 3,
+        status: EngagementHealth::HEALTHY,
+        inputs: { 'name' => 'Growth' },
+        computed_at: Time.current
+      )
 
       csv = described_class.new(company, [teammate]).call
       parsed = CSV.parse(csv, headers: true)
       row = parsed.first
 
-      expect(row['Aspirational Values Employee Checked-in Within 90 Days Percentage']).to eq('100.0%')
-      expect(row['Required Assignments Employee Checked-in Within 90 Days Percentage']).to eq('50.0%')
-      expect(row['Position Employee Checked-in Within 90 Days Percentage']).to eq('100.0%')
-      expect(row['Position Acknowledged Checked-in Within 60 Days Percentage']).to eq('100.0%')
+      expect(row['Total Percentage Healthy']).to eq('66.7%')
+      expect(row['Aspirations Percentage Healthy']).to eq('100.0%')
+      expect(row['Assignments Percentage Healthy']).to eq('0.0%')
+      expect(row['Assignments Percentage At Risk']).to eq('100.0%')
+      expect(row['Position Percentage Healthy']).to eq('100.0%')
     end
   end
 end

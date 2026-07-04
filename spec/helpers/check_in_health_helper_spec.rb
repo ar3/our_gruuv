@@ -6,11 +6,10 @@ RSpec.describe CheckInHealthHelper, type: :helper do
   include ActiveSupport::Testing::TimeHelpers
 
   describe '#check_in_health_clarity_popover_caption' do
-    it 'includes clear and blurred day counts from CheckInBehavior' do
+    it 'describes Gruuv Health workflow columns' do
       text = helper.check_in_health_clarity_popover_caption
-      expect(text).to include(CheckInBehavior::CLARITY_CLEAR_DAYS.to_s)
-      expect(text).to include(CheckInBehavior::CLARITY_BLURRED_DAYS.to_s)
-      expect(text).to include('overall clarity percentage')
+      expect(text).to include(EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS.to_s)
+      expect(text).to include('Healthy Gruuv Health status')
     end
   end
 

@@ -1,5 +1,4 @@
 class Organizations::InsightsController < Organizations::OrganizationNamespaceBaseController
-  include CheckInHealthCompletionRate
   include InsightsTimeframeSelection
 
   helper OgScorecardHelper
@@ -436,36 +435,35 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       h[tm.id] = tm.active_employment_tenure&.position&.title&.department
     end
 
-    caches = CheckInHealthCache.where(
-      teammate_id: teammate_ids,
-      organization_id: company.id
-    ).to_a
-    caches_by_teammate = caches.index_by(&:teammate_id)
+    records_by_teammate = EngagementHealth::ClarityMetrics.records_by_teammate_id(
+      organization: company,
+      teammate_ids: teammate_ids
+    )
 
     teammate_ids_by_department = teammate_ids.group_by { |id| department_by_teammate[id] }
 
     teammate_ids_by_department.map do |department, ids|
-      dept_caches = ids.filter_map { |id| caches_by_teammate[id] }
-      build_department_health_row(department, dept_caches, ids.size)
+      dept_records = ids.flat_map { |id| records_by_teammate[id] || [] }
+      build_department_health_row(department, dept_records, ids.size, records_by_teammate, ids)
     end
   end
 
-  def build_department_health_row(department, caches, employee_count)
+  def build_department_health_row(department, dept_records, employee_count, records_by_teammate, teammate_ids)
     department_name = department&.name.presence || 'No Department'
-    aspiration_counts = aggregate_category_counts(caches.flat_map(&:payload_aspirations))
-    assignment_counts = aggregate_category_counts(caches.flat_map(&:payload_assignments))
-    position_counts = aggregate_position_counts(caches.map { |c| c.payload_position.presence || {} })
-    milestone_total = caches.sum { |c| c.payload_milestones['total_required'].to_i }
-    milestone_earned = caches.sum { |c| c.payload_milestones['earned_count'].to_i }
-    completion_rate = completion_rate_for_caches(caches)
+    items = EngagementHealth::ClarityMetrics.clarity_items(dept_records)
+    aspiration_items = items.select { |item| item.entity_type == 'Aspiration' }
+    assignment_items = items.select { |item| item.entity_type == 'Assignment' }
+    position_items = items.select { |item| item.entity_type == 'Position' }
+    completion_rate = EngagementHealth::ClarityMetrics.average_healthy_percentage_for_teammates(
+      records_by_teammate,
+      teammate_ids
+    )
     {
       department: department,
       department_name: department_name,
-      aspiration_counts: aspiration_counts,
-      assignment_counts: assignment_counts,
-      position_counts: position_counts,
-      milestone_total_required: milestone_total,
-      milestone_earned_count: milestone_earned,
+      aspiration_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(aspiration_items),
+      assignment_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(assignment_items),
+      position_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(position_items),
       employee_count: employee_count,
       completion_rate: completion_rate
     }

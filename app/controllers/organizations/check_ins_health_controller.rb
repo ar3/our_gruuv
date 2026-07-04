@@ -1,5 +1,4 @@
 class Organizations::CheckInsHealthController < Organizations::OrganizationNamespaceBaseController
-  include CheckInHealthCompletionRate
   include Organizations::CheckInsHealthTeammateFiltering
 
   before_action :require_authentication
@@ -130,25 +129,26 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     direct_report_ids = EmploymentTenure
       .where(company: company, manager_teammate: manager_teammate, ended_at: nil)
       .pluck(:teammate_id)
-    caches = CheckInHealthCache.where(
-      teammate_id: direct_report_ids,
-      organization_id: @organization.id
-    ).to_a
-    aspiration_counts = aggregate_category_counts(caches.flat_map(&:payload_aspirations))
-    assignment_counts = aggregate_category_counts(caches.flat_map(&:payload_assignments))
-    position_counts = aggregate_position_counts(caches.map { |c| c.payload_position.presence || {} })
-    milestone_total = caches.sum { |c| c.payload_milestones['total_required'].to_i }
-    milestone_earned = caches.sum { |c| c.payload_milestones['earned_count'].to_i }
-    completion_rate = completion_rate_for_caches(caches)
+    records_by_teammate_id = EngagementHealth::ClarityMetrics.records_by_teammate_id(
+      organization: @organization,
+      teammate_ids: direct_report_ids
+    )
+    all_items = direct_report_ids.flat_map do |teammate_id|
+      EngagementHealth::ClarityMetrics.clarity_items(records_by_teammate_id[teammate_id] || [])
+    end
+    aspiration_items = all_items.select { |item| item.entity_type == "Aspiration" }
+    assignment_items = all_items.select { |item| item.entity_type == "Assignment" }
+    position_items = all_items.select { |item| item.entity_type == "Position" }
     {
       manager_teammate: manager_teammate,
-      aspiration_counts: aspiration_counts,
-      assignment_counts: assignment_counts,
-      position_counts: position_counts,
-      milestone_total_required: milestone_total,
-      milestone_earned_count: milestone_earned,
+      aspiration_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(aspiration_items),
+      assignment_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(assignment_items),
+      position_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(position_items),
       direct_report_count: direct_report_ids.size,
-      completion_rate: completion_rate
+      completion_rate: EngagementHealth::ClarityMetrics.average_healthy_percentage_for_teammates(
+        records_by_teammate_id,
+        direct_report_ids
+      )
     }
   end
 

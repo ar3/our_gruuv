@@ -20,9 +20,6 @@ class CheckInsHealthSpotlightService
   def rows_and_spotlight_for(manager_id)
     teammates = filtered_teammates(manager_id).to_a
     teammate_ids = teammates.map(&:id)
-    caches_by_teammate_id = CheckInHealthCache
-      .where(organization: organization, teammate_id: teammate_ids)
-      .index_by(&:teammate_id)
     engagement_health_by_teammate_id = CheckInsHealthEngagementHealthSupport.records_by_teammate_id(
       organization: organization,
       teammate_ids: teammate_ids
@@ -31,7 +28,6 @@ class CheckInsHealthSpotlightService
       {
         teammate: teammate,
         person: teammate.person,
-        cache: caches_by_teammate_id[teammate.id],
         engagement_health_records: engagement_health_by_teammate_id[teammate.id] || []
       }
     end

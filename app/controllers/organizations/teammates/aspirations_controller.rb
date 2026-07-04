@@ -51,7 +51,10 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
     @single_item_next_url = next_result[:next_url]
     @single_item_show_check_in_status_done = next_result[:show_check_in_status_done]
 
-    @check_in_health_cache = CheckInHealthCache.find_by(teammate: @teammate, organization: organization)
+    @engagement_health_records = EngagementHealth::ClarityMetrics.records_for_teammate(
+      organization: organization,
+      teammate_id: @teammate.id
+    )
 
     since_date = @latest_finalized&.official_check_in_completed_at || 10.years.ago
     @observations_since_date = since_date

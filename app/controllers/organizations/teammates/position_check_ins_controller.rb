@@ -48,7 +48,10 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
     @latest_finalized_for_pill = @latest_finalized
 
     # Clarity % (check-in health cache)
-    @check_in_health_cache = CheckInHealthCache.find_by(teammate: @teammate, organization: organization)
+    @engagement_health_records = EngagementHealth::ClarityMetrics.records_for_teammate(
+      organization: organization,
+      teammate_id: @teammate.id
+    )
 
     # Prior check-ins: already loaded as @check_ins (finalized only)
 

@@ -59,18 +59,6 @@ RSpec.describe 'Check-ins Health', type: :request do
     end
 
     it 'shows secondary Gruuv Health alert and refresh control when engagement health exists' do
-      create(
-        :check_in_health_cache,
-        teammate: teammate,
-        organization: company,
-        refreshed_at: 1.hour.ago,
-        payload: {
-          'position' => { 'category' => 'green' },
-          'assignments' => [],
-          'aspirations' => [],
-          'milestones' => { 'total_required' => 0, 'earned_count' => 0 }
-        }
-      )
       EngagementHealthStatus.create!(
         teammate: teammate,
         organization: company,

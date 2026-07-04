@@ -88,9 +88,19 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(json['widgets']['get_shit_done']['ok']).to eq(true)
     end
 
-    it 'returns check-in status widget html with clarity line and Values/Assignments/Position table' do
+    it 'returns check-in status widget html with healthy clarity line and Values/Assignments/Position table' do
       post organization_start_here_add_widget_path(company), params: { widget_id: "my_check_in" }
-      create(:check_in_health_cache, teammate: teammate, organization: company)
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: "item",
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: "Position",
+        entity_id: 1,
+        status: EngagementHealth::HEALTHY,
+        inputs: { "name" => "Engineer" },
+        computed_at: Time.current
+      )
 
       post organization_start_here_widget_dashboards_path(company),
            params: { widget_ids: %w[my_check_in] },
@@ -98,7 +108,7 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       json = JSON.parse(response.body)
       html = json.dig("widgets", "my_check_in", "html").to_s
       expect(json.dig("widgets", "my_check_in", "ok")).to eq(true)
-      expect(html).to include("clear on where you stand")
+      expect(html).to include("healthy on required clarity check-ins")
       expect(html).to include("Values")
       expect(html).to include("Assignments")
       expect(html).to include("Position")
@@ -106,7 +116,17 @@ RSpec.describe 'Organizations::StartHere', type: :request do
 
     it 'returns beta_check_in_history card body with same check-in clarity partial' do
       post organization_start_here_add_widget_path(company), params: { widget_id: "beta_check_in_history" }
-      create(:check_in_health_cache, teammate: teammate, organization: company)
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: "item",
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: "Position",
+        entity_id: 1,
+        status: EngagementHealth::HEALTHY,
+        inputs: { "name" => "Engineer" },
+        computed_at: Time.current
+      )
 
       post organization_start_here_widget_dashboards_path(company),
            params: { widget_ids: %w[beta_check_in_history] },
@@ -114,7 +134,7 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       json = JSON.parse(response.body)
       html = json.dig("widgets", "beta_check_in_history", "html").to_s
       expect(json.dig("widgets", "beta_check_in_history", "ok")).to eq(true)
-      expect(html).to include("clear on where you stand")
+      expect(html).to include("healthy on required clarity check-ins")
       expect(html).to include("Values")
     end
 

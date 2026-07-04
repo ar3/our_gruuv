@@ -121,7 +121,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       .where.not(effective_date: nil)
     @snapshot_total_count = snapshots_scope.count
     @snapshot_unacknowledged_count = snapshots_scope.where(employee_acknowledged_at: nil).count
-    @check_in_health_cache = CheckInHealthCache.find_by(teammate: @teammate, organization: organization)
+    @engagement_health_records = EngagementHealth::ClarityMetrics.records_for_teammate(
+      organization: organization,
+      teammate_id: @teammate.id
+    )
 
     next_result = CheckIns::SingleItemCheckInNextItemService.call(
       teammate: @teammate,
@@ -195,7 +198,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         if @check_in_errors.any?
           redirect_to redirect_url, alert: check_in_errors_flash_message
         else
-          CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
+          EngagementHealth.schedule_refresh_for(@teammate.id)
           redirect_to redirect_url, notice: 'Check-ins saved successfully.'
         end
       end
@@ -203,7 +206,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         if @check_in_errors.any?
           render json: { ok: false, errors: @check_in_errors }, status: :unprocessable_entity
         else
-          CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
+          EngagementHealth.schedule_refresh_for(@teammate.id)
           render json: { ok: true, saved_at: Time.current.iso8601 }
         end
       end

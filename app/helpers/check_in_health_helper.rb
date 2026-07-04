@@ -472,6 +472,30 @@ module CheckInHealthHelper
     end
   end
 
+  def engagement_health_clarity_breakdown(records)
+    EngagementHealth::ClarityMetrics.breakdown(records)
+  end
+
+  def engagement_health_clarity_popover_table(records)
+    EngagementHealth::ClarityMetrics.popover_table_data(records).presence
+  end
+
+  def engagement_health_clarity_breakdown_for_teammate(organization:, teammate:)
+    records = EngagementHealth::ClarityMetrics.records_for_teammate(
+      organization: organization,
+      teammate_id: teammate.id
+    )
+    engagement_health_clarity_breakdown(records)
+  end
+
+  def engagement_health_clarity_popover_table_for_teammate(organization:, teammate:)
+    records = EngagementHealth::ClarityMetrics.records_for_teammate(
+      organization: organization,
+      teammate_id: teammate.id
+    )
+    engagement_health_clarity_popover_table(records)
+  end
+
   # General helpers
   def health_status_badge_class(status)
     case status
@@ -541,10 +565,8 @@ module CheckInHealthHelper
   # Footnote for shared/clarity_popover_table (popover uses clear window; headline % uses blurred window in cache).
   def check_in_health_clarity_popover_caption
     format(
-      "The above calculations are based on check-ins that have been completed in the last %{clear} days, " \
-      "but the overall clarity percentage is based on check-ins that have been completed in the last %{blurred} days.",
-      clear: CheckInBehavior::CLARITY_CLEAR_DAYS,
-      blurred: CheckInBehavior::CLARITY_BLURRED_DAYS
+      "Employee and manager columns reflect in-progress workflow completion; Together is the share of items with Healthy Gruuv Health status (finalized within %{healthy} days).",
+      healthy: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
     )
   end
 end

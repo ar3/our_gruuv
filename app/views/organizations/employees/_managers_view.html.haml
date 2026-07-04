@@ -13,9 +13,9 @@
 .list-group.managers-view-card
   - @filtered_and_paginated_teammates.each do |teammate|
     .list-group-item.py-2
-      - cache = @check_in_health_caches_by_teammate && @check_in_health_caches_by_teammate[teammate.id]
-      - rate_data = check_in_health_completion_rate_and_breakdown(cache)
-      - health_table_data = single_item_health_popover_table(cache)
+      - cache = @engagement_health_by_teammate_id && @engagement_health_by_teammate_id[teammate.id]
+      - rate_data = engagement_health_clarity_breakdown(cache)
+      - health_table_data = engagement_health_clarity_popover_table(cache)
       - health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : no_clarity_check_in_health_data_label
       - casual_name = teammate.person.casual_name
       - row_data = (@managers_view_row_data_by_teammate_id || {})[teammate.id]

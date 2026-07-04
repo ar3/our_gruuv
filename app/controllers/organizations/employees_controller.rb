@@ -169,11 +169,12 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Preload check-in health caches for manager lite (90-day completion % next to check-in button)
       if @filtered_and_paginated_teammates.any?
         teammate_ids = @filtered_and_paginated_teammates.map(&:id)
-        @check_in_health_caches_by_teammate = CheckInHealthCache
-          .where(teammate_id: teammate_ids, organization_id: @organization.id)
-          .index_by(&:teammate_id)
+        @engagement_health_by_teammate_id = EngagementHealth::ClarityMetrics.records_by_teammate_id(
+          organization: @organization,
+          teammate_ids: teammate_ids
+        )
       else
-        @check_in_health_caches_by_teammate = {}
+        @engagement_health_by_teammate_id = {}
       end
 
       @managers_view_row_data_by_teammate_id =
@@ -478,7 +479,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       end
     end
 
-    CheckInHealthCacheRefreshSchedule.schedule_refresh_for(teammate.id) if teammate && acknowledged_count.positive?
+      EngagementHealth.schedule_refresh_for(@teammate.id) if teammate && acknowledged_count.positive?
     
     redirect_to audit_organization_employee_path(@organization, teammate), 
                 notice: "Successfully acknowledged #{acknowledged_count} check-in#{'s' if acknowledged_count != 1}."

@@ -50,7 +50,6 @@ class BulkMilestoneAwardApplyService
         apply_for_ability!(ability_id, target_level)
       end
 
-      CheckInHealthCacheRefreshSchedule.schedule_refresh_for(@teammate.id)
       EngagementHealth.schedule_refresh_for(@teammate.id)
       Result.ok(:applied)
     end
