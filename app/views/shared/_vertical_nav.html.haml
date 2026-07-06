@@ -32,7 +32,7 @@
             = section[:label]
         - else
           / Section with items
-          - visible_items = visible_nav_items(section[:items])
+          - visible_items = section[:items]
           - section_has_active = section_has_active_item?(visible_items)
           .nav-section
             %button.nav-section-toggle.btn.btn-link{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navSection#{section[:section].capitalize}", "aria-expanded": section_has_active.to_s}

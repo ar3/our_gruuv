@@ -68,7 +68,7 @@ class ApplicationController < ActionController::Base
   
   # Override Pundit's default user method to use current_company_teammate
   def pundit_user
-    OpenStruct.new(
+    @pundit_user ||= OpenStruct.new(
       user: current_company_teammate,
       impersonating_teammate: impersonating_teammate
     )
@@ -204,9 +204,8 @@ class ApplicationController < ActionController::Base
   end
   
   def current_company_teammate
-    Rails.logger.info "🔍🔍🔍🔍🔍 current_company_teammate: #{@current_company_teammate}" if @current_company_teammate.present?
-    return @current_company_teammate if @current_company_teammate.present?
-    
+    return @current_company_teammate if defined?(@current_company_teammate)
+
     # In test environment, allow RSpec mocks to override
     if Rails.env.test? && respond_to?(:current_company_teammate_mock)
       return current_company_teammate_mock if current_company_teammate_mock
@@ -244,18 +243,21 @@ class ApplicationController < ActionController::Base
     else
       @current_company_teammate = nil
     end
-    Rails.logger.info "🔍🔍🔍🔍🔍 current_company_teammate: #{@current_company_teammate.present? ? @current_company_teammate : 'unauthenticated'}"
     @current_company_teammate
   end
 
   # Helper method that delegates to current_company_teammate.person for backward compatibility
   def current_person
-    current_company_teammate&.person
+    return @current_person if defined?(@current_person)
+
+    @current_person = current_company_teammate&.person
   end
 
   # Helper method that delegates to current_company_teammate.organization
   def current_organization
-    current_company_teammate&.organization
+    return @current_organization if defined?(@current_organization)
+
+    @current_organization = current_company_teammate&.organization
   end
   
   # Helper method to get or create user preferences
@@ -324,28 +326,19 @@ class ApplicationController < ActionController::Base
   end
 
   def start_impersonation(teammate)
-    Rails.logger.info "🔍🔍🔍🔍🔍 START_IMPERSONATION: About to start impersonation for teammate: #{teammate&.id} (#{teammate&.person&.display_name})"
-    Rails.logger.info "🔍🔍🔍🔍🔍 START_IMPERSONATION: pundit: #{pundit_user}"
-    
-    @impersonating_teammate = nil
-    @current_company_teammate = nil
+    clear_request_identity_cache
 
     # Use Pundit policy for authorization (check if real user can impersonate the teammate's person)
     return false unless policy(teammate.person).can_impersonate?
-    Rails.logger.info "🔍🔍🔍🔍🔍 START_IMPERSONATION: session[:current_company_teammate_id]: #{session[:current_company_teammate_id]}"
-    Rails.logger.info "🔍🔍🔍🔍🔍 START_IMPERSONATION: session[:impersonating_teammate_id]: #{session[:impersonating_teammate_id]}"
     session[:impersonating_teammate_id] = session[:current_company_teammate_id]
     session[:current_company_teammate_id] = teammate.id
     raise "Impersonation failed because current_company_teammate.id (#{current_company_teammate&.id}) != teammate.id (#{teammate.id})" if current_company_teammate&.id != teammate.id
-    Rails.logger.info "🔍🔍🔍🔍🔍 IMPERSONATION_COMPLETE: session[:current_company_teammate_id]: #{session[:current_company_teammate_id]}"
-    Rails.logger.info "🔍🔍🔍🔍🔍 IMPERSONATION_COMPLETE: session[:impersonating_teammate_id]: #{session[:impersonating_teammate_id]}"
     true
   end
 
   def stop_impersonation
     return false unless impersonating?
-    @impersonating_teammate = nil
-    @current_company_teammate = nil
+    clear_request_identity_cache
 
     session[:current_company_teammate_id] = session[:impersonating_teammate_id]
     session.delete(:impersonating_teammate_id)
@@ -478,6 +471,15 @@ class ApplicationController < ActionController::Base
     # Don't let tracking errors break the request
     Rails.logger.error "PageVisit tracking error: #{e.class} - #{e.message}"
     Rails.logger.error e.backtrace.first(5).join("\n")
+  end
+
+  def clear_request_identity_cache
+    remove_instance_variable(:@current_company_teammate) if defined?(@current_company_teammate)
+    remove_instance_variable(:@current_person) if defined?(@current_person)
+    remove_instance_variable(:@current_organization) if defined?(@current_organization)
+    remove_instance_variable(:@pundit_user) if defined?(@pundit_user)
+    remove_instance_variable(:@current_user_preferences) if defined?(@current_user_preferences)
+    @impersonating_teammate = nil
   end
 
   # Close vertical nav after redirects unless it is locked open.

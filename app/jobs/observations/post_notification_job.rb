@@ -2,7 +2,6 @@ class Observations::PostNotificationJob < ApplicationJob
   queue_as :default
 
   def perform(observation_id, notify_teammate_ids = [], kudos_channel_organization_id = nil, existing_dm_main_notification_id: nil)
-    Rails.logger.info "🔍🔍🔍🔍🔍 PostNotificationJob: perform: observation_id: #{observation_id}, notify_teammate_ids: #{notify_teammate_ids}, kudos_channel_organization_id: #{kudos_channel_organization_id}, existing_dm_main_notification_id: #{existing_dm_main_notification_id}"
     observation = Observation.find(observation_id)
 
     if existing_dm_main_notification_id.present?

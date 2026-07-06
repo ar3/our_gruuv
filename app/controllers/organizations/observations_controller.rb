@@ -990,7 +990,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
 
   # Slack posting from show page
   def post_to_slack
-    Rails.logger.info "🔍🔍🔍🔍🔍 ObservationController::post_to_slack: About to authorize Observation"
     authorize @observation, :post_to_slack?
     
     # Disallow if draft
@@ -1003,7 +1002,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     notify_teammate_ids = params[:notify_teammate_ids] || []
     kudos_channel_organization_id = params[:kudos_channel_organization_id]
     
-    Rails.logger.info "🔍🔍🔍🔍🔍 ObservationController::post_to_slack: perform: @observation.id: #{@observation.id}, notify_teammate_ids: #{notify_teammate_ids}, kudos_channel_organization_id: #{kudos_channel_organization_id}"
     Observations::PostNotificationJob.perform_and_get_result(
       @observation.id, 
       notify_teammate_ids,

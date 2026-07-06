@@ -8,8 +8,8 @@ module NavigationHelper
   # Uses the same query service as the controller to ensure consistency
   def pending_get_shit_done_count(teammate)
     return 0 unless teammate
-    
-    GetShitDoneQueryService.new(teammate: teammate).total_pending_count
+
+    @pending_gsd_count ||= GetShitDoneQueryService.new(teammate: teammate).total_pending_count
   end
 
   # Navigation structure definition
