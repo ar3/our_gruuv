@@ -203,7 +203,7 @@
               - person = data[:person]
               - teammate = data[:teammate]
               - engagement_records = data[:engagement_health_records]
-              - manager_teammate = teammate.employment_tenures.active.where(company: @organization).first&.manager_teammate
+              - manager_teammate = data[:manager_teammate]
               %tr
                 %td.align-top{style: "width: 25%", rowspan: 2}
                   .d-flex.align-items-center.gap-2

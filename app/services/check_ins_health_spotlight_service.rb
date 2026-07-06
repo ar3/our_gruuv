@@ -2,6 +2,14 @@
 
 # Check-ins Health dashboard: manager filter (shared with goals health) and spotlight counts from cache.
 class CheckInsHealthSpotlightService
+  EMPTY_SPOTLIGHT_STATS = {
+    total_employees: 0,
+    healthy_count: 0,
+    at_risk_count: 0,
+    needs_attention_count: 0,
+    ok_percentage: 0
+  }.freeze
+
   attr_reader :organization, :filtering
 
   def initialize(organization:, current_person:, current_company_teammate:, manage_employment:)
@@ -17,36 +25,107 @@ class CheckInsHealthSpotlightService
   delegate :filtered_teammates, :available_manager_filter_options, :default_manager_filter_value,
            :normalize_manager_filter, to: :filtering
 
+  def paginated_index_data(manager_id, page:, items: 25)
+    scope = filtered_teammates(manager_id)
+    total_count = scope.count
+    page = [page.to_i, 1].max
+    teammates = scope.offset((page - 1) * items).limit(items).to_a
+
+    {
+      rows: rows_for_teammates(teammates),
+      spotlight_stats: spotlight_stats_for(manager_id),
+      total_count: total_count
+    }
+  end
+
   def rows_and_spotlight_for(manager_id)
     teammates = filtered_teammates(manager_id).to_a
+    {
+      rows: rows_for_teammates(teammates),
+      spotlight_stats: spotlight_stats_for(manager_id)
+    }
+  end
+
+  def spotlight_stats_for(manager_id)
+    teammate_ids = filtered_teammates(manager_id).pluck(:id)
+    spotlight_stats_from_teammate_ids(teammate_ids)
+  end
+
+  # Stats for the full Check-ins Health page from Required Clarity Gruuv Health rollups.
+  def spotlight_stats_from_rows(employee_health_data)
+    spotlight_stats_from_teammate_ids(
+      Array(employee_health_data).map { |data| data.fetch(:teammate).id }
+    )
+  end
+
+  # Backward-compatible entry point for specs and callers that only pass cache rows.
+  def spotlight_stats_from_cache(employee_health_data)
+    normalized = Array(employee_health_data).map do |data|
+      records = data.fetch(:engagement_health_records, [])
+      status = CheckInsHealthEngagementHealthSupport.clarity_rollup_status(records)
+      { teammate_id: data.fetch(:teammate).id, status: status }
+    end
+    spotlight_stats_from_status_rows(normalized)
+  end
+
+  # Three-tier counts aligned with Goals/Observations Health Start Here widgets.
+  def compact_spotlight_stats(manager_id)
+    full = spotlight_stats_for(manager_id)
+    {
+      total_employees: full[:total_employees],
+      healthy_count: full[:healthy_count],
+      ok_count: full[:at_risk_count],
+      concerning_count: full[:needs_attention_count]
+    }
+  end
+
+  private
+
+  def rows_for_teammates(teammates)
+    return [] if teammates.empty?
+
+    company = organization.root_company || organization
     teammate_ids = teammates.map(&:id)
     engagement_health_by_teammate_id = CheckInsHealthEngagementHealthSupport.records_by_teammate_id(
       organization: organization,
       teammate_ids: teammate_ids
     )
-    employee_health_data = teammates.map do |teammate|
+    teammates.map do |teammate|
       {
         teammate: teammate,
         person: teammate.person,
+        manager_teammate: Goals::HealthManagerPerson.manager_teammate_for(teammate, company: company),
         engagement_health_records: engagement_health_by_teammate_id[teammate.id] || []
       }
     end
-    { rows: employee_health_data, spotlight_stats: spotlight_stats_from_rows(employee_health_data) }
   end
 
-  def spotlight_stats_for(manager_id)
-    rows_and_spotlight_for(manager_id).fetch(:spotlight_stats)
+  def spotlight_stats_from_teammate_ids(teammate_ids)
+    return EMPTY_SPOTLIGHT_STATS.dup if teammate_ids.blank?
+
+    rollups_by_teammate_id = EngagementHealthStatus
+      .where(
+        organization: organization,
+        teammate_id: teammate_ids,
+        category: CheckInsHealthEngagementHealthSupport::CATEGORY,
+        level: "category"
+      )
+      .index_by(&:teammate_id)
+
+    status_rows = teammate_ids.map do |teammate_id|
+      { teammate_id: teammate_id, status: rollups_by_teammate_id[teammate_id]&.status }
+    end
+    spotlight_stats_from_status_rows(status_rows)
   end
 
-  # Stats for the full Check-ins Health page from Required Clarity Gruuv Health rollups.
-  def spotlight_stats_from_rows(employee_health_data)
-    total_employees = employee_health_data.count
+  def spotlight_stats_from_status_rows(status_rows)
+    total_employees = status_rows.count
     healthy_count = 0
     at_risk_count = 0
     needs_attention_count = 0
 
-    employee_health_data.each do |data|
-      case CheckInsHealthEngagementHealthSupport.clarity_rollup_status(data[:engagement_health_records])
+    status_rows.each do |row|
+      case row[:status]
       when EngagementHealth::HEALTHY
         healthy_count += 1
       when EngagementHealth::AT_RISK
@@ -70,25 +149,6 @@ class CheckInsHealthSpotlightService
       at_risk_count: at_risk_count,
       needs_attention_count: needs_attention_count,
       ok_percentage: ok_percentage
-    }
-  end
-
-  # Backward-compatible entry point for specs and callers that only pass cache rows.
-  def spotlight_stats_from_cache(employee_health_data)
-    normalized = Array(employee_health_data).map do |data|
-      data.merge(engagement_health_records: data.fetch(:engagement_health_records, []))
-    end
-    spotlight_stats_from_rows(normalized)
-  end
-
-  # Three-tier counts aligned with Goals/Observations Health Start Here widgets.
-  def compact_spotlight_stats(manager_id)
-    full = spotlight_stats_for(manager_id)
-    {
-      total_employees: full[:total_employees],
-      healthy_count: full[:healthy_count],
-      ok_count: full[:at_risk_count],
-      concerning_count: full[:needs_attention_count]
     }
   end
 end

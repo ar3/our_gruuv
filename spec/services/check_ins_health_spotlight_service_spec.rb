@@ -83,6 +83,53 @@ RSpec.describe CheckInsHealthSpotlightService do
     end
   end
 
+  describe "#paginated_index_data" do
+    it "loads only the requested page of teammates" do
+      30.times do
+        tm = create(:teammate, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+        EngagementHealthStatus.create!(
+          teammate: tm,
+          organization: organization,
+          level: "category",
+          category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+          status: EngagementHealth::HEALTHY,
+          inputs: {},
+          computed_at: Time.current
+        )
+      end
+
+      page1 = service.paginated_index_data("everyone", page: 1, items: 25)
+      page2 = service.paginated_index_data("everyone", page: 2, items: 25)
+
+      expect(page1[:total_count]).to eq(31)
+      expect(page1[:rows].size).to eq(25)
+      expect(page2[:rows].size).to eq(6)
+      expect(page1[:spotlight_stats][:total_employees]).to eq(31)
+      expect(page1[:rows].first).to include(:manager_teammate)
+    end
+  end
+
+  describe "#spotlight_stats_for" do
+    it "counts rollup statuses without loading item-level engagement health rows" do
+      allow(service).to receive(:filtered_teammates).and_return(CompanyTeammate.where(id: teammate.id))
+
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: organization,
+        level: "category",
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        status: EngagementHealth::HEALTHY,
+        inputs: {},
+        computed_at: Time.current
+      )
+
+      expect(CheckInsHealthEngagementHealthSupport).not_to receive(:records_by_teammate_id)
+
+      stats = service.spotlight_stats_for("just_me")
+      expect(stats[:healthy_count]).to eq(1)
+    end
+  end
+
   describe "#compact_spotlight_stats" do
     it "maps page stats to three-tier Start Here counts" do
       allow(service).to receive(:spotlight_stats_for).and_return(

@@ -151,7 +151,8 @@ module CheckInsHealthBarsHelper
 
   def teammate_and_manager_short_names(teammate, organization)
     employee_person = teammate.person
-    manager_person = teammate.current_manager
+    company = organization.root_company || organization
+    manager_person = Goals::HealthManagerPerson.for(teammate, company: company)
 
     employee = check_ins_health_popover_person_name(employee_person, fallback: "Employee")
     manager = check_ins_health_popover_person_name(manager_person, fallback: "Manager")

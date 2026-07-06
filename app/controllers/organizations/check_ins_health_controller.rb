@@ -8,13 +8,15 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
   def index
     authorize @organization, :check_ins_health?
     apply_filter_default_if_needed
-    data = check_ins_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])
-    all_employee_health_data = data.fetch(:rows)
+    page = params[:page] || 1
+    data = check_ins_health_spotlight_service.paginated_index_data(
+      params[:manager_id],
+      page: page,
+      items: 25
+    )
     @spotlight_stats = data.fetch(:spotlight_stats)
-
-    # Paginate
-    @pagy = Pagy.new(count: all_employee_health_data.count, page: params[:page] || 1, items: 25)
-    @employee_health_data = all_employee_health_data[@pagy.offset, @pagy.items]
+    @pagy = Pagy.new(count: data.fetch(:total_count), page: page, items: 25)
+    @employee_health_data = data.fetch(:rows)
     @current_manager_filter = params[:manager_id]
     @available_manager_filter_options = check_ins_health_spotlight_service.available_manager_filter_options
   end
