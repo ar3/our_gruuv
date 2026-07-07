@@ -163,10 +163,24 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @manager_name = @teammate.current_manager&.casual_name.presence || "Manager"
     @up_next_required_assignment_ids = required_assignment_ids_for_teammate.to_set
     @up_next_active_tenure_assignment_ids = active_assignment_ids_for_teammate.to_set
+    @engagement_health_records = EngagementHealth::ClarityMetrics.records_for_teammate(
+      organization: organization,
+      teammate_id: @teammate.id
+    )
+    @engagement_health_by_item_key = EngagementHealth::UpNextSupport.index_items_by_key(@engagement_health_records)
+    @engagement_health_computed_at = CheckInsHealthEngagementHealthSupport.computed_at_for(@engagement_health_records)
 
     @employee_up_next_items = build_up_next_explainer_items_for(@employee_perspective_person)
     @manager_up_next_items = build_up_next_explainer_items_for(@manager_perspective_person)
     assign_up_next_actions_spotlight!
+  end
+
+  def refresh_engagement_health
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    EngagementHealth.schedule_refresh_for(@teammate.id)
+    redirect_to up_next_organization_company_teammate_check_ins_path(organization, @teammate),
+                notice: "Gruuv Health refresh queued for #{@teammate.person.display_name}."
   end
   
   def update
@@ -1136,31 +1150,49 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       current_type: :position,
       current_id: nil
     )
-    ordered_items = next_result[:ordered_items].to_a
+    ordered_items = EngagementHealth::UpNextSupport.sort_items_for_perspective(
+      next_result[:ordered_items].to_a,
+      eh_by_key: @engagement_health_by_item_key,
+      manager_perspective: manager_perspective
+    )
     latest_finalized_by_key = build_latest_finalized_by_item_key(ordered_items)
     latest_open_by_key = build_latest_open_check_in_by_item_key(ordered_items)
 
     ordered_items.each_with_index.map do |item, index|
       item_key = up_next_item_key(item)
+      eh_item = EngagementHealth::UpNextSupport.find_item(@engagement_health_by_item_key, item)
       latest_finalized = latest_finalized_by_key[item_key]
       latest_open = latest_open_by_key[item_key]
-      actions_needed_count = up_next_actions_needed_count(
-        item: item,
-        latest_finalized: latest_finalized,
+      actions_needed_count = EngagementHealth::UpNextSupport.actions_needed_count(
+        eh_item,
         manager_perspective: manager_perspective
       )
-      actions_total_count = manager_perspective ? 2 : 1
+      actions_total_count = EngagementHealth::UpNextSupport.actions_total_count(
+        eh_item,
+        manager_perspective: manager_perspective
+      )
       {
         item: item,
+        engagement_health_item: eh_item,
         url: check_in_hub_item_url(item),
         finalized_line: up_next_finalized_line(latest_finalized),
-        current_open_line: up_next_current_open_line(latest_open),
-        therefore_line: up_next_therefore_line(item, index, ordered_items),
+        status_explainer: EngagementHealth::UpNextSupport.status_explainer(
+          eh_item: eh_item,
+          index: index,
+          ordered_items: ordered_items,
+          manager_perspective: manager_perspective,
+          eh_by_key: @engagement_health_by_item_key
+        ),
+        workflow: EngagementHealth::UpNextSupport.workflow_completion(eh_item: eh_item, latest_open: latest_open),
         ready_for_joint_review: up_next_ready_for_joint_review(item, latest_open),
         required_line: up_next_required_line(item),
         actions_needed_count: actions_needed_count,
         actions_total_count: actions_total_count,
-        actions_line: up_next_actions_needed_line(actions_needed_count, person_name)
+        actions_line: EngagementHealth::UpNextSupport.actions_line(
+          count: actions_needed_count,
+          person_name: person_name,
+          eh_item: eh_item
+        )
       }
     end
   end
@@ -1176,26 +1208,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
   def up_next_manager_perspective?(perspective_person)
     perspective_person.id != @employee_perspective_person.id
-  end
-
-  def up_next_actions_needed_count(item:, latest_finalized:, manager_perspective:)
-    count = up_next_check_in_action_needed?(item) ? 1 : 0
-    count += 1 if manager_perspective && up_next_finalize_action_needed?(latest_finalized)
-    count
-  end
-
-  def up_next_check_in_action_needed?(item)
-    item[:bucket]&.to_sym == :red && item[:my_side_completed_at].blank?
-  end
-
-  def up_next_finalize_action_needed?(latest_finalized)
-    level = latest_finalized&.clarity_level || :obscured
-    level.in?(%i[blurred obscured])
-  end
-
-  def up_next_actions_needed_line(count, person_name)
-    action_word = count == 1 ? "action" : "actions"
-    "#{count} #{action_word} needed from #{person_name}"
   end
 
   def build_latest_finalized_by_item_key(items)
@@ -1220,7 +1232,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
 
     position_latest = PositionCheckIn.where(company_teammate: @teammate).closed.order(official_check_in_completed_at: :desc).first
-    by_key[up_next_item_key(type: :position, id: nil)] = position_latest if position_latest
+    position_id = items.find { |item| item[:type] == :position }&.dig(:id)
+    if position_latest && position_id
+      by_key[up_next_item_key(type: :position, id: position_id)] = position_latest
+    end
 
     by_key
   end
@@ -1247,7 +1262,10 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
 
     position_latest_open = PositionCheckIn.where(company_teammate: @teammate).open.order(check_in_started_on: :desc, created_at: :desc).first
-    by_key[up_next_item_key(type: :position, id: nil)] = position_latest_open if position_latest_open
+    position_id = items.find { |item| item[:type] == :position }&.dig(:id)
+    if position_latest_open && position_id
+      by_key[up_next_item_key(type: :position, id: position_id)] = position_latest_open
+    end
 
     by_key
   end
@@ -1272,101 +1290,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       "Last finalized #{view_context.time_ago_in_words(latest_finalized.official_check_in_completed_at)} ago."
     else
       "No finalized check-in yet."
-    end
-  end
-
-  def up_next_current_open_line(latest_open)
-    return "No open check-in yet for this item." if latest_open.blank?
-
-    employee_side = up_next_side_completion_phrase(latest_open.employee_completed_at)
-    manager_side = up_next_side_completion_phrase(latest_open.manager_completed_at)
-    "#{@employee_name}: #{employee_side} · #{@manager_name}: #{manager_side}"
-  end
-
-  def up_next_side_completion_phrase(timestamp)
-    timestamp.present? ? "#{view_context.time_ago_in_words(timestamp)} ago" : "not completed yet"
-  end
-
-  def up_next_therefore_line(item, index, ordered_items)
-    rank_reason = up_next_rank_reason(item, index, ordered_items)
-    "Therefore this is #{up_next_clarity_level_label(item[:bucket])}, #{up_next_bucket_label(item[:bucket])}, and #{rank_reason}."
-  end
-
-  def up_next_clarity_level_label(bucket)
-    case bucket&.to_sym
-    when :green
-      "crystal clear"
-    when :yellow
-      "clear"
-    else
-      "blurred or obscured"
-    end
-  end
-
-  def up_next_bucket_label(bucket)
-    case bucket&.to_sym
-    when :green
-      "green bucket"
-    when :yellow
-      "yellow bucket"
-    else
-      "red bucket"
-    end
-  end
-
-  def up_next_rank_reason(item, index, ordered_items)
-    current_completed_at = item[:my_side_completed_at]
-    if index.zero? && current_completed_at.blank?
-      return "ranked first because your side has not been completed yet on the open check-in"
-    end
-    return "ranked first because it has the oldest completed date on your side" if index.zero?
-
-    previous_item = ordered_items[index - 1]
-    previous_completed_at = previous_item[:my_side_completed_at]
-    if current_completed_at.blank? && previous_completed_at.blank?
-      prev_bucket_rank = up_next_bucket_urgency_rank(previous_item[:bucket])
-      curr_bucket_rank = up_next_bucket_urgency_rank(item[:bucket])
-      if curr_bucket_rank > prev_bucket_rank
-        return "ordered after items with a more urgent clarity bucket (red before yellow before green)"
-      end
-      prev_type_rank = up_next_type_rank(previous_item[:type])
-      curr_type_rank = up_next_type_rank(item[:type])
-      if curr_bucket_rank == prev_bucket_rank && curr_type_rank > prev_type_rank
-        return "ordered after items of an earlier type (aspiration before assignment before position)"
-      end
-      if curr_bucket_rank == prev_bucket_rank &&
-           curr_type_rank == prev_type_rank &&
-           item[:bucket_activity_at].present? &&
-           previous_item[:bucket_activity_at].present? &&
-           item[:bucket_activity_at] > previous_item[:bucket_activity_at]
-        return "ordered by oldest clarity activity among items with the same bucket and type where your side has not been completed yet"
-      end
-      if curr_bucket_rank == prev_bucket_rank && curr_type_rank == prev_type_rank
-        return "ordered by name among items with the same clarity urgency and type where your side has not been completed yet"
-      end
-      return "ordered among items where your side has not been completed yet"
-    end
-    if current_completed_at.blank?
-      "ordered among items where your side has not been completed yet"
-    elsif previous_completed_at.blank?
-      "ordered after items where your side has not been completed yet"
-    elsif previous_completed_at.to_i == current_completed_at.to_i
-      "ordered by type then name when completion timing ties"
-    else
-      "ordered by your side's completion date from oldest to newest"
-    end
-  end
-
-  def up_next_type_rank(type)
-    { aspiration: 0, assignment: 1, position: 2 }[type&.to_sym] || 99
-  end
-
-  def up_next_bucket_urgency_rank(bucket)
-    case bucket&.to_sym
-    when :red then 0
-    when :yellow then 1
-    when :green then 2
-    else 3
     end
   end
 

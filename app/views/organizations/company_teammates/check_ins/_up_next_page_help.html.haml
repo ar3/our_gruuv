@@ -22,63 +22,78 @@
   %p.mb-2
     Each column is the same teammate’s queue computed from that person’s view (employee vs manager completion on the
     %strong open
-    check-in). Order can differ between columns when one side has finished and the other has not.
+    check-in). By default, only items that still need an action from that person are shown; use
+    %strong Show the other
+    at the bottom of a column to expand completed and healthy items.
 
-  %h5.fw-semibold.mb-2 Status pill on each item
+  %h5.fw-semibold.mb-2 Gruuv Health pill on each item
   %p.mb-2
-    The first line under each name is a colored pill for that column’s person. It reflects clarity urgency (recent finalization counts when your open side is still blank).
-    Hover the pill for the full “why this bucket and rank” explanation.
+    Next to each item name is an outline pill for that column’s person. It reflects Gruuv Health for Required Clarity on
+    that item (how recently it was finalized, plus open check-in workflow when relevant). Hover the pill for the full
+    explanation.
   %p.mb-2
-    Pill colors mean:
+    Pills mean:
   %ul.mb-3
     %li.d-flex.align-items-start.gap-2
-      %span.badge.rounded-pill.bg-success.flex-shrink-0 Green
+      %span.badge.rounded-pill.border.border-success.text-success.bg-transparent.flex-shrink-0 Healthy
       %span
-        %em doesn't need to do anything with this right now
-        — crystal-clear window (recent activity or finalize).
+        %em no action needed
+        — finalized recently; clarity is in good shape.
     %li.d-flex.align-items-start.gap-2
-      %span.badge.rounded-pill.bg-warning.text-dark.flex-shrink-0 Yellow
+      %span.badge.rounded-pill.border.border-warning.text-warning.bg-transparent.flex-shrink-0 Warning
       %span
-        %em if they want an early check-in they could, but doesn't need to do anything right now
-        — clear window; optional early touch.
+        %em action desired
+        — finalized a while ago; an early check-in is encouraged.
     %li.d-flex.align-items-start.gap-2
-      %span.badge.rounded-pill.bg-danger.flex-shrink-0 Red
+      %span.badge.rounded-pill.border.border-danger.text-danger.bg-transparent.flex-shrink-0 Needs Attention
       %span
-        %em should do a check-in right now
-        — blurred or obscured clarity, or no recency anchor yet.
+        %em action required
+        — never finalized or stale; check in now.
 
   %h5.fw-semibold.mb-2 How items are ordered
   %ul.mb-3
-    %li Items where that person’s open side is not completed yet come first.
-    %li Among those, more urgent clarity buckets first (red, then yellow, then green).
-    %li Then by type (aspiration, assignment, position), oldest clarity activity, and name.
-    %li Then items where that side is completed, oldest completion to newest on the open check-in.
-    %li Ties on completed sides break by type, then name.
+    %li Items that still need your action come first (more actions before fewer).
+    %li Then by Gruuv Health urgency (Needs Attention, then Warning, then Healthy).
+    %li Then by type (aspiration, assignment, position) and name.
+
+  %h5.fw-semibold.mb-2 Workflow on each item
+  %p.mb-2
+    Each item lists who still needs to act on the open check-in: employee and manager with a check or open circle,
+    then joint review (button when both sides are done, otherwise a pending step).
+  %p.mb-2
+    Hover the
+    %i.bi.bi-info-circle
+    icon beside the name for why that item is on the list.
 
   %h5.fw-semibold.mb-2 Clarity actions
   %p.mb-2
-    Each list item ends with how many clarity actions that person still needs on that item.
+    Each list item ends with how many Gruuv Health actions that person still needs on that item.
   %ul.mb-3
     %li
-      %strong Employee:
-      0 or 1 action—check in when the status pill says they should do a check-in right now and their open side is not completed yet.
+      %strong Healthy:
+      actions are counted in the spotlight total and show as completed (0 still needed).
     %li
-      %strong Manager:
-      up to 2 actions per item—the same check-in rule, plus finalize/review when the last finalized check-in for that item is blurred or obscured.
+      %strong Warning / Needs Attention:
+      1 action when there is no open check-in yet (start one).
+    %li
+      %strong With an open check-in:
+      count incomplete sides for that person; managers also count finalize when both sides are done.
     %li
       Joint review (ready to finalize together) is shown separately and is not counted here.
 
   %h5.fw-semibold.mb-2 Example list item
   %p.mb-2.text-muted.small
-    Numbering comes from the ordered list itself—the name is a link; bullets below explain state.
+    The name is a link with the Gruuv Health pill beside it; bullets below explain state.
   .border.rounded.p-3.bg-white.mb-0
-    %p.fw-semibold.mb-2 Keep Growing
+    .d-flex.align-items-center.gap-2.flex-wrap.mb-2
+      %span.fw-semibold Keep Growing
+      %i.bi.bi-info-circle.text-muted
+      %span.badge.rounded-pill.border.border-danger.text-danger.bg-transparent Needs Attention
     %ul.small.mb-0
-      %li.mb-1
-        %span.badge.rounded-pill.bg-danger{title: "Therefore this is blurred or obscured, red bucket, and ranked first because your side has not been completed yet on the open check-in."}
-          = "#{employee_name} should do a check-in right now"
-        %span.text-muted (hover pill on the live page for this detail)
+      %li.mb-1.text-muted
+        Hover the pill on the live page for the full Gruuv Health explanation.
       %li Last finalized 2 months ago.
-      %li= "#{employee_name}: not completed yet · #{manager_name}: not completed yet"
-      %li This aspirational value is on the list because aspirational values are always included for 1-by-1 clarity check-ins.
-      %li= "1 action needed from #{employee_name}"
+      %li (1) #{employee_name} ○
+      %li (2) #{manager_name} ○
+      %li (3) Both complete? Review together ○
+      %li= "1 action required from #{employee_name}"

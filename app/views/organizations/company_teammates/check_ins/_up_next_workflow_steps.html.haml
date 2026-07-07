@@ -1,0 +1,23 @@
+-# Locals: workflow, ready_for_joint_review, employee_name, manager_name
+- workflow = local_assigns.fetch(:workflow)
+- employee_name = local_assigns.fetch(:employee_name)
+- manager_name = local_assigns.fetch(:manager_name)
+- ready_for_joint_review = local_assigns[:ready_for_joint_review]
+%li.d-flex.align-items-center.gap-2.flex-wrap
+  %span
+    (1)
+    = employee_name
+  = up_next_workflow_completion_icon(workflow[:employee_done])
+%li.d-flex.align-items-center.gap-2.flex-wrap
+  %span
+    (2)
+    = manager_name
+  = up_next_workflow_completion_icon(workflow[:manager_done])
+%li
+  - if workflow[:ready_for_joint_review] && ready_for_joint_review.present?
+    = render "organizations/company_teammates/check_ins/up_next_ready_for_joint_review",
+             ready_for_joint_review: ready_for_joint_review
+  - else
+    .d-flex.align-items-center.gap-2.flex-wrap
+      %span (3) Both complete? Review together
+      = up_next_workflow_completion_icon(false)

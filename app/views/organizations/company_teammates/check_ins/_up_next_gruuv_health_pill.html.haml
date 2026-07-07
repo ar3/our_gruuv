@@ -1,0 +1,12 @@
+-# Locals: status (healthy | warning | needs_attention | nil), tooltip
+- status = local_assigns[:status]
+- tooltip = local_assigns.fetch(:tooltip)
+%span.d-inline-block{
+  "data-bs-toggle" => "tooltip",
+  "data-bs-placement" => "top",
+  "data-bs-title" => tooltip,
+  title: tooltip,
+  style: "cursor: help;",
+  tabindex: "0"
+}
+  %span.badge.rounded-pill{class: up_next_gruuv_health_pill_class(status)}= up_next_gruuv_health_pill_label(status)

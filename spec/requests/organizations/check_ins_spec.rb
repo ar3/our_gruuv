@@ -731,6 +731,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration)
       AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
       PositionCheckIn.find_or_create_open_for(employee_teammate)
+      EngagementHealth::Refresher.call(employee_teammate)
 
       get up_next_organization_company_teammate_check_ins_path(organization, employee_teammate)
 
@@ -738,17 +739,20 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include(" - Clarity Check-ins... Up Next")
       expect(response.body).to include("Clarity Check-Ins (Active)")
       expect(response.body).to include("Goal of this page")
-      expect(response.body).to include("Status pill on each item")
+      expect(response.body).to include("Gruuv Health pill on each item")
       expect(response.body).to include("#{employee_person.casual_name} perspective")
       expect(response.body).to include("#{manager_person.casual_name} perspective")
-      expect(response.body).to include("#{employee_person.casual_name} should do a check-in right now")
-      expect(response.body).to include("#{manager_person.casual_name} should do a check-in right now")
+      expect(response.body).to include("Needs Attention")
       expect(response.body).to include('badge rounded-pill')
       expect(response.body).not_to match(/1\. Up Next Aspiration/)
-      expect(response.body).to include("Therefore this is")
+      expect(response.body).to include("Gruuv Health is")
       expect(response.body).to include("This aspirational value is on the list because")
-      expect(response.body).to include("actions needed from")
-      expect(response.body).to include("clarifying action")
+      expect(response.body).to include("Both complete? Review together")
+      expect(response.body).to include("bi-circle")
+      expect(response.body).to include("action required from")
+      expect(response.body).to include("If something doesn't look right, first")
+      expect(response.body).to include("click here to refresh")
+      expect(response.body).to include("last refreshed at:")
       expect(response.body).to include("... meaning;")
       expect(response.body).to include("needed for clarity")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/assignments/#{assignment.id}")
@@ -760,6 +764,29 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include(
         assignment_selection_organization_company_teammate_path(organization, employee_teammate)
       )
+    end
+
+    it "hides items without an action for that person behind show the other" do
+      healthy_aspiration = create(:aspiration, company: organization, name: "Healthy Aspiration")
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: employee_teammate,
+        aspiration: healthy_aspiration,
+        official_check_in_completed_at: 5.days.ago
+      )
+      urgent_aspiration = create(:aspiration, company: organization, name: "Urgent Aspiration")
+      AspirationCheckIn.find_or_create_open_for(employee_teammate, urgent_aspiration)
+      EngagementHealth::Refresher.call(employee_teammate)
+
+      get up_next_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Show the other")
+      expect(response.body).to include("upNextEmployeeHiddenItems")
+      expect(response.body).to include("Urgent Aspiration")
+      expect(response.body).to include('id="upNextEmployeeHiddenItems"')
+      expect(response.body.scan("Healthy Aspiration").size).to eq(2)
     end
 
     it "shows a review-together button when an open check-in is ready for finalization" do
@@ -782,6 +809,16 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         organization_company_teammate_finalization_path(organization, employee_teammate)
       )
       expect(response.body).to include("bi-box-arrow-up-right")
+    end
+
+    it "queues a Gruuv Health refresh" do
+      expect {
+        post refresh_engagement_health_organization_company_teammate_check_ins_path(organization, employee_teammate)
+      }.to have_enqueued_job(EngagementHealthRefreshJob).with(employee_teammate.id)
+
+      expect(response).to redirect_to(up_next_organization_company_teammate_check_ins_path(organization, employee_teammate))
+      follow_redirect!
+      expect(response.body).to include("Gruuv Health refresh queued")
     end
   end
 end

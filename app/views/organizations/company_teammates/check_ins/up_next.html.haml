@@ -29,7 +29,16 @@
            manager_name: @manager_name
 
 %p.text-muted.mb-3
-  Two live lists sorted by urgency—one from #{@employee_name}'s perspective, one from #{@manager_name}'s.
+  Two live lists sorted by Gruuv Health urgency—one from #{@employee_name}'s perspective, one from #{@manager_name}'s.
+
+%p.text-muted.small.mb-4
+  - refreshed_at_label = @engagement_health_computed_at ? format_time_in_user_timezone(@engagement_health_computed_at) : "not yet computed"
+  If something doesn't look right, first
+  = link_to "click here to refresh",
+    refresh_engagement_health_organization_company_teammate_check_ins_path(organization, @teammate),
+    class: "text-muted text-decoration-underline",
+    data: { turbo_method: :post }
+  (last refreshed at: #{refreshed_at_label})
 
 = render "organizations/company_teammates/check_ins/up_next_actions_spotlight",
          actions_needed: @up_next_actions_needed,
@@ -48,7 +57,9 @@
       .card-body
         = render "organizations/company_teammates/check_ins/up_next_perspective_list",
                  items: @employee_up_next_items,
-                 person_name: @employee_name
+                 employee_name: @employee_name,
+                 manager_name: @manager_name,
+                 hidden_list_id: "upNextEmployeeHiddenItems"
 
   .col-12.col-lg-6
     .card.h-100
@@ -61,7 +72,9 @@
       .card-body
         = render "organizations/company_teammates/check_ins/up_next_perspective_list",
                  items: @manager_up_next_items,
-                 person_name: @manager_name
+                 employee_name: @employee_name,
+                 manager_name: @manager_name,
+                 hidden_list_id: "upNextManagerHiddenItems"
 
 .row.mt-4
   .col-12.col-sm-10.offset-sm-1

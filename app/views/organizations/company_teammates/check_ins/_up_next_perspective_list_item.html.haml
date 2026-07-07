@@ -1,0 +1,31 @@
+-# Locals: row, employee_name, manager_name, omit_li_wrapper (optional — inner content only for nested ol li)
+- omit_li_wrapper = local_assigns.fetch(:omit_li_wrapper, false)
+- item_content = capture do
+  .d-flex.align-items-center.gap-2.flex-wrap.mb-1
+    = link_to row.dig(:item, :name), row[:url], class: "fw-semibold text-decoration-none"
+    %span.d-inline-block{
+      "data-bs-toggle" => "tooltip",
+      "data-bs-placement" => "top",
+      "data-bs-title" => row[:required_line],
+      title: row[:required_line],
+      style: "cursor: help;",
+      tabindex: "0"
+    }
+      %i.bi.bi-info-circle.text-muted{aria: {label: "Why this item is on the list"}}
+    = render "organizations/company_teammates/check_ins/up_next_gruuv_health_pill",
+             status: row[:engagement_health_item]&.status,
+             tooltip: row[:status_explainer]
+  %ul.mb-0
+    %li= row[:finalized_line]
+    = render "organizations/company_teammates/check_ins/up_next_workflow_steps",
+             workflow: row[:workflow],
+             ready_for_joint_review: row[:ready_for_joint_review],
+             employee_name: employee_name,
+             manager_name: manager_name
+    %li= row[:actions_line]
+
+- if omit_li_wrapper
+  = item_content
+- else
+  %li.mb-3
+    = item_content

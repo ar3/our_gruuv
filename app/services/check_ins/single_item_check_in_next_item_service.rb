@@ -167,7 +167,7 @@ module CheckIns
       name = employment.position.title&.external_title.presence || "Position"
       {
         type: :position,
-        id: nil,
+        id: employment.position.id,
         name: name,
         bucket: bucket_for(last_activity),
         bucket_activity_at: last_activity,

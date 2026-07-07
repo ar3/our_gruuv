@@ -1,18 +1,34 @@
--# Locals: items (explainer rows), person_name (employee or manager for this column)
+-# Locals: items (explainer rows), employee_name, manager_name, hidden_list_id (unique collapse target)
+- employee_name = local_assigns.fetch(:employee_name)
+- manager_name = local_assigns.fetch(:manager_name)
+- hidden_list_id = local_assigns.fetch(:hidden_list_id)
+- hidden_item_class = "#{hidden_list_id}-item"
+- hidden_count = items.count { |row| row[:actions_needed_count].to_i.zero? }
+- show_other_placed = false
+
 %ol.ps-3.mb-0
   - items.each do |row|
-    %li.mb-3
-      = link_to row.dig(:item, :name), row[:url], class: "fw-semibold text-decoration-none d-block mb-1"
-      %ul.mb-0
-        %li.mb-1
-          = render "organizations/company_teammates/check_ins/up_next_status_pill",
-                   bucket: row.dig(:item, :bucket),
-                   person_name: person_name,
-                   therefore_line: row[:therefore_line]
-        %li= row[:finalized_line]
-        %li= row[:current_open_line]
-        - if row[:ready_for_joint_review].present?
-          = render "organizations/company_teammates/check_ins/up_next_ready_for_joint_review",
-                   ready_for_joint_review: row[:ready_for_joint_review]
-        %li= row[:required_line]
-        %li= row[:actions_line]
+    - if row[:actions_needed_count].to_i.positive?
+      = render "organizations/company_teammates/check_ins/up_next_perspective_list_item",
+               row: row,
+               employee_name: employee_name,
+               manager_name: manager_name
+    - else
+      - unless show_other_placed
+        - show_other_placed = true
+        %li.mb-2.up-next-show-other{style: "list-style-type: none;"}
+          %a.text-muted.small.text-decoration-underline{
+            href: "##{hidden_list_id}",
+            "data-bs-toggle" => "collapse",
+            "data-bs-target" => ".#{hidden_item_class}",
+            "aria-expanded" => "false",
+            role: "button",
+            onclick: "this.closest('li').classList.add('d-none');"
+          }
+            = "Show the other #{hidden_count}"
+      %li.mb-3.collapse{class: hidden_item_class, id: hidden_list_id}
+        = render "organizations/company_teammates/check_ins/up_next_perspective_list_item",
+                 row: row,
+                 employee_name: employee_name,
+                 manager_name: manager_name,
+                 omit_li_wrapper: true

@@ -375,6 +375,7 @@ Rails.application.routes.draw do
         get :review_most_recent, on: :member
         get :hub, on: :member
         get :up_next, on: :member
+        post :refresh_engagement_health, on: :member
       end
       
       resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :create, :update] do
