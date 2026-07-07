@@ -67,7 +67,7 @@ RSpec.describe MyEmployeesDashboardService do
           category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
           entity_type: "Assignment",
           entity_id: 2,
-          status: EngagementHealth::AT_RISK,
+          status: EngagementHealth::WARNING,
           inputs: { "name" => "Support" },
           computed_at: Time.current
         )

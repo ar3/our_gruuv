@@ -3,13 +3,13 @@
 module CheckInsHealthEngagementHealthHelper
   ENGAGEMENT_HEALTH_BAR_ORDER = [
     EngagementHealth::NEEDS_ATTENTION,
-    EngagementHealth::AT_RISK,
+    EngagementHealth::WARNING,
     EngagementHealth::HEALTHY
   ].freeze
 
   ENGAGEMENT_HEALTH_BAR_CSS = {
     EngagementHealth::NEEDS_ATTENTION => "bg-danger",
-    EngagementHealth::AT_RISK => "bg-warning",
+    EngagementHealth::WARNING => "bg-warning",
     EngagementHealth::HEALTHY => "bg-success"
   }.freeze
 
@@ -51,7 +51,7 @@ module CheckInsHealthEngagementHealthHelper
     case status
     when EngagementHealth::HEALTHY
       "every required item finalized within #{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS} days"
-    when EngagementHealth::AT_RISK
+    when EngagementHealth::WARNING
       "worst required item finalized #{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1}–" \
         "#{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS - 1} days ago"
     when EngagementHealth::NEEDS_ATTENTION

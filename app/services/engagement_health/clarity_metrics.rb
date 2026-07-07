@@ -40,7 +40,7 @@ module EngagementHealth
       items = Array(items)
       return 0.0 if items.empty?
 
-      ok = items.count { |item| item.status.in?([HEALTHY, AT_RISK]) }
+      ok = items.count { |item| item.status.in?([HEALTHY, WARNING]) }
       (ok.to_f / items.size * 100).round(1)
     end
 

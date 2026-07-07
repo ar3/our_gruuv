@@ -19,7 +19,7 @@ module Organizations
       css =
         case status
         when EngagementHealth::HEALTHY then "badge text-bg-success"
-        when EngagementHealth::AT_RISK then "badge text-bg-warning"
+        when EngagementHealth::WARNING then "badge text-bg-warning"
         when EngagementHealth::NEEDS_ATTENTION then "badge text-bg-danger"
         else "badge text-bg-secondary"
         end
@@ -110,24 +110,24 @@ module Organizations
       when EngagementHealth::CATEGORY_OGO_GIVEN
         "Tracks the most recent published OGO #{casual_name} gave to anyone. " \
           "Healthy when the last one is #{EngagementHealth::Thresholds::OGO_HEALTHY_WITHIN_DAYS} days old or less, " \
-          "Needs Attention at #{EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS}+ days or if none was ever given; At Risk in between."
+          "Needs Attention at #{EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS}+ days or if none was ever given; Warning in between."
       when EngagementHealth::CATEGORY_OGO_RECEIVED
         "Tracks the most recent published OGO anyone gave about #{casual_name}. " \
           "Healthy when the last one is #{EngagementHealth::Thresholds::OGO_HEALTHY_WITHIN_DAYS} days old or less, " \
-          "Needs Attention at #{EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS}+ days or if none was ever received; At Risk in between."
+          "Needs Attention at #{EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS}+ days or if none was ever received; Warning in between."
       when EngagementHealth::CATEGORY_GOAL_CONFIDENCE
         "Each started goal (plus goals completed in the last #{EngagementHealth::Thresholds::COMPLETED_GOAL_WINDOW_DAYS} days) is rated by its most recent confidence check. " \
           "Healthy when checked within #{EngagementHealth::Thresholds::GOAL_CONFIDENCE_HEALTHY_WITHIN_DAYS} days, " \
-          "Needs Attention at #{EngagementHealth::Thresholds::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS}+ days or never; At Risk in between. " \
+          "Needs Attention at #{EngagementHealth::Thresholds::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS}+ days or never; Warning in between. " \
           "Never having started or completed a goal is itself Needs Attention."
       when EngagementHealth::CATEGORY_REQUIRED_CLARITY
         "Each required check-in item (current position, required and actively-tenured assignments, and aspirations) is rated by its last finalized check-in. " \
           "These are required, so the thresholds are stricter: Healthy when finalized within #{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS} days, " \
-          "Needs Attention at #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS}+ days or never; At Risk in between."
+          "Needs Attention at #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS}+ days or never; Warning in between."
       when EngagementHealth::CATEGORY_MILESTONES
         "Each ability required by #{casual_name}'s position or assignments is rated at its highest required milestone level. " \
           "Healthy when the required level is earned or an active goal is attached to the ability; " \
-          "At Risk when an earlier milestone is earned or only a draft goal is attached; " \
+          "Warning when an earlier milestone is earned or only a draft goal is attached; " \
           "Needs Attention when there is no milestone and no goal."
       end
     end

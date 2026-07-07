@@ -23,7 +23,7 @@ RSpec.describe EngagementHealth::ClarityMetrics do
   describe ".breakdown" do
     it "returns healthy percentages by section" do
       clarity_item("Position", 1, "Engineer", EngagementHealth::HEALTHY)
-      clarity_item("Assignment", 2, "Support", EngagementHealth::AT_RISK)
+      clarity_item("Assignment", 2, "Support", EngagementHealth::WARNING)
       clarity_item("Aspiration", 3, "Growth", EngagementHealth::HEALTHY)
       records = described_class.records_for_teammate(organization: organization, teammate_id: teammate.id)
 

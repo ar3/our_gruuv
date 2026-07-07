@@ -31,7 +31,7 @@ RSpec.describe EngagementHealth::WorkflowSnapshot do
   describe "action_bar_color resolution" do
     it "returns light_green when both sides completed on open check-in" do
       open_ci = build_check_in(employee_at: 1.day.ago, manager_at: 1.day.ago)
-      result = call(status: EngagementHealth::AT_RISK, open_check_in: open_ci)
+      result = call(status: EngagementHealth::WARNING, open_check_in: open_ci)
       expect(result["action_bar_color"]).to eq("light_green")
     end
 
@@ -55,7 +55,7 @@ RSpec.describe EngagementHealth::WorkflowSnapshot do
 
     it "returns orange when at risk with open check-in and neither side complete" do
       open_ci = build_check_in
-      result = call(status: EngagementHealth::AT_RISK, open_check_in: open_ci)
+      result = call(status: EngagementHealth::WARNING, open_check_in: open_ci)
       expect(result["action_bar_color"]).to eq("orange")
     end
 
@@ -89,7 +89,7 @@ RSpec.describe EngagementHealth::WorkflowSnapshot do
     end
 
     it "returns orange when at risk and no open check-in" do
-      result = call(status: EngagementHealth::AT_RISK)
+      result = call(status: EngagementHealth::WARNING)
       expect(result["action_bar_color"]).to eq("orange")
     end
 
@@ -114,20 +114,20 @@ RSpec.describe EngagementHealth::WorkflowSnapshot do
     end
   end
 
-  describe "days_until_at_risk" do
-    it "returns remaining days until at-risk while healthy" do
+  describe "days_until_warning" do
+    it "returns remaining days until warning while healthy" do
       closed_ci = build_check_in(finalized_at: 50.days.ago, acknowledged: true)
       result = call(
         status: EngagementHealth::HEALTHY,
         last_closed_check_in: closed_ci,
         days_since_last_event: 50
       )
-      expect(result["days_until_at_risk"]).to eq(11)
+      expect(result["days_until_warning"]).to eq(11)
     end
 
     it "returns zero when already at risk" do
-      result = call(status: EngagementHealth::AT_RISK, days_since_last_event: 70)
-      expect(result["days_until_at_risk"]).to eq(0)
+      result = call(status: EngagementHealth::WARNING, days_since_last_event: 70)
+      expect(result["days_until_warning"]).to eq(0)
     end
   end
 end

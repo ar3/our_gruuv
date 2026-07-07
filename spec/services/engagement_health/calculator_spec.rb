@@ -43,8 +43,8 @@ RSpec.describe EngagementHealth::Calculator do
     it 'is MECE across the boundaries' do
       expect(status_at(0)).to eq(EngagementHealth::HEALTHY)
       expect(status_at(30)).to eq(EngagementHealth::HEALTHY)
-      expect(status_at(31)).to eq(EngagementHealth::AT_RISK)
-      expect(status_at(89)).to eq(EngagementHealth::AT_RISK)
+      expect(status_at(31)).to eq(EngagementHealth::WARNING)
+      expect(status_at(89)).to eq(EngagementHealth::WARNING)
       expect(status_at(90)).to eq(EngagementHealth::NEEDS_ATTENTION)
       expect(status_at(365)).to eq(EngagementHealth::NEEDS_ATTENTION)
     end
@@ -84,7 +84,7 @@ RSpec.describe EngagementHealth::Calculator do
       observation.update!(published_at: 45.days.ago)
 
       item = rows_for('ogo_given', level: 'item').first
-      expect(item[:status]).to eq(EngagementHealth::AT_RISK)
+      expect(item[:status]).to eq(EngagementHealth::WARNING)
       expect(item[:inputs]['days_since_last_event']).to eq(45)
     end
 
@@ -249,7 +249,7 @@ RSpec.describe EngagementHealth::Calculator do
         create(:goal_association, goal: goal, associable: ability)
 
         item = rows_for('milestones', level: 'item').find { |row| row[:entity_id] == ability.id }
-        expect(item[:status]).to eq(EngagementHealth::AT_RISK)
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
         expect(item[:inputs]['reason']).to eq('draft_goal_attached')
       end
 
@@ -287,7 +287,7 @@ RSpec.describe EngagementHealth::Calculator do
       items = rows_for('goal_confidence', level: 'item')
       statuses = items.index_by { |item| item[:entity_id] }.transform_values { |item| item[:status] }
       expect(statuses[fresh_goal.id]).to eq(EngagementHealth::HEALTHY)
-      expect(statuses[stale_goal.id]).to eq(EngagementHealth::AT_RISK)
+      expect(statuses[stale_goal.id]).to eq(EngagementHealth::WARNING)
       expect(statuses[never_goal.id]).to eq(EngagementHealth::NEEDS_ATTENTION)
 
       rollup = rollup_for('goal_confidence')
@@ -329,7 +329,7 @@ RSpec.describe EngagementHealth::Calculator do
         position_item = items.find { |item| item[:entity_type] == 'Position' }
         aspiration_item = items.find { |item| item[:entity_type] == 'Aspiration' }
 
-        expect(position_item[:status]).to eq(EngagementHealth::AT_RISK)
+        expect(position_item[:status]).to eq(EngagementHealth::WARNING)
         expect(position_item[:inputs]['healthy_within_days']).to eq(60)
         expect(aspiration_item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
         expect(aspiration_item[:inputs]['never']).to be(true)
@@ -343,7 +343,7 @@ RSpec.describe EngagementHealth::Calculator do
         position_item = rows_for('required_clarity', level: 'item').find { |item| item[:entity_type] == 'Position' }
         expect(position_item[:status]).to eq(EngagementHealth::HEALTHY)
         expect(position_item[:inputs]['action_bar_color']).to be_present
-        expect(position_item[:inputs]['days_until_at_risk']).to eq(11)
+        expect(position_item[:inputs]['days_until_warning']).to eq(11)
       end
     end
   end
@@ -385,22 +385,22 @@ RSpec.describe EngagementHealth::Calculator do
         expect(item[:inputs]['reason']).to eq('active_goal_attached')
       end
 
-      it 'is At Risk when an earlier milestone is earned but not the required level' do
+      it 'is Warning when an earlier milestone is earned but not the required level' do
         ability = require_ability(level: 3)
         create(:teammate_milestone, company_teammate: teammate, ability: ability, milestone_level: 1)
 
         item = rows_for('milestones', level: 'item').find { |row| row[:entity_id] == ability.id }
-        expect(item[:status]).to eq(EngagementHealth::AT_RISK)
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
         expect(item[:inputs]['reason']).to eq('earlier_milestone_earned')
       end
 
-      it 'is At Risk when only a draft goal is attached' do
+      it 'is Warning when only a draft goal is attached' do
         ability = require_ability
         goal = create_goal(:draft, owner: teammate, creator: teammate)
         create(:goal_association, goal: goal, associable: ability)
 
         item = rows_for('milestones', level: 'item').find { |row| row[:entity_id] == ability.id }
-        expect(item[:status]).to eq(EngagementHealth::AT_RISK)
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
         expect(item[:inputs]['reason']).to eq('draft_goal_attached')
       end
 
@@ -428,8 +428,8 @@ RSpec.describe EngagementHealth::Calculator do
 
   describe 'rollup rule' do
     it 'worst status wins' do
-      expect(EngagementHealth.worst_status(%w[healthy at_risk])).to eq('at_risk')
-      expect(EngagementHealth.worst_status(%w[healthy at_risk needs_attention])).to eq('needs_attention')
+      expect(EngagementHealth.worst_status(%w[healthy warning])).to eq('warning')
+      expect(EngagementHealth.worst_status(%w[healthy warning needs_attention])).to eq('needs_attention')
       expect(EngagementHealth.worst_status(%w[healthy healthy])).to eq('healthy')
       expect(EngagementHealth.worst_status([])).to eq('healthy')
     end

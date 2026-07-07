@@ -5,7 +5,7 @@ class CheckInsHealthSpotlightService
   EMPTY_SPOTLIGHT_STATS = {
     total_employees: 0,
     healthy_count: 0,
-    at_risk_count: 0,
+    warning_count: 0,
     needs_attention_count: 0,
     ok_percentage: 0
   }.freeze
@@ -74,7 +74,7 @@ class CheckInsHealthSpotlightService
     {
       total_employees: full[:total_employees],
       healthy_count: full[:healthy_count],
-      ok_count: full[:at_risk_count],
+      ok_count: full[:warning_count],
       concerning_count: full[:needs_attention_count]
     }
   end
@@ -121,15 +121,15 @@ class CheckInsHealthSpotlightService
   def spotlight_stats_from_status_rows(status_rows)
     total_employees = status_rows.count
     healthy_count = 0
-    at_risk_count = 0
+    warning_count = 0
     needs_attention_count = 0
 
     status_rows.each do |row|
       case row[:status]
       when EngagementHealth::HEALTHY
         healthy_count += 1
-      when EngagementHealth::AT_RISK
-        at_risk_count += 1
+      when EngagementHealth::WARNING
+        warning_count += 1
       when EngagementHealth::NEEDS_ATTENTION
         needs_attention_count += 1
       else
@@ -138,7 +138,7 @@ class CheckInsHealthSpotlightService
     end
 
     ok_percentage = if total_employees.positive?
-                        ((healthy_count + at_risk_count).to_f / total_employees * 100).round(1)
+                        ((healthy_count + warning_count).to_f / total_employees * 100).round(1)
                       else
                         0
                       end
@@ -146,7 +146,7 @@ class CheckInsHealthSpotlightService
     {
       total_employees: total_employees,
       healthy_count: healthy_count,
-      at_risk_count: at_risk_count,
+      warning_count: warning_count,
       needs_attention_count: needs_attention_count,
       ok_percentage: ok_percentage
     }

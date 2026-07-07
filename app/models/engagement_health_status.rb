@@ -25,6 +25,6 @@ class EngagementHealthStatus < ApplicationRecord
   end
 
   def healthy? = status == EngagementHealth::HEALTHY
-  def at_risk? = status == EngagementHealth::AT_RISK
+  def warning? = status == EngagementHealth::WARNING
   def needs_attention? = status == EngagementHealth::NEEDS_ATTENTION
 end

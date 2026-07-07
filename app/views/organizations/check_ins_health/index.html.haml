@@ -18,7 +18,7 @@
     %p.mb-3 Give a manager a quick view at where they should focus in order to keep their folks 100% clear.
     %p.mb-2
       %strong How to read each row:
-      the top bar shows Gruuv Health Required Clarity per item (Healthy, At Risk, Needs Attention); the bottom bar shows what action to take next on each check-in.
+      the top bar shows Gruuv Health Required Clarity per item (Healthy, Warning, Needs Attention); the bottom bar shows what action to take next on each check-in.
     %p.mb-3 Hover any segment for details. Use refresh controls when data seems stale — they queue a Gruuv Health recalculation.
 
     .card.mb-3
@@ -41,13 +41,13 @@
                   %small.text-muted Casey Manager
                 %td
                   .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
-                    .flex-grow-0.check-in-health-eh-at-risk{style: "width: 100%;"}
+                    .flex-grow-0.check-in-health-eh-warning{style: "width: 100%;"}
                   .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
                     .flex-grow-0.check-in-health-action-red{style: "width: 100%;"}
                 %td
                   .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
                     .flex-grow-0.check-in-health-eh-healthy{style: "width: 50%;"}
-                    .flex-grow-0.check-in-health-eh-at-risk{style: "width: 50%;"}
+                    .flex-grow-0.check-in-health-eh-warning{style: "width: 50%;"}
                   .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
                     .flex-grow-0.check-in-health-action-green-striped{style: "width: 50%;"}
                     .flex-grow-0.check-in-health-action-orange{style: "width: 50%;"}
@@ -76,7 +76,7 @@
       .col-12.col-lg-6
         %h6.fw-semibold.mb-2 Top bar (Gruuv Health Required Clarity)
         %ul.mb-0
-          - [EngagementHealth::NEEDS_ATTENTION, EngagementHealth::AT_RISK, EngagementHealth::HEALTHY].each do |status|
+          - [EngagementHealth::NEEDS_ATTENTION, EngagementHealth::WARNING, EngagementHealth::HEALTHY].each do |status|
             %li
               %span.d-inline-block.rounded-circle.me-2.align-middle{class: check_ins_health_eh_status_swatch_css(status), style: "width: 10px; height: 10px;"}
               %strong= EngagementHealth::STATUS_LABELS.fetch(status)
@@ -106,8 +106,8 @@
             .h3.text-success.mb-0= @spotlight_stats[:healthy_count]
             %small.text-muted Healthy
           .col
-            .h3.text-warning.mb-0= @spotlight_stats[:at_risk_count]
-            %small.text-muted At Risk
+            .h3.text-warning.mb-0= @spotlight_stats[:warning_count]
+            %small.text-muted Warning
           .col
             .h3.text-danger.mb-0= @spotlight_stats[:needs_attention_count]
             %small.text-muted Needs Attention

@@ -324,8 +324,8 @@ module EngagementHealth
     def milestone_status(required_level, earned_level, goal_counts)
       return [HEALTHY, "earned_required_milestone"] if earned_level >= required_level
       return [HEALTHY, "active_goal_attached"] if goal_counts[:active].positive?
-      return [AT_RISK, "earlier_milestone_earned"] if earned_level.positive?
-      return [AT_RISK, "draft_goal_attached"] if goal_counts[:draft].positive?
+      return [WARNING, "earlier_milestone_earned"] if earned_level.positive?
+      return [WARNING, "draft_goal_attached"] if goal_counts[:draft].positive?
 
       [NEEDS_ATTENTION, "no_milestone_and_no_goal"]
     end

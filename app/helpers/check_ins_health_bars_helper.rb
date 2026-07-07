@@ -3,7 +3,7 @@
 module CheckInsHealthBarsHelper
   EH_STATUS_CSS = {
     EngagementHealth::HEALTHY => "check-in-health-eh-healthy",
-    EngagementHealth::AT_RISK => "check-in-health-eh-at-risk",
+    EngagementHealth::WARNING => "check-in-health-eh-warning",
     EngagementHealth::NEEDS_ATTENTION => "check-in-health-eh-needs-attention"
   }.freeze
 
@@ -118,8 +118,8 @@ module CheckInsHealthBarsHelper
     check_ins_health_inferred_action_bar_color(item)
   end
 
-  def check_ins_health_resolved_days_until_at_risk(item)
-    days = item.inputs["days_until_at_risk"]
+  def check_ins_health_resolved_days_until_warning(item)
+    days = item.inputs["days_until_warning"]
     return days unless days.nil?
     return 0 unless item.status == EngagementHealth::HEALTHY
 
@@ -190,14 +190,14 @@ module CheckInsHealthBarsHelper
   end
 
   def show_workflow_steps_popover?(item)
-    return true if item.status.in?([EngagementHealth::AT_RISK, EngagementHealth::NEEDS_ATTENTION])
+    return true if item.status.in?([EngagementHealth::WARNING, EngagementHealth::NEEDS_ATTENTION])
 
     inputs = item.inputs
     inputs["open_check_in_present"] && (inputs["open_employee_completed"] || inputs["open_manager_completed"])
   end
 
   def healthy_popover_body(item:)
-    days = check_ins_health_resolved_days_until_at_risk(item)
+    days = check_ins_health_resolved_days_until_warning(item)
     message = if days.nil?
                 "Consider a check-in when ready"
               elsif days.zero?
@@ -223,7 +223,7 @@ module CheckInsHealthBarsHelper
     case item.status
     when EngagementHealth::NEEDS_ATTENTION
       open_present ? "red" : "red"
-    when EngagementHealth::AT_RISK
+    when EngagementHealth::WARNING
       "orange"
     when EngagementHealth::HEALTHY
       if inputs["previous_finalized_acknowledged"] == true
@@ -255,7 +255,7 @@ module CheckInsHealthBarsHelper
     employee_done = inputs["open_employee_completed"]
     manager_done = inputs["open_manager_completed"]
 
-    consider = if item.status.in?([EngagementHealth::AT_RISK, EngagementHealth::NEEDS_ATTENTION]) && !inputs["open_check_in_present"]
+    consider = if item.status.in?([EngagementHealth::WARNING, EngagementHealth::NEEDS_ATTENTION]) && !inputs["open_check_in_present"]
                  "<div class=\"mt-1\">Consider a check-in now</div>"
                else
                  ""

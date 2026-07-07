@@ -68,14 +68,14 @@ RSpec.describe CheckInsHealthBarsHelper, type: :helper do
     end
   end
 
-  describe "#check_ins_health_resolved_days_until_at_risk" do
-    it "computes days from days_since_last_event when days_until_at_risk is missing" do
+  describe "#check_ins_health_resolved_days_until_warning" do
+    it "computes days from days_since_last_event when days_until_warning is missing" do
       item = EngagementHealthStatus.new(
         status: EngagementHealth::HEALTHY,
         inputs: { "days_since_last_event" => 50 }
       )
 
-      expect(helper.check_ins_health_resolved_days_until_at_risk(item)).to eq(11)
+      expect(helper.check_ins_health_resolved_days_until_warning(item)).to eq(11)
     end
 
     it "computes days from last_event_at when both workflow day fields are missing" do
@@ -84,7 +84,7 @@ RSpec.describe CheckInsHealthBarsHelper, type: :helper do
         inputs: { "last_event_at" => 20.days.ago.iso8601 }
       )
 
-      expect(helper.check_ins_health_resolved_days_until_at_risk(item)).to eq(41)
+      expect(helper.check_ins_health_resolved_days_until_warning(item)).to eq(41)
     end
   end
 

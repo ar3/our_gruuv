@@ -40,7 +40,7 @@ module Insights
             case status
             when EngagementHealth::HEALTHY
               "last published ≤ #{t::OGO_HEALTHY_WITHIN_DAYS} days ago"
-            when EngagementHealth::AT_RISK
+            when EngagementHealth::WARNING
               "last published #{t::OGO_HEALTHY_WITHIN_DAYS + 1}–#{t::OGO_NEEDS_ATTENTION_AT_DAYS - 1} days ago"
             when EngagementHealth::NEEDS_ATTENTION
               "last published ≥ #{t::OGO_NEEDS_ATTENTION_AT_DAYS} days ago or never"
@@ -49,7 +49,7 @@ module Insights
             case status
             when EngagementHealth::HEALTHY
               "every in-scope goal checked ≤ #{t::GOAL_CONFIDENCE_HEALTHY_WITHIN_DAYS} days ago"
-            when EngagementHealth::AT_RISK
+            when EngagementHealth::WARNING
               "worst in-scope goal checked #{t::GOAL_CONFIDENCE_HEALTHY_WITHIN_DAYS + 1}–#{t::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS - 1} days ago"
             when EngagementHealth::NEEDS_ATTENTION
               "worst in-scope goal ≥ #{t::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS} days or never; or never started/completed a goal"
@@ -58,7 +58,7 @@ module Insights
             case status
             when EngagementHealth::HEALTHY
               "every required item finalized ≤ #{t::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS} days ago"
-            when EngagementHealth::AT_RISK
+            when EngagementHealth::WARNING
               "worst required item #{t::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1}–#{t::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS - 1} days ago"
             when EngagementHealth::NEEDS_ATTENTION
               "any required item ≥ #{t::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS} days ago or never"
@@ -67,7 +67,7 @@ module Insights
             case status
             when EngagementHealth::HEALTHY
               "required level earned or active goal on every required ability"
-            when EngagementHealth::AT_RISK
+            when EngagementHealth::WARNING
               "earlier milestone or draft goal only on worst required ability"
             when EngagementHealth::NEEDS_ATTENTION
               "no milestone and no goal on any required ability"

@@ -28,14 +28,14 @@ module EngagementHealth
     end
 
     # MECE by construction: Needs Attention when never or >= needs_attention_at
-    # days, Healthy when <= healthy_within days, At Risk = everything else
+    # days, Healthy when <= healthy_within days, Warning = everything else
     # ("not Healthy and not Needs Attention"), so there are no boundary gaps.
     def status_for_last_event(last_event_at, healthy_within:, needs_attention_at:, reference_time: Time.current)
       days = days_since(last_event_at, reference_time: reference_time)
       return NEEDS_ATTENTION if days.nil? || days >= needs_attention_at
       return HEALTHY if days <= healthy_within
 
-      AT_RISK
+      WARNING
     end
   end
 end

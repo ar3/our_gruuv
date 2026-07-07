@@ -23,7 +23,7 @@ RSpec.describe CheckInsHealthSpotlightService do
 
       expect(stats[:total_employees]).to eq(1)
       expect(stats[:healthy_count]).to eq(0)
-      expect(stats[:at_risk_count]).to eq(0)
+      expect(stats[:warning_count]).to eq(0)
       expect(stats[:needs_attention_count]).to eq(1)
       expect(stats[:ok_percentage]).to eq(0)
     end
@@ -44,7 +44,7 @@ RSpec.describe CheckInsHealthSpotlightService do
       stats = service.spotlight_stats_from_cache(data)
 
       expect(stats[:healthy_count]).to eq(1)
-      expect(stats[:at_risk_count]).to eq(0)
+      expect(stats[:warning_count]).to eq(0)
       expect(stats[:needs_attention_count]).to eq(0)
       expect(stats[:ok_percentage]).to eq(100.0)
     end
@@ -55,7 +55,7 @@ RSpec.describe CheckInsHealthSpotlightService do
 
       [
         [teammate, EngagementHealth::HEALTHY],
-        [at_risk_teammate, EngagementHealth::AT_RISK],
+        [at_risk_teammate, EngagementHealth::WARNING],
         [needs_attention_teammate, EngagementHealth::NEEDS_ATTENTION]
       ].each do |tm, status|
         EngagementHealthStatus.create!(
@@ -77,7 +77,7 @@ RSpec.describe CheckInsHealthSpotlightService do
       stats = service.spotlight_stats_from_cache(data)
 
       expect(stats[:healthy_count]).to eq(1)
-      expect(stats[:at_risk_count]).to eq(1)
+      expect(stats[:warning_count]).to eq(1)
       expect(stats[:needs_attention_count]).to eq(1)
       expect(stats[:ok_percentage]).to eq(66.7)
     end
@@ -169,7 +169,7 @@ RSpec.describe CheckInsHealthSpotlightService do
       allow(service).to receive(:spotlight_stats_for).and_return(
         total_employees: 4,
         healthy_count: 1,
-        at_risk_count: 1,
+        warning_count: 1,
         needs_attention_count: 2,
         ok_percentage: 50.0
       )

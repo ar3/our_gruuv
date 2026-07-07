@@ -53,7 +53,7 @@ RSpec.describe CheckInsHealthEmployeeSummaryCsvBuilder do
         category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
         entity_type: 'Assignment',
         entity_id: 2,
-        status: EngagementHealth::AT_RISK,
+        status: EngagementHealth::WARNING,
         inputs: { 'name' => 'Support' },
         computed_at: Time.current
       )
@@ -76,7 +76,7 @@ RSpec.describe CheckInsHealthEmployeeSummaryCsvBuilder do
       expect(row['Total Percentage Healthy']).to eq('66.7%')
       expect(row['Aspirations Percentage Healthy']).to eq('100.0%')
       expect(row['Assignments Percentage Healthy']).to eq('0.0%')
-      expect(row['Assignments Percentage At Risk']).to eq('100.0%')
+      expect(row['Assignments Percentage Warning']).to eq('100.0%')
       expect(row['Position Percentage Healthy']).to eq('100.0%')
     end
   end

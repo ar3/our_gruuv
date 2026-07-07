@@ -58,7 +58,7 @@ module EngagementHealth
         "open_ready_for_finalization" => open_present && both_done,
         "previous_finalized_acknowledged" => previous_acknowledged,
         "previous_finalized_awaiting_acknowledgment" => last_closed_check_in.present? && !previous_acknowledged,
-        "days_until_at_risk" => days_until_at_risk,
+        "days_until_warning" => days_until_warning,
         "action_bar_color" => action_bar_color
       }
     end
@@ -75,7 +75,7 @@ module EngagementHealth
 
         if neither_done
           return "red" if status == NEEDS_ATTENTION
-          return "orange" if status == AT_RISK
+          return "orange" if status == WARNING
           if status == HEALTHY
             return "anomaly_gray" if last_closed_check_in.blank?
             return previous_acknowledged ? "neon_green_striped" : "green_striped"
@@ -83,7 +83,7 @@ module EngagementHealth
         end
       else
         return "red" if status == NEEDS_ATTENTION
-        return "orange" if status == AT_RISK
+        return "orange" if status == WARNING
         if status == HEALTHY
           return "anomaly_gray" if last_closed_check_in.blank?
           return previous_acknowledged ? "neon_green_striped" : "green_striped"
@@ -105,7 +105,7 @@ module EngagementHealth
       timestamp.present? && timestamp <= reference_time
     end
 
-    def days_until_at_risk
+    def days_until_warning
       return 0 unless status == HEALTHY
       return nil if days_since_last_event.nil?
 

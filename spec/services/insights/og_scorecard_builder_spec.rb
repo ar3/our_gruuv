@@ -217,7 +217,7 @@ RSpec.describe Insights::OgScorecardBuilder do
       gruuv_keys = data_rows.last(3).map { |row| row[:key] }
       expect(gruuv_keys).to contain_exactly(
         Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_MILESTONES, EngagementHealth::HEALTHY),
-        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_MILESTONES, EngagementHealth::AT_RISK),
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_MILESTONES, EngagementHealth::WARNING),
         Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_MILESTONES, EngagementHealth::NEEDS_ATTENTION)
       )
 
@@ -242,7 +242,7 @@ RSpec.describe Insights::OgScorecardBuilder do
       gruuv_keys = data_rows.last(3).map { |row| row[:key] }
       expect(gruuv_keys).to contain_exactly(
         Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::HEALTHY),
-        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::AT_RISK),
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::WARNING),
         Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::NEEDS_ATTENTION)
       )
 

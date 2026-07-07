@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Engagement Health: shared Healthy / At Risk / Needs Attention vocabulary
+# Engagement Health: shared Healthy / Warning / Needs Attention vocabulary
 # across five categories (OGO given, OGO received, goal confidence, required
 # clarity check-ins, milestones). Deliberately NOT "on/off track", which
 # already describes a goal's outcome trajectory — these statuses describe the
@@ -10,9 +10,9 @@
 # definitions.
 module EngagementHealth
   HEALTHY = "healthy"
-  AT_RISK = "at_risk"
+  WARNING = "warning"
   NEEDS_ATTENTION = "needs_attention"
-  STATUSES = [HEALTHY, AT_RISK, NEEDS_ATTENTION].freeze
+  STATUSES = [HEALTHY, WARNING, NEEDS_ATTENTION].freeze
 
   CATEGORY_OGO_GIVEN = "ogo_given"
   CATEGORY_OGO_RECEIVED = "ogo_received"
@@ -37,7 +37,7 @@ module EngagementHealth
 
   STATUS_LABELS = {
     HEALTHY => "Healthy",
-    AT_RISK => "At Risk",
+    WARNING => "Warning",
     NEEDS_ATTENTION => "Needs Attention"
   }.freeze
 

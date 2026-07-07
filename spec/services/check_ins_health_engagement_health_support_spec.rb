@@ -32,7 +32,7 @@ RSpec.describe CheckInsHealthEngagementHealthSupport do
           category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
           entity_type: "Assignment",
           entity_id: 1,
-          status: EngagementHealth::AT_RISK,
+          status: EngagementHealth::WARNING,
           inputs: { "name" => "Alpha" },
           computed_at: Time.current
         ),

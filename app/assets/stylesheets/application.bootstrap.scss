@@ -1172,7 +1172,7 @@ body:has(.vertical-nav.open) .floating-toggle {
   pointer-events: none;
 }
 
-.check-in-health-eh-at-risk .check-in-health-bar__initials {
+.check-in-health-eh-warning .check-in-health-bar__initials {
   color: rgba(33, 37, 41, 0.9);
   text-shadow: none;
 }
@@ -1185,7 +1185,7 @@ body:has(.vertical-nav.open) .floating-toggle {
   background-color: #198754 !important;
 }
 
-.check-in-health-eh-at-risk {
+.check-in-health-eh-warning {
   background-color: #ffc107 !important;
 }
 

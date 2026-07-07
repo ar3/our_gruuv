@@ -39,7 +39,7 @@ class CheckInsHealthEmployeeSummaryCsvBuilder
       *SECTIONS.flat_map do |label, _|
         [
           "#{label} Percentage Healthy",
-          "#{label} Percentage At Risk",
+          "#{label} Percentage Warning",
           "#{label} Percentage Needs Attention"
         ]
       end
@@ -90,7 +90,7 @@ class CheckInsHealthEmployeeSummaryCsvBuilder
         entity_type: entity_type
       )
       row << format_pct(percents[EngagementHealth::HEALTHY])
-      row << format_pct(percents[EngagementHealth::AT_RISK])
+      row << format_pct(percents[EngagementHealth::WARNING])
       row << format_pct(percents[EngagementHealth::NEEDS_ATTENTION])
     end
 
