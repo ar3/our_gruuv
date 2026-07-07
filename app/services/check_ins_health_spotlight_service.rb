@@ -22,7 +22,7 @@ class CheckInsHealthSpotlightService
     )
   end
 
-  delegate :filtered_teammates, :available_manager_filter_options, :default_manager_filter_value,
+  delegate :filtered_teammates, :filtered_teammate_ids, :available_manager_filter_options, :default_manager_filter_value,
            :normalize_manager_filter, to: :filtering
 
   def paginated_index_data(manager_id, page:, items: 25)
@@ -47,7 +47,7 @@ class CheckInsHealthSpotlightService
   end
 
   def spotlight_stats_for(manager_id)
-    teammate_ids = filtered_teammates(manager_id).pluck(:id)
+    teammate_ids = filtered_teammate_ids(manager_id)
     spotlight_stats_from_teammate_ids(teammate_ids)
   end
 

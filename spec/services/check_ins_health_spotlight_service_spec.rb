@@ -111,7 +111,7 @@ RSpec.describe CheckInsHealthSpotlightService do
 
   describe "#spotlight_stats_for" do
     it "counts rollup statuses without loading item-level engagement health rows" do
-      allow(service).to receive(:filtered_teammates).and_return(CompanyTeammate.where(id: teammate.id))
+      allow(service).to receive(:filtered_teammate_ids).and_return([teammate.id])
 
       EngagementHealthStatus.create!(
         teammate: teammate,
@@ -126,6 +126,40 @@ RSpec.describe CheckInsHealthSpotlightService do
       expect(CheckInsHealthEngagementHealthSupport).not_to receive(:records_by_teammate_id)
 
       stats = service.spotlight_stats_for("just_me")
+      expect(stats[:healthy_count]).to eq(1)
+    end
+
+    it "counts unique teammates when multiple active employment tenures inflate pluck" do
+      manager_person = create(:person)
+      manager = create(:teammate, organization: organization, person: manager_person, first_employed_at: 1.month.ago, last_terminated_at: nil)
+      report = create(:teammate, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+      tenure = create(:employment_tenure, company: organization, company_teammate: report, manager_teammate: manager)
+      duplicate_tenure = tenure.dup
+      duplicate_tenure.save(validate: false)
+
+      EngagementHealthStatus.create!(
+        teammate: report,
+        organization: organization,
+        level: "category",
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        status: EngagementHealth::HEALTHY,
+        inputs: {},
+        computed_at: Time.current
+      )
+
+      mgr_service = described_class.new(
+        organization: organization,
+        current_person: manager_person,
+        current_company_teammate: manager,
+        manage_employment: false
+      )
+
+      scope = mgr_service.filtered_teammates("my_direct_employees")
+      expect(scope.count).to eq(1)
+      expect(scope.pluck(:id).size).to be > 1
+
+      stats = mgr_service.spotlight_stats_for("my_direct_employees")
+      expect(stats[:total_employees]).to eq(1)
       expect(stats[:healthy_count]).to eq(1)
     end
   end

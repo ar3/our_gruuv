@@ -38,6 +38,12 @@ class GoalsHealthSpotlightService
     filtered_teammates_for_mid(mid)
   end
 
+  # Unique teammate ids for the filter scope. Use instead of filtered_teammates(...).pluck(:id)
+  # when the scope eager-loads employment_tenures — a plain pluck can duplicate rows per tenure.
+  def filtered_teammate_ids(manager_id)
+    filtered_teammates(manager_id).reorder(nil).distinct.pluck(:id)
+  end
+
   def build_aggregate_goals_by_teammate(teammates)
     teammate_ids = teammates.map(&:id)
     goals = Goal

@@ -76,7 +76,7 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     authorize @organization, :check_ins_health?
     apply_filter_default_if_needed
 
-    teammate_ids = check_ins_health_spotlight_service.filtered_teammates(params[:manager_id]).pluck(:id)
+    teammate_ids = check_ins_health_spotlight_service.filtered_teammate_ids(params[:manager_id])
     teammate_ids.each do |teammate_id|
       EngagementHealth.schedule_refresh_for(teammate_id)
     end

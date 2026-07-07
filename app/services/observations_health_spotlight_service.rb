@@ -32,7 +32,7 @@ class ObservationsHealthSpotlightService
     )
   end
 
-  delegate :filtered_teammates, :available_manager_filter_options, :default_manager_filter_value,
+  delegate :filtered_teammates, :filtered_teammate_ids, :available_manager_filter_options, :default_manager_filter_value,
            :normalize_manager_filter, to: :filtering
 
   def rows_and_spotlight_for(manager_id)

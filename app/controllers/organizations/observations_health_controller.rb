@@ -37,7 +37,7 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
     authorize @organization, :observations_health?
     apply_filter_default_if_needed
 
-    teammate_ids = observations_health_spotlight_service.filtered_teammates(params[:manager_id]).pluck(:id)
+    teammate_ids = observations_health_spotlight_service.filtered_teammate_ids(params[:manager_id])
     teammate_ids.each { |teammate_id| ObservationHealthCacheRefreshJob.perform_later(teammate_id) }
 
     redirect_to organization_observations_health_path(@organization, manager_id: params[:manager_id]),
