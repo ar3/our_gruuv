@@ -230,7 +230,8 @@
                     - if engagement_records.any?
                       = render "organizations/check_ins_health/action_summary_line",
                                breakdown: data[:action_breakdown],
-                               popover_html: action_popover_html
+                               popover_html: action_popover_html,
+                               url: up_next_organization_company_teammate_check_ins_path(@organization, teammate)
                     - else
                       %small.text-muted Pending
                 
