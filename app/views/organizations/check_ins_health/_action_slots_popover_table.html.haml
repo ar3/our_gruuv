@@ -1,0 +1,19 @@
+-# Locals: rows, employee_name, manager_name
+.overflow-x-auto
+  %table.table.table-sm.mb-0.small.check-ins-health-action-popover-table
+    %thead
+      %tr
+        %th{style: "width: 55%;"}
+        %th.text-center.text-nowrap= employee_name
+        %th.text-center.text-nowrap= manager_name
+        %th.text-center.text-nowrap Together
+    %tbody
+      - rows.each do |row|
+        %tr
+          %td{style: "max-width: 0;"}
+            .d-flex.align-items-center.gap-2.text-nowrap
+              = up_next_gruuv_health_status_icon(row.status)
+              %span.text-truncate.min-w-0{title: row.name}= row.name
+          %td.text-center= up_next_workflow_completion_icon(row.employee_done)
+          %td.text-center= up_next_workflow_completion_icon(row.manager_done)
+          %td.text-center= up_next_workflow_completion_icon(row.together_done)

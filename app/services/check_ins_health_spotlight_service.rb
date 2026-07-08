@@ -7,7 +7,12 @@ class CheckInsHealthSpotlightService
     healthy_count: 0,
     warning_count: 0,
     needs_attention_count: 0,
-    ok_percentage: 0
+    ok_percentage: 0,
+    total_action_slots: 0,
+    healthy_action_slots: 0,
+    warning_actions_taken: 0,
+    needs_attention_actions_taken: 0,
+    actions_to_full_maap: 0
   }.freeze
 
   attr_reader :organization, :filtering
@@ -48,7 +53,14 @@ class CheckInsHealthSpotlightService
 
   def spotlight_stats_for(manager_id)
     teammate_ids = filtered_teammate_ids(manager_id)
-    spotlight_stats_from_teammate_ids(teammate_ids)
+    stats = spotlight_stats_from_teammate_ids(teammate_ids)
+    stats.merge(action_spotlight_stats_for(teammate_ids))
+  end
+
+  def action_spotlight_stats_for(teammate_ids)
+    EngagementHealth::ClarityActionMetrics
+      .spotlight_stats(organization: organization, teammate_ids: teammate_ids)
+      .to_h
   end
 
   # Stats for the full Check-ins Health page from Required Clarity Gruuv Health rollups.
@@ -95,7 +107,10 @@ class CheckInsHealthSpotlightService
         teammate: teammate,
         person: teammate.person,
         manager_teammate: Goals::HealthManagerPerson.manager_teammate_for(teammate, company: company),
-        engagement_health_records: engagement_health_by_teammate_id[teammate.id] || []
+        engagement_health_records: engagement_health_by_teammate_id[teammate.id] || [],
+        action_breakdown: EngagementHealth::ClarityActionMetrics.for_records(
+          engagement_health_by_teammate_id[teammate.id] || []
+        )
       }
     end
   end

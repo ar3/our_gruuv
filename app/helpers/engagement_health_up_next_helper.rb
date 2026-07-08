@@ -27,4 +27,17 @@ module EngagementHealthUpNextHelper
       tag.i(class: "bi bi-circle text-muted", aria: { hidden: true })
     end
   end
+
+  def up_next_gruuv_health_status_icon(status)
+    label = up_next_gruuv_health_pill_label(status)
+    icon_class = case status
+                 when EngagementHealth::WARNING
+                   "bi bi-exclamation-circle-fill text-warning"
+                 when EngagementHealth::NEEDS_ATTENTION
+                   "bi bi-exclamation-triangle-fill text-danger"
+                 else
+                   "bi bi-circle text-secondary"
+                 end
+    tag.i(class: "#{icon_class} flex-shrink-0", title: label, aria: { label: label })
+  end
 end

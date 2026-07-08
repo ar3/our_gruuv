@@ -110,7 +110,7 @@ RSpec.describe CheckInsHealthSpotlightService do
   end
 
   describe "#spotlight_stats_for" do
-    it "counts rollup statuses without loading item-level engagement health rows" do
+    it "includes action stats from item-level engagement health rows" do
       allow(service).to receive(:filtered_teammate_ids).and_return([teammate.id])
 
       EngagementHealthStatus.create!(
@@ -122,11 +122,22 @@ RSpec.describe CheckInsHealthSpotlightService do
         inputs: {},
         computed_at: Time.current
       )
-
-      expect(CheckInsHealthEngagementHealthSupport).not_to receive(:records_by_teammate_id)
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: organization,
+        level: "item",
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: "Aspiration",
+        entity_id: 1,
+        status: EngagementHealth::HEALTHY,
+        inputs: { "name" => "Growth" },
+        computed_at: Time.current
+      )
 
       stats = service.spotlight_stats_for("just_me")
       expect(stats[:healthy_count]).to eq(1)
+      expect(stats[:total_action_slots]).to eq(3)
+      expect(stats[:healthy_action_slots]).to eq(3)
     end
 
     it "counts unique teammates when multiple active employment tenures inflate pluck" do

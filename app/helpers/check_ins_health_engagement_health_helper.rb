@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 module CheckInsHealthEngagementHealthHelper
+  ACTION_SLOTS_SUMMARY_MAX_WIDTH_PX = 200
+  ACTION_SLOTS_SUMMARY_BAR_HEIGHT_PX = 10
+
   ENGAGEMENT_HEALTH_BAR_ORDER = [
     EngagementHealth::NEEDS_ATTENTION,
     EngagementHealth::WARNING,
@@ -100,5 +103,55 @@ module CheckInsHealthEngagementHealthHelper
   def check_ins_health_engagement_refreshed_tooltip(records)
     computed_at = CheckInsHealthEngagementHealthSupport.computed_at_for(records)
     computed_at ? "Gruuv Health computed #{time_ago_in_words(computed_at)} ago" : "Gruuv Health has not been computed yet"
+  end
+
+  def check_ins_health_action_slots_summary_bar_height_px
+    ACTION_SLOTS_SUMMARY_BAR_HEIGHT_PX
+  end
+
+  def check_ins_health_action_summary_segments(breakdown)
+    [
+      [breakdown.healthy_percentage, EngagementHealth::HEALTHY],
+      [breakdown.warning_percentage, EngagementHealth::WARNING],
+      [breakdown.needs_attention_percentage, EngagementHealth::NEEDS_ATTENTION]
+    ]
+  end
+
+  def check_ins_health_action_slots_bar_segments(breakdown)
+    return [] if breakdown.blank? || breakdown.total_slots.zero?
+
+    check_ins_health_action_summary_segments(breakdown).filter_map do |percentage, status|
+      next if percentage.to_f.zero?
+
+      {
+        percentage: percentage,
+        status: status,
+        css: check_ins_health_eh_status_bar_css(status),
+        label: "#{percentage}% #{EngagementHealth::STATUS_LABELS.fetch(status)}"
+      }
+    end
+  end
+
+  def check_ins_health_eh_status_bar_css(status)
+    CheckInsHealthBarsHelper::EH_STATUS_CSS.fetch(status, "check-in-health-action-anomaly-gray")
+  end
+
+  def check_ins_health_action_summary_text_class(status)
+    case status
+    when EngagementHealth::HEALTHY then "text-success"
+    when EngagementHealth::WARNING then "text-warning"
+    when EngagementHealth::NEEDS_ATTENTION then "text-danger"
+    else "text-muted"
+    end
+  end
+
+  def check_ins_health_action_popover_html(records:, employee_name:, manager_name:)
+    rows = EngagementHealth::ClarityActionMetrics.popover_rows(records)
+    return nil if rows.empty?
+
+    render(
+      partial: "organizations/check_ins_health/action_slots_popover_table",
+      locals: { rows: rows, employee_name: employee_name, manager_name: manager_name }
+    ).html_safe
   end
 end

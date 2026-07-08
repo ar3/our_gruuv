@@ -102,18 +102,28 @@
           .col
             .h3.text-primary.mb-0= @spotlight_stats[:total_employees]
             %small.text-muted Total Active Employees
+            %br
+            %small.text-muted= "#{@spotlight_stats[:total_action_slots]} actions"
           .col
             .h3.text-success.mb-0= @spotlight_stats[:healthy_count]
             %small.text-muted Healthy
+            %br
+            %small.text-success= "#{@spotlight_stats[:healthy_action_slots]} actions"
           .col
             .h3.text-warning.mb-0= @spotlight_stats[:warning_count]
             %small.text-muted Warning
+            %br
+            %small.text-warning= "#{@spotlight_stats[:warning_actions_taken]} actions taken"
           .col
             .h3.text-danger.mb-0= @spotlight_stats[:needs_attention_count]
             %small.text-muted Needs Attention
+            %br
+            %small.text-danger= "#{@spotlight_stats[:needs_attention_actions_taken]} actions taken"
           .col
             .h3.text-info.mb-0= "#{@spotlight_stats[:ok_percentage]}%"
             %small.text-muted "% Ok"
+            %br
+            %small.text-info= "#{@spotlight_stats[:actions_to_full_maap]} actions to get to full MAAP Check-in clarity health"
       .card-footer.bg-light
         .row.align-items-center
           .col-md-6
@@ -216,6 +226,15 @@
                       = link_to manager_teammate.person&.display_name, organization_check_ins_health_path(@organization, manager_id: "CompanyTeammate_#{manager_teammate.id}"), class: "text-muted"
                   - else
                     %small.text-muted —
+                  - names = teammate_and_manager_short_names(teammate, @organization)
+                  - action_popover_html = check_ins_health_action_popover_html(records: engagement_records, employee_name: names[:employee], manager_name: names[:manager])
+                  .mt-1
+                    - if engagement_records.any?
+                      = render "organizations/check_ins_health/action_summary_line",
+                               breakdown: data[:action_breakdown],
+                               popover_html: action_popover_html
+                    - else
+                      %small.text-muted Pending
                 
                 %td{style: "width: 25%"}
                   - if engagement_records.any?

@@ -1181,6 +1181,24 @@ body:has(.vertical-nav.open) .floating-toggle {
   opacity: 0.92;
 }
 
+.clarity-action-slots-summary {
+  width: 100%;
+  max-width: 200px;
+
+  &__bar {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 60px;
+    align-items: stretch;
+  }
+
+  &__segment {
+    display: block;
+    height: 100%;
+    min-width: 2px;
+  }
+}
+
 .check-in-health-eh-healthy {
   background-color: #198754 !important;
 }
