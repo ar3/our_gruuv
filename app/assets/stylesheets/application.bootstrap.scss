@@ -1185,6 +1185,11 @@ body:has(.vertical-nav.open) .floating-toggle {
   width: 100%;
   max-width: 200px;
 
+  &--text-only {
+    max-width: none;
+    width: auto;
+  }
+
   &--linked:hover {
     opacity: 0.9;
   }

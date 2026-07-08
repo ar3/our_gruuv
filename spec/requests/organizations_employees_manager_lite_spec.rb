@@ -253,6 +253,32 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
       end
     end
 
+    it 'shows action-slot % clear linked to Up Next on managers_view cards' do
+      EngagementHealthStatus.create!(
+        teammate: direct_report1_teammate,
+        organization: organization,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Aspiration',
+        entity_id: 1,
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: {
+          'name' => 'Growth',
+          'open_check_in_present' => false
+        },
+        computed_at: Time.current
+      )
+
+      get organization_employees_path(organization, spotlight: 'manager_lite', view: 'managers_view', manager_teammate_id: manager_teammate.id)
+
+      expect(response).to be_successful
+      expect(response.body).to include('% clear')
+      expect(response.body).to include('clarity-action-slots-summary')
+      expect(response.body).to include('clarity-action-slots-summary--text-only')
+      expect(response.body).not_to include('clarity-action-slots-summary__bar')
+      expect(response.body).to include(up_next_organization_company_teammate_check_ins_path(organization, direct_report1_teammate))
+    end
+
     it 'defaults to manager_lite spotlight when manager_teammate_id is present and no spotlight is specified' do
       get organization_employees_path(organization, view: 'managers_view', manager_teammate_id: manager_teammate.id)
       

@@ -1,10 +1,13 @@
--# Locals: breakdown, popover_html (optional), height_px (optional — defaults to 10px), url (optional)
+-# Locals: breakdown, popover_html (optional), height_px (optional — defaults to 10px),
+-#         url (optional), show_bar (optional — default true)
 - breakdown = local_assigns[:breakdown]
 - popover_html = local_assigns[:popover_html]
 - height_px = local_assigns[:height_px].presence || check_ins_health_action_slots_summary_bar_height_px
 - url = local_assigns[:url]
+- show_bar = local_assigns.fetch(:show_bar, true)
 - segments = check_ins_health_action_slots_bar_segments(breakdown)
 - summary_classes = ["clarity-action-slots-summary", "d-flex", "align-items-center", "gap-2"]
+- summary_classes << "clarity-action-slots-summary--text-only" unless show_bar
 - summary_classes += ["clarity-action-slots-summary--linked", "text-decoration-none"] if url.present?
 - popover_attrs = {}
 - if popover_html.present?
@@ -14,13 +17,15 @@
 - elsif url.present?
   = link_to url, { class: summary_classes.join(" "), title: "View Up Next" }.merge(popover_attrs) do
     %small.text-info.flex-shrink-0.mb-0= "#{breakdown.ok_percentage.round(1)}% clear"
-    .clarity-action-slots-summary__bar.rounded.overflow-hidden{style: "height: #{height_px}px;", role: "img", aria: { label: "Clarity action slots: #{breakdown.ok_percentage.round(1)}% clear" }}
-      - segments.each do |segment|
-        %span.clarity-action-slots-summary__segment{class: segment[:css], style: "flex: #{segment[:percentage]} 0 0;", title: segment[:label], aria: { label: segment[:label] }}
+    - if show_bar
+      .clarity-action-slots-summary__bar.rounded.overflow-hidden{style: "height: #{height_px}px;", role: "img", aria: { label: "Clarity action slots: #{breakdown.ok_percentage.round(1)}% clear" }}
+        - segments.each do |segment|
+          %span.clarity-action-slots-summary__segment{class: segment[:css], style: "flex: #{segment[:percentage]} 0 0;", title: segment[:label], aria: { label: segment[:label] }}
 - else
   - div_attrs = { class: summary_classes.join(" ") }.merge(popover_attrs)
   %div{div_attrs}
     %small.text-info.flex-shrink-0.mb-0= "#{breakdown.ok_percentage.round(1)}% clear"
-    .clarity-action-slots-summary__bar.rounded.overflow-hidden{style: "height: #{height_px}px;", role: "img", aria: { label: "Clarity action slots: #{breakdown.ok_percentage.round(1)}% clear" }}
-      - segments.each do |segment|
-        %span.clarity-action-slots-summary__segment{class: segment[:css], style: "flex: #{segment[:percentage]} 0 0;", title: segment[:label], aria: { label: segment[:label] }}
+    - if show_bar
+      .clarity-action-slots-summary__bar.rounded.overflow-hidden{style: "height: #{height_px}px;", role: "img", aria: { label: "Clarity action slots: #{breakdown.ok_percentage.round(1)}% clear" }}
+        - segments.each do |segment|
+          %span.clarity-action-slots-summary__segment{class: segment[:css], style: "flex: #{segment[:percentage]} 0 0;", title: segment[:label], aria: { label: segment[:label] }}

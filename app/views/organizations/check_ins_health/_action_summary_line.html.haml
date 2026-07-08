@@ -1,5 +1,6 @@
--# Locals: breakdown, popover_html (optional), height_px (optional), url (optional)
-= render "shared/clarity_action_slots/summary",
-         breakdown: local_assigns[:breakdown],
-         popover_html: local_assigns[:popover_html],
-         **local_assigns.slice(:height_px, :url).compact
+-# Locals: breakdown, popover_html (optional), height_px (optional), url (optional), show_bar (optional)
+- summary_locals = { breakdown: local_assigns[:breakdown], popover_html: local_assigns[:popover_html] }
+- summary_locals[:height_px] = local_assigns[:height_px] if local_assigns.key?(:height_px) && local_assigns[:height_px].present?
+- summary_locals[:url] = local_assigns[:url] if local_assigns[:url].present?
+- summary_locals[:show_bar] = local_assigns[:show_bar] if local_assigns.key?(:show_bar)
+= render "shared/clarity_action_slots/summary", **summary_locals

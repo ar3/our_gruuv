@@ -14,9 +14,9 @@
   - @filtered_and_paginated_teammates.each do |teammate|
     .list-group-item.py-2
       - cache = @engagement_health_by_teammate_id && @engagement_health_by_teammate_id[teammate.id]
-      - rate_data = engagement_health_clarity_breakdown(cache)
-      - health_table_data = engagement_health_clarity_popover_table(cache)
-      - health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : no_clarity_check_in_health_data_label
+      - action_breakdown = EngagementHealth::ClarityActionMetrics.for_records(cache)
+      - names = teammate_and_manager_short_names(teammate, @organization)
+      - action_popover_html = check_ins_health_action_popover_html(records: cache, employee_name: names[:employee], manager_name: names[:manager])
       - casual_name = teammate.person.casual_name
       - row_data = (@managers_view_row_data_by_teammate_id || {})[teammate.id]
       - check_in_actions_needed = row_data&.check_in_actions_needed.to_i
@@ -50,12 +50,11 @@
 
       .row.g-1.mt-1.align-items-center.managers-view-health-row
         .offset-md-1.col-6.col-md-2
-          - if rate_data
-            %span.fw-semibold{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => health_popover_html.html_safe, style: "cursor: pointer;"}
-              #{rate_data[:completion_rate]}% clear
-          - else
-            %span.text-muted.fw-semibold{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => health_popover_html, style: "cursor: pointer;"}
-              —
+          = render "shared/clarity_action_slots/summary",
+                   breakdown: action_breakdown,
+                   popover_html: action_popover_html,
+                   url: up_next_organization_company_teammate_check_ins_path(@organization, teammate),
+                   show_bar: false
         .col-6.col-md-3
           = link_to up_next_organization_company_teammate_check_ins_path(@organization, teammate), class: "text-body" do
             %i.bi.bi-list-check.me-1.text-primary
