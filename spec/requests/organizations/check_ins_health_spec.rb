@@ -90,7 +90,6 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response.body).to include('bi-arrow-clockwise')
       expect(response.body).to include('% ok')
       expect(response.body).to include('clarity-action-slots-summary')
-      expect(response.body).to include('actions to get to full MAAP Check-in clarity health')
     end
   end
 

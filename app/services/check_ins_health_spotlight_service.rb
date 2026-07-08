@@ -10,8 +10,8 @@ class CheckInsHealthSpotlightService
     ok_percentage: 0,
     total_action_slots: 0,
     healthy_action_slots: 0,
-    warning_actions_taken: 0,
-    needs_attention_actions_taken: 0,
+    warning_action_slots: 0,
+    needs_attention_action_slots: 0,
     actions_to_full_maap: 0
   }.freeze
 

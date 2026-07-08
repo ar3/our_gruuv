@@ -25,8 +25,8 @@ module EngagementHealth
     SpotlightStats = Struct.new(
       :total_action_slots,
       :healthy_action_slots,
-      :warning_actions_taken,
-      :needs_attention_actions_taken,
+      :warning_action_slots,
+      :needs_attention_action_slots,
       :actions_to_full_maap,
       keyword_init: true
     )
@@ -148,26 +148,16 @@ module EngagementHealth
 
     def aggregate_spotlight_stats(items)
       totals = empty_slot_totals
-      warning_actions_taken = 0
-      needs_attention_actions_taken = 0
 
       items.each do |item|
-        counts = slot_counts_for_item(item)
-        merge_slot_totals!(totals, counts)
-        completed = counts[:healthy_slots]
-        case item.status
-        when WARNING
-          warning_actions_taken += completed
-        when NEEDS_ATTENTION
-          needs_attention_actions_taken += completed
-        end
+        merge_slot_totals!(totals, slot_counts_for_item(item))
       end
 
       SpotlightStats.new(
         total_action_slots: totals.values.sum,
         healthy_action_slots: totals[:healthy_slots],
-        warning_actions_taken: warning_actions_taken,
-        needs_attention_actions_taken: needs_attention_actions_taken,
+        warning_action_slots: totals[:warning_slots],
+        needs_attention_action_slots: totals[:needs_attention_slots],
         actions_to_full_maap: totals[:warning_slots] + totals[:needs_attention_slots]
       )
     end
@@ -176,8 +166,8 @@ module EngagementHealth
       SpotlightStats.new(
         total_action_slots: 0,
         healthy_action_slots: 0,
-        warning_actions_taken: 0,
-        needs_attention_actions_taken: 0,
+        warning_action_slots: 0,
+        needs_attention_action_slots: 0,
         actions_to_full_maap: 0
       )
     end

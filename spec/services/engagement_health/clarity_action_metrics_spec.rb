@@ -142,7 +142,11 @@ RSpec.describe EngagementHealth::ClarityActionMetrics do
 
       expect(stats.total_action_slots).to eq(6)
       expect(stats.healthy_action_slots).to eq(4)
-      expect(stats.needs_attention_actions_taken).to eq(1)
+      expect(stats.warning_action_slots).to eq(0)
+      expect(stats.needs_attention_action_slots).to eq(2)
+      expect(
+        stats.healthy_action_slots + stats.warning_action_slots + stats.needs_attention_action_slots
+      ).to eq(stats.total_action_slots)
       expect(stats.actions_to_full_maap).to eq(2)
     end
   end
