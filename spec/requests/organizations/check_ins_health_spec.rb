@@ -88,7 +88,7 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Consider checking in on:')
       expect(response.body).to include('bi-arrow-clockwise')
-      expect(response.body).to include('% ok')
+      expect(response.body).to include('% clear')
       expect(response.body).to include('clarity-action-slots-summary')
       expect(response.body).to include(up_next_organization_company_teammate_check_ins_path(company, teammate))
     end
