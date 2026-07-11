@@ -190,7 +190,7 @@ en:
     og_scorecard_ability_milestones_label: "Ability Milestones"
     og_scorecard_ability_milestones_help: "Milestone totals count ability milestone records for this company. “This week” and 90-day rows use attained_at in that Mon–Sun week or the rolling 90 calendar days ending that Sunday; all-time totals count every record on or before that Sunday. Teammate rows count unique people employed during that week who earned at least one such milestone in the same window. Gruuv Health Milestones rows below use the same rules as the 1:1 Hub Overview."
     og_scorecard_goals_label: "Goals"
-    og_scorecard_goals_help: "active owned goals as of each Sunday, including rows for goals linked to an Aspirational Value, Assignment, or Ability; goal check-ins bucketed by GoalCheckIn created_at in that Mon–Sun week; completed goals use completed_at in the rolling 90 calendar days ending that Sunday (owner only)."
+    og_scorecard_goals_help: "Activity rows: active owned goals as of each Sunday, including rows for goals linked to an Aspirational Value, Assignment, or Ability; goal check-ins bucketed by GoalCheckIn created_at in that Mon–Sun week; completed goals use completed_at in the rolling 90 calendar days ending that Sunday (owner only). Gruuv Health Goal Confidence rows below use the same rules as the 1:1 Hub Overview (Healthy / Warning / Needs Attention)."
     priority_clarity_ready_for_review_title: "Are there clarity check-ins ready for review together?"
     priority_review_clarity_check_ins_together:
       one: "Review 1 clarity check-in together"

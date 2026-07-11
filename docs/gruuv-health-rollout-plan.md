@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0 complete. Phase 1.1–1.4 done (EH rows, clarity/OGO alignment, activity vs status labeling). Phase 3/6/8 partial. **Open leftovers:** item-healthy % aggregates; Phase 1.5 verify / 1.6–1.7. **Next:** Phase 2 (Observations Health) or quick 1.5 verify.
+**Status:** Phase 0 complete. Phase 1.1–1.5 done (all five EH category population trios on the scorecard). Phase 3/6/8 partial. **Open leftovers:** item-healthy % aggregates; Phase 1.6 confirm / 1.7. **Next:** Phase 2 (Observations Health), or quick 1.6/1.7 closeout first.
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -24,7 +24,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | Phase | Focus | Status |
 |-------|--------|--------|
 | 0 | Foundation + Overview tab | ✅ Done |
-| 1 | OG Scorecard | 🔄 In progress (1.1–1.4 done) |
+| 1 | OG Scorecard | 🔄 In progress (1.1–1.5 done) |
 | 2 | Observations Health | ⬜ |
 | 3 | Required clarity / percentage clear | 🔄 In progress (action-slot `% clear` everywhere that used the old component) |
 | 4 | Goals Health | ⬜ |
@@ -90,7 +90,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 
 **Key files:** `app/services/insights/og_scorecard_builder.rb`, `metric_registry.rb`, `check_in_clarity_week_counts.rb`, `observations_thirty_day_week_counts.rb`, `app/views/organizations/insights/og_scorecard.html.haml`
 
-**Note:** EH calculator accepts `reference_time` for historical Sundays (OGO, goal confidence, required clarity). Milestone category still uses *current* tenure/position — see Phase 1.6 if historical milestone status is needed.
+**Note:** EH calculator accepts `reference_time` for historical Sundays (OGO, goal confidence, required clarity, milestones via `ReferenceTime` tenure helpers). Phase 1.6 was originally written assuming milestones used *current* tenure — confirm that’s obsolete before spending a full sub-phase on it.
 
 ### 1.1 — Add Gruuv Health population row group
 
@@ -122,11 +122,13 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [x] Update page help to explain status vs activity; link toward 1:1 Hub Overview drill-down via Managers View
 - [x] Labeled `Activity` / `Gruuv Health` subsection separators in the scorecard table
 
-### 1.5 — Optional EH rows for remaining categories
+### 1.5 — Optional EH rows for remaining categories ✅
 
-- [ ] **Goal Confidence** population counts (Healthy / At Risk / Needs Attention) — if not fully covered in 1.1
-- [ ] **Milestones** population counts from EH — if not fully covered in 1.1 (may be point-in-time only until 1.6)
+- [x] **Goal Confidence** population counts — already covered in 1.1 (`gruuv_health_entries` under Goals → Gruuv Health); locked in registry + builder specs
+- [x] **Milestones** population counts — already covered in 1.1 under Ability Milestones → Gruuv Health; locked in registry + builder specs
+- [x] Page help: Goals locale notes Gruuv Health Goal Confidence matches Overview; Milestones help already did
 
+**Note:** Calculator + weekly snapshotter already pass Sunday `reference_time` into milestone tenure resolution (`ReferenceTime` helpers). Phase 1.6 is likely already satisfied — confirm with a historical-week spot-check before skipping.
 ### 1.6 — Point-in-time tenure for historical milestones (if needed)
 
 - [ ] Extend `EngagementHealth::Calculator` to resolve position/assignment tenures **as of `reference_time`**

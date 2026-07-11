@@ -294,13 +294,16 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(goals_group[:rows][0]).to include(separator: true, label: 'Activity')
       first_activity_index = goals_group[:rows].index { |row| row[:key] == 'unique_teammates_active_goal' }
       separator_index = goals_group[:rows].index { |row| row[:separator] && row[:label] == 'Gruuv Health' }
-      first_gruuv_index = goals_group[:rows].index do |row|
-        row[:key]&.start_with?(Insights::OgScorecard::GruuvHealthWeekCounts::METRIC_KEY_PREFIX)
-      end
+      data_rows = goals_group[:rows].reject { |row| row[:separator] }
+      gruuv_keys = data_rows.last(3).map { |row| row[:key] }
 
       expect(first_activity_index).to eq(1)
       expect(separator_index).to eq(7)
-      expect(first_gruuv_index).to eq(8)
+      expect(gruuv_keys).to contain_exactly(
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_GOAL_CONFIDENCE, EngagementHealth::HEALTHY),
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_GOAL_CONFIDENCE, EngagementHealth::WARNING),
+        Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_GOAL_CONFIDENCE, EngagementHealth::NEEDS_ATTENTION)
+      )
     end
 
     it 'includes a Gruuv Health group with population rows from EngagementHealth' do
