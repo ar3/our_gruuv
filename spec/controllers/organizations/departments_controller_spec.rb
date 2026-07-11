@@ -68,6 +68,22 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
       expect(assigns(:aspirations)).to include(aspiration)
     end
 
+    it 'excludes archived assignments and abilities from department show lists' do
+      active_assignment = create(:assignment, company: organization, department: department)
+      archived_assignment = create(:assignment, company: organization, department: department)
+      archived_assignment.archive!
+      active_ability = create(:ability, company: organization, department: department)
+      archived_ability = create(:ability, company: organization, department: department)
+      archived_ability.archive!
+
+      get :show, params: { organization_id: organization.id, id: department.id }
+
+      expect(assigns(:assignments)).to include(active_assignment)
+      expect(assigns(:assignments)).not_to include(archived_assignment)
+      expect(assigns(:abilities)).to include(active_ability)
+      expect(assigns(:abilities)).not_to include(archived_ability)
+    end
+
     it 'loads child departments' do
       nested_department
       
@@ -526,6 +542,17 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
         expect(response).to be_successful
         expect(assigns(:unassociated_assignments)).to include(unassociated_assignment)
         expect(assigns(:unassociated_assignments)).not_to include(associated_assignment)
+      end
+
+      it 'excludes archived unassociated assignments' do
+        active = create(:assignment, company: organization, department: nil)
+        archived = create(:assignment, company: organization, department: nil)
+        archived.archive!
+
+        get :associate_assignments, params: { organization_id: organization.id, id: department.id }
+
+        expect(assigns(:unassociated_assignments)).to include(active)
+        expect(assigns(:unassociated_assignments)).not_to include(archived)
       end
 
       it 'only includes assignments from the same company' do

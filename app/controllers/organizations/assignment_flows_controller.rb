@@ -75,13 +75,7 @@ class Organizations::AssignmentFlowsController < Organizations::OrganizationName
 
   def edit
     authorize @assignment_flow
-    assignments = policy_scope(Assignment).where(company: company).includes(:department).order(:title)
-    # Group by department, same order as assignments index: nil first, then by department display_name
-    grouped = assignments.to_a.group_by(&:department)
-    @assignments_by_department = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
-    memberships_by_assignment = @assignment_flow.assignment_flow_memberships.index_by(&:assignment_id)
-    @placement_by_assignment_id = memberships_by_assignment.transform_values(&:placement)
-    @group_name_by_assignment_id = memberships_by_assignment.transform_values { |m| m.group_name.presence }
+    load_edit_assignments
     render layout: determine_layout
   end
 
@@ -97,7 +91,7 @@ class Organizations::AssignmentFlowsController < Organizations::OrganizationName
           next if placement_str.blank?
           placement = placement_str.to_i
           next if placement < 0
-          assignment = company.assignments.find_by(id: assignment_id_str)
+          assignment = company.assignments.unarchived.find_by(id: assignment_id_str)
           next unless assignment
           group_name = params[:group_names]&.dig(assignment_id_str)&.presence
           @assignment_flow.assignment_flow_memberships.create!(
@@ -110,12 +104,7 @@ class Organizations::AssignmentFlowsController < Organizations::OrganizationName
       end
       redirect_to organization_assignment_flow_path(@organization, @assignment_flow), notice: 'Assignment flow was successfully updated.'
     else
-      assignments = policy_scope(Assignment).where(company: company).includes(:department).order(:title)
-      grouped = assignments.to_a.group_by(&:department)
-      @assignments_by_department = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
-      memberships_by_assignment = @assignment_flow.assignment_flow_memberships.index_by(&:assignment_id)
-      @placement_by_assignment_id = memberships_by_assignment.transform_values(&:placement)
-      @group_name_by_assignment_id = memberships_by_assignment.transform_values { |m| m.group_name.presence }
+      load_edit_assignments
       render :edit, status: :unprocessable_entity
     end
   end
@@ -127,6 +116,16 @@ class Organizations::AssignmentFlowsController < Organizations::OrganizationName
   end
 
   private
+
+  def load_edit_assignments
+    assignments = policy_scope(Assignment).where(company: company).unarchived.includes(:department).order(:title)
+    # Group by department, same order as assignments index: nil first, then by department display_name
+    grouped = assignments.to_a.group_by(&:department)
+    @assignments_by_department = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
+    memberships_by_assignment = @assignment_flow.assignment_flow_memberships.index_by(&:assignment_id)
+    @placement_by_assignment_id = memberships_by_assignment.transform_values(&:placement)
+    @group_name_by_assignment_id = memberships_by_assignment.transform_values { |m| m.group_name.presence }
+  end
 
   def set_assignment_flow
     @assignment_flow = company.assignment_flows.find(params[:id])

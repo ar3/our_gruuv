@@ -95,6 +95,18 @@ RSpec.describe Organizations::AssignmentFlowsController, type: :controller do
       all_assignments = assigns(:assignments_by_department).values.flatten
       expect(all_assignments).to include(assignment)
     end
+
+    it 'excludes archived assignments from the edit picker' do
+      assignment
+      archived = create(:assignment, company: organization, title: 'Archived Flow Assignment')
+      archived.archive!
+
+      get :edit, params: { organization_id: organization.id, id: assignment_flow.id }
+
+      all_assignments = assigns(:assignments_by_department).values.flatten
+      expect(all_assignments).to include(assignment)
+      expect(all_assignments).not_to include(archived)
+    end
   end
 
   describe 'PATCH #update' do

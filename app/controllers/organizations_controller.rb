@@ -415,7 +415,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       
       # Align stats (positions and assignments)
       @total_positions = @organization.positions.count
-      @total_assignments = @organization.assignments.count
+      @total_assignments = @organization.assignments.unarchived.count
       @total_seats = @organization.seats.count
       
       # Collaborate stats (huddles and ratings)
@@ -448,8 +448,8 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       
       # Basic pillar stats (will be expanded)
       @total_positions = @organization.positions.count
-      @total_assignments = @organization.assignments.count
-      @total_abilities = @organization.abilities.count
+      @total_assignments = @organization.assignments.unarchived.count
+      @total_abilities = @organization.abilities.unarchived.count
       
       # Observation statistics for dashboard
       load_observation_dashboard_stats

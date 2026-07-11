@@ -208,6 +208,38 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       end
     end
 
+    context 'when matching against archived records' do
+      let!(:archived_assignment) do
+        a = create(:assignment, title: 'Archived Only Assignment', company: organization, tagline: 'Old')
+        a.archive!
+        a
+      end
+
+      let(:preview_actions) do
+        {
+          'assignments' => [
+            {
+              'title' => 'Archived Only Assignment',
+              'tagline' => 'Should not update archived',
+              'outcomes' => [],
+              'required_activities' => [],
+              'department_names' => [],
+              'row' => 2
+            }
+          ],
+          'abilities' => [],
+          'assignment_abilities' => [],
+          'position_assignments' => []
+        }
+      end
+
+      it 'does not update an archived assignment as an existing match' do
+        # Uniqueness still blocks create with the same title; assert we did not revive/update archived.
+        expect { processor.process }.not_to change { archived_assignment.reload.tagline }
+        expect(archived_assignment).to be_archived
+      end
+    end
+
     context 'with multiple department names in input' do
       let!(:existing_assignment) do
         create(:assignment, title: 'Test Assignment', company: organization, department_id: nil)

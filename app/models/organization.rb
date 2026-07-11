@@ -272,7 +272,7 @@ class Organization < ApplicationRecord
   end
 
   def abilities_count
-    abilities.count
+    abilities.unarchived.count
   end
 
   def teammate_milestones_for_person(person)

@@ -70,9 +70,9 @@ module Insights
         when 'Aspiration'
           Aspiration.within_hierarchy(company).pluck(:id)
         when 'Assignment'
-          Assignment.where(company: company).pluck(:id)
+          Assignment.unarchived.where(company: company).pluck(:id)
         when 'Ability'
-          Ability.where(company: company).pluck(:id)
+          Ability.unarchived.where(company: company).pluck(:id)
         else
           []
         end

@@ -169,6 +169,16 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       
       expect(assigns(:total_assignments)).to eq(2)
     end
+
+    it 'excludes archived assignments from the total' do
+      create(:assignment, company: company)
+      archived = create(:assignment, company: company)
+      archived.archive!
+
+      get :assignments, params: { organization_id: company.id }
+
+      expect(assigns(:total_assignments)).to eq(1)
+    end
   end
 
   describe 'GET #abilities' do
@@ -184,6 +194,16 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       get :abilities, params: { organization_id: company.id }
       
       expect(assigns(:total_abilities)).to eq(2)
+    end
+
+    it 'excludes archived abilities from the total' do
+      create(:ability, company: company, created_by: person, updated_by: person)
+      archived = create(:ability, company: company, created_by: person, updated_by: person)
+      archived.archive!
+
+      get :abilities, params: { organization_id: company.id }
+
+      expect(assigns(:total_abilities)).to eq(1)
     end
   end
 

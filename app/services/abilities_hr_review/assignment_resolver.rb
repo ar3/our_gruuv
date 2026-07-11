@@ -17,7 +17,7 @@ module AbilitiesHrReview
     def call
       return empty_result if @title.blank?
 
-      scope = Assignment.where(company_id: @organization.id)
+      scope = Assignment.unarchived.where(company_id: @organization.id)
 
       exact = scope.find_by(title: @title)
       return build_result(exact, 'exact', []) if exact
@@ -25,7 +25,7 @@ module AbilitiesHrReview
       flexible = find_with_flexible_matching(Assignment, :title, @title, scope)
       return build_result(flexible, 'flexible', []) if flexible
 
-      search_hits = Assignment.search_by_full_text(@title).where(company_id: @organization.id).limit(5).to_a
+      search_hits = Assignment.unarchived.search_by_full_text(@title).where(company_id: @organization.id).limit(5).to_a
       if search_hits.any?
         return build_result(
           search_hits.first,

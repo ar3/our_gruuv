@@ -119,8 +119,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     authorize company, :view_assignments?
 
     @organization = company
-    @total_assignments = Assignment.where(company: company).count
-    assignments_scope = Assignment.for_company(company)
+    @total_assignments = Assignment.unarchived.where(company: company).count
+    assignments_scope = Assignment.unarchived.for_company(company)
     @outcomes_distribution_chart_data = assignments_outcomes_distribution_chart_data(assignments_scope)
     @positions_distribution_chart_data = assignments_positions_distribution_chart_data(assignments_scope)
 
@@ -137,8 +137,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     authorize company, :view_abilities?
 
     @organization = company
-    @total_abilities = Ability.where(company: company).count
-    abilities_scope = Ability.for_company(company)
+    @total_abilities = Ability.unarchived.where(company: company).count
+    abilities_scope = Ability.unarchived.for_company(company)
     @milestones_distribution_chart_data = abilities_milestones_distribution_chart_data(abilities_scope)
     @assignments_per_ability_chart_data = abilities_assignments_per_milestone_chart_data(abilities_scope)
 
@@ -1183,7 +1183,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
   def assignments_updated_chart_data(company, chart_range)
     return { categories: [], series: [] } if chart_range.nil?
-    assignment_ids = Assignment.for_company(company).pluck(:id)
+    assignment_ids = Assignment.unarchived.for_company(company).pluck(:id)
     return { categories: [], series: [] } if assignment_ids.empty?
     scope = PaperTrail::Version.where(item_type: 'Assignment', item_id: assignment_ids, event: 'update').where(created_at: chart_range)
     end_date = chart_range.end.to_date
@@ -1282,7 +1282,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
   def abilities_updated_chart_data(company, chart_range)
     return { categories: [], series: [] } if chart_range.nil?
-    ability_ids = Ability.for_company(company).pluck(:id)
+    ability_ids = Ability.unarchived.for_company(company).pluck(:id)
     return { categories: [], series: [] } if ability_ids.empty?
     scope = PaperTrail::Version.where(item_type: 'Ability', item_id: ability_ids, event: 'update').where(created_at: chart_range)
     end_date = chart_range.end.to_date

@@ -35,10 +35,10 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
     @titles = Title.for_department(@department).includes(:positions).ordered
     
     # Load assignments for this department
-    @assignments = Assignment.for_department(@department).ordered
+    @assignments = Assignment.unarchived.for_department(@department).ordered
     
     # Load abilities for this department
-    @abilities = Ability.for_department(@department).ordered
+    @abilities = Ability.unarchived.for_department(@department).ordered
     
     # Load aspirations for this department
     @aspirations = Aspiration.for_department(@department).ordered
@@ -169,14 +169,14 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
   # Assignments association
   def associate_assignments
     authorize @department, :update?
-    @unassociated_assignments = Assignment.for_company(company).where(department_id: nil).ordered
+    @unassociated_assignments = Assignment.unarchived.for_company(company).where(department_id: nil).ordered
   end
 
   def update_assignments_association
     authorize @department, :update?
     
     assignment_ids = params[:assignment_ids] || []
-    assignments_to_associate = Assignment.for_company(company).where(id: assignment_ids, department_id: nil)
+    assignments_to_associate = Assignment.unarchived.for_company(company).where(id: assignment_ids, department_id: nil)
     
     count = assignments_to_associate.count
     assignments_to_associate.update_all(department_id: @department.id)

@@ -275,7 +275,7 @@ class AssignmentsAndAbilitiesUploadParser
         Assignment,
         :title,
         assignment_title,
-        Assignment.where(company: organization)
+        Assignment.unarchived.where(company: organization)
       )
       
       if existing_assignment
@@ -322,7 +322,7 @@ class AssignmentsAndAbilitiesUploadParser
         Ability,
         :name,
         ability_name,
-        Ability.where(company: organization)
+        Ability.unarchived.where(company: organization)
       )
       
       if existing_ability

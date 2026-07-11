@@ -310,7 +310,7 @@ class AssignmentsAndAbilitiesUploadProcessor
       Ability,
       :name,
       ability_name,
-      Ability.where(company: organization)
+      Ability.unarchived.where(company: organization)
     )
     
     if ability
@@ -349,7 +349,7 @@ class AssignmentsAndAbilitiesUploadProcessor
       Assignment,
       :title,
       assignment_title,
-      Assignment.where(company: organization)
+      Assignment.unarchived.where(company: organization)
     )
     
     if assignment
@@ -513,7 +513,7 @@ class AssignmentsAndAbilitiesUploadProcessor
       Assignment,
       :title,
       title,
-      Assignment.where(company: organization)
+      Assignment.unarchived.where(company: organization)
     )
   end
 
@@ -524,7 +524,7 @@ class AssignmentsAndAbilitiesUploadProcessor
       Ability,
       :name,
       name,
-      Ability.where(company: organization)
+      Ability.unarchived.where(company: organization)
     )
   end
 
