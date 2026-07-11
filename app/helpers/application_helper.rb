@@ -384,6 +384,19 @@ module ApplicationHelper
     end.sort_by { |row| row[:ability].name }
   end
 
+  # Popover body for ability milestone radios: optional "required by" line + milestone markdown.
+  def ability_milestone_level_popover_html(ability, level, required_by_titles: [])
+    parts = []
+    titles = Array(required_by_titles).map(&:presence).compact
+    if titles.any?
+      parts << tag.div(class: "small fw-semibold text-start mb-2") do
+        "Milestone #{level} is required by #{titles.to_sentence}."
+      end
+    end
+    parts << complete_picture_unearned_milestone_popover_html(ability, level)
+    tag.div(class: "text-start") { safe_join(parts) }
+  end
+
   # Returns :pass, :maybe, or :miss for one aspirational value row given monthly statuses and requirement.
   # monthly_statuses: [ { status: :exceeding|:meeting|:working_to_meet|:none }, ... ]
   # Pass: at least minimum_months with rating at or above minimum_rating.

@@ -3,6 +3,8 @@
 -#   form_param_prefix — e.g. "assignment_ability_milestones_form[ability_milestones]"
 -#   associated_abilities, available_abilities, existing_associations
 -#   can_update, save_label, disabled_tooltip
+-#   assignment_milestone_locks — optional Hash ability_id => { max_level:, level_assignment_titles: }
+- assignment_milestone_locks = local_assigns.fetch(:assignment_milestone_locks, {})
 - expand_add = associated_abilities.empty?
 - available_count = available_abilities.size
 
@@ -21,13 +23,17 @@
               %th{scope: "col", colspan: "6"} Milestone Level
           %tbody
             - associated_abilities.each do |ability|
+              - lock = assignment_milestone_locks[ability.id] || {}
+              - lock_max = lock[:max_level].to_i
+              - selected_milestone = existing_associations[ability.id] || (lock_max > 0 ? lock_max : nil)
               = render "shared/ability_milestones/ability_row",
                 ability: ability,
-                current_milestone: existing_associations[ability.id],
+                current_milestone: selected_milestone,
                 form_param_prefix: form_param_prefix,
                 can_update: can_update,
                 show_no_association: true,
-                filterable: false
+                filterable: false,
+                level_assignment_titles: lock[:level_assignment_titles] || {}
     - else
       .alert.alert-info.mb-0
         %i.bi.bi-info-circle.me-2

@@ -44,6 +44,22 @@ RSpec.describe Organizations::Positions::AbilityMilestonesController, type: :con
         expect(assigns(:available_abilities)).not_to include(ability1)
       end
 
+      it 'includes abilities required via required assignments in the change list' do
+        assignment = create(:assignment, company: organization, title: 'Lead Delivery')
+        create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required')
+        create(:assignment_ability, assignment: assignment, ability: ability2, milestone_level: 3)
+
+        get :show, params: { organization_id: organization.id, position_id: position.id }
+
+        expect(assigns(:associated_abilities)).to include(ability2)
+        expect(assigns(:available_abilities)).not_to include(ability2)
+        lock = assigns(:assignment_milestone_locks)[ability2.id]
+        expect(lock[:max_level]).to eq(3)
+        expect(lock[:level_assignment_titles][1]).to eq(['Lead Delivery'])
+        expect(lock[:level_assignment_titles][3]).to eq(['Lead Delivery'])
+        expect(lock[:level_assignment_titles][4]).to be_blank
+      end
+
       it 'loads existing associations' do
         create(:position_ability, position: position, ability: ability1, milestone_level: 3)
 

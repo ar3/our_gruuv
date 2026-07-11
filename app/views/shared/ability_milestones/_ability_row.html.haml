@@ -1,9 +1,11 @@
 -# Locals: ability, current_milestone, form_param_prefix, can_update, show_no_association:
--#   current_milestone — Integer level or nil
+-#   current_milestone — Integer level or nil (selected radio; may be assignment-locked level when no direct)
 -#   form_param_prefix — e.g. "assignment_ability_milestones_form[ability_milestones]"
 -#   show_no_association — true for associated list (change/remove); false for add list
+-#   level_assignment_titles — optional Hash level => [assignment titles] for locked levels (position page)
 - department_label = ability.department&.display_name || "Company-wide"
 - row_class = local_assigns[:filterable] ? "filterable-option" : nil
+- level_assignment_titles = local_assigns[:level_assignment_titles] || {}
 %tr{class: row_class}
   %td
     %small.text-muted.d-block= department_label
@@ -14,11 +16,16 @@
   %td
     .btn-group.btn-group-sm{role: "group", "aria-label": "Milestone level for #{ability.name}"}
       - [1, 2, 3, 4, 5].each do |level|
-        - pop_html = complete_picture_unearned_milestone_popover_html(ability, level)
+        - required_by = Array(level_assignment_titles[level])
+        - level_locked = required_by.any?
+        - level_disabled = !can_update || level_locked
+        - pop_html = ability_milestone_level_popover_html(ability, level, required_by_titles: required_by)
         - radio_id = "ability_#{ability.id}_milestone_#{level}"
-        = radio_button_tag "#{form_param_prefix}[#{ability.id}]", level, (current_milestone == level), class: "btn-check", id: radio_id, disabled: !can_update
         - popover_title = "Milestone #{level} (#{milestone_level_display(level)}) for #{ability.name}"
-        = label_tag radio_id, nil, class: "btn btn-outline-primary", role: "button", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "top", bs_title: popover_title, bs_custom_class: "complete-picture-milestone-popover", bs_content: pop_html } do
+        -# Bootstrap sets pointer-events:none on labels after disabled .btn-check; restore so popovers still hover.
+        - label_style = level_disabled ? "pointer-events: auto; cursor: help;" : nil
+        = radio_button_tag "#{form_param_prefix}[#{ability.id}]", level, (current_milestone == level), class: "btn-check", id: radio_id, disabled: level_disabled
+        = label_tag radio_id, nil, class: "btn btn-outline-primary", role: "button", style: label_style, tabindex: (level_disabled ? "0" : nil), data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "top", bs_title: popover_title, bs_custom_class: "complete-picture-milestone-popover", bs_content: pop_html } do
           = level
       - if show_no_association
         - none_id = "ability_#{ability.id}_no_association"

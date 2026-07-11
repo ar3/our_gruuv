@@ -37,6 +37,25 @@ RSpec.describe 'Position Direct Milestone Requirements', type: :request do
       expect(response.body).to include('No milestone requirements yet')
     end
 
+    it 'shows assignment-required abilities in Change with locked levels and keeps Add collapsed' do
+      assignment = create(:assignment, company: company, title: 'Lead Delivery')
+      create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required')
+      create(:assignment_ability, assignment: assignment, ability: ability1, milestone_level: 3)
+
+      get organization_position_ability_milestones_path(company, position)
+
+      expect(response.body).to include(ability1.name)
+      expect(response.body).to include('Milestone 3 is required by Lead Delivery')
+      expect(response.body).to include('Milestone 1 is required by Lead Delivery')
+      expect(response.body).to match(/id="ability_#{ability1.id}_milestone_1"[^>]*disabled|disabled[^>]*id="ability_#{ability1.id}_milestone_1"/)
+      expect(response.body).to match(/id="ability_#{ability1.id}_milestone_3"[^>]*disabled|disabled[^>]*id="ability_#{ability1.id}_milestone_3"/)
+      expect(response.body).to include('pointer-events: auto')
+      expect(response.body).not_to match(/id="ability_#{ability1.id}_milestone_4"[^>]*disabled|disabled[^>]*id="ability_#{ability1.id}_milestone_4"/)
+      expect(response.body).to include('requires more of the')
+      expect(response.body).not_to include('class="collapse show" id="addMilestoneRequirements"')
+      expect(response.body).not_to include('No milestone requirements yet')
+    end
+
     it 'shows a collapsed expand link when associations exist' do
       create(:position_ability, position: position, ability: ability1, milestone_level: 2)
 

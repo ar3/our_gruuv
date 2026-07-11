@@ -37,15 +37,42 @@ module Organizations
       end
 
       def load_abilities_for_milestones
+        load_assignment_milestone_locks
+
         abilities = Ability.unarchived
           .where(company: @position.company)
           .includes(:department)
           .to_a
           .sort_by { |a| [(a.department&.display_name || "Company-wide").downcase, a.name.to_s.downcase] }
 
-        associated_ids = @existing_associations.keys
-        @associated_abilities = abilities.select { |a| associated_ids.include?(a.id) }
-        @available_abilities = abilities.reject { |a| associated_ids.include?(a.id) }
+        change_ids = (@existing_associations.keys + @assignment_milestone_locks.keys).uniq
+        @associated_abilities = abilities.select { |a| change_ids.include?(a.id) }
+        @available_abilities = abilities.reject { |a| change_ids.include?(a.id) }
+      end
+
+      # ability_id => { max_level:, level_assignment_titles: { level => [assignment titles] } }
+      def load_assignment_milestone_locks
+        @assignment_milestone_locks = {}
+
+        @position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+          assignment = position_assignment.assignment
+          next unless assignment
+
+          assignment.assignment_abilities.each do |assignment_ability|
+            level = assignment_ability.milestone_level.to_i
+            next unless (1..5).include?(level)
+
+            lock = @assignment_milestone_locks[assignment_ability.ability_id] ||= {
+              max_level: 0,
+              level_assignment_titles: Hash.new { |h, k| h[k] = [] }
+            }
+            lock[:max_level] = [lock[:max_level], level].max
+            (1..level).each do |locked_level|
+              titles = lock[:level_assignment_titles][locked_level]
+              titles << assignment.title unless titles.include?(assignment.title)
+            end
+          end
+        end
       end
 
       def load_existing_associations

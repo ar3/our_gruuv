@@ -27,12 +27,27 @@
   %ul.mb-3
     %li
       %strong= "#{change_section_title}:"
-      Abilities already required for this #{subject_label}. Change the Milestone level, or choose
-      %em No Association
-      to remove a requirement.
+      - if is_assignment
+        Abilities already required for this assignment. Change the Milestone level, or choose
+        %em No Association
+        to remove a requirement.
+      - else
+        Abilities required for this position—either as a
+        %strong direct
+        requirement on the position, or indirectly through a
+        %strong required Assignment
+        \. Direct levels can be changed or cleared with
+        %em No Association
+        \. Levels already required by an Assignment are disabled (hover to see which Assignment).
+        You can still set a
+        %strong higher
+        direct Milestone above those locked levels.
     %li
       %strong= "#{add_section_title}:"
-      Abilities not yet required. Collapsed by default when requirements already exist; expanded when this #{subject_label} has none yet. Use search to filter by Ability name or department.
+      Abilities not yet required
+      - unless is_assignment
+        (directly or via a required Assignment)
+      \. Collapsed by default when the Change section already has requirements; expanded only when there are none yet. Use search to filter by Ability name or department.
 
   %h5.fw-semibold.mb-2 How to set a Milestone
   %p.mb-2
@@ -46,7 +61,13 @@
     \.
     Hover a Milestone button for a popover titled like
     %em Milestone 3 (Expert) for {Ability}
-    with that Milestone’s description.
+    with that Milestone’s description
+    - if is_assignment
+      \.
+    - else
+      ; locked levels also say
+      %em Milestone X is required by {Assignment}
+      \.
   %p.mb-3
     Example: for Ability
     %strong Coaching
@@ -55,6 +76,8 @@
     means this #{subject_label} requires
     %strong Advanced
     Coaching (Milestone 2).
+    - unless is_assignment
+      If a required Assignment already needs Coaching at Milestone 3, buttons 1–3 are disabled and you may only add a higher direct requirement (4 or 5) or leave it to the Assignment.
 
   %h5.fw-semibold.mb-2 Saving
   %p.mb-0
