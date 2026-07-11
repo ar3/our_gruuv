@@ -201,11 +201,7 @@ module Insights
       observees_by_week = week_starts.index_with { Set.new }
       week_set = week_starts.to_set
 
-      obs_scope = Observation
-        .for_company(company)
-        .not_soft_deleted
-        .published
-        .where(published_at: chart_range)
+      obs_scope = scorecard_observation_scope.where(published_at: chart_range)
 
       obs_rows = obs_scope.pluck(:published_at, :observer_id)
       observer_person_ids = obs_rows.map(&:last).compact.uniq
@@ -255,11 +251,7 @@ module Insights
       }
       max_week_end = (week_starts.max + 6.days).in_time_zone.end_of_day
 
-      obs_scope = Observation
-        .for_company(company)
-        .not_soft_deleted
-        .published
-        .where("published_at <= ?", max_week_end)
+      obs_scope = scorecard_observation_scope.where("published_at <= ?", max_week_end)
 
       obs_rows = obs_scope.pluck(:published_at, :observer_id)
       observer_person_ids = obs_rows.map(&:last).compact.uniq
@@ -302,6 +294,11 @@ module Insights
         publishers_by_week.transform_values(&:size),
         observees_by_week.transform_values(&:size)
       ]
+    end
+
+    # Matches Observations::HealthScopes company + non-journal filters (activity velocity, not privacy).
+    def scorecard_observation_scope
+      Observations::HealthScopes.published_non_journal_scope(company)
     end
 
     def active_teammate_ids_for_week(week_ending_on)

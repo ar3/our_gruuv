@@ -1,21 +1,27 @@
 # frozen_string_literal: true
 
 module Observations
-  # Published OGO scopes for Observations Health cache (Given, Received, authored mix).
+  # Published OGO scopes for Observations Health cache (Given, Received, authored mix)
+  # and Engagement Health OGO Given / Received. Scorecard activity rows should use the
+  # same company + non-journal filters when counting publishers / observees.
   module HealthScopes
     module_function
 
     def company_ids_for(organization)
-      [organization.id]
+      organization.self_and_descendants.pluck(:id)
     end
 
-    def given_scope(teammate, organization)
+    def published_non_journal_scope(organization)
       Observation
         .published
         .not_soft_deleted
         .not_journal
-        .where(observer_id: teammate.person_id)
         .where(company_id: company_ids_for(organization))
+    end
+
+    def given_scope(teammate, organization)
+      published_non_journal_scope(organization)
+        .where(observer_id: teammate.person_id)
     end
 
     def received_scope(teammate, organization)

@@ -24,6 +24,19 @@ RSpec.describe Observations::HealthScopes do
     end
   end
 
+  describe ".company_ids_for" do
+    it "includes the organization (and any descendants when hierarchy exists)" do
+      expect(described_class.company_ids_for(organization)).to include(organization.id)
+    end
+  end
+
+  describe ".published_non_journal_scope" do
+    it "excludes journal entries" do
+      publish_observation!(privacy_level: :observer_only)
+      expect(described_class.published_non_journal_scope(organization)).not_to exist
+    end
+  end
+
   describe ".given_scope" do
     it "includes non-journal published observations by the teammate" do
       publish_observation!(privacy_level: :observed_only)

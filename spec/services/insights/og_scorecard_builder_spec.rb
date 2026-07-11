@@ -177,6 +177,37 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(first_gruuv_index).to eq(observees_this_week_index + 3)
     end
 
+    it 'excludes journal (observer-only) observations from activity publisher and observee counts' do
+      monday = Date.new(2026, 7, 6)
+      week_starts = [monday]
+      chart_range = monday.beginning_of_day..(monday + 6).end_of_day
+
+      observer_person = create(:person)
+      observee_person = create(:person)
+      create(:teammate, organization: company, person: observer_person, first_employed_at: monday - 1.year, last_terminated_at: nil)
+      observee_tm = create(:teammate, organization: company, person: observee_person, first_employed_at: monday - 1.year, last_terminated_at: nil)
+
+      obs = build(
+        :observation,
+        company: company,
+        observer: observer_person,
+        story: 'A' * 20,
+        privacy_level: :observer_only
+      )
+      obs.observees.destroy_all
+      obs.observees.build(teammate: observee_tm)
+      obs.save!(validate: false)
+      obs.update_columns(published_at: monday.to_time + 12.hours, observed_at: monday.to_time + 12.hours)
+
+      result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
+      data_rows = result[:groups].find { |g| g[:title] == 'Observations' }[:rows].reject { |r| r[:separator] }
+      publishers_this_week = data_rows.find { |r| r[:key] == 'unique_ogo_publishers_this_week' }
+      observees_this_week = data_rows.find { |r| r[:key] == 'unique_ogo_observees_this_week' }
+
+      expect(publishers_this_week[:weekly_values]).to eq([0])
+      expect(observees_this_week[:weekly_values]).to eq([0])
+    end
+
     it 'limits metrics to filtered teammate ids' do
       monday = Date.new(2026, 4, 6)
       week_starts = [monday]

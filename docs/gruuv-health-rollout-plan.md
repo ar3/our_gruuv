@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0 complete. Phase 1.1–1.2 done (EH population rows + Required Clarity trio retired). Phase 3/6/8 partial (clarity workflows on EH). **Open leftovers:** item-healthy % aggregates; Phase 1.3+ scorecard. **Next:** Phase 1.3 (OGO 30-day → EH) or Phase 1.4 (activity relabel).
+**Status:** Phase 0 complete. Phase 1.1–1.3 done (EH population rows, Required Clarity trio retired, OGO Healthy scopes aligned). Phase 3/6/8 partial (clarity workflows on EH). **Open leftovers:** item-healthy % aggregates; Phase 1.4+ scorecard. **Next:** Phase 1.4 (activity relabel / status vs activity help).
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -24,7 +24,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | Phase | Focus | Status |
 |-------|--------|--------|
 | 0 | Foundation + Overview tab | ✅ Done |
-| 1 | OG Scorecard | 🔄 In progress (1.1–1.2 done) |
+| 1 | OG Scorecard | 🔄 In progress (1.1–1.3 done) |
 | 2 | Observations Health | ⬜ |
 | 3 | Required clarity / percentage clear | 🔄 In progress (action-slot `% clear` everywhere that used the old component) |
 | 4 | Goals Health | ⬜ |
@@ -107,12 +107,12 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [x] Update `MetricRegistry` labels and `og_scorecard_clarity_check_ins_help` locale copy (activity vs status)
 - [x] Remove duplicated clarity status logic (`ClarityLevel`, `CheckInClarityWeekCounts`); keep `ClarityCheckInWeekCounts` for activity-only this-week / all-time rows; prune stale threshold rows for retired metric keys
 
-### 1.3 — OGO 30-day rows → EH scopes
+### 1.3 — OGO 30-day rows → EH scopes ✅
 
-- [ ] Align **OGO Given 30-day** count with `Observations::HealthScopes.given_scope` (matches EH healthy threshold + scope)
-- [ ] Align **OGO Received 30-day** with `Observations::HealthScopes.received_scope` (privacy rules)
-- [ ] Rename rows to reflect **Healthy** on OGO Given / Received (optional: drop 30-day rows if 1.1 EH rows supersede them)
-- [ ] Fix scope gaps: `.not_journal`, org hierarchy, received privacy
+- [x] **OGO Given / Received Healthy** on the scorecard already use `Observations::HealthScopes` via EH category rollups (30-day Healthy window)
+- [x] Dropped orphaned `ObservationsThirtyDayWeekCounts` (was not wired into MetricRegistry; superseded by Healthy rows)
+- [x] Scorecard OGO activity this-week / all-time scopes aligned: `HealthScopes.published_non_journal_scope` (`.not_journal` + company ids)
+- [x] `HealthScopes.company_ids_for` uses `self_and_descendants`; received privacy remains on EH Received (not activity “named as observee” rows); page help clarifies Healthy = 30-day signal
 
 ### 1.4 — Relabel activity rows (no logic change)
 
@@ -139,7 +139,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [ ] Manual compare: sample teammates on Overview vs scorecard population counts for same Sunday
 - [ ] Document any intentional differences in page help
 
-**Phase 1 retire (when complete):** scorecard-only `ClarityLevel` / `CheckInClarityWeekCounts` (**already removed**); duplicated OGO 30-day logic in `ObservationsThirtyDayWeekCounts` (if superseded). Keep `ClarityCheckInWeekCounts` for activity velocity rows.
+**Phase 1 retire (when complete):** scorecard-only `ClarityLevel` / `CheckInClarityWeekCounts` (**already removed**); `ObservationsThirtyDayWeekCounts` (**removed** — superseded by EH Healthy OGO Given/Received). Keep `ClarityCheckInWeekCounts` for check-in activity velocity rows.
 
 **Gate:** Your approval before Phase 2.
 

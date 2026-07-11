@@ -63,9 +63,10 @@
         using the same rules as the 1:1 Hub Overview; the parenthetical on each row states the threshold. All-time and weekly activity rows are grouped separately within each section.
       %li
         %strong Observations:
-        “This week” rows count unique teammates who published or were named in an OGO during that Mon–Sun week.
-        All-time rows count teammates employed during that week who had ever done so on or before that Sunday.
-        Gruuv Health rows measure recency of last OGO activity as of each Sunday.
+        Activity rows count unique teammates who published or were named in a non-journal OGO during that Mon–Sun week (this week), or who had ever done so on or before that Sunday while employed that week (all-time). Scopes match Gruuv Health (org hierarchy + non-journal).
+        Gruuv Health
+        %strong Healthy OGOs Given / Received
+        is the 30-day Healthy window (last published ≤ 30 days as of that Sunday); Warning and Needs Attention complete the trio. There is no separate 30-day activity row—Healthy is that signal.
       %li
         %strong= "#{I18n.t('terminology.og_scorecard_clarity_check_ins_label')}:"
         = I18n.t('terminology.og_scorecard_clarity_check_ins_help')
