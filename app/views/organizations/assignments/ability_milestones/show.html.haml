@@ -1,15 +1,26 @@
+- page_help_id = "assignmentAbilityMilestonesPageHelp"
+
 - content_for :title, "Ability Milestones - #{@assignment.title}"
 
 - content_for :header do
-  %h1.mb-0
-    %i.bi.bi-link-45deg.me-2
-    #{@assignment.title} - Ability Milestones
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0
+      %i.bi.bi-link-45deg.me-2
+      #{@assignment.title} - Ability Milestones
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Set which Abilities and Milestone levels this assignment requires. Click for details."
 
 - content_for :header_action do
   = render 'assignments/view_switcher'
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @assignment.title, url: organization_assignment_path(@organization, @assignment) }, { label: "Ability milestones", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "shared/ability_milestones/page_help",
+           subject_name: @assignment.title,
+           subject_kind: :assignment
 
 = form_with model: @form, url: organization_assignment_ability_milestones_path(@organization, @assignment), method: :patch, local: true do |f|
   .row.justify-content-center

@@ -1,15 +1,26 @@
+- page_help_id = "positionAbilityMilestonesPageHelp"
+
 - content_for :title, "Direct Milestone Requirements - #{@position.display_name}"
 
 - content_for :header do
-  %h1.mb-0
-    %i.bi.bi-link-45deg.me-2
-    #{@position.display_name} - Direct Milestone Requirements
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0
+      %i.bi.bi-link-45deg.me-2
+      #{@position.display_name} - Direct Milestone Requirements
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Set direct Ability Milestone requirements for this position. Click for details."
 
 - content_for :header_action do
   = render 'view_switcher'
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @position.display_name, url: organization_position_path(@organization, @position) }, { label: "Ability milestones", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "shared/ability_milestones/page_help",
+           subject_name: @position.display_name,
+           subject_kind: :position
 
 = form_with model: @form, url: organization_position_ability_milestones_path(@organization, @position), method: :patch, local: true do |f|
   .row.justify-content-center

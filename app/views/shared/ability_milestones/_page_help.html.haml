@@ -1,0 +1,65 @@
+-# Locals: subject_name, subject_kind (:assignment or :position)
+- subject_name = local_assigns.fetch(:subject_name)
+- subject_kind = local_assigns.fetch(:subject_kind)
+- is_assignment = subject_kind.to_sym == :assignment
+- subject_label = is_assignment ? "assignment" : "position"
+- change_section_title = "Change Milestone Requirement"
+- add_section_title = "Add additional Milestone Requirements"
+- save_label = is_assignment ? "Save Ability Milestones" : "Save Direct Milestone Requirements"
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    - if is_assignment
+      Define which Abilities—and at which Milestone level—someone needs to do the job of
+      %strong= subject_name
+      well.
+    - else
+      Set direct Ability Milestone requirements on the
+      %strong= subject_name
+      position (in addition to requirements that come through its Assignments).
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 The two sections
+  %ul.mb-3
+    %li
+      %strong= "#{change_section_title}:"
+      Abilities already required for this #{subject_label}. Change the Milestone level, or choose
+      %em No Association
+      to remove a requirement.
+    %li
+      %strong= "#{add_section_title}:"
+      Abilities not yet required. Collapsed by default when requirements already exist; expanded when this #{subject_label} has none yet. Use search to filter by Ability name or department.
+
+  %h5.fw-semibold.mb-2 How to set a Milestone
+  %p.mb-2
+    Each row shows the department, Ability name, and Milestone buttons
+    %span.btn.btn-sm.btn-outline-primary.me-1 1
+    through
+    %span.btn.btn-sm.btn-outline-primary.mx-1 5
+    plus
+    %span.btn.btn-sm.btn-outline-secondary.ms-1
+      %em No Association
+    \.
+    Hover a Milestone button for a popover titled like
+    %em Milestone 3 (Expert) for {Ability}
+    with that Milestone’s description.
+  %p.mb-3
+    Example: for Ability
+    %strong Coaching
+    , choosing
+    %span.btn.btn-sm.btn-outline-primary 2
+    means this #{subject_label} requires
+    %strong Advanced
+    Coaching (Milestone 2).
+
+  %h5.fw-semibold.mb-2 Saving
+  %p.mb-0
+    Click
+    %strong= save_label
+    when you are done. Unsaved Milestone picks in the add section stay local until you save; use
+    %em No Association
+    to clear a mistaken pick without refreshing.

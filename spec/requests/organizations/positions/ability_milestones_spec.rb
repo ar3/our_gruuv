@@ -24,6 +24,9 @@ RSpec.describe 'Position Direct Milestone Requirements', type: :request do
       expect(response.body).to include(position.display_name)
       expect(response.body).to include('Change Milestone Requirement')
       expect(response.body).to include('Add additional Milestone Requirements')
+      expect(response.body).to include('positionAbilityMilestonesPageHelp')
+      expect(response.body).to include('Goal of this page')
+      expect(response.body).to include('What is MAAP?')
     end
 
     it 'expands the add section when there are no associations yet' do

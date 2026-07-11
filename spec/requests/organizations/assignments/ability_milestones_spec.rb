@@ -26,6 +26,9 @@ RSpec.describe 'Assignment Ability Milestones', type: :request do
       expect(response.body).to include('data-controller="options-filter"')
       expect(response.body).to include('data-bs-toggle="popover"')
       expect(response.body).to include("ability_#{ability1.id}_no_association")
+      expect(response.body).to include('assignmentAbilityMilestonesPageHelp')
+      expect(response.body).to include('Goal of this page')
+      expect(response.body).to include('What is MAAP?')
     end
 
     it 'shows associated abilities in the change section and a collapsed expand link' do

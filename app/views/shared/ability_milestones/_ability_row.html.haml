@@ -17,7 +17,8 @@
         - pop_html = complete_picture_unearned_milestone_popover_html(ability, level)
         - radio_id = "ability_#{ability.id}_milestone_#{level}"
         = radio_button_tag "#{form_param_prefix}[#{ability.id}]", level, (current_milestone == level), class: "btn-check", id: radio_id, disabled: !can_update
-        = label_tag radio_id, nil, class: "btn btn-outline-primary", role: "button", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "top", bs_title: "Milestone #{level}", bs_custom_class: "complete-picture-milestone-popover", bs_content: pop_html } do
+        - popover_title = "Milestone #{level} (#{milestone_level_display(level)}) for #{ability.name}"
+        = label_tag radio_id, nil, class: "btn btn-outline-primary", role: "button", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "top", bs_title: popover_title, bs_custom_class: "complete-picture-milestone-popover", bs_content: pop_html } do
           = level
       - if show_no_association
         - none_id = "ability_#{ability.id}_no_association"
