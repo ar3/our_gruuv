@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0 complete. Phase 3/6 partial (Style 2 removed, About Me on EH, old `% clear` UI retired). **Open leftovers:** One Thing (Phase 8); item-healthy % aggregates on Insights / by-manager / CSV. **Next:** Phase 1 remaining / Phase 8 One Thing.
+**Status:** Phase 0 complete. Phase 3/6/8 partial (Style 2 removed, About Me on EH, old `% clear` UI retired, One Thing + hub next-up + all-fresh on EH). **Open leftovers:** item-healthy % aggregates on Insights / by-manager / CSV. **Next:** Phase 1 remaining (OG Scorecard 1.2+).
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -31,14 +31,14 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | 5 | Milestones Health (+ migrate check-ins milestone bars) | ⬜ |
 | 6 | Check-ins Health (remainder) | 🔄 Style 2 + `CheckInHealthService` removed |
 | 7 | Insights pages | ⬜ — dept `% healthy` still item-healthy math |
-| 8 | 1:1 system (One Thing, hub next-up, etc.) | 🔄 all-fresh + hub next-up done; One Thing open |
+| 8 | 1:1 system (One Thing, hub next-up, etc.) | ✅ threshold alignment done (all-fresh, hub next-up, One Thing) |
 | 9 | Cleanup — retire old caches/jobs | ⬜ |
 
 ### Open threshold-alignment leftovers (from required-clarity migration)
 
 These still use 30/60/90 `clarity_level` / old green buckets and can disagree with Gruuv Health (Healthy = 60 days):
 
-- [ ] **One Thing / priority carousel** — `PriorityCarouselBuilder` + `RequiredCheckInUrgencySort` still queue/sort on blurred/obscured `clarity_level`
+- [x] **One Thing / priority carousel** — `PriorityCarouselBuilder` + `RequiredCheckInUrgencySort` use EH Warning / Needs Attention (60/90), not blurred/obscured `clarity_level`
 - [x] **All-fresh “100% clear” banner** — `CheckIns::AllFreshBannerService` uses EH Healthy (`REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS` = 60)
 - [x] **Hub “next up” CTA** — `SingleItemCheckInNextItemService` urgency buckets map to EH Healthy / Warning / Needs Attention (60/90), not crystal-clear (30)
 
@@ -168,7 +168,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [x] Check-in hub / single-item check-in header → `shared/clarity_action_slots/summary`
 - [x] About Me check-in sections — clarity icons + merge messaging from EH Required Clarity
 - [x] Start Here check-in status + My Employees overall `% clear` → action-slot math
-- [ ] `CheckIns::RequiredCheckInUrgencySort` — align sort keys with EH severity (also Phase 8 One Thing)
+- [x] `CheckIns::RequiredCheckInUrgencySort` — EH severity (Needs Attention → Warning → Healthy); legacy blurred/obscured keys still map
 - [ ] Org aggregates still on item-healthy `%` (by-manager, Insights Check-ins Progress, employee summary CSV) — migrate to action slots or keep as explicit “% items healthy”
 
 **Retire when done:** 4-level clarity as *status* in `check_in_health_caches.required_check_ins` payload; `ClarityLevel` in non-scorecard paths; `ClarityMetrics.breakdown` if no remaining consumers
@@ -232,7 +232,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 
 ## Phase 8 — 1:1 system
 
-- [ ] **One Thing** — `PriorityCarouselBuilder` priorities driven by EH item/category status (replace inline 30/60/90 checks)
+- [x] **One Thing** — `PriorityCarouselBuilder` priorities driven by EH Warning / Needs Attention (replace blurred/obscured `clarity_level`)
 - [x] **All-fresh banner** — `CheckIns::AllFreshBannerService` / `_all_fresh_banner.html.haml` use EH Healthy (60d) instead of crystal-clear (30d)
 - [x] **Hub next-up CTA** — `SingleItemCheckInNextItemService` urgency buckets use EH Healthy / Warning / Needs Attention (60/90) so hub “fully up to date” matches Up Next
 - [ ] **Work to Meet** — evaluate; likely stays goal/OGO *presence* logic (separate from Gruuv Health status)

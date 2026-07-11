@@ -87,6 +87,60 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(ready[:reason]).to include("(or another manager)")
     end
 
+    it "flags required clarity Warning/Needs Attention items using EH windows (not crystal-clear 30d)" do
+      healthy_within = EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
+      one_on_one_link = create(:one_on_one_link, teammate: teammate, url: "https://example.com/1-1")
+
+      if teammate.active_employment_tenure&.position
+        create(
+          :position_check_in,
+          :finalized,
+          teammate: teammate,
+          official_check_in_completed_at: 10.days.ago
+        )
+      end
+
+      still_healthy = create(:aspiration, company: organization, name: "Still Healthy")
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: still_healthy,
+        official_check_in_completed_at: (CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 10).days.ago
+      )
+
+      warning_aspiration = create(:aspiration, company: organization, name: "Getting Stale")
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: warning_aspiration,
+        official_check_in_completed_at: (healthy_within + 5).days.ago
+      )
+
+      result = described_class.call(
+        organization: organization,
+        teammate: teammate,
+        one_on_one_link: one_on_one_link
+      )
+
+      clarity = result[:priorities][2]
+      expect(clarity[:data_kind]).to eq(:required_clarity_attention)
+      expect(clarity[:needs_attention]).to eq(true)
+      expect(clarity[:title]).to include("Warning")
+      expect(clarity[:title]).to include("Needs Attention")
+      titles = clarity[:items].map { |i| i[:display_title] }
+      expect(titles).to include("Getting Stale")
+      expect(titles).not_to include("Still Healthy")
+      expect(clarity[:items].find { |i| i[:display_title] == "Getting Stale" }[:status]).to eq(EngagementHealth::WARNING)
+
+      renderer = OneOnOne::PriorityRenderer.new(priority: clarity, organization: organization, teammate: teammate)
+      warning_item = clarity[:items].find { |i| i[:display_title] == "Getting Stale" }
+      label = renderer.item_label_url(warning_item)[:label]
+      expect(label).to include("Warning")
+      expect(label).not_to include("Blurred")
+    end
+
     it "marks Asana-specific priorities as not applicable when Asana is linked but never synced" do
       one_on_one_link = create(
         :one_on_one_link,

@@ -77,7 +77,7 @@ module OneOnOne
       case priority[:data_kind]
       when :observation_received_success, :wtm_received_success, :observation_given_attention, :observation_received_attention
         :html
-      when :blurred_or_obscured_attention,
+      when :required_clarity_attention, :blurred_or_obscured_attention,
            :wtm_with_goals_success,
            :wtm_gap_without_goals_attention,
            :milestone_gap_attention,
@@ -104,8 +104,8 @@ module OneOnOne
 
     def item_label_url(item)
       case priority[:data_kind]
-      when :blurred_or_obscured_attention
-        blurred_or_obscured_item_label_url(item)
+      when :required_clarity_attention, :blurred_or_obscured_attention
+        required_clarity_attention_item_label_url(item)
       when :wtm_with_goals_success
         wtm_with_goals_item_label_url(item)
       when :wtm_gap_without_goals_attention
@@ -478,37 +478,37 @@ module OneOnOne
       }
     end
 
-    # ---------- Priority 3: blurred/obscured (attention) ----------
+    # ---------- Priority 3: required clarity Warning / Needs Attention ----------
 
-    def blurred_or_obscured_item_label_url(item)
-      prefix = blurred_or_obscured_kind_prefix(item[:kind])
-      clarity_label = blurred_or_obscured_clarity_label(item[:clarity])
+    def required_clarity_attention_item_label_url(item)
+      prefix = required_clarity_attention_kind_prefix(item[:kind])
+      status_label = required_clarity_attention_status_label(item[:status] || item[:clarity])
       label =
-        "#{prefix} #{item[:display_title]} — #{clarity_label} " \
-        "(Last check-in: #{blurred_or_obscured_words(item[:finalized_at])})"
-      { label: label, url: blurred_or_obscured_url(item) }
+        "#{prefix} #{item[:display_title]} — #{status_label} " \
+        "(Last check-in: #{required_clarity_attention_words(item[:finalized_at])})"
+      { label: label, url: required_clarity_attention_url(item) }
     end
 
-    def blurred_or_obscured_clarity_label(clarity)
-      case clarity&.to_sym
-      when :blurred
-        "Blurred (#{blurred_check_in_age_hint})"
-      when :obscured
-        "Obscured (#{obscured_check_in_age_hint})"
+    def required_clarity_attention_status_label(status)
+      case CheckIns::RequiredCheckInUrgencySort.normalize_status(status)
+      when EngagementHealth::WARNING
+        "Warning (#{warning_check_in_age_hint})"
+      when EngagementHealth::NEEDS_ATTENTION
+        "Needs Attention (#{needs_attention_check_in_age_hint})"
       else
-        clarity.to_s.humanize.presence || "Needs attention"
+        EngagementHealth::STATUS_LABELS.fetch(status.to_s, status.to_s.humanize.presence || "Needs Attention")
       end
     end
 
-    def blurred_check_in_age_hint
-      "check-in #{CheckInBehavior::CLARITY_CLEAR_DAYS}+ days old"
+    def warning_check_in_age_hint
+      "check-in #{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1}+ days old"
     end
 
-    def obscured_check_in_age_hint
-      "check-in #{CheckInBehavior::CLARITY_BLURRED_DAYS}+ days old"
+    def needs_attention_check_in_age_hint
+      "check-in #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS}+ days old"
     end
 
-    def blurred_or_obscured_kind_prefix(kind)
+    def required_clarity_attention_kind_prefix(kind)
       case kind
       when :aspiration then "Aspiration:"
       when :assignment then "Assignment:"
@@ -517,13 +517,13 @@ module OneOnOne
       end
     end
 
-    def blurred_or_obscured_words(completed_at)
+    def required_clarity_attention_words(completed_at)
       return "never" if completed_at.blank?
 
       "#{h.time_ago_in_words(completed_at)} ago"
     end
 
-    def blurred_or_obscured_url(item)
+    def required_clarity_attention_url(item)
       case item[:kind]
       when :aspiration
         organization_teammate_aspiration_path(organization, teammate, item[:record_id])

@@ -68,7 +68,7 @@ module OneOnOne
       [
         priority_asana_urgent_tasks,
         priority_check_ins_ready_for_review,
-        priority_blurred_or_obscured_check_ins,
+        priority_required_clarity_attention_check_ins,
         priority_wtm_required_or_active_without_goals,
         priority_current_position_milestone_gaps_without_goals,
         priority_no_observation_given_30d,
@@ -207,23 +207,23 @@ module OneOnOne
       { kind: row[:kind], display_title: row[:display_title] }
     end
 
-    def priority_blurred_or_obscured_check_ins
-      rows = blurred_or_obscured_check_in_rows
+    def priority_required_clarity_attention_check_ins
+      rows = required_clarity_attention_check_in_rows
 
       rows.sort_by! do |row|
         CheckIns::RequiredCheckInUrgencySort.sort_tuple(
-          row[:clarity],
+          row[:status],
           row[:kind],
           row[:finalized_at],
           row[:rating]
         )
       end
 
-      item_data = rows.first(3).map { |row| blurred_or_obscured_item_data(row) }
+      item_data = rows.first(3).map { |row| required_clarity_attention_item_data(row) }
 
-      title = blurred_or_obscured_priority_title
+      title = required_clarity_attention_priority_title
       if rows.any?
-        top_check_in_path = blurred_or_obscured_check_in_path(rows.first)
+        top_check_in_path = required_clarity_attention_check_in_path(rows.first)
         top_check_in_path ||= review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
         attention_priority(
           title,
@@ -233,50 +233,68 @@ module OneOnOne
           cta_kind: :open_top_prioritized_check_in,
           cta_label: I18n.t("terminology.priority_open_top_clarity_check_in"),
           cta_path: top_check_in_path,
-          data_kind: :blurred_or_obscured_attention,
+          data_kind: :required_clarity_attention,
           items: item_data
         )
       else
         success_priority(
           title,
-          I18n.t("terminology.priority_required_clarity_check_ins_clear"),
+          I18n.t("terminology.priority_required_clarity_check_ins_healthy"),
           [
             I18n.t(
-              "terminology.priority_no_blurred_clarity_check_ins",
-              blurred_hint: blurred_check_in_age_hint,
-              obscured_hint: obscured_check_in_age_hint
+              "terminology.priority_no_required_clarity_attention",
+              warning_hint: warning_check_in_age_hint,
+              needs_attention_hint: needs_attention_check_in_age_hint
             )
           ]
         )
       end
     end
 
-    def blurred_or_obscured_priority_title
+    def required_clarity_attention_priority_title
       I18n.t(
-        "terminology.priority_blurred_obscured_clarity_title",
-        blurred_hint: blurred_check_in_age_hint,
-        obscured_hint: obscured_check_in_age_hint
+        "terminology.priority_required_clarity_attention_title",
+        warning_hint: warning_check_in_age_hint,
+        needs_attention_hint: needs_attention_check_in_age_hint
       )
     end
 
-    def blurred_check_in_age_hint
-      I18n.t("terminology.clarity_check_in_age_hint", days: CheckInBehavior::CLARITY_CLEAR_DAYS)
+    def warning_check_in_age_hint
+      I18n.t(
+        "terminology.clarity_check_in_age_hint",
+        days: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1
+      )
     end
 
-    def obscured_check_in_age_hint
-      I18n.t("terminology.clarity_check_in_age_hint", days: CheckInBehavior::CLARITY_BLURRED_DAYS)
+    def needs_attention_check_in_age_hint
+      I18n.t(
+        "terminology.clarity_check_in_age_hint",
+        days: EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      )
     end
 
-    def blurred_or_obscured_check_in_rows
+    def required_clarity_status_for(finalized_at)
+      EngagementHealth::Thresholds.status_for_last_event(
+        finalized_at,
+        healthy_within: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
+        needs_attention_at: EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      )
+    end
+
+    def required_clarity_needs_attention?(status)
+      status.in?([EngagementHealth::WARNING, EngagementHealth::NEEDS_ATTENTION])
+    end
+
+    def required_clarity_attention_check_in_rows
       rows = []
 
       position = @teammate.active_employment_tenure&.position
       pos_check_in = PositionCheckIn.latest_finalized_for(@teammate)
-      pos_clarity = pos_check_in&.clarity_level || :obscured
-      if %i[blurred obscured].include?(pos_clarity)
+      pos_status = required_clarity_status_for(pos_check_in&.official_check_in_completed_at)
+      if required_clarity_needs_attention?(pos_status)
         rows << {
           kind: :position,
-          clarity: pos_clarity,
+          status: pos_status,
           finalized_at: pos_check_in&.official_check_in_completed_at,
           rating: pos_check_in&.official_rating,
           record_id: position&.id,
@@ -292,12 +310,12 @@ module OneOnOne
         next if assignment.blank?
 
         latest = AssignmentCheckIn.latest_finalized_for(@teammate, assignment)
-        clarity = latest&.clarity_level || :obscured
-        next unless %i[blurred obscured].include?(clarity)
+        status = required_clarity_status_for(latest&.official_check_in_completed_at)
+        next unless required_clarity_needs_attention?(status)
 
         rows << {
           kind: :assignment,
-          clarity: clarity,
+          status: status,
           finalized_at: latest&.official_check_in_completed_at,
           rating: latest&.official_rating,
           record_id: assignment.id,
@@ -307,12 +325,12 @@ module OneOnOne
 
       Aspiration.within_hierarchy(@organization).find_each do |aspiration|
         latest = AspirationCheckIn.latest_finalized_for(@teammate, aspiration)
-        clarity = latest&.clarity_level || :obscured
-        next unless %i[blurred obscured].include?(clarity)
+        status = required_clarity_status_for(latest&.official_check_in_completed_at)
+        next unless required_clarity_needs_attention?(status)
 
         rows << {
           kind: :aspiration,
-          clarity: clarity,
+          status: status,
           finalized_at: latest&.official_check_in_completed_at,
           rating: latest&.official_rating,
           record_id: aspiration.id,
@@ -323,17 +341,17 @@ module OneOnOne
       rows
     end
 
-    def blurred_or_obscured_item_data(row)
+    def required_clarity_attention_item_data(row)
       {
         kind: row[:kind],
         record_id: row[:record_id],
         display_title: row[:display_title],
         finalized_at: row[:finalized_at],
-        clarity: row[:clarity]
+        status: row[:status]
       }
     end
 
-    def blurred_or_obscured_check_in_path(row)
+    def required_clarity_attention_check_in_path(row)
       case row[:kind]
       when :aspiration
         organization_teammate_aspiration_path(@organization, @teammate, row[:record_id])
