@@ -125,31 +125,6 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       unassigned_count = @unassigned_teammates.is_a?(Array) ? @unassigned_teammates.count : @unassigned_teammates.count
       @pagy = Pagy.new(count: @hierarchy_tree.count + unassigned_count, page: 1, items: 999999)
       @filtered_and_paginated_teammates = []
-    # Handle check_ins_health view
-    elsif query.current_view == 'check_ins_health'
-      # Filter to active employees only for check-ins health
-      filtered_teammates = filtered_teammates.where.not(first_employed_at: nil).where(last_terminated_at: nil)
-      
-      # Create filtered_teammates: filtered but unpaginated (for spotlight calculations)
-      @filtered_teammates = filtered_teammates
-      
-      # Calculate health data for all active employees
-      all_employee_health_data = @filtered_teammates.map do |teammate|
-        health_data = CheckInHealthService.call(teammate, @organization)
-        {
-          teammate: teammate,
-          person: teammate.person,
-          health: health_data
-        }
-      end
-      
-      # Calculate spotlight statistics from all data (before pagination)
-      @spotlight_stats = calculate_check_ins_health_stats(all_employee_health_data)
-      
-      # Paginate
-      @pagy = Pagy.new(count: all_employee_health_data.count, page: params[:page] || 1, items: 25)
-      @filtered_and_paginated_employee_health_data = all_employee_health_data[@pagy.offset, @pagy.items]
-      @filtered_and_paginated_teammates = [] # Empty for check_ins_health view
     else
       # Eager load associations for check-in status display BEFORE pagination to preserve filters
       if query.current_view == 'check_in_status'
@@ -206,32 +181,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       end
       
       # Calculate spotlight statistics from filtered_teammates (honors filters, not pagination)
-      # Handle check_ins_health spotlight separately since it requires health data calculation
-      if @current_spotlight == 'check_ins_health'
-        # Filter to active employees only for check-ins health spotlight
-        active_teammates = status_filtered_teammates.is_a?(Array) ? 
-          status_filtered_teammates.select { |t| t.first_employed_at.present? && t.last_terminated_at.nil? } :
-          status_filtered_teammates.where.not(first_employed_at: nil).where(last_terminated_at: nil)
-        
-        # Convert to array if needed for consistent processing
-        active_teammates_array = active_teammates.is_a?(Array) ? active_teammates : active_teammates.to_a
-        
-        # Calculate health data for all active employees
-        all_employee_health_data = active_teammates_array.map do |teammate|
-          health_data = CheckInHealthService.call(teammate, @organization)
-          {
-            teammate: teammate,
-            person: teammate.person,
-            health: health_data
-          }
-        end
-        
-        # Calculate spotlight statistics from all data
-        @spotlight_stats = calculate_check_ins_health_stats(all_employee_health_data)
-      else
-        # Pass both filtered array and original relation for proper join calculations
-        @spotlight_stats = calculate_spotlight_stats(@filtered_teammates, @current_spotlight, filtered_teammates_for_joins)
-      end
+      @spotlight_stats = calculate_spotlight_stats(@filtered_teammates, @current_spotlight, filtered_teammates_for_joins)
     end
     
     # Store current filter/sort state for view
@@ -572,12 +522,6 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
           display: 'check_in_status',
           manager_teammate_id: current_company_teammate&.id
         }
-      when 'my_direct_reports_check_in_status_2'
-        {
-          display: 'check_ins_health',
-          spotlight: 'check_ins_health',
-          manager_teammate_id: current_company_teammate&.id
-        }
       when 'hierarchical_accountability_chart'
         {
           view: 'vertical_hierarchy',
@@ -591,8 +535,12 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     end
 
     def determine_spotlight
-      # If spotlight param is set, use it
-      return params[:spotlight] if params[:spotlight].present?
+      # If spotlight param is set, use it (legacy check_ins_health spotlight removed)
+      if params[:spotlight].present?
+        return 'teammates_overview' if params[:spotlight] == 'check_ins_health'
+
+        return params[:spotlight]
+      end
       
       # Auto-select manager_lite if manager filter is active
       return 'manager_lite' if params[:manager_teammate_id].present?
@@ -629,10 +577,6 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       teammates_for_joins ||= teammates
       
       case spotlight_type
-      when 'check_ins_health'
-        # This should not be called for check_ins_health spotlight
-        # Use calculate_check_ins_health_stats instead
-        {}
       when 'teammate_tenures'
         calculate_tenure_stats(teammates)
       when 'employee_locations'
@@ -697,67 +641,6 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
 
     def calculate_location_stats(teammates)
       helpers.calculate_location_distribution(teammates)
-    end
-
-    def calculate_check_ins_health_stats(employee_health_data)
-      total_employees = employee_health_data.count
-      
-      # Count employees with all concerns healthy (all success or no requirements)
-      all_healthy = employee_health_data.count do |data|
-        health = data[:health]
-        health[:position][:status] == :success &&
-        (health[:assignments][:status] == :success || health[:assignments][:total_count] == 0) &&
-        (health[:aspirations][:status] == :success || health[:aspirations][:total_count] == 0) &&
-        (health[:milestones][:status] == :success || health[:milestones][:required_count] == 0)
-      end
-      
-      # Count employees needing attention (any alarm or warning)
-      needing_attention = employee_health_data.count do |data|
-        health = data[:health]
-        [:alarm, :warning].include?(health[:position][:status]) ||
-        [:alarm, :warning].include?(health[:assignments][:status]) ||
-        [:alarm, :warning].include?(health[:aspirations][:status]) ||
-        [:alarm, :warning].include?(health[:milestones][:status])
-      end
-      
-      # Calculate average check-in completion rate
-      total_concerns = 0
-      completed_concerns = 0
-      
-      employee_health_data.each do |data|
-        health = data[:health]
-        
-        # Position
-        total_concerns += 1
-        completed_concerns += 1 if health[:position][:status] == :success
-        
-        # Assignments
-        if health[:assignments][:total_count] > 0
-          total_concerns += 1
-          completed_concerns += 1 if health[:assignments][:status] == :success
-        end
-        
-        # Aspirations
-        if health[:aspirations][:total_count] > 0
-          total_concerns += 1
-          completed_concerns += 1 if health[:aspirations][:status] == :success
-        end
-        
-        # Milestones
-        if health[:milestones][:required_count] > 0
-          total_concerns += 1
-          completed_concerns += 1 if health[:milestones][:status] == :success
-        end
-      end
-      
-      completion_rate = total_concerns > 0 ? (completed_concerns.to_f / total_concerns * 100).round(1) : 0
-      
-      {
-        total_employees: total_employees,
-        all_healthy: all_healthy,
-        needing_attention: needing_attention,
-        completion_rate: completion_rate
-      }
     end
 
     def calculate_manager_stats(teammates, teammates_relation)

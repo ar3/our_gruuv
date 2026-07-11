@@ -138,6 +138,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     load_aspiration_check_in_data
     load_abilities_data
     load_viewer_check_in_readiness_for_about_me
+    load_engagement_health_for_about_me
   end
 
   def kudos_points
@@ -2016,6 +2017,14 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       @viewer_ready_assignment_count = 0
       @viewer_ready_position = false
     end
+  end
+
+  def load_engagement_health_for_about_me
+    records = EngagementHealth::ClarityMetrics.records_for_teammate(
+      organization: organization,
+      teammate_id: @teammate.id
+    )
+    @engagement_health_by_item_key = EngagementHealth::UpNextSupport.index_items_by_key(records)
   end
 
   def build_request_info

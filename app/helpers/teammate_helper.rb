@@ -562,15 +562,6 @@ module TeammateHelper
       tooltip: has_direct_reports ? nil : 'You need to have direct reports to use this preset'
     }
     
-    # My Direct Reports - Check-in Status Style 2
-    presets << {
-      name: 'My Direct Reports - Check-in Status Style 2',
-      value: 'my_direct_reports_check_in_status_2',
-      available: has_direct_reports,
-      permission_required: has_direct_reports ? nil : 'direct reports',
-      tooltip: has_direct_reports ? nil : 'You need to have direct reports to use this preset'
-    }
-    
     # Hierarchical Accountability Chart
     presets << {
       name: 'Hierarchical Accountability Chart',

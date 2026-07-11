@@ -1165,50 +1165,50 @@ RSpec.describe AboutMeHelper, type: :helper do
   end
 
   describe '#about_me_clarity_icon_details' do
-    let(:check_in) { instance_double('AssignmentCheckIn', official_check_in_completed_at: 10.days.ago) }
+    def eh_item(status:, last_event_at: 10.days.ago)
+      instance_double(
+        EngagementHealthStatus,
+        status: status,
+        inputs: { "last_event_at" => last_event_at.iso8601 }
+      )
+    end
 
-    it 'returns crystal-clear icon details and no urgency warning text' do
-      allow(check_in).to receive(:clarity_level).and_return(:crystal_clear)
-
+    it 'returns Healthy icon details and no urgency warning text' do
       result = helper.about_me_clarity_icon_details(
-        latest_finalized_check_in: check_in,
+        eh_item: eh_item(status: EngagementHealth::HEALTHY),
         casual_name: 'Taylor',
         object_name: 'Assignment Alpha'
       )
 
       expect(result[:icon_class]).to eq('bi-check-circle-fill')
       expect(result[:text_class]).to eq('text-success')
-      expect(result[:tooltip]).to include('Taylor is crystal clear on Assignment Alpha')
-      expect(result[:tooltip]).to include('however clarity will downgrade to clear')
+      expect(result[:tooltip]).to include('Taylor is Healthy on Assignment Alpha')
+      expect(result[:tooltip]).to include('however clarity will move to Warning')
       expect(result[:tooltip]).not_to include('consider checking in soon')
     end
 
-    it 'returns blurred icon details and urgency warning text' do
-      allow(check_in).to receive(:clarity_level).and_return(:blurred)
-
+    it 'returns Warning icon details and urgency warning text' do
       result = helper.about_me_clarity_icon_details(
-        latest_finalized_check_in: check_in,
+        eh_item: eh_item(status: EngagementHealth::WARNING, last_event_at: 70.days.ago),
         casual_name: 'Taylor',
         object_name: 'Assignment Alpha'
       )
 
       expect(result[:icon_class]).to eq('bi-exclamation-triangle-fill')
       expect(result[:text_class]).to eq('text-warning')
-      expect(result[:tooltip]).to include('Taylor is blurred on Assignment Alpha')
+      expect(result[:tooltip]).to include('Taylor is Warning on Assignment Alpha')
       expect(result[:tooltip]).to include('You should consider checking in soon')
     end
 
-    it 'does not include next clarity text when already obscured' do
-      allow(check_in).to receive(:clarity_level).and_return(:obscured)
-
+    it 'does not include next clarity text when already Needs Attention' do
       result = helper.about_me_clarity_icon_details(
-        latest_finalized_check_in: check_in,
+        eh_item: eh_item(status: EngagementHealth::NEEDS_ATTENTION, last_event_at: 100.days.ago),
         casual_name: 'Taylor',
         object_name: 'Assignment Alpha'
       )
 
-      expect(result[:tooltip]).to eq('Taylor is obscured on Assignment Alpha. You should consider checking in soon.')
-      expect(result[:tooltip]).not_to include('clarity will downgrade to')
+      expect(result[:tooltip]).to eq('Taylor is Needs Attention on Assignment Alpha. You should consider checking in soon.')
+      expect(result[:tooltip]).not_to include('clarity will move to')
     end
   end
 

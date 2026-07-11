@@ -36,8 +36,6 @@
   = render 'organizations/employees/spotlights/employee_locations'
 - when 'manager_distribution'
   = render 'organizations/employees/spotlights/manager_distribution'
-- when 'check_ins_health'
-  = render 'organizations/employees/spotlights/check_ins_health'
 - when 'manager_lite'
   = render 'organizations/employees/spotlights/manager_lite'
 - else
@@ -61,28 +59,13 @@
   .col-lg-12
     .d-flex.justify-content-between.align-items-center
       %small.text-muted= raw pagy_info(@pagy)
-      - if @filtered_and_paginated_teammates.count > 0 || (@current_view == 'check_ins_health' && @filtered_and_paginated_employee_health_data&.any?)
+      - if @filtered_and_paginated_teammates.count > 0
         %small.text-muted Showing #{@current_view.humanize} view
 
 / Main Content Area
 .row.justify-content-center
   .col-lg-12
-    - if @current_view == 'check_ins_health'
-      - if @filtered_and_paginated_employee_health_data&.any?
-        = render 'organizations/employees/displays/check_ins_health'
-      - else
-        .alert.alert-info
-          %h6.mb-2
-            %i.bi.bi-info-circle.me-2
-            No Active Employees Found
-          %p.mb-2
-            This organization doesn't have any active employees yet.
-      
-      / Pagination
-      .d-flex.justify-content-center.mt-4
-        - if @pagy.pages > 1
-          = raw pagy_nav(@pagy)
-    - elsif @current_view == 'vertical_hierarchy'
+    - if @current_view == 'vertical_hierarchy'
       = render 'organizations/employees/displays/vertical_hierarchy'
     - elsif @filtered_and_paginated_teammates.any?
       - case @current_view

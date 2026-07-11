@@ -42,11 +42,11 @@
                 - aspiration = data[:aspiration]
                 - check_in = data[:check_in]
                 - latest_finalized = data[:latest_finalized]
-                - clarity_level = latest_finalized&.clarity_level || :obscured
-                - clarity_icon = about_me_clarity_icon_details(latest_finalized_check_in: latest_finalized, casual_name: @teammate.person.casual_name, object_name: aspiration.name)
+                - eh_item = about_me_eh_item_for(type: :aspiration, id: aspiration.id)
+                - clarity_icon = about_me_clarity_icon_details(eh_item: eh_item, casual_name: @teammate.person.casual_name, object_name: aspiration.name)
                 - goal_icon = about_me_goal_icon_details(has_active_goal: data[:has_active_goal], latest_rating: data[:latest_rating], casual_name: @teammate.person.casual_name, object_name: aspiration.name)
                 - neither_side_ready = check_in.present? && !check_in.employee_completed? && !check_in.manager_completed?
-                - show_clarity_merge_row = neither_side_ready && [:crystal_clear, :clear].include?(clarity_level)
+                - show_clarity_merge_row = about_me_show_clarity_merge_row?(eh_item: eh_item, neither_side_ready: neither_side_ready)
                 %tr
                   %td
                     %i{class: "bi #{clarity_icon[:icon_class]} #{clarity_icon[:text_class]} me-1", "data-bs-toggle" => "tooltip", "data-bs-title" => clarity_icon[:tooltip]}
@@ -61,8 +61,7 @@
                   - if show_clarity_merge_row
                     %td{ colspan: 2 }
                       .alert.alert-success.mb-0.py-2
-                        - next_check_in_window = distance_of_time_in_words(latest_finalized.official_check_in_completed_at, latest_finalized.official_check_in_completed_at + 60.days)
-                        = "#{@teammate.person.casual_name} is #{clarity_level.to_s.humanize.downcase} and a new check-in should be considered in #{next_check_in_window}"
+                        = about_me_clarity_merge_message(eh_item: eh_item, casual_name: @teammate.person.casual_name, latest_finalized: latest_finalized)
                   - else
                     %td
                       - if check_in

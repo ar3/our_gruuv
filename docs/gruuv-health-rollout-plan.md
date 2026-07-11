@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0 complete. **Next:** Phase 1 (OG Scorecard).
+**Status:** Phase 0 complete. Phase 3/6 partial (Style 2 removed, About Me on EH). **Open leftovers:** One Thing, all-fresh banner, hub next-up (Phase 8). **Next:** Phase 1 remaining / Phase 8 threshold alignment.
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -24,13 +24,27 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | 0 | Foundation + Overview tab | ✅ Done |
 | 1 | OG Scorecard | 🔄 In progress (1.1 done) |
 | 2 | Observations Health | ⬜ |
-| 3 | Required clarity / percentage clear | ⬜ |
+| 3 | Required clarity / percentage clear | 🔄 In progress (hub/header/Manager Lite/% clear done; About Me done) |
 | 4 | Goals Health | ⬜ |
 | 5 | Milestones Health (+ migrate check-ins milestone bars) | ⬜ |
-| 6 | Check-ins Health (remainder) | ⬜ |
+| 6 | Check-ins Health (remainder) | 🔄 Style 2 + `CheckInHealthService` removed |
 | 7 | Insights pages | ⬜ |
-| 8 | 1:1 system (One Thing, etc.) | ⬜ |
+| 8 | 1:1 system (One Thing, all-fresh, hub next-up, etc.) | ⬜ — see open threshold-alignment items below |
 | 9 | Cleanup — retire old caches/jobs | ⬜ |
+
+### Open threshold-alignment leftovers (from required-clarity migration)
+
+These still use 30/60/90 `clarity_level` / old green buckets and can disagree with Gruuv Health (Healthy = 60 days):
+
+- [ ] **One Thing / priority carousel** — `PriorityCarouselBuilder` + `RequiredCheckInUrgencySort` still queue/sort on blurred/obscured `clarity_level`
+- [ ] **All-fresh “100% clear” banner** — `CheckIns::AllFreshBannerService` still uses `CLARITY_CRYSTAL_CLEAR_DAYS` (30), not EH Healthy (60)
+- [ ] **Hub “next up” CTA** — hub `% clear` is EH, but next-item urgency still comes from `SingleItemCheckInNextItemService` tricolor (30-day green)
+
+**Done recently (required clarity):**
+- [x] Check-ins Health page + Start Here widget + action-slot `% clear` + Manager Lite `% clear`
+- [x] Up Next status/actions from EH
+- [x] About Me position/assignment/aspiration clarity icons + merge copy → EH status
+- [x] Removed employees Check-ins Health Style 2 view/spotlight + `CheckInHealthService`
 
 ---
 
@@ -125,9 +139,10 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 
 ## Phase 3 — Required clarity / percentage clear
 
-- [ ] Clarity popovers (`_clarity_popover_table.html.haml`) → EH item rows + status labels
-- [ ] Check-in hub / single-item check-in header health popovers
-- [ ] `CheckIns::RequiredCheckInUrgencySort` — align sort keys with EH severity
+- [x] Clarity popovers (`_clarity_popover_table.html.haml`) → EH item rows + status labels (hub/header; action-slot popover on Check-ins Health / Manager Lite)
+- [x] Check-in hub / single-item check-in header health popovers
+- [x] About Me check-in sections — clarity icons + merge messaging from EH Required Clarity
+- [ ] `CheckIns::RequiredCheckInUrgencySort` — align sort keys with EH severity (also Phase 8 One Thing)
 - [ ] Eligibility requirements views that show clarity % — document mapping or migrate display
 
 **Retire when done:** 4-level clarity as *status* in `check_in_health_caches.required_check_ins` payload; `ClarityLevel` in non-scorecard paths
@@ -157,7 +172,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 - [ ] Migrate check-ins health milestone stacked bars to EH data
 - [ ] Insights Abilities page — keep event counts; link to Milestones Health where appropriate
 
-**Retire when done:** `check_in_health_cache_builder` milestone section, `CheckInHealthService#milestone_health`
+**Retire when done:** `check_in_health_cache_builder` milestone section (`CheckInHealthService#milestone_health` removed with Style 2)
 
 **Gate:** Approval before Phase 6.
 
@@ -165,11 +180,12 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 
 ## Phase 6 — Check-ins Health (remainder)
 
-- [ ] Required clarity section → already EH from Phase 3 (verify integrated)
-- [ ] Milestone section → already EH from Phase 5 (verify integrated)
-- [ ] **Keep:** 7-category completion bars (in-progress / acknowledgment — not in EH)
-- [ ] Legacy employees index `displays/_check_ins_health.html.haml` — migrate or remove
-- [ ] `CheckInsHealthSpotlightService` — completion rate + EH clarity/milestones where applicable
+- [x] Required clarity section → EH (bars, action slots, spotlight, Start Here widget)
+- [ ] Milestone section → already EH from Phase 5 (verify integrated) — N/A on current Check-ins Health page (no milestone bars)
+- [ ] **Keep:** 7-category completion bars (in-progress / acknowledgment — not in EH) — superseded by EH + action bars on dedicated page
+- [x] Legacy employees index `displays/_check_ins_health.html.haml` — **removed** (Style 2)
+- [x] `CheckInHealthService` — **removed** (only consumer was Style 2)
+- [x] `CheckInsHealthSpotlightService` — EH clarity rollups + action-slot stats
 
 **Retire when done:** overlapping portions of `check_in_health_caches`; evaluate whether full cache can shrink to completion-only
 
@@ -191,6 +207,8 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 ## Phase 8 — 1:1 system
 
 - [ ] **One Thing** — `PriorityCarouselBuilder` priorities driven by EH item/category status (replace inline 30/60/90 checks)
+- [ ] **All-fresh banner** — `CheckIns::AllFreshBannerService` / `_all_fresh_banner.html.haml` use EH Healthy (60d) instead of crystal-clear (30d)
+- [ ] **Hub next-up CTA** — align `SingleItemCheckInNextItemService` urgency buckets with EH so hub next-item matches Up Next
 - [ ] **Work to Meet** — evaluate; likely stays goal/OGO *presence* logic (separate from Gruuv Health status)
 - [ ] **Detailed hub** — no health scoring changes expected
 - [ ] Teammate OGO sub-pages observation health cards → EH or link to Overview
@@ -203,7 +221,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 
 - [ ] Remove `observation_health_caches` table/jobs if fully superseded (retain only if kudos/rating needs separate cache)
 - [ ] Remove or slim `check_in_health_caches` to completion-only payload
-- [ ] Remove unused services: `Observations::HealthRecency`, legacy `CheckInHealthService`, old goal health calculators
+- [ ] Remove unused services: `Observations::HealthRecency`, old goal health calculators (`CheckInHealthService` already removed)
 - [ ] Consolidate spotlight services on EH vocabulary + shared aggregation helper
 - [ ] Remove duplicate refresh scheduling where EH refresh covers the same events
 - [ ] Update `docs/` and agent context so new work never reintroduces parallel threshold logic

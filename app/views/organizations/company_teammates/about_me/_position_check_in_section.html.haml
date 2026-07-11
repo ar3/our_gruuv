@@ -24,13 +24,14 @@
   .card.mb-4
     .card-body
       - if @current_position
-        - position_clarity_level = @latest_finalized_position_check_in&.clarity_level || :obscured
+        - position_eh_item = about_me_eh_item_for(type: :position, id: @current_position&.id)
+        - position_clarity_icon = about_me_clarity_icon_details(eh_item: position_eh_item, casual_name: @teammate.person.casual_name, object_name: @current_position.display_name)
         - position_neither_side_ready = @position_check_in.present? && !@position_check_in.employee_completed? && !@position_check_in.manager_completed?
-        - position_show_clarity_merge = position_neither_side_ready && [:crystal_clear, :clear].include?(position_clarity_level)
+        - position_show_clarity_merge = about_me_show_clarity_merge_row?(eh_item: position_eh_item, neither_side_ready: position_neither_side_ready)
         .mb-3
           %h5.mb-2
             Position:
-            - if position_clarity_level == :obscured
+            - if position_clarity_icon[:status] == EngagementHealth::NEEDS_ATTENTION
               %i.bi.bi-exclamation-triangle-fill.text-danger.me-1
             = link_to @current_position.display_name, position_check_in_organization_teammate_path(organization, @teammate), class: "text-decoration-none"
           
@@ -46,8 +47,7 @@
               %h6.mb-2 Currently Active Check-In Status:
               - if position_show_clarity_merge
                 .alert.alert-success.mb-1
-                  - next_check_in_window = distance_of_time_in_words(@latest_finalized_position_check_in.official_check_in_completed_at, @latest_finalized_position_check_in.official_check_in_completed_at + 60.days)
-                  = "#{@teammate.person.casual_name} is #{position_clarity_level.to_s.humanize.downcase} and a new check-in should be considered in #{next_check_in_window}"
+                  = about_me_clarity_merge_message(eh_item: position_eh_item, casual_name: @teammate.person.casual_name, latest_finalized: @latest_finalized_position_check_in)
               - else
                 .row
                   .col-md-6

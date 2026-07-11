@@ -273,27 +273,57 @@ module AboutMeHelper
     end
   end
 
-  def about_me_clarity_icon_details(latest_finalized_check_in:, casual_name:, object_name:, reference_time: Time.current)
-    clarity_level = latest_finalized_check_in&.clarity_level(reference_time: reference_time) || :obscured
-    clarity_label = clarity_level.to_s.humanize.downcase
+  def about_me_clarity_icon_details(eh_item:, casual_name:, object_name:, reference_time: Time.current)
+    status = eh_item&.status || EngagementHealth::NEEDS_ATTENTION
+    clarity_label = EngagementHealth::STATUS_LABELS.fetch(status, status.to_s.humanize)
     next_transition = about_me_next_clarity_transition(
-      latest_finalized_check_in: latest_finalized_check_in,
-      clarity_level: clarity_level,
+      eh_item: eh_item,
+      status: status,
       reference_time: reference_time
     )
 
-    tooltip = if clarity_level == :obscured
+    tooltip = if status == EngagementHealth::NEEDS_ATTENTION
       "#{casual_name} is #{clarity_label} on #{object_name}."
     else
-      "#{casual_name} is #{clarity_label} on #{object_name}, however clarity will downgrade to #{next_transition[:next_level]} in #{next_transition[:time_until]}."
+      "#{casual_name} is #{clarity_label} on #{object_name}, however clarity will move to #{next_transition[:next_level]} in #{next_transition[:time_until]}."
     end
-    tooltip += " You should consider checking in soon." unless clarity_level == :crystal_clear
+    tooltip += " You should consider checking in soon." unless status == EngagementHealth::HEALTHY
 
     {
-      icon_class: about_me_clarity_icon_class(clarity_level),
-      text_class: about_me_clarity_text_class(clarity_level),
-      tooltip: tooltip
+      icon_class: about_me_clarity_icon_class(status),
+      text_class: about_me_clarity_text_class(status),
+      tooltip: tooltip,
+      status: status,
+      label: clarity_label
     }
+  end
+
+  def about_me_eh_item_for(type:, id: nil)
+    EngagementHealth::UpNextSupport.find_item(
+      @engagement_health_by_item_key || {},
+      { type: type, id: id }
+    )
+  end
+
+  def about_me_show_clarity_merge_row?(eh_item:, neither_side_ready:)
+    neither_side_ready && eh_item&.status == EngagementHealth::HEALTHY
+  end
+
+  def about_me_clarity_merge_message(eh_item:, casual_name:, latest_finalized:, reference_time: Time.current)
+    label = EngagementHealth::STATUS_LABELS.fetch(eh_item.status, eh_item.status.to_s.humanize)
+    finalized_at = latest_finalized&.official_check_in_completed_at
+    finalized_at ||= Time.zone.parse(eh_item.inputs["last_event_at"].to_s) if eh_item.inputs["last_event_at"].present?
+    consider_at = if finalized_at.present?
+      finalized_at + EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS.days
+    else
+      reference_time
+    end
+    window = if consider_at <= reference_time
+      "less than a minute"
+    else
+      distance_of_time_in_words(reference_time, consider_at)
+    end
+    "#{casual_name} is #{label} and a new check-in should be considered in #{window}"
   end
 
   def about_me_goal_icon_details(has_active_goal:, latest_rating:, casual_name:, object_name:)
@@ -372,49 +402,52 @@ module AboutMeHelper
     end
   end
 
-  def about_me_clarity_icon_class(clarity_level)
-    case clarity_level
-    when :crystal_clear
-      'bi-check-circle-fill'
-    when :clear
-      'bi-info-circle-fill'
-    when :blurred
-      'bi-exclamation-triangle-fill'
+  def about_me_clarity_icon_class(status)
+    case status
+    when EngagementHealth::HEALTHY
+      "bi-check-circle-fill"
+    when EngagementHealth::WARNING
+      "bi-exclamation-triangle-fill"
     else
-      'bi-x-octagon-fill'
+      "bi-x-octagon-fill"
     end
   end
 
-  def about_me_clarity_text_class(clarity_level)
-    case clarity_level
-    when :crystal_clear
-      'text-success'
-    when :clear
-      'text-info'
-    when :blurred
-      'text-warning'
+  def about_me_clarity_text_class(status)
+    case status
+    when EngagementHealth::HEALTHY
+      "text-success"
+    when EngagementHealth::WARNING
+      "text-warning"
     else
-      'text-danger'
+      "text-danger"
     end
   end
 
-  def about_me_next_clarity_transition(latest_finalized_check_in:, clarity_level:, reference_time:)
-    finalized_at = latest_finalized_check_in&.official_check_in_completed_at
-    return { next_level: 'obscured', time_until: 'less than a minute' } if finalized_at.blank?
+  def about_me_next_clarity_transition(eh_item:, status:, reference_time:)
+    finalized_at = nil
+    if eh_item&.inputs&.dig("last_event_at").present?
+      finalized_at = Time.zone.parse(eh_item.inputs["last_event_at"].to_s) rescue nil
+    end
+    return { next_level: EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::NEEDS_ATTENTION), time_until: "less than a minute" } if finalized_at.blank?
 
-    transition_at, next_level = case clarity_level
-    when :crystal_clear
-      [finalized_at + (CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 1).days, 'clear']
-    when :clear
-      [finalized_at + (CheckInBehavior::CLARITY_CLEAR_DAYS + 1).days, 'blurred']
-    when :blurred
-      [finalized_at + (CheckInBehavior::CLARITY_BLURRED_DAYS + 1).days, 'obscured']
+    transition_at, next_level = case status
+    when EngagementHealth::HEALTHY
+      [
+        finalized_at + (EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1).days,
+        EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::WARNING)
+      ]
+    when EngagementHealth::WARNING
+      [
+        finalized_at + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS.days,
+        EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::NEEDS_ATTENTION)
+      ]
     else
-      [reference_time, 'obscured']
+      [reference_time, EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::NEEDS_ATTENTION)]
     end
 
     time_until = if transition_at <= reference_time
-      'less than a minute'
+      "less than a minute"
     else
       distance_of_time_in_words(reference_time, transition_at)
     end

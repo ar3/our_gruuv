@@ -859,10 +859,10 @@ RSpec.describe TeammateHelper, type: :helper do
           expect(style_1[:available]).to be true
         end
 
-        it 'makes My Direct Reports - Check-in Status Style 2 available' do
+        it 'does not include My Direct Reports - Check-in Status Style 2' do
           presets = helper.available_presets_with_permissions(organization, manager_teammate)
           style_2 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_2' }
-          expect(style_2[:available]).to be true
+          expect(style_2).to be_nil
         end
       end
 
@@ -877,10 +877,10 @@ RSpec.describe TeammateHelper, type: :helper do
           expect(style_1[:available]).to be true
         end
 
-        it 'makes My Direct Reports - Check-in Status Style 2 available' do
+        it 'does not include My Direct Reports - Check-in Status Style 2' do
           presets = helper.available_presets_with_permissions(organization, manager_teammate)
           style_2 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_2' }
-          expect(style_2[:available]).to be true
+          expect(style_2).to be_nil
         end
       end
     end
@@ -898,12 +898,10 @@ RSpec.describe TeammateHelper, type: :helper do
         expect(style_1[:tooltip]).to eq('You need to have direct reports to use this preset')
       end
 
-      it 'makes My Direct Reports - Check-in Status Style 2 unavailable' do
+      it 'does not include My Direct Reports - Check-in Status Style 2' do
         presets = helper.available_presets_with_permissions(organization, manager_teammate)
         style_2 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_2' }
-        expect(style_2[:available]).to be false
-        expect(style_2[:permission_required]).to eq('direct reports')
-        expect(style_2[:tooltip]).to eq('You need to have direct reports to use this preset')
+        expect(style_2).to be_nil
       end
     end
   end

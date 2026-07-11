@@ -54,9 +54,15 @@ class CompanyTeammatesQuery
 
   def current_view
     # Prioritize display over view, but fall back if display is empty
-    return params[:display] unless params[:display].blank?
-    return params[:view] unless params[:view].blank?
-    'list'
+    view = if params[:display].present?
+      params[:display]
+    elsif params[:view].present?
+      params[:view]
+    else
+      "list"
+    end
+    # Legacy employees Check-ins Health Style 2 removed; fall back to list
+    view == "check_ins_health" ? "list" : view
   end
 
   def current_spotlight
