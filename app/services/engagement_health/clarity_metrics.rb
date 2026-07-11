@@ -66,43 +66,6 @@ module EngagementHealth
       items.present? && items.all?(&:healthy?)
     end
 
-    def popover_table_data(records)
-      by_type = clarity_items(records).group_by(&:entity_type)
-      {
-        position: section_popover_row(by_type["Position"] || []),
-        assignments: section_popover_row(by_type["Assignment"] || []),
-        aspirations: section_popover_row(by_type["Aspiration"] || [])
-      }
-    end
-
-    def section_popover_row(items)
-      items = Array(items)
-      return { employee: 0, manager: 0, together: 0 } if items.empty?
-
-      count = items.size.to_f
-      {
-        employee: (items.count { |item| workflow_employee_done?(item) } / count * 100).round(0),
-        manager: (items.count { |item| workflow_manager_done?(item) } / count * 100).round(0),
-        together: (items.count { |item| item.status == HEALTHY } / count * 100).round(0)
-      }
-    end
-
-    def workflow_employee_done?(item)
-      inputs = item.inputs
-      return true if inputs["open_employee_completed"]
-      return true if item.healthy? && !inputs["open_check_in_present"]
-
-      false
-    end
-
-    def workflow_manager_done?(item)
-      inputs = item.inputs
-      return true if inputs["open_manager_completed"]
-      return true if item.healthy? && !inputs["open_check_in_present"]
-
-      false
-    end
-
     def status_counts_for_items(items)
       EngagementHealth::STATUSES.index_with(0).tap do |counts|
         Array(items).each do |item|

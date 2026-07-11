@@ -521,10 +521,6 @@ module TerminologyHelper
     terminology(:no_completed_clarity_check_in_yet)
   end
 
-  def no_clarity_check_in_health_data_label
-    terminology(:no_clarity_check_in_health_data)
-  end
-
   def no_clarity_check_ins_awaiting_your_input_label
     terminology(:no_clarity_check_ins_awaiting_your_input)
   end

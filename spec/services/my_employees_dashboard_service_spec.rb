@@ -39,7 +39,7 @@ RSpec.describe MyEmployeesDashboardService do
         create(:employment_tenure, company_teammate: report, company: company, manager_teammate: manager)
       end
 
-      it "counts direct reports and averages 0% healthy without engagement health rows" do
+      it "counts direct reports and averages 0% clear without engagement health rows" do
         s = described_class.summary(manager_teammate: manager, organization: company)
         expect(s[:direct_report_count]).to eq(1)
         expect(s[:crystal_clear_count]).to eq(0)
@@ -58,7 +58,7 @@ RSpec.describe MyEmployeesDashboardService do
         expect(s[:pill_class]).to include("bg-success")
       end
 
-      it "uses warning pill for overall between 50 and 80" do
+      it "uses action-slot ok % (healthy + warning slots) for overall clear" do
         create_healthy_clarity_item(teammate: report, entity_type: "Position", entity_id: 1, name: "Engineer")
         EngagementHealthStatus.create!(
           teammate: report,
@@ -67,12 +67,13 @@ RSpec.describe MyEmployeesDashboardService do
           category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
           entity_type: "Assignment",
           entity_id: 2,
-          status: EngagementHealth::WARNING,
+          status: EngagementHealth::NEEDS_ATTENTION,
           inputs: { "name" => "Support" },
           computed_at: Time.current
         )
 
         s = described_class.new(manager_teammate: manager, organization: company).summary
+        # 3 healthy slots + 3 needs-attention slots => 50% clear
         expect(s[:overall_pct]).to eq(50.0)
         expect(s[:pill_class]).to include("bg-warning")
       end

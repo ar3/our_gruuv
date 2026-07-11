@@ -88,7 +88,7 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(json['widgets']['get_shit_done']['ok']).to eq(true)
     end
 
-    it 'returns check-in status widget html with healthy clarity line and Values/Assignments/Position table' do
+    it 'returns check-in status widget html with action-slot % clear' do
       post organization_start_here_add_widget_path(company), params: { widget_id: "my_check_in" }
       EngagementHealthStatus.create!(
         teammate: teammate,
@@ -108,10 +108,8 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       json = JSON.parse(response.body)
       html = json.dig("widgets", "my_check_in", "html").to_s
       expect(json.dig("widgets", "my_check_in", "ok")).to eq(true)
-      expect(html).to include("healthy on required clarity check-ins")
-      expect(html).to include("Values")
-      expect(html).to include("Assignments")
-      expect(html).to include("Position")
+      expect(html).to include("% clear")
+      expect(html).to include("clarity-action-slots-summary")
     end
 
     it 'returns beta_check_in_history card body with same check-in clarity partial' do
@@ -134,8 +132,7 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       json = JSON.parse(response.body)
       html = json.dig("widgets", "beta_check_in_history", "html").to_s
       expect(json.dig("widgets", "beta_check_in_history", "ok")).to eq(true)
-      expect(html).to include("healthy on required clarity check-ins")
-      expect(html).to include("Values")
+      expect(html).to include("% clear")
     end
 
     it 'returns active job view widget with active assignment count and total energy %' do

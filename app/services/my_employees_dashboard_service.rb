@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Start Here "My Employees" widget: direct report counts, fully-healthy count, and averaged Gruuv Health clarity %.
+# Start Here "My Employees" widget: direct report counts, fully-healthy count, and action-slot % clear.
 class MyEmployeesDashboardService
   class << self
     def summary(manager_teammate:, organization:)
@@ -42,10 +42,10 @@ class MyEmployeesDashboardService
       direct_report_ids
     )
 
-    overall = EngagementHealth::ClarityMetrics.average_healthy_percentage_for_teammates(
-      records_by_teammate_id,
-      direct_report_ids
-    )
+    all_items = direct_report_ids.flat_map do |teammate_id|
+      EngagementHealth::ClarityMetrics.clarity_items(records_by_teammate_id[teammate_id] || [])
+    end
+    overall = EngagementHealth::ClarityActionMetrics.breakdown_for_items(all_items).ok_percentage.round(1)
 
     {
       direct_report_count: direct_report_ids.size,

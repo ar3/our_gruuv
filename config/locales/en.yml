@@ -182,7 +182,6 @@ en:
       one: "%{count} goal has not had a confidence check in the past 2 weeks"
       other: "%{count} goals have not had a confidence check in the past 2 weeks"
     no_completed_clarity_check_in_yet: "No completed clarity check-in yet."
-    no_clarity_check_in_health_data: "No clarity check-in health data yet."
     start_here_clarity_check_in_status: "Clarity check-in status"
     start_here_clarity_check_in_status_description: "How clear your clarity check-ins are across values, assignments, and position."
     start_here_open_clarity_check_ins: "Open Clarity Check-Ins"

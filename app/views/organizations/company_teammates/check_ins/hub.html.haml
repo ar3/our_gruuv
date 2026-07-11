@@ -29,23 +29,19 @@
            manager_name: @manager_name
 
 .row.g-3.mb-4
-- rate_data = engagement_health_clarity_breakdown(@engagement_health_records)
-- health_table_data = engagement_health_clarity_popover_table(@engagement_health_records)
-- health_popover_html = health_table_data ? render(partial: "shared/clarity_popover_table", locals: { table_data: health_table_data }) : no_clarity_check_in_health_data_label
+- action_breakdown = EngagementHealth::ClarityActionMetrics.for_records(@engagement_health_records)
+- names = teammate_and_manager_short_names(@teammate, organization)
+- action_popover_html = check_ins_health_action_popover_html(records: @engagement_health_records, employee_name: names[:employee], manager_name: names[:manager])
 
 .d-flex.justify-content-between.align-items-center.mb-3.gap-3.flex-wrap
   %p.mb-0.fw-medium
     = clarity_hub_five_ways_intro_label(teammate_name: @teammate.person.casual_name)
-  - if rate_data
-    .text-end
-      %span.fw-bold.fs-3{class: check_in_health_rate_text_class(rate_data[:completion_rate]), "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => health_popover_html.html_safe, style: "cursor: pointer;"}
-        #{rate_data[:completion_rate]}%
-      %span.text-muted.small.ms-1 ... clear on where they stand
-  - else
-    .text-end
-      %span.text-muted.fs-4.fw-bold{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => health_popover_html, style: "cursor: pointer;"}
-        —
-      %span.text-muted.small.ms-1 ... clear on where they stand
+  .text-end
+    = render "shared/clarity_action_slots/summary",
+             breakdown: action_breakdown,
+             popover_html: action_popover_html,
+             url: up_next_organization_company_teammate_check_ins_path(organization, @teammate),
+             show_bar: false
 
 .row.g-4.mb-4
   .col-12.col-lg-6

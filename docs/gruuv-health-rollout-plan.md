@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0 complete. Phase 3/6 partial (Style 2 removed, About Me on EH). **Open leftovers:** One Thing, all-fresh banner, hub next-up (Phase 8). **Next:** Phase 1 remaining / Phase 8 threshold alignment.
+**Status:** Phase 0 complete. Phase 3/6 partial (Style 2 removed, About Me on EH, old `% clear` UI retired). **Open leftovers:** One Thing, hub next-up (Phase 8); item-healthy % aggregates on Insights / by-manager / CSV. **Next:** Phase 1 remaining / Phase 8 threshold alignment.
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -15,6 +15,8 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 
 **Per-teammate UI (Phase 0):** 1:1 Hub → Overview (`overview_organization_company_teammate_one_on_one_link_path`)
 
+**Canonical `% clear` UI:** `shared/clarity_action_slots/summary` + `EngagementHealth::ClarityActionMetrics` (action-slot math; hover = action-slot popover). Do not reintroduce `shared/clarity_popover_table` or item-healthy `%` as the per-teammate clear headline.
+
 ---
 
 ## Progress summary
@@ -24,12 +26,12 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | 0 | Foundation + Overview tab | ✅ Done |
 | 1 | OG Scorecard | 🔄 In progress (1.1 done) |
 | 2 | Observations Health | ⬜ |
-| 3 | Required clarity / percentage clear | 🔄 In progress (hub/header/Manager Lite/% clear done; About Me done) |
+| 3 | Required clarity / percentage clear | 🔄 In progress (action-slot `% clear` everywhere that used the old component) |
 | 4 | Goals Health | ⬜ |
 | 5 | Milestones Health (+ migrate check-ins milestone bars) | ⬜ |
 | 6 | Check-ins Health (remainder) | 🔄 Style 2 + `CheckInHealthService` removed |
-| 7 | Insights pages | ⬜ |
-| 8 | 1:1 system (One Thing, all-fresh, hub next-up, etc.) | ⬜ — see open threshold-alignment items below |
+| 7 | Insights pages | ⬜ — dept `% healthy` still item-healthy math |
+| 8 | 1:1 system (One Thing, hub next-up, etc.) | 🔄 all-fresh banner done; One Thing + hub next-up open |
 | 9 | Cleanup — retire old caches/jobs | ⬜ |
 
 ### Open threshold-alignment leftovers (from required-clarity migration)
@@ -37,14 +39,37 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 These still use 30/60/90 `clarity_level` / old green buckets and can disagree with Gruuv Health (Healthy = 60 days):
 
 - [ ] **One Thing / priority carousel** — `PriorityCarouselBuilder` + `RequiredCheckInUrgencySort` still queue/sort on blurred/obscured `clarity_level`
-- [ ] **All-fresh “100% clear” banner** — `CheckIns::AllFreshBannerService` still uses `CLARITY_CRYSTAL_CLEAR_DAYS` (30), not EH Healthy (60)
-- [ ] **Hub “next up” CTA** — hub `% clear` is EH, but next-item urgency still comes from `SingleItemCheckInNextItemService` tricolor (30-day green)
+- [x] **All-fresh “100% clear” banner** — `CheckIns::AllFreshBannerService` uses EH Healthy (`REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS` = 60)
+- [ ] **Hub “next up” CTA** — hub `% clear` is action-slot EH, but next-item urgency still comes from `SingleItemCheckInNextItemService` tricolor (30-day green)
+
+### Old `% clear` component retirement
+
+**Deleted (ready / done):**
+- [x] `shared/_clarity_popover_table.html.haml` + view spec
+- [x] `ClarityMetrics.popover_table_data` / workflow popover helpers
+- [x] Helper wrappers: `engagement_health_clarity_breakdown*`, `engagement_health_clarity_popover_table*`, `check_in_health_clarity_popover_caption`, `check_in_health_rate_text_class`
+- [x] Terminology: `no_clarity_check_in_health_data`
+
+**Migrated to action-slot summary (`shared/clarity_action_slots/summary`):**
+- [x] Clarity check-in hub
+- [x] Single-item check-in header switcher
+- [x] Check-ins Health employee column + Manager Lite
+- [x] Start Here check-in status / beta check-in history widgets
+- [x] Start Here My Employees overall `% clear` (action-slot ok % across reports)
+
+**Still using item-healthy % (not the deleted UI; track for Phase 3/7 cleanup):**
+- [ ] Check-ins Health by Manager `completion_rate` / `% employees are healthy`
+- [ ] Insights Check-ins Progress dept `completion_rate` / `% healthy`
+- [ ] `CheckInsHealthEmployeeSummaryCsvBuilder` overall completion via `ClarityMetrics.breakdown`
+- [ ] Keep `ClarityMetrics.breakdown` / `average_healthy_percentage_for_teammates` until those migrate or are explicitly kept as “% items healthy” (distinct from `% clear` action slots)
 
 **Done recently (required clarity):**
 - [x] Check-ins Health page + Start Here widget + action-slot `% clear` + Manager Lite `% clear`
 - [x] Up Next status/actions from EH
 - [x] About Me position/assignment/aspiration clarity icons + merge copy → EH status
 - [x] Removed employees Check-ins Health Style 2 view/spotlight + `CheckInHealthService`
+- [x] All-fresh banner → EH Healthy window
+- [x] Retired old hub/header `% clear` + Employee/Manager/Together popover table
 
 ---
 
@@ -139,13 +164,14 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 
 ## Phase 3 — Required clarity / percentage clear
 
-- [x] Clarity popovers (`_clarity_popover_table.html.haml`) → EH item rows + status labels (hub/header; action-slot popover on Check-ins Health / Manager Lite)
-- [x] Check-in hub / single-item check-in header health popovers
+- [x] Clarity popovers (`_clarity_popover_table.html.haml`) → **deleted**; replaced by action-slot popover on hub/header/Check-ins Health / Manager Lite / Start Here
+- [x] Check-in hub / single-item check-in header → `shared/clarity_action_slots/summary`
 - [x] About Me check-in sections — clarity icons + merge messaging from EH Required Clarity
+- [x] Start Here check-in status + My Employees overall `% clear` → action-slot math
 - [ ] `CheckIns::RequiredCheckInUrgencySort` — align sort keys with EH severity (also Phase 8 One Thing)
-- [ ] Eligibility requirements views that show clarity % — document mapping or migrate display
+- [ ] Org aggregates still on item-healthy `%` (by-manager, Insights Check-ins Progress, employee summary CSV) — migrate to action slots or keep as explicit “% items healthy”
 
-**Retire when done:** 4-level clarity as *status* in `check_in_health_caches.required_check_ins` payload; `ClarityLevel` in non-scorecard paths
+**Retire when done:** 4-level clarity as *status* in `check_in_health_caches.required_check_ins` payload; `ClarityLevel` in non-scorecard paths; `ClarityMetrics.breakdown` if no remaining consumers
 
 **Gate:** Approval before Phase 4.
 
@@ -207,7 +233,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 ## Phase 8 — 1:1 system
 
 - [ ] **One Thing** — `PriorityCarouselBuilder` priorities driven by EH item/category status (replace inline 30/60/90 checks)
-- [ ] **All-fresh banner** — `CheckIns::AllFreshBannerService` / `_all_fresh_banner.html.haml` use EH Healthy (60d) instead of crystal-clear (30d)
+- [x] **All-fresh banner** — `CheckIns::AllFreshBannerService` / `_all_fresh_banner.html.haml` use EH Healthy (60d) instead of crystal-clear (30d)
 - [ ] **Hub next-up CTA** — align `SingleItemCheckInNextItemService` urgency buckets with EH so hub next-item matches Up Next
 - [ ] **Work to Meet** — evaluate; likely stays goal/OGO *presence* logic (separate from Gruuv Health status)
 - [ ] **Detailed hub** — no health scoring changes expected
@@ -236,7 +262,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 |-------------|----------------------|
 | OGO Given / Received | Observations Health, OG Scorecard 30d OGO, Priority carousel |
 | Goal Confidence | Goals Health (14d), OG Scorecard goal activity rows |
-| Required Clarity | Check-ins Health `required_check_ins`, OG Scorecard clarity trio, clarity popovers |
+| Required Clarity | Check-ins Health `required_check_ins`, OG Scorecard clarity trio, action-slot `% clear` |
 | Milestones | Check-ins Health milestone bars, OG Scorecard milestone activity, Priority carousel |
 | (Org activity only) | OG Scorecard weekly OGO, milestones earned, goal check-ins this week |
 

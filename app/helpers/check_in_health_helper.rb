@@ -241,42 +241,6 @@ module CheckInHealthHelper
     end
   end
 
-  # Bootstrap text class for completion rate: success (≥80%), info (50–80%), warning (<50%).
-  def check_in_health_rate_text_class(rate)
-    return 'text-secondary' if rate.nil?
-    if rate >= 80
-      'text-success'
-    elsif rate >= 50
-      'text-info'
-    else
-      'text-warning'
-    end
-  end
-
-  def engagement_health_clarity_breakdown(records)
-    EngagementHealth::ClarityMetrics.breakdown(records)
-  end
-
-  def engagement_health_clarity_popover_table(records)
-    EngagementHealth::ClarityMetrics.popover_table_data(records).presence
-  end
-
-  def engagement_health_clarity_breakdown_for_teammate(organization:, teammate:)
-    records = EngagementHealth::ClarityMetrics.records_for_teammate(
-      organization: organization,
-      teammate_id: teammate.id
-    )
-    engagement_health_clarity_breakdown(records)
-  end
-
-  def engagement_health_clarity_popover_table_for_teammate(organization:, teammate:)
-    records = EngagementHealth::ClarityMetrics.records_for_teammate(
-      organization: organization,
-      teammate_id: teammate.id
-    )
-    engagement_health_clarity_popover_table(records)
-  end
-
   # General helpers
   def health_status_badge_class(status)
     case status
@@ -295,14 +259,6 @@ module CheckInHealthHelper
 
   def health_status_text(status)
     status.to_s.humanize.titleize
-  end
-
-  # Footnote for shared/clarity_popover_table.
-  def check_in_health_clarity_popover_caption
-    format(
-      "Employee and manager columns reflect in-progress workflow completion; Together is the share of items with Healthy Gruuv Health status (finalized within %{healthy} days).",
-      healthy: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
-    )
   end
 end
 

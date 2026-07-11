@@ -4,7 +4,7 @@ module CheckIns
   # Determines whether the unified check-in page should show the "all fresh" success banner.
   # Scope: required + active assignment check-ins, all company aspirations, position check-in.
   class AllFreshBannerService
-    FRESH_DAYS = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS
+    FRESH_DAYS = EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
 
     Result = Struct.new(
       :show_banner,
@@ -38,7 +38,7 @@ module CheckIns
       items = build_items
       return empty_result if items.empty?
 
-      # Calendar-day window matches CheckInBehavior#clarity_level (avoids boundary bugs vs Time cutoff).
+      # Calendar-day window matches EngagementHealth Required Clarity Healthy threshold.
       freshness = items.map { |item| item_fresh?(item) }
       all_fresh = freshness.all?
 
