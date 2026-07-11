@@ -154,7 +154,7 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(publishers[:weekly_values]).to eq([1, 0])
     end
 
-    it 'includes separator rows in the Observations section between activity and Gruuv Health blocks' do
+    it 'includes labeled Activity and Gruuv Health separators in the Observations section' do
       monday = Date.current.beginning_of_week(:monday)
       week_starts = [monday]
       chart_range = monday.beginning_of_day..(monday + 6).end_of_day
@@ -162,19 +162,18 @@ RSpec.describe Insights::OgScorecardBuilder do
       result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
       obs_group = result[:groups].find { |g| g[:title] == 'Observations' }
 
-      expect(obs_group[:rows].count { |row| row[:separator] }).to eq(3)
+      expect(obs_group[:rows].count { |row| row[:separator] }).to eq(2)
+      expect(obs_group[:rows][0]).to include(separator: true, label: 'Activity')
       publishers_this_week_index = obs_group[:rows].index { |row| row[:key] == 'unique_ogo_publishers_this_week' }
-      publishers_all_time_index = obs_group[:rows].index { |row| row[:key] == 'unique_ogo_publishers' }
       observees_this_week_index = obs_group[:rows].index { |row| row[:key] == 'unique_ogo_observees_this_week' }
+      gruuv_sep_index = obs_group[:rows].index { |row| row[:separator] && row[:label] == 'Gruuv Health' }
       first_gruuv_index = obs_group[:rows].index do |row|
         row[:key]&.start_with?(Insights::OgScorecard::GruuvHealthWeekCounts::METRIC_KEY_PREFIX)
       end
-      expect(publishers_this_week_index).to eq(0)
-      expect(publishers_all_time_index).to eq(1)
-      expect(obs_group[:rows][publishers_all_time_index + 1][:separator]).to be(true)
-      expect(observees_this_week_index).to eq(publishers_all_time_index + 2)
-      expect(obs_group[:rows][observees_this_week_index + 2][:separator]).to be(true)
-      expect(first_gruuv_index).to eq(observees_this_week_index + 3)
+      expect(publishers_this_week_index).to eq(1)
+      expect(observees_this_week_index).to eq(3)
+      expect(gruuv_sep_index).to eq(5)
+      expect(first_gruuv_index).to eq(6)
     end
 
     it 'excludes journal (observer-only) observations from activity publisher and observee counts' do
@@ -227,7 +226,7 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(row[:weekly_values]).to eq([1])
     end
 
-    it 'includes activity rows, teammate rows, separators, and Gruuv Health rows in the Ability Milestones section' do
+    it 'includes activity rows then Gruuv Health rows in the Ability Milestones section' do
       monday = Date.current.beginning_of_week(:monday)
       week_starts = [monday]
       chart_range = monday.beginning_of_day..(monday + 6).end_of_day
@@ -236,6 +235,7 @@ RSpec.describe Insights::OgScorecardBuilder do
       milestones_group = result[:groups].find { |g| g[:title] == 'Ability Milestones' }
 
       expect(milestones_group[:rows].count { |row| row[:separator] }).to eq(2)
+      expect(milestones_group[:rows][0]).to include(separator: true, label: 'Activity')
       data_rows = milestones_group[:rows].reject { |row| row[:separator] }
       expect(data_rows.size).to eq(9)
       expect(data_rows[0][:key]).to eq('milestones_earned_this_week')
@@ -253,10 +253,11 @@ RSpec.describe Insights::OgScorecardBuilder do
       )
 
       separator_indices = milestones_group[:rows].each_index.select { |i| milestones_group[:rows][i][:separator] }
-      expect(separator_indices).to eq([3, 7])
+      expect(separator_indices).to eq([0, 7])
+      expect(milestones_group[:rows][7][:label]).to eq('Gruuv Health')
     end
 
-    it 'includes activity rows, a separator, and Gruuv Health rows in the Check-ins section' do
+    it 'includes activity rows, a Gruuv Health separator, and Required Clarity rows in the Check-ins section' do
       monday = Date.current.beginning_of_week(:monday)
       week_starts = [monday]
       chart_range = monday.beginning_of_day..(monday + 6).end_of_day
@@ -264,7 +265,8 @@ RSpec.describe Insights::OgScorecardBuilder do
       result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
       check_ins_group = result[:groups].find { |g| g[:title] == 'Check-ins' }
 
-      expect(check_ins_group[:rows].count { |row| row[:separator] }).to eq(1)
+      expect(check_ins_group[:rows].count { |row| row[:separator] }).to eq(2)
+      expect(check_ins_group[:rows][0]).to include(separator: true, label: 'Activity')
       data_rows = check_ins_group[:rows].reject { |row| row[:separator] }
       expect(data_rows.size).to eq(5)
       expect(data_rows[0][:key]).to eq('unique_teammates_check_in_finalized_this_week')
@@ -277,11 +279,10 @@ RSpec.describe Insights::OgScorecardBuilder do
         Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::NEEDS_ATTENTION)
       )
 
-      separator_index = check_ins_group[:rows].index { |row| row[:separator] }
-      expect(separator_index).to eq(2)
+      expect(check_ins_group[:rows][3]).to include(separator: true, label: 'Gruuv Health')
     end
 
-    it 'includes a separator between Gruuv Health and goal activity rows in the Goals section' do
+    it 'lists goal activity before Gruuv Health Goal Confidence rows' do
       monday = Date.current.beginning_of_week(:monday)
       week_starts = [monday]
       chart_range = monday.beginning_of_day..(monday + 6).end_of_day
@@ -289,16 +290,17 @@ RSpec.describe Insights::OgScorecardBuilder do
       result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
       goals_group = result[:groups].find { |g| g[:title] == 'Goals' }
 
-      expect(goals_group[:rows].count { |row| row[:separator] }).to eq(1)
+      expect(goals_group[:rows].count { |row| row[:separator] }).to eq(2)
+      expect(goals_group[:rows][0]).to include(separator: true, label: 'Activity')
+      first_activity_index = goals_group[:rows].index { |row| row[:key] == 'unique_teammates_active_goal' }
+      separator_index = goals_group[:rows].index { |row| row[:separator] && row[:label] == 'Gruuv Health' }
       first_gruuv_index = goals_group[:rows].index do |row|
         row[:key]&.start_with?(Insights::OgScorecard::GruuvHealthWeekCounts::METRIC_KEY_PREFIX)
       end
-      separator_index = goals_group[:rows].index { |row| row[:separator] }
-      first_activity_index = goals_group[:rows].index { |row| row[:key] == 'unique_teammates_active_goal' }
 
-      expect(first_gruuv_index).to eq(0)
-      expect(separator_index).to eq(3)
-      expect(first_activity_index).to eq(4)
+      expect(first_activity_index).to eq(1)
+      expect(separator_index).to eq(7)
+      expect(first_gruuv_index).to eq(8)
     end
 
     it 'includes a Gruuv Health group with population rows from EngagementHealth' do

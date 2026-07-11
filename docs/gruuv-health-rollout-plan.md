@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0 complete. Phase 1.1–1.3 done (EH population rows, Required Clarity trio retired, OGO Healthy scopes aligned). Phase 3/6/8 partial (clarity workflows on EH). **Open leftovers:** item-healthy % aggregates; Phase 1.4+ scorecard. **Next:** Phase 1.4 (activity relabel / status vs activity help).
+**Status:** Phase 0 complete. Phase 1.1–1.4 done (EH rows, clarity/OGO alignment, activity vs status labeling). Phase 3/6/8 partial. **Open leftovers:** item-healthy % aggregates; Phase 1.5 verify / 1.6–1.7. **Next:** Phase 2 (Observations Health) or quick 1.5 verify.
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -24,7 +24,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | Phase | Focus | Status |
 |-------|--------|--------|
 | 0 | Foundation + Overview tab | ✅ Done |
-| 1 | OG Scorecard | 🔄 In progress (1.1–1.3 done) |
+| 1 | OG Scorecard | 🔄 In progress (1.1–1.4 done) |
 | 2 | Observations Health | ⬜ |
 | 3 | Required clarity / percentage clear | 🔄 In progress (action-slot `% clear` everywhere that used the old component) |
 | 4 | Goals Health | ⬜ |
@@ -114,13 +114,13 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [x] Scorecard OGO activity this-week / all-time scopes aligned: `HealthScopes.published_non_journal_scope` (`.not_journal` + company ids)
 - [x] `HealthScopes.company_ids_for` uses `self_and_descendants`; received privacy remains on EH Received (not activity “named as observee” rows); page help clarifies Healthy = 30-day signal
 
-### 1.4 — Relabel activity rows (no logic change)
+### 1.4 — Relabel activity rows (no logic change) ✅
 
-- [ ] Group **Goal activity** separately from Gruuv Health (active goals, association breakdowns, check-ins this week, completed 90d)
-- [ ] Group **Milestone activity** separately (earned this week / 90d — velocity, not compliance status)
-- [ ] Group **OGO weekly activity** separately (publishers/observees in that Mon–Sun week)
-- [ ] Update page help (`og_scorecard.html.haml` info panel) to explain status vs activity metrics
-- [ ] Link to 1:1 Overview as per-teammate drill-down
+- [x] Group **Goal activity** separately from Gruuv Health (activity first, then Goal Confidence EH)
+- [x] Group **Milestone activity** separately (velocity rows under Activity, then EH Milestones)
+- [x] Group **OGO weekly activity** separately (Activity label, then Gruuv Health Given/Received)
+- [x] Update page help to explain status vs activity; link toward 1:1 Hub Overview drill-down via Managers View
+- [x] Labeled `Activity` / `Gruuv Health` subsection separators in the scorecard table
 
 ### 1.5 — Optional EH rows for remaining categories
 

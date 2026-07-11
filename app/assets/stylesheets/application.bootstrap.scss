@@ -1776,12 +1776,20 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 
   tr.og-scorecard-separator td {
-    padding: 0 !important;
-    height: 0.35rem;
-    line-height: 0;
+    padding: 0.35rem 0.5rem !important;
+    height: auto;
+    line-height: 1.2;
     background-color: var(--bs-secondary-bg);
     border-top: none;
     border-bottom: none;
+  }
+
+  .og-scorecard-subsection-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
   }
 }
 

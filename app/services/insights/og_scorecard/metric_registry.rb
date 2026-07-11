@@ -18,10 +18,10 @@ module Insights
         )
       end
 
-      def self.separator(group:)
+      def self.separator(group:, label: nil)
         Entry.new(
           key: nil,
-          label: nil,
+          label: label,
           direction: :more,
           supports_percent: false,
           group: group,
@@ -128,6 +128,7 @@ module Insights
           )
         ] +
         [
+          separator(group: 'Observations', label: 'Activity'),
           metric(
             key: 'unique_ogo_publishers_this_week',
             label: 'Teammates that published an OGO this week',
@@ -142,7 +143,6 @@ module Insights
             supports_percent: true,
             group: 'Observations'
           ),
-          separator(group: 'Observations'),
           metric(
             key: 'unique_ogo_observees_this_week',
             label: 'Teammates named as observees in an OGO this week',
@@ -157,14 +157,12 @@ module Insights
             supports_percent: true,
             group: 'Observations'
           ),
-          separator(group: 'Observations')
+          separator(group: 'Observations', label: 'Gruuv Health')
         ] +
         gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_GIVEN, metric_name: 'OGOs Given', group: 'Observations') +
-        [
-          separator(group: 'Observations')
-        ] +
         gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_RECEIVED, metric_name: 'OGOs Received', group: 'Observations') +
         [
+          separator(group: 'Check-ins', label: 'Activity'),
           metric(
             key: 'unique_teammates_check_in_finalized_this_week',
             label: 'Teammates that had a check-in finalized this week',
@@ -179,7 +177,7 @@ module Insights
             supports_percent: true,
             group: 'Check-ins'
           ),
-          separator(group: 'Check-ins')
+          separator(group: 'Check-ins', label: 'Gruuv Health')
         ] +
         gruuv_health_entries(
           category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
@@ -187,6 +185,7 @@ module Insights
           group: 'Check-ins'
         ) +
         [
+          separator(group: 'Ability Milestones', label: 'Activity'),
           metric(
             key: 'milestones_earned_this_week',
             label: 'Milestones earned this week',
@@ -208,7 +207,6 @@ module Insights
             supports_percent: false,
             group: 'Ability Milestones'
           ),
-          separator(group: 'Ability Milestones'),
           metric(
             key: 'unique_teammates_milestone_this_week',
             label: 'Teammates with a milestone earned this week',
@@ -230,20 +228,15 @@ module Insights
             supports_percent: true,
             group: 'Ability Milestones'
           ),
-          separator(group: 'Ability Milestones')
+          separator(group: 'Ability Milestones', label: 'Gruuv Health')
         ] +
         gruuv_health_entries(
           category: EngagementHealth::CATEGORY_MILESTONES,
           metric_name: 'Milestones',
           group: 'Ability Milestones'
         ) +
-        gruuv_health_entries(
-          category: EngagementHealth::CATEGORY_GOAL_CONFIDENCE,
-          metric_name: 'Goal Confidence',
-          group: 'Goals'
-        ) +
         [
-          separator(group: 'Goals'),
+          separator(group: 'Goals', label: 'Activity'),
           metric(
             key: 'unique_teammates_active_goal',
             label: 'Teammates with an active goal',
@@ -285,8 +278,14 @@ module Insights
             direction: :more,
             supports_percent: true,
             group: 'Goals'
-          )
-        ]
+          ),
+          separator(group: 'Goals', label: 'Gruuv Health')
+        ] +
+        gruuv_health_entries(
+          category: EngagementHealth::CATEGORY_GOAL_CONFIDENCE,
+          metric_name: 'Goal Confidence',
+          group: 'Goals'
+        )
       ).freeze
     end
   end

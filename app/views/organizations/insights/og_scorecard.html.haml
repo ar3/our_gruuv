@@ -50,23 +50,23 @@
     %h5.fw-semibold.mb-2 Metric definitions
     %ul.mb-2
       %li
+        %strong Status vs activity:
+        Within each section,
+        %strong Activity
+        rows are velocity (what happened this week / all-time / rolling windows).
+        %strong Gruuv Health
+        rows are population status counts (Healthy / Warning / Needs Attention) using the same rules as each teammate’s
+        = link_to "1:1 Hub Overview", organization_employees_path(@organization, view: "managers_view", spotlight: "manager_lite")
+        drill-down (open a teammate → 1:1 Hub → Overview).
+      %li
         %strong Active teammates:
         teammates with a hire date still employed at the end of that week (Sunday).
       %li
-        %strong Gruuv Health rows
-        in Observations, Check-ins, Ability Milestones, and Goals count teammates by
-        %strong Healthy
-        ,
-        %strong Warning
-        , or
-        %strong Needs Attention
-        using the same rules as the 1:1 Hub Overview; the parenthetical on each row states the threshold. All-time and weekly activity rows are grouped separately within each section.
-      %li
         %strong Observations:
-        Activity rows count unique teammates who published or were named in a non-journal OGO during that Mon–Sun week (this week), or who had ever done so on or before that Sunday while employed that week (all-time). Scopes match Gruuv Health (org hierarchy + non-journal).
+        Activity rows count unique teammates who published or were named in a non-journal OGO during that Mon–Sun week (this week), or who had ever done so on or before that Sunday while employed that week (all-time).
         Gruuv Health
         %strong Healthy OGOs Given / Received
-        is the 30-day Healthy window (last published ≤ 30 days as of that Sunday); Warning and Needs Attention complete the trio. There is no separate 30-day activity row—Healthy is that signal.
+        is the 30-day Healthy window (last published ≤ 30 days as of that Sunday); Warning and Needs Attention complete the trio.
       %li
         %strong= "#{I18n.t('terminology.og_scorecard_clarity_check_ins_label')}:"
         = I18n.t('terminology.og_scorecard_clarity_check_ins_help')
@@ -147,7 +147,9 @@
           - group[:rows].each do |row|
             - if row[:separator]
               %tr.og-scorecard-separator
-                %td{colspan: 5 + @week_labels.size}
+                %td.sticky-col{colspan: 5 + @week_labels.size}
+                  - if row[:label].present?
+                    %span.og-scorecard-subsection-label= row[:label]
             - else
               %tr
                 %td.sticky-col

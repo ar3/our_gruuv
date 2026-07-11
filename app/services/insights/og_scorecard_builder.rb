@@ -57,7 +57,7 @@ module Insights
       groups = OgScorecard::MetricRegistry.grouped.map do |group|
         rows = group[:entries].filter_map do |entry|
           if entry.separator
-            { separator: true }
+            { separator: true, label: entry.label }
           else
             counts = counts_for(
               entry.key,
