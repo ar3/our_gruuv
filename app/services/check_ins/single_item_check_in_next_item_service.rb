@@ -3,15 +3,15 @@
 module CheckIns
   # Returns the next single-item check-in target (aspiration, assignment, or position)
   # and whether the "Save and move to next" button should be enabled.
-  # Bucket thresholds match CheckInBehavior#clarity_level (crystal clear / clear / blurred+obscured)
-  # via CheckInBehavior.recency_tricolor_bucket, using the later of the viewer's open-side completion
-  # and the item's latest official finalization so a new open cycle does not read as obscured when
-  # the prior cycle was finalized recently. When all items are green (crystal-clear window),
-  # next_requires_check_in is false.
+  #
+  # Urgency buckets match EngagementHealth Required Clarity (Healthy / Warning /
+  # Needs Attention) from latest official finalization — same windows as Up Next
+  # and the all-fresh banner. When every item is Healthy, next_requires_check_in
+  # is false ("fully up to date" on the hub CTA).
   class SingleItemCheckInNextItemService
-    BUCKET_RED = :red    # blurred + obscured vs clarity, or no activity
-    BUCKET_YELLOW = :yellow # clear window
-    BUCKET_GREEN = :green   # crystal_clear window
+    BUCKET_RED = :red       # Needs Attention (never or 90+ days)
+    BUCKET_YELLOW = :yellow # Warning (61–89 days)
+    BUCKET_GREEN = :green   # Healthy (finalized within 60 days)
 
     def self.call(teammate:, organization:, current_person:, current_type:, current_id: nil)
       new(
@@ -79,23 +79,21 @@ module CheckIns
       employee? ? check_in.employee_completed_at : check_in.manager_completed_at
     end
 
-    def bucket_for(last_activity)
-      case CheckInBehavior.recency_tricolor_bucket(last_activity)
-      when :green
+    # Map EH Required Clarity status → next-item urgency bucket.
+    def bucket_for_finalized_at(finalized_at)
+      status = EngagementHealth::Thresholds.status_for_last_event(
+        finalized_at,
+        healthy_within: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
+        needs_attention_at: EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      )
+      case status
+      when EngagementHealth::HEALTHY
         BUCKET_GREEN
-      when :blue
+      when EngagementHealth::WARNING
         BUCKET_YELLOW
-      when :yellow
-        BUCKET_RED
       else
         BUCKET_RED
       end
-    end
-
-    # Recency for bucket urgency: open-side activity, or latest finalize when the open cycle has no side timestamp yet.
-    def last_activity_for_bucket(open_ci, latest_finalized_at: nil)
-      open_side = my_side_completed_at(open_ci)
-      [open_side, latest_finalized_at].compact.max
     end
 
     def build_ordered_items
@@ -111,13 +109,12 @@ module CheckIns
       Aspiration.within_hierarchy(organization).ordered.map do |aspiration|
         open_ci = AspirationCheckIn.where(company_teammate: teammate, aspiration: aspiration).open.first
         latest_finalized_at = AspirationCheckIn.latest_finalized_for(teammate, aspiration)&.official_check_in_completed_at
-        last_activity = last_activity_for_bucket(open_ci, latest_finalized_at: latest_finalized_at)
         {
           type: :aspiration,
           id: aspiration.id,
           name: aspiration.name,
-          bucket: bucket_for(last_activity),
-          bucket_activity_at: last_activity,
+          bucket: bucket_for_finalized_at(latest_finalized_at),
+          bucket_activity_at: latest_finalized_at,
           required: true,
           my_side_completed_at: my_side_completed_at(open_ci)
         }
@@ -144,13 +141,12 @@ module CheckIns
       assignments_by_id.values.map do |assignment|
         open_ci = AssignmentCheckIn.where(company_teammate: teammate, assignment: assignment).open.first
         latest_finalized_at = AssignmentCheckIn.latest_finalized_for(teammate, assignment)&.official_check_in_completed_at
-        last_activity = last_activity_for_bucket(open_ci, latest_finalized_at: latest_finalized_at)
         {
           type: :assignment,
           id: assignment.id,
           name: assignment.title,
-          bucket: bucket_for(last_activity),
-          bucket_activity_at: last_activity,
+          bucket: bucket_for_finalized_at(latest_finalized_at),
+          bucket_activity_at: latest_finalized_at,
           required: true,
           my_side_completed_at: my_side_completed_at(open_ci)
         }
@@ -163,14 +159,13 @@ module CheckIns
 
       open_ci = PositionCheckIn.where(company_teammate: teammate).open.first
       latest_finalized_at = PositionCheckIn.latest_finalized_for(teammate)&.official_check_in_completed_at
-      last_activity = last_activity_for_bucket(open_ci, latest_finalized_at: latest_finalized_at)
       name = employment.position.title&.external_title.presence || "Position"
       {
         type: :position,
         id: employment.position.id,
         name: name,
-        bucket: bucket_for(last_activity),
-        bucket_activity_at: last_activity,
+        bucket: bucket_for_finalized_at(latest_finalized_at),
+        bucket_activity_at: latest_finalized_at,
         required: true,
         my_side_completed_at: my_side_completed_at(open_ci)
       }
@@ -204,9 +199,8 @@ module CheckIns
       active_position.required_assignments.pluck(:assignment_id)
     end
 
-    # Items are sorted red → yellow → green. Simple (index + 1) % n skips items that sort
-    # *before* the current row (e.g. yellow assignment while on green assignment). Prefer any
-    # other item with a more urgent bucket first; otherwise advance circularly in the list.
+    # Items are sorted red → yellow → green. Prefer any other item with a more
+    # urgent bucket first; otherwise advance circularly in the list.
     def resolve_next_item(items, current_index)
       return items.first if items.blank? || current_index.nil?
 

@@ -6,6 +6,8 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
   let(:organization) { create(:organization) }
   let(:teammate) { create(:company_teammate, organization: organization) }
   let(:current_person) { teammate.person }
+  let(:healthy_days) { EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS }
+  let(:needs_attention_days) { EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS }
 
   describe ".call" do
     it "returns a hash with next_url, next_requires_check_in, next_item, ordered_items" do
@@ -75,8 +77,8 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
     end
   end
 
-  describe "bucket recency with latest finalized fallback" do
-    it "uses crystal-clear bucket when open side is incomplete but item was finalized recently" do
+  describe "EH Healthy bucket from latest finalized" do
+    it "uses Healthy (green) when open side is incomplete but item was finalized within the EH window" do
       aspiration = create(:aspiration, company: organization, name: "Be Kind")
       create(
         :aspiration_check_in,
@@ -91,7 +93,7 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
         :finalized,
         teammate: teammate,
         aspiration: aspiration,
-        official_check_in_completed_at: 6.days.ago
+        official_check_in_completed_at: (healthy_days - 5).days.ago
       )
 
       result = described_class.call(
@@ -106,10 +108,80 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
       expect(item[:my_side_completed_at]).to be_nil
       expect(item[:bucket]).to eq(described_class::BUCKET_GREEN)
     end
+
+    it "treats finalized within Healthy window as green even past the old 30-day crystal-clear window" do
+      aspiration = create(:aspiration, company: organization, name: "Still Healthy")
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: (CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 10).days.ago
+      )
+
+      result = described_class.call(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :aspiration,
+        current_id: aspiration.id
+      )
+
+      item = result[:ordered_items].find { |i| i[:name] == "Still Healthy" }
+      expect(item[:bucket]).to eq(described_class::BUCKET_GREEN)
+      expect(result[:next_requires_check_in]).to be(false)
+    end
+
+    it "uses Warning (yellow) between Healthy and Needs Attention windows" do
+      aspiration = create(:aspiration, company: organization, name: "Getting Stale")
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: aspiration,
+        official_check_in_completed_at: (healthy_days + 5).days.ago
+      )
+
+      result = described_class.call(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :aspiration,
+        current_id: aspiration.id
+      )
+
+      item = result[:ordered_items].find { |i| i[:name] == "Getting Stale" }
+      expect(item[:bucket]).to eq(described_class::BUCKET_YELLOW)
+      expect(result[:next_requires_check_in]).to be(true)
+    end
+
+    it "does not treat recent open-side completion as Healthy when never finalized" do
+      aspiration = create(:aspiration, company: organization, name: "Never Done")
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: aspiration,
+        employee_completed_at: 1.day.ago,
+        manager_completed_at: nil,
+        official_check_in_completed_at: nil
+      )
+
+      result = described_class.call(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :aspiration,
+        current_id: aspiration.id
+      )
+
+      item = result[:ordered_items].find { |i| i[:name] == "Never Done" }
+      expect(item[:bucket]).to eq(described_class::BUCKET_RED)
+      expect(result[:next_requires_check_in]).to be(true)
+    end
   end
 
   describe "ordering among incomplete open sides" do
-    it "ranks a more urgent clarity bucket before a recently finalized item with the same incomplete open side" do
+    it "ranks a more urgent EH bucket before a recently finalized Healthy item with the same incomplete open side" do
       be_kind = create(:aspiration, company: organization, name: "Be Kind")
       keep_growing = create(:aspiration, company: organization, name: "Keep Growing")
 
@@ -122,7 +194,7 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
         :finalized,
         teammate: teammate,
         aspiration: keep_growing,
-        official_check_in_completed_at: (CheckInBehavior::CLARITY_CLEAR_DAYS + 5).days.ago
+        official_check_in_completed_at: (healthy_days + 5).days.ago
       )
 
       result = described_class.call(
@@ -143,8 +215,8 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
       assignment = create(:assignment, company: organization, title: "Newer Assignment")
       create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 6.months.ago, ended_at: nil)
 
-      old_activity = (CheckInBehavior::CLARITY_CLEAR_DAYS + 5).days.ago
-      new_activity = 6.days.ago
+      old_activity = (healthy_days + 5).days.ago
+      new_activity = (healthy_days + 10).days.ago
 
       create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, employee_completed_at: nil, official_check_in_completed_at: nil)
       create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: old_activity)
