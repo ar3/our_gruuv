@@ -117,6 +117,10 @@ module TerminologyHelper
     terminology(:go_to_clarity_hub)
   end
 
+  def go_to_up_next_label
+    terminology(:go_to_up_next)
+  end
+
   def clarity_check_in_history_label
     terminology(:clarity_check_in_history)
   end

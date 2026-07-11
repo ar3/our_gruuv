@@ -406,9 +406,18 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to include("is working to meet on #{aspiration.name}, but there is no active goal linked yet")
       end
 
-      it 'uses the Clarity Check-Ins CTA wording in all three check-in sections' do
+      it 'links last finalized dates to review most recent and CTAs to Up Next for assignment/aspiration sections' do
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body.scan('Go to Clarity Check-Ins').count).to eq(3)
+
+        review_path = review_most_recent_organization_company_teammate_check_ins_path(organization, teammate)
+        up_next_path = up_next_organization_company_teammate_check_ins_path(organization, teammate)
+        hub_path = hub_organization_company_teammate_check_ins_path(organization, teammate)
+
+        expect(response.body.scan(%r{href="#{Regexp.escape(review_path)}"}).count).to be >= 2
+        expect(response.body.scan('Go to Up Next').count).to eq(2)
+        expect(response.body).to include(%(href="#{up_next_path}">Go to Up Next))
+        expect(response.body.scan('Go to Clarity Check-Ins').count).to eq(1)
+        expect(response.body).to include(%(href="#{hub_path}">Go to Clarity Check-Ins))
       end
     end
   end

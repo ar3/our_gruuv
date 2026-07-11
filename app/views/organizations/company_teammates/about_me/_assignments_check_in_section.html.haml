@@ -55,7 +55,9 @@
                     = link_to assignment.title, organization_teammate_assignment_path(organization, @teammate, assignment), class: "text-decoration-none"
                   %td
                     - if latest_finalized
-                      = format_date_in_user_timezone(latest_finalized.official_check_in_completed_at)
+                      = link_to format_date_in_user_timezone(latest_finalized.official_check_in_completed_at),
+                                review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate),
+                                class: "text-decoration-none"
                     - else
                       %span.text-muted Check-in not started
                   - if show_clarity_merge_row
@@ -87,7 +89,7 @@
         %p.text-muted.mb-3 No assignments found.
       
       .d-grid.mt-3
-        = link_to hub_organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-primary btn-lg fw-semibold" do
-          = go_to_clarity_hub_label
+        = link_to up_next_organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-primary btn-lg fw-semibold" do
+          = go_to_up_next_label
           %i.bi.bi-box-arrow-up-right.ms-2.text-info
 

@@ -60,6 +60,7 @@ en:
     review_clarity_check_ins_together: "Review %{count} clarity check-ins together"
     view_clarity_hub: "View Clarity Check-Ins"
     go_to_clarity_hub: "Go to Clarity Check-Ins"
+    go_to_up_next: "Go to Up Next"
     clarity_check_in_history: "Clarity check-in history"
     finalize_selected_clarity_check_ins: "Finalize selected clarity check-ins"
     clarity_check_ins_awaiting_your_input: "Clarity check-ins awaiting your input"
