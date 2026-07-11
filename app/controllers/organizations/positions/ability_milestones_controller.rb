@@ -9,8 +9,8 @@ module Organizations
 
       def show
         authorize @position
-        load_abilities_in_hierarchy
         load_existing_associations
+        load_abilities_for_milestones
         @form = PositionAbilityMilestonesForm.new(@position)
         render layout: determine_layout
       end
@@ -24,8 +24,8 @@ module Organizations
           redirect_to organization_position_path(@organization, @position),
                       notice: 'Direct milestone requirements were successfully updated.'
         else
-          load_abilities_in_hierarchy
           load_existing_associations
+          load_abilities_for_milestones
           render :show, status: :unprocessable_entity
         end
       end
@@ -36,8 +36,16 @@ module Organizations
         @position = @organization.positions.find(params[:position_id])
       end
 
-      def load_abilities_in_hierarchy
-        @abilities = Ability.unarchived.where(company: @position.company).order(:name)
+      def load_abilities_for_milestones
+        abilities = Ability.unarchived
+          .where(company: @position.company)
+          .includes(:department)
+          .to_a
+          .sort_by { |a| [(a.department&.display_name || "Company-wide").downcase, a.name.to_s.downcase] }
+
+        associated_ids = @existing_associations.keys
+        @associated_abilities = abilities.select { |a| associated_ids.include?(a.id) }
+        @available_abilities = abilities.reject { |a| associated_ids.include?(a.id) }
       end
 
       def load_existing_associations

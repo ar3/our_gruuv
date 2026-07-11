@@ -22,6 +22,30 @@ RSpec.describe 'Position Direct Milestone Requirements', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Direct Milestone Requirements')
       expect(response.body).to include(position.display_name)
+      expect(response.body).to include('Change Milestone Requirement')
+      expect(response.body).to include('Add additional Milestone Requirements')
+    end
+
+    it 'expands the add section when there are no associations yet' do
+      get organization_position_ability_milestones_path(company, position)
+
+      expect(response.body).to include('id="addMilestoneRequirements"')
+      expect(response.body).to include('collapse show')
+      expect(response.body).to include('No milestone requirements yet')
+    end
+
+    it 'shows a collapsed expand link when associations exist' do
+      create(:position_ability, position: position, ability: ability1, milestone_level: 2)
+
+      get organization_position_ability_milestones_path(company, position)
+
+      expect(response.body).to include('requires more of the')
+      expect(response.body).to include('available Abilities')
+      expect(response.body).to include(ability1.name)
+      expect(response.body).to include('id="addMilestoneRequirements"')
+      expect(response.body).to include('aria-controls="addMilestoneRequirements"')
+      expect(response.body).not_to include('class="collapse show" id="addMilestoneRequirements"')
+      expect(response.body).not_to include('id="addMilestoneRequirements" class="collapse show"')
     end
 
     it 'shows the view switcher with Direct Milestone Requirements as active when on this page' do

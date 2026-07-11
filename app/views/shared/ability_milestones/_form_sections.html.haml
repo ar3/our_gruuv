@@ -1,0 +1,83 @@
+-# Locals:
+-#   subject_name — assignment title or position display name
+-#   form_param_prefix — e.g. "assignment_ability_milestones_form[ability_milestones]"
+-#   associated_abilities, available_abilities, existing_associations
+-#   can_update, save_label, disabled_tooltip
+- expand_add = associated_abilities.empty?
+- available_count = available_abilities.size
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-sliders.me-2
+      Change Milestone Requirement
+  .card-body
+    - if associated_abilities.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th{scope: "col"} Ability
+              %th{scope: "col", colspan: "6"} Milestone Level
+          %tbody
+            - associated_abilities.each do |ability|
+              = render "shared/ability_milestones/ability_row",
+                ability: ability,
+                current_milestone: existing_associations[ability.id],
+                form_param_prefix: form_param_prefix,
+                can_update: can_update,
+                show_no_association: true,
+                filterable: false
+    - else
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No milestone requirements yet. Add abilities below to define what being a #{subject_name} requires.
+
+.card.mb-4
+  - unless expand_add
+    .card-body.py-3.border-bottom
+      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#addMilestoneRequirements", "aria-expanded" => "false", "aria-controls" => "addMilestoneRequirements", href: "#addMilestoneRequirements"}
+        Being a #{subject_name} requires more of the #{available_count} available Abilities… add new milestone requirement
+  .collapse{id: "addMilestoneRequirements", class: ("show" if expand_add)}
+    - if expand_add
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-plus-circle.me-2
+          Add additional Milestone Requirements
+    .card-body
+      - if available_abilities.any?
+        .mb-3{data: {controller: "options-filter"}}
+          %input.form-control.form-control-lg.mb-3{type: "search", placeholder: "Search abilities by name or department...", "data-options-filter-target": "input", "aria-label": "Filter abilities by name or department"}
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead
+                %tr
+                  %th{scope: "col"} Ability
+                  %th{scope: "col", colspan: "6"} Milestone Level
+              %tbody{data: {"options-filter-target": "list"}}
+                - available_abilities.each do |ability|
+                  = render "shared/ability_milestones/ability_row",
+                    ability: ability,
+                    current_milestone: nil,
+                    form_param_prefix: form_param_prefix,
+                    can_update: can_update,
+                    show_no_association: true,
+                    filterable: true
+      - else
+        .alert.alert-info.mb-0
+          %i.bi.bi-info-circle.me-2
+          - if associated_abilities.any?
+            All available abilities are already associated.
+          - else
+            No abilities found in this organization hierarchy.
+
+.card.mb-4
+  .card-body
+    - if can_update
+      = submit_tag save_label, class: "btn btn-primary btn-lg"
+    - else
+      .d-flex.align-items-center.gap-2
+        .flex-grow-1
+          %button.btn.btn-primary.btn-lg.w-100.disabled{disabled: true, type: "button"}
+            = save_label
+        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => disabled_tooltip}

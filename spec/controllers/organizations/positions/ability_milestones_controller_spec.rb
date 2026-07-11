@@ -34,11 +34,14 @@ RSpec.describe Organizations::Positions::AbilityMilestonesController, type: :con
         expect(assigns(:position)).to eq(position)
       end
 
-      it 'loads all abilities in company hierarchy' do
+      it 'splits abilities into associated and available lists' do
+        create(:position_ability, position: position, ability: ability1, milestone_level: 3)
+
         get :show, params: { organization_id: organization.id, position_id: position.id }
 
-        abilities = assigns(:abilities)
-        expect(abilities).to include(ability1, ability2, ability3)
+        expect(assigns(:associated_abilities)).to eq([ability1])
+        expect(assigns(:available_abilities)).to include(ability2, ability3)
+        expect(assigns(:available_abilities)).not_to include(ability1)
       end
 
       it 'loads existing associations' do

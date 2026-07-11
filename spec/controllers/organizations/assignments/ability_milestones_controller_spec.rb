@@ -30,11 +30,26 @@ RSpec.describe Organizations::Assignments::AbilityMilestonesController, type: :c
         expect(assigns(:assignment)).to eq(assignment)
       end
 
-      it 'loads all abilities in company hierarchy' do
+      it 'splits abilities into associated and available lists' do
+        create(:assignment_ability, assignment: assignment, ability: ability1, milestone_level: 3)
+
         get :show, params: { organization_id: company.id, assignment_id: assignment.id }
-        
-        abilities = assigns(:abilities)
-        expect(abilities).to include(ability1, ability2, ability3)
+
+        expect(assigns(:associated_abilities)).to eq([ability1])
+        expect(assigns(:available_abilities)).to include(ability2, ability3)
+        expect(assigns(:available_abilities)).not_to include(ability1)
+      end
+
+      it 'sorts abilities by department then name' do
+        dept_b = create(:department, company: company, name: 'Zebra Dept')
+        dept_a = create(:department, company: company, name: 'Alpha Dept')
+        ability_z = create(:ability, company: company, department: dept_b, name: 'AAA Ability')
+        ability_a = create(:ability, company: company, department: dept_a, name: 'ZZZ Ability')
+
+        get :show, params: { organization_id: company.id, assignment_id: assignment.id }
+
+        available = assigns(:available_abilities)
+        expect(available.index(ability_a)).to be < available.index(ability_z)
       end
 
       it 'loads existing associations' do

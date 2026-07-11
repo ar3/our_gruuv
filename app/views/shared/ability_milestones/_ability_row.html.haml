@@ -1,0 +1,26 @@
+-# Locals: ability, current_milestone, form_param_prefix, can_update, show_no_association:
+-#   current_milestone — Integer level or nil
+-#   form_param_prefix — e.g. "assignment_ability_milestones_form[ability_milestones]"
+-#   show_no_association — true for associated list (change/remove); false for add list
+- department_label = ability.department&.display_name || "Company-wide"
+- row_class = local_assigns[:filterable] ? "filterable-option" : nil
+%tr{class: row_class}
+  %td
+    %small.text-muted.d-block= department_label
+    %strong= ability.name
+    - if ability.description.present?
+      %br
+      %small.text-muted= ability.description.truncate(100)
+  %td
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Milestone level for #{ability.name}"}
+      - [1, 2, 3, 4, 5].each do |level|
+        - pop_html = complete_picture_unearned_milestone_popover_html(ability, level)
+        - radio_id = "ability_#{ability.id}_milestone_#{level}"
+        = radio_button_tag "#{form_param_prefix}[#{ability.id}]", level, (current_milestone == level), class: "btn-check", id: radio_id, disabled: !can_update
+        = label_tag radio_id, nil, class: "btn btn-outline-primary", role: "button", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "top", bs_title: "Milestone #{level}", bs_custom_class: "complete-picture-milestone-popover", bs_content: pop_html } do
+          = level
+      - if show_no_association
+        - none_id = "ability_#{ability.id}_no_association"
+        = radio_button_tag "#{form_param_prefix}[#{ability.id}]", 0, current_milestone.nil?, class: "btn-check", id: none_id, disabled: !can_update
+        = label_tag none_id, class: "btn btn-outline-secondary" do
+          %em No Association
