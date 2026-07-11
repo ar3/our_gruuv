@@ -18,7 +18,7 @@ Every priority in **needs attention** mode should present three parts:
 |---|----------|----------------------|
 | 1 | Are there overdue or due-soon Asana tasks? | Asana 1:1 project has urgent incomplete tasks (N/A if not Asana-linked) |
 | 2 | Are there check-ins ready for review together? | Any position, assignment, or aspiration check-in is `ready_for_finalization` (both sides reflected; joint review not done) |
-| 3 | Are any position, assignment, or aspiration check-ins blurred (check-in 60+ days old) or obscured (check-in 90+ days old)? | Any required check-in is blurred or obscured |
+| 3 | Are any position, assignment, or aspiration clarity check-ins Warning (61+ days) or Needs Attention (90+ days / never)? | Any required clarity item is Warning or Needs Attention on Gruuv Health |
 | 4 | Are any WTM assignments or aspirations missing active goals? | WTM rating without an active goal on that area |
 | 5 | Are any current-position ability milestones below target missing active goals? | Ability gap on current position without a covering goal |
 | 6 | Has the teammate given a published observation to someone else in 30 days? | None given |

@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0 complete. Phase 3/6/8 partial (Style 2 removed, About Me on EH, old `% clear` UI retired, One Thing + hub next-up + all-fresh on EH). **Open leftovers:** item-healthy % aggregates on Insights / by-manager / CSV. **Next:** Phase 1 remaining (OG Scorecard 1.2+).
+**Status:** Phase 0 complete. Phase 1.1–1.2 done (EH population rows + Required Clarity trio retired). Phase 3/6/8 partial (clarity workflows on EH). **Open leftovers:** item-healthy % aggregates; Phase 1.3+ scorecard. **Next:** Phase 1.3 (OGO 30-day → EH) or Phase 1.4 (activity relabel).
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -24,7 +24,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | Phase | Focus | Status |
 |-------|--------|--------|
 | 0 | Foundation + Overview tab | ✅ Done |
-| 1 | OG Scorecard | 🔄 In progress (1.1 done) |
+| 1 | OG Scorecard | 🔄 In progress (1.1–1.2 done) |
 | 2 | Observations Health | ⬜ |
 | 3 | Required clarity / percentage clear | 🔄 In progress (action-slot `% clear` everywhere that used the old component) |
 | 4 | Goals Health | ⬜ |
@@ -100,12 +100,12 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [x] Wire into `OgScorecardBuilder` with same department/manager filters as existing metrics
 - [x] Yellow/green thresholds work on new population counts (existing `CellStatus` UX)
 
-### 1.2 — Required clarity trio → EH-backed + rename
+### 1.2 — Required clarity trio → EH-backed + rename ✅
 
-- [ ] Replace `CheckInClarityWeekCounts` / `ClarityLevel` rollup with EH `required_clarity` category counts
-- [ ] Rename rows to **Healthy / At Risk / Needs Attention** (replace clear / blurred / obscured labels)
-- [ ] Update `MetricRegistry` labels and `og_scorecard_clarity_check_ins_help` locale copy
-- [ ] Remove or deprecate duplicated clarity logic once EH path is verified
+- [x] Replace `CheckInClarityWeekCounts` / `ClarityLevel` rollup with EH `required_clarity` category counts (`GruuvHealthWeekCounts`; old clear/blurred/obscured keys removed)
+- [x] Rename rows to **Healthy / Warning / Needs Attention** (replaces clear / blurred / obscured)
+- [x] Update `MetricRegistry` labels and `og_scorecard_clarity_check_ins_help` locale copy (activity vs status)
+- [x] Remove duplicated clarity status logic (`ClarityLevel`, `CheckInClarityWeekCounts`); keep `ClarityCheckInWeekCounts` for activity-only this-week / all-time rows; prune stale threshold rows for retired metric keys
 
 ### 1.3 — OGO 30-day rows → EH scopes
 
@@ -139,7 +139,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [ ] Manual compare: sample teammates on Overview vs scorecard population counts for same Sunday
 - [ ] Document any intentional differences in page help
 
-**Phase 1 retire (when complete):** `Insights::OgScorecard::CheckInClarityWeekCounts`, `ClarityLevel` (scorecard-only usage), duplicated OGO 30-day logic in `ObservationsThirtyDayWeekCounts` (if superseded)
+**Phase 1 retire (when complete):** scorecard-only `ClarityLevel` / `CheckInClarityWeekCounts` (**already removed**); duplicated OGO 30-day logic in `ObservationsThirtyDayWeekCounts` (if superseded). Keep `ClarityCheckInWeekCounts` for activity velocity rows.
 
 **Gate:** Your approval before Phase 2.
 

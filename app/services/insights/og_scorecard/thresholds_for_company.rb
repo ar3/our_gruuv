@@ -12,6 +12,8 @@ module Insights
       end
 
       def call
+        prune_stale_threshold_rows!
+
         records = OgScorecardMetricThreshold.for_company(company).index_by(&:metric_key)
         OgScorecard::MetricRegistry.keys.index_with do |key|
           record = records[key]
@@ -29,6 +31,13 @@ module Insights
       private
 
       attr_reader :company
+
+      def prune_stale_threshold_rows!
+        OgScorecardMetricThreshold
+          .for_company(company)
+          .where.not(metric_key: OgScorecard::MetricRegistry.keys)
+          .delete_all
+      end
 
       def default_threshold
         { yellow: nil, green: nil, mode: 'absolute', configured?: false }
