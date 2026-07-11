@@ -1,0 +1,17 @@
+%footer.app-footer.bg-light.border-top.mt-5.py-3
+  .container
+    .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2
+      %p.mb-0.text-muted
+        %small
+          = link_to new_us_path, class: "text-muted text-decoration-none" do
+            Made with
+            %i.bi.bi-heart-fill.app-footer-heart{"aria-hidden": "true"}
+            by New Us
+      %p.mb-0.text-muted
+        %small
+          = link_to "About", about_path, class: "text-muted text-decoration-none"
+          %span.mx-1 ·
+          = link_to "Help Improve OG", interest_submissions_path, class: "text-muted text-decoration-none"
+          - if current_organization
+            %span.mx-1 ·
+            = link_to "Sitemap", organization_sitemap_path(current_organization), class: "text-muted text-decoration-none"

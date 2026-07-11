@@ -810,6 +810,11 @@ Rails.application.routes.draw do
   get '/hypothesis-management', to: 'pages#hypothesis_management_coming_soon', as: :hypothesis_management_coming_soon
   get '/eligibility-reviews', to: 'pages#eligibility_reviews_coming_soon', as: :eligibility_reviews_coming_soon
   
+  # Public marketing / founder pages
+  get '/about', to: 'pages#about', as: :about
+  get '/new-us', to: 'pages#new_us', as: :new_us
+  get '/ar3', to: redirect('/new-us')
+
   # Overview pages for Level 2 navigation
   get '/position-management', to: 'pages#position_management_overview', as: :position_management_overview
   get '/milestones', to: 'pages#milestones_overview', as: :milestones_overview

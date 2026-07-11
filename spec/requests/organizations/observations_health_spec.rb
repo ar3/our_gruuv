@@ -29,7 +29,7 @@ RSpec.describe "Observations Health", type: :request do
       expect(response.body).to include("Refresh all in this view")
       expect(response.body).to include("Company Observations Insights")
       expect(response.body).to include('data-bs-toggle="popover"')
-      expect(response.body).to include("Spotlight Healthy / Ok / Needs attention uses only Given and Received")
+      expect(response.body).to include("Spotlight Healthy / Warning / Needs Attention uses only Given and Received")
       expect(response.body).to include("Download OGOs (CSV)")
       expect(response.body).to include("Download employees observations summary (CSV)")
     end
@@ -46,14 +46,32 @@ RSpec.describe "Observations Health", type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it "shows cached row data when cache exists" do
+    it "shows Gruuv Health Given/Received and mix columns from cache" do
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: "category",
+        category: EngagementHealth::CATEGORY_OGO_GIVEN,
+        status: EngagementHealth::HEALTHY,
+        inputs: { "last_event_at" => 1.day.ago.iso8601, "never" => false },
+        computed_at: Time.current
+      )
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: "category",
+        category: EngagementHealth::CATEGORY_OGO_RECEIVED,
+        status: EngagementHealth::WARNING,
+        inputs: { "last_event_at" => 45.days.ago.iso8601, "never" => false },
+        computed_at: Time.current
+      )
       create(
         :observation_health_cache,
         teammate: teammate,
         organization: company,
         payload: {
-          "given" => { "status" => "green", "last_published_at" => 1.day.ago.iso8601 },
-          "received" => { "status" => "yellow", "last_published_at" => 45.days.ago.iso8601 },
+          "given" => { "status" => "green", "observations_count" => 2 },
+          "received" => { "status" => "yellow", "observations_count" => 1 },
           "kudos_mix" => { "band" => "healthy", "kudos_count" => 2, "constructive_count" => 1, "display_ratio" => "2:1" },
           "rating_intensity" => { "band" => "healthy", "less_extreme_count" => 1, "most_extreme_count" => 1, "display_ratio" => "1:1" },
           "overall_status" => "yellow"
@@ -63,6 +81,7 @@ RSpec.describe "Observations Health", type: :request do
       get organization_observations_health_path(company), params: { manager_id: "just_me" }
       expect(response).to have_http_status(:success)
       expect(response.body).to include("2:1")
+      expect(response.body).to include("Warning")
       expect(response.body).to include("bi-arrow-clockwise")
     end
   end
@@ -86,10 +105,11 @@ RSpec.describe "Observations Health", type: :request do
   end
 
   describe "POST /organizations/:organization_id/observations_health_refresh" do
-    it "enqueues refresh for the teammate" do
+    it "enqueues Gruuv Health and observation mix refresh for the teammate" do
       expect {
         post organization_observations_health_refresh_path(company), params: { teammate_id: teammate.id }
       }.to have_enqueued_job(ObservationHealthCacheRefreshJob).with(teammate.id)
+        .and have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
       expect(response).to redirect_to(organization_observations_health_path(company))
     end
   end
@@ -99,6 +119,7 @@ RSpec.describe "Observations Health", type: :request do
       expect {
         post organization_observations_health_refresh_all_path(company), params: { manager_id: "just_me" }
       }.to have_enqueued_job(ObservationHealthCacheRefreshJob).with(teammate.id)
+        .and have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
     end
   end
 end

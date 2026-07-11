@@ -510,4 +510,24 @@ RSpec.describe 'Vertical Navigation', type: :request do
       expect(response.body).to match(/<a[^>]*href="#{Regexp.escape(about_me_path)}"[^>]*>.*<h5[^>]*>Navigation<\/h5>/m)
     end
   end
+
+  describe 'app footer' do
+    it 'includes About, Help Improve OG, Made with New Us, and Sitemap links' do
+      get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('app-footer')
+      expect(response.body).to include("href=\"#{about_path}\"")
+      expect(response.body).to include("href=\"#{new_us_path}\"")
+      expect(response.body).to include('Made with')
+      expect(response.body).to include('bi-heart-fill')
+      expect(response.body).to include('app-footer-heart')
+      expect(response.body).to include('New Us')
+      expect(response.body).to include('Help Improve OG')
+      expect(response.body).to include("href=\"#{interest_submissions_path}\"")
+      expect(response.body).to include('Sitemap')
+      expect(response.body).to include("href=\"#{organization_sitemap_path(organization)}\"")
+    end
+  end
 end

@@ -40,7 +40,7 @@ class ObservationsHealthEmployeeSummaryCsvBuilder
       "Less Extreme Rating Count",
       "Most Extreme Rating Count",
       "Rating Intensity Display Ratio",
-      "Cache Refreshed At"
+      "Gruuv Health Computed At"
     ]
   end
 
@@ -58,11 +58,11 @@ class ObservationsHealthEmployeeSummaryCsvBuilder
       person&.email.to_s,
       manager&.display_name.to_s,
       manager&.email.to_s,
-      row[:overall_status].to_s,
-      given["status"].to_s,
+      status_label(row[:overall_status]),
+      status_label(given["status"]),
       given["observations_count"].to_s,
       iso_or_blank(given["last_published_at"]),
-      received["status"].to_s,
+      status_label(received["status"]),
       received["observations_count"].to_s,
       iso_or_blank(received["last_published_at"]),
       kudos["band"].to_s,
@@ -75,6 +75,10 @@ class ObservationsHealthEmployeeSummaryCsvBuilder
       intensity["display_ratio"].to_s,
       datetime(row[:refreshed_at])
     ]
+  end
+
+  def status_label(status)
+    EngagementHealth::STATUS_LABELS.fetch(status.to_s) { status.to_s }
   end
 
   def stringify_keys(hash)

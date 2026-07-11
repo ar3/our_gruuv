@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0 complete. Phase 1.1–1.5 done (all five EH category population trios on the scorecard). Phase 3/6/8 partial. **Open leftovers:** item-healthy % aggregates; Phase 1.6 confirm / 1.7. **Next:** Phase 2 (Observations Health), or quick 1.6/1.7 closeout first.
+**Status:** Phase 0–2 done for health dashboards on EH for clarity + OGO Given/Received. Phase 1.1–1.5 scorecard done. Phase 3/6/8 partial. **Open leftovers:** item-healthy % aggregates; Phase 1.6 confirm / 1.7; Phase 8 teammate OGO cards. **Next:** approval gate — then Phase 4 (Goals Health) recommended.
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -25,7 +25,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 |-------|--------|--------|
 | 0 | Foundation + Overview tab | ✅ Done |
 | 1 | OG Scorecard | 🔄 In progress (1.1–1.5 done) |
-| 2 | Observations Health | ⬜ |
+| 2 | Observations Health | ✅ Done (teammate OGO cards → Phase 8) |
 | 3 | Required clarity / percentage clear | 🔄 In progress (action-slot `% clear` everywhere that used the old component) |
 | 4 | Goals Health | ⬜ |
 | 5 | Milestones Health (+ migrate check-ins milestone bars) | ⬜ |
@@ -147,20 +147,20 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 
 ---
 
-## Phase 2 — Observations Health dashboard
+## Phase 2 — Observations Health dashboard ✅
 
-- [ ] OGO Given / Received columns read from `engagement_health_statuses` (or EH calculator)
-- [ ] Map display: Healthy / At Risk / Needs Attention (replace green/yellow/red + Stale/Never)
-- [ ] CSV exports use new vocabulary
-- [ ] `ObservationsHealthSpotlightService` uses EH category rollups
-- [ ] Start Here widget (`insights_observations_health_widget`) aligned
-- [ ] Teammate OGO pages (`_observation_health.html.haml`, `PriorityCarouselBuilder` OGO checks) — defer detailed work to Phase 8 if preferred
+- [x] OGO Given / Received columns read from `engagement_health_statuses` (category rollups)
+- [x] Map display: Healthy / Warning / Needs Attention (replace green/yellow/red + Stale/Never)
+- [x] CSV exports use new vocabulary (`ObservationsHealthEmployeeSummaryCsvBuilder`)
+- [x] `ObservationsHealthSpotlightService` uses EH category rollups (kudos/rating still from observation cache)
+- [x] Start Here widget (`insights_observations_health`) aligned via `compact_spotlight_stats`
+- [x] Teammate OGO pages (`_observation_health.html.haml`, `PriorityCarouselBuilder` OGO checks) — **deferred to Phase 8**
 
 **Keep separate (not EH):** kudos mix, rating intensity bands
 
-**Retire when done:** `Observations::HealthRecency` (2-tier OGO), OGO portion of `observation_health_caches` + related refresh for given/received only
+**Retire when done:** `Observations::HealthRecency` (2-tier OGO) for dashboard paths — still used by cache builder until Phase 9; OGO portion of `observation_health_caches` display path retired (status now from EH)
 
-**Gate:** Approval before Phase 3.
+**Gate:** Approval before Phase 3 (or Phase 4 — Phase 3 clarity leftovers are mostly done).
 
 ---
 

@@ -19,25 +19,27 @@ RSpec.describe ObservationsHealthEmployeeSummaryCsvBuilder do
       teammate: teammate,
       person: person,
       manager: manager_person,
-      given: { "status" => "green", "last_published_at" => Time.zone.parse("2025-06-01"), "observations_count" => 2 },
-      received: { "status" => "yellow", "last_published_at" => nil, "observations_count" => 0 },
+      given: { "status" => EngagementHealth::HEALTHY, "last_published_at" => Time.zone.parse("2025-06-01"), "observations_count" => 2 },
+      received: { "status" => EngagementHealth::WARNING, "last_published_at" => nil, "observations_count" => 0 },
       kudos_mix: { "band" => "healthy", "kudos_count" => 1, "constructive_count" => 0, "display_ratio" => "1:0" },
       rating_intensity: { "band" => "no_data", "less_extreme_count" => 0, "most_extreme_count" => 0, "display_ratio" => "0:0" },
-      overall_status: "yellow",
+      overall_status: EngagementHealth::WARNING,
       refreshed_at: Time.zone.parse("2025-06-15 10:00")
     }
   end
 
-  it "includes headers and employee row values" do
+  it "includes headers and employee row values with Gruuv Health vocabulary" do
     csv = described_class.new([row]).call
     lines = csv.lines.map(&:chomp)
 
     expect(lines.first).to include("Employee Name")
     expect(lines.first).to include("Given OGO Count")
+    expect(lines.first).to include("Gruuv Health Computed At")
     expect(lines.second).to include("Pat Lee")
     expect(lines.second).to include("pat@example.com")
     expect(lines.second).to include("Mo Mgr")
-    expect(lines.second).to include("yellow")
+    expect(lines.second).to include("Warning")
+    expect(lines.second).to include("Healthy")
     expect(lines.second).to include("2")
   end
 end

@@ -925,6 +925,12 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   }
 }
 
+.app-footer-heart {
+  color: #b8a9d4; // soft purple hint
+  font-size: 0.85em;
+  vertical-align: -0.05em;
+}
+
 // Mobile responsive styles
 @media (max-width: 991.98px) {
   .vertical-nav {

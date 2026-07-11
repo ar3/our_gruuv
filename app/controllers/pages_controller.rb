@@ -70,6 +70,14 @@ class PagesController < ApplicationController
     render layout: determine_layout
   end
 
+  def about
+    render layout: 'application'
+  end
+
+  def new_us
+    render layout: 'application'
+  end
+
   def close_tab
     @return_text = params[:return_text] || 'previous page'
     render layout: 'overlay'

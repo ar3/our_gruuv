@@ -28,9 +28,9 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
       return
     end
 
-    ObservationHealthCacheRefreshJob.perform_later(teammate.id)
+    queue_observations_health_refresh(teammate.id)
     redirect_back fallback_location: organization_observations_health_path(@organization),
-                  notice: "Refresh queued for #{teammate.person.display_name}."
+                  notice: "Gruuv Health and mix refresh queued for #{teammate.person.display_name}."
   end
 
   def refresh_all
@@ -38,10 +38,10 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
     apply_filter_default_if_needed
 
     teammate_ids = observations_health_spotlight_service.filtered_teammate_ids(params[:manager_id])
-    teammate_ids.each { |teammate_id| ObservationHealthCacheRefreshJob.perform_later(teammate_id) }
+    teammate_ids.each { |teammate_id| queue_observations_health_refresh(teammate_id) }
 
     redirect_to organization_observations_health_path(@organization, manager_id: params[:manager_id]),
-                notice: "Refresh queued for #{teammate_ids.size} teammate#{'s' if teammate_ids.size != 1}."
+                notice: "Gruuv Health and mix refresh queued for #{teammate_ids.size} teammate#{'s' if teammate_ids.size != 1}."
   end
 
   def export
@@ -83,6 +83,11 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
     return if params[:manager_id].present?
 
     params[:manager_id] = observations_health_spotlight_service.default_manager_filter_value
+  end
+
+  def queue_observations_health_refresh(teammate_id)
+    EngagementHealth.schedule_refresh_for(teammate_id)
+    ObservationHealthCacheRefreshJob.perform_later(teammate_id)
   end
 
   def require_authentication

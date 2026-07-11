@@ -37,7 +37,7 @@ class StartHere::Widgets::InsightsObservationsHealthWidget < StartHere::Widget::
       current_person: person,
       current_company_teammate: ct,
       manage_employment: org_policy.manage_employment?
-    ).rows_and_spotlight_for(nil).fetch(:spotlight_stats)
+    ).compact_spotlight_stats(nil)
 
     view.render(
       partial: "shared/observations_health_spotlight_compact",

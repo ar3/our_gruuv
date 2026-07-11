@@ -1,46 +1,66 @@
 # frozen_string_literal: true
 
 module ObservationsHealthHelper
-  RECENCY_STATUS_COPY = {
-    "green" => "Healthy",
-    "yellow" => "Stale",
-    "red" => "Never"
-  }.freeze
-
-  RECENCY_DAYS = Observations::HealthRecency::RECENCY_DAYS
+  OGO_HEALTHY_DAYS = EngagementHealth::Thresholds::OGO_HEALTHY_WITHIN_DAYS
+  OGO_NEEDS_ATTENTION_DAYS = EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS
 
   def observations_health_filter_label(value)
     option = @available_manager_filter_options.find { |(_label, option_value)| option_value.to_s == value.to_s }
     option ? option.first : "Unknown filter"
   end
 
+  def observations_health_status_copy(status)
+    EngagementHealth::STATUS_LABELS.fetch(status.to_s) { status.to_s.humanize }
+  end
+
+  # Backward-compatible alias used by older specs/call sites.
   def observations_health_recency_copy(status)
-    RECENCY_STATUS_COPY[status.to_s] || status.to_s.humanize
+    case status.to_s
+    when "green" then EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::HEALTHY)
+    when "yellow" then EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::WARNING)
+    when "red" then EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::NEEDS_ATTENTION)
+    else
+      observations_health_status_copy(status)
+    end
+  end
+
+  def observations_health_status_caption(section)
+    count = section["observations_count"].to_i
+    last_at = section["last_published_at"]
+    never = section["never"] == true || (last_at.blank? && count.zero?)
+
+    if never && count.zero?
+      return "Never published"
+    end
+
+    parts = []
+    parts << "#{count} #{'OGO'.pluralize(count)}" if count.positive?
+
+    if last_at.present?
+      parsed = Time.zone.parse(last_at.to_s)
+      parts << "last #{time_ago_in_words(parsed)} ago" if parsed
+    end
+
+    parts.join(", ").presence || "No data yet"
   end
 
   def observations_health_recency_caption(section)
-    count = section["observations_count"].to_i
-    label = "#{count} #{'OGO'.pluralize(count)}"
-    return label if count.zero?
-
-    last_at = section["last_published_at"]
-    return label if last_at.blank?
-
-    parsed = Time.zone.parse(last_at)
-    return label unless parsed
-
-    "#{label}, last #{time_ago_in_words(parsed)} ago"
+    observations_health_status_caption(section)
   end
 
-  def observations_health_recency_alert_class(status)
+  def observations_health_status_alert_class(status)
     case status.to_s
-    when "green"
+    when EngagementHealth::HEALTHY, "green"
       "alert alert-success mb-0 py-2"
-    when "yellow"
+    when EngagementHealth::WARNING, "yellow"
       "alert alert-warning mb-0 py-2"
     else
       "alert alert-danger mb-0 py-2"
     end
+  end
+
+  def observations_health_recency_alert_class(status)
+    observations_health_status_alert_class(status)
   end
 
   def observations_health_band_alert_class(band)
@@ -56,9 +76,9 @@ module ObservationsHealthHelper
 
   def observations_health_definition_lines
     [
-      "Spotlight Healthy / Ok / Needs attention uses only Given and Received (worst of the two).",
-      "Given: green if a non-journal OGO was published in the last #{RECENCY_DAYS} days; yellow if older; red if never.",
-      "Received: same recency rules for published OGOs where they are an observee (self-journals count only when they are the observee).",
+      "Spotlight Healthy / Warning / Needs Attention uses only Given and Received (worst of the two).",
+      "Given: Healthy if a non-journal OGO was published in the last #{OGO_HEALTHY_DAYS} days; Warning if #{OGO_HEALTHY_DAYS + 1}–#{OGO_NEEDS_ATTENTION_DAYS - 1}; Needs Attention if ≥ #{OGO_NEEDS_ATTENTION_DAYS} days or never.",
+      "Received: same Gruuv Health rules for published OGOs where they are an observee (self-journals count only when they are the observee).",
       "Kudos mix: ratio of kudos-style vs constructive OGOs they authored (healthy target about #{Insights::ObservationsRatingHealth::KUDOS_CONSTRUCTIVE_HEALTHY_RATIO_LABEL}).",
       "Rating intensity: ratio of everyday (Solid + Misaligned) to extreme (Exceptional + Concerning) ratings on OGOs they authored (healthy target about 3:1)."
     ]
@@ -93,20 +113,32 @@ module ObservationsHealthHelper
     )
   end
 
-  def observations_health_recency_popover_content(column_label)
+  def observations_health_status_popover_content(column_label)
     content_tag(:div, class: "small") do
       safe_join([
         content_tag(:p, class: "mb-2") do
-          "#{column_label} uses published OGOs only (not drafts or journals excluded by the Given/Received rules)."
+          "#{column_label} uses Gruuv Health (same rules as 1:1 Hub Overview) for published OGOs only."
         end,
         content_tag(:ul, class: "mb-0 ps-3") do
           safe_join([
-            content_tag(:li, "Healthy — published in the last #{RECENCY_DAYS} days.", class: "mb-1"),
-            content_tag(:li, "Stale — last publish was more than #{RECENCY_DAYS} days ago.", class: "mb-1"),
-            content_tag(:li, "Never — no qualifying published OGOs yet.", class: "mb-0")
+            content_tag(:li, "Healthy — published in the last #{OGO_HEALTHY_DAYS} days.", class: "mb-1"),
+            content_tag(
+              :li,
+              "Warning — last publish was #{OGO_HEALTHY_DAYS + 1}–#{OGO_NEEDS_ATTENTION_DAYS - 1} days ago.",
+              class: "mb-1"
+            ),
+            content_tag(
+              :li,
+              "Needs Attention — last publish was ≥ #{OGO_NEEDS_ATTENTION_DAYS} days ago, or never.",
+              class: "mb-0"
+            )
           ])
         end
       ])
     end
+  end
+
+  def observations_health_recency_popover_content(column_label)
+    observations_health_status_popover_content(column_label)
   end
 end
