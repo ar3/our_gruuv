@@ -9,7 +9,9 @@ RSpec.describe 'Public About and New Us pages', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('About OurGruuv')
+      expect(response.body).to include('MAAP')
       expect(response.body).to include(new_us_path)
+      expect(response.body).to include('Jobs we')
     end
   end
 
@@ -21,9 +23,15 @@ RSpec.describe 'Public About and New Us pages', type: :request do
       expect(response.body).to include('New Us')
       expect(response.body).to include('The people')
       expect(response.body).to include('AR3')
-      expect(response.body).to include('Something fun')
+      expect(response.body).to include('Chaotic Good')
+      expect(response.body).to include('Artificer')
       expect(response.body).to include('Skills')
       expect(response.body).to include('Why New Us')
+      expect(response.body).to include('ache for')
+      expect(response.body).to include('People Partner')
+      expect(response.body).to include('Coming soon')
+      expect(response.body).to include('Indianapolis')
+      expect(response.body).to include('ourgruuv@ar3.me')
       expect(response.body).to include(about_path)
     end
   end
