@@ -68,11 +68,8 @@ The Core module provides the foundational infrastructure that enables all other 
 - **Deliverable**: Robust test coverage for organization-scoped access management
 
 ### **Layout System**
-- [x] User-selectable navigation layouts (horizontal/vertical)
-- [x] `authenticated-horizontal-navigation.html.haml` - Default horizontal navigation
-- [x] `authenticated-vertical-navigation.html.haml` - Vertical sidebar navigation
-- [x] User preferences stored and persisted across sessions
-- [x] Dynamic layout switching via user dropdown menu
+- [x] Authenticated vertical sidebar navigation (`authenticated-vertical-navigation.html.haml`)
+- [x] Vertical nav behavior preferences (lock open / closed unless opened), persisted across sessions
 
 ## DREAMING 💭
 
@@ -127,12 +124,11 @@ The Core module provides the foundational infrastructure that enables all other 
 - **Future: Security Hardening** - Enhanced validation, comprehensive testing, audit logging foundation, and bulletproof security for production use
 
 ### **Layout Usage**
-**All authenticated pages** use either:
-- `authenticated-horizontal-navigation.html.haml` (default)
-- `authenticated-vertical-navigation.html.haml` (user preference)
+**All authenticated pages** use:
+- `authenticated-vertical-navigation.html.haml`
 
-Both layouts provide:
-- Consistent navigation structure with Align, Collab, and Transform menus
+The layout provides:
+- Consistent vertical sidebar navigation
 - User profile dropdown with organization switching
 - Impersonation warnings and controls
 - Responsive mobile navigation

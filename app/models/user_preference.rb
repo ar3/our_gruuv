@@ -5,7 +5,6 @@ class UserPreference < ApplicationRecord
   WEEKLY_DIGEST_TOGGLE_KEYS = %w[about_me_digest_enabled one_on_one_digest_enabled].freeze
 
   DEFAULT_PREFERENCES = {
-    layout: 'vertical',
     vertical_nav_open: false,
     vertical_nav_locked: false,
     vertical_nav_mode: 'closed_unless_opened',
@@ -50,10 +49,6 @@ class UserPreference < ApplicationRecord
   end
   
   # Convenience methods for common preferences
-  def layout
-    preference(:layout)
-  end
-  
   def vertical_nav_open?
     preference(:vertical_nav_open)
   end

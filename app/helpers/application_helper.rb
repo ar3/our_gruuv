@@ -733,21 +733,11 @@ module ApplicationHelper
     end
   end
 
-  # Start page picker only when top/side nav is shown; clean layout always lands on Start Here.
-  def show_start_page_picker_on_start_here?(prefs)
-    %w[vertical horizontal].include?(prefs.layout.to_s)
-  end
-
-
-  # Authenticated header brand: no-nav layout always links to Start Here.
+  # Authenticated header brand links to the user's preferred start page.
   def organization_header_brand_path(organization, company_teammate)
     return dashboard_organization_path(organization) unless company_teammate
 
-    if current_user_preferences&.layout.to_s == 'no_nav'
-      organization_start_here_path(organization)
-    else
-      preferred_start_page_path(organization, company_teammate)
-    end
+    preferred_start_page_path(organization, company_teammate)
   end
 
   def start_here_dashboard_service

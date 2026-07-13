@@ -8,7 +8,6 @@ RSpec.describe 'Vertical Navigation', type: :request do
   
   before do
     sign_in_as_teammate_for_request(person, organization)
-    user_preference.update_preference(:layout, 'vertical')
     user_preference.update_preference(:vertical_nav_open, true)
     # Mock policy for check-ins visibility
     allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_check_ins?).and_return(true)

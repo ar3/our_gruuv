@@ -8,11 +8,10 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
   
   before do
     sign_in_as(person, organization)
-    user_preference.update_preference(:layout, 'vertical')
   end
   
   describe 'navigation visibility' do
-    it 'shows vertical navigation when layout is vertical' do
+    it 'shows vertical navigation' do
       visit dashboard_organization_path(organization)
       
       expect(page).to have_css('.vertical-nav')
@@ -105,25 +104,17 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
     end
   end
   
-  describe 'layout switching' do
+  describe 'vertical nav behavior settings' do
     before do
-      user_preference.update_preference(:layout, 'horizontal')
-      visit dashboard_organization_path(organization)
+      visit organization_start_here_path(organization)
     end
     
-    it 'switches to vertical layout from user menu' do
-      # Layout switching is now managed on Start Here under Navigation Settings
-      visit organization_start_here_path(organization)
+    it 'shows vertical nav behavior options on Start Here' do
       expect(page).to have_link('Other ways to customize OurGruuv', wait: 5)
       click_link 'Other ways to customize OurGruuv'
-      expect(page).to have_button('Vertical', wait: 5)
-
-      click_button 'Vertical'
-      expect(page).to have_css('.vertical-nav', wait: 5)
-      
-      # Verify preference updated
-      user_preference.reload
-      expect(user_preference.layout).to eq('vertical')
+      expect(page).to have_content('Vertical nav behavior', wait: 5)
+      expect(page).to have_content('Lock the vertical nav bar open')
+      expect(page).to have_css('.vertical-nav')
     end
   end
   

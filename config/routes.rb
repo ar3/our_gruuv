@@ -770,7 +770,6 @@ Rails.application.routes.draw do
 
   # User preferences
   resource :user_preferences, only: [] do
-    patch :layout, on: :collection, to: 'user_preferences#update_layout'
     patch :vertical_nav, on: :collection, to: 'user_preferences#update_vertical_nav'
     patch :vertical_nav_mode, on: :collection, to: 'user_preferences#update_vertical_nav_mode'
   end

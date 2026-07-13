@@ -156,7 +156,6 @@ RSpec.describe 'Organizations::People Show', type: :request do
 
           expect(response).to have_http_status(:success)
           expect(response.body).to include('Navigation Settings')
-          expect(response.body).to include('Navigation style')
           expect(response.body).to include('Vertical nav behavior')
           expect(response.body).to include('Lock the vertical nav bar open')
           expect(response.body).to include('Keep the vertical nav bar closed unless I open it')

@@ -9,115 +9,6 @@ RSpec.describe 'User Preferences', type: :request do
     sign_in_as_teammate_for_request(person, organization)
   end
   
-  describe 'PATCH /user_preferences/layout' do
-    context 'with valid layout' do
-      it 'updates the layout preference' do
-        expect {
-          patch layout_user_preferences_path, params: { layout: 'horizontal' }
-        }.to change { user_preference.reload.layout }.from('vertical').to('horizontal')
-      end
-
-      it 'accepts no_nav layout' do
-        expect {
-          patch layout_user_preferences_path, params: { layout: 'no_nav' }
-        }.to change { user_preference.reload.layout }.to('no_nav')
-      end
-
-      it 'forces org start page to Start Here when switching to no_nav' do
-        key = "start_page_#{organization.id}"
-        user_preference.update_preference(key, 'about_me')
-        patch layout_user_preferences_path, params: { layout: 'no_nav' }
-        expect(user_preference.reload.preference(key)).to eq('start_here')
-      end
-      
-      it 'redirects back with notice' do
-        patch layout_user_preferences_path, params: { layout: 'vertical' }
-        
-        expect(response).to redirect_to(root_path)
-        expect(flash[:notice]).to eq('Layout preference updated')
-      end
-      
-      it 'returns JSON when requested' do
-        patch layout_user_preferences_path, params: { layout: 'vertical' }, headers: { 'Accept' => 'application/json' }
-        
-        expect(response).to have_http_status(:success)
-        json = JSON.parse(response.body)
-        expect(json['layout']).to eq('vertical')
-      end
-      
-      it 'persists the preference across requests' do
-        patch layout_user_preferences_path, params: { layout: 'vertical' }
-        
-        # Verify preference was saved
-        expect(user_preference.reload.layout).to eq('vertical')
-        
-        # Simulate a new request - preference should still be vertical
-        get dashboard_organization_path(organization)
-        
-        # Preference should persist
-        expect(UserPreference.for_person(person).layout).to eq('vertical')
-      end
-    end
-    
-    context 'with invalid layout' do
-      it 'returns error for invalid layout' do
-        patch layout_user_preferences_path, params: { layout: 'invalid' }, headers: { 'Accept' => 'application/json' }
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        json = JSON.parse(response.body)
-        expect(json['error']).to eq('Invalid layout')
-      end
-      
-      it 'does not update preference with invalid layout' do
-        original_layout = user_preference.layout
-        
-        patch layout_user_preferences_path, params: { layout: 'invalid' }, headers: { 'Accept' => 'application/json' }
-        
-        expect(user_preference.reload.layout).to eq(original_layout)
-      end
-    end
-    
-    context 'when not authenticated' do
-      before do
-        sign_out_teammate_for_request
-      end
-      
-      it 'redirects to login' do
-        patch layout_user_preferences_path, params: { layout: 'vertical' }
-        
-        expect(response).to redirect_to(login_path)
-      end
-    end
-    
-    context 'authorization' do
-      let(:other_person) { create(:person) }
-      let(:other_organization) { create(:organization) }
-      let(:other_preference) { UserPreference.for_person(other_person) }
-      
-      before do
-        sign_in_as_teammate_for_request(other_person, other_organization)
-      end
-      
-      it 'allows users to update their own preferences' do
-        patch layout_user_preferences_path, params: { layout: 'vertical' }
-        
-        expect(response).to have_http_status(:redirect)
-        expect(other_preference.reload.layout).to eq('vertical')
-      end
-      
-      it 'does not allow users to update other users preferences' do
-        # This is tested via Pundit policy - the controller should prevent this
-        # The preference should only update for the current user
-        original_layout = user_preference.layout
-        
-        patch layout_user_preferences_path, params: { layout: 'vertical' }
-        
-        # Other person's preference should not change
-        expect(user_preference.reload.layout).to eq(original_layout)
-      end
-    end
-  end
-  
   describe 'PATCH /user_preferences/vertical_nav' do
     context 'updating open state' do
       it 'updates open state to true' do
@@ -278,73 +169,18 @@ RSpec.describe 'User Preferences', type: :request do
     end
   end
   
-  describe 'integration with layout selection' do
-    it 'uses vertical layout when preference is set to vertical' do
-      user_preference.update_preference(:layout, 'vertical')
-      
+  describe 'authenticated layout' do
+    it 'uses vertical navigation chrome' do
       get dashboard_organization_path(organization)
       follow_redirect! if response.redirect?
       
       expect(response).to have_http_status(:success)
-      # Verify preference is actually set
-      expect(UserPreference.for_person(person).layout).to eq('vertical')
-      # Verify vertical layout is used by checking for vertical nav elements
-      expect(response.body).to include('vertical-nav-top-bar')
-      expect(response.body).to include('vertical-nav')
-    end
-    
-    it 'uses horizontal layout when preference is set to horizontal' do
-      user_preference.update_preference(:layout, 'horizontal')
-      
-      get dashboard_organization_path(organization)
-      follow_redirect! if response.redirect?
-      
-      expect(response).to have_http_status(:success)
-      # Horizontal layout should have navbar, not vertical nav
-      expect(response.body).to include('navbar navbar-expand-lg')
-      expect(response.body).not_to include('vertical-nav-top-bar')
-    end
-
-    it 'uses no-nav layout without sidebar or horizontal navbar' do
-      user_preference.update_preference(:layout, 'no_nav')
-
-      get dashboard_organization_path(organization)
-      follow_redirect! if response.redirect?
-
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('vertical-nav-top-bar')
-      expect(response.body).not_to include('vertical-nav"')
-      expect(response.body).not_to include('navbar-expand-lg')
-    end
-
-    it 'links navbar brand to Start Here when layout is no_nav' do
-      user_preference.update_preference(:layout, 'no_nav')
-
-      get dashboard_organization_path(organization)
-      follow_redirect! if response.redirect?
-
-      start_here_href = organization_start_here_path(organization)
-      expect(response.body).to include(%(href="#{start_here_href}"))
-    end
-    
-    it 'defaults to vertical layout when no preference exists' do
-      user_preference.destroy
-      
-      get dashboard_organization_path(organization)
-      follow_redirect! if response.redirect?
-      
-      expect(response).to have_http_status(:success)
-      # Should default to vertical - verify by checking for vertical nav elements
       expect(response.body).to include('vertical-nav-top-bar')
       expect(response.body).to include('vertical-nav')
     end
   end
 
   describe 'vertical nav state on redirects' do
-    before do
-      user_preference.update_preference(:layout, 'vertical')
-    end
-
     it 'closes the vertical nav after redirect when mode is closed_unless_opened' do
       user_preference.update_preference(:vertical_nav_open, true)
       user_preference.update_preference(:vertical_nav_locked, false)
@@ -369,4 +205,3 @@ RSpec.describe 'User Preferences', type: :request do
     end
   end
 end
-

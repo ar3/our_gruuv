@@ -11,7 +11,7 @@ This document defines the standard navigation patterns used throughout the OurGr
 
 ## Page context: return back vs hierarchy (authenticated v1)
 
-Use `content_for :go_back_link` in layouts that yield it (authenticated vertical and horizontal navigation).
+Use `content_for :go_back_link` in layouts that yield it (authenticated vertical navigation).
 
 ### When the app has an explicit return URL
 

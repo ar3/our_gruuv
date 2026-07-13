@@ -44,32 +44,17 @@ RSpec.describe 'Organizations::StartHere', type: :request do
     it 'shows Other ways to customize section with navigation and digest info alert' do
       get organization_start_here_path(company)
       expect(response.body).to include('Other ways to customize OurGruuv')
-      expect(response.body).to include('Navigation style')
       expect(response.body).to include('Vertical nav behavior')
       expect(response.body).to include('Lock the vertical nav bar open')
       expect(response.body).to include('Keep the vertical nav bar closed unless I open it')
       expect(response.body).to include('Notification timing and delivery preferences moved to the Notifications tab on your profile.')
       expect(response.body).to include('Open notification settings')
-      expect(response.body).to include('Clean/No Navigation')
     end
 
-    it 'shows start page picker when layout is vertical or horizontal' do
+    it 'shows start page picker' do
       get organization_start_here_path(company)
       expect(response.body).to include('Start page when I open')
-    end
-
-    it 'does not show start page picker when layout is no_nav' do
-      UserPreference.for_person(person).update_preference(:layout, 'no_nav')
-      get organization_start_here_path(company)
-      expect(response.body).not_to include('id="start_here_start_page"')
-    end
-
-    it 'normalizes start page to Start Here when layout is no_nav' do
-      key = "start_page_#{company.id}"
-      UserPreference.for_person(person).update_preference(:layout, 'no_nav')
-      UserPreference.for_person(person).update_preference(key, 'insights')
-      get organization_start_here_path(company)
-      expect(UserPreference.for_person(person).reload.preference(key)).to eq('start_here')
+      expect(response.body).to include('id="start_here_start_page"')
     end
   end
 

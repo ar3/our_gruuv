@@ -5,7 +5,6 @@ class Organizations::StartHereController < Organizations::OrganizationNamespaceB
 
   def show
     authorize current_organization, :show?
-    ensure_start_here_when_no_nav_layout!
     @start_here_dashboard = start_here_dashboard
     @start_here_dashboard.ensure_manager_default_if_blank!
   end
@@ -130,16 +129,6 @@ class Organizations::StartHereController < Organizations::OrganizationNamespaceB
   rescue StandardError => e
     Rails.logger.error("[StartHere#widget_dashboards] widget_id=#{widget_id.inspect} #{e.class}: #{e.message}\n#{e.backtrace&.first(8)&.join("\n")}")
     { ok: false, error: "Could not load this widget’s description." }
-  end
-
-  def ensure_start_here_when_no_nav_layout!
-    return unless current_company_teammate
-    return unless current_user_preferences.layout.to_s == "no_nav"
-
-    key = helpers.start_page_preference_key(current_organization)
-    return if current_user_preferences.preference(key).to_s == "start_here"
-
-    current_user_preferences.update_preference(key, "start_here")
   end
 
   def start_here_dashboard

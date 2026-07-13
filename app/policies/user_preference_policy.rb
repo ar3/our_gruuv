@@ -7,10 +7,6 @@ class UserPreferencePolicy < ApplicationPolicy
     viewing_teammate.person == record.person
   end
   
-  def update_layout?
-    update?
-  end
-  
   def update_vertical_nav?
     update?
   end

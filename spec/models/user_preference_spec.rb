@@ -11,14 +11,12 @@ RSpec.describe UserPreference, type: :model do
     let(:preference) { UserPreference.for_person(person) }
     
     it 'sets default preferences' do
-      expect(preference.preference(:layout)).to eq('vertical')
       expect(preference.preference(:vertical_nav_open)).to eq(false)
       expect(preference.preference(:vertical_nav_locked)).to eq(false)
       expect(preference.preference(:vertical_nav_mode)).to eq('closed_unless_opened')
     end
     
     it 'provides convenience methods' do
-      expect(preference.layout).to eq('vertical')
       expect(preference.vertical_nav_open?).to eq(false)
       expect(preference.vertical_nav_locked?).to eq(false)
       expect(preference.vertical_nav_mode).to eq('closed_unless_opened')
@@ -33,7 +31,7 @@ RSpec.describe UserPreference, type: :model do
     end
     
     it 'returns existing preferences if they exist' do
-      existing = UserPreference.create!(person: person, preferences: { layout: 'vertical' })
+      existing = UserPreference.create!(person: person, preferences: { vertical_nav_open: false })
       
       expect(UserPreference.for_person(person)).to eq(existing)
     end
@@ -43,23 +41,23 @@ RSpec.describe UserPreference, type: :model do
     let(:preference) { UserPreference.for_person(person) }
     
     it 'updates a preference value' do
-      preference.update_preference(:layout, 'vertical')
+      preference.update_preference(:vertical_nav_open, true)
       
-      expect(preference.reload.preference(:layout)).to eq('vertical')
+      expect(preference.reload.preference(:vertical_nav_open)).to eq(true)
     end
     
     it 'saves the changes' do
       expect {
-        preference.update_preference(:layout, 'horizontal')
-      }.to change { preference.reload.preference(:layout) }.from('vertical').to('horizontal')
+        preference.update_preference(:vertical_nav_locked, true)
+      }.to change { preference.reload.preference(:vertical_nav_locked) }.from(false).to(true)
     end
   end
   
   describe '#preference' do
-    let(:preference) { UserPreference.create!(person: person, preferences: { layout: 'vertical' }) }
+    let(:preference) { UserPreference.create!(person: person, preferences: { vertical_nav_locked: true }) }
     
     it 'returns the preference value' do
-      expect(preference.preference(:layout)).to eq('vertical')
+      expect(preference.preference(:vertical_nav_locked)).to eq(true)
     end
     
     it 'returns default if preference is not set' do
@@ -73,7 +71,8 @@ RSpec.describe UserPreference, type: :model do
       preference.valid?
       
       expect(preference.preferences).to be_a(Hash)
-      expect(preference.preferences).to include('layout', 'vertical_nav_open', 'vertical_nav_locked', 'vertical_nav_mode')
+      expect(preference.preferences).to include('vertical_nav_open', 'vertical_nav_locked', 'vertical_nav_mode')
+      expect(preference.preferences).not_to include('layout')
     end
   end
 

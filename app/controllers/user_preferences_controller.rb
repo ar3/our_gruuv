@@ -2,34 +2,7 @@ class UserPreferencesController < ApplicationController
   before_action :authenticate_user!
 
   VERTICAL_NAV_MODES = %w[locked_open closed_unless_opened].freeze
-  
-  def update_layout
-    authorize current_user_preferences, :update_layout?
-    
-    layout = params[:layout]
-    unless %w[horizontal vertical no_nav].include?(layout)
-      render json: { error: 'Invalid layout' }, status: :unprocessable_entity
-      return
-    end
-    
-    if current_user_preferences.update_preference(:layout, layout)
-      if layout == "no_nav" && current_company_teammate
-        key = "start_page_#{current_company_teammate.organization_id}"
-        current_user_preferences.update_preference(key, "start_here")
-      end
 
-      respond_to do |format|
-        format.html { redirect_back(fallback_location: root_path, notice: 'Layout preference updated') }
-        format.json { render json: { layout: layout } }
-      end
-    else
-      respond_to do |format|
-        format.html { redirect_back(fallback_location: root_path, alert: 'Failed to update layout preference') }
-        format.json { render json: { error: 'Failed to update' }, status: :unprocessable_entity }
-      end
-    end
-  end
-  
   def update_vertical_nav
     authorize current_user_preferences, :update_vertical_nav?
 
