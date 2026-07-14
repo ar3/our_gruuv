@@ -1128,14 +1128,24 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
     assignment_ids = sorted_active.map(&:assignment_id).uniq
     @latest_finalized_assignment_check_ins_by_assignment_id = {}
+    open_check_ins_by_assignment_id = {}
     if assignment_ids.any?
-      AssignmentCheckIn
-        .where(company_teammate: @teammate, assignment_id: assignment_ids)
+      check_ins_scope = AssignmentCheckIn.where(company_teammate: @teammate, assignment_id: assignment_ids)
+
+      check_ins_scope
         .closed
         .includes(:assignment, manager_completed_by_teammate: :person, finalized_by_teammate: :person)
         .order(official_check_in_completed_at: :desc)
         .each do |check_in|
           @latest_finalized_assignment_check_ins_by_assignment_id[check_in.assignment_id] ||= check_in
+        end
+
+      check_ins_scope
+        .open
+        .includes(:assignment)
+        .order(check_in_started_on: :desc, id: :desc)
+        .each do |check_in|
+          open_check_ins_by_assignment_id[check_in.assignment_id] ||= check_in
         end
     end
 
@@ -1144,7 +1154,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
     @my_growth_experiences_summary = MyGrowth::ExperiencesSummary.build(
       teammate: @teammate,
-      latest_finalized_check_ins_by_assignment_id: @latest_finalized_assignment_check_ins_by_assignment_id
+      latest_finalized_check_ins_by_assignment_id: @latest_finalized_assignment_check_ins_by_assignment_id,
+      viewer_teammate: current_company_teammate,
+      open_check_ins_by_assignment_id: open_check_ins_by_assignment_id
     )
   end
 

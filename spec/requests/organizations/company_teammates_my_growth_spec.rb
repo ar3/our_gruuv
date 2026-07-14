@@ -60,8 +60,27 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           expect(response.body).to include('add up to 100%')
           expect(response.body).to include('my-growth-experiences-energy-pie-chart')
           expect(response.body).to include('my-growth-experiences-rating-pie-chart')
+          expect(response.body).not_to include('my-growth-experiences-inflight-rating-pie-chart')
           expect(response.body).to include('Delivery Lead')
           expect(response.body).to include('Team Coach')
+        end
+
+        it 'shows the in-flight rating pie when the managerial viewer completed their open side' do
+          create(
+            :assignment_check_in,
+            teammate: employee_teammate,
+            assignment: assignment_one,
+            employee_completed_at: nil,
+            manager_completed_at: Time.current,
+            manager_completed_by_teammate: manager_teammate,
+            manager_rating: 'working_to_meet',
+            official_check_in_completed_at: nil
+          )
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('Energy by your in-flight check-in ratings')
+          expect(response.body).to include('my-growth-experiences-inflight-rating-pie-chart')
         end
 
         it 'shows warning summary and bypass link when energy is 95%' do

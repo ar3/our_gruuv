@@ -87,7 +87,8 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
 
     @my_growth_experiences_summary = MyGrowth::ExperiencesSummary.for_teammate(
       @teammate,
-      organization: organization
+      organization: organization,
+      viewer_teammate: current_company_teammate
     )
 
     render "organizations/teammates/position_check_ins/show"

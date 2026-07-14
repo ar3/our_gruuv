@@ -5,6 +5,8 @@
 - show_divider = local_assigns.fetch(:show_divider, true)
 - energy_chart_id = "#{chart_id_prefix}-energy-pie-chart"
 - rating_chart_id = "#{chart_id_prefix}-rating-pie-chart"
+- inflight_rating_chart_id = "#{chart_id_prefix}-inflight-rating-pie-chart"
+- show_inflight = summary.show_inflight_viewer_rating_chart && summary.energy_by_inflight_viewer_rating_chart.any?
 
 - if show_divider
   %hr.my-4
@@ -32,6 +34,16 @@
         - else
           %p.text-muted.mb-0 No active assignments with energy allocated.
 
+- if show_inflight
+  .row.mb-3
+    .col-12
+      .card
+        .card-body
+          %h6.mb-3 Energy by your in-flight check-in ratings
+          %p.text-muted.small.mb-3
+            Same energy mix as above, but assignments where you already completed your side of an open check-in use your unfinalized rating instead of the last finalized one.
+          %div{id: inflight_rating_chart_id, style: 'height: 300px;'}
+
 - if summary.chart_data_present?
   :javascript
     (function() {
@@ -39,6 +51,32 @@
       var ratingChartId = #{rating_chart_id.to_json};
       var energyData = #{summary.energy_by_assignment_chart.to_json};
       var ratingData = #{summary.energy_by_rating_chart.to_json};
+      var inflightRatingChartId = #{show_inflight ? inflight_rating_chart_id.to_json : 'null'};
+      var inflightRatingData = #{show_inflight ? summary.energy_by_inflight_viewer_rating_chart.to_json : '[]'};
+      var showInflight = #{show_inflight.to_json};
+
+      function pieChartOptions(data) {
+        return {
+          chart: { type: 'pie' },
+          title: { text: null },
+          accessibility: { enabled: false },
+          plotOptions: {
+            pie: {
+              allowPointSelect: true,
+              cursor: 'pointer',
+              dataLabels: {
+                enabled: true,
+                format: '<b>{point.name}</b>: {point.y}% ({point.percentage:.1f}%)'
+              }
+            }
+          },
+          series: [{
+            name: 'Energy',
+            colorByPoint: false,
+            data: data
+          }]
+        };
+      }
 
       function initExperiencesSummaryCharts() {
         if (typeof Highcharts === 'undefined') return;
@@ -69,28 +107,16 @@
 
         var ratingEl = document.getElementById(ratingChartId);
         if (ratingEl && ratingData.length > 0) {
-          Highcharts.chart(ratingChartId, {
-            chart: { type: 'pie' },
-            title: { text: null },
-            accessibility: { enabled: false },
-            plotOptions: {
-              pie: {
-                allowPointSelect: true,
-                cursor: 'pointer',
-                dataLabels: {
-                  enabled: true,
-                  format: '<b>{point.name}</b>: {point.y}% ({point.percentage:.1f}%)'
-                }
-              }
-            },
-            series: [{
-              name: 'Energy',
-              colorByPoint: false,
-              data: ratingData
-            }]
-          });
+          Highcharts.chart(ratingChartId, pieChartOptions(ratingData));
         } else if (ratingEl) {
           ratingEl.innerHTML = '<p class="text-muted mb-0">No rating data to chart.</p>';
+        }
+
+        if (showInflight && inflightRatingChartId) {
+          var inflightEl = document.getElementById(inflightRatingChartId);
+          if (inflightEl && inflightRatingData.length > 0) {
+            Highcharts.chart(inflightRatingChartId, pieChartOptions(inflightRatingData));
+          }
         }
       }
 

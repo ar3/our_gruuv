@@ -124,4 +124,114 @@ RSpec.describe MyGrowth::ExperiencesSummary do
       )
     end
   end
+
+  describe 'energy_by_inflight_viewer_rating_chart' do
+    let(:manager_person) { create(:person) }
+    let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
+
+    before do
+      create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      create(:employment_tenure, teammate: teammate, company: organization, started_at: 1.year.ago, ended_at: nil,
+             manager_teammate: manager_teammate)
+    end
+
+    def build_with_viewer(energy_by_assignment:, finalized: {}, open: {}, viewer:)
+      energy_by_assignment.each do |assignment, energy|
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          anticipated_energy_percentage: energy,
+          ended_at: nil
+        )
+      end
+
+      described_class.build(
+        teammate: teammate.reload,
+        latest_finalized_check_ins_by_assignment_id: finalized,
+        open_check_ins_by_assignment_id: open,
+        viewer_teammate: viewer
+      )
+    end
+
+    it 'hides the chart when the viewer has not completed any open side' do
+      summary = build_with_viewer(
+        energy_by_assignment: { assignment_a => 100 },
+        viewer: teammate
+      )
+
+      expect(summary.show_inflight_viewer_rating_chart).to eq(false)
+      expect(summary.energy_by_inflight_viewer_rating_chart).to eq([])
+    end
+
+    it 'swaps employee open ratings into the hybrid chart for the employee viewer' do
+      finalized_a = create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: teammate,
+        assignment: assignment_a,
+        official_rating: 'meeting'
+      )
+      open_a = create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment_a,
+        employee_completed_at: Time.current,
+        employee_rating: 'exceeding',
+        manager_completed_at: nil,
+        official_check_in_completed_at: nil
+      )
+      open_b = create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment_b,
+        employee_completed_at: nil,
+        employee_rating: nil,
+        manager_completed_at: nil,
+        official_check_in_completed_at: nil
+      )
+
+      summary = build_with_viewer(
+        energy_by_assignment: { assignment_a => 40, assignment_b => 60 },
+        finalized: { assignment_a.id => finalized_a },
+        open: { assignment_a.id => open_a, assignment_b.id => open_b },
+        viewer: teammate
+      )
+
+      expect(summary.show_inflight_viewer_rating_chart).to eq(true)
+      expect(summary.energy_by_inflight_viewer_rating_chart).to contain_exactly(
+        hash_including(name: 'Exceeding Expectations', y: 40),
+        hash_including(name: 'No finalized check-in', y: 60)
+      )
+      expect(summary.energy_by_rating_chart).to contain_exactly(
+        hash_including(name: 'Meeting expectations', y: 40),
+        hash_including(name: 'No finalized check-in', y: 60)
+      )
+    end
+
+    it 'swaps manager open ratings for a managerial viewer' do
+      open_a = create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment_a,
+        employee_completed_at: nil,
+        manager_completed_at: Time.current,
+        manager_completed_by_teammate: manager_teammate,
+        manager_rating: 'working_to_meet',
+        official_check_in_completed_at: nil
+      )
+
+      summary = build_with_viewer(
+        energy_by_assignment: { assignment_a => 55, assignment_b => 45 },
+        open: { assignment_a.id => open_a },
+        viewer: manager_teammate
+      )
+
+      expect(summary.show_inflight_viewer_rating_chart).to eq(true)
+      expect(summary.energy_by_inflight_viewer_rating_chart).to contain_exactly(
+        hash_including(name: 'Working to Meet expectations', y: 55),
+        hash_including(name: 'No finalized check-in', y: 45)
+      )
+    end
+  end
 end

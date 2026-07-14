@@ -21,3 +21,12 @@
           show_divider: false
         %p.text-muted.mb-0.mt-3
           In order to have this up-to-date, finalize all assignment check-ins and come back to this page.
+
+        .mt-3
+          = render 'shared/og_tips/callout',
+            tip_id: 'og-tip-position-assignment-energy-ratings',
+            title: 'OG pro tip',
+            tone: :loud,
+            expanded: true,
+            collapsible: false,
+            body: og_tip_position_assignment_energy_rating_body(summary: @my_growth_experiences_summary)

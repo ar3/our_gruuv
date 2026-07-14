@@ -1,0 +1,31 @@
+-# Reusable OG pro tip callout.
+-# locals:
+-#   body: (required) String or HTML-safe content
+-#   title: (optional) default "OG pro tip"
+-#   tip_id: (optional) unique id for collapse targeting; auto-generated if blank when collapsible
+-#   expanded: (optional) default true — initial open state when collapsible
+-#   collapsible: (optional) default true — when false, content is always shown with no toggle
+-#   tone: (optional) :loud (default) or :subtle
+- title = local_assigns.fetch(:title, 'OG pro tip')
+- expanded = local_assigns.fetch(:expanded, true)
+- collapsible = local_assigns.fetch(:collapsible, true)
+- tone = local_assigns.fetch(:tone, :loud).to_sym
+- tip_id = local_assigns[:tip_id].presence || (collapsible ? "og-tip-#{SecureRandom.hex(4)}" : nil)
+- body = local_assigns.fetch(:body)
+- tone_class = tone == :subtle ? 'og-tip--subtle' : 'og-tip--loud'
+- show_open = expanded || !collapsible
+
+.og-tip{class: tone_class, role: 'note'}
+  - if collapsible
+    %button.og-tip__toggle.btn.btn-link.text-decoration-none.p-0.d-flex.align-items-center.gap-2{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{tip_id}", "aria-expanded" => show_open.to_s, "aria-controls" => tip_id}
+      %i.bi.bi-lightbulb.og-tip__icon{"aria-hidden" => "true"}
+      %span.og-tip__title= title
+      %i.bi.bi-chevron-down.og-tip__chevron.ms-auto{"aria-hidden" => "true"}
+    .og-tip__body.collapse{id: tip_id, class: (show_open ? 'show' : nil)}
+      .og-tip__content= body
+  - else
+    .og-tip__header.d-flex.align-items-center.gap-2
+      %i.bi.bi-lightbulb.og-tip__icon{"aria-hidden" => "true"}
+      %span.og-tip__title= title
+    .og-tip__body
+      .og-tip__content= body
