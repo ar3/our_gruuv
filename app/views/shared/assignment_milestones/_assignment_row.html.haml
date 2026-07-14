@@ -1,0 +1,21 @@
+-# Locals: assignment, current_milestone, form_param_prefix, can_update, show_no_association, filterable
+- department_label = assignment.department&.display_name || "Company-wide"
+- row_class = local_assigns[:filterable] ? "filterable-option" : nil
+%tr{class: row_class}
+  %td
+    %small.text-muted.d-block= department_label
+    %strong= assignment.title
+    - if assignment.tagline.present?
+      %br
+      %small.text-muted= assignment.tagline.truncate(100)
+  %td
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Milestone level for #{assignment.title}"}
+      - [1, 2, 3, 4, 5].each do |level|
+        - radio_id = "assignment_#{assignment.id}_milestone_#{level}"
+        = radio_button_tag "#{form_param_prefix}[#{assignment.id}]", level, (current_milestone == level), class: "btn-check", id: radio_id, disabled: !can_update
+        = label_tag radio_id, level, class: "btn btn-outline-primary"
+      - if show_no_association
+        - none_id = "assignment_#{assignment.id}_no_association"
+        = radio_button_tag "#{form_param_prefix}[#{assignment.id}]", 0, current_milestone.nil?, class: "btn-check", id: none_id, disabled: !can_update
+        = label_tag none_id, class: "btn btn-outline-secondary" do
+          %em No Association

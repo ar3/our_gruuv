@@ -38,6 +38,16 @@ RSpec.describe Organizations::Abilities::AssignmentMilestonesController, type: :
         expect(assignments).to include(assignment1, assignment2, assignment3)
       end
 
+      it 'splits assignments into associated and available sections' do
+        create(:assignment_ability, ability: ability, assignment: assignment1, milestone_level: 3)
+
+        get :show, params: { organization_id: company.id, ability_id: ability.id }
+
+        expect(assigns(:associated_assignments)).to eq([assignment1])
+        expect(assigns(:available_assignments)).to include(assignment2, assignment3)
+        expect(assigns(:available_assignments)).not_to include(assignment1)
+      end
+
       it 'loads existing associations' do
         create(:assignment_ability, ability: ability, assignment: assignment1, milestone_level: 3)
         

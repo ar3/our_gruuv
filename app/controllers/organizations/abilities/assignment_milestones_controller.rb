@@ -3,8 +3,8 @@ class Organizations::Abilities::AssignmentMilestonesController < Organizations::
 
   def show
     authorize @ability
-    load_assignments_in_hierarchy
     load_existing_associations
+    load_assignments_in_hierarchy
     @form = AbilityAssignmentMilestonesForm.new(@ability)
     render layout: determine_layout
   end
@@ -18,8 +18,8 @@ class Organizations::Abilities::AssignmentMilestonesController < Organizations::
       redirect_to organization_ability_path(@organization, @ability),
                   notice: 'Assignment milestone associations were successfully updated.'
     else
-      load_assignments_in_hierarchy
       load_existing_associations
+      load_assignments_in_hierarchy
       render :show, status: :unprocessable_entity
     end
   end
@@ -31,10 +31,15 @@ class Organizations::Abilities::AssignmentMilestonesController < Organizations::
   end
 
   def load_assignments_in_hierarchy
-    assignments = Assignment.unarchived.where(company: @ability.company).includes(:department).order(:title)
-    grouped = assignments.group_by(&:department)
-    # Sort departments: nil (No Department) first, then by display_name; assignments already ordered by title
-    @assignments_by_department = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
+    assignments = Assignment.unarchived
+      .where(company: @ability.company)
+      .includes(:department)
+      .to_a
+      .sort_by { |a| [(a.department&.display_name || "Company-wide").downcase, a.title.to_s.downcase] }
+
+    associated_ids = @existing_associations.keys
+    @associated_assignments = assignments.select { |a| associated_ids.include?(a.id) }
+    @available_assignments = assignments.reject { |a| associated_ids.include?(a.id) }
     @assignments = assignments
   end
 

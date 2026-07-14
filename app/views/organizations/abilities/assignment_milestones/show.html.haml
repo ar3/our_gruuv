@@ -16,55 +16,15 @@
 = form_with model: @form, url: organization_ability_assignment_milestones_path(@organization, @ability), method: :patch, local: true do |f|
   .row.justify-content-center
     .col-lg-10
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-list-check.me-2
-            Select Milestone Requirements for Each Assignment
-        .card-body
-          - if @assignments.any?
-            .table-responsive
-              %table.table.table-hover
-                %thead
-                  %tr
-                    %th{scope: "col"} Assignment Title
-                    %th{scope: "col", colspan: "6"} Milestone Level
-                %tbody
-                  - @assignments_by_department.each do |department, assignments|
-                    %tr.table-secondary
-                      %td.border-top.py-2{colspan: 7}
-                        %strong= department ? department.display_name : 'No Department'
-                    - assignments.each do |assignment|
-                      - current_milestone = @existing_associations[assignment.id]
-                      %tr
-                        %td
-                          %strong= assignment.title
-                          %br
-                          %small.text-muted= assignment.tagline.truncate(100) if assignment.tagline.present?
-                        %td
-                          .btn-group.btn-group-sm{role: "group", "aria-label": "Milestone level for #{assignment.title}"}
-                            - [1, 2, 3, 4, 5].each do |level|
-                              = radio_button_tag "ability_assignment_milestones_form[assignment_milestones][#{assignment.id}]", level, (current_milestone == level), class: "btn-check", id: "assignment_#{assignment.id}_milestone_#{level}", disabled: !policy(@ability).update?
-                              = label_tag "assignment_#{assignment.id}_milestone_#{level}", class: "btn btn-outline-primary" do
-                                = level
-                            = radio_button_tag "ability_assignment_milestones_form[assignment_milestones][#{assignment.id}]", 0, current_milestone.nil?, class: "btn-check", id: "assignment_#{assignment.id}_no_association", disabled: !policy(@ability).update?
-                            = label_tag "assignment_#{assignment.id}_no_association", class: "btn btn-outline-secondary" do
-                              %em No Association
-          - if @assignments.empty?
-            .alert.alert-info
-              %i.bi.bi-info-circle.me-2
-              No assignments found in this organization hierarchy.
-
-      .card.mb-4
-        .card-body
-          - if policy(@ability).update?
-            = f.submit "Save Assignment Milestones", class: "btn btn-primary btn-lg"
-          - else
-            .d-flex.align-items-center.gap-2
-              .flex-grow-1
-                %button.btn.btn-primary.btn-lg.w-100.disabled{disabled: true, type: "button"}
-                  Save Assignment Milestones
-              %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions to update assignment milestones"}
+      = render "shared/assignment_milestones/form_sections",
+        subject_name: @ability.name,
+        form_param_prefix: "ability_assignment_milestones_form[assignment_milestones]",
+        associated_assignments: @associated_assignments,
+        available_assignments: @available_assignments,
+        existing_associations: @existing_associations,
+        can_update: policy(@ability).update?,
+        save_label: "Save Assignment Milestones",
+        disabled_tooltip: "You need MAAP management permissions to update assignment milestones"
 
 - if @form.errors.any?
   .row.justify-content-center

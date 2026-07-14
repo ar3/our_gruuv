@@ -1,0 +1,83 @@
+-# Locals:
+-#   subject_name — ability name
+-#   form_param_prefix — e.g. "ability_assignment_milestones_form[assignment_milestones]"
+-#   associated_assignments, available_assignments, existing_associations
+-#   can_update, save_label, disabled_tooltip
+- expand_add = associated_assignments.empty?
+- available_count = available_assignments.size
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-sliders.me-2
+      Change Milestone Requirement
+  .card-body
+    - if associated_assignments.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th{scope: "col"} Assignment
+              %th{scope: "col", colspan: "6"} Milestone Level
+          %tbody
+            - associated_assignments.each do |assignment|
+              = render "shared/assignment_milestones/assignment_row",
+                assignment: assignment,
+                current_milestone: existing_associations[assignment.id],
+                form_param_prefix: form_param_prefix,
+                can_update: can_update,
+                show_no_association: true,
+                filterable: false
+    - else
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No milestone requirements yet. Add assignments below to define where #{subject_name} is required.
+
+.card.mb-4
+  - unless expand_add
+    .card-body.py-3.border-bottom
+      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#addAssignmentMilestoneRequirements", "aria-expanded" => "false", "aria-controls" => "addAssignmentMilestoneRequirements", href: "#addAssignmentMilestoneRequirements"}
+        #{subject_name} is required by more of the #{available_count} available Assignments… add new milestone requirement
+  .collapse{id: "addAssignmentMilestoneRequirements", class: ("show" if expand_add)}
+    - if expand_add
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-plus-circle.me-2
+          Add additional Milestone Requirements
+    .card-body
+      - if available_assignments.any?
+        .mb-3{data: {controller: "options-filter"}}
+          %input.form-control.form-control-lg.mb-3{type: "search", placeholder: "Search assignments by name or department...", "data-options-filter-target": "input", "aria-label": "Filter assignments by name or department"}
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead
+                %tr
+                  %th{scope: "col"} Assignment
+                  %th{scope: "col", colspan: "6"} Milestone Level
+              %tbody{data: {"options-filter-target": "list"}}
+                - available_assignments.each do |assignment|
+                  = render "shared/assignment_milestones/assignment_row",
+                    assignment: assignment,
+                    current_milestone: nil,
+                    form_param_prefix: form_param_prefix,
+                    can_update: can_update,
+                    show_no_association: true,
+                    filterable: true
+      - else
+        .alert.alert-info.mb-0
+          %i.bi.bi-info-circle.me-2
+          - if associated_assignments.any?
+            All available assignments are already associated.
+          - else
+            No assignments found in this organization hierarchy.
+
+.card.mb-4
+  .card-body
+    - if can_update
+      = submit_tag save_label, class: "btn btn-primary btn-lg"
+    - else
+      .d-flex.align-items-center.gap-2
+        .flex-grow-1
+          %button.btn.btn-primary.btn-lg.w-100.disabled{disabled: true, type: "button"}
+            = save_label
+        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => disabled_tooltip}
