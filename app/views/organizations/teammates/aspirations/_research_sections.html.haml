@@ -104,6 +104,9 @@
   %section#research-observations.mb-4
     = render "shared/single_item_check_in/current_period_observations"
 
+  - research_ai_prompt = single_item_check_in_aspiration_research_ai_prompt(teammate: @teammate, aspiration: @aspiration, latest_finalized: @latest_finalized)
+  = render "shared/single_item_check_in/research_ai_prompt_callout", prompt: research_ai_prompt
+
   %section#research-goals.mb-4
     = render 'organizations/shared/goals/associable_associated_goals_card',
         organization: @organization,

@@ -16,7 +16,9 @@
         - associable = row.associable
         - check_in = row.check_in
         - object_name = associable.respond_to?(:title) ? associable.title : associable.name
-        - clarity_icon = about_me_clarity_icon_details(latest_finalized_check_in: check_in, casual_name: casual_name, object_name: object_name)
+        - eh_type = associable.is_a?(Aspiration) ? :aspiration : :assignment
+        - eh_item = about_me_eh_item_for(type: eh_type, id: associable.id)
+        - clarity_icon = about_me_clarity_icon_details(eh_item: eh_item, casual_name: casual_name, object_name: object_name)
         - goal_icon = about_me_goal_icon_details(has_active_goal: row.has_active_goal, latest_rating: check_in.official_rating, casual_name: casual_name, object_name: object_name)
         %tr
           %td

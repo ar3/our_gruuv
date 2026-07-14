@@ -39,6 +39,19 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).count).to eq(1)
         expect(AspirationCheckIn.where(company_teammate: employee_teammate, aspiration: aspiration).open.count).to eq(1)
       end
+
+      it "renders a copyable AI research prompt callout between observations and linked goals" do
+        aspiration.update!(description: "Seek understanding before acting")
+        get aspiration_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Need more observations?")
+        expect(response.body).to include("data-controller=\"clipboard\"")
+        expect(response.body).to include("Seek understanding before acting")
+
+        body = response.body
+        expect(body.index("research-observations")).to be < body.index("Need more observations?")
+        expect(body.index("Need more observations?")).to be < body.index("Associated Goals")
+      end
     end
 
     context "when there are no check-ins yet (department aspiration)" do

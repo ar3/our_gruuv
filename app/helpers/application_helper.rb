@@ -565,6 +565,22 @@ module ApplicationHelper
     rendered.gsub(/\n/, '<br/>').gsub(/<br\/>$/, '').html_safe
   end
 
+  # Plain text for pasting into external AI prompts (strip markdown noise, keep readable lines).
+  def markdown_to_plain_text(text)
+    return '' if text.blank?
+
+    html = Redcarpet::Markdown.new(
+      Redcarpet::Render::HTML,
+      autolink: true,
+      tables: true,
+      fenced_code_blocks: true,
+      strikethrough: true
+    ).render(text.to_s.strip)
+
+    plain = strip_tags(html)
+    CGI.unescapeHTML(plain.to_s).gsub(/[ \t]+\n/, "\n").gsub(/\n{3,}/, "\n\n").strip
+  end
+
   # Observation sort options helper
   def observation_sort_options
     [

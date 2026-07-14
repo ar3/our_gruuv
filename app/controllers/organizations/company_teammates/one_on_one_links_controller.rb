@@ -24,6 +24,9 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     authorize @one_on_one_link
     @person = @teammate.person
     @work_to_meet_summary = load_work_to_meet_summary
+    @engagement_health_by_item_key = EngagementHealth::UpNextSupport.index_items_by_key(
+      @engagement_health_by_teammate_id[@teammate.id] || []
+    )
   end
 
   def overview

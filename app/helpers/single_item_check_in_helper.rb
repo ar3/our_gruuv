@@ -122,6 +122,7 @@ module SingleItemCheckInHelper
 
   CHECK_IN_SECTION_LABEL = "Your check-in"
   RESEARCH_SECTION_LABEL = "Context for your rating"
+  RESEARCH_AI_PROMPT_LOOKBACK_DAYS = 90
 
   def single_item_check_in_define_section_label(check_in_type)
     DEFINE_SECTION_LABELS.fetch(check_in_type.to_sym)
@@ -139,5 +140,84 @@ module SingleItemCheckInHelper
       { id: "research", label: RESEARCH_SECTION_LABEL, icon: "bi-journal-text", primary: true },
       *research_sublinks.map { |link| link.merge(primary: false) }
     ]
+  end
+
+  # Slack @handle for AI research prompts; omit when we only have a real/display name.
+  def single_item_check_in_slack_handle(teammate)
+    identity = teammate&.slack_identity
+    return nil if identity.blank?
+
+    raw = identity.raw_data.is_a?(Hash) ? identity.raw_data : {}
+    candidate = raw['name'].presence ||
+                raw.dig('extra', 'raw_info', 'name').presence ||
+                raw.dig('profile', 'display_name_normalized').presence ||
+                raw.dig('profile', 'display_name').presence
+
+    handle = candidate.to_s.strip
+    return nil if handle.blank? || handle.include?(' ')
+
+    handle.start_with?('@') ? handle : "@#{handle}"
+  end
+
+  def single_item_check_in_research_prompt_since_date(latest_finalized)
+    completed_at = latest_finalized&.official_check_in_completed_at
+    completed_at.present? ? completed_at : RESEARCH_AI_PROMPT_LOOKBACK_DAYS.days.ago
+  end
+
+  # Copy-paste prompt for Slack / Asana / Zoom / Meet AI tools to surface observation candidates.
+  def single_item_check_in_research_ai_prompt(teammate:, latest_finalized:, focus_body:)
+    full_name = teammate.person.preferred_first_then_last_display_name
+    slack_handle = single_item_check_in_slack_handle(teammate)
+    person_ref = slack_handle.present? ? "#{full_name} (#{slack_handle})" : full_name
+    since_label = format_date_in_user_timezone(
+      single_item_check_in_research_prompt_since_date(latest_finalized),
+      format: '%B %-d, %Y'
+    )
+
+    <<~PROMPT.strip
+      I'm preparing an observation-based check-in about #{person_ref}.
+
+      We believe people grow best with specific, observation-based feedback. Please find examples of this person demonstrating the following between #{since_label} and today. Look for exceptional, good, misaligned, concerning, and poor examples of the behaviors these call for.
+
+      List observations I should take into account in my check-in, and note whether each is a strong or weak example of pursuing these:
+
+      #{focus_body.to_s.strip}
+    PROMPT
+  end
+
+  def single_item_check_in_assignment_research_ai_prompt(teammate:, latest_finalized:, outcomes:)
+    lines = Array(outcomes).filter_map do |outcome|
+      plain = markdown_to_plain_text(outcome.description)
+      next if plain.blank?
+
+      "- #{plain}"
+    end
+
+    focus_body = if lines.any?
+                   lines.join("\n")
+                 else
+                   '(No expected outcomes are defined for this assignment yet.)'
+                 end
+
+    single_item_check_in_research_ai_prompt(
+      teammate: teammate,
+      latest_finalized: latest_finalized,
+      focus_body: focus_body
+    )
+  end
+
+  def single_item_check_in_aspiration_research_ai_prompt(teammate:, aspiration:, latest_finalized:)
+    description = markdown_to_plain_text(aspiration.description)
+    focus_body = if description.present?
+                   "#{aspiration.name}\n\n#{description}"
+                 else
+                   aspiration.name.to_s
+                 end
+
+    single_item_check_in_research_ai_prompt(
+      teammate: teammate,
+      latest_finalized: latest_finalized,
+      focus_body: focus_body
+    )
   end
 end
