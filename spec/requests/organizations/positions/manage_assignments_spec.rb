@@ -18,16 +18,26 @@ RSpec.describe 'Position Assignments Management', type: :request do
   end
 
   describe 'GET /organizations/:organization_id/positions/:id/manage_assignments' do
-    it 'loads assignments grouped by hierarchy' do
+    it 'loads assignments split into associated and available sections' do
       company_assignment
       department_assignment
-      
+      create(:position_assignment,
+        position: position,
+        assignment: company_assignment,
+        min_estimated_energy: 5,
+        max_estimated_energy: 15,
+        assignment_type: 'required'
+      )
+
       get manage_assignments_organization_position_path(company, position)
-      
+
       expect(response).to have_http_status(:success)
-      assignments = assigns(:assignments)
-      expect(assignments.map(&:id)).to include(company_assignment.id, department_assignment.id)
-      expect(assigns(:assignments_by_org)).to be_a(Hash)
+      expect(assigns(:assignments).map(&:id)).to include(company_assignment.id, department_assignment.id)
+      expect(assigns(:associated_assignments).map(&:id)).to eq([company_assignment.id])
+      expect(assigns(:available_assignments).map(&:id)).to include(department_assignment.id)
+      expect(assigns(:available_assignments).map(&:id)).not_to include(company_assignment.id)
+      expect(response.body).to include('Configure Position Assignments')
+      expect(response.body).to include('add new assignment')
     end
 
     it 'requires MAAP permission' do
@@ -176,6 +186,50 @@ RSpec.describe 'Position Assignments Management', type: :request do
       
       expect(response).to redirect_to(manage_assignments_organization_position_path(company, position))
       expect(PositionAssignment.find_by(id: existing_pa.id)).to be_nil
+    end
+
+    it 'destroys PositionAssignment when association type is none' do
+      existing_pa = create(:position_assignment,
+        position: position,
+        assignment: company_assignment,
+        max_estimated_energy: 30,
+        assignment_type: 'required'
+      )
+
+      patch update_assignments_organization_position_path(company, position), params: {
+        position_assignments: {
+          company_assignment.id => {
+            assignment_type: 'none',
+            min_estimated_energy: '20',
+            max_estimated_energy: '40'
+          }
+        }
+      }
+
+      expect(response).to redirect_to(manage_assignments_organization_position_path(company, position))
+      expect(PositionAssignment.find_by(id: existing_pa.id)).to be_nil
+    end
+
+    it 'applies default energy percentages when adding from type alone' do
+      patch update_assignments_organization_position_path(company, position), params: {
+        position_assignments: {
+          company_assignment.id => { assignment_type: 'required' },
+          department_assignment.id => { assignment_type: 'suggested' }
+        }
+      }
+
+      expect(response).to redirect_to(manage_assignments_organization_position_path(company, position))
+
+      required_pa = PositionAssignment.find_by(position: position, assignment: company_assignment)
+      suggested_pa = PositionAssignment.find_by(position: position, assignment: department_assignment)
+
+      expect(required_pa.min_estimated_energy).to eq(5)
+      expect(required_pa.max_estimated_energy).to eq(15)
+      expect(required_pa.assignment_type).to eq('required')
+
+      expect(suggested_pa.min_estimated_energy).to eq(0)
+      expect(suggested_pa.max_estimated_energy).to eq(10)
+      expect(suggested_pa.assignment_type).to eq('suggested')
     end
 
     it 'destroys PositionAssignment when not in params' do

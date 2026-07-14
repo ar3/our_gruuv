@@ -9,7 +9,7 @@
       %i.bi.bi-list-check.me-2
       Position Assignments
     %p.mb-0.text-muted
-      Set energy percentages and assignment types for each assignment. Assignments with max energy > 0% will be associated with this position.
+      Set energy percentages and whether each assignment is required, suggested, or not associated with this position.
 
   .card-body
     = form_with url: update_assignments_organization_position_path(@organization, @position), method: :patch, local: true do |form|
@@ -61,15 +61,12 @@
           .card-body
             = render 'copy_assignments_card', sibling_positions: @sibling_positions, assignment_diffs: @assignment_diffs, page_position: @position
 
-      - company = @position.title.company.root_company
-      - hierarchy_tree = build_assignment_hierarchy_tree(@assignments_by_org, company)
-
-      - if hierarchy_tree.any?
-        - hierarchy_tree.each do |node|
-          = render 'assignment_hierarchy_node', node: node, form: form, existing_position_assignments: @existing_position_assignments, indent_level: 0
-      - else
-        .alert.alert-info
-          %p.mb-0 No assignments found in this organization's hierarchy.
+      = render "organizations/positions/assignment_form_sections",
+        form: form,
+        associated_assignments: @associated_assignments,
+        available_assignments: @available_assignments,
+        existing_position_assignments: @existing_position_assignments,
+        subject_name: @position.display_name
 
       .mt-4.d-flex.justify-content-between
         = link_to "Cancel", @return_url, class: "btn btn-secondary"

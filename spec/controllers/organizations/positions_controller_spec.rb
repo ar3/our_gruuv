@@ -248,13 +248,14 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       teammate.update(can_manage_maap: true)
     end
 
-    it 'loads assignments grouped by hierarchy' do
+    it 'loads assignments split into associated and available sections' do
       assignment # Create the assignment
       get :manage_assignments, params: { organization_id: organization.id, id: position.id }
       
       expect(response).to have_http_status(:success)
       expect(assigns(:assignments)).to be_present
-      expect(assigns(:assignments_by_org)).to be_a(Hash)
+      expect(assigns(:associated_assignments)).to eq([])
+      expect(assigns(:available_assignments).map(&:id)).to include(assignment.id)
       expect(response).to render_template(:manage_assignments)
       expect(response).to render_template(layout: 'overlay')
     end

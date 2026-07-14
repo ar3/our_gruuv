@@ -315,38 +315,36 @@ class Organizations::PositionsController < ApplicationController
 
   def manage_assignments
     authorize @position, :manage_assignments?
-    
-    # Get position's company (root organization)
+
     company = @position.title.company.root_company
-    
-    # Load all assignments for the company
+
     @assignments = Assignment.unarchived
                             .where(company: company)
                             .includes(:department)
-                            .ordered
-    
-    # Build nested structure: company > department > assignments
-    @assignments_by_org = @assignments.group_by(&:department)
-    
-    # Get existing position assignments for pre-population
+                            .to_a
+                            .sort_by { |a| [(a.department&.display_name || "Company-wide").downcase, a.title.to_s.downcase] }
+
     @existing_position_assignments = @position.position_assignments.index_by(&:assignment_id)
-    
-    # Calculate totals for required and suggested assignments
+    associated_ids = @existing_position_assignments.keys
+
+    @associated_assignments = @assignments.select { |a| associated_ids.include?(a.id) }
+    @available_assignments = @assignments.reject { |a| associated_ids.include?(a.id) }
+
     required_pas = @position.position_assignments.required
     suggested_pas = @position.position_assignments.suggested
-    
+
     @required_totals = {
       min: required_pas.sum { |pa| pa.min_estimated_energy || 0 },
       max: required_pas.sum { |pa| pa.max_estimated_energy || 0 },
       anticipated: required_pas.sum { |pa| pa.anticipated_energy_percentage || 0 }
     }
-    
+
     @suggested_totals = {
       min: suggested_pas.sum { |pa| pa.min_estimated_energy || 0 },
       max: suggested_pas.sum { |pa| pa.max_estimated_energy || 0 },
       anticipated: suggested_pas.sum { |pa| pa.anticipated_energy_percentage || 0 }
     }
-    
+
     # Sibling positions in the same title (different position_level), used by the
     # "Copy Position Assignments" card to compare and copy configurations.
     @sibling_positions = @position.title.positions
@@ -359,49 +357,41 @@ class Organizations::PositionsController < ApplicationController
       PositionAssignments::Diff.call(source: sp, destination: @position)
     end
 
-    # Set return URL
     @return_url = organization_position_path(@organization, @position)
     @return_text = "Back to Position"
-    
+
     render layout: 'overlay'
   end
 
   def update_assignments
     authorize @position, :manage_assignments?
-    
+
     position_assignments_params = params[:position_assignments] || {}
     assignment_ids_to_keep = []
     errors = []
-    
-    # Process each assignment in params
+
     position_assignments_params.each do |assignment_id_str, assignment_data|
       assignment_id = assignment_id_str.to_i
-      max_energy = assignment_data[:max_estimated_energy].present? ? assignment_data[:max_estimated_energy].to_i : 0
-      
-      # Skip if max_estimated_energy is 0 or not set
+      assignment_type = resolve_assignment_association_type(assignment_data)
+      next unless assignment_type
+
+      min_energy, max_energy = resolve_assignment_energy_values(assignment_data, assignment_type)
       next if max_energy <= 0
-      
+
       assignment_ids_to_keep << assignment_id
-      
-      # Find or initialize PositionAssignment
+
       position_assignment = @position.position_assignments.find_or_initialize_by(assignment_id: assignment_id)
-      
-      # Update attributes
-      min_energy = assignment_data[:min_estimated_energy].present? ? assignment_data[:min_estimated_energy].to_i : nil
-      
       position_assignment.min_estimated_energy = min_energy
       position_assignment.max_estimated_energy = max_energy
-      position_assignment.assignment_type = assignment_data[:assignment_type] || 'required'
-      
+      position_assignment.assignment_type = assignment_type
+
       unless position_assignment.save
         errors << "Failed to save assignment #{assignment_id}: #{position_assignment.errors.full_messages.join(', ')}"
       end
     end
-    
-    # Destroy position assignments that are no longer in params or have max_energy = 0
-    assignments_to_destroy = @position.position_assignments.where.not(assignment_id: assignment_ids_to_keep)
-    assignments_to_destroy.destroy_all
-    
+
+    @position.position_assignments.where.not(assignment_id: assignment_ids_to_keep).destroy_all
+
     if errors.any?
       redirect_to manage_assignments_organization_position_path(@organization, @position), alert: "Some assignments could not be saved: #{errors.join('; ')}"
       return
@@ -593,6 +583,29 @@ class Organizations::PositionsController < ApplicationController
     end
 
     total_points
+  end
+
+  # Returns 'required'/'suggested', or nil when the row should not be associated.
+  # Legacy payloads without assignment_type still associate when max_energy > 0.
+  def resolve_assignment_association_type(assignment_data)
+    raw_type = assignment_data[:assignment_type].to_s
+    return raw_type if %w[required suggested].include?(raw_type)
+    return nil if raw_type.present?
+
+    max_energy = assignment_data[:max_estimated_energy].present? ? assignment_data[:max_estimated_energy].to_i : 0
+    max_energy > 0 ? 'required' : nil
+  end
+
+  def resolve_assignment_energy_values(assignment_data, assignment_type)
+    defaults = assignment_type == 'suggested' ? [0, 10] : [5, 15]
+
+    if assignment_data[:max_estimated_energy].present?
+      max_energy = assignment_data[:max_estimated_energy].to_i
+      min_energy = assignment_data[:min_estimated_energy].present? ? assignment_data[:min_estimated_energy].to_i : nil
+      [min_energy, max_energy]
+    else
+      defaults
+    end
   end
 
 end

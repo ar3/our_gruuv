@@ -1,0 +1,39 @@
+-# Locals:
+-#   assignment, form, existing_pa (optional PositionAssignment), mode: :configure | :add
+- mode = local_assigns.fetch(:mode, :configure)
+- existing_pa = local_assigns[:existing_pa]
+- add_mode = mode == :add
+- current_type = add_mode ? 'none' : (existing_pa&.assignment_type || 'required')
+- department_label = assignment.department.present? ? department_hierarchy_display(assignment.department) : "Company-wide"
+- row_class = add_mode ? "filterable-option" : nil
+- prefix = "position_assignments[#{assignment.id}]"
+%tr{class: row_class, data: { controller: "position-assignment-association", position_assignment_association_add_mode_value: add_mode }}
+  %td
+    %small.text-muted.d-block= department_label
+    %strong= assignment.title
+    = link_to organization_assignment_path(assignment.company, assignment), target: "_blank", class: "ms-2", title: "View assignment" do
+      %i.bi.bi-box-arrow-up-right
+    - if add_mode
+      = hidden_field_tag "#{prefix}[min_estimated_energy]", "", data: { position_assignment_association_target: "minEnergy" }
+      = hidden_field_tag "#{prefix}[max_estimated_energy]", "", data: { position_assignment_association_target: "maxEnergy" }
+  - unless add_mode
+    %td
+      = form.select "#{prefix}[min_estimated_energy]",
+        energy_percentage_options(existing_pa&.min_estimated_energy),
+        { include_blank: '—' },
+        { class: "form-select form-select-sm", data: { position_assignment_association_target: "minEnergy" } }
+    %td
+      = form.select "#{prefix}[max_estimated_energy]",
+        energy_percentage_options(existing_pa&.max_estimated_energy),
+        { include_blank: '—' },
+        { class: "form-select form-select-sm", data: { position_assignment_association_target: "maxEnergy" } }
+  %td
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Association for #{assignment.title}"}
+      - [['required', 'Required'], ['suggested', 'Suggested'], ['none', 'No Association']].each do |value, label|
+        - radio_id = "assignment_#{assignment.id}_type_#{value}"
+        = radio_button_tag "#{prefix}[assignment_type]", value, current_type == value,
+          class: "btn-check",
+          id: radio_id,
+          data: { position_assignment_association_target: "type", action: "change->position-assignment-association#changeType" }
+        - btn_class = value == 'none' ? 'btn btn-outline-secondary' : 'btn btn-outline-primary'
+        = label_tag radio_id, label, class: btn_class

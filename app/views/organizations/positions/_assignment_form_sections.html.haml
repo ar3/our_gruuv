@@ -1,0 +1,67 @@
+-# Locals: form, associated_assignments, available_assignments, existing_position_assignments, subject_name
+- expand_add = associated_assignments.empty?
+- available_count = available_assignments.size
+- subject_name = local_assigns.fetch(:subject_name, "this position")
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-sliders.me-2
+      Configure Position Assignments
+  .card-body
+    - if associated_assignments.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th{scope: "col"} Assignment
+              %th{scope: "col"} Min Energy
+              %th{scope: "col"} Max Energy
+              %th{scope: "col"} Association
+          %tbody
+            - associated_assignments.each do |assignment|
+              = render "organizations/positions/assignment_association_row",
+                assignment: assignment,
+                form: form,
+                existing_pa: existing_position_assignments[assignment.id],
+                mode: :configure
+    - else
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No assignments yet. Add assignments below to define what being a #{subject_name} requires or suggests.
+
+.card.mb-4
+  - unless expand_add
+    .card-body.py-3.border-bottom
+      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#addPositionAssignments", "aria-expanded" => "false", "aria-controls" => "addPositionAssignments", href: "#addPositionAssignments"}
+        Being a #{subject_name} needs more of the #{available_count} available Assignments… add new assignment
+  .collapse{id: "addPositionAssignments", class: ("show" if expand_add)}
+    - if expand_add
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-plus-circle.me-2
+          Add Assignments
+    .card-body
+      - if available_assignments.any?
+        .mb-3{data: {controller: "options-filter"}}
+          %input.form-control.form-control-lg.mb-3{type: "search", placeholder: "Search assignments by name or department...", "data-options-filter-target": "input", "aria-label": "Filter assignments by name or department"}
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead
+                %tr
+                  %th{scope: "col"} Assignment
+                  %th{scope: "col"} Association
+              %tbody{data: {"options-filter-target": "list"}}
+                - available_assignments.each do |assignment|
+                  = render "organizations/positions/assignment_association_row",
+                    assignment: assignment,
+                    form: form,
+                    existing_pa: nil,
+                    mode: :add
+      - else
+        .alert.alert-info.mb-0
+          %i.bi.bi-info-circle.me-2
+          - if associated_assignments.any?
+            All available assignments are already associated.
+          - else
+            No assignments found in this organization hierarchy.
