@@ -80,6 +80,12 @@ class Person < ApplicationRecord
     parts.join(' ')
   end
 
+  # Unique clearly-fake email used when freeing this person's address for a new hire.
+  def archived_email_replacement
+    local = email.to_s.split('@').first.presence || 'person'
+    "#{local}-#{id}@ourgruuv.archived"
+  end
+
   # Instance methods
   def to_s
     preferred_first_then_last_display_name

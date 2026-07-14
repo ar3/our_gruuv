@@ -280,67 +280,74 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     authorize @organization, :manage_employment?
     @person = Person.new
     @employment_tenure = EmploymentTenure.new
-    @positions = @organization.positions.unarchived.includes(:title, :position_level)
-                                .joins(:title)
-                                .order('titles.external_title')
-    load_manager_data
+    load_new_employee_form_supporting_data
   end
 
   def create_employee
     # For creating a new person and employment simultaneously
     authorize @organization, :manage_employment?
-    
-    # Create person and employment in a transaction (reuse existing person if email matches, case-insensitive)
-    ActiveRecord::Base.transaction do
-      person_attrs = person_params.to_h
-      # Map phone_number to unique_textable_phone_number if present
-      if person_attrs.key?('phone_number')
-        person_attrs['unique_textable_phone_number'] = person_attrs.delete('phone_number')
-      end
-      @person = Person.find_by_email_insensitive(person_attrs['email'])
-      unless @person
-        @person = Person.new(person_attrs)
-        @person.save!
-      end
-      
-      # Extract started_at from employment_tenure_params for first_employed_at
-      employment_params = employment_tenure_params.to_h
-      start_date = employment_params['started_at']
-      
-      # Create or find teammate for this person and organization
-      teammate_attrs = { organization: @organization }
-      teammate_attrs[:first_employed_at] = start_date if start_date.present?
-      teammate = @person.teammates.find_or_create_by!(organization: @organization) do |t|
-        t.first_employed_at = start_date if start_date.present?
-      end
-      teammate.update!(first_employed_at: start_date) if start_date.present? && teammate.first_employed_at != start_date
-      
-      @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
-      @employment_tenure.company = @organization
-      @employment_tenure.company_teammate = teammate
-      @employment_tenure.save!
-      
-      # Create observable moment for new hire
-      ObservableMoments::CreateNewHireMomentService.call(
-        employment_tenure: @employment_tenure,
-        created_by: current_person
-      )
-      
-      teammate = @person.teammates.find_by(organization: @organization)
-      EngagementHealth.schedule_refresh_for(teammate.id) if teammate
-      redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employee was successfully created.'
+    assign_new_employee_form_objects_from_params
+
+    if (conflict = in_organization_email_conflict)
+      render_employee_email_conflict(**conflict)
+      return
     end
+
+    persist_new_employee!
   rescue ActiveRecord::RecordInvalid
-    @positions = @organization.positions.unarchived.includes(:title, :position_level)
-                                .joins(:title)
-                                .order('titles.external_title')
-    load_manager_data
+    @person = build_person_from_params if @person.nil?
+    @employment_tenure = build_employment_tenure_from_params if @employment_tenure.nil?
+    load_new_employee_form_supporting_data
     render :new_employee, status: :unprocessable_entity
   rescue => e
-    @positions = @organization.positions.unarchived.includes(:title, :position_level)
-                                .joins(:title)
-                                .order('titles.external_title')
-    load_manager_data
+    assign_new_employee_form_objects_from_params if params[:person].present?
+    @person ||= Person.new
+    @employment_tenure ||= EmploymentTenure.new
+    load_new_employee_form_supporting_data
+    @error_message = "An error occurred: #{e.message}"
+    render :new_employee, status: :unprocessable_entity
+  end
+
+  def resolve_employee_email_conflict
+    authorize @organization, :manage_employment?
+    assign_new_employee_form_objects_from_params
+
+    @existing_person = Person.find(params.require(:existing_person_id))
+    @existing_teammate = @existing_person.teammates.find_by(organization: @organization)
+    unless @existing_teammate
+      @error_message = 'That person is no longer a teammate in this organization. You can create the employee now.'
+      load_new_employee_form_supporting_data
+      render :new_employee, status: :unprocessable_entity
+      return
+    end
+
+    case params[:resolution]
+    when 'rehire'
+      redirect_to organization_company_teammate_path(@organization, @existing_teammate)
+    when 'change_new_email'
+      load_new_employee_form_supporting_data
+      render :new_employee
+    when 'archive_old_email'
+      ActiveRecord::Base.transaction do
+        @existing_person.update!(email: @existing_person.archived_email_replacement)
+        persist_new_employee!(force_new_person: true)
+      end
+    else
+      render_employee_email_conflict(
+        existing_person: @existing_person,
+        existing_teammate: @existing_teammate
+      )
+    end
+  rescue ActiveRecord::RecordInvalid
+    @person = build_person_from_params if @person.nil?
+    @employment_tenure = build_employment_tenure_from_params if @employment_tenure.nil?
+    load_new_employee_form_supporting_data
+    render :new_employee, status: :unprocessable_entity
+  rescue => e
+    assign_new_employee_form_objects_from_params if params[:person].present?
+    @person ||= Person.new
+    @employment_tenure ||= EmploymentTenure.new
+    load_new_employee_form_supporting_data
     @error_message = "An error occurred: #{e.message}"
     render :new_employee, status: :unprocessable_entity
   end
@@ -876,6 +883,90 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   def require_authentication
     unless current_person
       redirect_to root_path, alert: 'Please log in to access organizations.'
+    end
+  end
+
+  def assign_new_employee_form_objects_from_params
+    @person = build_person_from_params
+    @employment_tenure = build_employment_tenure_from_params
+  end
+
+  def build_person_from_params
+    person_attrs = person_params.to_h
+    @phone_number = person_attrs.delete('phone_number')
+    person_attrs['unique_textable_phone_number'] = @phone_number if @phone_number.present?
+    Person.new(person_attrs)
+  end
+
+  def build_employment_tenure_from_params
+    EmploymentTenure.new(employment_tenure_params)
+  end
+
+  def load_new_employee_form_supporting_data
+    @positions = @organization.positions.unarchived.includes(:title, :position_level)
+                              .joins(:title)
+                              .order('titles.external_title')
+    load_manager_data
+  end
+
+  def in_organization_email_conflict
+    email = @person.email
+    return nil if email.blank?
+
+    existing_person = Person.find_by_email_insensitive(email)
+    return nil unless existing_person
+
+    existing_teammate = existing_person.teammates.find_by(organization: @organization)
+    return nil unless existing_teammate
+
+    { existing_person: existing_person, existing_teammate: existing_teammate }
+  end
+
+  def render_employee_email_conflict(existing_person:, existing_teammate:)
+    @existing_person = existing_person
+    @existing_teammate = existing_teammate
+    @archived_email = existing_person.archived_email_replacement
+    load_new_employee_form_supporting_data
+    render :email_conflict, status: :conflict
+  end
+
+  def persist_new_employee!(force_new_person: false)
+    ActiveRecord::Base.transaction do
+      person_attrs = person_params.to_h
+      if person_attrs.key?('phone_number')
+        person_attrs['unique_textable_phone_number'] = person_attrs.delete('phone_number')
+      end
+
+      unless force_new_person
+        @person = Person.find_by_email_insensitive(person_attrs['email'])
+      end
+
+      unless @person&.persisted?
+        @person = Person.new(person_attrs)
+        @person.save!
+      end
+
+      employment_params = employment_tenure_params.to_h
+      start_date = employment_params['started_at']
+
+      teammate = @person.teammates.find_or_create_by!(organization: @organization) do |t|
+        t.first_employed_at = start_date if start_date.present?
+      end
+      teammate.update!(first_employed_at: start_date) if start_date.present? && teammate.first_employed_at != start_date
+
+      @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
+      @employment_tenure.company = @organization
+      @employment_tenure.company_teammate = teammate
+      @employment_tenure.save!
+
+      ObservableMoments::CreateNewHireMomentService.call(
+        employment_tenure: @employment_tenure,
+        created_by: current_person
+      )
+
+      teammate = @person.teammates.find_by(organization: @organization)
+      EngagementHealth.schedule_refresh_for(teammate.id) if teammate
+      redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employee was successfully created.'
     end
   end
 

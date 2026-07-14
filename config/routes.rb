@@ -120,6 +120,7 @@ Rails.application.routes.draw do
       collection do
         get :new_employee
         post :create_employee
+        post :resolve_employee_email_conflict
         get :customize_view
         patch :update_view
       end

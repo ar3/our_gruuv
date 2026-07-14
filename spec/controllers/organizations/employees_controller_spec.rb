@@ -563,6 +563,111 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       new_teammate = new_person.teammates.find_by(organization: company)
       expect(new_teammate.first_employed_at.to_date).to eq(future_date)
     end
+
+    context 'when email belongs to an existing teammate in this organization' do
+      let!(:existing_person) { create(:person, first_name: 'Old', last_name: 'Teammate', email: 'shared@example.com') }
+      let!(:existing_teammate) do
+        create(:company_teammate, person: existing_person, organization: company, first_employed_at: 2.years.ago, last_terminated_at: 1.month.ago)
+      end
+      let(:new_person_params) do
+        {
+          first_name: 'Andrew',
+          last_name: 'Hall',
+          email: 'shared@example.com',
+          timezone: 'Eastern Time (US & Canada)'
+        }
+      end
+
+      it 'renders the email conflict page instead of creating' do
+        expect {
+          post :create_employee, params: {
+            organization_id: company.id,
+            person: new_person_params,
+            employment_tenure: valid_employment_params
+          }
+        }.not_to change { Person.count }
+
+        expect(response).to have_http_status(:conflict)
+        expect(response).to render_template(:email_conflict)
+        expect(assigns(:existing_person)).to eq(existing_person)
+        expect(assigns(:existing_teammate)).to eq(existing_teammate)
+        expect(assigns(:archived_email)).to eq(existing_person.archived_email_replacement)
+      end
+
+      it 'rehires by redirecting to the existing teammate seat page' do
+        post :resolve_employee_email_conflict, params: {
+          organization_id: company.id,
+          resolution: 'rehire',
+          existing_person_id: existing_person.id,
+          person: new_person_params,
+          employment_tenure: valid_employment_params
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_path(company, existing_teammate))
+        expect(Person.where(email: 'shared@example.com').count).to eq(1)
+      end
+
+      it 'returns to the new employee form with fields preserved when changing the new email' do
+        post :resolve_employee_email_conflict, params: {
+          organization_id: company.id,
+          resolution: 'change_new_email',
+          existing_person_id: existing_person.id,
+          person: new_person_params,
+          employment_tenure: valid_employment_params
+        }
+
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:new_employee)
+        expect(assigns(:person).first_name).to eq('Andrew')
+        expect(assigns(:person).email).to eq('shared@example.com')
+        expect(assigns(:employment_tenure).position_id).to eq(position.id)
+      end
+
+      it 'archives the old email and creates the new employee' do
+        expect {
+          post :resolve_employee_email_conflict, params: {
+            organization_id: company.id,
+            resolution: 'archive_old_email',
+            existing_person_id: existing_person.id,
+            person: new_person_params,
+            employment_tenure: valid_employment_params
+          }
+        }.to change { Person.count }.by(1)
+          .and change { CompanyTeammate.count }.by(1)
+          .and change { EmploymentTenure.count }.by(1)
+
+        existing_person.reload
+        expect(existing_person.email).to eq("shared-#{existing_person.id}@ourgruuv.archived")
+
+        new_person = Person.find_by(email: 'shared@example.com')
+        expect(new_person).to be_present
+        expect(new_person.first_name).to eq('Andrew')
+        new_teammate = new_person.teammates.find_by(organization: company)
+        expect(response).to redirect_to(organization_company_teammate_path(company, new_teammate))
+      end
+    end
+
+    context 'when email belongs to a person without a teammate in this organization' do
+      let!(:outside_person) { create(:person, email: 'outside@example.com', first_name: 'Outside') }
+      let(:other_company) { create(:organization) }
+      let!(:outside_teammate) do
+        create(:company_teammate, person: outside_person, organization: other_company, first_employed_at: 1.year.ago)
+      end
+
+      it 'reuses the existing person and creates a teammate for this organization' do
+        expect {
+          post :create_employee, params: {
+            organization_id: company.id,
+            person: valid_person_params.merge(email: 'outside@example.com', first_name: 'Ignored'),
+            employment_tenure: valid_employment_params
+          }
+        }.to change { CompanyTeammate.count }.by(1)
+          .and change { Person.count }.by(0)
+
+        expect(outside_person.teammates.find_by(organization: company)).to be_present
+        expect(response).to redirect_to(organization_company_teammate_path(company, outside_person.teammates.find_by(organization: company)))
+      end
+    end
   end
 end
 

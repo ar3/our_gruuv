@@ -39,13 +39,13 @@
                 
                 .mb-3
                   = form.label :phone_number, class: 'form-label'
-                  = form.telephone_field :phone_number, class: 'form-control'
+                  = form.telephone_field :phone_number, value: (@phone_number.presence || @person.try(:unique_textable_phone_number)), class: 'form-control'
                 
                 .mb-3
                   = form.label :timezone, class: 'form-label'
                   = form.select :timezone, 
                     ActiveSupport::TimeZone.all.map { |tz| [tz.name, tz.name] },
-                    { selected: 'Eastern Time (US & Canada)' },
+                    { selected: (@person.timezone.presence || 'Eastern Time (US & Canada)') },
                     { class: 'form-select' }
               
               .col-md-6
@@ -62,7 +62,7 @@
                   
                   .mb-3
                     = et_form.label :started_at, 'Start Date', class: 'form-label'
-                    = et_form.date_field :started_at, value: Date.current, class: 'form-control', required: true
+                    = et_form.date_field :started_at, value: (@employment_tenure.started_at.presence || Date.current), class: 'form-control', required: true
                   
                   .mb-3
                     = et_form.label :employment_change_notes, 'Notes', class: 'form-label'

@@ -3,6 +3,19 @@ require 'rails_helper'
 RSpec.describe Person, type: :model do
   let(:person) { build(:person) }
 
+  describe '#archived_email_replacement' do
+    it 'builds a unique archived email from the local part and id' do
+      person = create(:person, email: 'ahall@careerplug.com')
+      expect(person.archived_email_replacement).to eq("ahall-#{person.id}@ourgruuv.archived")
+    end
+
+    it 'is a valid email format' do
+      person = create(:person, email: 'someone@example.com')
+      archived = Person.new(email: person.archived_email_replacement)
+      expect(archived).to be_valid
+    end
+  end
+
   describe 'validations' do
     it 'is valid with valid attributes' do
       expect(person).to be_valid

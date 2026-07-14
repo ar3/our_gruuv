@@ -1,0 +1,49 @@
+- content_for :title, "Email Already In Use"
+
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-8
+      .card
+        .card-header
+          %h3.mb-0 Email already in use
+        .card-body
+          %p.mb-3
+            There is already a person with this email in #{@organization.name}:
+            %strong= @existing_person.display_name
+            (#{@existing_person.email}).
+
+          %p.mb-4
+            Do you want to re-hire #{@existing_person.casual_name}, or would you like to change
+            #{@existing_person.casual_name}'s email to
+            %code= @archived_email
+            so
+            %strong= @person.casual_name
+            can use #{@person.email}?
+
+          = form_with url: resolve_employee_email_conflict_organization_employees_path(@organization), local: true, method: :post do
+            = hidden_field_tag :existing_person_id, @existing_person.id
+            - person_fields = { first_name: @person.first_name, last_name: @person.last_name, email: @person.email, timezone: @person.timezone, phone_number: @phone_number }
+            - person_fields.each do |key, value|
+              = hidden_field_tag "person[#{key}]", value
+            - tenure_fields = { position_id: @employment_tenure.position_id, manager_teammate_id: @employment_tenure.manager_teammate_id, started_at: @employment_tenure.started_at, employment_change_notes: @employment_tenure.employment_change_notes }
+            - tenure_fields.each do |key, value|
+              = hidden_field_tag "employment_tenure[#{key}]", value
+
+            .d-grid.gap-2
+              = button_tag type: 'submit', name: 'resolution', value: 'rehire', class: 'btn btn-primary text-start' do
+                Re-hire #{@existing_person.casual_name}
+                %span.d-block.small.fw-normal.opacity-75
+                  Take me to #{@existing_person.casual_name}'s seat management page
+
+              = button_tag type: 'submit', name: 'resolution', value: 'change_new_email', class: 'btn btn-outline-secondary text-start' do
+                No, let me update the new person, #{@person.casual_name}'s email
+                %span.d-block.small.fw-normal.opacity-75
+                  Return to the form with your entries preserved
+
+              = button_tag type: 'submit', name: 'resolution', value: 'archive_old_email', class: 'btn btn-outline-primary text-start' do
+                Yes, update #{@existing_person.casual_name}'s email and give #{@person.email} to #{@person.casual_name}
+                %span.d-block.small.fw-normal.opacity-75
+                  Change #{@existing_person.casual_name}'s email to #{@archived_email}, then create #{@person.casual_name}
+
+          .mt-3
+            = link_to 'Cancel', organization_employees_path(@organization), class: 'btn btn-link px-0'
