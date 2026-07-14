@@ -23,6 +23,9 @@
             - if current_organization
               = link_to organization_search_path(current_organization), class: "nav-link text-dark", title: "Search" do
                 %i.bi.bi-search
+              - if policy(Observation).create?
+                = link_to select_type_organization_observations_path(current_organization), class: "nav-link text-dark", title: "Add New OGO", "aria-label": "Add New OGO" do
+                  %i.bi.bi-plus
             - if current_organization && current_company_teammate
               - pending_count = pending_get_shit_done_count(current_company_teammate)
               - if pending_count > 0

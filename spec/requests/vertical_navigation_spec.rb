@@ -529,4 +529,18 @@ RSpec.describe 'Vertical Navigation', type: :request do
       expect(response.body).to include("href=\"#{organization_sitemap_path(organization)}\"")
     end
   end
+
+  describe 'top bar Add New OGO control' do
+    it 'links an icon-only plus to select type when the viewer can create observations' do
+      get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
+
+      expect(response).to have_http_status(:success)
+      select_type_path = select_type_organization_observations_path(organization)
+      expect(response.body).to include("href=\"#{select_type_path}\"")
+      expect(response.body).to include('title="Add New OGO"')
+      expect(response.body).to include('aria-label="Add New OGO"')
+      expect(response.body).to include('bi-plus')
+    end
+  end
 end
