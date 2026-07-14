@@ -1,5 +1,11 @@
 - content_for :title, "1-by-1 Check-in – Position – #{@teammate.person.display_name}"
 
+- content_for :header do
+  %h1.mb-0= "#{@single_item_name} — clarity check-in"
+
+- content_for :header_action do
+  = render "people/view_switcher"
+
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "Position Check-In", url: nil }])
 

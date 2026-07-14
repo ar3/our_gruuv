@@ -1,5 +1,11 @@
 - content_for :title, "Aspirations - #{@teammate.person.display_name}"
 
+- content_for :header do
+  %h1.mb-0= "#{@aspiration.name} — clarity check-in"
+
+- content_for :header_action do
+  = render "people/view_switcher"
+
 - content_for :head do
   :css
     .aspiration-check-in-toggle .details-expanded { display: none; }

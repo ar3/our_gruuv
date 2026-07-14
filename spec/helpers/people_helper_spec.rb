@@ -61,6 +61,14 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.clarity_check_ins_view_active?).to eq(true)
     end
 
+    it 'returns 1-by-1 clarity check-in for single-item assignment pages' do
+      allow(helper).to receive(:action_name).and_return('show')
+      allow(helper).to receive(:controller_name).and_return('assignments')
+      allow(helper).to receive(:controller_path).and_return('organizations/teammates/assignments')
+      expect(helper.people_current_view_name).to eq('1-by-1 clarity check-in')
+      expect(helper.clarity_check_ins_view_active?).to eq(true)
+    end
+
     it 'returns One on One Hub for one_on_one_links show action' do
       allow(helper).to receive(:action_name).and_return('show')
       allow(helper).to receive(:controller_name).and_return('one_on_one_links')

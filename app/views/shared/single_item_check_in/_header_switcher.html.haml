@@ -1,5 +1,5 @@
--# Expects: @teammate, @organization, @single_item_name, @single_item_ordered_items, @latest_finalized_for_pill, @engagement_health_records
--# Optional: @single_item_type, @single_item_id for current item
+-# Expects: @teammate, @organization, @single_item_name, @latest_finalized_for_pill, @engagement_health_records
+-# Optional: @single_item_type for finalized pill
 - return unless @teammate && @organization
 
 .d-flex.flex-column.gap-2
@@ -17,37 +17,6 @@
         %span.badge.bg-secondary Employee View
       - else
         %span.badge.bg-secondary Manager View
-      .dropdown
-        %button.btn.btn-outline-secondary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
-          Checking-in on #{@single_item_name.presence || '…'}
-        %ul.dropdown-menu.dropdown-menu-end
-          - aspirations = @single_item_ordered_items.to_a.select { |i| i[:type] == :aspiration }
-          - if aspirations.any?
-            %li.dropdown-header Aspirational Values
-            - aspirations.each do |item|
-              %li
-                = link_to single_item_check_in_item_url(@organization, @teammate, item), class: "dropdown-item d-flex align-items-center gap-2" do
-                  %span= single_item_check_in_bucket_emoji(item[:bucket])
-                  = item[:name]
-          - assignments = @single_item_ordered_items.to_a.select { |i| i[:type] == :assignment }
-          - if assignments.any?
-            %li
-              %hr.dropdown-divider
-            %li.dropdown-header Assignments
-            - assignments.each do |item|
-              %li
-                = link_to single_item_check_in_item_url(@organization, @teammate, item), class: "dropdown-item d-flex align-items-center gap-2" do
-                  %span= single_item_check_in_bucket_emoji(item[:bucket])
-                  = item[:name]
-          - position_item = @single_item_ordered_items.to_a.find { |i| i[:type] == :position }
-          - if position_item
-            %li
-              %hr.dropdown-divider
-            %li.dropdown-header Position
-            %li
-              = link_to single_item_check_in_item_url(@organization, @teammate, position_item), class: "dropdown-item d-flex align-items-center gap-2" do
-                %span= single_item_check_in_bucket_emoji(position_item[:bucket])
-                = position_item[:name]
 
   %hr.my-1.py-0.opacity-25
 

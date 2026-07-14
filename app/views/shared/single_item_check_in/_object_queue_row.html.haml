@@ -1,0 +1,34 @@
+-# Locals: row, employee_name, manager_name, manager_perspective, li_extra_class (optional)
+- row = local_assigns.fetch(:row)
+- item = row[:item]
+- url = single_item_check_in_item_url(@organization, @teammate, item)
+- subcopy = single_item_object_queue_row_subcopy(row, employee_name: employee_name, manager_name: manager_name, manager_perspective: manager_perspective)
+- health_tooltip = single_item_object_queue_health_tooltip(row)
+- row_classes = ["list-group-item", "px-3", "py-2"]
+- row_classes << "single-item-object-queue-row--current" if row[:current]
+- row_classes << "single-item-object-queue-row--your-turn" if row[:your_turn]
+- row_classes << local_assigns[:li_extra_class] if local_assigns[:li_extra_class].present?
+
+- row_inner = capture do
+  .d-flex.align-items-center.gap-1.flex-wrap.mb-1
+    = render "organizations/company_teammates/check_ins/up_next_gruuv_health_pill", status: row[:status], tooltip: health_tooltip
+    %span.d-inline-block{
+      "data-bs-toggle" => "tooltip",
+      "data-bs-placement" => "top",
+      "data-bs-title" => subcopy,
+      title: subcopy,
+      style: "cursor: help;",
+      tabindex: "0"
+    }
+      %span{class: single_item_object_queue_viewer_chip_class(row[:viewer_state])}
+        = single_item_object_queue_viewer_chip_label(row[:viewer_state])
+  .fw-semibold.small.text-break= row[:name]
+  - if row[:current]
+    %p.small.text-muted.mb-0 Currently viewing
+
+%li{class: row_classes.join(" ")}
+  - if row[:current]
+    .text-body= row_inner
+  - else
+    = link_to url, class: "text-decoration-none text-body d-block" do
+      = row_inner

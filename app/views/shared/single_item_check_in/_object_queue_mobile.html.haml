@@ -1,0 +1,29 @@
+-# Locals: queue (optional)
+- queue = local_assigns.fetch(:queue) { single_item_object_queue }
+- return if queue.blank? || queue[:rows].blank?
+
+- your_turn_count = queue[:your_turn_count]
+- offcanvas_id = "singleItemObjectQueueOffcanvas"
+
+.d-md-none.single-item-object-queue-mobile.position-sticky.mb-2
+  %button.btn.btn-outline-secondary.btn-sm.w-100.d-flex.align-items-center.justify-content-between{
+    type: "button",
+    "data-bs-toggle" => "offcanvas",
+    "data-bs-target" => "##{offcanvas_id}",
+    "aria-controls" => offcanvas_id
+  }
+    %span
+      %i.bi.bi-list-check.me-1{aria: { hidden: true }}
+      To get clear on
+    %span{class: (your_turn_count.positive? ? "badge text-bg-danger" : "badge text-bg-secondary")}
+      = "#{your_turn_count} your turn"
+
+.offcanvas.offcanvas-bottom.h-auto.d-md-none{tabindex: "-1", id: offcanvas_id, "aria-labelledby" => "#{offcanvas_id}Label", style: "max-height: 75vh;"}
+  .offcanvas-header
+    %h5.offcanvas-title{id: "#{offcanvas_id}Label"} To get clear on
+    %button.btn-close{type: "button", "data-bs-dismiss" => "offcanvas", "aria-label" => "Close"}
+  .offcanvas-body.pt-0.overflow-auto
+    = render "shared/single_item_check_in/object_queue",
+             queue: queue,
+             embed: true,
+             hidden_list_id: "singleItemObjectQueueHiddenMobile"

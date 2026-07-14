@@ -57,3 +57,18 @@
     font-size: 0.8125rem;
     padding: 0.35rem 0.65rem;
   }
+
+  .single-item-object-queue-mobile {
+    top: 0;
+    z-index: 1021;
+    background: var(--bs-body-bg);
+  }
+
+  .single-item-object-queue-row--current {
+    border-left: 3px solid var(--bs-primary);
+    background-color: rgba(13, 110, 253, 0.06);
+  }
+
+  .single-item-object-queue-row--your-turn:not(.single-item-object-queue-row--current) {
+    border-left: 3px solid var(--bs-danger);
+  }

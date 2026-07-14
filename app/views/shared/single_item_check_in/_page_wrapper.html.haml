@@ -8,9 +8,14 @@
     in_page_section_nav_initial_section_value: initial_section
   }
 }
+  = render "shared/single_item_check_in/object_queue_mobile"
   = render "shared/single_item_check_in/section_nav_mobile", nav_title: nav_title, nav_links: nav_links
   .row
-    .col-md-3.col-lg-2.d-none.d-md-block
-      = render "shared/single_item_check_in/section_nav_desktop", nav_title: nav_title, nav_links: nav_links
-    .col-md-9.col-lg-10
+    .col-md-4.col-lg-3.d-none.d-md-block
+      .position-sticky{style: "top: 2rem;"}
+        = render "shared/single_item_check_in/section_nav_desktop", nav_title: nav_title, nav_links: nav_links
+        .mt-3
+          = render "shared/single_item_check_in/object_queue",
+                   hidden_list_id: "singleItemObjectQueueHiddenDesktop"
+    .col-md-8.col-lg-9
       = yield

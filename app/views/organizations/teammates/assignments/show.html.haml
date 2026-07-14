@@ -6,6 +6,9 @@
       %span= "#{@assignment.title} — clarity check-in"
       = render 'shared/page_help/header_info_button', collapse_id: assignment_single_item_page_help_id
 
+- content_for :header_action do
+  = render "people/view_switcher"
+
 - content_for :head do
   :css
     .assignment-check-in-toggle .details-expanded { display: none; }

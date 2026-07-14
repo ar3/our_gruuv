@@ -126,9 +126,19 @@ module PeopleHelper
   end
 
   CLARITY_CHECK_INS_VIEW_ACTIONS = %w[hub show review_most_recent up_next].freeze
+  SINGLE_ITEM_CHECK_IN_CONTROLLER_PATHS = %w[
+    organizations/teammates/assignments
+    organizations/teammates/aspirations
+    organizations/teammates/position_check_ins
+  ].freeze
+
+  def single_item_check_in_view_active?
+    SINGLE_ITEM_CHECK_IN_CONTROLLER_PATHS.include?(controller_path) && action_name == "show"
+  end
 
   def clarity_check_ins_view_active?
-    (controller_name == 'check_ins' && CLARITY_CHECK_INS_VIEW_ACTIONS.include?(action_name)) ||
+    single_item_check_in_view_active? ||
+      (controller_name == 'check_ins' && CLARITY_CHECK_INS_VIEW_ACTIONS.include?(action_name)) ||
       (controller_name == 'finalizations' && action_name == 'show') ||
       (controller_name == 'employees' && action_name == 'audit')
   end
@@ -138,6 +148,10 @@ module PeopleHelper
     
     if controller_name == 'company_teammates' && action_name == 'assignment_tenure_check_in_bypass'
       return set_assignments_view_label
+    end
+
+    if single_item_check_in_view_active?
+      return one_by_one_clarity_check_in_label
     end
 
     if clarity_check_ins_view_active?

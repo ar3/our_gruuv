@@ -7,8 +7,64 @@ module SingleItemCheckInHelper
     green: "✅"
   }.freeze
 
+  VIEWER_STATE_CHIP_LABELS = {
+    your_turn: "Your turn",
+    waiting: "Waiting",
+    review_together: "Review together",
+    clear: "Clear"
+  }.freeze
+
   def single_item_check_in_bucket_emoji(bucket)
     BUCKET_EMOJI[bucket&.to_sym] || "‼️"
+  end
+
+  def single_item_object_queue
+    return @single_item_object_queue if defined?(@single_item_object_queue) && @single_item_object_queue
+
+    @single_item_object_queue = CheckIns::SingleItemObjectQueueService.call(
+      items: @single_item_ordered_items,
+      engagement_health_records: @engagement_health_records,
+      teammate: @teammate,
+      current_person: current_person,
+      current_type: @single_item_type,
+      current_id: @single_item_id
+    )
+  end
+
+  def single_item_object_queue_viewer_chip_label(viewer_state)
+    VIEWER_STATE_CHIP_LABELS.fetch(viewer_state.to_sym, viewer_state.to_s.humanize)
+  end
+
+  def single_item_object_queue_viewer_chip_class(viewer_state)
+    case viewer_state.to_sym
+    when :your_turn
+      "badge rounded-pill text-bg-danger"
+    when :review_together
+      "badge rounded-pill border border-warning text-warning bg-transparent"
+    else
+      "badge rounded-pill border text-muted bg-transparent"
+    end
+  end
+
+  def single_item_object_queue_row_subcopy(row, employee_name:, manager_name:, manager_perspective:)
+    other_name = manager_perspective ? employee_name : manager_name
+    case row[:viewer_state]
+    when :your_turn
+      row[:open_check_in_present] ? "I still owe this" : "Start check-in"
+    when :waiting
+      "Waiting on #{other_name}"
+    when :review_together
+      "Ready to finalize"
+    else
+      "Nothing owed right now"
+    end
+  end
+
+  def single_item_object_queue_health_tooltip(row)
+    finalized_at = row[:last_finalized_at]
+    return "Never finalized" if finalized_at.blank?
+
+    "Last finalized #{time_ago_in_words(finalized_at)} ago"
   end
 
   def single_item_check_in_item_url(organization, teammate, item)

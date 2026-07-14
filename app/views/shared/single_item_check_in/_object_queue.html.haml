@@ -1,0 +1,69 @@
+-# Locals: queue (optional), hidden_list_id (optional), embed (optional — skip card chrome)
+- queue = local_assigns.fetch(:queue) { single_item_object_queue }
+- return if queue.blank? || queue[:rows].blank?
+
+- embed = local_assigns.fetch(:embed, false)
+- names = teammate_and_manager_short_names(@teammate, @organization)
+- manager_perspective = current_person != @teammate.person
+- rows = queue[:rows]
+- your_turn_count = queue[:your_turn_count]
+- total_count = queue[:total_count]
+- review_together_count = rows.count { |row| row[:viewer_state] == :review_together }
+- up_next_url = up_next_organization_company_teammate_check_ins_path(@organization, @teammate)
+- finalization_url = organization_company_teammate_finalization_path(@organization, @teammate)
+- hidden_list_id = local_assigns.fetch(:hidden_list_id, "singleItemObjectQueueHidden")
+- hidden_item_class = "#{hidden_list_id}-item"
+- visible_rows = rows.select { |row| row[:your_turn] || row[:current] }
+- hidden_rows = rows.reject { |row| row[:your_turn] || row[:current] }
+- hidden_count = hidden_rows.size
+
+- queue_body = capture do
+  .px-3.pt-3.pb-2
+    %p.small.mb-1
+      %span{class: (your_turn_count.positive? ? "text-danger fw-semibold" : "text-muted")}
+        = your_turn_count
+        your turn
+      %span.text-muted
+        ·
+        = total_count
+        #{"object".pluralize(total_count)}
+    = link_to "Full Up Next →", up_next_url, class: "small text-decoration-none"
+  %ul.list-group.list-group-flush.mb-0{aria: { label: "Objects to get clear on" }}
+    - visible_rows.each do |row|
+      = render "shared/single_item_check_in/object_queue_row",
+               row: row,
+               employee_name: names[:employee],
+               manager_name: names[:manager],
+               manager_perspective: manager_perspective
+    - if hidden_rows.any?
+      %li.list-group-item.px-3.py-2
+        %a.text-muted.small.text-decoration-underline{
+          href: "##{hidden_list_id}",
+          "data-bs-toggle" => "collapse",
+          "data-bs-target" => ".#{hidden_item_class}",
+          "aria-expanded" => "false",
+          role: "button"
+        }
+          = "Show the other #{hidden_count}"
+      - hidden_rows.each do |row|
+        = render "shared/single_item_check_in/object_queue_row",
+                 row: row,
+                 employee_name: names[:employee],
+                 manager_name: names[:manager],
+                 manager_perspective: manager_perspective,
+                 li_extra_class: "collapse #{hidden_item_class}"
+    - if review_together_count.positive?
+      %li.list-group-item.px-3.py-2
+        = link_to finalization_url, class: "small fw-semibold text-decoration-none text-warning" do
+          = "Go to review #{review_together_count} together"
+
+- if embed
+  = queue_body
+- else
+  .card.single-item-object-queue
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-list-check.me-2{aria: { hidden: true }}
+        To get clear on
+    .card-body.p-0
+      = queue_body
