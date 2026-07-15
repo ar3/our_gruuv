@@ -247,6 +247,54 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
           organization_id: organization.id
         )
       end
+
+      it 'reuses the existing batch when a concurrent create already won the unique key' do
+        hour_marker = Time.current.utc.beginning_of_hour
+        existing = CheckInCompletionNotificationBatch.create!(
+          organization: organization,
+          hour_marker: hour_marker,
+          employee_teammate: employee_teammate,
+          manager_teammate: manager_teammate,
+          action_taker_teammate: employee_teammate
+        )
+        notification = Notification.create!(
+          notifiable: existing,
+          notification_type: 'check_in_completion',
+          status: 'sent_successfully',
+          message_id: '111.222',
+          metadata: { 'channel' => 'D123456', 'thread_check_in_keys' => [] },
+          fallback_text: "#{employee.casual_name} has completed a check-in!"
+        )
+        existing.update!(notification_id: notification.id)
+
+        # Simulate TOCTOU: initial find misses, then create hits uniqueness and we re-find.
+        find_attempts = 0
+        allow(CheckInCompletionNotificationBatch).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+          find_attempts += 1
+          find_attempts == 1 ? nil : original.call(*args, **kwargs)
+        end
+
+        allow(slack_service).to receive(:post_message_to_thread).and_return({ success: true })
+        allow(slack_service).to receive(:update_group_dm_message).and_return({ success: true })
+
+        expect {
+          result = CheckIns::NotifyCompletionJob.perform_and_get_result(
+            check_in_id: check_in.id,
+            check_in_type: 'AssignmentCheckIn',
+            completion_state: :employee_only,
+            organization_id: organization.id
+          )
+          expect(result).to eq({ success: true })
+        }.not_to change(CheckInCompletionNotificationBatch, :count)
+
+        expect(CheckInCompletionNotificationBatch.where(
+          organization_id: organization.id,
+          hour_marker: hour_marker,
+          employee_teammate_id: employee_teammate.id,
+          manager_teammate_id: manager_teammate.id,
+          action_taker_teammate_id: employee_teammate.id
+        ).count).to eq(1)
+      end
     end
 
     context 'when employee does not have Slack' do

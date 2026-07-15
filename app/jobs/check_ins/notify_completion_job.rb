@@ -108,13 +108,23 @@ module CheckIns
     end
 
     def find_or_create_batch(organization:, hour_marker:, employee_teammate:, manager_teammate:, action_taker_teammate:)
-      CheckInCompletionNotificationBatch.find_or_create_by!(
+      attrs = {
         organization_id: organization.id,
         hour_marker: hour_marker,
         employee_teammate_id: employee_teammate.id,
         manager_teammate_id: manager_teammate.id,
         action_taker_teammate_id: action_taker_teammate.id
-      )
+      }
+      CheckInCompletionNotificationBatch.find_by(attrs) ||
+        CheckInCompletionNotificationBatch.create!(attrs)
+    rescue ActiveRecord::RecordNotUnique
+      CheckInCompletionNotificationBatch.find_by!(attrs)
+    rescue ActiveRecord::RecordInvalid => e
+      # Concurrent create: uniqueness validation loses the race between find and insert.
+      raise unless e.record.is_a?(CheckInCompletionNotificationBatch) &&
+                   e.record.errors.of_kind?(:organization_id, :taken)
+
+      CheckInCompletionNotificationBatch.find_by!(attrs)
     end
 
     def create_main_message_and_thread(batch:, slack_service:, organization:, employee_teammate:, manager_teammate:, action_taker_teammate:, hour_marker:)
