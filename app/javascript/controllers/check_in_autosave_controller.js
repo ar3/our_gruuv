@@ -7,6 +7,7 @@ export default class extends Controller {
 
   static values = {
     debounceMs: { type: Number, default: 2500 },
+    timeoutMs: { type: Number, default: 30000 },
     message: {
       type: String,
       default: "Did you save? Your unsaved changes may be lost if you leave."
@@ -16,9 +17,11 @@ export default class extends Controller {
   connect() {
     this.dirty = false
     this.saving = false
+    this.saveGeneration = 0
     this.lastError = null
     this.debounceTimer = null
     this.retryTimer = null
+    this.abortController = null
     this.boundHandleClick = this.handleClick.bind(this)
     document.addEventListener("click", this.boundHandleClick, true)
   }
@@ -26,11 +29,13 @@ export default class extends Controller {
   disconnect() {
     this.clearDebounce()
     this.clearRetry()
+    this.abortInFlight()
     document.removeEventListener("click", this.boundHandleClick, true)
   }
 
   markDirty() {
     this.dirty = true
+    this.saveGeneration += 1
     if (!this.saving) {
       this.updateStatus("")
     }
@@ -40,6 +45,7 @@ export default class extends Controller {
   handleSubmit() {
     this.clearDebounce()
     this.clearRetry()
+    this.abortInFlight()
     this.saving = true
     this.updateStatus("Saving…")
   }
@@ -52,42 +58,69 @@ export default class extends Controller {
   async save(retryAttempt = 0) {
     if (!this.dirty || this.saving) return
 
+    this.clearRetry()
     this.saving = true
     this.updateStatus("Saving…")
 
-    const formData = new FormData(this.element)
-    formData.append("autosave", "1")
-    formData.append("save_and_continue_editing", "1")
+    const generationAtStart = this.saveGeneration
+    const controller = new AbortController()
+    this.abortController = controller
+    let abortedByTimeout = false
+    const timeoutId = window.setTimeout(() => {
+      abortedByTimeout = true
+      controller.abort()
+    }, this.timeoutMsValue)
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+    let succeeded = false
 
     try {
+      const formData = new FormData(this.element)
+      formData.append("autosave", "1")
+      formData.append("save_and_continue_editing", "1")
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+
       const response = await fetch(this.element.action, {
         method: (this.element.method || "patch").toUpperCase(),
         headers: {
           Accept: "application/json",
           ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
         },
-        body: formData
+        body: formData,
+        signal: controller.signal
       })
 
       const data = await response.json().catch(() => ({}))
 
       if (response.ok && data.ok) {
-        this.dirty = false
+        // Only clear dirty if nothing changed since we captured FormData.
+        if (this.saveGeneration === generationAtStart) {
+          this.dirty = false
+        }
         this.lastError = null
-        this.saving = false
+        succeeded = true
         this.updateStatus(`Saved ${this.formatTime(data.saved_at)}`)
-        return
+      } else {
+        this.lastError = data.errors || "Save failed"
+        this.showSaveError(retryAttempt)
       }
-
-      this.lastError = data.errors || "Save failed"
-      this.saving = false
-      this.showSaveError(retryAttempt)
     } catch (_error) {
-      this.lastError = "Network error"
-      this.saving = false
+      // Disconnect (or handleSubmit) aborted the request — don't surface an error.
+      if (controller.signal.aborted && !abortedByTimeout) return
+
+      this.lastError = abortedByTimeout ? "Save timed out" : "Network error"
       this.showSaveError(retryAttempt)
+    } finally {
+      window.clearTimeout(timeoutId)
+      if (this.abortController === controller) {
+        this.abortController = null
+      }
+      this.saving = false
+    }
+
+    // Debounced saves that fired while `saving` were no-ops; re-schedule if still dirty.
+    if (succeeded && this.dirty) {
+      this.scheduleSave()
     }
   }
 
@@ -169,6 +202,13 @@ export default class extends Controller {
     if (this.retryTimer) {
       window.clearTimeout(this.retryTimer)
       this.retryTimer = null
+    }
+  }
+
+  abortInFlight() {
+    if (this.abortController) {
+      this.abortController.abort()
+      this.abortController = null
     }
   }
 }
