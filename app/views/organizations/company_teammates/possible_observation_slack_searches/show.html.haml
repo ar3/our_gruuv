@@ -1,0 +1,84 @@
+- content_for :title, teammate_context_page_title(@selected_teammate, "Slack search about #{@casual_name}")
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %i.bi.bi-slack.me-2
+      Slack search about #{@casual_name}
+      %span.badge.text-bg-warning
+        %i.bi.bi-flask.me-1
+        Beta
+
+- content_for :header_action do
+  = render "people/view_switcher"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "#{@casual_name}'s OGOs", url: ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)) }, { label: "Slack search", url: nil }])
+
+.d-flex.flex-wrap.align-items-center.gap-2.mb-3
+  = link_to ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)), class: "btn btn-outline-secondary" do
+    %i.bi.bi-arrow-left.me-1
+    Back to Source from Slack
+  - if policy(@search).destroy?
+    = button_to organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search),
+                method: :delete,
+                class: "btn btn-outline-danger",
+                data: { turbo: false, confirm: "Delete this Slack search?" } do
+      %i.bi.bi-trash.me-1
+      Delete search
+
+.card.border-0.shadow-sm.mb-4
+  .card-body
+    %p.mb-1
+      %strong= @search.display_name
+    %p.mb-1.text-muted
+      Status:
+      %span.badge.text-bg-secondary= @search.search_status
+      · Window: last #{@search.window_days} days
+      · Run by #{@search.creator_company_teammate.person.casual_name}
+    - if @search.query.present?
+      %p.mb-0.small
+        %span.text-muted Query:
+        %code= @search.query
+    - if @search.search_status == "failed" && @search.search_error.present?
+      .alert.alert-danger.mt-3.mb-0= @search.search_error
+
+.card.border-0.shadow-sm
+  .card-header.bg-transparent.border-0
+    %h5.mb-0
+      Messages
+      - if @search.search_status == "completed"
+        %span.badge.text-bg-light.ms-1= @messages.size
+  .card-body
+    - if @search.search_status != "completed"
+      %p.mb-0.text-muted
+        - if @search.search_status == "failed"
+          Search failed. Delete and try again, or reconnect Slack (search).
+        - else
+          Search is still #{@search.search_status}.
+    - elsif @messages.empty?
+      %p.mb-0.text-muted No messages matched this search in the selected window (or none were visible to you).
+    - else
+      .list-group.list-group-flush
+        - @messages.each do |message|
+          .list-group-item.px-0
+            .d-flex.justify-content-between.align-items-start.gap-3.flex-wrap
+              .flex-grow-1
+                .small.text-muted.mb-1
+                  - if message[:channel_name].present?
+                    %span ##{message[:channel_name]}
+                  - if message[:username].present?
+                    %span.ms-1 @#{message[:username]}
+                  - if message[:ts].present?
+                    %span.ms-1= Time.zone.at(message[:ts].to_f).strftime("%Y-%m-%d %H:%M")
+                %p.mb-0.text-break= truncate(message[:text].to_s, length: 500)
+              .flex-shrink-0
+                - if message[:permalink].present?
+                  = link_to message[:permalink], class: "btn btn-sm btn-outline-primary", target: "_blank", rel: "noopener" do
+                    %i.bi.bi-box-arrow-up-right.me-1
+                    Open in Slack
+                - else
+                  %span.text-muted.small No permalink
+
+%p.mt-3.mb-0.text-muted.small
+  Turning these into draft OGOs comes in a later step.

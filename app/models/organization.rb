@@ -40,6 +40,7 @@ class Organization < ApplicationRecord
   has_many :assignment_flows, foreign_key: 'company_id', dependent: :destroy
   has_many :observations, foreign_key: :company_id, dependent: :destroy
   has_many :possible_observation_transcripts, dependent: :destroy
+  has_many :possible_observation_slack_searches, dependent: :destroy
 
   # Kudos associations
   has_many :kudos_points_ledgers, foreign_key: :organization_id, dependent: :destroy

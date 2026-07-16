@@ -65,11 +65,12 @@ RSpec.describe "Teammate OGOs page", type: :request do
     context "when the viewer has a Slack search identity" do
       before { create(:teammate_identity, :slack_search, teammate: teammate) }
 
-      it "shows connected status with reconnect and disconnect" do
+      it "shows connected status with reconnect, disconnect, and search form" do
         get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
         expect(response.body).to include("Slack (search) is connected")
-        expect(response.body).to include("Reconnect Slack (search)")
+        expect(response.body).to include("Reconnect")
         expect(response.body).to include("Disconnect")
+        expect(response.body).to include("Run a new search")
       end
     end
   end

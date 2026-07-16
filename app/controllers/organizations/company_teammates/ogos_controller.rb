@@ -27,6 +27,12 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
 
   def source_from_slack
     load_page(active_tab: :source_from_slack)
+    @prior_slack_searches = PossibleObservationSlackSearch
+                            .for_subject(@teammate)
+                            .where(organization: organization)
+                            .recent_first
+                            .includes(creator_company_teammate: :person)
+                            .limit(25)
     render :source_from_slack
   end
 

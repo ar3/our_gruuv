@@ -11,7 +11,7 @@
 
 = render "tabs"
 
-.card.border-0.shadow-sm
+.card.border-0.shadow-sm.mb-4
   .card-header.bg-transparent.border-0
     %h5.mb-0.d-flex.align-items-center.flex-wrap.gap-2
       %span
@@ -26,19 +26,32 @@
         %i.bi.bi-check-circle.me-1
         Slack (search) is connected for
         %strong= viewer.person.casual_name
-        — searches will run with your Slack visibility.
-      .d-flex.flex-wrap.gap-2
-        = link_to organization_company_teammate_slack_search_oauth_authorize_path(organization, teammate_route_param(viewer), source: "sourceFromSlack", return_to: return_to), class: "btn btn-outline-primary" do
+        — searches run with your Slack visibility.
+      .d-flex.flex-wrap.gap-2.mb-4
+        = link_to organization_company_teammate_slack_search_oauth_authorize_path(organization, teammate_route_param(viewer), source: "sourceFromSlack", return_to: return_to), class: "btn btn-outline-secondary btn-sm" do
           %i.bi.bi-arrow-repeat.me-1
-          Reconnect Slack (search)
+          Reconnect
         = button_to organization_company_teammate_slack_search_disconnect_path(organization, teammate_route_param(viewer), return_to: return_to),
                     method: :delete,
-                    class: "btn btn-outline-danger",
+                    class: "btn btn-outline-danger btn-sm",
                     data: { turbo: false, confirm: "Disconnect Slack (search)? You will not be able to search Slack as yourself until you reconnect." } do
           %i.bi.bi-x-circle.me-1
           Disconnect
-      %p.mt-3.mb-0.text-muted
-        Running a search about #{@casual_name} and reviewing candidate moments comes in a later step.
+
+      %h6.fw-semibold.mb-2 Run a new search
+      = form_with url: organization_company_teammate_possible_observation_slack_searches_path(organization, teammate_route_param(@teammate)), method: :post, local: true, class: "row g-2 align-items-end" do
+        .col-auto
+          %label.form-label.mb-1{for: "slack-search-window-days"} Time window
+          %select#slack-search-window-days.form-select{name: "possible_observation_slack_search[window_days]"}
+            - PossibleObservationSlackSearch::ALLOWED_WINDOW_DAYS.each do |days|
+              %option{value: days, selected: days == PossibleObservationSlackSearch::DEFAULT_WINDOW_DAYS}
+                Last #{days} days
+        .col-auto
+          %button.btn.btn-primary{type: "submit"}
+            %i.bi.bi-search.me-1
+            Search Slack about #{@casual_name}
+      %p.mt-2.mb-0.small.text-muted
+        Uses your Slack (search) token. Prefer a linked Slack identity on #{@casual_name} for mention-based results; otherwise we search by name.
     - else
       %p.mb-3
         Connect
@@ -52,3 +65,36 @@
       %p.mt-3.mb-0.text-muted
         %i.bi.bi-info-circle.me-1
         You can also connect or disconnect from your profile Identities section.
+
+.card.border-0.shadow-sm
+  .card-header.bg-transparent.border-0
+    %h5.mb-0 Prior searches about #{@casual_name}
+  .card-body
+    - searches = @prior_slack_searches || []
+    - if searches.any?
+      .table-responsive
+        %table.table.table-hover.align-middle.mb-0
+          %thead
+            %tr
+              %th Search
+              %th Run by
+              %th Status
+              %th Messages
+              %th When
+              %th
+          %tbody
+            - searches.each do |search|
+              %tr
+                %td= search.display_name
+                %td= search.creator_company_teammate&.person&.casual_name
+                %td
+                  %span.badge.text-bg-secondary= search.search_status
+                %td= search.search_status == "completed" ? search.raw_messages_count : "—"
+                %td.text-muted= l(search.created_at, format: :short)
+                %td.text-end
+                  - if policy(search).show?
+                    = link_to "Open", organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), search), class: "btn btn-sm btn-outline-primary"
+                  - else
+                    %span.text-muted Open (creator only)
+    - else
+      %p.mb-0.text-muted No Slack searches about #{@casual_name} yet.

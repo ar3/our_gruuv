@@ -38,6 +38,16 @@ class CompanyTeammate < ApplicationRecord
            foreign_key: :creator_company_teammate_id,
            dependent: :destroy,
            inverse_of: :creator_company_teammate
+  has_many :possible_observation_slack_searches_created,
+           class_name: 'PossibleObservationSlackSearch',
+           foreign_key: :creator_company_teammate_id,
+           dependent: :destroy,
+           inverse_of: :creator_company_teammate
+  has_many :possible_observation_slack_searches_as_subject,
+           class_name: 'PossibleObservationSlackSearch',
+           foreign_key: :subject_company_teammate_id,
+           dependent: :destroy,
+           inverse_of: :subject_company_teammate
 
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }
