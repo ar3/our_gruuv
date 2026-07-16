@@ -264,7 +264,8 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
           :responder_company_teammate_id, :subject_company_teammate_id,
           :observer_unknown, :observee_unknown,
           :channel_id, :ts, :permalink, :slack_user_id,
-          :suggested_rateable_type, :suggested_rateable_id, :suggested_rating, :suggested_goal_id
+          :suggested_rateable_type, :suggested_rateable_id, :suggested_rating, :suggested_goal_id,
+          :confidence
         ).to_h
       else
         h.stringify_keys

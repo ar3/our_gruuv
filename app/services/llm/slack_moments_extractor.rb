@@ -2,8 +2,9 @@
 
 module Llm
   # Bedrock extractor for noteworthy Slack moments that warrant an OGO (precision over recall).
+  # Default: Claude Sonnet 4.5 via Bedrock regional inference profile (override with SLACK_SEARCH_BEDROCK_MODEL_ID).
   class SlackMomentsExtractor
-    HAIKU_45_FOUNDATION_SUFFIX = "anthropic.claude-haiku-4-5-20251001-v1:0"
+    SONNET_45_FOUNDATION_SUFFIX = "anthropic.claude-sonnet-4-5-20250929-v1:0"
     RATING_WORDS = {
       "strongly_agree" => "Exceptional",
       "agree" => "Solid",
@@ -12,6 +13,10 @@ module Llm
     }.freeze
     ALLOWED_RATINGS = RATING_WORDS.keys.freeze
     ALLOWED_RATEABLE_TYPES = %w[Assignment Ability Aspiration].freeze
+    # Model may return weaker hits; drop these before review.
+    MIN_RETURN_CONFIDENCE = 0.6
+    # Auto-check Include when speaker/subject resolve and confidence is high.
+    INCLUDE_CONFIDENCE_THRESHOLD = 0.75
 
     def self.default_model_id
       region = RubyLLM.config.bedrock_region.presence || ENV["AWS_REGION"].presence || "us-east-1"
@@ -21,7 +26,7 @@ module Llm
         else
           region.to_s.split("-").first.presence || "us"
         end
-      "#{prefix}.#{HAIKU_45_FOUNDATION_SUFFIX}"
+      "#{prefix}.#{SONNET_45_FOUNDATION_SUFFIX}"
     end
 
     def self.call(chunk_text:, subject_name:, context_text: nil, context_catalog: nil)
@@ -43,9 +48,7 @@ module Llm
     def call
       return stub_response unless bedrock_configured?
 
-      model_id = ENV.fetch("SLACK_SEARCH_BEDROCK_MODEL_ID") {
-        ENV.fetch("TRANSCRIPT_BEDROCK_MODEL_ID") { self.class.default_model_id }
-      }
+      model_id = ENV.fetch("SLACK_SEARCH_BEDROCK_MODEL_ID") { self.class.default_model_id }
       chat = RubyLLM.chat(model: model_id, provider: :bedrock, assume_model_exists: true)
       chat.with_instructions(system_instructions)
       response = chat.ask(user_prompt)
@@ -76,12 +79,18 @@ module Llm
       <<~TXT.squish
         You select rare, noteworthy Slack moments that deserve an OurGruuv Observation (OGO):
         reinforce something that strengthens community/aspirations, or correct something that harms them.
-        Prefer precision over recall — skip routine chatter, logistics, and weak praise.
+        Prefer precision over recall — skip routine chatter, logistics, status updates, and weak/generic praise.
         Prefer moments that clearly evidence the SUBJECT CONTEXT objects (aspirations, assignment outcomes,
         abilities, goals). Use the exact object names and ids from that context when suggesting links.
         Subject of interest is often "#{@subject_name}", but speaker/recipient may vary.
+        For each candidate, score confidence from 0.0 to 1.0:
+        0.90–1.00 = unmistakable OGO (specific action/outcome/impact; clear speaker and subject; strong MAAP/goal link);
+        0.75–0.89 = solid OGO with only minor ambiguity;
+        0.60–0.74 = borderline (thin praise or weak evidence) — include only if clearly better than silence;
+        below 0.60 = omit entirely (do not list).
         Return ONLY valid JSON:
         {"items":[{"kind":"kudos"|"feedback",
+        "confidence":0.0-1.0,
         "summary":"This is a story about when <recipient> caused <outcome> by <action>. And this made me feel <impact>.",
         "short_quote":"short exact quote","full_quote":"verbatim quote from message text",
         "speaker_label":"speaker name if known","recipient_label":"recipient name if known",
@@ -94,7 +103,8 @@ module Llm
         Rating bands: strongly_agree=Exceptional, agree=Solid, disagree=Mis-aligned, strongly_disagree=Concerning.
         Rules: full_quote/short_quote must come from message text; never invent channel_id/ts/permalink/slack_user_id;
         only use suggested_* ids that appear in SUBJECT CONTEXT; if unsure, leave suggested_* null;
-        only include moments clearly worth logging as OGOs. If none, return {"items":[]}.
+        only include moments clearly worth logging as OGOs with confidence >= #{MIN_RETURN_CONFIDENCE};
+        when unsure between including and omitting, omit. If none, return {"items":[]}.
       TXT
     end
 
@@ -143,9 +153,12 @@ module Llm
         suggestion = sanitize_suggestion(h)
         suggestion_line = suggestion_display_line(suggestion)
         summary = prepend_suggestion_to_summary(summary, suggestion_line) if suggestion_line.present?
+        confidence = sanitize_confidence(h["confidence"])
+        next if confidence < MIN_RETURN_CONFIDENCE
 
         {
           "kind" => (h["kind"].to_s == "feedback" ? "feedback" : "kudos"),
+          "confidence" => confidence,
           "summary" => summary.truncate(2500),
           "short_quote" => short_quote.truncate(2500),
           "full_quote" => full_quote.truncate(10_000),
@@ -166,9 +179,17 @@ module Llm
           "suggested_goal_id" => suggestion[:goal_id]
         }
       end
-      { "items" => items }
+      { "items" => items.sort_by { |item| [-item["confidence"].to_f, item["ts"].to_s] } }
     rescue JSON::ParserError => e
       { "items" => [], "error" => "Invalid JSON from model: #{e.message}" }
+    end
+
+    def sanitize_confidence(value)
+      conf = Float(value)
+      conf = 0.0 if conf.nan?
+      conf.clamp(0.0, 1.0).round(2)
+    rescue ArgumentError, TypeError
+      0.0
     end
 
     def sanitize_suggestion(h)

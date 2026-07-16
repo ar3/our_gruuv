@@ -52,7 +52,9 @@ class PossibleObservationSlackSearch < ApplicationRecord
 
   def extraction_items
     hash = extractions.is_a?(Hash) ? extractions.with_indifferent_access : {}
-    Array(hash[:items]).map(&:with_indifferent_access)
+    Array(hash[:items])
+      .map(&:with_indifferent_access)
+      .sort_by { |item| [-item[:confidence].to_f, item[:ts].to_s] }
   end
 
   def mark_extraction_processing!
@@ -65,7 +67,7 @@ class PossibleObservationSlackSearch < ApplicationRecord
 
   def mark_extraction_completed!(items:, extraction_note: nil)
     update!(
-      extractions: { "version" => EXTRACTIONS_VERSION, "items" => items },
+      extractions: { "version" => EXTRACTIONS_VERSION, "items" => sort_extraction_items(items) },
       extraction_status: "completed",
       extraction_error: extraction_note
     )
@@ -76,8 +78,13 @@ class PossibleObservationSlackSearch < ApplicationRecord
   end
 
   def replace_extraction_items!(items)
-    update!(extractions: { "version" => EXTRACTIONS_VERSION, "items" => items })
+    update!(extractions: { "version" => EXTRACTIONS_VERSION, "items" => sort_extraction_items(items) })
   end
+
+  def sort_extraction_items(items)
+    Array(items).sort_by { |item| h = item.with_indifferent_access; [-h[:confidence].to_f, h[:ts].to_s] }
+  end
+  private :sort_extraction_items
 
   def mark_search_processing!
     update!(search_status: "processing", search_error: nil)

@@ -32,7 +32,7 @@ module PossibleObservationSlackSearches
         end
       end
 
-      merged
+      merged.sort_by { |item| [-item["confidence"].to_f, item["ts"].to_s] }
     end
 
     private
@@ -77,10 +77,13 @@ module PossibleObservationSlackSearches
       subject_id = @default_subject&.id
       subject_unknown = subject_id.blank?
       suggestion = validated_suggestion(raw)
+      confidence = sanitize_confidence(raw["confidence"])
+      high_confidence = confidence >= Llm::SlackMomentsExtractor::INCLUDE_CONFIDENCE_THRESHOLD
 
       {
         "id" => SecureRandom.uuid,
         "kind" => raw["kind"],
+        "confidence" => confidence,
         "quote" => raw["quote"].to_s,
         "summary" => raw["summary"].to_s,
         "short_quote" => raw["short_quote"].to_s,
@@ -99,8 +102,16 @@ module PossibleObservationSlackSearches
         "suggested_rateable_id" => suggestion[:rateable_id],
         "suggested_rating" => suggestion[:rating],
         "suggested_goal_id" => suggestion[:goal_id],
-        "include" => !speaker[:unknown] && !subject_unknown
+        "include" => !speaker[:unknown] && !subject_unknown && high_confidence
       }
+    end
+
+    def sanitize_confidence(value)
+      conf = Float(value)
+      conf = 0.0 if conf.nan?
+      conf.clamp(0.0, 1.0).round(2)
+    rescue ArgumentError, TypeError
+      0.0
     end
 
     def validated_suggestion(raw)

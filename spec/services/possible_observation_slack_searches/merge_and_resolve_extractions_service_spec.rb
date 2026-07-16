@@ -43,7 +43,8 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
             "channel_id" => "C123",
             "ts" => "1710000000.000100",
             "permalink" => "https://example.slack.com/p1",
-            "slack_user_id" => "UOBS"
+            "slack_user_id" => "UOBS",
+            "confidence" => 0.9
           }
         ]
       ]
@@ -53,7 +54,50 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
     expect(items.first["responder_company_teammate_id"]).to eq(speaker.id)
     expect(items.first["subject_company_teammate_id"]).to eq(subject.id)
     expect(items.first["include"]).to be(true)
+    expect(items.first["confidence"]).to eq(0.9)
     expect(items.first["channel_id"]).to eq("C123")
+  end
+
+  it "sorts by confidence and leaves mid-confidence rows unchecked" do
+    items = described_class.call(
+      search: search,
+      raw_items_by_chunk: [
+        [
+          {
+            "kind" => "kudos",
+            "summary" => "weaker",
+            "short_quote" => "ok",
+            "full_quote" => "Pat was fine.",
+            "quote" => "Pat was fine.",
+            "speaker_label" => "alex",
+            "recipient_label" => "Pat",
+            "channel_id" => "C123",
+            "ts" => "1710000000.000200",
+            "permalink" => "https://example.slack.com/p2",
+            "slack_user_id" => "UOBS",
+            "confidence" => 0.65
+          },
+          {
+            "kind" => "kudos",
+            "summary" => "stronger",
+            "short_quote" => "great",
+            "full_quote" => "Pat crushed the launch.",
+            "quote" => "Pat crushed the launch.",
+            "speaker_label" => "alex",
+            "recipient_label" => "Pat",
+            "channel_id" => "C123",
+            "ts" => "1710000000.000100",
+            "permalink" => "https://example.slack.com/p1",
+            "slack_user_id" => "UOBS",
+            "confidence" => 0.92
+          }
+        ]
+      ]
+    )
+
+    expect(items.map { |i| i["confidence"] }).to eq([0.92, 0.65])
+    expect(items.first["include"]).to be(true)
+    expect(items.last["include"]).to be(false)
   end
 
   it "keeps validated suggestion fields from the catalog" do
@@ -79,6 +123,7 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
             "ts" => "1710000000.000100",
             "permalink" => "https://example.slack.com/p1",
             "slack_user_id" => "UOBS",
+            "confidence" => 0.88,
             "suggested_rateable_type" => "Assignment",
             "suggested_rateable_id" => 11,
             "suggested_rating" => "strongly_agree",

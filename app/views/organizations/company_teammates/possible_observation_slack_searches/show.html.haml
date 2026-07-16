@@ -120,6 +120,7 @@
               %tr
                 %th Include
                 %th Kind
+                %th Confidence
                 %th Quote
                 %th Observer → subject
                 %th Status
@@ -130,6 +131,7 @@
                 - ready = responder_selected && subject_selected
                 - dup_key = "#{item[:channel_id]}|#{item[:ts]}"
                 - duplicates = @duplicate_observations_by_key&.[](dup_key) || []
+                - confidence = item[:confidence].to_f
                 %tr
                   %td
                     = hidden_field_tag "items[#{idx}][id]", item[:id]
@@ -139,6 +141,15 @@
                       .form-check.form-check-inline
                         = radio_button_tag "items[#{idx}][kind]", value, item[:kind].to_s == value, class: "form-check-input", id: "items_#{idx}_kind_#{value}"
                         = label_tag "items_#{idx}_kind_#{value}", label, class: "form-check-label"
+                  %td
+                    - badge_class = if confidence >= 0.75
+                      - "text-bg-success"
+                    - elsif confidence >= 0.6
+                      - "text-bg-warning"
+                    - else
+                      - "text-bg-secondary"
+                    %span.badge{ class: badge_class }= format("%.0f%%", confidence * 100)
+                    = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
                   %td
                     - if item[:suggested_rating].present? || item[:suggested_rateable_type].present?
                       - rating_label = { "strongly_agree" => "Exceptional", "agree" => "Solid", "disagree" => "Mis-aligned", "strongly_disagree" => "Concerning" }[item[:suggested_rating].to_s]
@@ -193,11 +204,14 @@
                   %td
                     - if !ready
                       %span.text-warning Needs IDs
+                    - elsif confidence < 0.75
+                      %span.text-muted Low confidence
                     - else
                       %span.text-muted Reviewing
         = submit_tag "Save candidates", class: "btn btn-primary mt-2"
       %p.mt-3.mb-0.text-muted.small
         Creating draft OGOs from included candidates comes in a later step.
+        Include is pre-checked only for high-confidence candidates (≥75%).
 
   - else
     = render "raw_messages", messages: @messages, search: @search

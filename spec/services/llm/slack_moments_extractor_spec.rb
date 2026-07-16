@@ -35,6 +35,7 @@ RSpec.describe Llm::SlackMomentsExtractor do
           "ts": "1.0",
           "permalink": "https://example.slack.com/p1",
           "slack_user_id": "U1",
+          "confidence": 0.91,
           "suggested_rateable_type": "Assignment",
           "suggested_rateable_id": 11,
           "suggested_rating": "strongly_agree",
@@ -44,6 +45,7 @@ RSpec.describe Llm::SlackMomentsExtractor do
     JSON
 
     item = result["items"].first
+    expect(item["confidence"]).to eq(0.91)
     expect(item["summary"]).to start_with("Suggested: Exceptional example of Assignment Own launch; linked to Goal Close Q3 deals.")
     expect(item["suggested_rateable_type"]).to eq("Assignment")
     expect(item["suggested_rateable_id"]).to eq(11)
@@ -59,6 +61,7 @@ RSpec.describe Llm::SlackMomentsExtractor do
           "summary": "Story",
           "short_quote": "quote",
           "full_quote": "full",
+          "confidence": 0.8,
           "suggested_rateable_type": "Assignment",
           "suggested_rateable_id": 999,
           "suggested_rating": "agree",
@@ -73,5 +76,21 @@ RSpec.describe Llm::SlackMomentsExtractor do
     expect(item["suggested_goal_id"]).to be_nil
     expect(item["suggested_rating"]).to eq("agree")
     expect(item["summary"]).to start_with("Suggested: Solid example.")
+  end
+
+  it "drops items below the minimum confidence threshold" do
+    result = parse(<<~JSON)
+      {
+        "items": [{
+          "kind": "kudos",
+          "summary": "Weak",
+          "short_quote": "nice",
+          "full_quote": "nice job",
+          "confidence": 0.4
+        }]
+      }
+    JSON
+
+    expect(result["items"]).to be_empty
   end
 end
