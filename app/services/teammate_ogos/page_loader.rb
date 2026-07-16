@@ -36,6 +36,8 @@ module TeammateOgos
                 :one_on_one_link, :active_tab, :company
 
     def load_observation_health
+      return nil if active_tab == :source_from_slack
+
       OneOnOne::PriorityCarouselBuilder.observation_health(
         organization: organization,
         teammate: teammate,
@@ -103,8 +105,10 @@ module TeammateOgos
         case active_tab
         when :from
           from_scope
-        else
+        when :about
           about_scope
+        else
+          return Observation.none
         end
 
       scope
@@ -172,6 +176,8 @@ module TeammateOgos
         helpers.ogos_from_organization_company_teammate_path(organization, teammate)
       when :feedback_requests
         helpers.ogos_feedback_requests_organization_company_teammate_path(organization, teammate)
+      when :source_from_slack
+        helpers.ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
       else
         helpers.ogos_organization_company_teammate_path(organization, teammate)
       end

@@ -29,6 +29,12 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("involving_teammate_id=#{teammate.id}")
       expect(response.body).to include("view=large_list")
     end
+
+    it "includes the Source from Slack tab on the OGOs page" do
+      get ogos_organization_company_teammate_path(organization, teammate)
+      expect(response.body).to include("Source from Slack")
+      expect(response.body).to include("/ogos/source_from_slack")
+    end
   end
 
   describe "GET /organizations/:organization_id/company_teammates/:id/ogos/from" do
@@ -36,6 +42,19 @@ RSpec.describe "Teammate OGOs page", type: :request do
       get ogos_from_organization_company_teammate_path(organization, teammate)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("From #{person.casual_name}")
+    end
+  end
+
+  describe "GET /organizations/:organization_id/company_teammates/:id/ogos/source_from_slack" do
+    it "renders the Source from Slack Beta tab with page help" do
+      get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Source from Slack")
+      expect(response.body).to include("Beta")
+      expect(response.body).to include("sourceFromSlackPageHelp")
+      expect(response.body).to include("missed reinforcement is partly on you")
+      expect(response.body).to include("Connect Slack search and review candidate moments in a later step")
+      expect(response.body).not_to include("OGO health (last 30 days)")
     end
   end
 

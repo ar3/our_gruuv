@@ -1,6 +1,7 @@
 - about_active = @active_tab == :about
 - from_active = @active_tab == :from
 - requests_active = @active_tab == :feedback_requests
+- source_active = @active_tab == :source_from_slack
 - casual = @casual_name
 
 %ul.nav.nav-tabs.mb-3{role: "tablist"}
@@ -19,3 +20,9 @@
               class: "nav-link #{'active' if requests_active}",
               role: "tab" do
       Feedback Requests
+  %li.nav-item{role: "presentation"}
+    = link_to ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)),
+              class: "nav-link #{'active' if source_active}",
+              role: "tab" do
+      %i.bi.bi-slack.me-1
+      Source from Slack

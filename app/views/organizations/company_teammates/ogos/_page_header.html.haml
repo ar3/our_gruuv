@@ -1,4 +1,6 @@
 - content_for :title, teammate_context_page_title(@selected_teammate, "#{@casual_name}'s OGOs")
+- page_help_id = local_assigns[:page_help_id]
+- path_for_teammate = ogos_tab_path_for_teammate(organization, @active_tab)
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -7,9 +9,17 @@
                organization: organization,
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: ->(tm) { ogos_organization_company_teammate_path(organization, teammate_route_param(tm)) },
+               path_for_teammate: path_for_teammate,
                switch_aria_label: "Switch teammate for OGOs"
       %span= " - #{@casual_name}'s OGOs"
+      - if @active_tab == :source_from_slack
+        %span.badge.text-bg-warning
+          %i.bi.bi-flask.me-1
+          Beta
+      - if page_help_id.present?
+        = render "shared/page_help/header_info_button",
+                 collapse_id: page_help_id,
+                 tooltip: local_assigns.fetch(:page_help_tooltip, "What this page is for and how to use it. Click for details.")
 
 - content_for :header_action do
   = render "people/view_switcher"

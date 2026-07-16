@@ -25,6 +25,11 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
     render :feedback_requests
   end
 
+  def source_from_slack
+    load_page(active_tab: :source_from_slack)
+    render :source_from_slack
+  end
+
   private
 
   def load_page(active_tab:)
