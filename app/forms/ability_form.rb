@@ -23,18 +23,18 @@ class AbilityForm < Reform::Form
   # Reform automatically handles save - we just need to customize the logic
   def save
     return false unless valid?
-    
-    # Let Reform sync the form data to the model first
-    super
-    
-    # Set the semantic version based on version type
+
+    was_new_record = model.new_record?
+
+    # Set before Reform persists (super syncs + model.save); otherwise
+    # created_by/updated_by are null at save and Sentry sees OURGRUUV-3V4.
     model.semantic_version = calculate_semantic_version
-    
-    # Set audit fields
-    model.created_by = current_person if model.new_record?
+    model.created_by = current_person if was_new_record
     model.updated_by = current_person
-    
-    # Save the model
+
+    super
+
+    # Persist any fields Reform did not write on the first save
     model.save
   end
 

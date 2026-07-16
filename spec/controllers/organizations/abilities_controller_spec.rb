@@ -134,6 +134,8 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
       expect(ability.semantic_version).to eq("1.0.0")
       expect(ability.name).to eq('Test Ability')
       expect(ability.milestone_1_description).to eq('Basic understanding')
+      expect(ability.created_by).to eq(person)
+      expect(ability.updated_by).to eq(person)
     end
 
     it 'creates a new ability nearly ready' do
