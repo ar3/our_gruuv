@@ -51,6 +51,7 @@ RSpec.describe TeammateIdentity, type: :model do
 
   describe 'scopes' do
     let!(:slack_identity) { create(:teammate_identity, :slack) }
+    let!(:slack_search_identity) { create(:teammate_identity, :slack_search) }
     let!(:jira_identity) { create(:teammate_identity, :jira) }
     let!(:linear_identity) { create(:teammate_identity, :linear) }
     let!(:asana_identity) { create(:teammate_identity, :asana) }
@@ -58,6 +59,12 @@ RSpec.describe TeammateIdentity, type: :model do
     describe '.slack' do
       it 'returns only Slack identities' do
         expect(TeammateIdentity.slack).to contain_exactly(slack_identity)
+      end
+    end
+
+    describe '.slack_search' do
+      it 'returns only Slack search identities' do
+        expect(TeammateIdentity.slack_search).to contain_exactly(slack_search_identity)
       end
     end
 

@@ -52,9 +52,12 @@ Rails.application.routes.draw do
     
   end
   
-  # Slack OAuth callback (fixed URL for Slack)
+  # Slack OAuth callback (fixed URL for Slack org bot install)
   get 'slack/oauth/callback', to: 'organizations/slack/oauth#callback'
-  
+
+  # Slack search user OAuth callback (fixed URL for per-teammate search identity)
+  get 'slack/search/oauth/callback', to: 'organizations/company_teammates/slack_search/oauth#callback', as: :slack_search_oauth_callback
+
   # Asana OAuth callback (fixed URL for Asana)
   get 'asana/oauth/callback', to: 'organizations/company_teammates/asana/oauth#callback'
   
@@ -414,6 +417,10 @@ Rails.application.routes.draw do
       # Asana OAuth (nested under company_teammates)
       get 'asana/oauth/authorize', to: 'company_teammates/asana/oauth#authorize', as: :asana_oauth_authorize
       delete 'asana/disconnect', to: 'company_teammates/asana/oauth#disconnect', as: :asana_disconnect
+
+      # Slack search user OAuth (nested under company_teammates; distinct from org bot + linked Slack identity)
+      get 'slack_search/oauth/authorize', to: 'company_teammates/slack_search/oauth#authorize', as: :slack_search_oauth_authorize
+      delete 'slack_search/disconnect', to: 'company_teammates/slack_search/oauth#disconnect', as: :slack_search_disconnect
     end
     
     # Teammates resource routes for position, assignments, and aspirations

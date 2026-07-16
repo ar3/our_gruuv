@@ -186,6 +186,11 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.identity_provider_icon(identity)).to eq('bi-slack')
     end
 
+    it 'returns bi-slack for slack_search provider' do
+      identity = create(:teammate_identity, :slack_search, teammate: teammate)
+      expect(helper.identity_provider_icon(identity)).to eq('bi-slack')
+    end
+
     it 'returns bi-kanban for asana provider' do
       identity = create(:teammate_identity, :asana, teammate: teammate)
       expect(helper.identity_provider_icon(identity)).to eq('bi-kanban')
@@ -210,6 +215,11 @@ RSpec.describe PeopleHelper, type: :helper do
     it 'returns Slack for slack provider' do
       identity = create(:teammate_identity, :slack, teammate: teammate)
       expect(helper.identity_provider_name(identity)).to eq('Slack')
+    end
+
+    it 'returns Slack (search) for slack_search provider' do
+      identity = create(:teammate_identity, :slack_search, teammate: teammate)
+      expect(helper.identity_provider_name(identity)).to eq('Slack (search)')
     end
 
     it 'returns Asana for asana provider' do

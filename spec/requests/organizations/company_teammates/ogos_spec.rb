@@ -53,8 +53,24 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("Beta")
       expect(response.body).to include("sourceFromSlackPageHelp")
       expect(response.body).to include("missed reinforcement is partly on you")
-      expect(response.body).to include("Connect Slack search and review candidate moments in a later step")
       expect(response.body).not_to include("OGO health (last 30 days)")
+    end
+
+    it "prompts the viewer to connect Slack (search) when not connected" do
+      get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
+      expect(response.body).to include("Connect Slack (search)")
+      expect(response.body).to include("/slack_search/oauth/authorize")
+    end
+
+    context "when the viewer has a Slack search identity" do
+      before { create(:teammate_identity, :slack_search, teammate: teammate) }
+
+      it "shows connected status with reconnect and disconnect" do
+        get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include("Slack (search) is connected")
+        expect(response.body).to include("Reconnect Slack (search)")
+        expect(response.body).to include("Disconnect")
+      end
     end
   end
 

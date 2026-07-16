@@ -11,6 +11,7 @@ class TeammateIdentity < ApplicationRecord
   
   # Scopes
   scope :slack, -> { where(provider: 'slack') }
+  scope :slack_search, -> { where(provider: 'slack_search') }
   scope :jira, -> { where(provider: 'jira') }
   scope :linear, -> { where(provider: 'linear') }
   scope :asana, -> { where(provider: 'asana') }
@@ -18,6 +19,10 @@ class TeammateIdentity < ApplicationRecord
   # Instance methods
   def slack?
     provider == 'slack'
+  end
+
+  def slack_search?
+    provider == 'slack_search'
   end
   
   def jira?

@@ -1,4 +1,6 @@
 - page_help_id = "sourceFromSlackPageHelp"
+- viewer = current_company_teammate
+- return_to = ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate))
 
 = render "page_header",
          page_help_id: page_help_id,
@@ -16,8 +18,37 @@
         %i.bi.bi-slack.me-2
         Source OGOs from Slack about #{@casual_name}
   .card-body
-    %p.text-muted.mb-2
-      Connect Slack search and review candidate moments in a later step. This Beta surface is ready for that flow.
-    %p.mb-0.text-muted
-      %i.bi.bi-info-circle.me-1
-      Use the info icon above for why logging OGOs from Slack moments matters.
+    - if viewer.nil?
+      %p.mb-0.text-muted
+        Sign in as a teammate in this organization to connect Slack search.
+    - elsif viewer.has_slack_search_identity?
+      .alert.alert-success.border.mb-3
+        %i.bi.bi-check-circle.me-1
+        Slack (search) is connected for
+        %strong= viewer.person.casual_name
+        — searches will run with your Slack visibility.
+      .d-flex.flex-wrap.gap-2
+        = link_to organization_company_teammate_slack_search_oauth_authorize_path(organization, teammate_route_param(viewer), source: "sourceFromSlack", return_to: return_to), class: "btn btn-outline-primary" do
+          %i.bi.bi-arrow-repeat.me-1
+          Reconnect Slack (search)
+        = button_to organization_company_teammate_slack_search_disconnect_path(organization, teammate_route_param(viewer), return_to: return_to),
+                    method: :delete,
+                    class: "btn btn-outline-danger",
+                    data: { turbo: false, confirm: "Disconnect Slack (search)? You will not be able to search Slack as yourself until you reconnect." } do
+          %i.bi.bi-x-circle.me-1
+          Disconnect
+      %p.mt-3.mb-0.text-muted
+        Running a search about #{@casual_name} and reviewing candidate moments comes in a later step.
+    - else
+      %p.mb-3
+        Connect
+        %strong Slack (search)
+        on your own profile so OurGruuv can search Slack
+        %em as you
+        (your visibility). This is separate from the linked Slack identity used for DMs and mentions.
+      = link_to organization_company_teammate_slack_search_oauth_authorize_path(organization, teammate_route_param(viewer), source: "sourceFromSlack", return_to: return_to), class: "btn btn-primary" do
+        %i.bi.bi-slack.me-1
+        Connect Slack (search)
+      %p.mt-3.mb-0.text-muted
+        %i.bi.bi-info-circle.me-1
+        You can also connect or disconnect from your profile Identities section.

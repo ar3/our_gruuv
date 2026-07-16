@@ -41,6 +41,30 @@ FactoryBot.define do
       sequence(:uid) { |n| "U#{SecureRandom.hex(8)}_#{n}" }
     end
 
+    trait :slack_search do
+      provider { 'slack_search' }
+      sequence(:uid) { |n| "U#{SecureRandom.hex(8)}_#{n}" }
+      raw_data do
+        {
+          'info' => {
+            'id' => 'USEARCH123',
+            'name' => 'searchuser',
+            'real_name' => 'Search User'
+          },
+          'credentials' => {
+            'token' => 'xoxp-test-search-token',
+            'scope' => 'search:read',
+            'token_type' => 'user',
+            'team_id' => 'T1234567890'
+          },
+          'extra' => {
+            'ok' => true,
+            'authed_user' => { 'id' => 'USEARCH123', 'access_token' => 'xoxp-test-search-token' }
+          }
+        }
+      end
+    end
+
     trait :jira do
       provider { 'jira' }
       sequence(:uid) { |n| "jira_user_#{n}" }

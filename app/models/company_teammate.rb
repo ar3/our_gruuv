@@ -162,6 +162,14 @@ class CompanyTeammate < ApplicationRecord
     teammate_identities.slack.exists?
   end
 
+  def slack_search_identity
+    teammate_identities.slack_search.first
+  end
+
+  def has_slack_search_identity?
+    teammate_identities.slack_search.exists?
+  end
+
   def asana_identity
     teammate_identities.asana.first
   end

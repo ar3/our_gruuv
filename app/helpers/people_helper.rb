@@ -6,7 +6,7 @@ module PeopleHelper
       'bi-google'
     when 'email'
       'bi-envelope'
-    when 'slack'
+    when 'slack', 'slack_search'
       'bi-slack'
     when 'asana'
       'bi-kanban'
@@ -23,6 +23,8 @@ module PeopleHelper
       'Email'
     when 'slack'
       'Slack'
+    when 'slack_search'
+      'Slack (search)'
     when 'asana'
       'Asana'
     else
