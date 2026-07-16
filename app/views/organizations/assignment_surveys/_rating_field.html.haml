@@ -1,0 +1,17 @@
+- labels = { 1 => "Strongly disagree", 2 => "Disagree", 3 => "Somewhat disagree", 4 => "Somewhat agree", 5 => "Agree", 6 => "Strongly agree" }
+.mb-4
+  %fieldset
+    %legend.h6.mb-2= prompt
+    .d-flex.flex-wrap.gap-2
+      - labels.each do |value, label|
+        - input_id = "#{field.object_name}_#{attribute}_#{value}".parameterize(separator: "_")
+        = field.radio_button attribute,
+          value,
+          id: input_id,
+          class: "btn-check",
+          autocomplete: "off"
+        = field.label attribute,
+          label,
+          for: input_id,
+          value: value,
+          class: "btn btn-sm btn-outline-primary"

@@ -176,6 +176,15 @@ Rails.application.routes.draw do
     post :observations_health_refresh, to: 'organizations/observations_health#refresh', as: :observations_health_refresh
     post :observations_health_refresh_all, to: 'organizations/observations_health#refresh_all', as: :observations_health_refresh_all
 
+    resource :assignment_survey,
+             path: "assignment-experience-survey",
+             controller: "organizations/assignment_surveys",
+             only: [:show, :create, :update] do
+      get :results
+      get :export
+      get "submissions/:submission_id", action: :submission, as: :submission
+    end
+
     # Employment management wizard
     resources :employment_management, only: [:index, :new, :create], controller: 'organizations/employment_management' do
       collection do

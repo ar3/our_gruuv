@@ -1,0 +1,13 @@
+%ul.nav.nav-tabs.mb-4{role: "tablist"}
+  %li.nav-item{role: "presentation"}
+    = link_to organization_assignment_survey_path(organization),
+      class: "nav-link #{active_tab == :take ? 'active' : ''}",
+      role: "tab" do
+      %i.bi.bi-pencil-square.me-1
+      Take survey
+  %li.nav-item{role: "presentation"}
+    = link_to results_organization_assignment_survey_path(organization),
+      class: "nav-link #{active_tab == :results ? 'active' : ''}",
+      role: "tab" do
+      %i.bi.bi-bar-chart.me-1
+      Results

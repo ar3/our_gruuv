@@ -2080,3 +2080,20 @@ body:has(.vertical-nav.open) .floating-toggle {
   vertical-align: middle;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
+
+.assignment-survey-completion-progress {
+  height: 1rem;
+}
+
+.assignment-survey-distribution-progress {
+  height: 0.75rem;
+  display: block;
+}
+
+.assignment-survey-distribution-count {
+  min-width: 2rem;
+}
+
+.assignment-survey-intro {
+  max-width: 44rem;
+}

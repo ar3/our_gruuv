@@ -1,0 +1,15 @@
+- labels = { 1 => "Strongly disagree", 2 => "Disagree", 3 => "Somewhat disagree", 4 => "Somewhat agree", 5 => "Agree", 6 => "Strongly agree" }
+- data = distributions.fetch(dimension)
+.mb-3
+  .d-flex.justify-content-between.align-items-center
+    %h4.h6.mb-2= title
+    - if data[:average]
+      %span.small.text-muted Average #{data[:average]} / 6
+  - labels.each do |rating, label|
+    - count = data[:counts].fetch(rating)
+    - percentage = data[:total].positive? ? ((count.to_f / data[:total]) * 100).round : 0
+    .row.g-2.align-items-center.mb-1
+      .col-5.col-md-4.small= label
+      .col
+        %progress.assignment-survey-distribution-progress.w-100{value: percentage, max: 100, "aria-label": "#{title}: #{label}"} #{percentage}%
+      .col-auto.small.text-muted.assignment-survey-distribution-count= count

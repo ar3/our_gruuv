@@ -1,0 +1,119 @@
+= render "header"
+= render "tabs", active_tab: :take
+
+.alert.alert-warning.d-flex.gap-2.align-items-start
+  %i.bi.bi-eye-fill.mt-1
+  %div
+    %strong This survey is identifiable.
+    Your draft and finalized answers are visible to your employment managers and managerial hierarchy.
+
+- if @draft
+  - if @draft.errors.any?
+    .alert.alert-danger
+      %strong Please fix the following:
+      %ul.mb-0
+        - @draft.errors.full_messages.each do |message|
+          %li= message
+
+  .card.mb-4
+    .card-body
+      .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+        %div
+          %h2.h4.mb-1 Survey in progress
+          %p.text-muted.mb-0
+            #{@draft.complete_response_count} of #{@draft.responses.size} assignments fully rated
+        %span.badge.text-bg-warning Draft
+      %progress.assignment-survey-completion-progress.w-100.mt-3{value: @draft.progress_percentage,
+        max: 100,
+        "aria-label": "Survey completion"} #{@draft.progress_percentage}%
+
+  = form_with model: @draft,
+    scope: :assignment_survey_submission,
+    url: organization_assignment_survey_path(organization),
+    method: :patch,
+    local: true,
+    data: { controller: "check-in-autosave",
+      action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit",
+      check_in_autosave_debounce_ms_value: 1200,
+      check_in_autosave_message_value: "Your latest survey changes may still be saving. Leave this page?" } do |form|
+    = form.fields_for :responses do |response_fields|
+      - response = response_fields.object
+      .card.mb-4
+        .card-header.bg-light
+          .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2
+            %div
+              %h2.h4.mb-1= response.snapshot_title
+              - if response.snapshot_tagline.present?
+                %p.text-muted.mb-0= response.snapshot_tagline
+            %span.badge.text-bg-secondary= response.source_label
+          %details.mt-3
+            %summary.fw-semibold Assignment outcomes and required activities
+            .row.g-3.mt-1
+              .col-12.col-lg-6
+                %h3.h6 Outcomes
+                - if response.snapshot_outcomes.any?
+                  %ul.mb-0
+                    - response.snapshot_outcomes.each do |outcome|
+                      %li= outcome["description"]
+                - else
+                  %p.text-muted.mb-0 No outcomes are documented.
+              .col-12.col-lg-6
+                %h3.h6 Required activities
+                - if response.snapshot_required_activities.present?
+                  .markdown-content= render_markdown(response.snapshot_required_activities)
+                - else
+                  %p.text-muted.mb-0 No required activities are documented.
+        .card-body
+          = response_fields.hidden_field :id
+          = render "rating_field",
+            field: response_fields,
+            attribute: :understandable_rating,
+            prompt: "I clearly understand what this assignment expects of me."
+          = render "rating_field",
+            field: response_fields,
+            attribute: :possible_rating,
+            prompt: "I can realistically meet the expectations of this assignment."
+          = render "rating_field",
+            field: response_fields,
+            attribute: :relevant_rating,
+            prompt: "This assignment represents a real need for our team's success."
+          = response_fields.label :comment, "Optional comments about this assignment", class: "form-label fw-semibold"
+          = response_fields.text_area :comment,
+            class: "form-control",
+            rows: 3,
+            placeholder: "What would make this assignment clearer, more possible, or more relevant?"
+
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-3.mb-4
+      %span.text-muted.d-none{data: { check_in_autosave_target: "status" }, "aria-live": "polite"}
+      .d-flex.gap-2.ms-auto
+        = form.submit "Save draft", class: "btn btn-outline-primary"
+        = form.submit "Finalize survey",
+          name: "finalize",
+          value: "1",
+          class: "btn btn-primary",
+          data: { turbo_confirm: "Finalize this survey? You will not be able to edit it afterward." }
+- else
+  .card.mb-4
+    .card-body.text-center.py-5
+      %i.bi.bi-clipboard2-check.display-4.text-primary
+      %h2.h4.mt-3= @finalized_submissions.any? ? "Ready for another perspective?" : "Share your assignment experience"
+      %p.text-muted.mx-auto.assignment-survey-intro
+        A new survey captures the active assignments you hold and the assignments required by your current position. Suggested assignments are excluded.
+      = button_to "Start a new survey",
+        organization_assignment_survey_path(organization),
+        method: :post,
+        class: "btn btn-primary"
+
+- if @finalized_submissions.any?
+  %h2.h4 Previous finalized surveys
+  .list-group.mb-4
+    - @finalized_submissions.each_with_index do |submission, index|
+      = link_to submission_organization_assignment_survey_path(organization, submission.id),
+        class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center" do
+        %span
+          Finalized #{l(submission.finalized_at, format: :long)}
+          - if index.zero?
+            %span.badge.text-bg-primary.ms-2 Current
+        %span.text-muted
+          #{submission.responses.count} assignments
+          %i.bi.bi-chevron-right.ms-1

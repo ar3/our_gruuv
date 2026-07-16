@@ -20,6 +20,7 @@ class CompanyTeammate < ApplicationRecord
   has_one :one_on_one_link, foreign_key: 'teammate_id', dependent: :destroy
   has_many :huddle_feedbacks, foreign_key: 'teammate_id', dependent: :nullify
   has_many :huddle_participants, foreign_key: 'teammate_id', dependent: :nullify
+  has_many :assignment_survey_submissions, foreign_key: :teammate_id, dependent: :destroy
 
   has_many :prompts, foreign_key: 'company_teammate_id', dependent: :destroy
   has_many :maap_agent_runs, as: :subject, dependent: :destroy

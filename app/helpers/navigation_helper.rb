@@ -543,6 +543,13 @@ module NavigationHelper
             path: organization_position_comparison_path(current_organization),
             policy_check: -> { policy(:eligibility_requirement).index? },
             coming_soon: false
+          },
+          {
+            label: 'Assignment Experience Survey',
+            icon: 'bi-clipboard2-check',
+            path: organization_assignment_survey_path(current_organization),
+            policy_check: -> { current_company_teammate&.employed? && policy(current_company).show? },
+            coming_soon: false
           }
         ]
       },

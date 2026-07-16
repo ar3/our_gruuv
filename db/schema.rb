@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_16_030000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -228,6 +228,43 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_030000) do
     t.index ["supplier_assignment_id", "consumer_assignment_id"], name: "index_assignment_supply_relationships_on_supplier_and_consumer", unique: true
     t.index ["supplier_assignment_id"], name: "idx_on_supplier_assignment_id_815beca5be"
     t.check_constraint "supplier_assignment_id <> consumer_assignment_id", name: "check_no_self_referential_supply_relationships"
+  end
+
+  create_table "assignment_survey_responses", force: :cascade do |t|
+    t.bigint "assignment_survey_submission_id", null: false
+    t.bigint "assignment_id", null: false
+    t.string "assignment_source", null: false
+    t.string "snapshot_title", null: false
+    t.text "snapshot_tagline"
+    t.text "snapshot_required_activities"
+    t.jsonb "snapshot_outcomes", default: [], null: false
+    t.integer "understandable_rating"
+    t.integer "possible_rating"
+    t.integer "relevant_rating"
+    t.text "comment"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_id"], name: "index_assignment_survey_responses_on_assignment_id"
+    t.index ["assignment_survey_submission_id", "assignment_id"], name: "index_assignment_survey_responses_on_submission_assignment", unique: true
+    t.index ["assignment_survey_submission_id"], name: "index_assignment_survey_responses_on_submission_id"
+    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
+    t.check_constraint "possible_rating >= 1 AND possible_rating <= 6", name: "assignment_survey_responses_possible_rating_check"
+    t.check_constraint "relevant_rating >= 1 AND relevant_rating <= 6", name: "assignment_survey_responses_relevant_rating_check"
+    t.check_constraint "understandable_rating >= 1 AND understandable_rating <= 6", name: "assignment_survey_responses_understandable_rating_check"
+  end
+
+  create_table "assignment_survey_submissions", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "teammate_id", null: false
+    t.string "status", default: "draft", null: false
+    t.datetime "finalized_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "teammate_id", "finalized_at"], name: "index_assignment_survey_submissions_for_latest_results"
+    t.index ["organization_id"], name: "index_assignment_survey_submissions_on_organization_id"
+    t.index ["teammate_id"], name: "index_assignment_survey_submissions_on_one_draft_per_teammate", unique: true, where: "((status)::text = 'draft'::text)"
+    t.index ["teammate_id"], name: "index_assignment_survey_submissions_on_teammate_id"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'finalized'::character varying]::text[])", name: "assignment_survey_submissions_status_check"
   end
 
   create_table "assignment_tenures", force: :cascade do |t|
@@ -1682,6 +1719,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_030000) do
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignment_supply_relationships", "assignments", column: "consumer_assignment_id"
   add_foreign_key "assignment_supply_relationships", "assignments", column: "supplier_assignment_id"
+  add_foreign_key "assignment_survey_responses", "assignment_survey_submissions"
+  add_foreign_key "assignment_survey_responses", "assignments"
+  add_foreign_key "assignment_survey_submissions", "organizations"
+  add_foreign_key "assignment_survey_submissions", "teammates"
   add_foreign_key "assignment_tenures", "assignments"
   add_foreign_key "assignment_tenures", "teammates"
   add_foreign_key "assignments", "departments"

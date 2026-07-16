@@ -1,0 +1,125 @@
+= render "header"
+= render "tabs", active_tab: :results
+
+.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-4
+  %p.text-muted.mb-0
+    Showing people you are authorized to support. Draft answers are included only in individual results.
+  = link_to export_organization_assignment_survey_path(organization), class: "btn btn-outline-primary" do
+    %i.bi.bi-download.me-1
+    Export CSV
+
+.row.g-3.mb-4
+  .col-12.col-md-3
+    .card.h-100
+      .card-body
+        .text-muted People in view
+        .display-6= @results.teammates.size
+  .col-12.col-md-3
+    .card.h-100.border-success
+      .card-body
+        .text-muted Finalized
+        .display-6.text-success= @results.finalized_teammate_count
+  .col-12.col-md-3
+    .card.h-100.border-warning
+      .card-body
+        .text-muted Draft
+        .display-6.text-warning= @results.draft_teammate_count
+  .col-12.col-md-3
+    .card.h-100.border-secondary
+      .card-body
+        .text-muted Not started
+        .display-6.text-secondary= @results.not_started_teammate_count
+
+- if @results.finalized_teammate_count.positive?
+  .card.mb-4
+    .card-header
+      %h2.h4.mb-0 Current overall results
+    .card-body
+      %p.text-muted
+        Uses only each teammate's latest finalized survey. Distributions are primary; averages are provided as a quick reference.
+      .row.g-4
+        .col-12.col-lg-4
+          = render "distribution",
+            distributions: @results.overall_distributions,
+            dimension: :understandable,
+            title: "Understandable"
+        .col-12.col-lg-4
+          = render "distribution",
+            distributions: @results.overall_distributions,
+            dimension: :possible,
+            title: "Possible"
+        .col-12.col-lg-4
+          = render "distribution",
+            distributions: @results.overall_distributions,
+            dimension: :relevant,
+            title: "Relevant"
+
+  .card.mb-4
+    .card-header
+      %h2.h4.mb-0 Results by assignment
+    .list-group.list-group-flush
+      - @results.assignment_rows.each do |row|
+        .list-group-item
+          %details
+            %summary.d-flex.justify-content-between.align-items-center
+              %span.fw-semibold= row[:title]
+              %span.badge.text-bg-secondary #{row[:response_count]} responses
+            .row.g-4.mt-2
+              .col-12.col-lg-4
+                = render "distribution",
+                  distributions: row[:distributions],
+                  dimension: :understandable,
+                  title: "Understandable"
+              .col-12.col-lg-4
+                = render "distribution",
+                  distributions: row[:distributions],
+                  dimension: :possible,
+                  title: "Possible"
+              .col-12.col-lg-4
+                = render "distribution",
+                  distributions: row[:distributions],
+                  dimension: :relevant,
+                  title: "Relevant"
+- else
+  .alert.alert-info
+    No finalized surveys are available yet. Draft participation appears below.
+
+.card.mb-4
+  .card-header
+    %h2.h4.mb-0 Individual results
+  .table-responsive
+    %table.table.table-hover.align-middle.mb-0
+      %thead
+        %tr
+          %th Teammate
+          %th Current status
+          %th Finalized versions
+          %th Latest finalized
+          %th
+      %tbody
+        - @results.participation_rows.each do |row|
+          %tr
+            %td.fw-semibold= row[:teammate].person.display_name
+            %td
+              - case row[:status]
+              - when :draft
+                %span.badge.text-bg-warning Draft
+              - when :finalized
+                %span.badge.text-bg-success Finalized
+              - else
+                %span.badge.text-bg-secondary Not started
+            %td= row[:submission_count]
+            %td
+              - if row[:latest_finalized]
+                = l(row[:latest_finalized].finalized_at, format: :short)
+              - else
+                %span.text-muted —
+            %td.text-end
+              - if row[:draft]
+                = link_to "View draft",
+                  submission_organization_assignment_survey_path(organization, row[:draft].id),
+                  class: "btn btn-sm btn-outline-warning"
+              - elsif row[:latest_finalized]
+                = link_to "View responses",
+                  submission_organization_assignment_survey_path(organization, row[:latest_finalized].id),
+                  class: "btn btn-sm btn-outline-primary"

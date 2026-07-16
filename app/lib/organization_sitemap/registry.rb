@@ -541,7 +541,11 @@ module OrganizationSitemap
           beta_page(:position_comparison, "Position Comparison", "bi-layout-split", :organization_position_comparison_path,
             policy: ->(ctx) { ctx.policy(:eligibility_requirement).index? },
             goal: "Compare positions side by side for hiring and growth planning.",
-            synonyms: %w[position comparison compare positions side by side])
+            synonyms: %w[position comparison compare positions side by side]),
+          beta_page(:assignment_experience_survey, "Assignment Experience Survey", "bi-clipboard2-check", :organization_assignment_survey_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).assignment_survey? },
+            goal: "Rate whether your assignments are understandable, possible, and relevant.",
+            synonyms: %w[assignment experience survey clarity possible relevant])
         ]
       }
     end

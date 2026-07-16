@@ -1,0 +1,34 @@
+- content_for :title, "Assignment Experience Survey"
+
+- content_for :header do
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0
+      %i.bi.bi-clipboard2-check.me-2
+      Assignment Experience Survey
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+    %button.btn.btn-sm.btn-outline-info.rounded-circle{type: "button",
+      title: "Learn how this identifiable assignment survey works; click for details",
+      "aria-label": "About the Assignment Experience Survey",
+      "aria-controls": "assignment-survey-page-info",
+      "aria-expanded": "false",
+      "data-bs-toggle": "collapse",
+      "data-bs-target": "#assignment-survey-page-info"}
+      %i.bi.bi-info-lg
+
+.collapse.mb-3#assignment-survey-page-info
+  .alert.alert-light.border
+    %h3.fw-semibold.mb-2 Goal of this page
+    %p
+      Speak plainly about whether your assignments are understandable, possible, and relevant so expectations can improve.
+
+    %h3.fw-semibold.mb-2 Context
+    = render "shared/maap/definition"
+
+    %h3.fw-semibold.mb-2 Specifics of this page
+    %ul.mb-0
+      %li Your name is attached to every draft and finalized response.
+      %li Your employment managers and managerial hierarchy can read draft answers as they are saved.
+      %li A finalized survey cannot be edited. You can start another survey later, and only your latest finalized version counts in current summaries.
+      %li Ratings use six agreement choices with no neutral midpoint. Written comments are optional.
