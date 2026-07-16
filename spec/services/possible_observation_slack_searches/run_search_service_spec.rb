@@ -27,39 +27,51 @@ RSpec.describe PossibleObservationSlackSearches::RunSearchService do
     subject.update!(first_employed_at: 1.year.ago)
   end
 
-  def stub_slack_search(ok:, matches: [], error: nil, total: nil)
-    body = if ok
-      {
-        "ok" => true,
-        "messages" => {
-          "total" => total || matches.size,
-          "matches" => matches,
-          "paging" => { "count" => matches.size, "total" => total || matches.size, "page" => 1, "pages" => 1 }
-        }
-      }
-    else
-      { "ok" => false, "error" => error || "invalid_auth" }
-    end
-
-    response = double(body: double(to_s: body.to_json))
-    auth = double(get: response)
-    allow(HTTP).to receive(:auth).with("Bearer xoxp-test-search-token").and_return(auth)
+  def match_hash(id:, text:)
+    {
+      "iid" => id.to_s,
+      "team" => "T1",
+      "channel" => { "id" => "C1", "name" => "eng" },
+      "user" => "U1",
+      "username" => "alex",
+      "ts" => "1710000000.000#{id}",
+      "text" => text,
+      "permalink" => "https://slack.example/p#{id}"
+    }
   end
 
-  it "stores normalized raw messages and marks completed" do
-    stub_slack_search(
-      ok: true,
-      matches: [
-        {
-          "iid" => "1",
-          "team" => "T1",
-          "channel" => { "id" => "C1", "name" => "eng" },
-          "user" => "U1",
-          "username" => "alex",
-          "ts" => "1710000000.000100",
-          "text" => "Great work Pat",
-          "permalink" => "https://slack.example/p1"
+  def stub_paginated_slack_search(pages:)
+    auth = double("auth")
+    allow(HTTP).to receive(:auth).with("Bearer xoxp-test-search-token").and_return(auth)
+
+    pages.each_with_index do |matches, index|
+      page_number = index + 1
+      body = {
+        "ok" => true,
+        "messages" => {
+          "total" => pages.flatten.size,
+          "matches" => matches,
+          "paging" => {
+            "count" => matches.size,
+            "total" => pages.flatten.size,
+            "page" => page_number,
+            "pages" => pages.size
+          }
         }
+      }
+      response = double(body: double(to_s: body.to_json))
+      expect(auth).to receive(:get).with(
+        "https://slack.com/api/search.messages",
+        hash_including(params: hash_including(page: page_number, count: 100))
+      ).and_return(response)
+    end
+  end
+
+  it "paginates all pages, attaches raw JSON, and keeps only metadata in the DB row" do
+    stub_paginated_slack_search(
+      pages: [
+        [match_hash(id: 1, text: "Great work Pat")],
+        [match_hash(id: 2, text: "Pat again")]
       ]
     )
 
@@ -68,15 +80,19 @@ RSpec.describe PossibleObservationSlackSearches::RunSearchService do
     expect(result.success?).to be(true)
     search.reload
     expect(search.search_status).to eq("completed")
+    expect(search.messages_count).to eq(2)
+    expect(search.raw_results_file).to be_attached
+    expect(search.raw_results["stored_in"]).to eq("active_storage")
+    expect(search.raw_results["messages"]).to be_nil
+    expect(search.raw_messages.map { |m| m[:text] }).to eq(["Great work Pat", "Pat again"])
     expect(search.query).to include("<@USUBJECT99>")
-    expect(search.query).to include("after:")
-    expect(search.raw_messages_count).to eq(1)
-    expect(search.raw_messages.first[:permalink]).to eq("https://slack.example/p1")
-    expect(search.raw_messages.first[:channel_name]).to eq("eng")
   end
 
   it "marks failed when Slack returns an error" do
-    stub_slack_search(ok: false, error: "missing_scope")
+    auth = double("auth")
+    allow(HTTP).to receive(:auth).and_return(auth)
+    response = double(body: double(to_s: { "ok" => false, "error" => "missing_scope" }.to_json))
+    allow(auth).to receive(:get).and_return(response)
 
     result = described_class.call(search: search)
 
@@ -87,7 +103,7 @@ RSpec.describe PossibleObservationSlackSearches::RunSearchService do
 
   it "falls back to name search when subject has no Slack identity" do
     subject_slack.destroy!
-    stub_slack_search(ok: true, matches: [])
+    stub_paginated_slack_search(pages: [[]])
 
     described_class.call(search: search)
 

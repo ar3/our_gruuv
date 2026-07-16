@@ -1,0 +1,57 @@
+-# Locals: banner_id, label
+- banner_id = local_assigns.fetch(:banner_id)
+- label = local_assigns.fetch(:label)
+
+:javascript
+  (() => {
+    const banner = document.getElementById('#{banner_id}-banner');
+    if (!banner) return;
+
+    const url = banner.dataset.statusUrl;
+    const statusText = document.getElementById('#{banner_id}-text');
+    const elapsedText = document.getElementById('#{banner_id}-elapsed');
+    const slowWarning = document.getElementById('#{banner_id}-slow-warning');
+    const lastChecked = document.getElementById('#{banner_id}-last-checked');
+    const label = #{label.to_json};
+    const fmt = (seconds) => {
+      const s = Math.max(parseInt(seconds || 0, 10), 0);
+      const mins = Math.floor(s / 60);
+      const rem = s % 60;
+      return mins > 0 ? `${mins}m ${rem}s` : `${rem}s`;
+    };
+    const fmtTime = (date) => {
+      const d = date || new Date();
+      return d.toLocaleString([], {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+      });
+    };
+
+    const poll = async () => {
+      try {
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (statusText) statusText.textContent = `${label} is ${data.status}...`;
+        if (elapsedText) elapsedText.textContent = `(${fmt(data.elapsed_seconds)})`;
+        if (slowWarning) {
+          slowWarning.classList.toggle('d-none', !data.slow);
+          if (data.stale) slowWarning.textContent = 'Possible stall detected. Try refreshing or run again.';
+        }
+        if (lastChecked) lastChecked.textContent = `Last checked: ${fmtTime(new Date())}`;
+        if (data.status === 'completed' || data.status === 'failed') {
+          window.location.reload();
+        }
+      } catch (_) {
+        // Keep polling; transient failures are expected.
+      }
+    };
+
+    poll();
+    window.setInterval(poll, 3000);
+  })();

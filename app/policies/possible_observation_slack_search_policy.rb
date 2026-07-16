@@ -32,4 +32,20 @@ class PossibleObservationSlackSearchPolicy < ApplicationPolicy
   def destroy?
     show? && record.deletable?
   end
+
+  def update?
+    show?
+  end
+
+  def extract?
+    show? && record.search_status == "completed"
+  end
+
+  def re_extract?
+    extract?
+  end
+
+  def extraction_status?
+    show?
+  end
 end

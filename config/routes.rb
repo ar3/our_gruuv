@@ -367,7 +367,15 @@ Rails.application.routes.draw do
 
       resources :possible_observation_slack_searches,
                 controller: 'company_teammates/possible_observation_slack_searches',
-                only: [:create, :show, :destroy]
+                only: [:create, :show, :update, :destroy] do
+        member do
+          get :search_status
+          get :extraction_status
+          get :download_raw_results
+          post :extract
+          post :re_extract
+        end
+      end
       
       # Notifications tab on the profile (digest preferences; editable by self, management chain, admins)
       resource :notifications, controller: 'company_teammates/notifications', only: [:show, :update] do

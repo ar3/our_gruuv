@@ -3,6 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Possible observation Slack searches", type: :request do
+  include ActiveJob::TestHelper
+
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:company_teammate, :employment_manager, person: person, organization: organization) }
@@ -45,21 +47,35 @@ RSpec.describe "Possible observation Slack searches", type: :request do
     context "when Slack (search) is connected" do
       before { create(:teammate_identity, :slack_search, teammate: teammate) }
 
-      it "creates a search about the subject, runs Slack API, and redirects to show" do
-        stub_successful_slack_search
-
+      it "enqueues a search job and redirects to show" do
         expect {
           post organization_company_teammate_possible_observation_slack_searches_path(organization, subject),
                params: { possible_observation_slack_search: { window_days: 90 } }
         }.to change(PossibleObservationSlackSearch, :count).by(1)
+          .and have_enqueued_job(PossibleObservationSlackSearchJob)
 
         search = PossibleObservationSlackSearch.order(:id).last
         expect(search.subject_company_teammate).to eq(subject)
         expect(search.creator_company_teammate).to eq(teammate)
-        expect(search.search_status).to eq("completed")
+        expect(search.search_status).to eq("pending")
         expect(response).to redirect_to(
           organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
         )
+      end
+
+      it "stores full results on ActiveStorage when the job runs" do
+        stub_successful_slack_search
+
+        perform_enqueued_jobs do
+          post organization_company_teammate_possible_observation_slack_searches_path(organization, subject),
+               params: { possible_observation_slack_search: { window_days: 90 } }
+        end
+
+        search = PossibleObservationSlackSearch.order(:id).last
+        expect(search.reload.search_status).to eq("completed")
+        expect(search.messages_count).to eq(1)
+        expect(search.raw_results_file).to be_attached
+        expect(search.raw_messages.first[:text]).to eq("Pat crushed the demo.")
       end
     end
 
@@ -84,12 +100,174 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       )
     end
 
-    it "renders raw hits with permalinks" do
+    it "renders raw hits with permalinks and find-candidates action" do
       get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Pat did a great job on the launch.")
       expect(response.body).to include("Open in Slack")
-      expect(response.body).to include("example.slack.com")
+      expect(response.body).to include("Showing 1 of 1 messages")
+      expect(response.body).to include("Download")
+      expect(response.body).to include("Find OGO candidates")
+    end
+  end
+
+  describe "GET download_raw_results" do
+    let!(:search) do
+      create(
+        :possible_observation_slack_search,
+        :completed,
+        organization: organization,
+        creator_company_teammate: teammate,
+        subject_company_teammate: subject
+      )
+    end
+
+    it "redirects to the attached raw results blob" do
+      get download_raw_results_organization_company_teammate_possible_observation_slack_search_path(
+        organization, subject, search
+      )
+      expect(response).to have_http_status(:redirect)
+      expect(response.location).to include("rails/active_storage")
+    end
+  end
+
+  describe "POST extract" do
+    let!(:search) do
+      create(
+        :possible_observation_slack_search,
+        :completed,
+        organization: organization,
+        creator_company_teammate: teammate,
+        subject_company_teammate: subject,
+        extraction_status: "ready"
+      )
+    end
+
+    it "enqueues extraction and redirects" do
+      expect {
+        post extract_organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+      }.to have_enqueued_job(PossibleObservationSlackSearchExtractionJob)
+
+      expect(search.reload.extraction_status).to eq("pending")
+      expect(response).to redirect_to(
+        organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+      )
+    end
+  end
+
+  describe "review extracted candidates" do
+    let!(:search) do
+      create(
+        :possible_observation_slack_search,
+        :extracted,
+        organization: organization,
+        creator_company_teammate: teammate,
+        subject_company_teammate: subject
+      )
+    end
+
+    it "renders the review form" do
+      get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Review candidate OGOs")
+      expect(response.body).to include("Save candidates")
+      expect(response.body).to include("Observer (speaker)")
+    end
+
+    it "saves include/kind updates" do
+      item = search.extraction_items.first
+      patch organization_company_teammate_possible_observation_slack_search_path(organization, subject, search),
+            params: {
+              items: {
+                "0" => {
+                  id: item[:id],
+                  include: "0",
+                  kind: "feedback",
+                  quote: item[:quote],
+                  summary: item[:summary],
+                  short_quote: item[:short_quote],
+                  full_quote: item[:full_quote],
+                  speaker_label: item[:speaker_label],
+                  recipient_label: item[:recipient_label],
+                  responder_company_teammate_id: item[:responder_company_teammate_id],
+                  subject_company_teammate_id: item[:subject_company_teammate_id],
+                  channel_id: item[:channel_id],
+                  ts: item[:ts],
+                  permalink: item[:permalink],
+                  slack_user_id: item[:slack_user_id]
+                }
+              }
+            }
+
+      expect(response).to redirect_to(
+        organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+      )
+      updated = search.reload.extraction_items.first
+      expect(updated[:include]).to eq(false)
+      expect(updated[:kind]).to eq("feedback")
+    end
+
+    context "when another OGO already points at the same Slack message" do
+      before do
+        trigger = create(
+          :observation_trigger,
+          trigger_source: "slack",
+          trigger_type: "ogo_source_search",
+          trigger_data: {
+            "channel_id" => "C123",
+            "message_ts" => "1710000000.000100"
+          }
+        )
+        create(:observation, company: organization, observer: person, observation_trigger: trigger)
+      end
+
+      it "soft-warns without blocking review" do
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Already linked")
+        expect(response.body).to include("Save candidates")
+      end
+    end
+  end
+
+  describe "GET search_status" do
+    let!(:search) do
+      create(
+        :possible_observation_slack_search,
+        organization: organization,
+        creator_company_teammate: teammate,
+        subject_company_teammate: subject,
+        search_status: "processing"
+      )
+    end
+
+    it "returns the established background-processing status payload" do
+      get search_status_organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+      expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      expect(json["status"]).to eq("processing")
+      expect(json).to include("elapsed_seconds", "slow", "stale", "updated_at")
+    end
+  end
+
+  describe "GET show while processing" do
+    let!(:search) do
+      create(
+        :possible_observation_slack_search,
+        organization: organization,
+        creator_company_teammate: teammate,
+        subject_company_teammate: subject,
+        search_status: "processing"
+      )
+    end
+
+    it "renders the waiting banner and skeleton placeholders" do
+      get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Search is processing")
+      expect(response.body).to include("slack-search-status-banner")
+      expect(response.body).to include("Last checked: just now")
+      expect(response.body).to include("placeholder-glow")
     end
   end
 

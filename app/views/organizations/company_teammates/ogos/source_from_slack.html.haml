@@ -89,7 +89,7 @@
                 %td= search.creator_company_teammate&.person&.casual_name
                 %td
                   %span.badge.text-bg-secondary= search.search_status
-                %td= search.search_status == "completed" ? search.raw_messages_count : "—"
+                %td= search.search_status == "completed" ? search.messages_count : "—"
                 %td.text-muted= l(search.created_at, format: :short)
                 %td.text-end
                   - if policy(search).show?

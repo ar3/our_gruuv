@@ -21,36 +21,9 @@ module PossibleObservationSlackSearches
 
       search.mark_search_processing!
       query = build_query
-      response = HTTP.auth("Bearer #{token}")
-                     .get(
-                       "https://slack.com/api/search.messages",
-                       params: {
-                         query: query,
-                         count: PossibleObservationSlackSearch::MAX_MESSAGES,
-                         sort: "timestamp",
-                         sort_dir: "desc",
-                         highlight: false
-                       }
-                     )
-      data = JSON.parse(response.body.to_s)
+      messages, meta = fetch_all_messages(token: token, query: query)
 
-      unless data["ok"]
-        search.mark_search_failed!("Slack search failed: #{data['error'] || 'unknown error'}")
-        return Result.new(success?: false, error: search.search_error)
-      end
-
-      messages = normalize_messages(data.dig("messages", "matches") || [])
-      raw_results = {
-        "version" => PossibleObservationSlackSearch::RAW_RESULTS_VERSION,
-        "query" => query,
-        "window_days" => search.window_days,
-        "fetched_at" => Time.current.iso8601,
-        "total" => data.dig("messages", "total"),
-        "paging" => data.dig("messages", "paging"),
-        "messages" => messages
-      }
-
-      search.mark_search_completed!(query: query, raw_results: raw_results)
+      search.mark_search_completed!(query: query, messages: messages, meta: meta)
       Result.new(success?: true, error: nil)
     rescue StandardError => e
       Rails.logger.error("PossibleObservationSlackSearches::RunSearchService error: #{e.message}")
@@ -74,8 +47,59 @@ module PossibleObservationSlackSearches
       "#{mention} after:#{after_date}"
     end
 
+    def fetch_all_messages(token:, query:)
+      all_messages = []
+      page = 1
+      slack_total = nil
+      pages_fetched = 0
+
+      loop do
+        data = request_page(token: token, query: query, page: page)
+        unless data["ok"]
+          raise "Slack search failed: #{data['error'] || 'unknown error'}"
+        end
+
+        matches = data.dig("messages", "matches") || []
+        all_messages.concat(normalize_messages(matches))
+        pages_fetched += 1
+        slack_total = data.dig("messages", "total") if slack_total.nil?
+        search.heartbeat_search_processing!
+
+        paging = data.dig("messages", "paging") || {}
+        total_pages = paging["pages"].to_i
+        break if matches.empty?
+        break if total_pages.positive? && page >= total_pages
+        break if page >= PossibleObservationSlackSearch::MAX_PAGES
+
+        page += 1
+      end
+
+      meta = {
+        slack_total: slack_total,
+        pages_fetched: pages_fetched,
+        fetched_at: Time.current.iso8601
+      }
+      [all_messages, meta]
+    end
+
+    def request_page(token:, query:, page:)
+      response = HTTP.auth("Bearer #{token}")
+                     .get(
+                       "https://slack.com/api/search.messages",
+                       params: {
+                         query: query,
+                         count: PossibleObservationSlackSearch::PAGE_SIZE,
+                         page: page,
+                         sort: "timestamp",
+                         sort_dir: "desc",
+                         highlight: false
+                       }
+                     )
+      JSON.parse(response.body.to_s)
+    end
+
     def normalize_messages(matches)
-      matches.first(PossibleObservationSlackSearch::MAX_MESSAGES).map do |match|
+      matches.map do |match|
         channel = match["channel"] || {}
         {
           "iid" => match["iid"],
