@@ -91,7 +91,8 @@
       %span.text-muted.d-none{data: { check_in_autosave_target: "status" }, "aria-live": "polite"}
       .d-flex.gap-2.ms-auto
         = form.submit "Save draft", class: "btn btn-outline-primary"
-        = form.submit "Finalize survey",
+        = form.button "Finalize survey",
+          type: :submit,
           name: "finalize",
           value: "1",
           class: "btn btn-primary",
