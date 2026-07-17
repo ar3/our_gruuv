@@ -100,6 +100,12 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     authorize @feedback_request
     
     if @feedback_request.save
+      # PostHog: track feedback request created
+      PostHog.capture(
+        distinct_id: current_person.posthog_distinct_id,
+        event: 'feedback_request_created',
+        properties: { organization_name: organization.name }
+      )
       redirect_to select_focus_organization_feedback_request_path(organization, @feedback_request)
     else
       @teammates = eligible_subjects_for_feedback_request
@@ -508,6 +514,15 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       else
         organization_feedback_requests_path(organization)
       end
+      # PostHog: track feedback answers submitted
+      PostHog.capture(
+        distinct_id: current_person.posthog_distinct_id,
+        event: 'feedback_answers_submitted',
+        properties: {
+          completed: complete,
+          organization_name: organization.name
+        }
+      )
       notice = complete ? 'Your feedback has been submitted and marked complete.' : 'Your feedback has been saved and kept incomplete.'
       redirect_to redirect_path, notice: notice
     else

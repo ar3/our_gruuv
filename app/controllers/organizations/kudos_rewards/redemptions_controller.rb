@@ -55,6 +55,16 @@ class Organizations::KudosRewards::RedemptionsController < Organizations::KudosR
     )
 
     if result.ok?
+      # PostHog: track kudos reward redeemed
+      PostHog.capture(
+        distinct_id: current_person.posthog_distinct_id,
+        event: 'kudos_reward_redeemed',
+        properties: {
+          reward_name: @reward.name,
+          points_spent: @reward.cost_in_points.to_i,
+          organization_name: organization.name
+        }
+      )
       flash[:notice] = "Successfully redeemed #{@reward.name} for #{@reward.cost_in_points.to_i} points!"
       redirect_to organization_kudos_rewards_redemption_path(organization, result.value[:redemption])
     else

@@ -423,6 +423,20 @@ class Person < ApplicationRecord
 
   # Active employment tenure convenience methods (active_employment_tenure_for defined above)
 
+  # PostHog: distinct identifier used for event tracking and error association
+  def posthog_distinct_id
+    email
+  end
+
+  # PostHog: person properties sent on identify calls
+  def posthog_properties
+    {
+      name: display_name,
+      date_joined: created_at&.iso8601,
+      timezone: timezone
+    }
+  end
+
   private
 
   def normalize_email

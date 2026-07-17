@@ -41,3 +41,4 @@
 # Code coverage and quality analysis output
 /coverage
 /tmp/rubycritic
+.env

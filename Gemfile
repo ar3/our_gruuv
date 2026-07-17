@@ -55,6 +55,10 @@ gem "thruster", require: false
 gem "sentry-ruby", "~> 5.0"
 gem "sentry-rails", "~> 5.0"
 
+# PostHog analytics
+gem 'posthog-ruby'
+gem 'posthog-rails'
+
 # APM: production monitoring (free tier) + DevTrace in local development.
 # Activates only when SCOUT_KEY is set; see config/scout_apm.yml
 gem "scout_apm"

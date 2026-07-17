@@ -22,8 +22,16 @@ class ImpersonationsController < ApplicationController
     
     # Find or create a teammate for the person (prefer active teammates)
     teammate = ensure_teammate_for_person(person)
-    
+
+    admin_distinct_id = current_person&.posthog_distinct_id
+
     if start_impersonation(teammate)
+      # PostHog: track impersonation started (admin action; capture admin id before session changes)
+      PostHog.capture(
+        distinct_id: admin_distinct_id,
+        event: 'impersonation_started',
+        properties: { impersonated_person_id: person.id }
+      )
       flash[:notice] = "Now impersonating #{person.display_name}"
       redirect_back(fallback_location: root_path)
     else

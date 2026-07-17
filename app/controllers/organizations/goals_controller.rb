@@ -353,6 +353,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     if @form.validate(goal_params) && @form.save
       EngagementHealth.schedule_refresh_for_goal(@goal)
+
+      # PostHog: track goal created
+      PostHog.capture(
+        distinct_id: current_person.posthog_distinct_id,
+        event: 'goal_created',
+        properties: {
+          goal_type: @goal.goal_type,
+          privacy_level: @goal.privacy_level
+        }
+      )
+
       redirect_to organization_goal_path(@organization, @goal, anchor: 'check-in'),
         return_text: 'Edit Goal / Add Child Goals',
         notice: 'Goal was successfully created.'
@@ -791,6 +802,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     if check_in.save && @goal.update(completed_at: Time.current)
       EngagementHealth.schedule_refresh_for_goal(@goal)
+
+      # PostHog: track goal completed
+      PostHog.capture(
+        distinct_id: current_person.posthog_distinct_id,
+        event: 'goal_completed',
+        properties: {
+          completed_outcome: completed_outcome,
+          goal_type: @goal.goal_type
+        }
+      )
+
       redirect_url = params[:return_url] || organization_goal_path(@organization, @goal)
       redirect_to redirect_url,
                   notice: 'Goal marked as done successfully.'
