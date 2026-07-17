@@ -87,13 +87,17 @@ module Llm
         when the value is obvious.
         Prefer moments that clearly evidence the SUBJECT CONTEXT objects (aspirations, assignment outcomes,
         abilities, goals). Use the exact object names and ids from that context when suggesting links.
-        The OGO subject must be the person whose action caused the outcome — not the person being informed,
-        helped, @mentioned, or asked. The searched teammate "#{@subject_name}" MUST be one of the people whose
-        actions caused the outcome in every returned OGO. If "#{@subject_name}" is only the audience or recipient
-        of someone else's update, omit the candidate and never default them as the subject.
-        Set recipient_label to "#{@subject_name}" (even when other people are also subjects), and set
-        target_is_subject=true only when the message directly supports that conclusion. Omit the candidate if
-        the actor or subject identity is ambiguous.
+        Speaker identity: the message poster is the speaker (from the message header username/user).
+        When the speaker says "I", "me", "my", or describes their own work in first person, that action belongs
+        to the speaker — never to people who are only @mentioned, informed, helped, asked, or discussed.
+        The OGO subject (recipient_label) must be the person whose action caused the outcome — usually the
+        speaker for first-person posts. Never invent that "#{@subject_name}" did the work if the speaker's
+        first-person statement or the evidence shows another person did it.
+        Only return candidates where "#{@subject_name}" is that actor/subject. If "#{@subject_name}" is only
+        the audience, addressee, or mention in someone else's update, omit the candidate.
+        Set speaker_label to the poster, recipient_label to the actual actor/subject (must be "#{@subject_name}"),
+        and target_is_subject=true only when that conclusion is clear. Write the summary about
+        "#{@subject_name}" only when they are truly the actor. Omit if actor/subject identity is ambiguous.
         For each candidate, score confidence from 0.0 to 1.0:
         0.90–1.00 = unmistakable OGO (specific action/outcome/impact; clear speaker and subject; strong MAAP/goal link);
         0.75–0.89 = solid OGO with only minor ambiguity;

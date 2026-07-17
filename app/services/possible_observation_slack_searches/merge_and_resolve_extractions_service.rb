@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 module PossibleObservationSlackSearches
-  # Merges chunk extractions, resolves speaker via Slack UID, defaults subject to search subject.
+  # Merges chunk extractions, resolves speaker via Slack UID, keeps only search-subject actors.
   class MergeAndResolveExtractionsService
+    FIRST_PERSON_OWNERSHIP = /\b(i|i'm|i've|i'd|i'll|me|my|mine)\b/i
+
     def self.call(search:, raw_items_by_chunk:, context_catalog: nil)
       new(search: search, raw_items_by_chunk: raw_items_by_chunk, context_catalog: context_catalog).call
     end
@@ -24,13 +26,20 @@ module PossibleObservationSlackSearches
       @raw_items_by_chunk.each do |items|
         Array(items).each do |raw|
           enriched = enrich_from_raw_messages(raw)
+          speaker = resolve_speaker(enriched, teammates: teammates, resolution_cache: resolution_cache)
+          next if first_person_by_other_speaker?(enriched, speaker)
           next unless target_subject?(enriched)
 
           key = dedupe_key(enriched)
           next if key.blank? || seen.include?(key)
 
           seen.add(key)
-          merged << build_item(enriched, teammates: teammates, resolution_cache: resolution_cache)
+          merged << build_item(
+            enriched,
+            speaker: speaker,
+            teammates: teammates,
+            resolution_cache: resolution_cache
+          )
         end
       end
 
@@ -74,8 +83,7 @@ module PossibleObservationSlackSearches
       "#{raw['slack_user_id']}|#{q}"
     end
 
-    def build_item(raw, teammates:, resolution_cache:)
-      speaker = resolve_speaker(raw, teammates: teammates, resolution_cache: resolution_cache)
+    def build_item(raw, speaker:, teammates:, resolution_cache:)
       subject_id = @default_subject&.id
       subject_unknown = subject_id.blank?
       suggestion = validated_suggestion(raw)
@@ -109,6 +117,14 @@ module PossibleObservationSlackSearches
         "suggested_goal_id" => suggestion[:goal_id],
         "include" => !speaker[:unknown] && !subject_unknown && high_confidence
       }
+    end
+
+    def first_person_by_other_speaker?(raw, speaker)
+      return false if speaker[:unknown] || speaker[:company_teammate_id].blank?
+      return false if speaker[:company_teammate_id] == @default_subject&.id
+
+      text = [raw["short_quote"], raw["full_quote"], raw["summary"]].compact.join(" ")
+      text.match?(FIRST_PERSON_OWNERSHIP)
     end
 
     def sanitize_confidence(value)

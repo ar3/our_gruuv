@@ -169,4 +169,30 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
 
     expect(items).to be_empty
   end
+
+  it "drops first-person posts by someone other than the searched teammate" do
+    items = described_class.call(
+      search: search,
+      raw_items_by_chunk: [
+        [
+          {
+            "kind" => "kudos",
+            "summary" => "This is a story about when Pat tracked upgrade conversion.",
+            "short_quote" => "I track engagement with the upgrade button",
+            "full_quote" => "I track engagement with the upgrade button in the primary navigation in Pendo.",
+            "quote" => "I track engagement with the upgrade button",
+            "speaker_label" => "alex",
+            "recipient_label" => "Pat",
+            "channel_id" => "C123",
+            "ts" => "1710000000.000100",
+            "slack_user_id" => "UOBS",
+            "confidence" => 0.95,
+            "target_is_subject" => true
+          }
+        ]
+      ]
+    )
+
+    expect(items).to be_empty
+  end
 end
