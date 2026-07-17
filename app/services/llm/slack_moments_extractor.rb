@@ -82,7 +82,10 @@ module Llm
         Prefer precision over recall — skip routine chatter, logistics, status updates, and weak/generic praise.
         Prefer moments that clearly evidence the SUBJECT CONTEXT objects (aspirations, assignment outcomes,
         abilities, goals). Use the exact object names and ids from that context when suggesting links.
-        Subject of interest is often "#{@subject_name}", but speaker/recipient may vary.
+        The searched teammate "#{@subject_name}" MUST be a subject of every returned OGO.
+        Do not return moments whose subject is only another person. Set recipient_label to "#{@subject_name}"
+        (even when other people are also subjects), and set target_is_subject=true only when the message
+        directly supports that conclusion. Omit the candidate if this is ambiguous.
         For each candidate, score confidence from 0.0 to 1.0:
         0.90–1.00 = unmistakable OGO (specific action/outcome/impact; clear speaker and subject; strong MAAP/goal link);
         0.75–0.89 = solid OGO with only minor ambiguity;
@@ -91,6 +94,7 @@ module Llm
         Return ONLY valid JSON:
         {"items":[{"kind":"kudos"|"feedback",
         "confidence":0.0-1.0,
+        "target_is_subject":true,
         "summary":"This is a story about when <recipient> caused <outcome> by <action>. And this made me feel <impact>.",
         "short_quote":"short exact quote","full_quote":"verbatim quote from message text",
         "speaker_label":"speaker name if known","recipient_label":"recipient name if known",
@@ -99,10 +103,13 @@ module Llm
         "suggested_rateable_type":"Assignment"|"Ability"|"Aspiration"|null,
         "suggested_rateable_id":number|null,
         "suggested_rating":"strongly_agree"|"agree"|"disagree"|"strongly_disagree"|null,
+        "association_reason":"one concise sentence explaining why the evidence maps to this object",
+        "rating_reason":"one concise sentence explaining why the evidence warrants this rating",
         "suggested_goal_id":number|null}]}.
         Rating bands: strongly_agree=Exceptional, agree=Solid, disagree=Mis-aligned, strongly_disagree=Concerning.
         Rules: full_quote/short_quote must come from message text; never invent channel_id/ts/permalink/slack_user_id;
-        only use suggested_* ids that appear in SUBJECT CONTEXT; if unsure, leave suggested_* null;
+        every returned item must have a rateable object, rating, association_reason, and rating_reason;
+        only use suggested_* ids that appear in SUBJECT CONTEXT; if unsure, omit the item;
         only include moments clearly worth logging as OGOs with confidence >= #{MIN_RETURN_CONFIDENCE};
         when unsure between including and omitting, omit. If none, return {"items":[]}.
       TXT
@@ -135,6 +142,8 @@ module Llm
       data = JSON.parse(json)
       items = Array(data["items"]).filter_map do |h|
         next unless h.is_a?(Hash)
+        next unless ActiveModel::Type::Boolean.new.cast(h["target_is_subject"])
+        next unless target_recipient_label?(h["recipient_label"])
 
         full_quote = h["full_quote"].to_s.strip
         short_quote = h["short_quote"].to_s.strip
@@ -151,21 +160,32 @@ module Llm
         end
 
         suggestion = sanitize_suggestion(h)
-        suggestion_line = suggestion_display_line(suggestion)
-        summary = prepend_suggestion_to_summary(summary, suggestion_line) if suggestion_line.present?
+        next unless complete_suggestion?(suggestion, h)
+
         confidence = sanitize_confidence(h["confidence"])
         next if confidence < MIN_RETURN_CONFIDENCE
+        association_reason = sanitize_reason(h["association_reason"])
+        rating_reason = sanitize_reason(h["rating_reason"])
+        rateable_name = @context_catalog.dig(suggestion[:rateable_type], suggestion[:rateable_id]).to_s
+        rating_label = RATING_WORDS[suggestion[:rating]]
+        rateable_type_label = suggestion[:rateable_type] == "Aspiration" ? "Value" : suggestion[:rateable_type]
 
         {
           "kind" => (h["kind"].to_s == "feedback" ? "feedback" : "kudos"),
           "confidence" => confidence,
+          "target_is_subject" => true,
           "summary" => summary.truncate(2500),
           "short_quote" => short_quote.truncate(2500),
           "full_quote" => full_quote.truncate(10_000),
           "quote" => compose_display_quote(
             summary: summary,
             short_quote: short_quote,
-            full_quote: full_quote
+            full_quote: full_quote,
+            rating_label: rating_label,
+            rateable_type_label: rateable_type_label,
+            rateable_name: rateable_name,
+            association_reason: association_reason,
+            rating_reason: rating_reason
           ).truncate(20_000),
           "speaker_label" => h["speaker_label"].to_s.strip,
           "recipient_label" => h["recipient_label"].to_s.strip,
@@ -175,7 +195,10 @@ module Llm
           "slack_user_id" => h["slack_user_id"].to_s.strip,
           "suggested_rateable_type" => suggestion[:rateable_type],
           "suggested_rateable_id" => suggestion[:rateable_id],
+          "suggested_rateable_name" => rateable_name,
           "suggested_rating" => suggestion[:rating],
+          "association_reason" => association_reason,
+          "rating_reason" => rating_reason,
           "suggested_goal_id" => suggestion[:goal_id]
         }
       end
@@ -190,6 +213,36 @@ module Llm
       conf.clamp(0.0, 1.0).round(2)
     rescue ArgumentError, TypeError
       0.0
+    end
+
+    def target_recipient_label?(label)
+      normalized_label = normalize_name(label)
+      return false if normalized_label.blank?
+
+      target_names.any? do |name|
+        normalized_name = normalize_name(name)
+        normalized_name.present? && normalized_label.match?(/(?:\A|\s)#{Regexp.escape(normalized_name)}(?:\s|\z)/)
+      end
+    end
+
+    def target_names
+      @target_names ||= [@subject_name, @subject_name.split.first].compact_blank.uniq
+    end
+
+    def normalize_name(value)
+      value.to_s.downcase.gsub(/[^a-z0-9]+/, " ").squish
+    end
+
+    def complete_suggestion?(suggestion, raw)
+      suggestion[:rateable_type].present? &&
+        suggestion[:rateable_id].present? &&
+        suggestion[:rating].present? &&
+        raw["association_reason"].present? &&
+        raw["rating_reason"].present?
+    end
+
+    def sanitize_reason(value)
+      value.to_s.squish.sub(/\A(?:because\s+)/i, "").sub(/[.?!]+\z/, "").truncate(500)
     end
 
     def sanitize_suggestion(h)
@@ -219,37 +272,6 @@ module Llm
       { rateable_type: type, rateable_id: id, rating: rating, goal_id: goal_id }
     end
 
-    def suggestion_display_line(suggestion)
-      rating_word = RATING_WORDS[suggestion[:rating]]
-      object_label =
-        if suggestion[:rateable_type].present? && suggestion[:rateable_id].present?
-          name = @context_catalog.dig(suggestion[:rateable_type], suggestion[:rateable_id])
-          "#{suggestion[:rateable_type]} #{name.presence || "##{suggestion[:rateable_id]}"}"
-        end
-      goal_label =
-        if suggestion[:goal_id].present?
-          gname = @context_catalog.dig("Goal", suggestion[:goal_id])
-          "Goal #{gname.presence || "##{suggestion[:goal_id]}"}"
-        end
-
-      parts = []
-      if rating_word.present? && object_label.present?
-        parts << "#{rating_word} example of #{object_label}"
-      elsif rating_word.present?
-        parts << "#{rating_word} example"
-      elsif object_label.present?
-        parts << "Related to #{object_label}"
-      end
-      parts << "linked to #{goal_label}" if goal_label.present?
-      parts.join("; ").presence
-    end
-
-    def prepend_suggestion_to_summary(summary, suggestion_line)
-      return summary if summary.to_s.include?("Suggested:")
-
-      "Suggested: #{suggestion_line}. #{summary}"
-    end
-
     def extract_json_object(raw)
       text = raw.to_s.strip
       if (m = text.match(/\{.*\}/m))
@@ -259,9 +281,20 @@ module Llm
       end
     end
 
-    def compose_display_quote(summary:, short_quote:, full_quote:)
+    def compose_display_quote(
+      summary:, short_quote:, full_quote:, rating_label:, rateable_type_label:, rateable_name:,
+      association_reason:, rating_reason:
+    )
       [
-        "Summary: #{summary.presence || '(none)'}",
+        "The OG Consultation AI Agent is suggesting: #{rating_label} example of the #{rateable_type_label}, #{rateable_name}.",
+        "OG thought it was an example of #{rateable_name} because #{association_reason}.",
+        "OG thought it was a #{rating_label} example because #{rating_reason}.",
+        "",
+        "",
+        "====================",
+        "",
+        "",
+        summary.presence || "(none)",
         "",
         "",
         "====================",

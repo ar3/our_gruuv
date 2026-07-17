@@ -174,6 +174,33 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       expect(response.body).to include("Observer (speaker)")
     end
 
+    it "shows the rating and linked object name as text above the generated rationale" do
+      assignment = create(:assignment, company: organization, title: "Own the launch")
+      item = search.extraction_items.first.to_h.merge(
+        "confidence" => 0.91,
+        "target_is_subject" => true,
+        "suggested_rateable_type" => "Assignment",
+        "suggested_rateable_id" => assignment.id,
+        "suggested_rateable_name" => assignment.title,
+        "suggested_rating" => "strongly_agree",
+        "association_reason" => "the message describes the assignment outcome",
+        "rating_reason" => "the result exceeded expectations",
+        "quote" => "The OG Consultation AI Agent is suggesting: Exceptional example of the Assignment, Own the launch."
+      )
+      search.replace_extraction_items!([item])
+
+      get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("The OG Consultation AI Agent is suggesting:")
+      expect(response.body).to include("Exceptional")
+      expect(response.body).to include("Own the launch")
+      expect(response.body).to include(
+        organization_teammate_assignment_path(organization, subject, assignment.id)
+      )
+      expect(response.body).not_to include("text-bg-info")
+    end
+
     it "saves include/kind updates" do
       item = search.extraction_items.first
       patch organization_company_teammate_possible_observation_slack_search_path(organization, subject, search),

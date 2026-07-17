@@ -151,16 +151,29 @@
                     %span.badge{ class: badge_class }= format("%.0f%%", confidence * 100)
                     = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
                   %td
+                    - rateable_name = item[:suggested_rateable_name]
                     - if item[:suggested_rating].present? || item[:suggested_rateable_type].present?
                       - rating_label = { "strongly_agree" => "Exceptional", "agree" => "Solid", "disagree" => "Mis-aligned", "strongly_disagree" => "Concerning" }[item[:suggested_rating].to_s]
-                      .mb-1
-                        %span.badge.text-bg-info
-                          Suggested
-                          - if rating_label.present?
-                            = rating_label
-                          - if item[:suggested_rateable_type].present?
-                            · #{item[:suggested_rateable_type]} ##{item[:suggested_rateable_id]}
-                    = text_area_tag "items[#{idx}][quote]", item[:quote], class: "form-control form-control-sm", rows: 8, style: "min-width: 420px;"
+                      - rateable_type_label = item[:suggested_rateable_type] == "Aspiration" ? "Value" : item[:suggested_rateable_type]
+                      - rateable_key = "#{item[:suggested_rateable_type]}:#{item[:suggested_rateable_id]}"
+                      - rateable_name = rateable_name.presence || @suggested_rateable_names_by_key&.[](rateable_key)
+                      - rateable_path = nil
+                      - if item[:suggested_rateable_type] == "Assignment"
+                        - rateable_path = organization_teammate_assignment_path(organization, teammate_route_param(@teammate), item[:suggested_rateable_id])
+                      - elsif item[:suggested_rateable_type] == "Ability"
+                        - rateable_path = organization_teammate_ability_path(organization, teammate_route_param(@teammate), item[:suggested_rateable_id])
+                      - elsif item[:suggested_rateable_type] == "Aspiration"
+                        - rateable_path = organization_teammate_aspiration_path(organization, teammate_route_param(@teammate), item[:suggested_rateable_id])
+                      .mb-2.fs-6
+                        The OG Consultation AI Agent is suggesting:
+                        %strong= rating_label
+                        example of the #{rateable_type_label},
+                        - if rateable_path.present? && rateable_name.present?
+                          = link_to rateable_name, rateable_path, class: "fw-bold", target: "_blank", rel: "noopener"
+                        - else
+                          %strong= rateable_name
+                        = "."
+                    = text_area_tag "items[#{idx}][quote]", item[:quote], class: "form-control form-control-sm", rows: 14, style: "min-width: 520px;"
                     - if item[:permalink].present?
                       .mt-1
                         = link_to item[:permalink], target: "_blank", rel: "noopener", class: "small" do
@@ -197,9 +210,13 @@
                     = hidden_field_tag "items[#{idx}][ts]", item[:ts]
                     = hidden_field_tag "items[#{idx}][permalink]", item[:permalink]
                     = hidden_field_tag "items[#{idx}][slack_user_id]", item[:slack_user_id]
+                    = hidden_field_tag "items[#{idx}][target_is_subject]", item[:target_is_subject]
                     = hidden_field_tag "items[#{idx}][suggested_rateable_type]", item[:suggested_rateable_type]
                     = hidden_field_tag "items[#{idx}][suggested_rateable_id]", item[:suggested_rateable_id]
+                    = hidden_field_tag "items[#{idx}][suggested_rateable_name]", rateable_name
                     = hidden_field_tag "items[#{idx}][suggested_rating]", item[:suggested_rating]
+                    = hidden_field_tag "items[#{idx}][association_reason]", item[:association_reason]
+                    = hidden_field_tag "items[#{idx}][rating_reason]", item[:rating_reason]
                     = hidden_field_tag "items[#{idx}][suggested_goal_id]", item[:suggested_goal_id]
                   %td
                     - if !ready

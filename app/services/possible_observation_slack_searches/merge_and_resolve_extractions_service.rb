@@ -24,6 +24,8 @@ module PossibleObservationSlackSearches
       @raw_items_by_chunk.each do |items|
         Array(items).each do |raw|
           enriched = enrich_from_raw_messages(raw)
+          next unless target_subject?(enriched)
+
           key = dedupe_key(enriched)
           next if key.blank? || seen.include?(key)
 
@@ -100,7 +102,10 @@ module PossibleObservationSlackSearches
         "slack_user_id" => raw["slack_user_id"].to_s,
         "suggested_rateable_type" => suggestion[:rateable_type],
         "suggested_rateable_id" => suggestion[:rateable_id],
+        "suggested_rateable_name" => suggestion[:rateable_name],
         "suggested_rating" => suggestion[:rating],
+        "association_reason" => raw["association_reason"].to_s,
+        "rating_reason" => raw["rating_reason"].to_s,
         "suggested_goal_id" => suggestion[:goal_id],
         "include" => !speaker[:unknown] && !subject_unknown && high_confidence
       }
@@ -133,7 +138,34 @@ module PossibleObservationSlackSearches
         goal_id = nil unless @context_catalog.dig("Goal", goal_id).present?
       end
 
-      { rateable_type: type, rateable_id: id, rating: rating, goal_id: goal_id }
+      {
+        rateable_type: type,
+        rateable_id: id,
+        rateable_name: @context_catalog.dig(type, id).to_s.presence || raw["suggested_rateable_name"].to_s.presence,
+        rating: rating,
+        goal_id: goal_id
+      }
+    end
+
+    def target_subject?(raw)
+      return false unless ActiveModel::Type::Boolean.new.cast(raw["target_is_subject"])
+
+      label = normalize_name(raw["recipient_label"])
+      return false if label.blank?
+
+      person = @default_subject&.person
+      names = [
+        person&.display_name,
+        person&.casual_name,
+        person&.first_name,
+        person&.preferred_name
+      ].compact_blank.map { |name| normalize_name(name) }.uniq
+
+      names.any? { |name| label.match?(/(?:\A|\s)#{Regexp.escape(name)}(?:\s|\z)/) }
+    end
+
+    def normalize_name(value)
+      value.to_s.downcase.gsub(/[^a-z0-9]+/, " ").squish
     end
 
     def resolve_speaker(raw, teammates:, resolution_cache:)

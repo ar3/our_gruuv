@@ -44,7 +44,8 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
             "ts" => "1710000000.000100",
             "permalink" => "https://example.slack.com/p1",
             "slack_user_id" => "UOBS",
-            "confidence" => 0.9
+            "confidence" => 0.9,
+            "target_is_subject" => true
           }
         ]
       ]
@@ -75,7 +76,8 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
             "ts" => "1710000000.000200",
             "permalink" => "https://example.slack.com/p2",
             "slack_user_id" => "UOBS",
-            "confidence" => 0.65
+            "confidence" => 0.65,
+            "target_is_subject" => true
           },
           {
             "kind" => "kudos",
@@ -89,7 +91,8 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
             "ts" => "1710000000.000100",
             "permalink" => "https://example.slack.com/p1",
             "slack_user_id" => "UOBS",
-            "confidence" => 0.92
+            "confidence" => 0.92,
+            "target_is_subject" => true
           }
         ]
       ]
@@ -124,6 +127,7 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
             "permalink" => "https://example.slack.com/p1",
             "slack_user_id" => "UOBS",
             "confidence" => 0.88,
+            "target_is_subject" => true,
             "suggested_rateable_type" => "Assignment",
             "suggested_rateable_id" => 11,
             "suggested_rating" => "strongly_agree",
@@ -137,5 +141,32 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
     expect(items.first["suggested_rateable_id"]).to eq(11)
     expect(items.first["suggested_rating"]).to eq("strongly_agree")
     expect(items.first["suggested_goal_id"]).to eq(22)
+    expect(items.first["suggested_rateable_name"]).to eq("Own launch")
+  end
+
+  it "drops candidates whose recipient is not the searched teammate" do
+    items = described_class.call(
+      search: search,
+      raw_items_by_chunk: [
+        [
+          {
+            "kind" => "kudos",
+            "summary" => "Alex crushed it",
+            "short_quote" => "great job",
+            "full_quote" => "Alex did a great job.",
+            "quote" => "Alex did a great job.",
+            "speaker_label" => "alex",
+            "recipient_label" => "Alex",
+            "channel_id" => "C123",
+            "ts" => "1710000000.000100",
+            "slack_user_id" => "UOBS",
+            "confidence" => 0.95,
+            "target_is_subject" => true
+          }
+        ]
+      ]
+    )
+
+    expect(items).to be_empty
   end
 end

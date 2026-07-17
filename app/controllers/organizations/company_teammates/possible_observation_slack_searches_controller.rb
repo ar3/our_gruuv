@@ -195,6 +195,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
 
   def load_review_context
     load_teammate_options
+    load_suggested_rateable_names
     @observation_type_options = [
       ["Kudos", "kudos"],
       ["Feedback", "feedback"],
@@ -211,6 +212,25 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
         channel_id: item[:channel_id],
         message_ts: item[:ts]
       )
+    end
+  end
+
+  def load_suggested_rateable_names
+    @suggested_rateable_names_by_key = {}
+    items = @search.extraction_items
+
+    {
+      "Assignment" => Assignment,
+      "Ability" => Ability,
+      "Aspiration" => Aspiration
+    }.each do |type, model|
+      ids = items.filter_map do |item|
+        item[:suggested_rateable_id].to_i if item[:suggested_rateable_type] == type
+      end
+      model.where(id: ids).find_each do |record|
+        name = record.respond_to?(:title) ? record.title : record.name
+        @suggested_rateable_names_by_key["#{type}:#{record.id}"] = name
+      end
     end
   end
 
@@ -265,6 +285,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
           :observer_unknown, :observee_unknown,
           :channel_id, :ts, :permalink, :slack_user_id,
           :suggested_rateable_type, :suggested_rateable_id, :suggested_rating, :suggested_goal_id,
+          :suggested_rateable_name, :association_reason, :rating_reason, :target_is_subject,
           :confidence
         ).to_h
       else

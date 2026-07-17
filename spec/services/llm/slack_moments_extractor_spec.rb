@@ -36,9 +36,12 @@ RSpec.describe Llm::SlackMomentsExtractor do
           "permalink": "https://example.slack.com/p1",
           "slack_user_id": "U1",
           "confidence": 0.91,
+          "target_is_subject": true,
           "suggested_rateable_type": "Assignment",
           "suggested_rateable_id": 11,
           "suggested_rating": "strongly_agree",
+          "association_reason": "The message directly describes ownership of the launch outcome.",
+          "rating_reason": "Shipping early materially exceeded the expected outcome.",
           "suggested_goal_id": 22
         }]
       }
@@ -46,7 +49,16 @@ RSpec.describe Llm::SlackMomentsExtractor do
 
     item = result["items"].first
     expect(item["confidence"]).to eq(0.91)
-    expect(item["summary"]).to start_with("Suggested: Exceptional example of Assignment Own launch; linked to Goal Close Q3 deals.")
+    expect(item["summary"]).to start_with("This is a story about")
+    expect(item["quote"]).to start_with(
+      "The OG Consultation AI Agent is suggesting: Exceptional example of the Assignment, Own launch."
+    )
+    expect(item["quote"]).to include(
+      "OG thought it was an example of Own launch because The message directly describes ownership"
+    )
+    expect(item["quote"]).to include(
+      "OG thought it was a Exceptional example because Shipping early materially exceeded"
+    )
     expect(item["suggested_rateable_type"]).to eq("Assignment")
     expect(item["suggested_rateable_id"]).to eq(11)
     expect(item["suggested_rating"]).to eq("strongly_agree")
@@ -61,21 +73,20 @@ RSpec.describe Llm::SlackMomentsExtractor do
           "summary": "Story",
           "short_quote": "quote",
           "full_quote": "full",
+          "recipient_label": "Pat",
           "confidence": 0.8,
+          "target_is_subject": true,
           "suggested_rateable_type": "Assignment",
           "suggested_rateable_id": 999,
           "suggested_rating": "agree",
+          "association_reason": "It relates to the assignment.",
+          "rating_reason": "It met expectations.",
           "suggested_goal_id": 999
         }]
       }
     JSON
 
-    item = result["items"].first
-    expect(item["suggested_rateable_type"]).to be_nil
-    expect(item["suggested_rateable_id"]).to be_nil
-    expect(item["suggested_goal_id"]).to be_nil
-    expect(item["suggested_rating"]).to eq("agree")
-    expect(item["summary"]).to start_with("Suggested: Solid example.")
+    expect(result["items"]).to be_empty
   end
 
   it "drops items below the minimum confidence threshold" do
@@ -86,7 +97,37 @@ RSpec.describe Llm::SlackMomentsExtractor do
           "summary": "Weak",
           "short_quote": "nice",
           "full_quote": "nice job",
-          "confidence": 0.4
+          "recipient_label": "Pat",
+          "confidence": 0.4,
+          "target_is_subject": true,
+          "suggested_rateable_type": "Assignment",
+          "suggested_rateable_id": 11,
+          "suggested_rating": "agree",
+          "association_reason": "It relates to the assignment.",
+          "rating_reason": "It met expectations."
+        }]
+      }
+    JSON
+
+    expect(result["items"]).to be_empty
+  end
+
+  it "drops moments whose recipient is not the searched teammate" do
+    result = parse(<<~JSON)
+      {
+        "items": [{
+          "kind": "kudos",
+          "summary": "This is about Alex.",
+          "short_quote": "Alex crushed it",
+          "full_quote": "Alex crushed the launch.",
+          "recipient_label": "Alex",
+          "confidence": 0.95,
+          "target_is_subject": true,
+          "suggested_rateable_type": "Assignment",
+          "suggested_rateable_id": 11,
+          "suggested_rating": "strongly_agree",
+          "association_reason": "It relates to the assignment.",
+          "rating_reason": "It exceeded expectations."
         }]
       }
     JSON
