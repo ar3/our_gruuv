@@ -193,6 +193,11 @@ class CompanyTeammate < ApplicationRecord
     teammate_identities.asana.exists?
   end
 
+  # PostHog: distinct identifier used by posthog-rails for automatic user association
+  def posthog_distinct_id
+    person&.email
+  end
+
   def jira_identity
     teammate_identities.jira.first
   end

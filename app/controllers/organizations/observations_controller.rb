@@ -650,12 +650,23 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         if @form.save
           # Handle observees after form saves successfully
           handle_observees(@observation)
-          
+
           # Enforce privacy level if public observation has negative ratings
           if Observations::PrivacyLevelEnforcementService.call(@observation)
             flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
           end
-          
+
+          # PostHog: track observation created
+          PostHog.capture(
+            distinct_id: current_person.posthog_distinct_id,
+            event: 'observation_created',
+            properties: {
+              observation_type: @observation.observation_type,
+              privacy_level: @observation.privacy_level,
+              observee_count: @observation.observed_teammates.count
+            }
+          )
+
           # Redirect to return_url if provided, otherwise to show page
           redirect_url = params[:return_url].presence || organization_observation_path(organization, @observation)
           redirect_to redirect_url, notice: 'Observation was successfully created.'

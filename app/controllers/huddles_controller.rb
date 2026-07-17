@@ -163,6 +163,13 @@ class HuddlesController < ApplicationController
         role: 'facilitator'
       )
 
+      # PostHog: track huddle created
+      PostHog.capture(
+        distinct_id: person.posthog_distinct_id,
+        event: 'huddle_created',
+        properties: { team_name: team.name, organization_name: team.company&.name }
+      )
+
       # Store only the person ID in session
       session[:current_person_id] = person.id
 
@@ -346,6 +353,16 @@ class HuddlesController < ApplicationController
     Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
     Huddles::PostSummaryJob.perform_and_get_result(@huddle.id)
 
+    # PostHog: track huddle joined
+    PostHog.capture(
+      distinct_id: current_person.posthog_distinct_id,
+      event: 'huddle_joined',
+      properties: {
+        role: join_params[:role],
+        organization_name: @huddle.company&.name
+      }
+    )
+
     if role_changed
       redirect_to @huddle, notice: "Role updated successfully!"
     else
@@ -488,6 +505,16 @@ class HuddlesController < ApplicationController
         if @huddle.company&.root_company
           Companies::WeeklyHuddlesReviewNotificationJob.perform_later(@huddle.company.root_company.id)
         end
+
+        # PostHog: track huddle feedback submitted
+        PostHog.capture(
+          distinct_id: @current_person.posthog_distinct_id,
+          event: 'huddle_feedback_submitted',
+          properties: {
+            anonymous: @feedback.anonymous,
+            organization_name: @huddle.company&.name
+          }
+        )
 
         redirect_to @huddle, notice: 'Thank you for your feedback!'
       else

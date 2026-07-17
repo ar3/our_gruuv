@@ -34,15 +34,37 @@ class AuthController < ApplicationController
         redirect_to organization_person_path(current_company_teammate.organization, person), notice: 'Google account connected successfully!'
       else
         # Normal sign-in flow
+        is_new_person = PersonIdentity.find_by(provider: 'google_oauth2', uid: auth.uid).nil? &&
+                        Person.find_by_email_insensitive(auth.info.email).nil?
         person = find_or_create_person_from_google_auth(auth)
         create_or_update_google_identity(person, auth)
-        
+
         # Ensure person has a teammate (creates "OurGruuv Demo" if needed)
         teammate = ensure_teammate_for_person(person)
-        
+
+        # PostHog: identify and capture sign-in / sign-up
+        PostHog.identify(
+          distinct_id: person.posthog_distinct_id,
+          properties: person.posthog_properties
+        )
+
+        if is_new_person
+          PostHog.capture(
+            distinct_id: person.posthog_distinct_id,
+            event: 'user_signed_up',
+            properties: { auth_provider: 'google' }
+          )
+        else
+          PostHog.capture(
+            distinct_id: person.posthog_distinct_id,
+            event: 'user_signed_in',
+            properties: { auth_provider: 'google' }
+          )
+        end
+
         # Set session to use teammate
         session[:current_company_teammate_id] = teammate.id
-        
+
         # Check for return path
         if session[:return_to].present?
           return_path = session[:return_to]
