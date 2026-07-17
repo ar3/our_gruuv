@@ -38,50 +38,54 @@
       check_in_autosave_message_value: "Your latest survey changes may still be saving. Leave this page?" } do |form|
     = form.fields_for :responses do |response_fields|
       - response = response_fields.object
-      .card.mb-4
-        .card-header.bg-light
-          .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2
-            %div
-              %h2.h4.mb-1= response.snapshot_title
-              - if response.snapshot_tagline.present?
-                %p.text-muted.mb-0= response.snapshot_tagline
-            %span.badge.text-bg-secondary= response.source_label
-          %details.mt-3
-            %summary.fw-semibold Assignment outcomes and required activities
-            .row.g-3.mt-1
-              .col-12.col-lg-6
-                %h3.h6 Outcomes
-                - if response.snapshot_outcomes.any?
-                  %ul.mb-0
-                    - response.snapshot_outcomes.each do |outcome|
-                      %li= outcome["description"]
-                - else
-                  %p.text-muted.mb-0 No outcomes are documented.
-              .col-12.col-lg-6
-                %h3.h6 Required activities
-                - if response.snapshot_required_activities.present?
-                  .markdown-content= render_markdown(response.snapshot_required_activities)
-                - else
-                  %p.text-muted.mb-0 No required activities are documented.
-        .card-body
-          = response_fields.hidden_field :id
-          = render "rating_field",
-            field: response_fields,
-            attribute: :understandable_rating,
-            prompt: "I clearly understand what this assignment expects of me."
-          = render "rating_field",
-            field: response_fields,
-            attribute: :possible_rating,
-            prompt: "I can realistically meet the expectations of this assignment."
-          = render "rating_field",
-            field: response_fields,
-            attribute: :relevant_rating,
-            prompt: "This assignment represents a real need for our team's success."
-          = response_fields.label :comment, "Optional comments about this assignment", class: "form-label fw-semibold"
-          = response_fields.text_area :comment,
-            class: "form-control",
-            rows: 3,
-            placeholder: "What would make this assignment clearer, more possible, or more relevant?"
+      .row.mt-5.mb-3
+        .col-12
+          .d-flex.align-items-center
+            %h3.text-primary.mb-0.me-3
+              %i.bi.bi-clipboard2-check.me-2
+              = response.snapshot_title
+            .flex-grow-1
+              %hr.border-primary
+            %span.badge.text-bg-secondary.ms-3= response.source_label
+      .mb-4
+        - if response.snapshot_tagline.present?
+          %p.text-muted= response.snapshot_tagline
+        %details.mb-3
+          %summary.fw-semibold Assignment outcomes and required activities
+          .row.g-3.mt-1
+            .col-12.col-lg-6
+              %h4.h6 Outcomes
+              - if response.snapshot_outcomes.any?
+                %ul.mb-0
+                  - response.snapshot_outcomes.each do |outcome|
+                    %li= outcome["description"]
+              - else
+                %p.text-muted.mb-0 No outcomes are documented.
+            .col-12.col-lg-6
+              %h4.h6 Required activities
+              - if response.snapshot_required_activities.present?
+                .markdown-content= render_markdown(response.snapshot_required_activities)
+              - else
+                %p.text-muted.mb-0 No required activities are documented.
+        = response_fields.hidden_field :id
+        = render "rating_field",
+          field: response_fields,
+          attribute: :understandable_rating,
+          prompt: assignment_survey_understandable_prompt(response.snapshot_title)
+        = render "rating_field",
+          field: response_fields,
+          attribute: :possible_rating,
+          prompt: assignment_survey_possible_prompt(response.snapshot_title)
+        = render "rating_field",
+          field: response_fields,
+          attribute: :relevant_rating,
+          prompt: assignment_survey_relevant_prompt(response.snapshot_title)
+        = response_fields.label :comment, class: "form-label fw-semibold" do
+          (Optional) Assignments are designed to provide extreme clarity and accountability... It helps us achieve this clarity if you add a comment to anything that is less than "Agree"
+        = response_fields.text_area :comment,
+          class: "form-control",
+          rows: 3,
+          placeholder: "What would make this assignment clearer, more possible, or more relevant?"
 
     .d-flex.justify-content-between.align-items-center.flex-wrap.gap-3.mb-4
       %span.text-muted.d-none{data: { check_in_autosave_target: "status" }, "aria-live": "polite"}

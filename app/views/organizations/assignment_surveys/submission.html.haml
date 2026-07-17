@@ -22,29 +22,34 @@
 
 - labels = { 1 => "Strongly disagree", 2 => "Disagree", 3 => "Somewhat disagree", 4 => "Somewhat agree", 5 => "Agree", 6 => "Strongly agree" }
 - @submission.responses.each do |response|
-  .card.mb-4
-    .card-header.bg-light
-      .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2
-        %div
-          %h3.h4.mb-1= response.snapshot_title
-          - if response.snapshot_tagline.present?
-            %p.text-muted.mb-0= response.snapshot_tagline
-        %span.badge.text-bg-secondary= response.source_label
-    .card-body
-      .row.g-3
-        - rating_rows = [["Understandable", response.understandable_rating], ["Possible", response.possible_rating], ["Relevant", response.relevant_rating]]
-        - rating_rows.each do |title, rating|
-          .col-12.col-md-4
-            .border.rounded.p-3.h-100
-              .text-muted.small= title
-              - if rating
-                .fw-semibold= labels.fetch(rating)
-                .small.text-muted #{rating} / 6
-              - else
-                .text-muted Not answered
-      .mt-3
-        %h4.h6 Comment
-        - if response.comment.present?
-          = simple_format(response.comment, {}, wrapper_tag: "div")
-        - else
-          %p.text-muted.mb-0 No comment provided.
+  .row.mt-5.mb-3
+    .col-12
+      .d-flex.align-items-center
+        %h3.text-primary.mb-0.me-3
+          %i.bi.bi-clipboard2-check.me-2
+          = response.snapshot_title
+        .flex-grow-1
+          %hr.border-primary
+        %span.badge.text-bg-secondary.ms-3= response.source_label
+  .mb-4
+    - if response.snapshot_tagline.present?
+      %p.text-muted= response.snapshot_tagline
+    .row.g-3
+      - rating_rows = [["Understandable", response.understandable_rating], ["Possible", response.possible_rating], ["Relevant", response.relevant_rating]]
+      - rating_rows.each do |title, rating|
+        .col-12.col-md-4
+          .border.border-2.rounded.p-3.h-100{class: ("likert-answer-border-#{rating}" if rating)}
+            .text-muted.small= title
+            - if rating
+              .fw-semibold{class: "likert-answer-text-#{rating}"}= labels.fetch(rating)
+              .likert-scale-dots.mt-2{"aria-label": "#{labels.fetch(rating)} (#{rating} of 6)"}
+                - (1..6).each do |value|
+                  %span.likert-dot{class: "likert-dot-#{value} #{'filled' if value == rating}", title: labels.fetch(value)}
+            - else
+              .text-muted Not answered
+    .mt-3
+      %h4.h6 Comment
+      - if response.comment.present?
+        = simple_format(response.comment, {}, wrapper_tag: "div")
+      - else
+        %p.text-muted.mb-0 No comment provided.

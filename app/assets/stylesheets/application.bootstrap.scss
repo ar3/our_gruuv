@@ -2097,3 +2097,76 @@ body:has(.vertical-nav.open) .floating-toggle {
 .assignment-survey-intro {
   max-width: 44rem;
 }
+
+// Six-point Likert buttons: disagree side tinted increasingly red,
+// agree side increasingly green, so polarity is scannable by color.
+$likert-colors: (
+  1: #a02734,  // Strongly disagree — deep red
+  2: #ca3b49,  // Disagree — medium red
+  3: #e2848d,  // Somewhat disagree — light red
+  4: #79bd97,  // Somewhat agree — light green
+  5: #2f9e69,  // Agree — medium green
+  6: #14764a   // Strongly agree — deep green
+);
+
+.btn-likert {
+  background-color: var(--bs-body-bg, #fff);
+}
+
+// Results view: answer boxes and the six-dot scale mirror the Likert colors.
+.likert-scale-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.likert-dot {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 2px solid var(--bs-border-color, #dee2e6);
+  background-color: transparent;
+  flex-shrink: 0;
+}
+
+@each $value, $color in $likert-colors {
+  .btn-likert-#{$value} {
+    color: $color;
+    border-color: $color;
+
+    &:hover,
+    &:focus-visible {
+      color: #fff;
+      background-color: $color;
+      border-color: $color;
+    }
+  }
+
+  .btn-check:checked + .btn-likert-#{$value} {
+    color: #fff;
+    background-color: $color;
+    border-color: $color;
+    font-weight: 600;
+  }
+
+  .btn-check:focus-visible + .btn-likert-#{$value} {
+    box-shadow: 0 0 0 0.25rem rgba($color, 0.4);
+  }
+
+  .likert-answer-border-#{$value} {
+    border-color: $color !important;
+  }
+
+  .likert-answer-text-#{$value} {
+    color: $color;
+  }
+
+  .likert-dot-#{$value} {
+    border-color: $color;
+
+    &.filled {
+      background-color: $color;
+    }
+  }
+}
