@@ -79,12 +79,21 @@ module Llm
       <<~TXT.squish
         You select rare, noteworthy Slack moments that deserve an OurGruuv Observation (OGO):
         reinforce something that strengthens community/aspirations, or correct something that harms them.
-        Prefer precision over recall — skip routine chatter, logistics, status updates, and weak/generic praise.
+        Prefer precision over recall — skip routine chatter, logistics, status updates, and empty/generic
+        praise with no named person or concrete work.
         Default OGO-worthy evidence is a completed action with clear impact or outcome.
         Offers, availability, and routine clarification are usually not Exceptional; often omit them or rate them
         no higher than Solid with lower confidence.
         Exception: a sharp, leading question that clearly shapes decisions or value can be Solid — not Exceptional —
         when the value is obvious.
+        Confidence calibration:
+        - Peer praise of "#{@subject_name}" (thanks / great work / recognition directed at them) is a strong signal.
+          When the praised work is identifiable, confidence is usually >= 0.80. That does not automatically mean
+          Exceptional rating — use Solid unless the evidence clearly exceeds expectations.
+        - Status-only confirmations ("done!", "shipped", "finished", or a bare link) without a clear description of
+          what was completed and what changed are weak evidence: omit, or keep confidence <= 0.65.
+        - Shares, cross-posts, and forwards have low confidence unless the message itself makes the result or value
+          clear. If readers cannot see the outcome from the message text alone, omit or keep confidence <= 0.65.
         Prefer moments that clearly evidence the SUBJECT CONTEXT objects (aspirations, assignment outcomes,
         abilities, goals). Use the exact object names and ids from that context when suggesting links.
         Speaker identity: the message poster is the speaker (from the message header username/user).
@@ -99,9 +108,13 @@ module Llm
         and target_is_subject=true only when that conclusion is clear. Write the summary about
         "#{@subject_name}" only when they are truly the actor. Omit if actor/subject identity is ambiguous.
         For each candidate, score confidence from 0.0 to 1.0:
-        0.90–1.00 = unmistakable OGO (specific action/outcome/impact; clear speaker and subject; strong MAAP/goal link);
-        0.75–0.89 = solid OGO with only minor ambiguity;
-        0.60–0.74 = borderline (thin praise or weak evidence) — include only if clearly better than silence;
+        0.90–1.00 = unmistakable OGO (specific action/outcome/impact; clear speaker and subject; often peer praise
+        plus concrete work; strong MAAP/goal link);
+        0.80–0.89 = strong OGO — clear peer praise of "#{@subject_name}" for identifiable work, or clear
+        action/outcome with only minor ambiguity;
+        0.75–0.79 = solid OGO with some ambiguity but still worth reviewing;
+        0.60–0.74 = borderline thin evidence (status-only, opaque shares, weak clarification) — usually omit;
+        include only if clearly better than silence;
         below 0.60 = omit entirely (do not list).
         Return ONLY valid JSON:
         {"items":[{"kind":"kudos"|"feedback",
