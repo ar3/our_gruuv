@@ -36,6 +36,10 @@
         %span{"data-check-in-slack-ogo-consult-target" => "phaseLabel"} Working…
         %span.ms-2.small.text-muted May take a few minutes.
       %p.mb-0.small.text-muted.d-none{"data-check-in-slack-ogo-consult-target" => "progress"}
+      %p.mb-0.small.mt-2.d-none{"data-check-in-slack-ogo-consult-target" => "detailsLinkWrap"}
+        To see the full details on where this process is,
+        %a{"data-check-in-slack-ogo-consult-target" => "detailsLink", href: "#"} open this Find-Missing-OGOs OG Consultation
+        \.
 
     .d-none{"data-check-in-slack-ogo-consult-target" => "results"}
       %p.fw-semibold.mb-2 Examples of #{casual_name} and #{object_name}
@@ -50,8 +54,9 @@
           Re-run OG consultation with a stronger model
 
 .mb-4
-  %a.d-inline-flex.align-items-center.gap-1.text-decoration-none{href: "#check-in-get-evidence-manually", "data-bs-toggle" => "collapse", role: "button", "aria-expanded" => "false", "aria-controls" => "check-in-get-evidence-manually"}
-    %i.bi.bi-chevron-down
-    %span Get evidence manually
+  %a.d-inline-flex.align-items-start.gap-1.text-decoration-none{href: "#check-in-get-evidence-manually", "data-bs-toggle" => "collapse", role: "button", "aria-expanded" => "false", "aria-controls" => "check-in-get-evidence-manually"}
+    %i.bi.bi-chevron-down.mt-1
+    %span
+      If you'd prefer to have a prompt that could assist in finding evidence to help you give the most complete check-in about #{casual_name} and #{object_name}, open this for a prompt that you can use in your favorite AI tool
   .collapse#check-in-get-evidence-manually.mt-2
     = render "shared/single_item_check_in/research_ai_prompt_callout", prompt: prompt

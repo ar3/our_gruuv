@@ -14,6 +14,8 @@ export default class extends Controller {
     "waiting",
     "phaseLabel",
     "progress",
+    "detailsLinkWrap",
+    "detailsLink",
     "results",
     "objectList",
     "emptyObject",
@@ -142,6 +144,15 @@ export default class extends Controller {
         this.progressTarget.classList.remove("d-none")
       } else {
         this.progressTarget.classList.add("d-none")
+      }
+    }
+
+    if (this.hasDetailsLinkWrapTarget && this.hasDetailsLinkTarget) {
+      if (data.polling && data.full_results_url) {
+        this.detailsLinkTarget.href = data.full_results_url
+        this.detailsLinkWrapTarget.classList.remove("d-none")
+      } else {
+        this.detailsLinkWrapTarget.classList.add("d-none")
       }
     }
 
