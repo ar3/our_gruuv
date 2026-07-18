@@ -307,6 +307,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'OG Consultations',
+            icon: 'bi-robot',
+            path: organization_insights_og_consultations_path(current_organization),
+            policy_check: -> { policy(current_company).show? },
+            coming_soon: false
+          },
+          {
             label: 'Seats, Titles, Positions',
             icon: 'bi-briefcase',
             path: organization_insights_seats_titles_positions_path(current_organization),

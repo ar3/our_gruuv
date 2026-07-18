@@ -635,6 +635,7 @@ Rails.application.routes.draw do
       get 'observations/values_counts/download', to: 'insights#observations_values_counts_download', as: :observations_values_counts_download
       get 'observations', to: 'insights#observations'
       get 'feedback_requests', to: 'insights#feedback_requests'
+      get 'og_consultations', to: 'insights#og_consultations'
       get 'prompts/download', to: 'insights#prompts_download'
       get 'prompts', to: 'insights#prompts'
       get 'seats_titles_positions', to: 'insights#seats_titles_positions'

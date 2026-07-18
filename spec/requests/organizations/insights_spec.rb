@@ -315,6 +315,60 @@ RSpec.describe 'Organizations::Insights', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/insights/og_consultations' do
+    it 'returns http success' do
+      get organization_insights_og_consultations_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders OG Consultations insights with timeframe links and page help' do
+      get organization_insights_og_consultations_path(organization)
+      expect(response.body).to include('Insights: OG Consultations')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+      expect(response.body).to include('Custom')
+      expect(response.body).to include('Goal of this page')
+      expect(response.body).to include('What is MAAP?')
+    end
+
+    it 'returns success with timeframe=year' do
+      get organization_insights_og_consultations_path(organization, timeframe: 'year')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns success with timeframe=all_time' do
+      get organization_insights_og_consultations_path(organization, timeframe: 'all_time')
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'includes chart containers and runner section' do
+      get organization_insights_og_consultations_path(organization)
+      expect(response.body).to include('og-consultations-by-kind-week-chart')
+      expect(response.body).to include('og-consultations-kinds-pie-chart')
+      expect(response.body).to include('Top 10 Consultation Runners')
+    end
+
+    it 'shows kind labels and runner names for consultations in range' do
+      teammate = create(:company_teammate, :assigned_employee, organization: organization)
+      ability = create(:ability, company: organization)
+      create_ability_clarity_consultation!(
+        ability: ability,
+        status: 'completed',
+        triggered_by_teammate: teammate,
+        completed_at: Time.current
+      )
+
+      get organization_insights_og_consultations_path(organization, timeframe: 'year')
+
+      expect(response.body).to include('Ability clarity')
+      expect(response.body).to include(teammate.person.display_name)
+      expect(response.body).to match(%r{<strong>\s*1\s*</strong>})
+      expect(response.body).to include('consultations in this period')
+      expect(response.body).to include('Completed: 1')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/insights/prompts' do
     before do
       allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)

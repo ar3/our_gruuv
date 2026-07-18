@@ -100,34 +100,58 @@
             %p.text-muted.mb-0 No weeks in the selected range; per-employee value is not shown.
 
 .row.g-4
+  - insights_link_opts = { timeframe: @timeframe.to_s }
+  - if @timeframe == :custom
+    - insights_link_opts[:from] = @insights_custom_from if @insights_custom_from.present?
+    - insights_link_opts[:to] = @insights_custom_to if @insights_custom_to.present?
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
-      .card-header.bg-light
+      .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
         %h5.mb-0 OGO Stories Captured
+        - if policy(company).view_observations?
+          = render 'insights_chart_link',
+            path: organization_insights_observations_path(organization, **insights_link_opts),
+            label: 'Observations'
       .card-body
         #value-billing-observees-chart{style: "height: 280px;"}
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
-      .card-header.bg-light
+      .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
         %h5.mb-0 Clarity Check-ins Completed
+        - if policy(organization).check_ins_health?
+          = render 'insights_chart_link',
+            path: organization_insights_check_ins_progress_path(organization, **insights_link_opts),
+            label: 'Check-ins Progress'
       .card-body
         #value-billing-check-ins-chart{style: "height: 280px;"}
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
-      .card-header.bg-light
+      .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
         %h5.mb-0 Demonstrated Abilities Recognized
+        - if policy(company).view_abilities?
+          = render 'insights_chart_link',
+            path: organization_insights_abilities_path(organization, **insights_link_opts),
+            label: 'Abilities'
       .card-body
         #value-billing-milestones-chart{style: "height: 280px;"}
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
-      .card-header.bg-light
+      .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
         %h5.mb-0 Goals Progressed
+        - if policy(company).view_goals?
+          = render 'insights_chart_link',
+            path: organization_insights_goals_path(organization, **insights_link_opts),
+            label: 'Goals'
       .card-body
         #value-billing-goal-check-ins-chart{style: "height: 280px;"}
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
-      .card-header.bg-light
+      .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
         %h5.mb-0 OG Consultations
+        - if policy(company).show?
+          = render 'insights_chart_link',
+            path: organization_insights_og_consultations_path(organization, **insights_link_opts),
+            label: 'OG Consultations'
       .card-body
         #value-billing-consultations-chart{style: "height: 280px;"}
 

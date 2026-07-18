@@ -15,6 +15,8 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
     end
 
     it 'renders the value and billing page content with charts' do
+      allow_any_instance_of(OrganizationPolicy).to receive(:check_ins_health?).and_return(true)
+
       get organization_value_billing_path(organization)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Value / Billing')
@@ -40,6 +42,13 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
       expect(response.body).to include('OG Consultations')
       expect(response.body).to include('value-billing-consultations-chart')
       expect(response.body).to include('Every completed Consult OG consultation is worth $1.00')
+      expect(response.body).to include(organization_insights_observations_path(organization, timeframe: '90_days'))
+      expect(response.body).to include(organization_insights_check_ins_progress_path(organization, timeframe: '90_days'))
+      expect(response.body).to include(organization_insights_abilities_path(organization, timeframe: '90_days'))
+      expect(response.body).to include(organization_insights_goals_path(organization, timeframe: '90_days'))
+      expect(response.body).to include(organization_insights_og_consultations_path(organization, timeframe: '90_days'))
+      expect(response.body).to include('bi-bar-chart-line')
+      expect(response.body).to include('More detailed charts')
     end
 
     it 'accepts timeframe param like Insights' do

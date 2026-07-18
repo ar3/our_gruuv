@@ -1,0 +1,187 @@
+- content_for :title, "Insights: OG Consultations"
+- page_help_id = 'ogConsultationsInsightsPageHelp'
+- chart_title_period = @chart_title_period
+- status_counts = @og_consultations_status_counts || {}
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0
+      %i.bi.bi-robot.me-2
+      Insights: OG Consultations
+    = render 'shared/page_help/header_info_button',
+             collapse_id: page_help_id,
+             tooltip: 'See how Consult OG is used across kinds and teammates. Click for details.'
+
+.collapse.mb-4{id: page_help_id}
+  .alert.alert-light.border
+    %h3.fw-semibold.mb-2 Goal of this page
+    %p.mb-3
+      Understand Consult OG usage for this organization: which consultation kinds are run, who runs them, and how volume changes over time.
+
+    %h3.fw-semibold.mb-2 Context
+    = render 'shared/maap/definition'
+
+    %h3.fw-semibold.mb-2 Specifics of this page
+    %ul.mb-2
+      %li
+        Charts cover
+        %strong Consult OG
+        (ability, assignment, position clarity, teammate growth) and
+        %strong OGO search
+        (transcript and Slack).
+      %li Timeframe filters by when the consultation was started (created).
+      %li Status strip includes completed, failed, and in-flight runs in the selected period — not only billable completions.
+      %li
+        Example: if Ability clarity shows 12 and OGO search (Slack) shows 3 for Last 90 days, teammates ran fifteen consultations in that window.
+
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_og_consultations_path(@organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-4'
+
+.container-fluid
+  .row.mb-4
+    .col-12
+      .d-flex.flex-wrap.gap-3.align-items-center
+        .text-muted
+          %strong= @og_consultations_total_count
+          consultations in this period
+        - [['completed', 'success'], ['failed', 'danger'], ['processing', 'warning'], ['pending', 'secondary']].each do |status, color|
+          %span.badge{class: "text-bg-#{color}"}
+            = "#{status.humanize}: #{status_counts[status].to_i}"
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-bar-chart-steps.me-2
+            Consultations by Kind by Week (#{chart_title_period})
+        .card-body
+          #og-consultations-by-kind-week-chart{style: "height: 400px;"}
+
+  %hr.my-5
+
+  .row.mb-4
+    .col-lg-6.mb-4.mb-lg-0
+      .card.border-0.shadow-sm.h-100
+        .card-header.bg-info.text-white
+          %h4.mb-0
+            %i.bi.bi-pie-chart.me-2
+            Consultations by Type (#{chart_title_period})
+        .card-body
+          #og-consultations-kinds-pie-chart{style: "height: 380px;"}
+    .col-lg-6
+      .card.border-0.shadow-sm.h-100
+        .card-header.bg-success.text-white
+          %h4.mb-0
+            %i.bi.bi-person-lines-fill.me-2
+            Top 10 Consultation Runners
+        .card-body
+          - if @top_og_consultation_runners.any?
+            %ol.ps-3.mb-0
+              - @top_og_consultation_runners.each do |entry|
+                %li.mb-1
+                  - if entry[:company_teammate]
+                    = link_to entry[:person].display_name, internal_organization_company_teammate_path(@organization, entry[:company_teammate]), class: 'text-decoration-none'
+                  - else
+                    = entry[:person].display_name
+                  %span.text-muted.ms-1
+                    = "(#{entry[:count]})"
+          - else
+            %p.text-muted.mb-0 No data for this period.
+
+:javascript
+  (function() {
+    var byKindWeekData = #{@og_consultations_by_kind_week_chart_data.to_json};
+    var kindsPieData = #{@og_consultations_kinds_pie_chart_data.to_json};
+    var chartTitle = #{chart_title_period.to_json};
+
+    function initializeByKindWeekChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('og-consultations-by-kind-week-chart');
+      if (!el) return;
+      Highcharts.chart('og-consultations-by-kind-week-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Consultations by kind by week (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: byKindWeekData.categories,
+          title: { text: 'Week of' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of consultations' },
+          stackLabels: { enabled: false }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: byKindWeekData.series
+      });
+    }
+
+    function initializeKindsPieChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('og-consultations-kinds-pie-chart');
+      if (!el) return;
+      var data = (kindsPieData || []).map(function(d, i) {
+        return Object.assign({}, d);
+      });
+      Highcharts.chart('og-consultations-kinds-pie-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Consultations by type (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '{point.name}: {point.y}'
+            }
+          }
+        },
+        series: [{
+          name: 'Consultations',
+          colorByPoint: true,
+          data: data
+        }]
+      });
+    }
+
+    function initializeCharts() {
+      initializeByKindWeekChart();
+      initializeKindsPieChart();
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeCharts;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initializeCharts();
+    });
+  })();

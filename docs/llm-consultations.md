@@ -39,6 +39,10 @@ Full prompts/responses live on ActiveStorage (`request_payload` / `response_payl
 
 Look up with `OgConsultations::Kinds.fetch(kind)` (or `result_class_for` / `job_class_for` / `runner_class_for`). Ability clarity is wired through the registry as the reference path.
 
+## Insights
+
+Organization Insights includes an **OG Consultations** page (`/insights/og_consultations`) for volume by kind over time, kind mix, top runners, and status counts. Labels come from `OgConsultations::Kinds`.
+
 ## How to add a kind
 
 1. Add `KIND_*` on `OgConsultation` and a row in `OgConsultations::Kinds::REGISTRY`.

@@ -1,0 +1,11 @@
+-# Locals: path (required), label (required)
+- path = local_assigns.fetch(:path)
+- label = local_assigns.fetch(:label)
+
+= link_to path,
+  class: 'btn btn-sm btn-link text-secondary text-decoration-none p-0',
+  title: "More detailed charts: #{label}",
+  "aria-label" => "Open #{label} insights for more detailed charts",
+  "data-bs-toggle" => "tooltip",
+  "data-bs-placement" => "top" do
+  %i.bi.bi-bar-chart-line.fs-5.lh-1

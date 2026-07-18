@@ -209,6 +209,25 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @top_abilities_feedback_requested = top_abilities_feedback_requested_for_insights(range)
   end
 
+  def og_consultations
+    authorize company, :show?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
+
+    scoped = og_consultations_scope(range)
+    chart_scoped = og_consultations_scope(chart_range)
+
+    @og_consultations_by_kind_week_chart_data = og_consultations_by_kind_week_chart_series(chart_scoped, chart_range)
+    @og_consultations_kinds_pie_chart_data = og_consultations_kinds_pie_chart_data(scoped)
+    @og_consultations_status_counts = og_consultations_status_counts(scoped)
+    @top_og_consultation_runners = top_og_consultation_runners_for_insights(scoped)
+    @og_consultations_total_count = scoped.count
+  end
+
   def observations_values_counts_download
     authorize company, :view_observations?
 
@@ -409,6 +428,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     links << { label: 'Observations', path: organization_insights_observations_path(organization) } if policy(company).view_observations?
     links << { label: 'Who is doing what', path: organization_insights_who_is_doing_what_path(organization) } if policy(company).view_observations?
     links << { label: 'Feedback Requests', path: organization_insights_feedback_requests_path(organization) } if policy(company).view_feedback_requests?
+    links << { label: 'OG Consultations', path: organization_insights_og_consultations_path(organization) } if policy(company).show?
     links << { label: 'Seats, Titles, Positions', path: organization_insights_seats_titles_positions_path(organization) } if policy(company).view_seats?
     links << { label: 'Assignments', path: organization_insights_assignments_path(organization) } if policy(company).view_assignments?
     links << { label: 'Abilities', path: organization_insights_abilities_path(organization) } if policy(company).view_abilities?
@@ -822,6 +842,70 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     data = week_dates.map { |wd| raw_normalized[wd.to_s] || 0 }
     series = [{ name: 'Feedback requests created', data: data }]
     { categories: categories, series: series }
+  end
+
+  def og_consultations_scope(range)
+    scope = OgConsultation.where(organization_id: company.id)
+    scope = scope.where(created_at: range) if range
+    scope
+  end
+
+  def og_consultations_by_kind_week_chart_series(scope, chart_range)
+    raw = scope
+      .group(Arel.sql("date_trunc('week', og_consultations.created_at)::date"), :kind)
+      .count
+
+    end_date = chart_range.end.to_date
+    start_date = chart_range.begin.to_date
+    week_dates = (start_date..end_date).map(&:beginning_of_week).uniq.sort
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    kinds_present = raw.keys.map { |(_week, kind)| kind }.uniq
+    kind_order = OgConsultations::Kinds.kinds
+    ordered_kinds = (kind_order & kinds_present) | (kinds_present - kind_order)
+
+    series = ordered_kinds.map do |kind|
+      label = OgConsultations::Kinds.known?(kind) ? OgConsultations::Kinds.label_for(kind) : kind.to_s.humanize
+      data = week_dates.map do |week|
+        raw[[week, kind]] || raw[[week.to_s, kind]] || 0
+      end
+      { name: label, data: data }
+    end
+
+    { categories: categories, series: series }
+  end
+
+  def og_consultations_kinds_pie_chart_data(scope)
+    counts = scope.group(:kind).count
+    counts
+      .sort_by { |_kind, count| -count }
+      .map do |kind, count|
+        label = OgConsultations::Kinds.known?(kind) ? OgConsultations::Kinds.label_for(kind) : kind.to_s.humanize
+        { name: label, y: count }
+      end
+  end
+
+  def og_consultations_status_counts(scope)
+    counts = scope.group(:status).count
+    OgConsultation::STATUSES.index_with { |status| counts[status].to_i }
+  end
+
+  def top_og_consultation_runners_for_insights(scope)
+    counts = scope.where.not(triggered_by_teammate_id: nil).group(:triggered_by_teammate_id).count
+    top_10 = counts.sort_by { |_, c| -c }.first(10)
+    return [] if top_10.blank?
+
+    teammates_by_id = CompanyTeammate
+      .where(id: top_10.map(&:first))
+      .includes(:person)
+      .index_by(&:id)
+
+    top_10.filter_map do |teammate_id, count|
+      teammate = teammates_by_id[teammate_id]
+      next unless teammate&.person
+
+      { person: teammate.person, company_teammate: teammate, count: count }
+    end
   end
 
   def observations_feelings_pie_chart_data(range)
