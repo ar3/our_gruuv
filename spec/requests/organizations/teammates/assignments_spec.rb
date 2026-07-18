@@ -224,19 +224,21 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("Associated Goals")
       end
 
-      it "renders a copyable AI research prompt callout between observations and linked goals" do
+      it "renders Consult OG evidence and a collapsed manual prompt between observations and linked goals" do
         create(:assignment_outcome, assignment: assignment, description: "Deliver weekly demos", outcome_type: "quantitative")
         get assignment_show_path
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("Need more observations?")
+        expect(response.body).to include("Consult OG for evidence")
+        expect(response.body).to include("Get evidence manually")
+        expect(response.body).to include("Paste into Claude or another AI assistant")
         expect(response.body).to include("data-controller=\"clipboard\"")
         expect(response.body).to include("Copy prompt")
         expect(response.body).to include("observation-based check-in about")
         expect(response.body).to include("- Deliver weekly demos")
 
         body = response.body
-        expect(body.index("research-observations")).to be < body.index("Need more observations?")
-        expect(body.index("Need more observations?")).to be < body.index("Associated Goals")
+        expect(body.index("research-observations")).to be < body.index("Consult OG for evidence")
+        expect(body.index("Get evidence manually")).to be < body.index("Associated Goals")
       end
 
       it "renders expected outcomes as markdown in assignment details" do

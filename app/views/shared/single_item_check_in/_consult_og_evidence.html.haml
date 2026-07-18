@@ -1,0 +1,56 @@
+-# locals: prompt:, casual_name:, object_name:, rateable_type:, rateable_id:
+- viewer = current_company_teammate
+- status_url = organization_teammate_slack_ogo_check_in_consult_path(organization, @teammate)
+- create_url = organization_teammate_slack_ogo_check_in_consult_path(organization, @teammate)
+- csrf = form_authenticity_token
+
+.card.border-0.shadow-sm.mb-4{"data-controller" => "check-in-slack-ogo-consult",
+  "data-check-in-slack-ogo-consult-status-url-value" => status_url,
+  "data-check-in-slack-ogo-consult-create-url-value" => create_url,
+  "data-check-in-slack-ogo-consult-rateable-type-value" => rateable_type,
+  "data-check-in-slack-ogo-consult-rateable-id-value" => rateable_id.to_s,
+  "data-check-in-slack-ogo-consult-csrf-token-value" => csrf}
+  .card-body
+    %h6.mb-2
+      %i.bi.bi-stars.me-1
+      Consult OG for evidence
+    %p.mb-3.small.text-muted
+      Run an OG consultation over Slack moments about #{casual_name}. This may take a few minutes.
+      Results update as each consultation finishes.
+
+    .alert.alert-danger.d-none.mb-3{"data-check-in-slack-ogo-consult-target" => "error"}
+
+    .d-flex.flex-wrap.gap-2.mb-3{"data-check-in-slack-ogo-consult-target" => "primaryActions"}
+      - if viewer&.has_slack_search_identity?
+        %button.btn.btn-primary{type: "button", "data-action" => "check-in-slack-ogo-consult#start", "data-mode" => "fresh"}
+          %i.bi.bi-stars.me-1
+          Consult OG to find examples of #{casual_name} and #{object_name}
+      - else
+        = link_to organization_company_teammate_slack_search_oauth_authorize_path(organization, viewer || @teammate, source: "checkInConsult", return_to: request.url), class: "btn btn-primary" do
+          %i.bi.bi-slack.me-1
+          Connect Slack (search) to Consult OG
+
+    .d-none.mb-3{"data-check-in-slack-ogo-consult-target" => "waiting"}
+      .alert.alert-secondary.mb-2
+        %span{"data-check-in-slack-ogo-consult-target" => "phaseLabel"} Working…
+        %span.ms-2.small.text-muted May take a few minutes.
+      %p.mb-0.small.text-muted.d-none{"data-check-in-slack-ogo-consult-target" => "progress"}
+
+    .d-none{"data-check-in-slack-ogo-consult-target" => "results"}
+      %p.fw-semibold.mb-2 Examples of #{casual_name} and #{object_name}
+      %p.small.text-muted.d-none.mb-2{"data-check-in-slack-ogo-consult-target" => "emptyObject"}
+      %ul.list-unstyled.mb-3{"data-check-in-slack-ogo-consult-target" => "objectList"}
+      %p.small.mb-2{"data-check-in-slack-ogo-consult-target" => "otherLine"}
+
+      .d-none.d-flex.flex-wrap.gap-2.mt-3{"data-check-in-slack-ogo-consult-target" => "secondaryActions"}
+        %button.btn.btn-sm.btn-outline-primary.d-none{type: "button", "data-action" => "check-in-slack-ogo-consult#start", "data-mode" => "refresh_search", "data-check-in-slack-ogo-consult-target" => "refreshButton"}
+          Refresh search and consult
+        %button.btn.btn-sm.btn-outline-primary.d-none{type: "button", "data-action" => "check-in-slack-ogo-consult#start", "data-mode" => "stronger_model", "data-check-in-slack-ogo-consult-target" => "strongerButton"}
+          Re-run OG consultation with a stronger model
+
+.mb-4
+  %a.d-inline-flex.align-items-center.gap-1.text-decoration-none{href: "#check-in-get-evidence-manually", "data-bs-toggle" => "collapse", role: "button", "aria-expanded" => "false", "aria-controls" => "check-in-get-evidence-manually"}
+    %i.bi.bi-chevron-down
+    %span Get evidence manually
+  .collapse#check-in-get-evidence-manually.mt-2
+    = render "shared/single_item_check_in/research_ai_prompt_callout", prompt: prompt

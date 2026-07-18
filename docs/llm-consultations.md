@@ -18,6 +18,8 @@ Subject (Ability / Assignment / Transcript / Slack search batch / …)
 ```
 
 For Slack OGO search: `PossibleObservationSlackSearch` holds the raw fetch; each `PossibleObservationSlackSearchBatch` (≤500 filtered messages) is the consultation subject and owns review candidates.
+
+**Check-in entry:** Assignment / Aspiration / Ability 1-by-1 pages can start a 90-day Slack search with `auto_extract_after_search`, then poll progressive ≥80% object-matched candidates via `CheckIns::SlackOgoConsult`.
 **Not billable consultations:** HR enrich/match and teammate resolve still go through `Llm::Client` (invocations only).
 
 ### Payloads

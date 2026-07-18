@@ -220,4 +220,19 @@ module SingleItemCheckInHelper
       focus_body: focus_body
     )
   end
+
+  def single_item_check_in_ability_research_ai_prompt(teammate:, ability:)
+    description = markdown_to_plain_text(ability.description)
+    focus_body = if description.present?
+                   "#{ability.name}\n\n#{description}"
+                 else
+                   ability.name.to_s
+                 end
+
+    single_item_check_in_research_ai_prompt(
+      teammate: teammate,
+      latest_finalized: nil,
+      focus_body: focus_body
+    )
+  end
 end

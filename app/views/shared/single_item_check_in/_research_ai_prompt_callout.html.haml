@@ -1,12 +1,12 @@
 -# locals: (prompt:)
-.alert.alert-info.mb-4{"data-controller" => "clipboard", "data-clipboard-idle-label-value" => "Copy prompt", "data-clipboard-success-message-value" => "Copied!"}
+.alert.alert-info.mb-0{"data-controller" => "clipboard", "data-clipboard-idle-label-value" => "Copy prompt", "data-clipboard-success-message-value" => "Copied!"}
   .d-flex.flex-wrap.align-items-start.justify-content-between.gap-2.mb-2
     %div
       %h6.alert-heading.mb-1
-        %i.bi.bi-stars.me-1
-        Need more observations?
+        %i.bi.bi-clipboard.me-1
+        Paste into Claude or another AI assistant
       %p.mb-0.small
-        If you have an AI assistant in Slack, Asana, Zoom, Google Meet, or similar, paste this prompt. It can help surface observation candidates for this check-in.
+        Connect Slack or other tools via MCP in Claude, then run this prompt to look for observation candidates yourself.
     %button.btn.btn-sm.btn-outline-secondary.flex-shrink-0{type: "button", "data-clipboard-target" => "button", "data-action" => "clipboard#copy"}
       %i.bi.bi-clipboard.me-1
       %span{"data-clipboard-target" => "buttonLabel"} Copy prompt

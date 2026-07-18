@@ -469,6 +469,8 @@ Rails.application.routes.draw do
         delete :destroy_open_check_in, on: :member
       end
       resources :abilities, only: [:show], controller: 'teammates/abilities'
+      resource :slack_ogo_check_in_consult, only: [:show, :create],
+               controller: 'teammates/slack_ogo_check_in_consults'
     end
     
     # Positions management

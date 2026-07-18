@@ -73,6 +73,14 @@
 
     = render "shared/single_item_check_in/current_period_observations"
 
+    - research_ai_prompt = single_item_check_in_ability_research_ai_prompt(teammate: @teammate, ability: @ability)
+    = render "shared/single_item_check_in/consult_og_evidence",
+             prompt: research_ai_prompt,
+             casual_name: casual,
+             object_name: @ability.name,
+             rateable_type: "Ability",
+             rateable_id: @ability.id
+
     = render 'organizations/shared/goals/associable_associated_goals_card',
         organization: @organization,
         associable: @ability,
