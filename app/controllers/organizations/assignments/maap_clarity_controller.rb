@@ -9,45 +9,43 @@ module Organizations
       def show
         authorize @assignment, :run_clarity?
         assign_assignments_for_maap_clarity_switcher
-        @run = MaapAgentRun.includes(:maap_recommendation_acceptances).find_by(
-          subject: @assignment,
-          agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY
-        )
+        @run = @assignment.latest_assignment_clarity_consultation
         @accepted_maap_recommendation_ids =
-          @run ? @run.maap_recommendation_acceptances.pluck(:recommendation_id) : []
+          if @run&.result.is_a?(AssignmentClarityResult)
+            @run.result.assignment_clarity_recommendation_acceptances.pluck(:recommendation_id)
+          else
+            []
+          end
         render layout: determine_layout
       end
 
       def run
         authorize @assignment, :run_clarity?
-        record = MaapAgentRun.find_or_initialize_by(
+        consultation = OgConsultation.create!(
+          kind: OgConsultation::KIND_ASSIGNMENT_CLARITY,
           subject: @assignment,
-          agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY
-        )
-        record.maap_recommendation_acceptances.destroy_all if record.persisted?
-        record.assign_attributes(
+          organization_id: @assignment.company_id,
+          triggered_by_teammate: current_company_teammate,
           status: 'pending',
-          clarity_rating: nil,
-          clarity_score: nil,
-          clarity_recommendations: [],
-          consult_focus: sanitized_consult_focus_param,
-          output_text: nil,
-          error_message: nil,
+          billable: true,
           prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
-          triggered_by_teammate: current_company_teammate
+          units_total: 1,
+          units_completed: 0
         )
-        record.save!
-        AssignmentClarityJob.perform_later(@assignment.id, record.id)
+        result = AssignmentClarityResult.create!(
+          og_consultation: consultation,
+          consult_focus: sanitized_consult_focus_param,
+          clarity_recommendations: []
+        )
+        consultation.update!(result: result)
+        AssignmentClarityJob.perform_later(@assignment.id, consultation.id)
         redirect_to maap_clarity_organization_assignment_path(@organization, @assignment),
                     notice: 'Consult OG started. This page will update when processing finishes.'
       end
 
       def status
         authorize @assignment, :run_clarity?
-        run = MaapAgentRun.find_by(
-          subject: @assignment,
-          agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY
-        )
+        run = @assignment.latest_assignment_clarity_consultation
         if run.nil?
           return render json: { status: 'none', id: nil, elapsed_seconds: 0, stale: false, slow: false }
         end
@@ -57,11 +55,8 @@ module Organizations
 
       def accept_recommendation
         authorize @assignment, :accept_clarity_recommendation?
-        run = MaapAgentRun.find_by!(
-          subject: @assignment,
-          agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY
-        )
-        unless run.status == 'completed' && run.output_text.present?
+        run = @assignment.latest_assignment_clarity_consultation
+        unless run&.status == 'completed' && run.output_text.present? && run.result.is_a?(AssignmentClarityResult)
           redirect_to maap_clarity_organization_assignment_path(@organization, @assignment),
                       alert: 'Accept is only available after a completed Consult OG run.'
           return
@@ -75,8 +70,8 @@ module Organizations
           return
         end
 
-        acceptance = MaapRecommendationAcceptance.find_or_initialize_by(
-          maap_agent_run: run,
+        acceptance = AssignmentClarityRecommendationAcceptance.find_or_initialize_by(
+          assignment_clarity_result: run.result,
           recommendation_id: rid
         )
         if acceptance.new_record?
@@ -114,15 +109,7 @@ module Organizations
 
       def status_json_for(run)
         status = run.status.to_s
-        reference_time =
-          case status
-          when 'processing'
-            run.updated_at || run.created_at
-          when 'pending'
-            run.updated_at || run.created_at
-          else
-            run.updated_at || run.created_at
-          end
+        reference_time = run.started_at || run.updated_at || run.created_at
         elapsed_seconds = [(Time.current - reference_time).to_i, 0].max
         stale = status == 'processing' && elapsed_seconds > 240
         slow = %w[pending processing].include?(status) && elapsed_seconds > 90

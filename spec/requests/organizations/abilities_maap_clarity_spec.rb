@@ -30,28 +30,24 @@ RSpec.describe 'Organizations::Abilities::MaapClarity', type: :request do
   end
 
   describe 'POST /organizations/:organization_id/abilities/:id/maap_clarity/run' do
-    it 'creates a run and enqueues the job' do
+    it 'creates a consultation and enqueues the job' do
       expect do
         post run_maap_clarity_organization_ability_path(organization, ability)
       end.to have_enqueued_job(AbilityClarityJob).with(ability.id, a_kind_of(Integer))
 
       expect(response).to redirect_to(maap_clarity_organization_ability_path(organization, ability))
-      run = MaapAgentRun.find_by(subject: ability, agent_kind: MaapAgentRun::AGENT_KIND_ABILITY_CLARITY)
+      run = ability.latest_ability_clarity_consultation
       expect(run).to be_present
       expect(run.status).to eq('pending')
+      expect(run).to be_a(OgConsultation)
     end
   end
 
   describe 'GET /organizations/:organization_id/abilities/:id/maap_clarity/status' do
     let!(:ability_for_status) { create(:ability, company: organization, created_by: creator, updated_by: creator, name: 'Other Ability') }
 
-    it 'returns JSON for the current run' do
-      MaapAgentRun.create!(
-        subject: ability_for_status,
-        agent_kind: MaapAgentRun::AGENT_KIND_ABILITY_CLARITY,
-        status: 'processing',
-        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION
-      )
+    it 'returns JSON for the current consultation' do
+      create_ability_clarity_consultation!(ability: ability_for_status, status: 'processing')
 
       get maap_clarity_status_organization_ability_path(organization, ability_for_status),
           headers: { 'Accept' => 'application/json' }

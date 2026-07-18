@@ -105,7 +105,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
   def show
     authorize @ability
 
-    @ability_clarity_run = @ability.ability_clarity_maap_agent_run
+    @ability_clarity_run = @ability.latest_ability_clarity_consultation
 
     milestone_scope = @ability.teammate_milestones
       .joins(:company_teammate)

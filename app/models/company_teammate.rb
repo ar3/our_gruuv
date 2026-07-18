@@ -23,11 +23,11 @@ class CompanyTeammate < ApplicationRecord
   has_many :assignment_survey_submissions, foreign_key: :teammate_id, dependent: :destroy
 
   has_many :prompts, foreign_key: 'company_teammate_id', dependent: :destroy
-  has_many :maap_agent_runs, as: :subject, dependent: :destroy
-  has_one :teammate_growth_maap_agent_run,
-          -> { where(agent_kind: MaapAgentRun::AGENT_KIND_TEAMMATE_GROWTH) },
-          class_name: 'MaapAgentRun',
-          as: :subject
+  has_many :og_consultations, as: :subject, dependent: :destroy
+
+  def latest_teammate_growth_consultation
+    og_consultations.for_kind(OgConsultation::KIND_TEAMMATE_GROWTH).latest_first.first
+  end
 
   # Kudos associations
   has_one :kudos_points_ledger, foreign_key: :company_teammate_id, dependent: :destroy

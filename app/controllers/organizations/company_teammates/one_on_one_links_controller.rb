@@ -225,10 +225,7 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     @can_run_teammate_growth = CompanyTeammatePolicy.new(pundit_user, @teammate).run_teammate_growth?
     return unless @can_run_teammate_growth
 
-    @teammate_growth_maap_run = MaapAgentRun.find_by(
-      subject: @teammate,
-      agent_kind: MaapAgentRun::AGENT_KIND_TEAMMATE_GROWTH
-    )
+    @teammate_growth_maap_run = @teammate.latest_teammate_growth_consultation
   end
 
   def load_one_thing_priority_carousel

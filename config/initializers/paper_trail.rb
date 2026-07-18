@@ -45,7 +45,7 @@ Rails.application.config.after_initialize do
       self.meta = (meta || {}).merge('position_assignment_change_context' => value)
     end
 
-    # MaapAgentRun completion markers (used by Value/Billing OG consultations)
+    # Legacy MaapAgentRun meta keys (kept so old versions remain readable)
     def completed_event=(value)
       self.meta = (meta || {}).merge('completed_event' => value)
     end

@@ -11,11 +11,11 @@ class Position < ApplicationRecord
   has_many :position_abilities, dependent: :destroy
   has_many :abilities, through: :position_abilities
   has_many :comments, as: :commentable, dependent: :destroy
-  has_many :maap_agent_runs, as: :subject, dependent: :destroy
-  has_one :position_clarity_maap_agent_run,
-          -> { where(agent_kind: MaapAgentRun::AGENT_KIND_POSITION_CLARITY) },
-          class_name: 'MaapAgentRun',
-          as: :subject
+  has_many :og_consultations, as: :subject, dependent: :destroy
+
+  def latest_position_clarity_consultation
+    og_consultations.for_kind(OgConsultation::KIND_POSITION_CLARITY).latest_first.first
+  end
   has_one :published_external_reference, -> { where(reference_type: 'published') }, 
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   has_one :draft_external_reference, -> { where(reference_type: 'draft') }, 

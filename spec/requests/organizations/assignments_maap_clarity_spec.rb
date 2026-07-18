@@ -28,13 +28,13 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
   end
 
   describe 'POST /organizations/:organization_id/assignments/:id/maap_clarity/run' do
-    it 'creates a run and enqueues the job' do
+    it 'creates a consultation and enqueues the job' do
       expect do
         post run_maap_clarity_organization_assignment_path(organization, assignment)
       end.to have_enqueued_job(AssignmentClarityJob).with(assignment.id, a_kind_of(Integer))
 
       expect(response).to redirect_to(maap_clarity_organization_assignment_path(organization, assignment))
-      run = MaapAgentRun.find_by(subject: assignment, agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY)
+      run = assignment.latest_assignment_clarity_consultation
       expect(run).to be_present
       expect(run.status).to eq('pending')
     end
@@ -43,7 +43,7 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
       post run_maap_clarity_organization_assignment_path(organization, assignment),
            params: { consult_focus: '  Are outcomes clear enough?  ' }
 
-      run = MaapAgentRun.find_by(subject: assignment, agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY)
+      run = assignment.latest_assignment_clarity_consultation
       expect(run.consult_focus).to eq('Are outcomes clear enough?')
     end
   end
@@ -51,13 +51,8 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
   describe 'GET /organizations/:organization_id/assignments/:id/maap_clarity/status' do
     let!(:assignment_for_status) { create(:assignment, company: organization, title: 'Other Assignment') }
 
-    it 'returns JSON for the current run' do
-      MaapAgentRun.create!(
-        subject: assignment_for_status,
-        agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY,
-        status: 'processing',
-        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION
-      )
+    it 'returns JSON for the current consultation' do
+      create_assignment_clarity_consultation!(assignment: assignment_for_status, status: 'processing')
 
       get maap_clarity_status_organization_assignment_path(organization, assignment_for_status),
           headers: { 'Accept' => 'application/json' }
@@ -70,11 +65,9 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
 
   describe 'POST .../maap_clarity/recommendations/accept' do
     let!(:run) do
-      MaapAgentRun.create!(
-        subject: assignment,
-        agent_kind: MaapAgentRun::AGENT_KIND_ASSIGNMENT_CLARITY,
+      create_assignment_clarity_consultation!(
+        assignment: assignment,
         status: 'completed',
-        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
         output_text: 'ok',
         clarity_recommendations: [
           {
@@ -93,11 +86,11 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
       expect do
         post accept_maap_clarity_recommendation_organization_assignment_path(organization, assignment),
              params: { recommendation_id: 'rec_test' }
-      end.to change(MaapRecommendationAcceptance, :count).by(1)
+      end.to change(AssignmentClarityRecommendationAcceptance, :count).by(1)
 
       expect(response).to redirect_to(maap_clarity_organization_assignment_path(organization, assignment))
-      acc = MaapRecommendationAcceptance.last
-      expect(acc.maap_agent_run_id).to eq(run.id)
+      acc = AssignmentClarityRecommendationAcceptance.last
+      expect(acc.assignment_clarity_result_id).to eq(run.result.id)
       expect(acc.recommendation_id).to eq('rec_test')
       expect(acc.teammate_id).to eq(maap_teammate.id)
     end
@@ -108,7 +101,7 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
 
       expect(response).to redirect_to(maap_clarity_organization_assignment_path(organization, assignment))
       expect(flash[:alert]).to be_present
-      expect(MaapRecommendationAcceptance.count).to eq(0)
+      expect(AssignmentClarityRecommendationAcceptance.count).to eq(0)
     end
 
     it 'is idempotent when accepting twice' do
@@ -117,7 +110,7 @@ RSpec.describe 'Organizations::Assignments::MaapClarity', type: :request do
       expect do
         post accept_maap_clarity_recommendation_organization_assignment_path(organization, assignment),
              params: { recommendation_id: 'rec_test' }
-      end.not_to change(MaapRecommendationAcceptance, :count)
+      end.not_to change(AssignmentClarityRecommendationAcceptance, :count)
     end
   end
 end

@@ -34,25 +34,24 @@ RSpec.describe 'Organizations::CompanyTeammates::MaapTeammateGrowth', type: :req
   end
 
   describe 'POST /organizations/:organization_id/company_teammates/:id/maap_teammate_growth/run' do
-    it 'creates a run and enqueues the job' do
+    it 'creates a consultation and enqueues the job' do
       expect do
         post run_maap_teammate_growth_organization_company_teammate_path(organization, subject_teammate)
       end.to have_enqueued_job(TeammateGrowthJob).with(subject_teammate.id, organization.id, a_kind_of(Integer))
 
       expect(response).to redirect_to(maap_teammate_growth_organization_company_teammate_path(organization, subject_teammate))
-      run = MaapAgentRun.find_by(subject: subject_teammate, agent_kind: MaapAgentRun::AGENT_KIND_TEAMMATE_GROWTH)
+      run = subject_teammate.latest_teammate_growth_consultation
       expect(run).to be_present
       expect(run.status).to eq('pending')
     end
   end
 
   describe 'GET /organizations/:organization_id/company_teammates/:id/maap_teammate_growth/status' do
-    it 'returns JSON for the current run' do
-      MaapAgentRun.create!(
-        subject: subject_teammate,
-        agent_kind: MaapAgentRun::AGENT_KIND_TEAMMATE_GROWTH,
-        status: 'processing',
-        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION
+    it 'returns JSON for the current consultation' do
+      create_teammate_growth_consultation!(
+        teammate: subject_teammate,
+        organization: organization,
+        status: 'processing'
       )
 
       get maap_teammate_growth_status_organization_company_teammate_path(organization, subject_teammate),

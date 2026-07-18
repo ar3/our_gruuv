@@ -9,39 +9,34 @@ module Organizations
       def show
         authorize @position, :run_clarity?
         assign_positions_for_maap_clarity_switcher
-        @run = MaapAgentRun.find_by(
-          subject: @position,
-          agent_kind: MaapAgentRun::AGENT_KIND_POSITION_CLARITY
-        )
+        @run = @position.latest_position_clarity_consultation
         render layout: determine_layout
       end
 
       def run
         authorize @position, :run_clarity?
-        record = MaapAgentRun.find_or_initialize_by(
+        org_id = @position.company&.id || @position.title.company_id
+        consultation = OgConsultation.create!(
+          kind: OgConsultation::KIND_POSITION_CLARITY,
           subject: @position,
-          agent_kind: MaapAgentRun::AGENT_KIND_POSITION_CLARITY
-        )
-        record.assign_attributes(
+          organization_id: org_id,
+          triggered_by_teammate: current_company_teammate,
           status: 'pending',
-          clarity_rating: nil,
-          output_text: nil,
-          error_message: nil,
+          billable: true,
           prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
-          triggered_by_teammate: current_company_teammate
+          units_total: 1,
+          units_completed: 0
         )
-        record.save!
-        PositionClarityJob.perform_later(@position.id, record.id)
+        result = PositionClarityResult.create!(og_consultation: consultation)
+        consultation.update!(result: result)
+        PositionClarityJob.perform_later(@position.id, consultation.id)
         redirect_to maap_clarity_organization_position_path(@organization, @position),
                     notice: 'Consult OG started. This page will update when processing finishes.'
       end
 
       def status
         authorize @position, :run_clarity?
-        run = MaapAgentRun.find_by(
-          subject: @position,
-          agent_kind: MaapAgentRun::AGENT_KIND_POSITION_CLARITY
-        )
+        run = @position.latest_position_clarity_consultation
         if run.nil?
           return render json: { status: 'none', id: nil, elapsed_seconds: 0, stale: false, slow: false }
         end
@@ -75,15 +70,7 @@ module Organizations
 
       def status_json_for(run)
         status = run.status.to_s
-        reference_time =
-          case status
-          when 'processing'
-            run.updated_at || run.created_at
-          when 'pending'
-            run.updated_at || run.created_at
-          else
-            run.updated_at || run.created_at
-          end
+        reference_time = run.started_at || run.updated_at || run.created_at
         elapsed_seconds = [(Time.current - reference_time).to_i, 0].max
         stale = status == 'processing' && elapsed_seconds > 240
         slow = %w[pending processing].include?(status) && elapsed_seconds > 90

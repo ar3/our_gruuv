@@ -29,30 +29,42 @@ module Llm
       "#{prefix}.#{SONNET_45_FOUNDATION_SUFFIX}"
     end
 
-    def self.call(chunk_text:, subject_name:, context_text: nil, context_catalog: nil)
+    def self.call(chunk_text:, subject_name:, context_text: nil, context_catalog: nil, organization_id: nil, parent: nil, triggered_by_teammate_id: nil)
       new(
         chunk_text: chunk_text,
         subject_name: subject_name,
         context_text: context_text,
-        context_catalog: context_catalog
+        context_catalog: context_catalog,
+        organization_id: organization_id,
+        parent: parent,
+        triggered_by_teammate_id: triggered_by_teammate_id
       ).call
     end
 
-    def initialize(chunk_text:, subject_name:, context_text: nil, context_catalog: nil)
+    def initialize(chunk_text:, subject_name:, context_text: nil, context_catalog: nil, organization_id: nil, parent: nil, triggered_by_teammate_id: nil)
       @chunk_text = chunk_text.to_s
       @subject_name = subject_name.to_s
       @context_text = context_text.to_s
       @context_catalog = context_catalog || {}
+      @organization_id = organization_id
+      @parent = parent
+      @triggered_by_teammate_id = triggered_by_teammate_id
     end
 
     def call
       return stub_response unless bedrock_configured?
 
       model_id = ENV.fetch("SLACK_SEARCH_BEDROCK_MODEL_ID") { self.class.default_model_id }
-      chat = RubyLLM.chat(model: model_id, provider: :bedrock, assume_model_exists: true)
-      chat.with_instructions(system_instructions)
-      response = chat.ask(user_prompt)
-      parse_items(response.content.to_s)
+      llm = Llm::Client.call(
+        purpose: "slack_chunk",
+        model_id: model_id,
+        system_instructions: system_instructions,
+        user_prompt: user_prompt,
+        organization_id: @organization_id,
+        parent: @parent,
+        triggered_by_teammate_id: @triggered_by_teammate_id
+      )
+      parse_items(llm.content.to_s)
     rescue StandardError => e
       Rails.logger.warn(
         "SlackMomentsExtractor failed: #{e.class}: #{e.message} " \

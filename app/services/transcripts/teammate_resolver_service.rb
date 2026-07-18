@@ -63,25 +63,23 @@ module Transcripts
         }
       end
 
-      chat = RubyLLM.chat(
-        model: ENV.fetch('TRANSCRIPT_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id },
-        provider: :bedrock,
-        assume_model_exists: true
-      )
-      chat.with_instructions(
-        'You map one transcript speaker label to one teammate from a candidate list. ' \
-        'Return ONLY JSON: {"company_teammate_id":<integer or null>,"unknown":<true|false>}. ' \
-        'Set unknown=true when ambiguous or no confident match. Never invent ids.'
-      )
-      response = chat.ask(
-        <<~TXT
+      model_id = ENV.fetch('TRANSCRIPT_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id }
+      llm = Llm::Client.call(
+        purpose: 'teammate_resolve',
+        model_id: model_id,
+        system_instructions:
+          'You map one transcript speaker label to one teammate from a candidate list. ' \
+          'Return ONLY JSON: {"company_teammate_id":<integer or null>,"unknown":<true|false>}. ' \
+          'Set unknown=true when ambiguous or no confident match. Never invent ids.',
+        user_prompt: <<~TXT,
           Transcript label: #{@label}
 
           Candidate teammates JSON:
           #{options.to_json}
         TXT
+        organization_id: @organization.id
       )
-      parsed = parse_llm_json(response.content.to_s)
+      parsed = parse_llm_json(llm.content.to_s)
       return nil unless parsed.is_a?(Hash)
 
       teammate_id = parsed['company_teammate_id'].presence&.to_i

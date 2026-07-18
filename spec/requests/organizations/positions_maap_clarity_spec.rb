@@ -30,13 +30,13 @@ RSpec.describe 'Organizations::Positions::MaapClarity', type: :request do
   end
 
   describe 'POST /organizations/:organization_id/positions/:id/maap_clarity/run' do
-    it 'creates a run and enqueues the job' do
+    it 'creates a consultation and enqueues the job' do
       expect do
         post run_maap_clarity_organization_position_path(organization, position)
       end.to have_enqueued_job(PositionClarityJob).with(position.id, a_kind_of(Integer))
 
       expect(response).to redirect_to(maap_clarity_organization_position_path(organization, position))
-      run = MaapAgentRun.find_by(subject: position, agent_kind: MaapAgentRun::AGENT_KIND_POSITION_CLARITY)
+      run = position.latest_position_clarity_consultation
       expect(run).to be_present
       expect(run.status).to eq('pending')
     end
@@ -49,13 +49,8 @@ RSpec.describe 'Organizations::Positions::MaapClarity', type: :request do
       create(:position, title: t, position_level: pl)
     end
 
-    it 'returns JSON for the current run' do
-      MaapAgentRun.create!(
-        subject: position_for_status,
-        agent_kind: MaapAgentRun::AGENT_KIND_POSITION_CLARITY,
-        status: 'processing',
-        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION
-      )
+    it 'returns JSON for the current consultation' do
+      create_position_clarity_consultation!(position: position_for_status, status: 'processing')
 
       get maap_clarity_status_organization_position_path(organization, position_for_status),
           headers: { 'Accept' => 'application/json' }

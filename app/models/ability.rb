@@ -15,11 +15,11 @@ class Ability < ApplicationRecord
   has_many :observation_ratings, as: :rateable, dependent: :destroy
   has_many :observations, through: :observation_ratings
 has_many :comments, as: :commentable, dependent: :destroy
-has_many :maap_agent_runs, as: :subject, dependent: :destroy
-has_one :ability_clarity_maap_agent_run,
-        -> { where(agent_kind: MaapAgentRun::AGENT_KIND_ABILITY_CLARITY) },
-        class_name: 'MaapAgentRun',
-        as: :subject
+has_many :og_consultations, as: :subject, dependent: :destroy
+
+def latest_ability_clarity_consultation
+  og_consultations.for_kind(OgConsultation::KIND_ABILITY_CLARITY).latest_first.first
+end
 
 has_many :goal_associations, as: :associable, dependent: :destroy
   has_many :goals, through: :goal_associations

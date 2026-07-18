@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_18_142947) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -36,6 +36,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
     t.index ["department_id"], name: "index_abilities_on_department_id"
     t.index ["name", "company_id"], name: "index_abilities_on_name_and_company_id", unique: true
     t.index ["updated_by_id"], name: "index_abilities_on_updated_by_id"
+  end
+
+  create_table "ability_clarity_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.text "output_text"
+    t.string "clarity_rating"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "index_ability_clarity_results_on_og_consultation_id", unique: true
   end
 
   create_table "active_storage_attachments", force: :cascade do |t|
@@ -176,6 +185,29 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
     t.index ["teammate_id", "assignment_id"], name: "index_assignment_check_ins_on_teammate_and_assignment"
     t.index ["teammate_id"], name: "index_assignment_check_ins_on_teammate_id"
     t.check_constraint "actual_energy_percentage IS NULL OR actual_energy_percentage >= 0 AND actual_energy_percentage <= 100", name: "check_actual_energy_percentage_range"
+  end
+
+  create_table "assignment_clarity_recommendation_acceptances", force: :cascade do |t|
+    t.bigint "assignment_clarity_result_id", null: false
+    t.string "recommendation_id", null: false
+    t.bigint "teammate_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_clarity_result_id", "recommendation_id"], name: "index_assign_clarity_rec_acceptances_on_result_and_rec", unique: true
+    t.index ["assignment_clarity_result_id"], name: "index_assign_clarity_rec_acceptances_on_result_id"
+    t.index ["teammate_id"], name: "index_assign_clarity_rec_acceptances_on_teammate_id"
+  end
+
+  create_table "assignment_clarity_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.text "output_text"
+    t.string "clarity_rating"
+    t.integer "clarity_score"
+    t.jsonb "clarity_recommendations", default: [], null: false
+    t.text "consult_focus"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "index_assignment_clarity_results_on_og_consultation_id", unique: true
   end
 
   create_table "assignment_flow_memberships", force: :cascade do |t|
@@ -808,36 +840,31 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
     t.index ["type"], name: "index_kudos_transactions_on_type"
   end
 
-  create_table "maap_agent_runs", force: :cascade do |t|
-    t.string "subject_type", null: false
-    t.bigint "subject_id", null: false
-    t.string "agent_kind", null: false
+  create_table "llm_invocations", force: :cascade do |t|
+    t.string "purpose", null: false
+    t.string "model_id", null: false
     t.string "status", default: "pending", null: false
-    t.string "clarity_rating"
-    t.text "output_text"
     t.text "error_message"
     t.string "prompt_version"
-    t.string "model_id"
+    t.integer "input_tokens"
+    t.integer "output_tokens"
+    t.integer "cached_tokens"
+    t.integer "cache_creation_tokens"
+    t.bigint "cost_micros"
+    t.bigint "organization_id"
     t.bigint "triggered_by_teammate_id"
+    t.string "parent_type"
+    t.bigint "parent_id"
+    t.datetime "started_at"
+    t.datetime "finished_at"
+    t.integer "duration_ms"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "clarity_score"
-    t.jsonb "clarity_recommendations", default: [], null: false
-    t.text "consult_focus"
-    t.index ["status"], name: "index_maap_agent_runs_on_status"
-    t.index ["subject_type", "subject_id", "agent_kind"], name: "index_maap_agent_runs_on_subject_and_agent_kind", unique: true
-    t.index ["triggered_by_teammate_id"], name: "index_maap_agent_runs_on_triggered_by_teammate_id"
-  end
-
-  create_table "maap_recommendation_acceptances", force: :cascade do |t|
-    t.bigint "maap_agent_run_id", null: false
-    t.string "recommendation_id", null: false
-    t.bigint "teammate_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["maap_agent_run_id", "recommendation_id"], name: "index_maap_rec_acceptances_on_run_and_rec_id", unique: true
-    t.index ["maap_agent_run_id"], name: "index_maap_recommendation_acceptances_on_maap_agent_run_id"
-    t.index ["teammate_id"], name: "index_maap_recommendation_acceptances_on_teammate_id"
+    t.index ["organization_id"], name: "index_llm_invocations_on_organization_id"
+    t.index ["parent_type", "parent_id"], name: "index_llm_invocations_on_parent_type_and_parent_id"
+    t.index ["purpose", "status", "finished_at"], name: "index_llm_invocations_on_purpose_and_status_and_finished_at"
+    t.index ["purpose"], name: "index_llm_invocations_on_purpose"
+    t.index ["triggered_by_teammate_id"], name: "index_llm_invocations_on_triggered_by_teammate_id"
   end
 
   create_table "maap_snapshots", force: :cascade do |t|
@@ -1027,6 +1054,32 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
     t.index ["teammate_id"], name: "index_observees_on_teammate_id"
   end
 
+  create_table "og_consultations", force: :cascade do |t|
+    t.string "kind", null: false
+    t.string "subject_type", null: false
+    t.bigint "subject_id", null: false
+    t.bigint "organization_id", null: false
+    t.bigint "triggered_by_teammate_id"
+    t.string "status", default: "pending", null: false
+    t.boolean "billable", default: true, null: false
+    t.string "prompt_version"
+    t.string "model_id"
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.text "error_message"
+    t.integer "units_total", default: 1, null: false
+    t.integer "units_completed", default: 0, null: false
+    t.string "result_type"
+    t.bigint "result_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kind", "status", "completed_at"], name: "index_og_consultations_on_kind_and_status_and_completed_at"
+    t.index ["organization_id", "status", "completed_at"], name: "idx_on_organization_id_status_completed_at_e186d49773"
+    t.index ["result_type", "result_id"], name: "index_og_consultations_on_result_type_and_result_id"
+    t.index ["subject_type", "subject_id", "kind"], name: "index_og_consultations_on_subject_type_and_subject_id_and_kind"
+    t.index ["triggered_by_teammate_id"], name: "index_og_consultations_on_triggered_by_teammate_id"
+  end
+
   create_table "og_scorecard_metric_thresholds", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.string "metric_key"
@@ -1188,6 +1241,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
     t.check_constraint "employee_rating IS NULL OR employee_rating >= '-3'::integer AND employee_rating <= 3", name: "valid_employee_rating_range"
     t.check_constraint "manager_rating IS NULL OR manager_rating >= '-3'::integer AND manager_rating <= 3", name: "valid_manager_rating_range"
     t.check_constraint "official_rating IS NULL OR official_rating >= '-3'::integer AND official_rating <= 3", name: "valid_official_rating_range"
+  end
+
+  create_table "position_clarity_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.text "output_text"
+    t.string "clarity_rating"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "index_position_clarity_results_on_og_consultation_id", unique: true
   end
 
   create_table "position_eligibility_requirements", force: :cascade do |t|
@@ -1549,6 +1611,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
     t.index ["team_id"], name: "index_team_members_on_team_id"
   end
 
+  create_table "teammate_growth_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.text "output_text"
+    t.string "clarity_rating"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "index_teammate_growth_results_on_og_consultation_id", unique: true
+  end
+
   create_table "teammate_identities", force: :cascade do |t|
     t.bigint "teammate_id", null: false
     t.string "provider", null: false
@@ -1697,6 +1768,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
   add_foreign_key "abilities", "organizations", column: "company_id"
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
+  add_foreign_key "ability_clarity_results", "og_consultations"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "addresses", "people"
@@ -1710,6 +1782,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
   add_foreign_key "assignment_check_ins", "assignments"
   add_foreign_key "assignment_check_ins", "maap_snapshots"
   add_foreign_key "assignment_check_ins", "teammates"
+  add_foreign_key "assignment_clarity_recommendation_acceptances", "assignment_clarity_results"
+  add_foreign_key "assignment_clarity_results", "og_consultations"
   add_foreign_key "assignment_flow_memberships", "assignment_flows"
   add_foreign_key "assignment_flow_memberships", "assignments"
   add_foreign_key "assignment_flow_memberships", "teammates", column: "added_by_id"
@@ -1788,9 +1862,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
   add_foreign_key "kudos_transactions", "organizations"
   add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_banker_id"
   add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_id"
-  add_foreign_key "maap_agent_runs", "teammates", column: "triggered_by_teammate_id"
-  add_foreign_key "maap_recommendation_acceptances", "maap_agent_runs"
-  add_foreign_key "maap_recommendation_acceptances", "teammates"
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
   add_foreign_key "maap_snapshots", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "maap_snapshots", "teammates", column: "employee_company_teammate_id"
@@ -1828,6 +1899,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
   add_foreign_key "position_check_ins", "employment_tenures"
   add_foreign_key "position_check_ins", "maap_snapshots"
   add_foreign_key "position_check_ins", "teammates"
+  add_foreign_key "position_clarity_results", "og_consultations"
   add_foreign_key "position_levels", "position_major_levels"
   add_foreign_key "positions", "position_eligibility_requirements"
   add_foreign_key "positions", "position_levels"
@@ -1860,6 +1932,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_16_160000) do
   add_foreign_key "team_asana_links", "teams"
   add_foreign_key "team_members", "teammates", column: "company_teammate_id"
   add_foreign_key "team_members", "teams"
+  add_foreign_key "teammate_growth_results", "og_consultations"
   add_foreign_key "teammate_identities", "teammates"
   add_foreign_key "teammate_milestones", "abilities"
   add_foreign_key "teammate_milestones", "teammates"

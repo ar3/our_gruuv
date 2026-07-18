@@ -44,14 +44,18 @@ module Llm
       return text unless bedrock_configured?
 
       model_id = ENV.fetch('ABILITIES_HR_REVIEW_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id }
-      chat = RubyLLM.chat(model: model_id, provider: :bedrock, assume_model_exists: true)
-      chat.with_instructions(<<~TXT.squish)
-        You fix Markdown for HR-written ability descriptions: ensure list items use "* " after asterisks,
-        add blank lines around horizontal rules (---), preserve meaning, do not invent facts.
-        Return ONLY the cleaned Markdown text, no JSON, no preamble.
-      TXT
-      response = chat.ask("Clean this Markdown:\n\n#{text}")
-      response.content.to_s.strip.presence || text
+      llm = Llm::Client.call(
+        purpose: 'abilities_hr_enrich',
+        model_id: model_id,
+        system_instructions: <<~TXT.squish,
+          You fix Markdown for HR-written ability descriptions: ensure list items use "* " after asterisks,
+          add blank lines around horizontal rules (---), preserve meaning, do not invent facts.
+          Return ONLY the cleaned Markdown text, no JSON, no preamble.
+        TXT
+        user_prompt: "Clean this Markdown:\n\n#{text}",
+        organization_id: @organization&.id
+      )
+      llm.content.to_s.strip.presence || text
     rescue StandardError => e
       Rails.logger.warn("AbilitiesHrReviewEnricher: #{e.class}: #{e.message}")
       text

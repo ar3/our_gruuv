@@ -193,51 +193,29 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
   end
 
   def weekly_consultation_counts(chart_range)
-    completed_consultation_versions(chart_range)
-      .group(Arel.sql("date_trunc('week', versions.created_at)::date"))
+    completed_consultations(chart_range)
+      .group(Arel.sql("date_trunc('week', COALESCE(og_consultations.completed_at, og_consultations.created_at))::date"))
       .count
   end
 
   def consultation_counts(chart_range)
-    scope = completed_consultation_versions(chart_range)
+    scope = completed_consultations(chart_range)
     activity_count = scope.count
-    teammate_count = scope.where("meta ? 'completed_triggered_by_teammate_id'")
-                          .distinct
-                          .count(Arel.sql("meta->>'completed_triggered_by_teammate_id'"))
+    teammate_count = scope.where.not(triggered_by_teammate_id: nil).distinct.count(:triggered_by_teammate_id)
     [activity_count, teammate_count]
   end
 
-  def completed_consultation_versions(chart_range)
-    PaperTrail::Version
-      .where(item_type: 'MaapAgentRun', item_id: organization_maap_agent_run_ids)
-      .where("meta @> ?", { completed_event: true }.to_json)
-      .where(created_at: chart_range)
+  def completed_consultations(chart_range)
+    OgConsultation
+      .billable
+      .completed
+      .where(organization_id: company.id)
+      .where(
+        "COALESCE(og_consultations.completed_at, og_consultations.created_at) BETWEEN ? AND ?",
+        chart_range.begin,
+        chart_range.end
+      )
   end
-
-  def organization_maap_agent_run_ids
-    return @organization_maap_agent_run_ids if defined?(@organization_maap_agent_run_ids)
-
-    ability_scope = MaapAgentRun.where(
-      subject_type: 'Ability',
-      subject_id: Ability.where(company_id: company.id).select(:id)
-    )
-    assignment_scope = MaapAgentRun.where(
-      subject_type: 'Assignment',
-      subject_id: Assignment.where(company_id: company.id).select(:id)
-    )
-    position_scope = MaapAgentRun.where(
-      subject_type: 'Position',
-      subject_id: Position.joins(:title).where(titles: { company_id: company.id }).select('positions.id')
-    )
-    teammate_scope = MaapAgentRun.where(
-      subject_type: 'CompanyTeammate',
-      subject_id: CompanyTeammate.for_organization_hierarchy(company).select(:id)
-    )
-
-    @organization_maap_agent_run_ids =
-      (ability_scope.pluck(:id) + assignment_scope.pluck(:id) + position_scope.pluck(:id) + teammate_scope.pluck(:id)).uniq
-  end
-
   def stories_counts(chart_range)
     scope = Observee
       .joins(:observation)

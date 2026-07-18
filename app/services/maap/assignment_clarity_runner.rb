@@ -2,24 +2,24 @@
 
 module Maap
   class AssignmentClarityRunner
-    def self.call(assignment:, maap_agent_run:)
-      new(assignment: assignment, maap_agent_run: maap_agent_run).call
+    def self.call(assignment:, og_consultation:)
+      new(assignment: assignment, og_consultation: og_consultation).call
     end
 
-    def initialize(assignment:, maap_agent_run:)
+    def initialize(assignment:, og_consultation:)
       @assignment = assignment
-      @run = maap_agent_run
+      @consultation = og_consultation
     end
 
     def call
       unless bedrock_configured?
-        fail_run('AWS Bedrock is not configured (missing access key, secret, or region).')
+        fail_consultation('AWS Bedrock is not configured (missing access key, secret, or region).')
         return false
       end
 
       payload = AssignmentClarityPayloadBuilder.call(assignment: @assignment)
       user_markdown = PayloadRenderer.new(payload).to_markdown
-      user_markdown += consult_focus_markdown_append(@run.consult_focus)
+      user_markdown += consult_focus_markdown_append(@consultation.consult_focus)
       footer = <<~MD
 
         ---
@@ -27,41 +27,51 @@ module Maap
       MD
 
       model_id = ENV.fetch('MAAP_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id }
-      chat = RubyLLM.chat(model: model_id, provider: :bedrock, assume_model_exists: true)
-      chat.with_instructions(Maap::Prompts::ASSIGNMENT_CLARITY_AGENT)
-      response = chat.ask("#{user_markdown}#{footer}")
-      raw = response.content.to_s
-
+      llm = Llm::Client.call(
+        purpose: 'assignment_clarity',
+        model_id: model_id,
+        system_instructions: Maap::Prompts::ASSIGNMENT_CLARITY_AGENT,
+        user_prompt: "#{user_markdown}#{footer}",
+        organization_id: @assignment.company_id,
+        triggered_by_teammate_id: @consultation.triggered_by_teammate_id,
+        parent: @consultation,
+        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION
+      )
+      raw = llm.content.to_s
       parsed = AssignmentClarityOutputParser.call(raw)
-      @run.update!(
-        status: 'completed',
+
+      result = @consultation.result || @consultation.create_assignment_clarity_result!
+      result.update!(
         output_text: raw.strip,
         clarity_rating: parsed.rating,
         clarity_score: parsed.score,
-        clarity_recommendations: parsed.recommendations,
+        clarity_recommendations: parsed.recommendations
+      )
+      @consultation.update!(
+        status: 'completed',
+        result: result,
         model_id: model_id,
         prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
+        completed_at: Time.current,
+        units_completed: 1,
         error_message: nil
       )
       true
     rescue StandardError => e
       Rails.logger.warn("AssignmentClarityRunner failed: #{e.class}: #{e.message}")
-      fail_run(e.message)
+      fail_consultation(e.message)
       false
     end
 
     private
 
-    def fail_run(message)
-      @run.update!(
+    def fail_consultation(message)
+      @consultation.update!(
         status: 'failed',
         error_message: message.to_s.truncate(10_000),
-        clarity_rating: nil,
-        clarity_score: nil,
-        clarity_recommendations: [],
-        output_text: nil,
         model_id: ENV.fetch('MAAP_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id },
-        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION
+        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
+        completed_at: Time.current
       )
     end
 

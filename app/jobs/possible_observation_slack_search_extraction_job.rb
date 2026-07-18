@@ -34,7 +34,10 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
         chunk_text: chunk_text,
         subject_name: subject_name,
         context_text: context_pack.prompt_text,
-        context_catalog: context_pack.catalog
+        context_catalog: context_pack.catalog,
+        organization_id: search.organization_id,
+        parent: search,
+        triggered_by_teammate_id: search.subject_company_teammate_id
       )
       raw_by_chunk << (result["items"] || [])
       chunk_errors << result["error"] if result["error"].present?

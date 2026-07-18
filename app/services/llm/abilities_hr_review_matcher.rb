@@ -33,10 +33,14 @@ module Llm
       return [] if pool.empty?
 
       model_id = ENV.fetch('ABILITIES_HR_REVIEW_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id }
-      chat = RubyLLM.chat(model: model_id, provider: :bedrock, assume_model_exists: true)
-      chat.with_instructions(system_instructions)
-      response = chat.ask(user_prompt(pool))
-      parse_matches(response.content.to_s, pool)
+      llm = Llm::Client.call(
+        purpose: 'abilities_hr_match',
+        model_id: model_id,
+        system_instructions: system_instructions,
+        user_prompt: user_prompt(pool),
+        organization_id: @organization.id
+      )
+      parse_matches(llm.content.to_s, pool)
     rescue StandardError => e
       Rails.logger.warn("AbilitiesHrReviewMatcher: #{e.class}: #{e.message}")
       []

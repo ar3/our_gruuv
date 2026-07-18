@@ -21,12 +21,20 @@ module Llm
       "#{prefix}.#{HAIKU_45_FOUNDATION_SUFFIX}"
     end
 
-    def self.call(chunk_text:)
-      new(chunk_text: chunk_text).call
+    def self.call(chunk_text:, organization_id: nil, parent: nil, triggered_by_teammate_id: nil)
+      new(
+        chunk_text: chunk_text,
+        organization_id: organization_id,
+        parent: parent,
+        triggered_by_teammate_id: triggered_by_teammate_id
+      ).call
     end
 
-    def initialize(chunk_text:)
+    def initialize(chunk_text:, organization_id: nil, parent: nil, triggered_by_teammate_id: nil)
       @chunk_text = chunk_text.to_s
+      @organization_id = organization_id
+      @parent = parent
+      @triggered_by_teammate_id = triggered_by_teammate_id
     end
 
     # Returns { "items" => [ { "kind", "summary", "short_quote", "full_quote", "quote", "speaker_label", "recipient_label" }, ... ] }.
@@ -36,10 +44,16 @@ module Llm
       # Bedrock foundation model and inference-profile IDs (e.g. us.anthropic...) are often
       # absent from RubyLLM's bundled registry — skip registry lookup and pass the id through.
       model_id = ENV.fetch('TRANSCRIPT_BEDROCK_MODEL_ID') { self.class.default_model_id }
-      chat = RubyLLM.chat(model: model_id, provider: :bedrock, assume_model_exists: true)
-      chat.with_instructions(system_instructions)
-      response = chat.ask(user_prompt)
-      parse_items(response.content.to_s)
+      llm = Llm::Client.call(
+        purpose: 'transcript_chunk',
+        model_id: model_id,
+        system_instructions: system_instructions,
+        user_prompt: user_prompt,
+        organization_id: @organization_id,
+        parent: @parent,
+        triggered_by_teammate_id: @triggered_by_teammate_id
+      )
+      parse_items(llm.content.to_s)
     rescue StandardError => e
       Rails.logger.warn(
         "TranscriptMomentsExtractor failed: #{e.class}: #{e.message} " \

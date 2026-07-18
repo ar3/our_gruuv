@@ -3,13 +3,12 @@
 class AbilityClarityJob < ApplicationJob
   queue_as :default
 
-  def perform(ability_id, maap_agent_run_id)
+  def perform(ability_id, og_consultation_id)
     ability = Ability.find_by(id: ability_id)
-    run = MaapAgentRun.find_by(id: maap_agent_run_id)
-    return if ability.nil? || run.nil?
+    consultation = OgConsultation.find_by(id: og_consultation_id)
+    return if ability.nil? || consultation.nil?
 
-    run.update!(status: 'processing')
-    Maap::AbilityClarityRunner.call(ability: ability, maap_agent_run: run)
+    consultation.mark_processing!
+    Maap::AbilityClarityRunner.call(ability: ability, og_consultation: consultation)
   end
-
 end

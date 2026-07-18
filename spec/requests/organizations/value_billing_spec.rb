@@ -53,21 +53,18 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
       expect(response.body).to match(/weekly clarity value per active teammate|No active teammates/)
     end
 
-    it 'counts multiple completed OG consultations from version history' do
+    it 'counts multiple completed OG consultations' do
       teammate = create(:company_teammate, :assigned_employee, organization: organization)
       ability = create(:ability, company: organization)
-      run = MaapAgentRun.create!(
-        subject: ability,
-        agent_kind: MaapAgentRun::AGENT_KIND_ABILITY_CLARITY,
-        status: 'pending',
-        triggered_by_teammate: teammate,
-        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION
-      )
 
-      run.update!(status: 'processing')
-      run.update!(status: 'completed')
-      run.update!(status: 'pending')
-      run.update!(status: 'completed')
+      2.times do
+        create_ability_clarity_consultation!(
+          ability: ability,
+          status: 'completed',
+          triggered_by_teammate: teammate,
+          completed_at: Time.current
+        )
+      end
 
       get organization_value_billing_path(organization, timeframe: 'year')
 
