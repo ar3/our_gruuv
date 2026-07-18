@@ -51,12 +51,12 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
     authorize @search
     @casual_name = @teammate.person.casual_name
     @active_tab = :source_from_slack
-    @messages = @search.search_status == "completed" ? @search.raw_messages : []
     @batches = @search.message_batches.in_position_order
     if @search.search_status == "completed" && @batches.empty? && @search.raw_results_file.attached?
       PossibleObservationSlackSearches::CreateMessageBatches.call(search: @search)
       @batches = @search.message_batches.reload.in_position_order
     end
+    load_unified_review_context if @search.search_status == "completed" && @batches.any?
   end
 
   def download_raw_results
@@ -120,5 +120,83 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
 
   def default_display_name(window_days)
     "Slack search about #{@teammate.person.casual_name} (last #{window_days} days) — #{Time.current.strftime('%Y-%m-%d %H:%M')}"
+  end
+
+  def load_unified_review_context
+    @observation_type_options = [
+      ["Kudos", "kudos"],
+      ["Feedback", "feedback"]
+    ]
+    load_teammate_options
+    @latest_consultation_by_batch_id = {}
+    @duplicate_observations_by_batch_id = {}
+    @suggested_rateable_names_by_batch_id = {}
+
+    @batches.each do |batch|
+      @latest_consultation_by_batch_id[batch.id] = OgConsultation.latest_for(
+        subject: batch,
+        kind: OgConsultation::KIND_OGO_SEARCH_SLACK
+      )
+      next unless batch.extraction_status == "completed"
+
+      duplicates = {}
+      batch.extraction_items.each do |item|
+        key = "#{item[:channel_id]}|#{item[:ts]}"
+        next if item[:channel_id].blank? || item[:ts].blank?
+        next if duplicates.key?(key)
+
+        duplicates[key] = PossibleObservationSlackSearches::DuplicateObservationsForMessage.call(
+          organization: organization,
+          channel_id: item[:channel_id],
+          message_ts: item[:ts]
+        )
+      end
+      @duplicate_observations_by_batch_id[batch.id] = duplicates
+      @suggested_rateable_names_by_batch_id[batch.id] = suggested_rateable_names_for(batch)
+    end
+  end
+
+  def suggested_rateable_names_for(batch)
+    names = {}
+    items = batch.extraction_items
+    {
+      "Assignment" => Assignment,
+      "Ability" => Ability,
+      "Aspiration" => Aspiration
+    }.each do |type, model|
+      ids = items.filter_map do |item|
+        item[:suggested_rateable_id].to_i if item[:suggested_rateable_type] == type
+      end
+      model.where(id: ids).find_each do |record|
+        name = record.respond_to?(:title) ? record.title : record.name
+        names["#{type}:#{record.id}"] = name
+      end
+    end
+    names
+  end
+
+  def load_teammate_options
+    @teammates_for_select =
+      CompanyTeammate.employed
+                     .where(organization: current_company_teammate.organization)
+                     .includes(:person, employment_tenures: { position: { title: :department } })
+                     .order("people.last_name, people.first_name")
+    @teammates_grouped_for_select = teammates_grouped_by_department_for_select(@teammates_for_select)
+  end
+
+  def teammates_grouped_by_department_for_select(teammates)
+    list = teammates.respond_to?(:to_a) ? teammates.to_a : teammates
+    by_department = list.group_by do |teammate|
+      active_tenure = teammate.employment_tenures.find { |et| et.ended_at.nil? && et.company_id == organization.id }
+      active_tenure&.position&.title&.department
+    end
+
+    by_department.keys.sort_by { |department| department.nil? ? "" : department.display_name }.map do |department|
+      label = department.nil? ? "No department" : department.display_name
+      options = by_department[department]
+                  .sort_by { |teammate| [teammate.person.last_name.to_s, teammate.person.first_name.to_s] }
+                  .map { |teammate| [teammate.person.display_name, teammate.id] }
+      [label, options]
+    end
   end
 end

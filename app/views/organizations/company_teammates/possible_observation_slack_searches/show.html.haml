@@ -1,5 +1,6 @@
 - content_for :title, teammate_context_page_title(@selected_teammate, "Slack search about #{@casual_name}")
 - search_status_url = search_status_organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search)
+- page_help_id = "slackSearchPageHelp"
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -9,6 +10,9 @@
       %span.badge.text-bg-warning
         %i.bi.bi-flask.me-1
         Beta
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "How Slack search consultations work on this page. Click for details."
 
 - content_for :header_action do
   = render "people/view_switcher"
@@ -16,10 +20,17 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "#{@casual_name}'s OGOs", url: ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)) }, { label: "Slack search", url: nil }])
 
+.collapse.mb-4{id: page_help_id}
+  = render "page_help", casual_name: @casual_name
+
 .d-flex.flex-wrap.align-items-center.gap-2.mb-3
   = link_to ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)), class: "btn btn-outline-secondary" do
     %i.bi.bi-arrow-left.me-1
     Back to Source from Slack
+  - if @search.search_status == "completed" && @search.raw_results_file.attached?
+    = link_to download_raw_results_organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search), class: "btn btn-outline-secondary" do
+      %i.bi.bi-download.me-1
+      Download messages
   - if policy(@search).destroy?
     = button_to organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search),
                 method: :delete,
@@ -68,27 +79,57 @@
     Search failed. Delete and try again, or reconnect Slack (search).
 
 - when "completed"
-  %h5.mb-3 Consultations
   - if @batches.any?
-    .table-responsive.mb-4
-      %table.table.table-hover.align-middle
-        %thead
-          %tr
-            %th Consultation
-            %th Messages
-            %th Status
-            %th
-        %tbody
+    - if @batches.size > 1
+      .slack-consultation-sticky-nav.sticky-top.bg-body.border.rounded.px-3.py-2.mb-4{style: "z-index: 1020; top: 0.5rem;"}
+        .small.text-muted.mb-1 Jump to consultation
+        .d-flex.flex-wrap.gap-2
           - @batches.each do |batch|
-            %tr
-              %td= batch.display_label
-              %td= batch.messages_count
-              %td
-                %span.badge.text-bg-secondary= batch.extraction_status
-              %td.text-end
-                - if policy(batch).show?
-                  = link_to "Open", organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), @search, batch), class: "btn btn-sm btn-outline-primary"
+            = link_to "Consultation #{batch.position} of #{@batches.size}",
+                      "#consultation-#{batch.position}",
+                      class: "btn btn-sm btn-outline-secondary",
+                      title: batch.display_label
+
+    - @batches.each do |batch|
+      = render "consultation_section",
+               batch: batch,
+               search: @search,
+               messages: batch.messages,
+               latest_consultation: @latest_consultation_by_batch_id[batch.id],
+               observation_type_options: @observation_type_options || [],
+               teammates_grouped_for_select: @teammates_grouped_for_select || [],
+               duplicate_observations_by_key: @duplicate_observations_by_batch_id[batch.id] || {},
+               suggested_rateable_names_by_key: @suggested_rateable_names_by_batch_id[batch.id] || {}
+
+    :javascript
+      (function() {
+        document.querySelectorAll("[id^='slack-ogo-candidates-form-']").forEach(function(form) {
+          function syncRow(row) {
+            var include = row.querySelector("[data-slack-include]");
+            if (!include) return;
+            var enabled = include.checked;
+            row.querySelectorAll("[data-slack-row-field]").forEach(function(field) {
+              field.disabled = !enabled;
+            });
+          }
+
+          form.querySelectorAll("[data-slack-candidate-row]").forEach(function(row) {
+            syncRow(row);
+            var include = row.querySelector("[data-slack-include]");
+            if (include) {
+              include.addEventListener("change", function() { syncRow(row); });
+            }
+          });
+
+          form.addEventListener("submit", function() {
+            form.querySelectorAll("[data-slack-row-field]").forEach(function(field) {
+              field.disabled = false;
+            });
+          });
+        });
+      })();
   - else
-    %p.text-muted
+    %p.text-muted.mb-0
       No messages met the minimum length for consultation after filtering.
-  = render "raw_messages", messages: @messages, search: @search
+      - if @search.raw_results_file.attached?
+        You can still download the raw search messages above.

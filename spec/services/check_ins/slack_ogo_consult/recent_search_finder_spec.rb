@@ -41,8 +41,8 @@ RSpec.describe CheckIns::SlackOgoConsult::RecentSearchFinder do
     expect(described_class.call(viewer: viewer, subject_teammate: subject_teammate)).to eq(search)
   end
 
-  it "returns nil when the consultation is older than 7 days" do
+  it "still returns the search when the consultation is older than 7 days" do
     create_consultation(created_at: 8.days.ago)
-    expect(described_class.call(viewer: viewer, subject_teammate: subject_teammate)).to be_nil
+    expect(described_class.call(viewer: viewer, subject_teammate: subject_teammate)).to eq(search)
   end
 end

@@ -3,7 +3,8 @@
 module CheckIns
   module SlackOgoConsult
     CONFIDENCE_THRESHOLD = 0.80
-    RECENT_WINDOW = 7.days
+    # Show prior results even when older; warn when past this age.
+    STALE_AFTER = 7.days
     REFRESH_SEARCH_AFTER = 3.days
     WINDOW_DAYS = 90
     RATEABLE_TYPES = %w[Assignment Ability Aspiration].freeze

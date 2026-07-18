@@ -19,6 +19,7 @@ export default class extends Controller {
     "emptyObject",
     "otherLine",
     "error",
+    "staleWarning",
     "primaryActions",
     "secondaryActions",
     "refreshButton",
@@ -189,6 +190,16 @@ export default class extends Controller {
         ? `${this.escape(data.other_message)} — <a href="${this.escape(url)}">see full results</a>`
         : this.escape(data.other_message)
       this.otherLineTarget.classList.toggle("d-none", !showResults)
+    }
+
+    if (this.hasStaleWarningTarget) {
+      if (data.consultation_stale && data.stale_warning && showResults) {
+        this.staleWarningTarget.textContent = data.stale_warning
+        this.staleWarningTarget.classList.remove("d-none")
+      } else {
+        this.staleWarningTarget.textContent = ""
+        this.staleWarningTarget.classList.add("d-none")
+      }
     }
 
     if (this.hasSecondaryActionsTarget) {

@@ -53,6 +53,8 @@ module CheckIns
           can_refresh_search: can_refresh_search?(latest_consult_at),
           can_stronger_model: any_completed_extract && !all_stronger,
           used_stronger_model: used_stronger,
+          consultation_stale: consultation_stale?(latest_consult_at),
+          stale_warning: stale_warning(latest_consult_at),
           polling: %w[searching extracting].include?(phase)
         }
       end
@@ -63,6 +65,18 @@ module CheckIns
         return false if latest_consult_at.blank?
 
         latest_consult_at < REFRESH_SEARCH_AFTER.ago
+      end
+
+      def consultation_stale?(latest_consult_at)
+        return false if latest_consult_at.blank?
+
+        latest_consult_at < STALE_AFTER.ago
+      end
+
+      def stale_warning(latest_consult_at)
+        return nil unless consultation_stale?(latest_consult_at)
+
+        "These OG consultation results may be out of date. Refresh search and consult for newer Slack moments."
       end
 
       def derive_phase(batches)

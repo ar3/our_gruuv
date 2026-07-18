@@ -75,4 +75,18 @@ RSpec.describe CheckIns::SlackOgoConsult::StatusBuilder do
     )
     expect(build_payload[:can_stronger_model]).to eq(false)
   end
+
+  it "marks consultations older than 7 days as stale with a warning" do
+    create_completed_consultation(created_at: 8.days.ago)
+    payload = build_payload
+    expect(payload[:consultation_stale]).to eq(true)
+    expect(payload[:stale_warning]).to include("out of date")
+  end
+
+  it "does not mark fresh consultations as stale" do
+    create_completed_consultation(created_at: 2.days.ago)
+    payload = build_payload
+    expect(payload[:consultation_stale]).to eq(false)
+    expect(payload[:stale_warning]).to be_nil
+  end
 end

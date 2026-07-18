@@ -102,15 +102,16 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       )
     end
 
-    it "renders the search hub with consultation rows" do
+    it "renders the unified search page with consultation sections" do
       get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Consultations")
+      expect(response.body).to include("consultation-1")
       expect(response.body).to include("Consultation 1 of 1")
       expect(response.body).to include("1 fetched · 1 for consultation")
-      expect(response.body).to include("Pat did a great job on the launch")
-      expect(response.body).to include("Open in Slack")
-      expect(response.body).not_to include("Consult OG to find potential OGOs")
+      expect(response.body).to include("Download messages")
+      expect(response.body).to include("Messages in this consultation")
+      expect(response.body).to include("500 messages")
+      expect(response.body).to include("Consult OG to find potential OGOs")
     end
   end
 
@@ -146,7 +147,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
     end
     let(:batch) { search.message_batches.first }
 
-    it "enqueues extraction on the batch" do
+    it "enqueues extraction on the batch and returns to the search consultation section" do
       expect {
         post extract_organization_company_teammate_possible_observation_slack_search_batch_path(
           organization, subject, search, batch
@@ -155,7 +156,9 @@ RSpec.describe "Possible observation Slack searches", type: :request do
 
       expect(batch.reload.extraction_status).to eq("pending")
       expect(response).to redirect_to(
-        organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+        organization_company_teammate_possible_observation_slack_search_path(
+          organization, subject, search, anchor: "consultation-#{batch.position}"
+        )
       )
     end
 
@@ -171,8 +174,17 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       end
       let(:batch) { search.message_batches.first }
 
-      it "renders the review form" do
+      it "redirects batch show to the unified search consultation section" do
         get organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+        expect(response).to redirect_to(
+          organization_company_teammate_possible_observation_slack_search_path(
+            organization, subject, search, anchor: "consultation-#{batch.position}"
+          )
+        )
+      end
+
+      it "renders the review form on the unified search page" do
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Review candidate OGOs")
         expect(response.body).to include("Save candidates")
@@ -200,7 +212,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         )
         batch.replace_extraction_items!([item])
 
-        get organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("The OG Consultation AI Agent is suggesting:")
@@ -213,7 +225,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(response.body).not_to include("text-bg-info")
       end
 
-      it "saves include/kind updates" do
+      it "saves include/kind updates and returns to the consultation section" do
         item = batch.extraction_items.first
         patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
               params: {
@@ -239,7 +251,9 @@ RSpec.describe "Possible observation Slack searches", type: :request do
               }
 
         expect(response).to redirect_to(
-          organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+          organization_company_teammate_possible_observation_slack_search_path(
+            organization, subject, search, anchor: "consultation-#{batch.position}"
+          )
         )
         updated = batch.reload.extraction_items.first
         expect(updated[:include]).to eq(false)
@@ -261,7 +275,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         end
 
         it "soft-warns without blocking review" do
-          get organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+          get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
           expect(response).to have_http_status(:success)
           expect(response.body).to include("Already linked")
           expect(response.body).to include("Save candidates")
@@ -327,13 +341,19 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       )
     end
 
-    it "lists prior searches with nested consultation rows" do
+    it "lists prior searches with a single Open to the unified search page" do
+      expect(prior_search.message_batches.count).to eq(1)
+
       get ogos_source_from_slack_organization_company_teammate_path(organization, subject)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Run a new search")
       expect(response.body).to include("Prior search about Pat")
-      expect(response.body).to include("Consultation 1 of 1")
       expect(response.body).to include("1 fetched · 1 for consultation")
+      expect(response.body).to include(
+        organization_company_teammate_possible_observation_slack_search_path(organization, subject, prior_search)
+      )
+      expect(response.body).to match(/1\s+consultation/)
+      expect(response.body).not_to include("Consultation 1 of 1; Newest")
     end
   end
 end

@@ -15,14 +15,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
 
   def show
     authorize @batch
-    @casual_name = @teammate.person.casual_name
-    @active_tab = :source_from_slack
-    @messages = @batch.messages
-    @latest_consultation = OgConsultation.latest_for(
-      subject: @batch,
-      kind: OgConsultation::KIND_OGO_SEARCH_SLACK
-    )
-    load_review_context if @batch.extraction_status == "completed"
+    redirect_to search_anchor_path, status: :see_other
   end
 
   def update
@@ -127,74 +120,16 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
   end
 
   def batch_path
-    organization_company_teammate_possible_observation_slack_search_batch_path(
-      organization, @teammate, @search, @batch
+    search_anchor_path
+  end
+
+  def search_anchor_path
+    organization_company_teammate_possible_observation_slack_search_path(
+      organization,
+      @teammate,
+      @search,
+      anchor: "consultation-#{@batch.position}"
     )
-  end
-
-  def load_review_context
-    load_teammate_options
-    load_suggested_rateable_names
-    @observation_type_options = [
-      ["Kudos", "kudos"],
-      ["Feedback", "feedback"]
-    ]
-    @duplicate_observations_by_key = {}
-    @batch.extraction_items.each do |item|
-      key = "#{item[:channel_id]}|#{item[:ts]}"
-      next if item[:channel_id].blank? || item[:ts].blank?
-      next if @duplicate_observations_by_key.key?(key)
-
-      @duplicate_observations_by_key[key] = PossibleObservationSlackSearches::DuplicateObservationsForMessage.call(
-        organization: organization,
-        channel_id: item[:channel_id],
-        message_ts: item[:ts]
-      )
-    end
-  end
-
-  def load_suggested_rateable_names
-    @suggested_rateable_names_by_key = {}
-    items = @batch.extraction_items
-
-    {
-      "Assignment" => Assignment,
-      "Ability" => Ability,
-      "Aspiration" => Aspiration
-    }.each do |type, model|
-      ids = items.filter_map do |item|
-        item[:suggested_rateable_id].to_i if item[:suggested_rateable_type] == type
-      end
-      model.where(id: ids).find_each do |record|
-        name = record.respond_to?(:title) ? record.title : record.name
-        @suggested_rateable_names_by_key["#{type}:#{record.id}"] = name
-      end
-    end
-  end
-
-  def load_teammate_options
-    @teammates_for_select =
-      CompanyTeammate.employed
-                     .where(organization: current_company_teammate.organization)
-                     .includes(:person, employment_tenures: { position: { title: :department } })
-                     .order("people.last_name, people.first_name")
-    @teammates_grouped_for_select = teammates_grouped_by_department_for_select(@teammates_for_select)
-  end
-
-  def teammates_grouped_by_department_for_select(teammates)
-    list = teammates.respond_to?(:to_a) ? teammates.to_a : teammates
-    by_department = list.group_by do |teammate|
-      active_tenure = teammate.employment_tenures.find { |et| et.ended_at.nil? && et.company_id == organization.id }
-      active_tenure&.position&.title&.department
-    end
-
-    by_department.keys.sort_by { |department| department.nil? ? "" : department.display_name }.map do |department|
-      label = department.nil? ? "No department" : department.display_name
-      options = by_department[department]
-                  .sort_by { |teammate| [teammate.person.last_name.to_s, teammate.person.first_name.to_s] }
-                  .map { |teammate| [teammate.person.display_name, teammate.id] }
-      [label, options]
-    end
   end
 
   def items_param

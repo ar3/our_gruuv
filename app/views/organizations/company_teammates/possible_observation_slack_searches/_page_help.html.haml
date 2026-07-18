@@ -1,0 +1,24 @@
+-# Locals: casual_name:
+- casual_name = local_assigns.fetch(:casual_name)
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Review one Slack search about #{casual_name}, run OG consultations on each message slice, and choose candidate OGOs.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-3
+    Slack often already holds the moments worth logging. This Beta flow excavates them into reviewable candidates without sending a feedback request for something that already happened.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 Consultations of ≤500 messages
+  %p.mb-2
+    After search finishes, we filter very short messages and split the rest into consultations of at most
+    %strong 500 messages
+    each (newest first). Larger chunks would take too long to process in one OG consultation.
+  %h5.fw-semibold.mb-2 On this page
+  %ul.mb-0
+    %li Download captures the full search message set once (not per consultation).
+    %li Each consultation section has its own Consult OG / stronger-model actions and candidate review.
+    %li Messages inside a consultation stay collapsed by default so review stays front and center.
+    %li With multiple consultations, use the sticky nav to jump between sections.

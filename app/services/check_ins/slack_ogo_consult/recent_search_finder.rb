@@ -2,7 +2,7 @@
 
 module CheckIns
   module SlackOgoConsult
-    # Finds a Slack search about +subject+ that the viewer consulted within RECENT_WINDOW.
+    # Finds the latest Slack search about +subject+ that the viewer has consulted (any age).
     class RecentSearchFinder
       def self.call(viewer:, subject_teammate:)
         new(viewer: viewer, subject_teammate: subject_teammate).call
@@ -36,7 +36,6 @@ module CheckIns
             triggered_by_teammate_id: @viewer.id,
             subject_type: "PossibleObservationSlackSearchBatch"
           )
-          .where("og_consultations.created_at >= ?", RECENT_WINDOW.ago)
           .includes(subject: :possible_observation_slack_search)
           .latest_first
       end

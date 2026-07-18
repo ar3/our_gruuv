@@ -1,0 +1,24 @@
+-# Locals: messages:
+- messages = local_assigns.fetch(:messages)
+- preview_limit = 10
+- preview_messages = messages.first(preview_limit)
+
+- if messages.empty?
+  %p.mb-0.small.text-muted No messages in this consultation slice.
+- else
+  .list-group.list-group-flush.border.rounded
+    - preview_messages.each do |message|
+      .list-group-item
+        .small.text-muted.mb-1
+          - if message[:channel_name].present?
+            %span ##{message[:channel_name]}
+          - if message[:username].present?
+            %span.ms-1 @#{message[:username]}
+          - if message[:ts].present?
+            %span.ms-1= Time.zone.at(message[:ts].to_f).strftime("%Y-%m-%d %H:%M")
+        %p.mb-0.text-break.small= truncate(message[:text].to_s, length: 280)
+        - if message[:permalink].present?
+          = link_to message[:permalink], class: "small", target: "_blank", rel: "noopener" do
+            Open in Slack
+  %p.mt-2.mb-0.small.text-muted
+    Showing #{preview_messages.size} of #{messages.size}. Download all search messages from the top of this page.
