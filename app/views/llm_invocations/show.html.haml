@@ -1,0 +1,84 @@
+- content_for :title, "Admin: LLM Invocations"
+
+.container
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-4
+        %h1.mb-0
+          %i.bi.bi-cpu.me-2
+          Admin: LLM Invocations
+        %span.badge.text-bg-warning
+          %i.bi.bi-shield-lock.me-1
+          OG Admin
+      %p.text-muted
+        Last #{LlmInvocationsController::PER_PURPOSE_LIMIT} invocations per purpose, with Bedrock cost
+        recalculated from token counts using current pricing rates.
+        Anticipated cost is the average of those recent invocations.
+
+      - if @invocations_by_purpose.blank?
+        .alert.alert-info.mb-0
+          No LLM invocations recorded yet.
+      - else
+        - @invocations_by_purpose.each do |group|
+          .card.border-0.shadow-sm.mb-4
+            .card-header.bg-light.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+              %h5.mb-0= group[:label]
+              - if group[:anticipated_cost_micros]
+                %span.badge.text-bg-primary
+                  Anticipated
+                  = number_to_currency(group[:anticipated_cost_micros] / 1_000_000.0, precision: 4)
+                  avg
+            .card-body.p-0
+              .table-responsive
+                %table.table.table-sm.table-hover.mb-0.align-middle
+                  %thead.table-light
+                    %tr
+                      %th When
+                      %th Status
+                      %th Model
+                      %th Tokens
+                      %th Duration
+                      %th Organization
+                      %th.text-end Cost
+                  %tbody
+                    - group[:invocations].each_with_index do |invocation, idx|
+                      - cost_micros = group[:costs_micros][idx]
+                      %tr
+                        %td
+                          %small= format_time_in_user_timezone(invocation.created_at)
+                          .small.text-muted ##{invocation.id}
+                        %td
+                          - status_class = case invocation.status; when 'completed' then 'success'; when 'failed' then 'danger'; when 'processing' then 'warning'; else 'secondary'; end
+                          %span.badge{class: "text-bg-#{status_class}"}= invocation.status
+                        %td
+                          %code.small= invocation.model_id.to_s.truncate(40)
+                          - if invocation.prompt_version.present?
+                            .small.text-muted= invocation.prompt_version
+                        %td
+                          %small
+                            in #{number_with_delimiter(invocation.input_tokens.to_i)}
+                            \/ out #{number_with_delimiter(invocation.output_tokens.to_i)}
+                          - if invocation.cached_tokens.to_i.positive? || invocation.cache_creation_tokens.to_i.positive?
+                            .small.text-muted
+                              cache r #{number_with_delimiter(invocation.cached_tokens.to_i)}
+                              \/ w #{number_with_delimiter(invocation.cache_creation_tokens.to_i)}
+                        %td
+                          - if invocation.duration_ms.present?
+                            %small= "#{number_with_delimiter(invocation.duration_ms)} ms"
+                          - else
+                            %small.text-muted —
+                        %td
+                          - if invocation.organization
+                            %small= invocation.organization.display_name
+                          - else
+                            %small.text-muted —
+                        %td.text-end
+                          - if cost_micros&.positive?
+                            %strong= number_to_currency(cost_micros / 1_000_000.0, precision: 4)
+                          - elsif invocation.input_tokens.to_i.zero? && invocation.output_tokens.to_i.zero?
+                            %small.text-muted No tokens
+                          - else
+                            %small.text-muted —
+      = link_to organizations_path, class: "btn btn-outline-secondary" do
+        %i.bi.bi-arrow-left.me-1
+        Back to Organizations

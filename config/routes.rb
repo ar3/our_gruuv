@@ -790,6 +790,9 @@ Rails.application.routes.draw do
   # Impersonation routes
   resources :impersonations, only: [:create, :destroy]
 
+  # OG-admin LLM cost visibility
+  get 'admin/llm_invocations', to: 'llm_invocations#show', as: :admin_llm_invocations
+
   # Interest submissions for coming soon features
   resources :interest_submissions, path: 'interest', only: [:index, :new, :create, :show]
 
