@@ -14,7 +14,7 @@ class LlmInvocationsController < ApplicationController
     abilities_hr_match
   ].freeze
 
-  PER_PURPOSE_LIMIT = 5
+  PER_PURPOSE_LIMIT = 10
 
   def show
     authorize LlmInvocation, :show?
