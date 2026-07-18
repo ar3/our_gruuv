@@ -14,7 +14,7 @@ module Llm
     ALLOWED_RATINGS = RATING_WORDS.keys.freeze
     ALLOWED_RATEABLE_TYPES = %w[Assignment Ability Aspiration].freeze
     # Model may return weaker hits; drop these before review.
-    MIN_RETURN_CONFIDENCE = 0.6
+    MIN_RETURN_CONFIDENCE = 0.5
     # Auto-check Include when speaker/subject resolve and confidence is high.
     INCLUDE_CONFIDENCE_THRESHOLD = 0.75
 
@@ -113,9 +113,8 @@ module Llm
         0.80–0.89 = strong OGO — clear peer praise of "#{@subject_name}" for identifiable work, or clear
         action/outcome with only minor ambiguity;
         0.75–0.79 = solid OGO with some ambiguity but still worth reviewing;
-        0.60–0.74 = borderline thin evidence (status-only, opaque shares, weak clarification) — usually omit;
-        include only if clearly better than silence;
-        below 0.60 = omit entirely (do not list).
+        0.50–0.74 = borderline or thin evidence — return for review with lower confidence;
+        below 0.50 = omit entirely (do not list).
         Return ONLY valid JSON:
         {"items":[{"kind":"kudos"|"feedback",
         "confidence":0.0-1.0,
@@ -132,6 +131,7 @@ module Llm
         "rating_reason":"one concise sentence explaining why the evidence warrants this rating",
         "suggested_goal_id":number|null}]}.
         Rating bands: strongly_agree=Exceptional, agree=Solid, disagree=Mis-aligned, strongly_disagree=Concerning.
+        Kind follows rating: Exceptional/Solid => kudos; Mis-aligned/Concerning => feedback.
         Rules: full_quote/short_quote must come from message text; never invent channel_id/ts/permalink/slack_user_id;
         every returned item must have a rateable object, rating, association_reason, and rating_reason;
         only use suggested_* ids that appear in SUBJECT CONTEXT; if unsure, omit the item;
@@ -196,7 +196,7 @@ module Llm
         rateable_type_label = suggestion[:rateable_type] == "Aspiration" ? "Value" : suggestion[:rateable_type]
 
         {
-          "kind" => (h["kind"].to_s == "feedback" ? "feedback" : "kudos"),
+          "kind" => kind_for_rating(suggestion[:rating]),
           "confidence" => confidence,
           "target_is_subject" => true,
           "summary" => summary.truncate(2500),
@@ -230,6 +230,15 @@ module Llm
       { "items" => items.sort_by { |item| [-item["confidence"].to_f, item["ts"].to_s] } }
     rescue JSON::ParserError => e
       { "items" => [], "error" => "Invalid JSON from model: #{e.message}" }
+    end
+
+    def kind_for_rating(rating)
+      case rating.to_s
+      when "disagree", "strongly_disagree"
+        "feedback"
+      else
+        "kudos"
+      end
     end
 
     def sanitize_confidence(value)
@@ -311,7 +320,7 @@ module Llm
       association_reason:, rating_reason:
     )
       [
-        "The OG Consultation AI Agent is suggesting: #{rating_label} example of the #{rateable_type_label}, #{rateable_name}.",
+        "OG is suggesting: #{rating_label} example of the #{rateable_type_label}, #{rateable_name}.",
         "OG thought it was an example of #{rateable_name} because #{association_reason}.",
         "OG thought it was a #{rating_label} example because #{rating_reason}.",
         "",

@@ -20,10 +20,38 @@ module PossibleObservationSlackSearches
       end
 
       search.mark_search_processing!
-      query = build_query
-      messages, meta = fetch_all_messages(token: token, query: query)
+      queries = build_queries
+      raise "Unable to build Slack search queries for this teammate." if queries.empty?
 
-      search.mark_search_completed!(query: query, messages: messages, meta: meta)
+      all_messages = []
+      query_metas = []
+      pages_fetched = 0
+      slack_total = 0
+
+      queries.each do |entry|
+        messages, meta = fetch_all_messages(token: token, query: entry[:query])
+        tagged = messages.map { |message| message.merge("search_kind" => entry[:kind]) }
+        all_messages.concat(tagged)
+        pages_fetched += meta[:pages_fetched].to_i
+        slack_total += meta[:slack_total].to_i
+        query_metas << entry.merge(
+          "slack_total" => meta[:slack_total],
+          "pages_fetched" => meta[:pages_fetched],
+          "messages_count" => messages.size
+        )
+        search.heartbeat_search_processing!
+      end
+
+      messages = dedupe_messages(all_messages)
+      display_query = queries.map { |entry| "#{entry[:kind]}: #{entry[:query]}" }.join(" | ")
+      meta = {
+        slack_total: slack_total,
+        pages_fetched: pages_fetched,
+        fetched_at: Time.current.iso8601,
+        queries: query_metas
+      }
+
+      search.mark_search_completed!(query: display_query, messages: messages, meta: meta)
       Result.new(success?: true, error: nil)
     rescue StandardError => e
       Rails.logger.error("PossibleObservationSlackSearches::RunSearchService error: #{e.message}")
@@ -35,16 +63,40 @@ module PossibleObservationSlackSearches
 
     attr_reader :search, :creator, :subject
 
-    def build_query
+    def build_queries
       after_date = search.window_days.days.ago.to_date.iso8601
-      mention =
+      queries = []
+
+      about_term =
         if subject.slack_user_id.present?
           "<@#{subject.slack_user_id}>"
         else
           name = subject.person.full_name.presence || subject.person.casual_name
           "\"#{name.to_s.gsub('"', '')}\""
         end
-      "#{mention} after:#{after_date}"
+      queries << { kind: "about", query: "#{about_term} after:#{after_date}" }
+
+      if subject.slack_user_id.present?
+        queries << { kind: "from", query: "from:<@#{subject.slack_user_id}> after:#{after_date}" }
+      end
+
+      queries
+    end
+
+    def dedupe_messages(messages)
+      seen = Set.new
+      messages.filter_map do |message|
+        key =
+          if message["channel_id"].present? && message["ts"].present?
+            "#{message['channel_id']}|#{message['ts']}"
+          else
+            "#{message['user']}|#{message['text'].to_s[0, 200]}"
+          end
+        next if seen.include?(key)
+
+        seen.add(key)
+        message
+      end
     end
 
     def fetch_all_messages(token:, query:)
@@ -75,7 +127,7 @@ module PossibleObservationSlackSearches
       end
 
       meta = {
-        slack_total: slack_total,
+        slack_total: slack_total.to_i,
         pages_fetched: pages_fetched,
         fetched_at: Time.current.iso8601
       }

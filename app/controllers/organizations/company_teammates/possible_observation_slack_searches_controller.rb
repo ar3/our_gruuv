@@ -198,8 +198,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
     load_suggested_rateable_names
     @observation_type_options = [
       ["Kudos", "kudos"],
-      ["Feedback", "feedback"],
-      ["Quick note", "quick_note"]
+      ["Feedback", "feedback"]
     ]
     @duplicate_observations_by_key = {}
     @search.extraction_items.each do |item|

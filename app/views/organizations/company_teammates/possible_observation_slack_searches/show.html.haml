@@ -47,10 +47,13 @@
       %span.badge.text-bg-secondary= @search.extraction_status
       · Window: last #{@search.window_days} days
       · Run by #{@search.creator_company_teammate.person.casual_name}
-    - if @search.query.present?
-      %p.mb-0.small
-        %span.text-muted Query:
-        %code= @search.query
+    - if @search.query.present? || @search.search_queries.any?
+      .small.mb-0
+        %span.text-muted Queries:
+        - @search.search_queries.each do |entry|
+          .mt-1
+            %span.badge.text-bg-light.me-1= entry["kind"].presence || entry[:kind] || "query"
+            %code= entry["query"].presence || entry[:query]
     - if @search.search_status == "failed" && @search.search_error.present?
       .alert.alert-danger.mt-3.mb-0= @search.search_error
     - if @search.extraction_error.present? && @search.extraction_status != "failed"
@@ -113,45 +116,37 @@
       = render "raw_messages", messages: @messages, search: @search
     - else
       %h5.mb-3 Review candidate OGOs
-      = form_with url: organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search), method: :patch, local: true do
+      = form_with url: organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search), method: :patch, local: true, html: { id: "slack-ogo-candidates-form" } do
         .table-responsive
-          %table.table.table-bordered.align-middle
+          %table.table.table-bordered.align-middle#slack-ogo-candidates-table
             %thead.table-light
               %tr
-                %th Include
-                %th Kind
                 %th Confidence
                 %th Quote
-                %th Observer → subject
+                %th Actions
                 %th Status
             %tbody
               - items.each_with_index do |item, idx|
+                - included = ActiveModel::Type::Boolean.new.cast(item[:include])
                 - responder_selected = item[:responder_company_teammate_id].present?
                 - subject_selected = item[:subject_company_teammate_id].present?
                 - ready = responder_selected && subject_selected
                 - dup_key = "#{item[:channel_id]}|#{item[:ts]}"
                 - duplicates = @duplicate_observations_by_key&.[](dup_key) || []
                 - confidence = item[:confidence].to_f
-                %tr
-                  %td
-                    = hidden_field_tag "items[#{idx}][id]", item[:id]
-                    = check_box_tag "items[#{idx}][include]", "1", ActiveModel::Type::Boolean.new.cast(item[:include]), class: "form-check-input"
-                  %td
-                    - @observation_type_options.each do |label, value|
-                      .form-check.form-check-inline
-                        = radio_button_tag "items[#{idx}][kind]", value, item[:kind].to_s == value, class: "form-check-input", id: "items_#{idx}_kind_#{value}"
-                        = label_tag "items_#{idx}_kind_#{value}", label, class: "form-check-label"
+                - rateable_name = item[:suggested_rateable_name]
+                %tr{ data: { slack_candidate_row: true } }
                   %td
                     - badge_class = if confidence >= 0.75
                       - "text-bg-success"
-                    - elsif confidence >= 0.6
+                    - elsif confidence >= 0.5
                       - "text-bg-warning"
                     - else
                       - "text-bg-secondary"
                     %span.badge{ class: badge_class }= format("%.0f%%", confidence * 100)
+                    = hidden_field_tag "items[#{idx}][id]", item[:id]
                     = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
                   %td
-                    - rateable_name = item[:suggested_rateable_name]
                     - if item[:suggested_rating].present? || item[:suggested_rateable_type].present?
                       - rating_label = { "strongly_agree" => "Exceptional", "agree" => "Solid", "disagree" => "Mis-aligned", "strongly_disagree" => "Concerning" }[item[:suggested_rating].to_s]
                       - rateable_type_label = item[:suggested_rateable_type] == "Aspiration" ? "Value" : item[:suggested_rateable_type]
@@ -173,7 +168,8 @@
                         - else
                           %strong= rateable_name
                         = "."
-                    = text_area_tag "items[#{idx}][quote]", item[:quote], class: "form-control form-control-sm", rows: 14, style: "min-width: 520px;"
+                    = label_tag "items_#{idx}_quote", "Story / quotes", class: "form-label small mb-1"
+                    = text_area_tag "items[#{idx}][quote]", item[:quote], class: "form-control form-control-sm", rows: 14, style: "min-width: 420px;", id: "items_#{idx}_quote", data: { slack_row_field: true }, disabled: !included
                     - if item[:permalink].present?
                       .mt-1
                         = link_to item[:permalink], target: "_blank", rel: "noopener", class: "small" do
@@ -185,20 +181,31 @@
                         an OGO may already reference this Slack message.
                         - duplicates.each do |obs|
                           = link_to "##{obs.id}", organization_observation_path(organization, obs), class: "ms-1"
-                  %td
-                    .small.text-muted.mb-1
-                      #{item[:speaker_label]} → #{item[:recipient_label]}
-                    .row.g-1
-                      .col-12
-                        = label_tag "items_#{idx}_responder", "Observer (speaker)", class: "form-label small mb-0"
-                        = select_tag "items[#{idx}][responder_company_teammate_id]", grouped_options_for_select([["—", [["—", ""]]]] + @teammates_grouped_for_select, item[:responder_company_teammate_id]), class: "form-select form-select-sm", id: "items_#{idx}_responder"
-                      .col-12
-                        = label_tag "items_#{idx}_subject", "Subject (observee)", class: "form-label small mb-0"
-                        = select_tag "items[#{idx}][subject_company_teammate_id]", grouped_options_for_select([["—", [["—", ""]]]] + @teammates_grouped_for_select, item[:subject_company_teammate_id]), class: "form-select form-select-sm", id: "items_#{idx}_subject"
-                    - unless responder_selected
-                      .badge.text-bg-secondary.mt-1 Observer unclear
-                    - unless subject_selected
-                      .badge.text-bg-secondary.mt-1 Subject unclear
+                  %td{ style: "min-width: 240px;" }
+                    .mb-2
+                      = label_tag "items_#{idx}_include", "Include", class: "form-label small mb-1"
+                      .form-check
+                        = check_box_tag "items[#{idx}][include]", "1", included, class: "form-check-input", id: "items_#{idx}_include", data: { slack_include: true }
+                        = label_tag "items_#{idx}_include", "Include this candidate", class: "form-check-label"
+                    %hr.my-2
+                    .mb-2
+                      = label_tag "items_#{idx}_kind_kudos", "Kind", class: "form-label small mb-1"
+                      - @observation_type_options.each do |label, value|
+                        .form-check
+                          = radio_button_tag "items[#{idx}][kind]", value, item[:kind].to_s == value, class: "form-check-input", id: "items_#{idx}_kind_#{value}", data: { slack_row_field: true }, disabled: !included
+                          = label_tag "items_#{idx}_kind_#{value}", label, class: "form-check-label"
+                    %hr.my-2
+                    .mb-2
+                      .small.text-muted.mb-1
+                        Detected: #{item[:speaker_label]} → #{item[:recipient_label]}
+                      = label_tag "items_#{idx}_responder", "Observer (speaker)", class: "form-label small mb-0"
+                      = select_tag "items[#{idx}][responder_company_teammate_id]", grouped_options_for_select([["—", [["—", ""]]]] + @teammates_grouped_for_select, item[:responder_company_teammate_id]), class: "form-select form-select-sm mb-2", id: "items_#{idx}_responder", data: { slack_row_field: true }, disabled: !included
+                      = label_tag "items_#{idx}_subject", "Subject (observee)", class: "form-label small mb-0"
+                      = select_tag "items[#{idx}][subject_company_teammate_id]", grouped_options_for_select([["—", [["—", ""]]]] + @teammates_grouped_for_select, item[:subject_company_teammate_id]), class: "form-select form-select-sm", id: "items_#{idx}_subject", data: { slack_row_field: true }, disabled: !included
+                      - unless responder_selected
+                        .badge.text-bg-secondary.mt-1 Observer unclear
+                      - unless subject_selected
+                        .badge.text-bg-secondary.mt-1 Subject unclear
                     = hidden_field_tag "items[#{idx}][observer_unknown]", item[:observer_unknown]
                     = hidden_field_tag "items[#{idx}][observee_unknown]", item[:observee_unknown]
                     = hidden_field_tag "items[#{idx}][speaker_label]", item[:speaker_label]
@@ -229,6 +236,34 @@
       %p.mt-3.mb-0.text-muted.small
         Creating draft OGOs from included candidates comes in a later step.
         Include is pre-checked only for high-confidence candidates (≥75%).
+      :javascript
+        (function() {
+          var form = document.getElementById("slack-ogo-candidates-form");
+          if (!form) return;
+
+          function syncRow(row) {
+            var include = row.querySelector("[data-slack-include]");
+            if (!include) return;
+            var enabled = include.checked;
+            row.querySelectorAll("[data-slack-row-field]").forEach(function(field) {
+              field.disabled = !enabled;
+            });
+          }
+
+          form.querySelectorAll("[data-slack-candidate-row]").forEach(function(row) {
+            syncRow(row);
+            var include = row.querySelector("[data-slack-include]");
+            if (include) {
+              include.addEventListener("change", function() { syncRow(row); });
+            }
+          });
+
+          form.addEventListener("submit", function() {
+            form.querySelectorAll("[data-slack-row-field]").forEach(function(field) {
+              field.disabled = false;
+            });
+          });
+        })();
 
   - else
     = render "raw_messages", messages: @messages, search: @search

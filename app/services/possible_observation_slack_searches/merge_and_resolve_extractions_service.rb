@@ -92,7 +92,7 @@ module PossibleObservationSlackSearches
 
       {
         "id" => SecureRandom.uuid,
-        "kind" => raw["kind"],
+        "kind" => kind_for_rating(suggestion[:rating], fallback: raw["kind"]),
         "confidence" => confidence,
         "quote" => raw["quote"].to_s,
         "summary" => raw["summary"].to_s,
@@ -125,6 +125,17 @@ module PossibleObservationSlackSearches
 
       text = [raw["short_quote"], raw["full_quote"], raw["summary"]].compact.join(" ")
       text.match?(FIRST_PERSON_OWNERSHIP)
+    end
+
+    def kind_for_rating(rating, fallback: nil)
+      case rating.to_s
+      when "disagree", "strongly_disagree"
+        "feedback"
+      when "strongly_agree", "agree"
+        "kudos"
+      else
+        fallback.to_s == "feedback" ? "feedback" : "kudos"
+      end
     end
 
     def sanitize_confidence(value)

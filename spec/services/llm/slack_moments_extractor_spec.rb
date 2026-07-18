@@ -51,7 +51,7 @@ RSpec.describe Llm::SlackMomentsExtractor do
     expect(item["confidence"]).to eq(0.91)
     expect(item["summary"]).to start_with("This is a story about")
     expect(item["quote"]).to start_with(
-      "The OG Consultation AI Agent is suggesting: Exceptional example of the Assignment, Own launch."
+      "OG is suggesting: Exceptional example of the Assignment, Own launch."
     )
     expect(item["quote"]).to include(
       "OG thought it was an example of Own launch because The message directly describes ownership"
@@ -63,6 +63,33 @@ RSpec.describe Llm::SlackMomentsExtractor do
     expect(item["suggested_rateable_id"]).to eq(11)
     expect(item["suggested_rating"]).to eq("strongly_agree")
     expect(item["suggested_goal_id"]).to eq(22)
+    expect(item["kind"]).to eq("kudos")
+  end
+
+  it "sets kind to feedback for Mis-aligned or Concerning ratings" do
+    result = parse(<<~JSON)
+      {
+        "items": [{
+          "kind": "kudos",
+          "summary": "This is a story about when Pat missed the launch.",
+          "short_quote": "missed it",
+          "full_quote": "Pat missed the launch deadline.",
+          "speaker_label": "Alex",
+          "recipient_label": "Pat",
+          "channel_id": "C1",
+          "ts": "1.0",
+          "confidence": 0.8,
+          "target_is_subject": true,
+          "suggested_rateable_type": "Assignment",
+          "suggested_rateable_id": 11,
+          "suggested_rating": "strongly_disagree",
+          "association_reason": "It relates to the assignment.",
+          "rating_reason": "It fell short of expectations."
+        }]
+      }
+    JSON
+
+    expect(result["items"].first["kind"]).to eq("feedback")
   end
 
   it "drops suggestion ids that are not in the catalog" do
@@ -110,6 +137,30 @@ RSpec.describe Llm::SlackMomentsExtractor do
     JSON
 
     expect(result["items"]).to be_empty
+  end
+
+  it "keeps items at the 50% confidence floor" do
+    result = parse(<<~JSON)
+      {
+        "items": [{
+          "kind": "kudos",
+          "summary": "Borderline but returnable",
+          "short_quote": "nice summary",
+          "full_quote": "nice summary, thanks",
+          "recipient_label": "Pat",
+          "confidence": 0.5,
+          "target_is_subject": true,
+          "suggested_rateable_type": "Assignment",
+          "suggested_rateable_id": 11,
+          "suggested_rating": "agree",
+          "association_reason": "It relates to the assignment.",
+          "rating_reason": "It met expectations."
+        }]
+      }
+    JSON
+
+    expect(result["items"].size).to eq(1)
+    expect(result["items"].first["confidence"]).to eq(0.5)
   end
 
   it "drops moments whose recipient is not the searched teammate" do

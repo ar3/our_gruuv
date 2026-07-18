@@ -97,7 +97,7 @@ class PossibleObservationSlackSearch < ApplicationRecord
   def mark_search_completed!(query:, messages:, meta:)
     attach_raw_results!(query: query, messages: messages, meta: meta)
     update!(
-      query: query,
+      query: query.to_s.truncate(1000),
       messages_count: messages.size,
       raw_results: {
         "version" => RAW_RESULTS_VERSION,
@@ -105,8 +105,9 @@ class PossibleObservationSlackSearch < ApplicationRecord
         "messages_count" => messages.size,
         "slack_total" => meta[:slack_total],
         "pages_fetched" => meta[:pages_fetched],
-        "fetched_at" => meta[:fetched_at]
-      },
+        "fetched_at" => meta[:fetched_at],
+        "queries" => meta[:queries]
+      }.compact,
       search_status: "completed",
       search_error: nil
     )
@@ -120,18 +121,26 @@ class PossibleObservationSlackSearch < ApplicationRecord
     true
   end
 
+  def search_queries
+    payload = raw_results_payload
+    Array(payload[:queries]).presence ||
+      Array(raw_results.is_a?(Hash) ? raw_results["queries"] : nil).presence ||
+      (query.present? ? [{ "kind" => "legacy", "query" => query }] : [])
+  end
+
   private
 
   def attach_raw_results!(query:, messages:, meta:)
     payload = {
       "version" => RAW_RESULTS_VERSION,
       "query" => query,
+      "queries" => meta[:queries],
       "window_days" => window_days,
       "fetched_at" => meta[:fetched_at],
       "slack_total" => meta[:slack_total],
       "pages_fetched" => meta[:pages_fetched],
       "messages" => messages
-    }
+    }.compact
     raw_results_file.purge if raw_results_file.attached?
     raw_results_file.attach(
       io: StringIO.new(JSON.generate(payload)),

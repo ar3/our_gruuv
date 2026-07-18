@@ -172,6 +172,12 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       expect(response.body).to include("Review candidate OGOs")
       expect(response.body).to include("Save candidates")
       expect(response.body).to include("Observer (speaker)")
+      expect(response.body).to include(">Actions<")
+      expect(response.body).to include("Include this candidate")
+      expect(response.body).to include("data-slack-include")
+      expect(response.body).to include("Kudos")
+      expect(response.body).to include("Feedback")
+      expect(response.body).not_to include("Quick note")
     end
 
     it "shows the rating and linked object name as text above the generated rationale" do
@@ -185,7 +191,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         "suggested_rating" => "strongly_agree",
         "association_reason" => "the message describes the assignment outcome",
         "rating_reason" => "the result exceeded expectations",
-        "quote" => "The OG Consultation AI Agent is suggesting: Exceptional example of the Assignment, Own the launch."
+        "quote" => "OG is suggesting: Exceptional example of the Assignment, Own the launch."
       )
       search.replace_extraction_items!([item])
 
@@ -193,6 +199,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("The OG Consultation AI Agent is suggesting:")
+      expect(response.body).to include("OG is suggesting: Exceptional example of the Assignment, Own the launch.")
       expect(response.body).to include("Exceptional")
       expect(response.body).to include("Own the launch")
       expect(response.body).to include(

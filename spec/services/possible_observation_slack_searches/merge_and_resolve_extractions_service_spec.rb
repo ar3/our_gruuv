@@ -142,6 +142,42 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
     expect(items.first["suggested_rating"]).to eq("strongly_agree")
     expect(items.first["suggested_goal_id"]).to eq(22)
     expect(items.first["suggested_rateable_name"]).to eq("Own launch")
+    expect(items.first["kind"]).to eq("kudos")
+  end
+
+  it "maps concerning ratings to feedback kind" do
+    items = described_class.call(
+      search: search,
+      context_catalog: {
+        "Assignment" => { 11 => "Own launch" },
+        "Ability" => {},
+        "Aspiration" => {},
+        "Goal" => {}
+      },
+      raw_items_by_chunk: [
+        [
+          {
+            "kind" => "kudos",
+            "summary" => "Missed launch",
+            "short_quote" => "late",
+            "full_quote" => "Pat was late on the launch.",
+            "quote" => "Pat was late on the launch.",
+            "speaker_label" => "alex",
+            "recipient_label" => "Pat",
+            "channel_id" => "C123",
+            "ts" => "1710000000.000100",
+            "slack_user_id" => "UOBS",
+            "confidence" => 0.88,
+            "target_is_subject" => true,
+            "suggested_rateable_type" => "Assignment",
+            "suggested_rateable_id" => 11,
+            "suggested_rating" => "disagree"
+          }
+        ]
+      ]
+    )
+
+    expect(items.first["kind"]).to eq("feedback")
   end
 
   it "drops candidates whose recipient is not the searched teammate" do
