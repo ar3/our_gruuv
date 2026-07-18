@@ -154,6 +154,12 @@ module ApplicationHelper
     format_time_in_user_timezone(time, user, format: format)
   end
 
+  # IANA timezone for JS Intl formatting (Consult OG / OGO wait banners).
+  def current_person_iana_timezone
+    user = current_person if respond_to?(:current_person)
+    TimezoneService.iana_identifier(user&.timezone_or_default)
+  end
+
   # Human-readable timeframe for the observations card empty state (anchored to last check-in or milestone when present).
   # since_date: start of range (anchor date or long ago), has_finalized: true when an anchor event exists (check-in or milestone).
   def observations_timeframe_description(since_date, has_finalized)

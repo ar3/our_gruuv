@@ -63,15 +63,12 @@
 
 - case @search.search_status
 - when "pending", "processing"
-  .alert.alert-secondary.mb-0#slack-search-status-banner{ data: { status_url: search_status_url } }
-    %i.bi.bi-hourglass-split.me-2
-    %span#slack-search-status-text
-      Search is #{@search.search_status}…
-    %span.ms-1.text-muted#slack-search-elapsed
-    %span.ms-1.text-warning.d-none#slack-search-slow-warning
-      Taking longer than expected.
-    .small.text-muted.mt-1#slack-search-last-checked
-      Last checked: just now
+  = render "shared/og_consultations/status_banner",
+           status_url: search_status_url,
+           label: "Search",
+           initial_status: @search.search_status,
+           wrapper_class: "alert alert-secondary mb-0",
+           time_zone: current_person_iana_timezone
   .card.mt-3.border-0.bg-light
     .card-body.placeholder-glow.py-4
       - 4.times do
@@ -85,15 +82,12 @@
 - when "completed"
   - case @search.extraction_status
   - when "pending", "processing"
-    .alert.alert-secondary.mb-0#slack-extraction-status-banner{ data: { status_url: extraction_status_url } }
-      %i.bi.bi-hourglass-split.me-2
-      %span#slack-extraction-status-text
-        Extraction is #{@search.extraction_status}…
-      %span.ms-1.text-muted#slack-extraction-elapsed
-      %span.ms-1.text-warning.d-none#slack-extraction-slow-warning
-        Taking longer than expected.
-      .small.text-muted.mt-1#slack-extraction-last-checked
-        Last checked: just now
+    = render "shared/og_consultations/status_banner",
+             status_url: extraction_status_url,
+             label: "Consultation",
+             initial_status: @search.extraction_status,
+             wrapper_class: "alert alert-secondary mb-0",
+             time_zone: current_person_iana_timezone
     .card.mt-3.border-0.bg-light
       .card-body.placeholder-glow.py-4
         - 4.times do
@@ -271,8 +265,3 @@
       When ready, use
       %strong Consult OG to find potential OGOs
       to extract noteworthy moments from these messages.
-
-- if %w[pending processing].include?(@search.search_status)
-  = render "status_poll_script", banner_id: "slack-search-status", label: "Search"
-- elsif @search.search_status == "completed" && %w[pending processing].include?(@search.extraction_status)
-  = render "status_poll_script", banner_id: "slack-extraction-status", label: "Extraction"

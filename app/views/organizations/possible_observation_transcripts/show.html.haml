@@ -35,15 +35,12 @@
 
 - case @transcript.extraction_status
 - when 'pending', 'processing'
-  .alert.alert-secondary.mb-0#extraction-status-banner{ data: { status_url: extraction_status_organization_possible_observation_transcript_path(organization, @transcript) } }
-    %i.bi.bi-hourglass-split.me-2
-    %span#extraction-status-text
-      Extraction is #{@transcript.extraction_status}…
-    %span.ms-1.text-muted#extraction-elapsed
-    %span.ms-1.text-warning.d-none#extraction-slow-warning
-      Taking longer than expected.
-    .small.text-muted.mt-1#extraction-last-checked
-      Last checked: just now
+  = render 'shared/og_consultations/status_banner',
+           status_url: extraction_status_organization_possible_observation_transcript_path(organization, @transcript),
+           label: 'Consultation',
+           initial_status: @transcript.extraction_status,
+           wrapper_class: 'alert alert-secondary mb-0',
+           time_zone: current_person_iana_timezone
 
   .table-responsive.mt-3
     %table.table.table-bordered.align-middle
@@ -141,57 +138,3 @@
                   - else
                     %span.text-muted Reviewing
       = submit_tag 'Save and continue to request creation', class: 'btn btn-primary mt-2'
-
-- if %w[pending processing].include?(@transcript.extraction_status)
-  :javascript
-    (() => {
-      const banner = document.getElementById('extraction-status-banner');
-      if (!banner) return;
-
-      const url = banner.dataset.statusUrl;
-      const statusText = document.getElementById('extraction-status-text');
-      const elapsedText = document.getElementById('extraction-elapsed');
-      const slowWarning = document.getElementById('extraction-slow-warning');
-      const lastChecked = document.getElementById('extraction-last-checked');
-      const fmt = (seconds) => {
-        const s = Math.max(parseInt(seconds || 0, 10), 0);
-        const mins = Math.floor(s / 60);
-        const rem = s % 60;
-        return mins > 0 ? `${mins}m ${rem}s` : `${rem}s`;
-      };
-      const fmtTime = (date) => {
-        const d = date || new Date();
-        return d.toLocaleString([], {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZoneName: 'short'
-        });
-      };
-
-      const poll = async () => {
-        try {
-          const res = await fetch(url, { headers: { Accept: 'application/json' } });
-          if (!res.ok) return;
-          const data = await res.json();
-          if (statusText) statusText.textContent = `Extraction is ${data.status}...`;
-          if (elapsedText) elapsedText.textContent = `(${fmt(data.elapsed_seconds)})`;
-          if (slowWarning) {
-            slowWarning.classList.toggle('d-none', !data.slow);
-            if (data.stale) slowWarning.textContent = 'Possible stall detected. You can re-run extraction.';
-          }
-          if (lastChecked) lastChecked.textContent = `Last checked: ${fmtTime(new Date())}`;
-          if (data.status === 'completed' || data.status === 'failed') {
-            window.location.reload();
-          }
-        } catch (_) {
-          // Keep polling; transient failures are expected.
-        }
-      };
-
-      poll();
-      window.setInterval(poll, 3000);
-    })();

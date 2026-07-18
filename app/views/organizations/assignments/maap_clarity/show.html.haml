@@ -46,15 +46,10 @@
         = @run.error_message
 
     - if @run&.status.in?(%w[pending processing])
-      .alert.alert-secondary.mb-3#maap-clarity-status-banner{ data: { status_url: maap_clarity_status_organization_assignment_path(@organization, @assignment) } }
-        %i.bi.bi-hourglass-split.me-2
-        %span#maap-clarity-status-text
-          Consultation is #{@run.status}…
-        %span.ms-1.text-muted#maap-clarity-elapsed
-        %span.ms-1.text-warning.d-none#maap-clarity-slow-warning
-          Taking longer than expected.
-        .small.text-muted.mt-1#maap-clarity-last-checked
-          Last checked: just now
+      = render 'shared/og_consultations/status_banner',
+               status_url: maap_clarity_status_organization_assignment_path(@organization, @assignment),
+               initial_status: @run.status,
+               time_zone: current_person_iana_timezone
 
       .card.mb-4.border-0.bg-light
         .card-body.placeholder-glow.py-4
@@ -121,57 +116,3 @@
     - elsif (@run.nil? || (@run.status == 'completed' && @run.output_text.blank?)) && @run&.status != 'failed'
       .alert.alert-info.mb-0
         No completed consultation yet. Click “Consult OG” to generate one.
-
-- if @run && %w[pending processing].include?(@run.status)
-  :javascript
-    (() => {
-      const banner = document.getElementById('maap-clarity-status-banner');
-      if (!banner) return;
-
-      const url = banner.dataset.statusUrl;
-      const statusText = document.getElementById('maap-clarity-status-text');
-      const elapsedText = document.getElementById('maap-clarity-elapsed');
-      const slowWarning = document.getElementById('maap-clarity-slow-warning');
-      const lastChecked = document.getElementById('maap-clarity-last-checked');
-      const fmt = (seconds) => {
-        const s = Math.max(parseInt(seconds || 0, 10), 0);
-        const mins = Math.floor(s / 60);
-        const rem = s % 60;
-        return mins > 0 ? `${mins}m ${rem}s` : `${rem}s`;
-      };
-      const fmtTime = (date) => {
-        const d = date || new Date();
-        return d.toLocaleString([], {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZoneName: 'short'
-        });
-      };
-
-      const poll = async () => {
-        try {
-          const res = await fetch(url, { headers: { Accept: 'application/json' } });
-          if (!res.ok) return;
-          const data = await res.json();
-          if (statusText) statusText.textContent = `Consultation is ${data.status}...`;
-          if (elapsedText) elapsedText.textContent = `(${fmt(data.elapsed_seconds)})`;
-          if (slowWarning) {
-            slowWarning.classList.toggle('d-none', !data.slow);
-            if (data.stale) slowWarning.textContent = 'Possible stall detected. Try refreshing or re-run.';
-          }
-          if (lastChecked) lastChecked.textContent = `Last checked: ${fmtTime(new Date())}`;
-          if (data.status === 'completed' || data.status === 'failed') {
-            window.location.reload();
-          }
-        } catch (_) {
-          // Keep polling; transient failures are expected.
-        }
-      };
-
-      poll();
-      window.setInterval(poll, 3000);
-    })();

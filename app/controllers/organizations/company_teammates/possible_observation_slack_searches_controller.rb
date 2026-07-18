@@ -120,13 +120,38 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
   def search_status
     authorize @search, :show?
     status = @search.search_status.to_s
-    render json: status_payload(status: status, error: @search.search_error)
+    render json: OgConsultations::StatusPayload.for_heartbeat(
+      record: @search,
+      status: status,
+      search_error: @search.search_error,
+      messages_count: @search.messages_count
+    )
   end
 
   def extraction_status
     authorize @search, :extraction_status?
     status = @search.extraction_status.to_s
-    render json: status_payload(status: status, error: @search.extraction_error)
+    consultation = OgConsultation.latest_for(
+      subject: @search,
+      kind: OgConsultation::KIND_OGO_SEARCH_SLACK
+    )
+    payload =
+      if consultation
+        OgConsultations::StatusPayload.for_consultation(
+          consultation,
+          status: status,
+          search_error: @search.extraction_error,
+          messages_count: @search.messages_count
+        )
+      else
+        OgConsultations::StatusPayload.for_heartbeat(
+          record: @search,
+          status: status,
+          search_error: @search.extraction_error,
+          messages_count: @search.messages_count
+        )
+      end
+    render json: payload
   end
 
   def destroy
@@ -168,29 +193,6 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
 
   def default_display_name(window_days)
     "Slack search about #{@teammate.person.casual_name} (last #{window_days} days) — #{Time.current.strftime('%Y-%m-%d %H:%M')}"
-  end
-
-  def status_payload(status:, error:)
-    reference_time =
-      case status
-      when "processing"
-        @search.updated_at || @search.created_at
-      when "pending"
-        @search.created_at
-      else
-        @search.updated_at || @search.created_at
-      end
-    elapsed_seconds = [(Time.current - reference_time).to_i, 0].max
-    {
-      id: @search.id,
-      status: status,
-      search_error: error,
-      messages_count: @search.messages_count,
-      elapsed_seconds: elapsed_seconds,
-      stale: status == "processing" && elapsed_seconds > 120,
-      slow: %w[pending processing].include?(status) && elapsed_seconds > 60,
-      updated_at: @search.updated_at
-    }
   end
 
   def load_review_context

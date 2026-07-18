@@ -1,0 +1,26 @@
+-# Locals:
+-#   status_url (required)
+-#   label (default: "Consultation")
+-#   initial_status (required)
+-#   wrapper_class (default: "alert alert-secondary mb-3")
+-#   time_zone (optional IANA tz for last-checked formatting)
+- status_url = local_assigns.fetch(:status_url)
+- label = local_assigns.fetch(:label, 'Consultation')
+- initial_status = local_assigns.fetch(:initial_status)
+- wrapper_class = local_assigns.fetch(:wrapper_class, 'alert alert-secondary mb-3')
+- time_zone = local_assigns[:time_zone]
+- poll_data = { controller: 'og-consultation-status-poll', og_consultation_status_poll_status_url_value: status_url, og_consultation_status_poll_label_value: label }
+- poll_data[:og_consultation_status_poll_time_zone_value] = time_zone if time_zone.present?
+
+%div{ class: wrapper_class, data: poll_data }
+  %i.bi.bi-hourglass-split.me-2
+  %span{ data: { 'og-consultation-status-poll-target' => 'statusText' } }
+    #{label} is #{initial_status}…
+  %span.ms-1.text-muted{ data: { 'og-consultation-status-poll-target' => 'elapsed' } }
+  %span.ms-1.text-muted.d-none{ data: { 'og-consultation-status-poll-target' => 'units' } }
+  %span.ms-1.text-muted{ data: { 'og-consultation-status-poll-target' => 'eta' } }
+    Estimating…
+  %span.ms-1.text-warning.d-none{ data: { 'og-consultation-status-poll-target' => 'slowWarning' } }
+    Taking longer than expected.
+  .small.text-muted.mt-1{ data: { 'og-consultation-status-poll-target' => 'lastChecked' } }
+    Last checked: just now

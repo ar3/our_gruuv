@@ -76,4 +76,10 @@ class TimezoneService
     timezone = ensure_valid_timezone(timezone_name)
     time.in_time_zone(timezone).strftime('%B %d, %Y at %I:%M %p %Z')
   end
+
+  # IANA identifier for Intl / JS (e.g. "America/New_York"), or nil if unknown.
+  def self.iana_identifier(timezone_name = DEFAULT_TIMEZONE)
+    name = ensure_valid_timezone(timezone_name)
+    ActiveSupport::TimeZone[name]&.tzinfo&.name
+  end
 end 

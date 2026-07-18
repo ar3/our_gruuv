@@ -55,6 +55,15 @@ RSpec.describe 'Organizations::Abilities::MaapClarity', type: :request do
       expect(response).to have_http_status(:success)
       json = JSON.parse(response.body)
       expect(json['status']).to eq('processing')
+      expect(json).to include(
+        'elapsed_seconds',
+        'slow',
+        'stale',
+        'units_total',
+        'units_completed',
+        'estimated_duration_seconds',
+        'eta_confidence'
+      )
     end
   end
 end

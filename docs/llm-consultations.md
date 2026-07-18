@@ -43,6 +43,14 @@ Look up with `OgConsultations::Kinds.fetch(kind)` (or `result_class_for` / `job_
 
 Organization Insights includes an **OG Consultations** page (`/insights/og_consultations`) for volume by kind over time, kind mix, top runners, and status counts. Labels come from `OgConsultations::Kinds`.
 
+## Wait / ETA polling
+
+In-flight Consult OG and OGO search wait banners share `shared/og_consultations/status_banner` + Stimulus `og-consultation-status-poll`:
+
+- elapsed count-up from status JSON
+- **Last checked** formatted in the viewer’s profile timezone (IANA via `TimezoneService.iana_identifier`)
+- ETA from `OgConsultations::EtaEstimator`: a **stable** `estimated_duration_seconds` (units × median unit duration, or median full-run wall time). The banner shows remaining as `max(0, estimate − elapsed)` so the countdown tracks elapsed without jumping on each poll. Cold start shows `Estimating…`. When remaining hits zero before completion: `Almost done…`.
+
 ## How to add a kind
 
 1. Add `KIND_*` on `OgConsultation` and a row in `OgConsultations::Kinds::REGISTRY`.

@@ -55,22 +55,11 @@ module Organizations
       end
 
       def status_json_for(run)
-        status = run.status.to_s
-        reference_time = run.started_at || run.updated_at || run.created_at
-        elapsed_seconds = [(Time.current - reference_time).to_i, 0].max
-        stale = status == 'processing' && elapsed_seconds > 240
-        slow = %w[pending processing].include?(status) && elapsed_seconds > 90
-
-        {
-          id: run.id,
-          status: status,
+        OgConsultations::StatusPayload.for_consultation(
+          run,
           clarity_rating: run.clarity_rating,
-          error_message: run.error_message,
-          elapsed_seconds: elapsed_seconds,
-          stale: stale,
-          slow: slow,
-          updated_at: run.updated_at&.iso8601
-        }
+          error_message: run.error_message
+        )
       end
     end
   end

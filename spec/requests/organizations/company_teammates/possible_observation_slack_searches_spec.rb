@@ -281,6 +281,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       json = response.parsed_body
       expect(json["status"]).to eq("processing")
       expect(json).to include("elapsed_seconds", "slow", "stale", "updated_at")
+      expect(json).to include("estimated_duration_seconds", "eta_confidence")
     end
   end
 
@@ -299,8 +300,9 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Search is processing")
-      expect(response.body).to include("slack-search-status-banner")
+      expect(response.body).to include("og-consultation-status-poll")
       expect(response.body).to include("Last checked: just now")
+      expect(response.body).to include("Estimating")
       expect(response.body).to include("placeholder-glow")
     end
   end

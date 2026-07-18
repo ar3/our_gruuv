@@ -100,28 +100,25 @@ module Organizations
     def extraction_status
       authorize @transcript, :show?
       status = @transcript.extraction_status.to_s
-      reference_time =
-        case status
-        when 'processing'
-          @transcript.updated_at || @transcript.created_at
-        when 'pending'
-          @transcript.created_at
+      consultation = OgConsultation.latest_for(
+        subject: @transcript,
+        kind: OgConsultation::KIND_OGO_SEARCH_TRANSCRIPT
+      )
+      payload =
+        if consultation
+          OgConsultations::StatusPayload.for_consultation(
+            consultation,
+            status: status,
+            extraction_error: @transcript.extraction_error
+          )
         else
-          @transcript.updated_at || @transcript.created_at
+          OgConsultations::StatusPayload.for_heartbeat(
+            record: @transcript,
+            status: status,
+            extraction_error: @transcript.extraction_error
+          )
         end
-      elapsed_seconds = [(Time.current - reference_time).to_i, 0].max
-      stale = status == 'processing' && elapsed_seconds > 120
-      slow = %w[pending processing].include?(status) && elapsed_seconds > 60
-
-      render json: {
-        id: @transcript.id,
-        status: status,
-        extraction_error: @transcript.extraction_error,
-        elapsed_seconds: elapsed_seconds,
-        stale: stale,
-        slow: slow,
-        updated_at: @transcript.updated_at
-      }
+      render json: payload
     end
 
     def destroy
