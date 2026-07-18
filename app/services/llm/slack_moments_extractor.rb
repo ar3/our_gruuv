@@ -2,8 +2,10 @@
 
 module Llm
   # Bedrock extractor for noteworthy Slack moments that warrant an OGO (precision over recall).
-  # Default: Claude Sonnet 4.5 via Bedrock regional inference profile (override with SLACK_SEARCH_BEDROCK_MODEL_ID).
+  # Default: Claude Haiku 4.5 via Bedrock regional inference profile (override with SLACK_SEARCH_BEDROCK_MODEL_ID).
+  # Stronger pass: Claude Sonnet 4.5 (see stronger_model_id).
   class SlackMomentsExtractor
+    HAIKU_45_FOUNDATION_SUFFIX = "anthropic.claude-haiku-4-5-20251001-v1:0"
     SONNET_45_FOUNDATION_SUFFIX = "anthropic.claude-sonnet-4-5-20250929-v1:0"
     # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
     # Ask before bumping major; otherwise set date to today and increment minor.
@@ -21,22 +23,28 @@ module Llm
     # Auto-check Include when speaker/subject resolve and confidence is high.
     INCLUDE_CONFIDENCE_THRESHOLD = 0.75
 
-    def self.default_model_id
+    def self.region_prefix
       region = RubyLLM.config.bedrock_region.presence || ENV["AWS_REGION"].presence || "us-east-1"
-      prefix =
-        if region.to_s.match?(/\Aus-gov-/i)
-          "us-gov"
-        else
-          region.to_s.split("-").first.presence || "us"
-        end
-      "#{prefix}.#{SONNET_45_FOUNDATION_SUFFIX}"
+      if region.to_s.match?(/\Aus-gov-/i)
+        "us-gov"
+      else
+        region.to_s.split("-").first.presence || "us"
+      end
+    end
+
+    def self.default_model_id
+      "#{region_prefix}.#{HAIKU_45_FOUNDATION_SUFFIX}"
+    end
+
+    def self.stronger_model_id
+      "#{region_prefix}.#{SONNET_45_FOUNDATION_SUFFIX}"
     end
 
     def self.model_id
       ENV.fetch("SLACK_SEARCH_BEDROCK_MODEL_ID") { default_model_id }
     end
 
-    def self.call(chunk_text:, subject_name:, context_text: nil, context_catalog: nil, organization_id: nil, parent: nil, triggered_by_teammate_id: nil)
+    def self.call(chunk_text:, subject_name:, context_text: nil, context_catalog: nil, organization_id: nil, parent: nil, triggered_by_teammate_id: nil, model_id: nil)
       new(
         chunk_text: chunk_text,
         subject_name: subject_name,
@@ -44,11 +52,12 @@ module Llm
         context_catalog: context_catalog,
         organization_id: organization_id,
         parent: parent,
-        triggered_by_teammate_id: triggered_by_teammate_id
+        triggered_by_teammate_id: triggered_by_teammate_id,
+        model_id: model_id
       ).call
     end
 
-    def initialize(chunk_text:, subject_name:, context_text: nil, context_catalog: nil, organization_id: nil, parent: nil, triggered_by_teammate_id: nil)
+    def initialize(chunk_text:, subject_name:, context_text: nil, context_catalog: nil, organization_id: nil, parent: nil, triggered_by_teammate_id: nil, model_id: nil)
       @chunk_text = chunk_text.to_s
       @subject_name = subject_name.to_s
       @context_text = context_text.to_s
@@ -56,15 +65,15 @@ module Llm
       @organization_id = organization_id
       @parent = parent
       @triggered_by_teammate_id = triggered_by_teammate_id
+      @model_id = model_id.presence || self.class.model_id
     end
 
     def call
       return stub_response unless bedrock_configured?
 
-      model_id = self.class.model_id
       llm = Llm::Client.call(
         purpose: "slack_chunk",
-        model_id: model_id,
+        model_id: @model_id,
         system_instructions: system_instructions,
         user_prompt: user_prompt,
         organization_id: @organization_id,

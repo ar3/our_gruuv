@@ -28,6 +28,13 @@
                 data: { turbo: false } do
       %i.bi.bi-stars.me-1
       = @search.extraction_status == "completed" ? "Consult OG again to find potential OGOs" : "Consult OG to find potential OGOs"
+  - if policy(@search).re_extract_with_stronger_model?
+    = button_to re_extract_with_stronger_model_organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search),
+                method: :post,
+                class: "btn btn-outline-primary",
+                data: { turbo: false } do
+      %i.bi.bi-lightning-charge.me-1
+      Re-run with stronger model
   - if policy(@search).destroy?
     = button_to organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search),
                 method: :delete,
@@ -47,6 +54,8 @@
       %span.badge.text-bg-secondary= @search.extraction_status
       · Window: last #{@search.window_days} days
       · Run by #{@search.creator_company_teammate.person.casual_name}
+      - if @latest_consultation&.model_id.present?
+        · Model: #{@latest_consultation.model_id}
     - if @search.query.present? || @search.search_queries.any?
       .small.mb-0
         %span.text-muted Queries:

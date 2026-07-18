@@ -8,7 +8,8 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
   before_action :set_one_on_one_link
   before_action :assign_viewable_teammates_context
   before_action :set_search, only: %i[
-    show update destroy search_status extraction_status extract re_extract download_raw_results
+    show update destroy search_status extraction_status extract re_extract
+    re_extract_with_stronger_model download_raw_results
   ]
   after_action :verify_authorized
 
@@ -54,6 +55,10 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
     @casual_name = @teammate.person.casual_name
     @active_tab = :source_from_slack
     @messages = @search.search_status == "completed" ? @search.raw_messages : []
+    @latest_consultation = OgConsultation.latest_for(
+      subject: @search,
+      kind: OgConsultation::KIND_OGO_SEARCH_SLACK
+    )
     load_review_context if @search.extraction_status == "completed"
   end
 
@@ -115,6 +120,17 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
     PossibleObservationSlackSearchExtractionJob.perform_later(@search.id)
     redirect_to organization_company_teammate_possible_observation_slack_search_path(organization, @teammate, @search),
                 notice: "Consult OG started again — finding potential OGOs in the background."
+  end
+
+  def re_extract_with_stronger_model
+    authorize @search, :re_extract_with_stronger_model?
+    @search.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
+    PossibleObservationSlackSearchExtractionJob.perform_later(
+      @search.id,
+      model_id: Llm::SlackMomentsExtractor.stronger_model_id
+    )
+    redirect_to organization_company_teammate_possible_observation_slack_search_path(organization, @teammate, @search),
+                notice: "Consult OG started with a stronger model — finding potential OGOs in the background."
   end
 
   def search_status

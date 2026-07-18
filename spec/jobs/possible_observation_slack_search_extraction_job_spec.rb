@@ -41,4 +41,31 @@ RSpec.describe PossibleObservationSlackSearchExtractionJob, type: :job do
     expect(consultation.result.items_count).to eq(0)
     expect(search.reload.extraction_status).to eq('completed')
   end
+
+  it 'defaults to the Haiku model id' do
+    expect(Llm::SlackMomentsExtractor.model_id).to include('claude-haiku-4-5')
+    expect(Llm::SlackMomentsExtractor.stronger_model_id).to include('claude-sonnet-4-5')
+  end
+
+  it 'skips short messages and records the stronger model when requested' do
+    payload = {
+      'version' => 1,
+      'messages' => [
+        { 'text' => 'ok', 'ts' => '1.0', 'channel_id' => 'C1', 'user' => 'U1' },
+        { 'text' => 'x' * 39, 'ts' => '2.0', 'channel_id' => 'C1', 'user' => 'U1' }
+      ]
+    }
+    search.raw_results_file.attach(
+      io: StringIO.new(JSON.generate(payload)),
+      filename: 'short.json',
+      content_type: 'application/json'
+    )
+
+    described_class.perform_now(search.id, model_id: Llm::SlackMomentsExtractor.stronger_model_id)
+
+    consultation = OgConsultation.order(:id).last
+    expect(consultation.model_id).to eq(Llm::SlackMomentsExtractor.stronger_model_id)
+    expect(search.reload.extraction_status).to eq('completed')
+    expect(search.extraction_error).to include('minimum length')
+  end
 end

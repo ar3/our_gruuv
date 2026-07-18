@@ -383,6 +383,7 @@ Rails.application.routes.draw do
           get :download_raw_results
           post :extract
           post :re_extract
+          post :re_extract_with_stronger_model
         end
       end
       
