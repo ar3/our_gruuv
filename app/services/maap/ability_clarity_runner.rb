@@ -26,8 +26,9 @@ module Maap
       MD
 
       model_id = ENV.fetch('MAAP_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id }
+      purpose = OgConsultations::Kinds.fetch(@consultation.kind).llm_purpose
       llm = Llm::Client.call(
-        purpose: 'ability_clarity',
+        purpose: purpose,
         model_id: model_id,
         system_instructions: Maap::Prompts::ABILITY_CLARITY_AGENT,
         user_prompt: "#{user_markdown}#{footer}",

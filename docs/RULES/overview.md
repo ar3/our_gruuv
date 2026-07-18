@@ -16,6 +16,7 @@ This document provides a comprehensive overview of all rules and conventions for
 | **Project Workflow** | [project-workflow.md](./project-workflow.md) | Git, deployment, and team collaboration processes |
 | **Context Management** | [context-management.md](./context-management.md) | OKR3 framework and vision document handling |
 | **Prompt versioning** | [prompt-versioning.md](./prompt-versioning.md) | LLM prompt `major.date.minor` version strings |
+| **LLM consultations** | [../llm-consultations.md](../llm-consultations.md) | `LlmInvocation` / `OgConsultation` / kind results + registry |
 
 ## Agent Behavior Quick Start
 

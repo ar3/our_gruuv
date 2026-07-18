@@ -71,5 +71,63 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
       expect(response.body).to include('2 completed Consult OG consultations')
       expect(response.body).to include('Which is valued at $2.00')
     end
+
+    it 'counts completed billable consultations across mixed kinds' do
+      teammate = create(:company_teammate, :assigned_employee, organization: organization)
+      ability = create(:ability, company: organization)
+      assignment = create(:assignment, company: organization)
+      transcript = create(:possible_observation_transcript, organization: organization)
+      slack_search = create(:possible_observation_slack_search, organization: organization)
+      completed_at = Time.current
+
+      create_ability_clarity_consultation!(
+        ability: ability,
+        status: 'completed',
+        triggered_by_teammate: teammate,
+        completed_at: completed_at
+      )
+      create_assignment_clarity_consultation!(
+        assignment: assignment,
+        status: 'completed',
+        triggered_by_teammate: teammate,
+        completed_at: completed_at
+      )
+      create_ogo_search_consultation!(
+        subject: transcript,
+        kind: OgConsultation::KIND_OGO_SEARCH_TRANSCRIPT,
+        organization: organization,
+        status: 'completed',
+        triggered_by_teammate: teammate,
+        completed_at: completed_at,
+        items_count: 2
+      )
+      create_ogo_search_consultation!(
+        subject: slack_search,
+        kind: OgConsultation::KIND_OGO_SEARCH_SLACK,
+        organization: organization,
+        status: 'completed',
+        triggered_by_teammate: teammate,
+        completed_at: completed_at,
+        items_count: 1
+      )
+      create_ability_clarity_consultation!(
+        ability: ability,
+        status: 'failed',
+        triggered_by_teammate: teammate,
+        completed_at: completed_at
+      )
+      create_ability_clarity_consultation!(
+        ability: ability,
+        status: 'completed',
+        billable: false,
+        triggered_by_teammate: teammate,
+        completed_at: completed_at
+      )
+
+      get organization_value_billing_path(organization, timeframe: 'year')
+
+      expect(response.body).to include('4 completed Consult OG consultations')
+      expect(response.body).to include('Which is valued at $4.00')
+    end
   end
 end

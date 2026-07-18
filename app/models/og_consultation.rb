@@ -32,7 +32,7 @@ class OgConsultation < ApplicationRecord
   has_one :teammate_growth_result, dependent: :destroy
   has_one :ogo_search_result, dependent: :destroy
 
-  validates :kind, presence: true, inclusion: { in: KINDS }
+  validates :kind, presence: true, inclusion: { in: ->(_) { OgConsultations::Kinds.kinds } }
   validates :status, presence: true, inclusion: { in: STATUSES }
   validates :units_total, :units_completed,
             numericality: { only_integer: true, greater_than_or_equal_to: 0 }

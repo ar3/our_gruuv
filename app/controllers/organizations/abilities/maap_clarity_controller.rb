@@ -15,20 +15,21 @@ module Organizations
 
       def run
         authorize @ability, :run_clarity?
+        entry = OgConsultations::Kinds.fetch(OgConsultation::KIND_ABILITY_CLARITY)
         consultation = OgConsultation.create!(
-          kind: OgConsultation::KIND_ABILITY_CLARITY,
+          kind: entry.kind,
           subject: @ability,
           organization_id: @ability.company_id,
           triggered_by_teammate: current_company_teammate,
           status: 'pending',
-          billable: true,
+          billable: entry.billable,
           prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
           units_total: 1,
           units_completed: 0
         )
-        result = AbilityClarityResult.create!(og_consultation: consultation)
+        result = entry.result_class.create!(og_consultation: consultation)
         consultation.update!(result: result)
-        AbilityClarityJob.perform_later(@ability.id, consultation.id)
+        entry.job_class.perform_later(@ability.id, consultation.id)
         redirect_to maap_clarity_organization_ability_path(@organization, @ability),
                     notice: 'Consult OG started. This page will update when processing finishes.'
       end

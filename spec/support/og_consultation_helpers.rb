@@ -98,6 +98,31 @@ module OgConsultationSpecHelpers
     consultation.update!(result: result)
     consultation
   end
+
+  def create_ogo_search_consultation!(
+    subject:,
+    kind:,
+    organization:,
+    status: 'pending',
+    items_count: 0,
+    units_total: 1,
+    **attrs
+  )
+    consultation = OgConsultation.create!(
+      {
+        kind: kind,
+        subject: subject,
+        organization_id: organization.id,
+        status: status,
+        billable: true,
+        units_total: units_total,
+        units_completed: status == 'completed' ? units_total : 0
+      }.merge(attrs.slice(*CONSULTATION_ATTRS))
+    )
+    result = OgoSearchResult.create!(og_consultation: consultation, items_count: items_count)
+    consultation.update!(result: result)
+    consultation
+  end
 end
 
 RSpec.configure do |config|

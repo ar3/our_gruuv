@@ -9,6 +9,7 @@ class AbilityClarityJob < ApplicationJob
     return if ability.nil? || consultation.nil?
 
     consultation.mark_processing!
-    Maap::AbilityClarityRunner.call(ability: ability, og_consultation: consultation)
+    runner = OgConsultations::Kinds.runner_class_for(consultation.kind)
+    runner.call(ability: ability, og_consultation: consultation)
   end
 end

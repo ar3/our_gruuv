@@ -52,13 +52,13 @@ module OgConsultations
         organization_id: @organization_id,
         triggered_by_teammate_id: @triggered_by_teammate_id,
         status: 'pending',
-        billable: true,
+        billable: OgConsultations::Kinds.fetch(@kind).billable,
         units_total: @units_total,
         units_completed: 0,
         model_id: @model_id,
         prompt_version: @prompt_version
       )
-      result = OgoSearchResult.create!(
+      result = OgConsultations::Kinds.result_class_for(@kind).create!(
         og_consultation: consultation,
         items_count: 0,
         extraction_version: @extraction_version
