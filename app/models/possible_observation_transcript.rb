@@ -16,6 +16,7 @@ class PossibleObservationTranscript < ApplicationRecord
   has_many :feedback_requests, dependent: :restrict_with_exception
 
   has_one_attached :transcript_file
+  has_many :og_consultations, as: :subject, dependent: :nullify
 
   validates :display_name, presence: true, length: { maximum: 255 }
   validates :extraction_status, presence: true, inclusion: { in: %w[pending processing completed failed] }

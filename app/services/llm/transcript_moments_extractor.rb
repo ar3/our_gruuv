@@ -9,6 +9,9 @@ module Llm
     #   Llm::BedrockModelCatalog.print_suggestions
     #   Llm::BedrockModelCatalog.suggested_model_id
     HAIKU_45_FOUNDATION_SUFFIX = 'anthropic.claude-haiku-4-5-20251001-v1:0'
+    # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
+    # Ask before bumping major; otherwise set date to today and increment minor.
+    PROMPT_VERSION = '1.20260718.0'
 
     def self.default_model_id
       region = RubyLLM.config.bedrock_region.presence || ENV['AWS_REGION'].presence || 'us-east-1'
@@ -19,6 +22,10 @@ module Llm
           region.to_s.split('-').first.presence || 'us'
         end
       "#{prefix}.#{HAIKU_45_FOUNDATION_SUFFIX}"
+    end
+
+    def self.model_id
+      ENV.fetch('TRANSCRIPT_BEDROCK_MODEL_ID') { default_model_id }
     end
 
     def self.call(chunk_text:, organization_id: nil, parent: nil, triggered_by_teammate_id: nil)
@@ -43,7 +50,7 @@ module Llm
 
       # Bedrock foundation model and inference-profile IDs (e.g. us.anthropic...) are often
       # absent from RubyLLM's bundled registry — skip registry lookup and pass the id through.
-      model_id = ENV.fetch('TRANSCRIPT_BEDROCK_MODEL_ID') { self.class.default_model_id }
+      model_id = self.class.model_id
       llm = Llm::Client.call(
         purpose: 'transcript_chunk',
         model_id: model_id,
@@ -51,7 +58,8 @@ module Llm
         user_prompt: user_prompt,
         organization_id: @organization_id,
         parent: @parent,
-        triggered_by_teammate_id: @triggered_by_teammate_id
+        triggered_by_teammate_id: @triggered_by_teammate_id,
+        prompt_version: PROMPT_VERSION
       )
       parse_items(llm.content.to_s)
     rescue StandardError => e

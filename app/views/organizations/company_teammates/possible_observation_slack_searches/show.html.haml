@@ -27,7 +27,7 @@
                 class: "btn btn-primary",
                 data: { turbo: false } do
       %i.bi.bi-stars.me-1
-      = @search.extraction_status == "completed" ? "Re-find OGO candidates" : "Find OGO candidates"
+      = @search.extraction_status == "completed" ? "Consult OG again to find potential OGOs" : "Consult OG to find potential OGOs"
   - if policy(@search).destroy?
     = button_to organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search),
                 method: :delete,
@@ -269,7 +269,7 @@
     = render "raw_messages", messages: @messages, search: @search
     %p.mt-3.mb-0.text-muted
       When ready, use
-      %strong Find OGO candidates
+      %strong Consult OG to find potential OGOs
       to extract noteworthy moments from these messages.
 
 - if %w[pending processing].include?(@search.search_status)

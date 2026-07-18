@@ -5,16 +5,22 @@ module PossibleObservationSlackSearches
   class MergeAndResolveExtractionsService
     FIRST_PERSON_OWNERSHIP = /\b(i|i'm|i've|i'd|i'll|me|my|mine)\b/i
 
-    def self.call(search:, raw_items_by_chunk:, context_catalog: nil)
-      new(search: search, raw_items_by_chunk: raw_items_by_chunk, context_catalog: context_catalog).call
+    def self.call(search:, raw_items_by_chunk:, context_catalog: nil, llm_parent: nil)
+      new(
+        search: search,
+        raw_items_by_chunk: raw_items_by_chunk,
+        context_catalog: context_catalog,
+        llm_parent: llm_parent
+      ).call
     end
 
-    def initialize(search:, raw_items_by_chunk:, context_catalog: nil)
+    def initialize(search:, raw_items_by_chunk:, context_catalog: nil, llm_parent: nil)
       @search = search
       @organization = search.organization
       @raw_items_by_chunk = raw_items_by_chunk
       @default_subject = search.subject_company_teammate
       @context_catalog = context_catalog || {}
+      @llm_parent = llm_parent
     end
 
     def call
@@ -219,7 +225,8 @@ module PossibleObservationSlackSearches
       resolution_cache[key] ||= Transcripts::TeammateResolverService.call(
         organization: @organization,
         label: label,
-        teammates: teammates
+        teammates: teammates,
+        parent: @llm_parent
       )
     end
   end

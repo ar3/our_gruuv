@@ -16,6 +16,7 @@ class PossibleObservationSlackSearch < ApplicationRecord
                                        inverse_of: :possible_observation_slack_searches_as_subject
 
   has_one_attached :raw_results_file
+  has_many :og_consultations, as: :subject, dependent: :nullify
 
   validates :display_name, presence: true, length: { maximum: 255 }
   validates :window_days, inclusion: { in: ALLOWED_WINDOW_DAYS }

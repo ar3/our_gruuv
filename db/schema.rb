@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_18_142947) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_18_145303) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1092,6 +1092,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_142947) do
     t.index ["company_id"], name: "index_og_scorecard_metric_thresholds_on_company_id"
   end
 
+  create_table "ogo_search_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.integer "items_count", default: 0, null: false
+    t.integer "extraction_version"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "index_ogo_search_results_on_og_consultation_id", unique: true
+  end
+
   create_table "one_on_one_links", force: :cascade do |t|
     t.bigint "teammate_id", null: false
     t.string "url"
@@ -1885,6 +1894,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_142947) do
   add_foreign_key "observees", "observations"
   add_foreign_key "observees", "teammates"
   add_foreign_key "og_scorecard_metric_thresholds", "organizations", column: "company_id"
+  add_foreign_key "ogo_search_results", "og_consultations"
   add_foreign_key "one_on_one_links", "teammates"
   add_foreign_key "organizations", "position_eligibility_requirements", column: "minor_1_position_eligibility_requirement_id"
   add_foreign_key "organizations", "position_eligibility_requirements", column: "minor_2_position_eligibility_requirement_id"

@@ -107,7 +107,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       expect(response.body).to include("Open in Slack")
       expect(response.body).to include("Showing 1 of 1 messages")
       expect(response.body).to include("Download")
-      expect(response.body).to include("Find OGO candidates")
+      expect(response.body).to include("Consult OG to find potential OGOs")
     end
   end
 

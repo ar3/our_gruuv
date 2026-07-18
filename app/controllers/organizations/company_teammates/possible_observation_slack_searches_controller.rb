@@ -106,7 +106,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
     @search.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
     PossibleObservationSlackSearchExtractionJob.perform_later(@search.id)
     redirect_to organization_company_teammate_possible_observation_slack_search_path(organization, @teammate, @search),
-                notice: "Finding noteworthy OGO candidates in the background."
+                notice: "Consult OG started — finding potential OGOs in the background."
   end
 
   def re_extract
@@ -114,7 +114,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
     @search.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
     PossibleObservationSlackSearchExtractionJob.perform_later(@search.id)
     redirect_to organization_company_teammate_possible_observation_slack_search_path(organization, @teammate, @search),
-                notice: "Re-extraction started."
+                notice: "Consult OG started again — finding potential OGOs in the background."
   end
 
   def search_status

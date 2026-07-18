@@ -5,6 +5,9 @@ module Llm
   # Default: Claude Sonnet 4.5 via Bedrock regional inference profile (override with SLACK_SEARCH_BEDROCK_MODEL_ID).
   class SlackMomentsExtractor
     SONNET_45_FOUNDATION_SUFFIX = "anthropic.claude-sonnet-4-5-20250929-v1:0"
+    # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
+    # Ask before bumping major; otherwise set date to today and increment minor.
+    PROMPT_VERSION = "1.20260718.0"
     RATING_WORDS = {
       "strongly_agree" => "Exceptional",
       "agree" => "Solid",
@@ -27,6 +30,10 @@ module Llm
           region.to_s.split("-").first.presence || "us"
         end
       "#{prefix}.#{SONNET_45_FOUNDATION_SUFFIX}"
+    end
+
+    def self.model_id
+      ENV.fetch("SLACK_SEARCH_BEDROCK_MODEL_ID") { default_model_id }
     end
 
     def self.call(chunk_text:, subject_name:, context_text: nil, context_catalog: nil, organization_id: nil, parent: nil, triggered_by_teammate_id: nil)
@@ -54,7 +61,7 @@ module Llm
     def call
       return stub_response unless bedrock_configured?
 
-      model_id = ENV.fetch("SLACK_SEARCH_BEDROCK_MODEL_ID") { self.class.default_model_id }
+      model_id = self.class.model_id
       llm = Llm::Client.call(
         purpose: "slack_chunk",
         model_id: model_id,
@@ -62,7 +69,8 @@ module Llm
         user_prompt: user_prompt,
         organization_id: @organization_id,
         parent: @parent,
-        triggered_by_teammate_id: @triggered_by_teammate_id
+        triggered_by_teammate_id: @triggered_by_teammate_id,
+        prompt_version: PROMPT_VERSION
       )
       parse_items(llm.content.to_s)
     rescue StandardError => e

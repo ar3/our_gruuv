@@ -2,14 +2,15 @@
 
 module Transcripts
   class TeammateResolverService
-    def self.call(organization:, label:, teammates: nil)
-      new(organization: organization, label: label, teammates: teammates).call
+    def self.call(organization:, label:, teammates: nil, parent: nil)
+      new(organization: organization, label: label, teammates: teammates, parent: parent).call
     end
 
-    def initialize(organization:, label:, teammates:)
+    def initialize(organization:, label:, teammates:, parent: nil)
       @organization = organization
       @label = label.to_s.strip
       @teammates = teammates
+      @parent = parent
     end
 
     # Returns { company_teammate_id:, unknown: true/false }
@@ -77,7 +78,8 @@ module Transcripts
           Candidate teammates JSON:
           #{options.to_json}
         TXT
-        organization_id: @organization.id
+        organization_id: @organization.id,
+        parent: @parent
       )
       parsed = parse_llm_json(llm.content.to_s)
       return nil unless parsed.is_a?(Hash)

@@ -3,13 +3,14 @@
 module PossibleObservationTranscripts
   # Merges chunk-level raw items, dedupes, resolves speaker/recipient labels to teammate ids.
   class MergeAndResolveExtractionsService
-    def self.call(organization:, raw_items_by_chunk:)
-      new(organization: organization, raw_items_by_chunk: raw_items_by_chunk).call
+    def self.call(organization:, raw_items_by_chunk:, llm_parent: nil)
+      new(organization: organization, raw_items_by_chunk: raw_items_by_chunk, llm_parent: llm_parent).call
     end
 
-    def initialize(organization:, raw_items_by_chunk:)
+    def initialize(organization:, raw_items_by_chunk:, llm_parent: nil)
       @organization = organization
       @raw_items_by_chunk = raw_items_by_chunk
+      @llm_parent = llm_parent
     end
 
     def call
@@ -69,7 +70,8 @@ module PossibleObservationTranscripts
       resolution_cache[key] ||= Transcripts::TeammateResolverService.call(
         organization: @organization,
         label: label,
-        teammates: teammates
+        teammates: teammates,
+        parent: @llm_parent
       )
     end
   end

@@ -2,7 +2,9 @@
 
 module Maap
   module Prompts
-    MAAP_PROMPTS_VERSION = "2026-05-21".freeze
+    # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
+    # Ask before bumping major; otherwise set date to today and increment minor.
+    MAAP_PROMPTS_VERSION = "1.20260718.0".freeze
 
     PREAMBLE = <<~PROMPT.freeze
       You operate inside ourgruuv, a system built on the MAAP philosophy.
