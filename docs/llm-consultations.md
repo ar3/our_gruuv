@@ -11,12 +11,13 @@ Three layers separate **cost**, **billing**, and **typed product output**. New B
 | Typed result | Kind-specific tables | Display/parsed output for that kind (e.g. `AbilityClarityResult`, `OgoSearchResult`) |
 
 ```text
-Subject (Ability / Assignment / Transcript / …)
+Subject (Ability / Assignment / Transcript / Slack search batch / …)
   └── has_many OgConsultation (append-only; show UI uses latest for subject+kind)
         ├── belongs_to result (polymorphic → kind table)
         └── has_many LlmInvocation (parent)
 ```
 
+For Slack OGO search: `PossibleObservationSlackSearch` holds the raw fetch; each `PossibleObservationSlackSearchBatch` (≤500 filtered messages) is the consultation subject and owns review candidates.
 **Not billable consultations:** HR enrich/match and teammate resolve still go through `Llm::Client` (invocations only).
 
 ### Payloads

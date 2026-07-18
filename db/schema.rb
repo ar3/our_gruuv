@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_18_145303) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_18_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1317,6 +1317,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_145303) do
     t.index ["title_id"], name: "index_positions_on_title_id"
   end
 
+  create_table "possible_observation_slack_search_batches", force: :cascade do |t|
+    t.bigint "possible_observation_slack_search_id", null: false
+    t.integer "position", null: false
+    t.jsonb "message_keys", default: [], null: false
+    t.integer "messages_count", default: 0, null: false
+    t.string "oldest_ts"
+    t.string "newest_ts"
+    t.jsonb "extractions", default: {}, null: false
+    t.string "extraction_status", default: "ready", null: false
+    t.text "extraction_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["extraction_status"], name: "idx_on_extraction_status_9b48cbf891"
+    t.index ["possible_observation_slack_search_id", "position"], name: "idx_poss_obs_slack_search_batches_on_search_and_position", unique: true
+    t.index ["possible_observation_slack_search_id"], name: "idx_poss_obs_slack_search_batches_on_search_id"
+  end
+
   create_table "possible_observation_slack_searches", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.bigint "creator_company_teammate_id", null: false
@@ -1333,6 +1350,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_145303) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "messages_count", default: 0, null: false
+    t.integer "filtered_messages_count", default: 0, null: false
     t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_27e60c973a"
     t.index ["extraction_status"], name: "index_possible_observation_slack_searches_on_extraction_status"
     t.index ["organization_id"], name: "index_possible_observation_slack_searches_on_organization_id"
@@ -1914,6 +1932,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_145303) do
   add_foreign_key "positions", "position_eligibility_requirements"
   add_foreign_key "positions", "position_levels"
   add_foreign_key "positions", "titles"
+  add_foreign_key "possible_observation_slack_search_batches", "possible_observation_slack_searches"
   add_foreign_key "possible_observation_slack_searches", "organizations"
   add_foreign_key "possible_observation_slack_searches", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "possible_observation_slack_searches", "teammates", column: "subject_company_teammate_id"

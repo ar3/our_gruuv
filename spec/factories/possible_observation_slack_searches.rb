@@ -22,6 +22,7 @@ FactoryBot.define do
     trait :completed do
       search_status { "completed" }
       messages_count { 1 }
+      filtered_messages_count { 1 }
       raw_results do
         {
           "version" => 1,
@@ -46,7 +47,7 @@ FactoryBot.define do
               "user" => "UOBS",
               "username" => "alex",
               "ts" => "1710000000.000100",
-              "text" => "Pat did a great job on the launch.",
+              "text" => "Pat did a great job on the launch and crushed the timeline completely.",
               "permalink" => "https://example.slack.com/archives/C123/p1710000000000100"
             }
           ]
@@ -56,13 +57,15 @@ FactoryBot.define do
           filename: "slack_search_raw.json",
           content_type: "application/json"
         )
+        PossibleObservationSlackSearches::CreateMessageBatches.call(search: search)
       end
     end
 
     trait :extracted do
       search_status { "completed" }
-      extraction_status { "completed" }
+      extraction_status { "ready" }
       messages_count { 1 }
+      filtered_messages_count { 1 }
       after(:create) do |search|
         payload = {
           "version" => 1,
@@ -73,7 +76,7 @@ FactoryBot.define do
               "user" => "UOBS",
               "username" => "alex",
               "ts" => "1710000000.000100",
-              "text" => "Pat did a great job on the launch.",
+              "text" => "Pat did a great job on the launch and crushed the timeline completely.",
               "permalink" => "https://example.slack.com/archives/C123/p1710000000000100"
             }
           ]
@@ -83,7 +86,10 @@ FactoryBot.define do
           filename: "slack_search_raw.json",
           content_type: "application/json"
         )
-        search.update!(
+        PossibleObservationSlackSearches::CreateMessageBatches.call(search: search)
+        batch = search.message_batches.first
+        batch.update!(
+          extraction_status: "completed",
           extractions: {
             "version" => 1,
             "items" => [

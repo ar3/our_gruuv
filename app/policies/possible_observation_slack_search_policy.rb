@@ -37,18 +37,6 @@ class PossibleObservationSlackSearchPolicy < ApplicationPolicy
     show?
   end
 
-  def extract?
-    show? && record.search_status == "completed"
-  end
-
-  def re_extract?
-    extract?
-  end
-
-  def re_extract_with_stronger_model?
-    re_extract? && record.extraction_status == "completed"
-  end
-
   def extraction_status?
     show?
   end

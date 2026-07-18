@@ -31,7 +31,7 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
                             .for_subject(@teammate)
                             .where(organization: organization)
                             .recent_first
-                            .includes(creator_company_teammate: :person)
+                            .includes(:message_batches, creator_company_teammate: :person)
                             .limit(25)
     render :source_from_slack
   end

@@ -52,6 +52,7 @@ module PossibleObservationSlackSearches
       }
 
       search.mark_search_completed!(query: display_query, messages: messages, meta: meta)
+      # Batches are created inside mark_search_completed! (pre-filter + ≤500 slices).
       Result.new(success?: true, error: nil)
     rescue StandardError => e
       Rails.logger.error("PossibleObservationSlackSearches::RunSearchService error: #{e.message}")

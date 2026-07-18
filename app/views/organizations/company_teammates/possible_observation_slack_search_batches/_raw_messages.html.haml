@@ -1,7 +1,6 @@
--# Locals: messages, search, count_label (optional)
+-# Locals: messages, search
 - messages = local_assigns.fetch(:messages)
 - search = local_assigns.fetch(:search)
-- count_label = local_assigns.fetch(:count_label, search.messages_count)
 - preview_limit = 10
 - preview_messages = messages.first(preview_limit)
 
@@ -10,7 +9,7 @@
     .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
       %h5.mb-0
         Messages
-        %span.badge.text-bg-light.ms-1= count_label
+        %span.badge.text-bg-light.ms-1= search.messages_count
       - if search.raw_results_file.attached?
         = link_to download_raw_results_organization_company_teammate_possible_observation_slack_search_path(organization, @teammate, search),
                   class: "btn btn-sm btn-outline-secondary" do

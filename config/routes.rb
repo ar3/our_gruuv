@@ -376,14 +376,20 @@ Rails.application.routes.draw do
 
       resources :possible_observation_slack_searches,
                 controller: 'company_teammates/possible_observation_slack_searches',
-                only: [:create, :show, :update, :destroy] do
+                only: [:create, :show, :destroy] do
         member do
           get :search_status
-          get :extraction_status
           get :download_raw_results
-          post :extract
-          post :re_extract
-          post :re_extract_with_stronger_model
+        end
+        resources :batches,
+                  controller: 'company_teammates/possible_observation_slack_search_batches',
+                  only: [:show, :update] do
+          member do
+            get :extraction_status
+            post :extract
+            post :re_extract
+            post :re_extract_with_stronger_model
+          end
         end
       end
       

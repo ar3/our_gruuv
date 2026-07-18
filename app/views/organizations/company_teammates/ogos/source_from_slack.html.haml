@@ -76,7 +76,7 @@
         %table.table.table-hover.align-middle.mb-0
           %thead
             %tr
-              %th Search
+              %th Search / consultation
               %th Run by
               %th Status
               %th Messages
@@ -84,17 +84,36 @@
               %th
           %tbody
             - searches.each do |search|
+              - batches = search.message_batches.sort_by(&:position)
               %tr
-                %td= search.display_name
+                %td
+                  %strong= search.display_name
                 %td= search.creator_company_teammate&.person&.casual_name
                 %td
                   %span.badge.text-bg-secondary= search.search_status
-                %td= search.search_status == "completed" ? search.messages_count : "—"
+                %td
+                  - if search.search_status == "completed"
+                    = search.messages_count_summary
+                  - else
+                    —
                 %td.text-muted= l(search.created_at, format: :short)
                 %td.text-end
                   - if policy(search).show?
-                    = link_to "Open", organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), search), class: "btn btn-sm btn-outline-primary"
+                    = link_to "Search", organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), search), class: "btn btn-sm btn-outline-secondary"
                   - else
-                    %span.text-muted Open (creator only)
+                    %span.text-muted Creator only
+              - batches.each do |batch|
+                %tr.table-light
+                  %td.ps-4
+                    %i.bi.bi-diagram-3.me-1.text-muted
+                    = batch.display_label
+                  %td
+                  %td
+                    %span.badge.text-bg-secondary= batch.extraction_status
+                  %td= batch.messages_count
+                  %td
+                  %td.text-end
+                    - if policy(batch).show?
+                      = link_to "Open", organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), search, batch), class: "btn btn-sm btn-outline-primary"
     - else
       %p.mb-0.text-muted No Slack searches about #{@casual_name} yet.

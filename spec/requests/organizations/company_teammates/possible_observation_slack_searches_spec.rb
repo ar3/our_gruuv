@@ -32,7 +32,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
             "user" => "U1",
             "username" => "alex",
             "ts" => "1710000000.000100",
-            "text" => "Pat crushed the demo.",
+            "text" => "Pat crushed the demo and delivered an outstanding result for the team.",
             "permalink" => "https://example.slack.com/archives/C1/p1"
           }
         ],
@@ -63,7 +63,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         )
       end
 
-      it "stores full results on ActiveStorage when the job runs" do
+      it "stores full results and creates consultation batches when the job runs" do
         stub_successful_slack_search
 
         perform_enqueued_jobs do
@@ -74,8 +74,10 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         search = PossibleObservationSlackSearch.order(:id).last
         expect(search.reload.search_status).to eq("completed")
         expect(search.messages_count).to eq(1)
+        expect(search.filtered_messages_count).to eq(1)
         expect(search.raw_results_file).to be_attached
-        expect(search.raw_messages.first[:text]).to eq("Pat crushed the demo.")
+        expect(search.message_batches.count).to eq(1)
+        expect(search.raw_messages.first[:text]).to include("Pat crushed the demo")
       end
     end
 
@@ -100,14 +102,15 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       )
     end
 
-    it "renders raw hits with permalinks and find-candidates action" do
+    it "renders the search hub with consultation rows" do
       get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Pat did a great job on the launch.")
+      expect(response.body).to include("Consultations")
+      expect(response.body).to include("Consultation 1 of 1")
+      expect(response.body).to include("1 fetched · 1 for consultation")
+      expect(response.body).to include("Pat did a great job on the launch")
       expect(response.body).to include("Open in Slack")
-      expect(response.body).to include("Showing 1 of 1 messages")
-      expect(response.body).to include("Download")
-      expect(response.body).to include("Consult OG to find potential OGOs")
+      expect(response.body).not_to include("Consult OG to find potential OGOs")
     end
   end
 
@@ -131,135 +134,138 @@ RSpec.describe "Possible observation Slack searches", type: :request do
     end
   end
 
-  describe "POST extract" do
+  describe "batch extract and review" do
     let!(:search) do
       create(
         :possible_observation_slack_search,
         :completed,
         organization: organization,
         creator_company_teammate: teammate,
-        subject_company_teammate: subject,
-        extraction_status: "ready"
-      )
-    end
-
-    it "enqueues extraction and redirects" do
-      expect {
-        post extract_organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
-      }.to have_enqueued_job(PossibleObservationSlackSearchExtractionJob)
-
-      expect(search.reload.extraction_status).to eq("pending")
-      expect(response).to redirect_to(
-        organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
-      )
-    end
-  end
-
-  describe "review extracted candidates" do
-    let!(:search) do
-      create(
-        :possible_observation_slack_search,
-        :extracted,
-        organization: organization,
-        creator_company_teammate: teammate,
         subject_company_teammate: subject
       )
     end
+    let(:batch) { search.message_batches.first }
 
-    it "renders the review form" do
-      get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include("Review candidate OGOs")
-      expect(response.body).to include("Save candidates")
-      expect(response.body).to include("Observer (speaker)")
-      expect(response.body).to include(">Actions<")
-      expect(response.body).to include("Include this candidate")
-      expect(response.body).to include("data-slack-include")
-      expect(response.body).to include("Kudos")
-      expect(response.body).to include("Feedback")
-      expect(response.body).not_to include("Quick note")
-    end
-
-    it "shows the rating and linked object name as text above the generated rationale" do
-      assignment = create(:assignment, company: organization, title: "Own the launch")
-      item = search.extraction_items.first.to_h.merge(
-        "confidence" => 0.91,
-        "target_is_subject" => true,
-        "suggested_rateable_type" => "Assignment",
-        "suggested_rateable_id" => assignment.id,
-        "suggested_rateable_name" => assignment.title,
-        "suggested_rating" => "strongly_agree",
-        "association_reason" => "the message describes the assignment outcome",
-        "rating_reason" => "the result exceeded expectations",
-        "quote" => "OG is suggesting: Exceptional example of the Assignment, Own the launch."
-      )
-      search.replace_extraction_items!([item])
-
-      get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
-
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include("The OG Consultation AI Agent is suggesting:")
-      expect(response.body).to include("OG is suggesting: Exceptional example of the Assignment, Own the launch.")
-      expect(response.body).to include("Exceptional")
-      expect(response.body).to include("Own the launch")
-      expect(response.body).to include(
-        organization_teammate_assignment_path(organization, subject, assignment.id)
-      )
-      expect(response.body).not_to include("text-bg-info")
-    end
-
-    it "saves include/kind updates" do
-      item = search.extraction_items.first
-      patch organization_company_teammate_possible_observation_slack_search_path(organization, subject, search),
-            params: {
-              items: {
-                "0" => {
-                  id: item[:id],
-                  include: "0",
-                  kind: "feedback",
-                  quote: item[:quote],
-                  summary: item[:summary],
-                  short_quote: item[:short_quote],
-                  full_quote: item[:full_quote],
-                  speaker_label: item[:speaker_label],
-                  recipient_label: item[:recipient_label],
-                  responder_company_teammate_id: item[:responder_company_teammate_id],
-                  subject_company_teammate_id: item[:subject_company_teammate_id],
-                  channel_id: item[:channel_id],
-                  ts: item[:ts],
-                  permalink: item[:permalink],
-                  slack_user_id: item[:slack_user_id]
-                }
-              }
-            }
-
-      expect(response).to redirect_to(
-        organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
-      )
-      updated = search.reload.extraction_items.first
-      expect(updated[:include]).to eq(false)
-      expect(updated[:kind]).to eq("feedback")
-    end
-
-    context "when another OGO already points at the same Slack message" do
-      before do
-        trigger = create(
-          :observation_trigger,
-          trigger_source: "slack",
-          trigger_type: "ogo_source_search",
-          trigger_data: {
-            "channel_id" => "C123",
-            "message_ts" => "1710000000.000100"
-          }
+    it "enqueues extraction on the batch" do
+      expect {
+        post extract_organization_company_teammate_possible_observation_slack_search_batch_path(
+          organization, subject, search, batch
         )
-        create(:observation, company: organization, observer: person, observation_trigger: trigger)
+      }.to have_enqueued_job(PossibleObservationSlackSearchExtractionJob)
+
+      expect(batch.reload.extraction_status).to eq("pending")
+      expect(response).to redirect_to(
+        organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+      )
+    end
+
+    context "when extracted" do
+      let!(:search) do
+        create(
+          :possible_observation_slack_search,
+          :extracted,
+          organization: organization,
+          creator_company_teammate: teammate,
+          subject_company_teammate: subject
+        )
+      end
+      let(:batch) { search.message_batches.first }
+
+      it "renders the review form" do
+        get organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Review candidate OGOs")
+        expect(response.body).to include("Save candidates")
+        expect(response.body).to include("Observer (speaker)")
+        expect(response.body).to include(">Actions<")
+        expect(response.body).to include("Include this candidate")
+        expect(response.body).to include("data-slack-include")
+        expect(response.body).to include("Kudos")
+        expect(response.body).to include("Feedback")
+        expect(response.body).not_to include("Quick note")
       end
 
-      it "soft-warns without blocking review" do
-        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+      it "shows the rating and linked object name as text above the generated rationale" do
+        assignment = create(:assignment, company: organization, title: "Own the launch")
+        item = batch.extraction_items.first.to_h.merge(
+          "confidence" => 0.91,
+          "target_is_subject" => true,
+          "suggested_rateable_type" => "Assignment",
+          "suggested_rateable_id" => assignment.id,
+          "suggested_rateable_name" => assignment.title,
+          "suggested_rating" => "strongly_agree",
+          "association_reason" => "the message describes the assignment outcome",
+          "rating_reason" => "the result exceeded expectations",
+          "quote" => "OG is suggesting: Exceptional example of the Assignment, Own the launch."
+        )
+        batch.replace_extraction_items!([item])
+
+        get organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("Already linked")
-        expect(response.body).to include("Save candidates")
+        expect(response.body).to include("The OG Consultation AI Agent is suggesting:")
+        expect(response.body).to include("OG is suggesting: Exceptional example of the Assignment, Own the launch.")
+        expect(response.body).to include("Exceptional")
+        expect(response.body).to include("Own the launch")
+        expect(response.body).to include(
+          organization_teammate_assignment_path(organization, subject, assignment.id)
+        )
+        expect(response.body).not_to include("text-bg-info")
+      end
+
+      it "saves include/kind updates" do
+        item = batch.extraction_items.first
+        patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+              params: {
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    include: "0",
+                    kind: "feedback",
+                    quote: item[:quote],
+                    summary: item[:summary],
+                    short_quote: item[:short_quote],
+                    full_quote: item[:full_quote],
+                    speaker_label: item[:speaker_label],
+                    recipient_label: item[:recipient_label],
+                    responder_company_teammate_id: item[:responder_company_teammate_id],
+                    subject_company_teammate_id: item[:subject_company_teammate_id],
+                    channel_id: item[:channel_id],
+                    ts: item[:ts],
+                    permalink: item[:permalink],
+                    slack_user_id: item[:slack_user_id]
+                  }
+                }
+              }
+
+        expect(response).to redirect_to(
+          organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+        )
+        updated = batch.reload.extraction_items.first
+        expect(updated[:include]).to eq(false)
+        expect(updated[:kind]).to eq("feedback")
+      end
+
+      context "when another OGO already points at the same Slack message" do
+        before do
+          trigger = create(
+            :observation_trigger,
+            trigger_source: "slack",
+            trigger_type: "ogo_source_search",
+            trigger_data: {
+              "channel_id" => "C123",
+              "message_ts" => "1710000000.000100"
+            }
+          )
+          create(:observation, company: organization, observer: person, observation_trigger: trigger)
+        end
+
+        it "soft-warns without blocking review" do
+          get organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include("Already linked")
+          expect(response.body).to include("Save candidates")
+        end
       end
     end
   end
@@ -321,12 +327,13 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       )
     end
 
-    it "lists prior searches and the run form for the subject" do
+    it "lists prior searches with nested consultation rows" do
       get ogos_source_from_slack_organization_company_teammate_path(organization, subject)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Run a new search")
       expect(response.body).to include("Prior search about Pat")
-      expect(response.body).to include("Open")
+      expect(response.body).to include("Consultation 1 of 1")
+      expect(response.body).to include("1 fetched · 1 for consultation")
     end
   end
 end

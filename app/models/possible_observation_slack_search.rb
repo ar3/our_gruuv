@@ -16,6 +16,10 @@ class PossibleObservationSlackSearch < ApplicationRecord
                                        inverse_of: :possible_observation_slack_searches_as_subject
 
   has_one_attached :raw_results_file
+  has_many :message_batches, class_name: "PossibleObservationSlackSearchBatch",
+                             dependent: :destroy,
+                             inverse_of: :possible_observation_slack_search
+  # Legacy: older extractions used the search as OgConsultation subject. New runs use batches.
   has_many :og_consultations, as: :subject, dependent: :nullify
 
   validates :display_name, presence: true, length: { maximum: 255 }
@@ -24,6 +28,7 @@ class PossibleObservationSlackSearch < ApplicationRecord
   validates :extraction_status, presence: true, inclusion: { in: %w[ready pending processing completed failed] }
   validates :query, length: { maximum: 1000 }
   validates :messages_count, numericality: { greater_than_or_equal_to: 0 }
+  validates :filtered_messages_count, numericality: { greater_than_or_equal_to: 0 }
 
   scope :recent_first, -> { order(created_at: :desc) }
   scope :for_subject, ->(teammate) { where(subject_company_teammate_id: teammate.id) }
@@ -112,6 +117,13 @@ class PossibleObservationSlackSearch < ApplicationRecord
       search_status: "completed",
       search_error: nil
     )
+    PossibleObservationSlackSearches::CreateMessageBatches.call(search: self)
+  end
+
+  def messages_count_summary
+    return "—" unless search_status == "completed"
+
+    "#{messages_count} fetched · #{filtered_messages_count} for consultation"
   end
 
   def mark_search_failed!(message)
