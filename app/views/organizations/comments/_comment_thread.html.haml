@@ -3,9 +3,11 @@
 - organization = local_assigns[:organization]
 - depth = local_assigns[:depth] || 0
 - show_resolved = local_assigns.fetch(:show_resolved, false)
+- behavior = Comments::CommentableBehavior.for(comment)
 - can_edit = policy(comment).update?
-- can_resolve = policy(comment).resolve?
-- can_unresolve = policy(comment).unresolve?
+- can_destroy = policy(comment).destroy?
+- can_resolve = behavior.allows_resolve? && policy(comment).resolve?
+- can_unresolve = behavior.allows_resolve? && policy(comment).unresolve?
 
 .card.mb-3{class: "ms-#{depth * 3}"}
   .card-body
@@ -16,7 +18,7 @@
           %small.text-muted
             = time_ago_in_words(comment.created_at)
             ago
-          - if comment.resolved?
+          - if behavior.allows_resolve? && comment.resolved?
             %span.badge.bg-success.ms-2 Resolved
           - if comment.root_comment? && comment.slack_url.present?
             = link_to comment.slack_url, target: "_blank", class: "btn btn-sm btn-outline-primary ms-2", title: "View in Slack" do
@@ -25,10 +27,18 @@
       .d-flex.gap-2
         - if can_edit
           %button.btn.btn-sm.btn-outline-secondary{type: "button",
-              "data-bs-toggle" => "modal", 
+              "data-bs-toggle" => "modal",
               "data-bs-target" => "#editCommentModal#{comment.id}"}
             %i.bi.bi-pencil.me-1
             Edit
+        - if can_destroy
+          = button_to organization_comment_path(organization, comment, show_resolved: show_resolved),
+              method: :delete,
+              class: "btn btn-sm btn-outline-danger",
+              form: { style: "display: inline-block;" },
+              data: { turbo_confirm: "Delete this comment?" } do
+            %i.bi.bi-trash.me-1
+            Delete
         - if can_resolve && !comment.resolved?
           = button_to resolve_organization_comment_path(organization, comment, show_resolved: show_resolved),
               method: :patch,
@@ -44,14 +54,14 @@
               form: { style: "display: inline-block;" } do
             %i.bi.bi-x-circle.me-1
             Unresolve
-    
+
     .markdown-content.mb-3
       = render_markdown(comment.body)
-    
+
     / Reply Form
     - if policy(Comment.new(commentable: comment, organization: organization)).create?
       .reply-form.mt-3{style: "display: none;", id: "replyForm#{comment.id}"}
-        = form_with model: [organization, Comment.new], 
+        = form_with model: [organization, Comment.new],
             url: organization_comments_path(organization),
             local: true do |f|
           = f.hidden_field :commentable_type, value: 'Comment'
@@ -59,15 +69,15 @@
           .mb-2
             = f.text_area :body, class: "form-control", rows: 3, placeholder: "Write your reply here (markdown supported)"
           .d-flex.justify-content-end.gap-2
-            = button_tag "Cancel", type: "button", class: "btn btn-sm btn-outline-secondary", 
+            = button_tag "Cancel", type: "button", class: "btn btn-sm btn-outline-secondary",
                 onclick: "document.getElementById('replyForm#{comment.id}').style.display='none';"
             = f.submit "Post Reply", class: "btn btn-sm btn-primary"
-      
-      = link_to "#", class: "btn btn-sm btn-outline-primary", 
+
+      = link_to "#", class: "btn btn-sm btn-outline-primary",
           onclick: "document.getElementById('replyForm#{comment.id}').style.display='block'; this.style.display='none'; return false;" do
         %i.bi.bi-reply.me-1
         Reply
-    
+
     / Nested Comments
     - child_comments = comments_by_parent[comment.id] || []
     - if child_comments.any?
@@ -84,7 +94,7 @@
           %h5.modal-title Edit Comment
           %button.btn-close{type: "button", "data-bs-dismiss" => "modal"}
         .modal-body
-          = form_with model: [organization, comment], 
+          = form_with model: [organization, comment],
               url: organization_comment_path(organization, comment),
               method: :patch,
               local: true do |f|

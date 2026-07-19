@@ -49,6 +49,10 @@ FactoryBot.define do
       privacy_level { :observer_only }
     end
 
+    trait :published do
+      published_at { Time.current }
+    end
+
     trait :soft_deleted do
       deleted_at { Time.current }
     end

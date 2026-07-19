@@ -129,4 +129,77 @@ RSpec.describe "Organizations::Comments", type: :request do
       expect(response).to redirect_to(organization_comments_path(organization, commentable_type: 'Assignment', commentable_id: assignment.id))
     end
   end
+
+  describe "observation comments" do
+    let(:observer) { create(:person) }
+    let!(:observer_teammate) { create(:company_teammate, person: observer, organization: organization) }
+    let(:observee) { CompanyTeammate.find_by!(person: person, organization: organization) }
+    let(:observation) do
+      obs = build(:observation, :published, :observed_only, observer: observer, company: organization)
+      obs.observees = []
+      obs.observees.build(teammate: observee)
+      obs.save!
+      obs
+    end
+
+    it "creates a comment on a published observation" do
+      expect {
+        post organization_comments_path(organization), params: {
+          comment: {
+            body: 'Thanks for the context',
+            commentable_type: 'Observation',
+            commentable_id: observation.id
+          }
+        }
+      }.to change(Comment, :count).by(1)
+
+      expect(response).to redirect_to(organization_comments_path(organization, commentable_type: 'Observation', commentable_id: observation.id))
+      expect(Comment.last.commentable).to eq(observation)
+    end
+
+    it "does not enqueue MAAP Slack notification for observation comments" do
+      expect(Comments::PostNotificationJob).not_to receive(:perform_and_get_result)
+
+      post organization_comments_path(organization), params: {
+        comment: {
+          body: 'No Slack please',
+          commentable_type: 'Observation',
+          commentable_id: observation.id
+        }
+      }
+    end
+
+    it "rejects comments on draft observations" do
+      draft = build(:observation, observer: observer, company: organization, published_at: nil, story: 'Draft')
+      draft.observees = []
+      draft.observees.build(teammate: observee)
+      draft.save!(validate: false)
+
+      expect {
+        post organization_comments_path(organization), params: {
+          comment: {
+            body: 'Should fail',
+            commentable_type: 'Observation',
+            commentable_id: draft.id
+          }
+        }
+      }.not_to change(Comment, :count)
+    end
+
+    it "allows the creator to delete an observation comment" do
+      ogo_comment = create(:comment, organization: organization, creator: person, commentable: observation)
+
+      expect {
+        delete organization_comment_path(organization, ogo_comment)
+      }.to change(Comment, :count).by(-1)
+    end
+
+    it "shows comments entry point on the observation show page" do
+      create(:comment, organization: organization, creator: person, commentable: observation, body: 'Visible on show')
+
+      get organization_observation_path(organization, observation)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('View Comments')
+    end
+  end
 end

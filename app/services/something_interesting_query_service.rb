@@ -84,10 +84,54 @@ class SomethingInterestingQueryService
       assignments_updated.size +
       abilities_updated.size +
       observations_about_those_i_serve.count +
-      observations_about_me.count
+      observations_about_me.count +
+      observation_comments.size
+  end
+
+  # Comments on published OGOs where the viewer is the observer, an observee,
+  # or a prior commenter (and can still see the OGO). Own comments excluded.
+  def observation_comments
+    return [] unless teammate
+
+    Comment
+      .where(organization_id: company.id)
+      .where('comments.created_at > ?', since)
+      .where.not(creator_id: person.id)
+      .includes(:creator, :commentable)
+      .order(created_at: :desc)
+      .select { |comment| interesting_observation_comment?(comment) }
   end
 
   private
+
+  def interesting_observation_comment?(comment)
+    root = comment.root_commentable
+    return false unless root.is_a?(::Observation)
+    return false unless root.published? && !root.soft_deleted?
+    return false unless observation_comment_audience?(root)
+    return false unless observation_visible?(root)
+
+    true
+  end
+
+  def observation_comment_audience?(observation)
+    return true if observation.observer_id == person.id
+    return true if observation.observees.exists?(teammate_id: teammate.id)
+
+    viewer_commented_on_observation?(observation)
+  end
+
+  def viewer_commented_on_observation?(observation)
+    return true if Comment.exists?(commentable: observation, creator_id: person.id)
+
+    Comment.where(creator_id: person.id, organization_id: company.id).any? do |c|
+      c.root_commentable == observation
+    end
+  end
+
+  def observation_visible?(observation)
+    ObservationVisibilityQuery.new(person, company).visible_observations.where(id: observation.id).exists?
+  end
 
   def observations_about(teammate_ids)
     return Observation.none if teammate_ids.empty?

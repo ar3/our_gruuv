@@ -336,7 +336,7 @@ Rails.application.routes.draw do
     end
     
     # Comments management
-    resources :comments, module: :organizations, only: [:index, :show, :create, :update] do
+    resources :comments, module: :organizations, only: [:index, :show, :create, :update, :destroy] do
       member do
         patch :resolve
         patch :unresolve

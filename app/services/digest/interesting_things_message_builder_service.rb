@@ -90,6 +90,11 @@ module Digest
           title: 'Observations about you',
           label: 'observations about you',
           items: @query_service.observations_about_me.map { |o| observation_line(o) }
+        },
+        {
+          title: 'New comments on observations',
+          label: 'comments on observations you care about',
+          items: @query_service.observation_comments.map { |c| observation_comment_line(c) }
         }
       ]
     end
@@ -104,6 +109,15 @@ module Digest
 
     def observation_line(observation)
       record_line(observation.story, :organization_observation_url, observation)
+    end
+
+    def observation_comment_line(comment)
+      observation = comment.root_commentable
+      snippet = comment.body.to_s
+      snippet = "#{snippet[0, 60]}..." if snippet.length > 60
+      url = slack_app_url(:organization_observation_url, @organization, observation)
+      author = slack_escape(comment.creator.casual_name)
+      "<#{url}|#{author}: #{slack_escape(snippet)}>"
     end
 
     def record_line(label, url_helper, record)

@@ -99,6 +99,17 @@
 - else
   - quiet_categories << { title: 'Observations made about me', icon: 'bi-chat-heart', description: 'Published observations where you are an observee' }
 
+- if @observation_comments.any?
+  = render 'organizations/get_shit_done/interesting_observation_comments_section',
+           comments: @observation_comments,
+           title: 'New comments on observations',
+           icon: 'bi-chat-dots',
+           description: 'Comments on observations you wrote, received, or joined the conversation on',
+           collapse_id: 'observationCommentsSection',
+           summary: "#{pluralize(@observation_comments.size, 'comment')} on observations you care about"
+- else
+  - quiet_categories << { title: 'New comments on observations', icon: 'bi-chat-dots', description: 'Comments on observations you wrote, received, or joined the conversation on' }
+
 - if quiet_categories.any?
   .row.mt-5.pt-4
     .col-12

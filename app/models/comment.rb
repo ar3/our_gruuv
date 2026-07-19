@@ -70,6 +70,10 @@ class Comment < ApplicationRecord
     !commentable.is_a?(Comment)
   end
 
+  def commentable_behavior
+    Comments::CommentableBehavior.for(self)
+  end
+
   def slack_url
     return nil unless slack_message_id.present?
     

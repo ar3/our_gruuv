@@ -238,10 +238,52 @@ RSpec.describe SomethingInterestingQueryService do
         expect(service.observations_about_me).not_to include(observation)
       end
     end
+
+    describe '#observation_comments' do
+      it 'includes comments on observations where the viewer is an observee' do
+        observation = observation_about(viewer, observer: observer_person, privacy_level: :observed_only)
+        comment = create(:comment, organization: company, creator: observer_person, commentable: observation, body: 'Clarifying question')
+
+        expect(service.observation_comments).to include(comment)
+      end
+
+      it 'includes comments on observations the viewer authored' do
+        observation = observation_about(report, observer: viewer_person, privacy_level: :public_to_company)
+        commenter = create(:person)
+        create(:company_teammate, person: commenter, organization: company)
+        comment = create(:comment, organization: company, creator: commenter, commentable: observation)
+
+        expect(service.observation_comments).to include(comment)
+      end
+
+      it 'includes comments when the viewer previously commented' do
+        other = create(:company_teammate, organization: company)
+        observation = observation_about(other, observer: observer_person, privacy_level: :public_to_company)
+        create(:comment, organization: company, creator: viewer_person, commentable: observation, body: 'I was here')
+        later = create(:comment, organization: company, creator: observer_person, commentable: observation, body: 'Follow-up')
+
+        expect(service.observation_comments).to include(later)
+      end
+
+      it 'excludes the viewer\'s own comments' do
+        observation = observation_about(viewer, observer: observer_person, privacy_level: :observed_only)
+        comment = create(:comment, organization: company, creator: viewer_person, commentable: observation)
+
+        expect(service.observation_comments).not_to include(comment)
+      end
+
+      it 'excludes comments before the baseline' do
+        observation = observation_about(viewer, observer: observer_person, privacy_level: :observed_only)
+        comment = create(:comment, organization: company, creator: observer_person, commentable: observation)
+        comment.update_column(:created_at, 3.days.ago)
+
+        expect(service.observation_comments).not_to include(comment)
+      end
+    end
   end
 
   describe '#total_count' do
-    it 'sums all six sections' do
+    it 'sums all sections' do
       report = create(:company_teammate, organization: company)
       create(:employment_tenure, company_teammate: report, company: company, manager: viewer)
       create(:goal, owner: report, creator: report, company: company)

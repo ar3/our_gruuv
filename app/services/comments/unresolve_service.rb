@@ -5,17 +5,19 @@ class Comments::UnresolveService
 
   def initialize(comment:)
     @comment = comment
+    @behavior = Comments::CommentableBehavior.for(comment)
   end
 
   def call
+    return Result.err('Unresolve is not available for this comment') unless @behavior.allows_resolve?
+
     ApplicationRecord.transaction do
       @comment.unresolve!
-      
-      # Update Slack notification if this is a root comment
+
       if @comment.root_comment?
-        Comments::PostNotificationJob.perform_and_get_result(@comment.id)
+        @behavior.notify_after_update(@comment)
       end
-      
+
       Result.ok(@comment)
     end
   rescue => e

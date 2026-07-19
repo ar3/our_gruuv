@@ -34,6 +34,7 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
     @abilities_updated = query_service.abilities_updated
     @observations_about_those_i_serve = query_service.observations_about_those_i_serve
     @observations_about_me = query_service.observations_about_me
+    @observation_comments = query_service.observation_comments
 
     # The tab pill is always "since last visit", independent of the since filter on the page.
     @something_interesting_count =

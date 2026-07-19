@@ -185,6 +185,66 @@ RSpec.describe CommentPolicy, type: :policy do
     end
   end
 
+  describe 'observation comments' do
+    let(:observer) { create(:person) }
+    let!(:observer_teammate) { create(:company_teammate, person: observer, organization: organization) }
+    let(:observee_person) { person }
+    let(:observation) do
+      obs = build(:observation, :published, :observed_only, observer: observer, company: organization)
+      obs.observees = []
+      obs.observees.build(teammate: teammate)
+      obs.save!
+      obs
+    end
+    let(:ogo_comment) { create(:comment, organization: organization, creator: observer, commentable: observation) }
+    let(:pundit_user_observer) { OpenStruct.new(user: observer_teammate, impersonating_teammate: nil) }
+
+    describe 'create?' do
+      it 'allows creation on a published observation the user can see' do
+        new_comment = Comment.new(commentable: observation, organization: organization)
+        policy = CommentPolicy.new(pundit_user, new_comment)
+        expect(policy.create?).to be true
+      end
+
+      it 'denies creation on a draft observation' do
+        draft = build(:observation, observer: observer, company: organization, published_at: nil)
+        draft.observees = []
+        draft.observees.build(teammate: teammate)
+        draft.save!(validate: false)
+        new_comment = Comment.new(commentable: draft, organization: organization)
+        policy = CommentPolicy.new(pundit_user_observer, new_comment)
+        expect(policy.create?).to be false
+      end
+    end
+
+    describe 'resolve?' do
+      it 'denies resolve for observation comments' do
+        policy = CommentPolicy.new(pundit_user_observer, ogo_comment)
+        expect(policy.resolve?).to be false
+      end
+    end
+
+    describe 'destroy?' do
+      it 'allows the creator to destroy' do
+        policy = CommentPolicy.new(pundit_user_observer, ogo_comment)
+        expect(policy.destroy?).to be true
+      end
+
+      it 'allows an employment manager to destroy' do
+        manager_person = create(:person)
+        manager_teammate = create(:company_teammate, :employment_manager, person: manager_person, organization: organization)
+        pundit_user_manager = OpenStruct.new(user: manager_teammate, impersonating_teammate: nil)
+        policy = CommentPolicy.new(pundit_user_manager, ogo_comment)
+        expect(policy.destroy?).to be true
+      end
+
+      it 'denies destroy for other viewers' do
+        policy = CommentPolicy.new(pundit_user, ogo_comment)
+        expect(policy.destroy?).to be false
+      end
+    end
+  end
+
   describe 'scope' do
     let!(:comment1) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment) }
     let!(:comment2) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment) }

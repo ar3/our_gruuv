@@ -3,11 +3,14 @@ class Comments::PostNotificationJob < ApplicationJob
 
   def perform(comment_id)
     comment = Comment.find(comment_id)
-    
+
+    # Observation (and other non-MAAP) comments must not post to the MAAP comment channel
+    return unless Comments::CommentableBehavior.for(comment).slack_channel_notify?
+
     # Find the root comment (if this is a nested comment, find its root)
     root_comment = comment.root_comment? ? comment : find_root_comment(comment)
     return unless root_comment
-    
+
     company = root_comment.organization.root_company || root_comment.organization
     return unless company.maap_object_comment_channel_id.present?
     

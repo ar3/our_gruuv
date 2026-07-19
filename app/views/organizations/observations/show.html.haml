@@ -98,6 +98,9 @@
           Story
       .card-body
         .markdown-content= render_markdown(@observation.story)
+
+    - if @observation.published? && !@observation.soft_deleted?
+      = render 'shared/comment_summary', commentable: @observation, organization: @organization
         
     - if @observation.decorate.gifs_html.present?
       .card.mb-4{ role: "region", "aria-labelledby": "observation-gifs" }

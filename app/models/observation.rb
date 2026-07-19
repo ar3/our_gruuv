@@ -18,6 +18,7 @@ class Observation < ApplicationRecord
   has_many :assignments, through: :observation_ratings, source: :rateable, source_type: 'Assignment'
   has_many :aspirations, through: :observation_ratings, source: :rateable, source_type: 'Aspiration'
   has_many :notifications, as: :notifiable, dependent: :destroy
+  has_many :comments, as: :commentable, dependent: :destroy
 
   # Provider-specific source runs (Slack / Zoom / Meet / …) must NOT get FKs here.
   # Attribute excavation via ObservationTrigger — see docs/ogo-creation-attribution.md

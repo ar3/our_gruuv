@@ -706,6 +706,9 @@ module NavigationHelper
       [commentable.display_name, organization_position_path(organization, commentable)]
     when Title
       [commentable.display_name, organization_title_path(organization, commentable)]
+    when ::Observation
+      label = commentable.story.to_s.truncate(60).presence || "Observation ##{commentable.id}"
+      [label, organization_observation_path(organization, commentable)]
     else
       [nil, nil]
     end

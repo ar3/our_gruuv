@@ -15,7 +15,11 @@ FactoryBot.define do
     trait :on_aspiration do
       association :commentable, factory: :aspiration
     end
-    
+
+    trait :on_observation do
+      commentable { association :observation, :published, company: organization }
+    end
+
     trait :resolved do
       resolved_at { Time.current }
     end
