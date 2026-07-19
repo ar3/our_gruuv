@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_18_190000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_18_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1027,9 +1027,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_190000) do
     t.bigint "feedback_request_question_id"
     t.bigint "goal_id"
     t.datetime "gsd_notification_skipped_at"
+    t.bigint "creator_company_teammate_id"
     t.index ["company_id", "goal_id"], name: "index_observations_on_company_id_and_goal_id"
     t.index ["company_id"], name: "index_observations_on_company_id"
     t.index ["created_as_type"], name: "index_observations_on_created_as_type"
+    t.index ["creator_company_teammate_id"], name: "index_observations_on_creator_company_teammate_id"
     t.index ["custom_slug"], name: "index_observations_on_custom_slug", unique: true
     t.index ["deleted_at"], name: "index_observations_on_deleted_at"
     t.index ["feedback_request_question_id"], name: "index_observations_on_feedback_request_question_id"
@@ -1910,6 +1912,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_190000) do
   add_foreign_key "observations", "observation_triggers"
   add_foreign_key "observations", "organizations", column: "company_id"
   add_foreign_key "observations", "people", column: "observer_id"
+  add_foreign_key "observations", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "observees", "observations"
   add_foreign_key "observees", "teammates"
   add_foreign_key "og_scorecard_metric_thresholds", "organizations", column: "company_id"

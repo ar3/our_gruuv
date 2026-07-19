@@ -58,13 +58,38 @@
 
     / Main content sections
     - if @observation.observation_trigger.present?
+      - trigger = @observation.observation_trigger
+      - slack_source = @observation.slack_sourced? || trigger.ogo_source_search?
+      - creator_name = @observation.creator_company_teammate&.person&.casual_name
+      - observee_teammate = @observation.source_slack_search&.subject_company_teammate || @observation.observed_teammates.first
+      - observee_name = observee_teammate&.person&.casual_name
+      - slack_permalink = trigger.slack_message_permalink
       .card.mb-4{ role: "region", "aria-labelledby": "observation-trigger" }
         .card-body
-          .d-flex.align-items-center
-            %i.bi.bi-info-circle.text-info.me-2
-            %span.me-2
-              Story was triggered from #{@observation.observation_trigger.display_text}
-            %i.bi.bi-question-circle.text-muted{"data-bs-toggle" => "tooltip", "data-bs-html" => "true", "data-bs-title" => render_markdown(@observation.observation_trigger.formatted_trigger_data)}
+          .d-flex.align-items-start
+            %i.bi.bi-info-circle.text-info.me-2.mt-1
+            %div
+              .d-flex.align-items-center.flex-wrap.gap-1
+                %span
+                  Story was triggered from #{trigger.display_text}
+                %i.bi.bi-question-circle.text-muted{"data-bs-toggle" => "tooltip", "data-bs-html" => "true", "data-bs-title" => trigger.tooltip_trigger_data_html}
+              - if slack_source && creator_name.present? && observee_name.present?
+                %p.mb-2.mt-2.small.text-muted
+                  #{creator_name} did an OG consultation to find potentially missing observations from messages from and about #{observee_name}. This is one of those potentially missing OGOs. Feel free to ignore this, update it and publish it, or publish it as-is.
+              - if slack_source
+                .d-flex.flex-wrap.gap-3.small
+                  - if slack_permalink.present?
+                    = link_to slack_permalink, target: "_blank", rel: "noopener", class: "text-decoration-none" do
+                      %i.bi.bi-slack.me-1
+                      Open Slack message
+                  - if observee_teammate.present?
+                    = link_to ogos_source_from_slack_organization_company_teammate_path(@organization, observee_teammate), class: "text-decoration-none" do
+                      %i.bi.bi-search.me-1
+                      #{observee_name}'s Source from Slack
+                  - if @observation.source_slack_search.present?
+                    = link_to organization_company_teammate_possible_observation_slack_search_path(@organization, @observation.source_slack_search.subject_company_teammate, @observation.source_slack_search), class: "text-decoration-none" do
+                      %i.bi.bi-stars.me-1
+                      Open this OG consultation
     
     .card.mb-4{ role: "region", "aria-labelledby": "observation-story" }
       .card-header
@@ -160,6 +185,12 @@
                 = link_to organization_feedback_request_path(@organization, @observation.feedback_request_question.feedback_request), class: 'text-decoration-none' do
                   Feedback Request
                   %i.bi.bi-box-arrow-up-right.ms-1
+            - if @observation.slack_sourced?
+              %p
+                %strong Created from:
+                Slack Find-Missing-OGOs
+                - if @observation.creator_company_teammate.present?
+                  · excavated by #{@observation.creator_company_teammate.person.casual_name}
 
     - if @observation.observed_teammates.any?
       .card.mb-4{ role: "region", "aria-labelledby": "observation-observees" }
@@ -442,6 +473,7 @@
                   = parts.join(', ')
       
       - if @observation.observation_trigger.present?
+        - trigger = @observation.observation_trigger
         .card.mb-4
           .card-header
             %h6.mb-0
@@ -449,12 +481,21 @@
               Observation Trigger
           .card-body
             %p.mb-2
-              %strong= @observation.observation_trigger.display_text
-            - if @observation.observation_trigger.trigger_data.present?
-              %p.mb-2
-                %small.text-muted
-                  = render_markdown(@observation.observation_trigger.formatted_trigger_data)
-            - other_trigger_observations = @observation.observation_trigger.observations.where.not(id: @observation.id)
+              %strong= trigger.display_text
+              %i.bi.bi-question-circle.text-muted.ms-1{"data-bs-toggle" => "tooltip", "data-bs-html" => "true", "data-bs-title" => trigger.tooltip_trigger_data_html}
+            - if trigger.ogo_source_search?
+              - if trigger.slack_message_permalink.present?
+                %p.mb-2.small
+                  = link_to trigger.slack_message_permalink, target: "_blank", rel: "noopener", class: "text-decoration-none" do
+                    %i.bi.bi-slack.me-1
+                    Open Slack message
+              - source_teammate = @observation.source_slack_search&.subject_company_teammate || @observation.observed_teammates.first
+              - if source_teammate.present?
+                %p.mb-2.small
+                  = link_to ogos_source_from_slack_organization_company_teammate_path(@organization, source_teammate), class: "text-decoration-none" do
+                    %i.bi.bi-search.me-1
+                    #{source_teammate.person.casual_name}'s Source from Slack
+            - other_trigger_observations = trigger.observations.where.not(id: @observation.id)
             - if other_trigger_observations.any?
               %hr.my-2
               %p.mb-2

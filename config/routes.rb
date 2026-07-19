@@ -389,6 +389,7 @@ Rails.application.routes.draw do
             post :extract
             post :re_extract
             post :re_extract_with_stronger_model
+            match :create_draft_observations, via: %i[post patch]
           end
         end
       end

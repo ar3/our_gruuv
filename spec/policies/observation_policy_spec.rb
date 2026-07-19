@@ -335,6 +335,42 @@ RSpec.describe ObservationPolicy, type: :policy do
       policy = ObservationPolicy.new(pundit_user_observee, observation)
       expect(policy.update?).to be false
     end
+
+    context 'when draft with a distinct creator' do
+      let(:creator_person) { create(:person) }
+      let(:creator_teammate) { create(:company_teammate, person: creator_person, organization: company) }
+      let(:draft) do
+        build(
+          :observation,
+          observer: observer,
+          company: company,
+          published_at: nil,
+          creator_company_teammate: creator_teammate
+        ).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+      end
+      let(:pundit_user_creator) { OpenStruct.new(user: creator_teammate, impersonating_teammate: nil) }
+
+      before do
+        create(:employment_tenure, teammate: creator_teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+        creator_teammate.update!(first_employed_at: 1.year.ago)
+      end
+
+      it 'allows the excavating creator to edit the draft' do
+        policy = ObservationPolicy.new(pundit_user_creator, draft)
+        expect(policy.show?).to be true
+        expect(policy.update?).to be true
+      end
+
+      it 'denies the creator after publish' do
+        draft.publish!
+        policy = ObservationPolicy.new(pundit_user_creator, draft)
+        expect(policy.update?).to be false
+        expect(policy.publish?).to be false
+      end
+    end
   end
 
   describe '#view_permalink?' do

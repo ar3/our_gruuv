@@ -15,8 +15,10 @@ class ObservationPolicy < ApplicationPolicy
     # Soft-deleted observations: only the observer can see them
     return false if record.soft_deleted? && person != record.observer
     
-    # Draft observations: only the observer can see them (if they have active teammate)
-    return false if record.draft? && person != record.observer
+    # Draft observations: observer or excavating creator can see them
+    if record.draft?
+      return person == record.observer || record.created_by?(viewing_teammate)
+    end
     
     # Observer is always allowed (for published observations, if they have active teammate)
     return true if person == record.observer
@@ -59,14 +61,22 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def update?
-    viewing_teammate.person == record.observer
+    # Draft: creator or observer may edit. Published: observer only.
+    return false unless viewing_teammate
+
+    person = viewing_teammate.person
+    return true if person == record.observer
+    return true if record.draft? && record.created_by?(viewing_teammate)
+
+    false
   end
 
   def destroy?
     # Allow observer to always archive (soft delete) their observations
-    # The 24-hour restriction was for actual deletion, but we're using soft delete for archiving
+    # Draft creators may also archive drafts they excavated
     return true if admin_bypass?
     return true if viewing_teammate.person == record.observer
+    return true if record.draft? && record.created_by?(viewing_teammate)
     false
   end
 

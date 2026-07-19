@@ -39,6 +39,10 @@ class ObservationVisibilityQuery
     conditions << "(observer_id = ?)"
     params << @person.id
 
+    # Rule 2b: Current teammate excavated a draft (Slack-sourced creator ≠ observer)
+    conditions << "(published_at IS NULL AND creator_company_teammate_id = ?)"
+    params << current_teammate.id
+
     # Rule 3: Current teammate is one of the observed (published)
     # current_teammate.id IN (SELECT teammate_id FROM observees WHERE observation_id = observations.id)
     # AND published_at IS NOT NULL
@@ -112,6 +116,11 @@ class ObservationVisibilityQuery
 
     # Rule 2: Current teammate is the observer (regardless of published state, privacy level, or soft-deleted status)
     if observation.observer_id == @person.id
+      return true
+    end
+
+    # Rule 2b: Current teammate excavated a draft
+    if observation.draft? && observation.creator_company_teammate_id == current_teammate.id
       return true
     end
 

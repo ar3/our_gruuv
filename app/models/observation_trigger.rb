@@ -15,11 +15,45 @@ class ObservationTrigger < ApplicationRecord
       formatted_value = format_value(value)
       lines << "**#{formatted_key}**: #{formatted_value}"
     end
-    lines.join("\n")
+    lines.join("\n\n")
+  end
+
+  def tooltip_trigger_data_html
+    return "No trigger data" if trigger_data.blank?
+
+    trigger_data.map do |key, value|
+      "#{ERB::Util.html_escape(key.to_s.humanize)}: #{ERB::Util.html_escape(format_value(value))}"
+    end.join("<br>")
+  end
+
+  def ogo_source_search?
+    trigger_source == "slack" && trigger_type == "ogo_source_search"
+  end
+
+  def slack_message_permalink
+    return nil if trigger_data.blank?
+
+    trigger_data["permalink"].presence || trigger_data[:permalink].presence
+  end
+
+  # Provider run id lives in trigger_data so Zoom/Meet/etc. can share this pattern
+  # without new columns on observations. See docs/ogo-creation-attribution.md
+  def source_slack_search
+    return nil unless ogo_source_search?
+
+    search_id = trigger_data&.dig("possible_observation_slack_search_id").presence ||
+                trigger_data&.dig(:possible_observation_slack_search_id).presence
+    return nil if search_id.blank?
+
+    PossibleObservationSlackSearch.find_by(id: search_id)
   end
   
   def display_text
-    "#{trigger_source.humanize}'s #{trigger_type.humanize}"
+    if ogo_source_search?
+      "a Slack Find-Missing-OGOs search"
+    else
+      "#{trigger_source.humanize}'s #{trigger_type.humanize}"
+    end
   end
   
   private

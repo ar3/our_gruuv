@@ -33,6 +33,10 @@ class PossibleObservationSlackSearchBatchPolicy < ApplicationPolicy
     show?
   end
 
+  def create_draft_observations?
+    update? && record.extraction_status == "completed"
+  end
+
   private
 
   def search_policy

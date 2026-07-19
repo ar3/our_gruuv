@@ -10,6 +10,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
   before_action :set_search
   before_action :set_batch, only: %i[
     show update extract re_extract re_extract_with_stronger_model extraction_status
+    create_draft_observations
   ]
   after_action :verify_authorized
 
@@ -26,6 +27,12 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
       return
     end
 
+    if create_drafts_commit?
+      authorize @batch, :create_draft_observations?
+      promote_draft_observations!(items)
+      return
+    end
+
     invalid_rows = items.select do |item|
       ActiveModel::Type::Boolean.new.cast(item["include"]) &&
         (item["responder_company_teammate_id"].blank? || item["subject_company_teammate_id"].blank?)
@@ -36,7 +43,15 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     end
 
     @batch.replace_extraction_items!(items)
-    redirect_to batch_path, notice: "Candidates saved. Creating draft OGOs comes in a later step."
+    redirect_to batch_path, notice: "Candidates saved."
+  rescue ActionController::ParameterMissing
+    redirect_to batch_path, alert: "Invalid candidate data."
+  end
+
+  def create_draft_observations
+    authorize @batch, :create_draft_observations?
+    items = normalize_items_param(items_param)
+    promote_draft_observations!(items)
   rescue ActionController::ParameterMissing
     redirect_to batch_path, alert: "Invalid candidate data."
   end
@@ -136,6 +151,54 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     params[:items] || params.dig(:possible_observation_slack_search_batch, :items)
   end
 
+  def create_drafts_commit?
+    params[:commit].to_s.include?("Create draft OGOs")
+  end
+
+  def promote_draft_observations!(items)
+    if items.empty?
+      redirect_to batch_path, alert: "No candidate rows to promote."
+      return
+    end
+
+    invalid_rows = items.select do |item|
+      ActiveModel::Type::Boolean.new.cast(item["include"]) &&
+        item["observation_id"].blank? &&
+        (item["responder_company_teammate_id"].blank? || item["subject_company_teammate_id"].blank?)
+    end
+    if invalid_rows.any?
+      redirect_to batch_path, alert: "Rows marked include must have both observer and subject selected."
+      return
+    end
+
+    @batch.replace_extraction_items!(items)
+
+    result = PossibleObservationSlackSearches::BatchCreateDraftObservationsService.call(
+      batch: @batch.reload,
+      creator: current_company_teammate
+    )
+
+    if result.ok?
+      payload = result.value
+      notice_parts = []
+      notice_parts << "Created #{payload[:created]} draft OGO#{"s" if payload[:created] != 1}." if payload[:created].positive?
+      notice_parts << "#{payload[:skipped_already]} already had drafts." if payload[:skipped_already].positive?
+      if payload[:soft_duplicate_count].to_i.positive?
+        notice_parts << "#{payload[:soft_duplicate_count]} may already link to the same Slack message (soft warning)."
+      end
+      if payload[:errors].any?
+        redirect_to batch_path,
+                    alert: [notice_parts.presence&.join(" "), payload[:errors].join(" ")].compact.join(" ")
+      elsif notice_parts.empty?
+        redirect_to batch_path, alert: "No included candidates were ready to create as draft OGOs."
+      else
+        redirect_to batch_path, notice: notice_parts.join(" ")
+      end
+    else
+      redirect_to batch_path, alert: Array(result.error).join(", ")
+    end
+  end
+
   def normalize_items_param(raw)
     return [] if raw.blank?
 
@@ -159,7 +222,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
           :channel_id, :ts, :permalink, :slack_user_id,
           :suggested_rateable_type, :suggested_rateable_id, :suggested_rating, :suggested_goal_id,
           :suggested_rateable_name, :association_reason, :rating_reason, :target_is_subject,
-          :confidence
+          :confidence, :observation_id
         ).to_h
       else
         h.stringify_keys

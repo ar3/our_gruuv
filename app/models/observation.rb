@@ -6,6 +6,7 @@ class Observation < ApplicationRecord
   
   belongs_to :observer, class_name: 'Person'
   belongs_to :company, class_name: 'Organization'
+  belongs_to :creator_company_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :goal, optional: true
   belongs_to :observation_trigger, optional: true
   belongs_to :observable_moment, optional: true
@@ -17,6 +18,10 @@ class Observation < ApplicationRecord
   has_many :assignments, through: :observation_ratings, source: :rateable, source_type: 'Assignment'
   has_many :aspirations, through: :observation_ratings, source: :rateable, source_type: 'Aspiration'
   has_many :notifications, as: :notifiable, dependent: :destroy
+
+  # Provider-specific source runs (Slack / Zoom / Meet / …) must NOT get FKs here.
+  # Attribute excavation via ObservationTrigger — see docs/ogo-creation-attribution.md
+  CREATED_AS_SLACK_SOURCE = 'slack_source'
 
   accepts_nested_attributes_for :observees, allow_destroy: true
   accepts_nested_attributes_for :observation_ratings, allow_destroy: true
@@ -158,6 +163,19 @@ class Observation < ApplicationRecord
   
   def publish!
     update!(published_at: Time.current)
+  end
+
+  def slack_sourced?
+    created_as_type == CREATED_AS_SLACK_SOURCE || observation_trigger&.ogo_source_search?
+  end
+
+  # Resolve the Slack search run from ObservationTrigger.trigger_data — not a column on observations.
+  def source_slack_search
+    observation_trigger&.source_slack_search
+  end
+
+  def created_by?(teammate)
+    teammate.present? && creator_company_teammate_id.present? && creator_company_teammate_id == teammate.id
   end
   
   def can_post_to_slack_channel?

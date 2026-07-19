@@ -260,6 +260,51 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(updated[:kind]).to eq("feedback")
       end
 
+      it "creates draft OGOs from included candidates" do
+        item = batch.extraction_items.first
+        expect do
+          patch organization_company_teammate_possible_observation_slack_search_batch_path(
+            organization, subject, search, batch
+          ), params: {
+            commit: "Create draft OGOs from included",
+            items: {
+              "0" => {
+                id: item[:id],
+                include: "1",
+                kind: item[:kind],
+                quote: item[:quote],
+                summary: item[:summary],
+                short_quote: item[:short_quote],
+                full_quote: item[:full_quote],
+                speaker_label: item[:speaker_label],
+                recipient_label: item[:recipient_label],
+                responder_company_teammate_id: item[:responder_company_teammate_id],
+                subject_company_teammate_id: item[:subject_company_teammate_id],
+                channel_id: item[:channel_id],
+                ts: item[:ts],
+                permalink: item[:permalink],
+                slack_user_id: item[:slack_user_id]
+              }
+            }
+          }
+        end.to change(Observation, :count).by(1)
+
+        expect(response).to redirect_to(
+          organization_company_teammate_possible_observation_slack_search_path(
+            organization, subject, search, anchor: "consultation-#{batch.position}"
+          )
+        )
+        follow_redirect!
+        expect(response.body).to include("Open draft OGO")
+        expect(response.body).to include("Create draft OGOs from included")
+
+        observation = Observation.last
+        expect(observation).to be_draft
+        expect(observation.created_as_type).to eq(Observation::CREATED_AS_SLACK_SOURCE)
+        expect(observation.creator_company_teammate).to eq(teammate)
+        expect(batch.reload.extraction_items.first[:observation_id]).to eq(observation.id)
+      end
+
       context "when another OGO already points at the same Slack message" do
         before do
           trigger = create(
@@ -279,6 +324,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
           expect(response).to have_http_status(:success)
           expect(response.body).to include("Already linked")
           expect(response.body).to include("Save candidates")
+          expect(response.body).to include("Create draft OGOs from included")
         end
       end
     end

@@ -49,6 +49,11 @@ class CompanyTeammate < ApplicationRecord
            foreign_key: :subject_company_teammate_id,
            dependent: :destroy,
            inverse_of: :subject_company_teammate
+  has_many :observations_created,
+           class_name: 'Observation',
+           foreign_key: :creator_company_teammate_id,
+           dependent: :nullify,
+           inverse_of: :creator_company_teammate
 
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }
