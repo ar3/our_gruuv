@@ -103,4 +103,85 @@ RSpec.describe PossibleObservationSlackSearches::BatchCreateDraftObservationsSer
     expect(result).to be_ok
     expect(Observation.last.goal_id).to eq(goal.id)
   end
+
+  describe "suggested ObservationRatings" do
+    {
+      "strongly_agree" => :strongly_agree,
+      "agree" => :agree,
+      "disagree" => :disagree,
+      "strongly_disagree" => :strongly_disagree
+    }.each do |suggested_rating, expected|
+      it "seeds #{suggested_rating} on the suggested Assignment" do
+        assignment = create(:assignment, company: organization, title: "Own the launch")
+        items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
+        items[0].merge!(
+          "suggested_rateable_type" => "Assignment",
+          "suggested_rateable_id" => assignment.id,
+          "suggested_rating" => suggested_rating
+        )
+        batch.replace_extraction_items!(items)
+
+        result = described_class.call(batch: batch.reload, creator: creator)
+        expect(result).to be_ok
+
+        ratings = Observation.last.observation_ratings
+        expect(ratings.size).to eq(1)
+        expect(ratings.first.rateable).to eq(assignment)
+        expect(ratings.first.rating).to eq(expected.to_s)
+      end
+    end
+
+    it "seeds Ability and Aspiration suggestions" do
+      ability = create(:ability, company: organization, name: "Clear writing")
+      items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
+      items[0].merge!(
+        "suggested_rateable_type" => "Ability",
+        "suggested_rateable_id" => ability.id,
+        "suggested_rating" => "agree"
+      )
+      batch.replace_extraction_items!(items)
+
+      expect(described_class.call(batch: batch.reload, creator: creator)).to be_ok
+      rating = Observation.last.observation_ratings.sole
+      expect(rating.rateable).to eq(ability)
+      expect(rating.rating).to eq("agree")
+    end
+
+    it "does not seed when suggestion fields are missing" do
+      result = described_class.call(batch: batch, creator: creator)
+      expect(result).to be_ok
+      expect(Observation.last.observation_ratings).to be_empty
+    end
+
+    it "does not seed when rateable is outside the company" do
+      other_org = create(:organization)
+      assignment = create(:assignment, company: other_org, title: "Other launch")
+      items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
+      items[0].merge!(
+        "suggested_rateable_type" => "Assignment",
+        "suggested_rateable_id" => assignment.id,
+        "suggested_rating" => "strongly_agree"
+      )
+      batch.replace_extraction_items!(items)
+
+      result = described_class.call(batch: batch.reload, creator: creator)
+      expect(result).to be_ok
+      expect(Observation.last.observation_ratings).to be_empty
+    end
+
+    it "does not seed when rating value is invalid" do
+      assignment = create(:assignment, company: organization)
+      items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
+      items[0].merge!(
+        "suggested_rateable_type" => "Assignment",
+        "suggested_rateable_id" => assignment.id,
+        "suggested_rating" => "na"
+      )
+      batch.replace_extraction_items!(items)
+
+      result = described_class.call(batch: batch.reload, creator: creator)
+      expect(result).to be_ok
+      expect(Observation.last.observation_ratings).to be_empty
+    end
+  end
 end

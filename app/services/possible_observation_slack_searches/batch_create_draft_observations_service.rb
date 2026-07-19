@@ -120,11 +120,41 @@ module PossibleObservationSlackSearches
         end
 
         observation.observees.create!(teammate_id: subject.id)
+        seed_suggested_rating!(observation, item)
       end
 
       Result.ok(observation)
     rescue ActiveRecord::RecordInvalid => e
       Result.err(e.record.errors.full_messages.presence || e.message)
+    end
+
+    def seed_suggested_rating!(observation, item)
+      rateable_type = item["suggested_rateable_type"].to_s
+      return unless %w[Ability Assignment Aspiration].include?(rateable_type)
+
+      rateable_id = item["suggested_rateable_id"].presence&.to_i
+      return if rateable_id.blank? || rateable_id <= 0
+
+      rating = item["suggested_rating"].to_s
+      return unless %w[strongly_agree agree disagree strongly_disagree].include?(rating)
+
+      rateable = rateable_type.constantize.find_by(id: rateable_id)
+      return unless rateable
+      return unless rateable_in_company_tree?(rateable)
+
+      observation.observation_ratings.find_or_initialize_by(
+        rateable_type: rateable_type,
+        rateable_id: rateable_id
+      ).update!(rating: rating)
+    end
+
+    def rateable_in_company_tree?(rateable)
+      rateable_company = rateable.try(:company) || rateable.try(:organization)
+      return false unless rateable_company
+
+      obs_root = @company.root_company || @company
+      rateable_root = rateable_company.root_company || rateable_company
+      rateable_root.id == obs_root.id
     end
 
     def story_for(item, permalink)
