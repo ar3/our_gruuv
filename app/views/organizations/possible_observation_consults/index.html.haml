@@ -1,0 +1,35 @@
+.row.mb-3
+  .col
+    %h1.h3.mb-1 Consult OG to Find OGOs
+    %p.text-muted.mb-0
+      Paste or upload a transcript, confirm teammates, run one OG consultation, then create draft OGOs.
+
+.mb-3
+  = link_to "New consult", new_organization_possible_observation_consult_path(organization), class: "btn btn-primary"
+
+- if @consults.any?
+  .table-responsive
+    %table.table.table-striped.align-middle
+      %thead
+        %tr
+          %th Name
+          %th People
+          %th Status
+          %th Created
+          %th
+      %tbody
+        - @consults.each do |consult|
+          %tr
+            %td= consult.display_name
+            %td
+              - if consult.people_confirmed?
+                = pluralize(Array(consult.confirmed_teammate_ids).size, "teammate")
+              - else
+                %span.text-muted Confirm teammates
+            %td
+              %span.badge.text-bg-secondary= consult.extraction_status
+            %td= l(consult.created_at, format: :short)
+            %td
+              = link_to "Open", organization_possible_observation_consult_path(organization, consult), class: "btn btn-sm btn-outline-primary"
+- else
+  %p.text-muted No consults yet. Start by pasting or uploading a transcript.

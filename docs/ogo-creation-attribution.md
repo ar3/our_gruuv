@@ -27,24 +27,25 @@ Those belong on typed **run** tables (`PossibleObservationSlackSearch`, future Z
 
 `created_as_type` may record entry style (e.g. `slack_source`) for analytics; it is not a substitute for trigger provenance.
 
-## Source-from-X (Slack, Zoom, Meet, …)
+## Source-from-X (Slack, Zoom, Meet, …) and hub paste/upload
 
 Use **`ObservationTrigger`**:
 
 ```ruby
 ObservationTrigger.create!(
-  trigger_source: "slack",           # or "zoom", "google_meet", …
+  trigger_source: "slack",           # or "zoom", "google_meet", "ogo_consult", …
   trigger_type: "ogo_source_search", # shared type for Find-Missing-OGOs-style excavation
   trigger_data: {
-    "channel_id" => "...",           # or meeting id / recording id / …
-    "message_ts" => "...",           # provider-specific message/moment key
-    "permalink" => "...",
-    "possible_observation_slack_search_id" => 123,       # run table id
-    "possible_observation_slack_search_batch_id" => 4,  # optional
+    # provider-specific keys…
+    "possible_observation_slack_search_id" => 123,   # Slack run
+    # or:
+    "possible_observation_consult_id" => 456,        # hub paste/upload consult
     "extraction_item_id" => "uuid"
   }
 )
 ```
+
+Hub entry: **Consult OG to Find OGOs** (`PossibleObservationConsult`) — paste/upload, confirm teammates, one multi-teammate consultation, draft OGOs.
 
 Then set `observation.observation_trigger = trigger`.
 

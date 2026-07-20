@@ -155,6 +155,13 @@ module NavigationHelper
             path: organization_observations_path(current_organization),
             policy_check: -> { policy(current_company).view_observations? },
             coming_soon: false
+          },
+          {
+            label: 'Consult OG to Find OGOs',
+            icon: 'bi-stars',
+            path: organization_possible_observation_consults_path(current_organization),
+            policy_check: -> { policy(::PossibleObservationConsult).index? },
+            coming_soon: false
           }
         ]
       },

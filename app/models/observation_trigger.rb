@@ -27,7 +27,7 @@ class ObservationTrigger < ApplicationRecord
   end
 
   def ogo_source_search?
-    trigger_source == "slack" && trigger_type == "ogo_source_search"
+    trigger_type == "ogo_source_search"
   end
 
   def slack_message_permalink
@@ -39,7 +39,7 @@ class ObservationTrigger < ApplicationRecord
   # Provider run id lives in trigger_data so Zoom/Meet/etc. can share this pattern
   # without new columns on observations. See docs/ogo-creation-attribution.md
   def source_slack_search
-    return nil unless ogo_source_search?
+    return nil unless trigger_source == "slack" && ogo_source_search?
 
     search_id = trigger_data&.dig("possible_observation_slack_search_id").presence ||
                 trigger_data&.dig(:possible_observation_slack_search_id).presence
@@ -50,7 +50,14 @@ class ObservationTrigger < ApplicationRecord
   
   def display_text
     if ogo_source_search?
-      "a Slack Find-Missing-OGOs search"
+      case trigger_source
+      when "slack"
+        "a Slack Find-Missing-OGOs search"
+      when "ogo_consult"
+        "a Consult OG to Find OGOs"
+      else
+        "an OG source search"
+      end
     else
       "#{trigger_source.humanize}'s #{trigger_type.humanize}"
     end

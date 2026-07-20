@@ -215,6 +215,17 @@ Rails.application.routes.draw do
       end
     end
 
+    resources :possible_observation_consults, module: :organizations, only: %i[index new create show update] do
+      member do
+        patch :confirm_teammates
+        get :extraction_status
+        post :extract
+        post :re_extract
+        post :re_extract_with_stronger_model
+        post :create_draft_observations
+      end
+    end
+
     resources :possible_observation_transcripts, module: :organizations, only: [:index, :new, :create, :show, :update, :destroy] do
       member do
         get :extraction_status

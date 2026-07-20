@@ -8,6 +8,7 @@ class OgConsultation < ApplicationRecord
     teammate_growth
     ogo_search_transcript
     ogo_search_slack
+    ogo_search_consult
   ].freeze
 
   STATUSES = %w[pending processing completed failed].freeze
@@ -18,6 +19,7 @@ class OgConsultation < ApplicationRecord
   KIND_TEAMMATE_GROWTH = 'teammate_growth'
   KIND_OGO_SEARCH_TRANSCRIPT = 'ogo_search_transcript'
   KIND_OGO_SEARCH_SLACK = 'ogo_search_slack'
+  KIND_OGO_SEARCH_CONSULT = 'ogo_search_consult'
 
   belongs_to :subject, polymorphic: true
   belongs_to :organization, class_name: 'Organization'

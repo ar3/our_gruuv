@@ -1,0 +1,35 @@
+-# Locals: groups — [[teammate, items], ...]
+- groups.each do |teammate, person_items|
+  .mb-4
+    %h6.mb-2
+      = teammate.person.display_name
+      %span.badge.text-bg-light.ms-1.text-muted Ready
+    - if person_items.empty?
+      %p.small.text-muted.mb-0 No candidates for this person.
+    - else
+      .table-responsive
+        %table.table.table-bordered.align-middle
+          %thead.table-light
+            %tr
+              %th Quote
+              %th Suggested
+          %tbody
+            - person_items.each do |item|
+              - confidence = item[:confidence].to_f
+              - badge_class = confidence >= 0.75 ? "text-bg-success" : (confidence >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
+              %tr
+                %td
+                  .mb-2.fs-6
+                    %span.badge.me-2{ class: badge_class }= "#{format('%.0f%%', confidence * 100)} confident in this suggestion"
+                    - if item[:suggested_rating].present?
+                      - rating_label = { "strongly_agree" => "Exceptional", "agree" => "Solid", "disagree" => "Mis-aligned", "strongly_disagree" => "Concerning" }[item[:suggested_rating].to_s]
+                      Suggested:
+                      %strong= rating_label
+                      for #{item[:suggested_rateable_name].presence || item[:suggested_rateable_type]}
+                  .small.white-space-pre-wrap= item[:quote]
+                %td
+                  %div= item[:kind].to_s.titleize
+                  .small.text-muted
+                    Observer: #{@selectable_teammates.find { |tm| tm.id == item[:responder_company_teammate_id].to_i }&.person&.display_name || "—"}
+                  .small.text-muted
+                    Subject: #{teammate.person.display_name}

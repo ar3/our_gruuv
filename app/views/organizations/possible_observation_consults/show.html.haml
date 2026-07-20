@@ -1,0 +1,97 @@
+- extraction_status_url = extraction_status_organization_possible_observation_consult_path(organization, @consult)
+- form_id = "ogo-consult-candidates-form"
+- processing = %w[pending processing].include?(@consult.extraction_status)
+- completed = @consult.extraction_status == "completed"
+- groups = @consult.extraction_groups_by_processed_teammate(teammates: @confirmed_teammates)
+
+.mb-3
+  = link_to "← All consults", organization_possible_observation_consults_path(organization), class: "text-decoration-none"
+%h1.h3.mb-1= @consult.display_name
+%p.small.text-muted.mb-4
+  Status:
+  %span.badge.text-bg-secondary= @consult.extraction_status
+  · People: #{@consult.people_status}
+
+- unless @consult.people_confirmed?
+  .card.mb-4
+    .card-body
+      %h5.mb-2 Confirm teammates
+      %p.small.text-muted
+        Names detected in the content are pre-checked. Adjust the list, then start OG Consult.
+      = form_with url: confirm_teammates_organization_possible_observation_consult_path(organization, @consult), method: :patch, local: true do
+        - preselected = Array(@consult.suggested_teammate_ids).map(&:to_i)
+        .row
+          - @selectable_teammates.each do |tm|
+            .col-md-4.mb-2
+              .form-check
+                = check_box_tag "confirmed_teammate_ids[]", tm.id, preselected.include?(tm.id), class: "form-check-input", id: "tm_#{tm.id}"
+                = label_tag "tm_#{tm.id}", tm.person.display_name, class: "form-check-label"
+        = submit_tag "Confirm teammates and run OG Consult", class: "btn btn-primary mt-3"
+
+- if @consult.people_confirmed? && processing
+  = render "shared/og_consultations/status_banner",
+           status_url: extraction_status_url,
+           label: "OG Consult",
+           initial_status: @consult.extraction_status,
+           wrapper_class: "alert alert-secondary mb-3",
+           time_zone: current_person_iana_timezone,
+           processed_teammates_count: @consult.processed_teammate_ids.size
+
+- if @consult.extraction_status == "failed"
+  .alert.alert-danger
+    = @consult.extraction_error.presence || "Consultation failed."
+    - if policy(@consult).re_extract?
+      = button_to "Try again", re_extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "btn btn-sm btn-outline-primary ms-2"
+
+- if completed
+  .d-flex.flex-wrap.gap-2.mb-3
+    - if policy(@consult).re_extract?
+      = button_to "Consult OG again", re_extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "btn btn-sm btn-outline-primary"
+    - if policy(@consult).re_extract_with_stronger_model?
+      = button_to re_extract_with_stronger_model_organization_possible_observation_consult_path(organization, @consult),
+                  method: :post,
+                  class: "btn btn-sm btn-outline-primary" do
+        %i.bi.bi-lightning-charge.me-1
+        Re-run with stronger model
+
+- if processing && groups.any?
+  - confirmed_n = Array(@consult.confirmed_teammate_ids).size
+  - processed_n = @consult.processed_teammate_ids.size
+  %h5.mb-3 Results so far
+  %p.small.text-muted.mb-3
+    Showing finished teammates while others are still being consulted.
+    #{processed_n} of #{confirmed_n} people complete.
+  = render "candidate_groups_readonly", groups: groups
+
+- if completed
+  - items = @consult.extraction_items
+  - if items.empty? && groups.empty?
+    .alert.alert-warning
+      = @consult.extraction_error.presence || "No candidates found."
+      - if policy(@consult).re_extract?
+        = button_to "Consult again", re_extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "btn btn-sm btn-outline-primary ms-2"
+  - else
+    %h5.mb-3 Review candidate OGOs
+    = form_with url: organization_possible_observation_consult_path(organization, @consult), method: :patch, local: true, html: { id: form_id, data: { turbo: false } } do
+      - idx = 0
+      - groups.each do |teammate, person_items|
+        .mb-4
+          %h6.mb-2= teammate.person.display_name
+          - if person_items.empty?
+            %p.small.text-muted.mb-0 No candidates for this person.
+          - else
+            .table-responsive
+              %table.table.table-bordered.align-middle
+                %thead.table-light
+                  %tr
+                    %th Quote
+                    %th Actions
+                    %th Status
+                %tbody
+                  - person_items.each do |item|
+                    = render "candidate_row", item: item, idx: idx, editable: true
+                    - idx += 1
+      .d-flex.flex-wrap.gap-2.mt-3
+        = submit_tag "Save candidates", name: "commit", value: "Save candidates", class: "btn btn-outline-primary"
+        - if policy(@consult).create_draft_observations?
+          = submit_tag "Create draft OGOs from included", name: "commit", value: "Create draft OGOs from included", class: "btn btn-primary", data: { confirm: "Create draft OGOs for included candidates?" }

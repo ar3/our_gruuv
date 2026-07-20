@@ -1,0 +1,23 @@
+%h1.h3.mb-3 New OG Consult
+
+= form_with model: @consult, url: organization_possible_observation_consults_path(organization), local: true, html: { multipart: true } do |f|
+  .mb-3
+    = f.label :display_name, "Name", class: "form-label"
+    = f.text_field :display_name, class: "form-control", required: true
+  .mb-3
+    = f.label :source_text, "Paste transcript or notes", class: "form-label"
+    = f.text_area :source_text, class: "form-control", rows: 12, placeholder: "Paste meeting notes or a transcript…"
+  .mb-3
+    = f.label :source_file, "Or upload a file (.txt, .vtt, .srt, .json, .csv)", class: "form-label"
+    = f.file_field :source_file, class: "form-control", accept: ".txt,.vtt,.srt,.json,.csv,text/plain"
+  - if @consult.errors.any?
+    .alert.alert-danger
+      %ul.mb-0
+        - @consult.errors.full_messages.each do |msg|
+          %li= msg
+  .d-flex.gap-2
+    = f.submit "Continue", class: "btn btn-primary"
+    = link_to "Cancel", organization_possible_observation_consults_path(organization), class: "btn btn-outline-secondary"
+
+%p.mt-3.small.text-muted
+  Next you’ll confirm which teammates appear in this content. Then OG runs one consultation that can produce potential OGOs for all of them.

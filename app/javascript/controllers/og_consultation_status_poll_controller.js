@@ -6,7 +6,8 @@ export default class extends Controller {
   static values = {
     statusUrl: String,
     label: { type: String, default: "Consultation" },
-    timeZone: String
+    timeZone: String,
+    processedTeammatesCount: Number
   }
 
   static targets = ["statusText", "elapsed", "eta", "units", "slowWarning", "lastChecked"]
@@ -18,6 +19,9 @@ export default class extends Controller {
     this.elapsedBaseAt = Date.now()
     this.estimatedDurationSeconds = null
     this.inFlight = true
+    this.lastProcessedTeammatesCount = this.hasProcessedTeammatesCountValue
+      ? this.processedTeammatesCountValue
+      : null
 
     this.poll()
     this.pollTimer = window.setInterval(() => this.poll(), 3000)
@@ -47,6 +51,18 @@ export default class extends Controller {
 
       if (data.status === "completed" || data.status === "failed") {
         window.location.reload()
+        return
+      }
+
+      // Progressive OG Consult: reload when another person finishes so results
+      // appear grouped by person while the status banner keeps running.
+      if (Object.prototype.hasOwnProperty.call(data, "processed_teammates_count")) {
+        const processed = parseInt(data.processed_teammates_count || 0, 10)
+        if (this.lastProcessedTeammatesCount === null) {
+          this.lastProcessedTeammatesCount = processed
+        } else if (processed > this.lastProcessedTeammatesCount) {
+          window.location.reload()
+        }
       }
     } catch (_error) {
       // Keep polling; transient failures are expected.

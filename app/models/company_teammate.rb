@@ -55,6 +55,12 @@ class CompanyTeammate < ApplicationRecord
            dependent: :nullify,
            inverse_of: :creator_company_teammate
 
+  has_many :possible_observation_consults_created,
+           class_name: "PossibleObservationConsult",
+           foreign_key: :creator_company_teammate_id,
+           dependent: :destroy,
+           inverse_of: :creator_company_teammate
+
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }
   validates :first_employed_at, presence: true, if: :employed?

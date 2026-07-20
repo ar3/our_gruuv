@@ -228,6 +228,15 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.company).view_observations? },
             goal: "Browse every observation you can access in the organization.",
             synonyms: %w[all observations ogos every observation observation list]
+          ),
+          page(
+            key: :og_consult_to_find_ogos,
+            label: "Consult OG to Find OGOs",
+            icon: "bi-stars",
+            path: ->(ctx) { ctx.organization_possible_observation_consults_path(ctx.organization) },
+            policy: ->(ctx) { ctx.policy(::PossibleObservationConsult).index? },
+            goal: "Paste or upload a transcript, confirm teammates, and excavate draft OGOs.",
+            synonyms: %w[consult find ogos transcript paste upload excavate]
           )
         ]
       }

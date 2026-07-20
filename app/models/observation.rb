@@ -23,6 +23,7 @@ class Observation < ApplicationRecord
   # Provider-specific source runs (Slack / Zoom / Meet / …) must NOT get FKs here.
   # Attribute excavation via ObservationTrigger — see docs/ogo-creation-attribution.md
   CREATED_AS_SLACK_SOURCE = 'slack_source'
+  CREATED_AS_OGO_CONSULT = 'ogo_consult_source'
 
   accepts_nested_attributes_for :observees, allow_destroy: true
   accepts_nested_attributes_for :observation_ratings, allow_destroy: true
@@ -167,7 +168,13 @@ class Observation < ApplicationRecord
   end
 
   def slack_sourced?
-    created_as_type == CREATED_AS_SLACK_SOURCE || observation_trigger&.ogo_source_search?
+    created_as_type == CREATED_AS_SLACK_SOURCE ||
+      (observation_trigger&.trigger_source == "slack" && observation_trigger&.ogo_source_search?)
+  end
+
+  def ogo_consult_sourced?
+    created_as_type == CREATED_AS_OGO_CONSULT ||
+      (observation_trigger&.trigger_source == "ogo_consult" && observation_trigger&.ogo_source_search?)
   end
 
   # Resolve the Slack search run from ObservationTrigger.trigger_data — not a column on observations.

@@ -82,6 +82,15 @@ module OgConsultations
         runner_class_name: nil,
         llm_purpose: 'slack_chunk',
         billable: true
+      ),
+      OgConsultation::KIND_OGO_SEARCH_CONSULT => Entry.new(
+        kind: OgConsultation::KIND_OGO_SEARCH_CONSULT,
+        label: 'Consult OG to Find OGOs',
+        result_class_name: 'OgoSearchResult',
+        job_class_name: 'PossibleObservationConsultExtractionJob',
+        runner_class_name: nil,
+        llm_purpose: 'slack_chunk',
+        billable: true
       )
     }.freeze
 

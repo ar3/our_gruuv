@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_18_220000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_19_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1319,6 +1319,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_220000) do
     t.index ["title_id"], name: "index_positions_on_title_id"
   end
 
+  create_table "possible_observation_consults", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "creator_company_teammate_id", null: false
+    t.string "display_name", null: false
+    t.text "source_text"
+    t.jsonb "suggested_teammate_ids", default: [], null: false
+    t.jsonb "confirmed_teammate_ids", default: [], null: false
+    t.string "people_status", default: "suggested", null: false
+    t.string "extraction_status", default: "ready", null: false
+    t.text "extraction_error"
+    t.jsonb "extractions", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_3cbc8c0c14"
+    t.index ["extraction_status"], name: "index_possible_observation_consults_on_extraction_status"
+    t.index ["organization_id"], name: "index_possible_observation_consults_on_organization_id"
+    t.index ["people_status"], name: "index_possible_observation_consults_on_people_status"
+  end
+
   create_table "possible_observation_slack_search_batches", force: :cascade do |t|
     t.bigint "possible_observation_slack_search_id", null: false
     t.integer "position", null: false
@@ -1936,6 +1955,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_18_220000) do
   add_foreign_key "positions", "position_eligibility_requirements"
   add_foreign_key "positions", "position_levels"
   add_foreign_key "positions", "titles"
+  add_foreign_key "possible_observation_consults", "organizations"
+  add_foreign_key "possible_observation_consults", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "possible_observation_slack_search_batches", "possible_observation_slack_searches"
   add_foreign_key "possible_observation_slack_searches", "organizations"
   add_foreign_key "possible_observation_slack_searches", "teammates", column: "creator_company_teammate_id"

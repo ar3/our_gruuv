@@ -17,7 +17,9 @@ Subject (Ability / Assignment / Transcript / Slack search batch / …)
         └── has_many LlmInvocation (parent)
 ```
 
-For Slack OGO search: `PossibleObservationSlackSearch` holds the raw fetch; each `PossibleObservationSlackSearchBatch` (≤500 filtered messages) is the consultation subject and owns review candidates. Draft OGOs created from candidates attribute provenance via **`ObservationTrigger`**, not a Slack FK on `observations` — see [ogo-creation-attribution](./ogo-creation-attribution.md).
+## Hub: Consult OG to Find OGOs (`PossibleObservationConsult`)
+
+Org-nav under Observations (OGO). Phase 2: paste/upload → confirm teammates → one multi-teammate `ogo_search_consult` → review → draft OGOs. Google Meet import is a later phase; old Meeting transcripts retirement is later still.
 
 **Check-in entry:** Assignment / Aspiration / Ability 1-by-1 pages can start a 90-day Slack search with `auto_extract_after_search`, then poll progressive ≥80% object-matched candidates via `CheckIns::SlackOgoConsult`.
 **Not billable consultations:** HR enrich/match and teammate resolve still go through `Llm::Client` (invocations only).

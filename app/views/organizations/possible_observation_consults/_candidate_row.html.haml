@@ -1,0 +1,51 @@
+-# Locals: item, idx, editable
+- included = ActiveModel::Type::Boolean.new.cast(item[:include])
+- locked = item[:observation_id].present?
+- confidence = item[:confidence].to_f
+- badge_class = confidence >= 0.75 ? "text-bg-success" : (confidence >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
+%tr
+  %td
+    = hidden_field_tag "items[#{idx}][id]", item[:id]
+    = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
+    = hidden_field_tag "items[#{idx}][observation_id]", item[:observation_id]
+    = hidden_field_tag "items[#{idx}][summary]", item[:summary]
+    = hidden_field_tag "items[#{idx}][short_quote]", item[:short_quote]
+    = hidden_field_tag "items[#{idx}][full_quote]", item[:full_quote]
+    = hidden_field_tag "items[#{idx}][speaker_label]", item[:speaker_label]
+    = hidden_field_tag "items[#{idx}][recipient_label]", item[:recipient_label]
+    = hidden_field_tag "items[#{idx}][suggested_rateable_type]", item[:suggested_rateable_type]
+    = hidden_field_tag "items[#{idx}][suggested_rateable_id]", item[:suggested_rateable_id]
+    = hidden_field_tag "items[#{idx}][suggested_rateable_name]", item[:suggested_rateable_name]
+    = hidden_field_tag "items[#{idx}][suggested_rating]", item[:suggested_rating]
+    = hidden_field_tag "items[#{idx}][association_reason]", item[:association_reason]
+    = hidden_field_tag "items[#{idx}][rating_reason]", item[:rating_reason]
+    = hidden_field_tag "items[#{idx}][suggested_goal_id]", item[:suggested_goal_id]
+    .mb-2.fs-6
+      %span.badge.me-2{ class: badge_class }= "#{format('%.0f%%', confidence * 100)} confident in this suggestion"
+      - if item[:suggested_rating].present?
+        - rating_label = { "strongly_agree" => "Exceptional", "agree" => "Solid", "disagree" => "Mis-aligned", "strongly_disagree" => "Concerning" }[item[:suggested_rating].to_s]
+        Suggested:
+        %strong= rating_label
+        for #{item[:suggested_rateable_name].presence || item[:suggested_rateable_type]}
+    = text_area_tag "items[#{idx}][quote]", item[:quote], class: "form-control form-control-sm", rows: 8, disabled: !included || locked
+  %td{ style: "min-width: 220px;" }
+    - if locked
+      = hidden_field_tag "items[#{idx}][include]", "1"
+    .form-check.mb-2
+      = check_box_tag "items[#{idx}][include]", "1", included, class: "form-check-input", disabled: locked
+      = label_tag nil, locked ? "Included (draft created)" : "Include", class: "form-check-label"
+    - @observation_type_options.each do |label, value|
+      .form-check
+        = radio_button_tag "items[#{idx}][kind]", value, item[:kind].to_s == value, class: "form-check-input", disabled: !included || locked
+        = label_tag nil, label, class: "form-check-label"
+    = label_tag nil, "Observer", class: "form-label small mb-0 mt-2"
+    = select_tag "items[#{idx}][responder_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:responder_company_teammate_id]), class: "form-select form-select-sm", disabled: !included || locked
+    = label_tag nil, "Subject", class: "form-label small mb-0 mt-2"
+    = select_tag "items[#{idx}][subject_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:subject_company_teammate_id]), class: "form-select form-select-sm", disabled: !included || locked
+  %td
+    - if locked
+      = link_to "Open draft OGO", organization_observation_path(organization, item[:observation_id]), class: "btn btn-sm btn-outline-primary"
+    - elsif item[:responder_company_teammate_id].blank? || item[:subject_company_teammate_id].blank?
+      %span.text-warning Needs IDs
+    - else
+      %span.text-muted Ready
