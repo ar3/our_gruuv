@@ -15,6 +15,8 @@ class TeammateIdentity < ApplicationRecord
   scope :jira, -> { where(provider: 'jira') }
   scope :linear, -> { where(provider: 'linear') }
   scope :asana, -> { where(provider: 'asana') }
+  scope :google_meet, -> { where(provider: 'google_meet') }
+  scope :zoom, -> { where(provider: 'zoom') }
   
   # Instance methods
   def slack?
@@ -35,6 +37,14 @@ class TeammateIdentity < ApplicationRecord
   
   def asana?
     provider == 'asana'
+  end
+
+  def google_meet?
+    provider == 'google_meet'
+  end
+
+  def zoom?
+    provider == 'zoom'
   end
   
   def display_name

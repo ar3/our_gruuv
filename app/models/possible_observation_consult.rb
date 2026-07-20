@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Hub run for "Consult OG to Find OGOs" (paste / upload). Google ingest comes later.
+# Hub run for "Consult OG to Find OGOs" (paste / upload / Google Meet transcript import).
 # Attribution for promoted drafts: ObservationTrigger — see docs/ogo-creation-attribution.md
 class PossibleObservationConsult < ApplicationRecord
   EXTRACTIONS_VERSION = 1
@@ -120,6 +120,14 @@ class PossibleObservationConsult < ApplicationRecord
 
   def people_confirmed?
     people_status == "confirmed" && Array(confirmed_teammate_ids).any?
+  end
+
+  def google_meet_source?
+    source_metadata.is_a?(Hash) && source_metadata.with_indifferent_access[:provider].to_s == "google_meet"
+  end
+
+  def zoom_source?
+    source_metadata.is_a?(Hash) && source_metadata.with_indifferent_access[:provider].to_s == "zoom"
   end
 
   # Returns [[teammate, items], ...] in confirmed order for finished people only.

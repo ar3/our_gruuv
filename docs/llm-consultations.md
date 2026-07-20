@@ -19,7 +19,7 @@ Subject (Ability / Assignment / Transcript / Slack search batch / …)
 
 ## Hub: Consult OG to Find OGOs (`PossibleObservationConsult`)
 
-Org-nav under Observations (OGO). Phase 2: paste/upload → confirm teammates → one multi-teammate `ogo_search_consult` → review → draft OGOs. Google Meet import is a later phase; old Meeting transcripts retirement is later still.
+Org-nav under Observations (OGO). Paste/upload for now; Zoom and Google Meet connect are **Coming soon** (backend OAuth code retained). Confirm teammates → one multi-teammate `ogo_search_consult` → review → draft OGOs. Old Meeting transcripts retirement is a later phase.
 
 **Check-in entry:** Assignment / Aspiration / Ability 1-by-1 pages can start a 90-day Slack search with `auto_extract_after_search`, then poll progressive ≥80% object-matched candidates via `CheckIns::SlackOgoConsult`.
 **Not billable consultations:** HR enrich/match and teammate resolve still go through `Llm::Client` (invocations only).

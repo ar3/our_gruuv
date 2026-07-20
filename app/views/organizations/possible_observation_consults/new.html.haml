@@ -1,4 +1,31 @@
-%h1.h3.mb-3 New OG Consult
+%h1.h3.mb-3 New Consult OG
+
+- meet_coming_soon = "Coming soon. For now, download any Google Meet transcript and upload or paste it below."
+- zoom_coming_soon = "Coming soon. For now, download any Zoom transcript and upload or paste it below."
+
+.card.mb-4
+  .card-body
+    %h5.mb-2 Zoom transcripts
+    %p.small.text-muted.mb-3
+      Direct import from Zoom is on the way. Until then, export a cloud recording transcript from Zoom and paste or upload it below.
+    %span.d-inline-block{"tabindex" => "0", "data-bs-toggle" => "tooltip", "data-bs-title" => zoom_coming_soon}
+      %button.btn.btn-outline-primary{type: "button", disabled: true, style: "pointer-events: none;"}
+        %i.bi.bi-camera-video-fill.me-1
+        Connect Zoom (transcripts)
+        %span.badge.text-bg-secondary.ms-1 Coming soon
+
+.card.mb-4
+  .card-body
+    %h5.mb-2 Google Meet transcripts
+    %p.small.text-muted.mb-3
+      Direct import from Google Meet is on the way. Until then, export a transcript from Meet and paste or upload it below.
+    %span.d-inline-block{"tabindex" => "0", "data-bs-toggle" => "tooltip", "data-bs-title" => meet_coming_soon}
+      %button.btn.btn-outline-primary{type: "button", disabled: true, style: "pointer-events: none;"}
+        %i.bi.bi-camera-video.me-1
+        Connect Google Meet (transcripts)
+        %span.badge.text-bg-secondary.ms-1 Coming soon
+
+%hr.my-4
 
 = form_with model: @consult, url: organization_possible_observation_consults_path(organization), local: true, html: { multipart: true } do |f|
   .mb-3

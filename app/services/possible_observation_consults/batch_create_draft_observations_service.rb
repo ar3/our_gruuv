@@ -78,7 +78,14 @@ module PossibleObservationConsults
           trigger_data: {
             "possible_observation_consult_id" => @consult.id,
             "extraction_item_id" => item["id"],
-            "display_name" => @consult.display_name
+            "display_name" => @consult.display_name,
+            "source_provider" => @consult.source_metadata.is_a?(Hash) ? @consult.source_metadata["provider"] : nil,
+            "google_meet" => @consult.google_meet_source? ? @consult.source_metadata.slice(
+              "conference_record_name", "transcript_name", "document_id"
+            ) : nil,
+            "zoom" => @consult.zoom_source? ? @consult.source_metadata.slice(
+              "meeting_id", "meeting_uuid", "file_id"
+            ) : nil
           }.compact
         )
 
@@ -112,6 +119,8 @@ module PossibleObservationConsults
       parts << "=========="
       parts << "Sourced from Consult OG to Find OGOs"
       parts << @consult.display_name if @consult.display_name.present?
+      parts << "Imported from Google Meet" if @consult.google_meet_source?
+      parts << "Imported from Zoom" if @consult.zoom_source?
       parts.join("\n\n")
     end
 

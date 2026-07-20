@@ -45,7 +45,7 @@ ObservationTrigger.create!(
 )
 ```
 
-Hub entry: **Consult OG to Find OGOs** (`PossibleObservationConsult`) — paste/upload, confirm teammates, one multi-teammate consultation, draft OGOs.
+Hub entry: **Consult OG to Find OGOs** (`PossibleObservationConsult`) — paste/upload/Zoom transcript import (Meet Coming soon), confirm teammates, one multi-teammate consultation, draft OGOs. Meet/Zoom provenance lives on `source_metadata` and is copied into `ObservationTrigger.trigger_data` when promoting.
 
 Then set `observation.observation_trigger = trigger`.
 

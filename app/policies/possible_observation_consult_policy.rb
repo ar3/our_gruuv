@@ -23,6 +23,14 @@ class PossibleObservationConsultPolicy < ApplicationPolicy
     create?
   end
 
+  def import_google_meet?
+    create?
+  end
+
+  def import_zoom?
+    create?
+  end
+
   def update?
     show?
   end

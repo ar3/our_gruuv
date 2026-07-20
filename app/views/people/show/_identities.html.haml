@@ -28,6 +28,12 @@
                       - if identity.respond_to?(:slack_search?) && identity.slack_search?
                         %br
                         %small.text-muted Allows searching Slack as this teammate (user token)
+                      - if identity.respond_to?(:google_meet?) && identity.google_meet?
+                        %br
+                        %small.text-muted Allows listing Meet transcripts you organized
+                      - if identity.respond_to?(:zoom?) && identity.zoom?
+                        %br
+                        %small.text-muted Allows importing Zoom cloud recording transcripts you hosted
                     %td
                       - if identity.name.present?
                         = identity.name
@@ -74,6 +80,19 @@
                         data: { turbo: false, confirm: "Disconnect Slack (search)? You will not be able to search Slack as yourself until you reconnect." } do
               %i.bi.bi-x-circle.me-2
               Disconnect Slack (search)
+          - if @teammate && current_person == @teammate.person
+            - meet_coming_soon = "Coming soon. For now, download any Google Meet transcript and upload or paste it on Consult OG to Find OGOs."
+            - zoom_coming_soon = "Coming soon. For now, download any Zoom transcript and upload or paste it on Consult OG to Find OGOs."
+            %span.d-inline-block.w-100{"tabindex" => "0", "data-bs-toggle" => "tooltip", "data-bs-title" => meet_coming_soon}
+              %button.btn.btn-outline-primary{type: "button", disabled: true, style: "width: 100%; pointer-events: none;"}
+                %i.bi.bi-camera-video.me-2
+                Connect Google Meet (transcripts)
+                %span.badge.text-bg-secondary.ms-1 Coming soon
+            %span.d-inline-block.w-100{"tabindex" => "0", "data-bs-toggle" => "tooltip", "data-bs-title" => zoom_coming_soon}
+              %button.btn.btn-outline-primary{type: "button", disabled: true, style: "width: 100%; pointer-events: none;"}
+                %i.bi.bi-camera-video-fill.me-2
+                Connect Zoom (transcripts)
+                %span.badge.text-bg-secondary.ms-1 Coming soon
           - if @person.person_identities.any?
             = link_to "#", class: "btn btn-outline-info" do
               %i.bi.bi-shield.me-2

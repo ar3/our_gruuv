@@ -155,5 +155,56 @@ FactoryBot.define do
         }
       end
     end
+
+    trait :google_meet do
+      provider { 'google_meet' }
+      sequence(:uid) { |n| "google_meet_user_#{n}" }
+      sequence(:email) { |n| "meet#{n}@example.com" }
+      name { "Meet Test User" }
+      profile_image_url { "https://lh3.googleusercontent.com/a/default" }
+      raw_data do
+        {
+          'info' => {
+            'sub' => 'google_meet_user_123',
+            'name' => 'Meet Test User',
+            'email' => 'meet@example.com',
+            'picture' => 'https://lh3.googleusercontent.com/a/default'
+          },
+          'credentials' => {
+            'token' => 'ya29.test-meet-access-token',
+            'refresh_token' => '1//test-meet-refresh-token',
+            'expires_at' => 1.hour.from_now.iso8601,
+            'scope' => 'https://www.googleapis.com/auth/meetings.space.readonly https://www.googleapis.com/auth/drive.meet.readonly'
+          },
+          'extra' => {}
+        }
+      end
+    end
+
+    trait :zoom do
+      provider { 'zoom' }
+      sequence(:uid) { |n| "zoom_user_#{n}" }
+      sequence(:email) { |n| "zoom#{n}@example.com" }
+      name { "Zoom Test User" }
+      profile_image_url { "https://zoom.us/avatar/default" }
+      raw_data do
+        {
+          'info' => {
+            'id' => 'zoom_user_123',
+            'email' => 'zoom@example.com',
+            'first_name' => 'Zoom',
+            'last_name' => 'User',
+            'display_name' => 'Zoom Test User'
+          },
+          'credentials' => {
+            'token' => 'zoom-test-access-token',
+            'refresh_token' => 'zoom-test-refresh-token',
+            'expires_at' => 1.hour.from_now.iso8601,
+            'scope' => 'cloud_recording:read:list_user_recordings'
+          },
+          'extra' => {}
+        }
+      end
+    end
   end
 end

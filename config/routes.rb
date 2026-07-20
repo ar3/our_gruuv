@@ -58,6 +58,12 @@ Rails.application.routes.draw do
   # Slack search user OAuth callback (fixed URL for per-teammate search identity)
   get 'slack/search/oauth/callback', to: 'organizations/company_teammates/slack_search/oauth#callback', as: :slack_search_oauth_callback
 
+  # Google Meet transcript OAuth callback (fixed URL for per-teammate Meet identity)
+  get 'google_meet/oauth/callback', to: 'organizations/company_teammates/google_meet/oauth#callback', as: :google_meet_oauth_callback
+
+  # Zoom transcript OAuth callback (fixed URL for per-teammate Zoom identity)
+  get 'zoom/oauth/callback', to: 'organizations/company_teammates/zoom/oauth#callback', as: :zoom_oauth_callback
+
   # Asana OAuth callback (fixed URL for Asana)
   get 'asana/oauth/callback', to: 'organizations/company_teammates/asana/oauth#callback'
   
@@ -216,6 +222,10 @@ Rails.application.routes.draw do
     end
 
     resources :possible_observation_consults, module: :organizations, only: %i[index new create show update] do
+      collection do
+        post :import_google_meet
+        post :import_zoom
+      end
       member do
         patch :confirm_teammates
         get :extraction_status
@@ -461,6 +471,14 @@ Rails.application.routes.draw do
       # Slack search user OAuth (nested under company_teammates; distinct from org bot + linked Slack identity)
       get 'slack_search/oauth/authorize', to: 'company_teammates/slack_search/oauth#authorize', as: :slack_search_oauth_authorize
       delete 'slack_search/disconnect', to: 'company_teammates/slack_search/oauth#disconnect', as: :slack_search_disconnect
+
+      # Google Meet transcript OAuth (nested under company_teammates; distinct from login Google)
+      get 'google_meet/oauth/authorize', to: 'company_teammates/google_meet/oauth#authorize', as: :google_meet_oauth_authorize
+      delete 'google_meet/disconnect', to: 'company_teammates/google_meet/oauth#disconnect', as: :google_meet_disconnect
+
+      # Zoom transcript OAuth (nested under company_teammates)
+      get 'zoom/oauth/authorize', to: 'company_teammates/zoom/oauth#authorize', as: :zoom_oauth_authorize
+      delete 'zoom/disconnect', to: 'company_teammates/zoom/oauth#disconnect', as: :zoom_disconnect
     end
     
     # Teammates resource routes for position, assignments, and aspirations

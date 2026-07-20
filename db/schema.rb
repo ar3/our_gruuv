@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_19_200000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_20_003837) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1332,6 +1332,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_19_200000) do
     t.jsonb "extractions", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "source_metadata", default: {}, null: false
     t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_3cbc8c0c14"
     t.index ["extraction_status"], name: "index_possible_observation_consults_on_extraction_status"
     t.index ["organization_id"], name: "index_possible_observation_consults_on_organization_id"

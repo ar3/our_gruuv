@@ -34,16 +34,22 @@ module Organizations
       attach_source!(@consult)
 
       if @consult.save
-        suggested = PossibleObservationConsults::SuggestTeammatesFromText.call(
-          organization: organization,
-          plaintext: @consult.plaintext
-        )
-        @consult.update!(suggested_teammate_ids: suggested.map(&:id))
-        redirect_to organization_possible_observation_consult_path(organization, @consult),
-                    notice: "Content saved. Confirm which teammates to include, then run OG Consult."
+        after_source_saved!(@consult)
       else
         render :new, status: :unprocessable_entity
       end
+    end
+
+    def import_google_meet
+      authorize PossibleObservationConsult, :import_google_meet?
+      redirect_to new_organization_possible_observation_consult_path(organization),
+                  alert: "Google Meet import is coming soon. Upload or paste a Meet transcript instead."
+    end
+
+    def import_zoom
+      authorize PossibleObservationConsult, :import_zoom?
+      redirect_to new_organization_possible_observation_consult_path(organization),
+                  alert: "Zoom import is coming soon. Upload or paste a Zoom transcript instead."
     end
 
     def show
@@ -166,6 +172,15 @@ module Organizations
     def attach_source!(consult)
       file = params.dig(:possible_observation_consult, :source_file)
       consult.source_file.attach(file) if file.present?
+    end
+
+    def after_source_saved!(consult, notice: "Content saved. Confirm which teammates to include, then run OG Consult.")
+      suggested = PossibleObservationConsults::SuggestTeammatesFromText.call(
+        organization: organization,
+        plaintext: consult.plaintext
+      )
+      consult.update!(suggested_teammate_ids: suggested.map(&:id))
+      redirect_to organization_possible_observation_consult_path(organization, consult), notice: notice
     end
 
     def create_drafts_commit?

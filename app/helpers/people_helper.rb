@@ -10,6 +10,10 @@ module PeopleHelper
       'bi-slack'
     when 'asana'
       'bi-kanban'
+    when 'google_meet'
+      'bi-camera-video'
+    when 'zoom'
+      'bi-camera-video-fill'
     else
       'bi-person'
     end
@@ -27,6 +31,10 @@ module PeopleHelper
       'Slack (search)'
     when 'asana'
       'Asana'
+    when 'google_meet'
+      'Google Meet (transcripts)'
+    when 'zoom'
+      'Zoom (transcripts)'
     else
       identity.provider.titleize
     end

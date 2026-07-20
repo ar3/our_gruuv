@@ -204,6 +204,22 @@ class CompanyTeammate < ApplicationRecord
     teammate_identities.asana.exists?
   end
 
+  def google_meet_identity
+    teammate_identities.google_meet.first
+  end
+
+  def has_google_meet_identity?
+    teammate_identities.google_meet.exists?
+  end
+
+  def zoom_identity
+    teammate_identities.zoom.first
+  end
+
+  def has_zoom_identity?
+    teammate_identities.zoom.exists?
+  end
+
   def jira_identity
     teammate_identities.jira.first
   end

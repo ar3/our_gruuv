@@ -213,4 +213,50 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(json["confirmed_teammates_count"]).to eq(2)
     end
   end
+
+  describe "Google Meet import (coming soon)" do
+    it "shows a disabled Connect control with coming-soon copy on new" do
+      get new_organization_possible_observation_consult_path(organization)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Google Meet transcripts")
+      expect(response.body).to include("Coming soon")
+      expect(response.body).to include("upload or paste")
+      expect(response.body).to include("data-bs-toggle=\"tooltip\"")
+      expect(response.body).not_to include("Use this transcript")
+    end
+
+    it "rejects import while Meet connect is disabled" do
+      expect do
+        post import_google_meet_organization_possible_observation_consults_path(organization),
+             params: { document_id: "doc123" }
+      end.not_to change(PossibleObservationConsult, :count)
+
+      expect(response).to redirect_to(new_organization_possible_observation_consult_path(organization))
+      expect(flash[:alert]).to include("coming soon")
+    end
+  end
+
+  describe "Zoom import (coming soon)" do
+    it "shows a disabled Connect control with coming-soon copy on new" do
+      get new_organization_possible_observation_consult_path(organization)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Zoom transcripts")
+      expect(response.body).to include("Coming soon")
+      expect(response.body).to include("Connect Zoom (transcripts)")
+      expect(response.body).to include("data-bs-toggle=\"tooltip\"")
+      expect(response.body).not_to include("Use this transcript")
+    end
+
+    it "rejects import while Zoom connect is disabled" do
+      expect do
+        post import_zoom_organization_possible_observation_consults_path(organization),
+             params: { download_url: "https://zoom.us/rec/download/transcript" }
+      end.not_to change(PossibleObservationConsult, :count)
+
+      expect(response).to redirect_to(new_organization_possible_observation_consult_path(organization))
+      expect(flash[:alert]).to include("coming soon")
+    end
+  end
 end

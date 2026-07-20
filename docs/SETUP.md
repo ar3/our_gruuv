@@ -579,6 +579,41 @@ You can also use the setup script:
 script/setup_google_oauth.sh
 ```
 
+#### Google Meet transcripts (Consult OG hub)
+
+Same OAuth client can power Meet transcript import. Separately from login:
+
+1. Enable **Google Meet REST API** and **Google Drive API** on the Google Cloud project
+2. Add authorized redirect URI: `http://localhost:3000/google_meet/oauth/callback` (and production `https://<host>/google_meet/oauth/callback`)
+3. Consent screen: add scopes
+   - `https://www.googleapis.com/auth/meetings.space.readonly`
+   - `https://www.googleapis.com/auth/drive.meet.readonly`
+4. Optional override: `GOOGLE_MEET_OAUTH_SCOPE` (space-separated scopes)
+
+This stores a per-teammate `google_meet` identity (not the login `google_oauth2` PersonIdentity). Users who already sign in with Google still click **Connect Google Meet (transcripts)** once for Meet/Drive access. (Hub UI currently shows Meet as Coming soon; Zoom is the live meeting-import path.)
+
+#### Zoom transcripts (Consult OG hub)
+
+1. Create a **Zoom Marketplace** OAuth (User-managed) app
+2. Add redirect URI (**must match exactly** what the app sends — Zoom shows a generic “something went wrong” page on mismatch):
+   - If `RAILS_HOST` is your ngrok host: `https://<your-ngrok-host>/zoom/oauth/callback`
+   - Or set `ZOOM_REDIRECT_URI` in `.env` to that same URL and whitelist it in Zoom
+   - Local-only: `http://localhost:3000/zoom/oauth/callback` only if that is what Rails actually generates
+3. Enable cloud recording scopes for listing/downloading user recordings and transcript files, e.g.:
+   - `cloud_recording:read:list_user_recordings`
+   - `cloud_recording:read:list_recording_files`
+   - `cloud_recording:read:meeting_transcript` (if required by your app type)
+4. Add to `.env`:
+
+```bash
+ZOOM_CLIENT_ID=your_zoom_client_id
+ZOOM_CLIENT_SECRET=your_zoom_client_secret
+# Optional but recommended with ngrok — must match Zoom allowlist exactly
+# ZOOM_REDIRECT_URI=https://your-subdomain.ngrok-free.app/zoom/oauth/callback
+```
+
+Prerequisites for imports to appear: Zoom **cloud recording** and **audio transcript** must be enabled; typically only recordings the connected user **hosted**.
+
 ### 7.7 Configure Slack Integration (Optional)
 
 If you need Slack integration:
