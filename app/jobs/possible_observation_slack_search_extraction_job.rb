@@ -11,6 +11,7 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
     return unless search.search_status == "completed"
 
     model_id = model_id.presence || Llm::SlackMomentsExtractor.model_id
+    prompt_version = Llm::SlackMomentsExtractor::PROMPT_VERSION
     batch.mark_extraction_processing!
     consultation = nil
 
@@ -24,7 +25,7 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
         units_total: 0,
         extraction_version: PossibleObservationSlackSearchBatch::EXTRACTIONS_VERSION,
         model_id: model_id,
-        prompt_version: Llm::SlackMomentsExtractor::PROMPT_VERSION
+        prompt_version: prompt_version
       )
       batch.mark_extraction_completed!(
         items: [],
@@ -34,12 +35,24 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
       return
     end
 
-    chunks = PossibleObservationSlackSearches::ChunkMessagesService.call(messages)
-    subject_name = search.subject_company_teammate.person.casual_name
+    subject = search.subject_company_teammate
+    subject_name = subject.person.casual_name
     context_pack = PossibleObservationSlackSearches::SubjectContextPack.call(
-      teammate: search.subject_company_teammate,
+      teammate: subject,
       organization: search.organization
     )
+    context_fingerprint = PossibleObservationSlackSearches::ContextFingerprint.compute(context_pack.prompt_text)
+
+    memo_lookup = PossibleObservationSlackSearches::ExtractionMemoLookup.call(
+      subject: subject,
+      context_fingerprint: context_fingerprint,
+      prompt_version: prompt_version,
+      model_id: model_id,
+      messages: messages
+    )
+
+    miss_messages = memo_lookup.miss_messages
+    chunks = miss_messages.empty? ? [] : PossibleObservationSlackSearches::ChunkMessagesService.call(miss_messages)
 
     consultation = OgConsultations::StartOgoSearch.call(
       subject: batch,
@@ -49,11 +62,16 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
       units_total: chunks.size,
       extraction_version: PossibleObservationSlackSearchBatch::EXTRACTIONS_VERSION,
       model_id: model_id,
-      prompt_version: Llm::SlackMomentsExtractor::PROMPT_VERSION
+      prompt_version: prompt_version
     )
 
     raw_by_chunk = []
     chunk_errors = []
+    fresh_raw_items = []
+
+    if memo_lookup.hydrated_raw_items.any?
+      raw_by_chunk << memo_lookup.hydrated_raw_items
+    end
 
     chunks.each do |chunk_text|
       batch.heartbeat_extraction_processing!
@@ -67,9 +85,22 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
         triggered_by_teammate_id: search.creator_company_teammate_id,
         model_id: model_id
       )
-      raw_by_chunk << (result["items"] || [])
+      items = result["items"] || []
+      raw_by_chunk << items
+      fresh_raw_items.concat(items)
       chunk_errors << result["error"] if result["error"].present?
       consultation.increment_units_completed!
+    end
+
+    if miss_messages.any?
+      PossibleObservationSlackSearches::WriteExtractionMemos.call(
+        subject: subject,
+        context_fingerprint: context_fingerprint,
+        prompt_version: prompt_version,
+        model_id: model_id,
+        messages: miss_messages,
+        raw_items: fresh_raw_items
+      )
     end
 
     items = PossibleObservationSlackSearches::MergeAndResolveExtractionsService.call(

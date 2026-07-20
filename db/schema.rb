@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_20_103000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_20_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1492,6 +1492,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_103000) do
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
   end
 
+  create_table "slack_ogo_extraction_memos", force: :cascade do |t|
+    t.bigint "subject_company_teammate_id", null: false
+    t.string "context_fingerprint", limit: 64, null: false
+    t.string "prompt_version", null: false
+    t.string "model_id", null: false
+    t.string "channel_id", null: false
+    t.string "message_ts", null: false
+    t.jsonb "raw_items", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["subject_company_teammate_id", "context_fingerprint", "prompt_version", "model_id", "channel_id", "message_ts"], name: "idx_slack_ogo_extraction_memos_uniq", unique: true
+    t.index ["subject_company_teammate_id"], name: "idx_slack_ogo_extraction_memos_on_subject_id"
+  end
+
   create_table "solid_cache_entries", force: :cascade do |t|
     t.binary "key", null: false
     t.binary "value", null: false
@@ -1959,6 +1973,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_103000) do
   add_foreign_key "seats", "titles"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"
+  add_foreign_key "slack_ogo_extraction_memos", "teammates", column: "subject_company_teammate_id"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
