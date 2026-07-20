@@ -55,9 +55,13 @@ RSpec.describe OgConsultations::StatusPayload do
   end
 
   it 'builds heartbeat payloads without ETA' do
-    transcript = create(:possible_observation_transcript, organization: organization, extraction_status: 'pending')
+    consult = create(
+      :possible_observation_consult,
+      organization: organization,
+      extraction_status: 'pending'
+    )
 
-    payload = described_class.for_heartbeat(record: transcript, status: 'pending')
+    payload = described_class.for_heartbeat(record: consult, status: 'pending')
 
     expect(payload[:estimated_duration_seconds]).to be_nil
     expect(payload[:eta_confidence]).to be_nil

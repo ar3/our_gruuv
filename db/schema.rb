@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_20_003837) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_20_103000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -619,10 +619,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_003837) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "subject_line"
-    t.bigint "possible_observation_transcript_id"
     t.index ["company_id"], name: "index_feedback_requests_on_company_id"
     t.index ["deleted_at"], name: "index_feedback_requests_on_deleted_at"
-    t.index ["possible_observation_transcript_id"], name: "index_feedback_requests_on_possible_observation_transcript_id"
     t.index ["requestor_teammate_id"], name: "index_feedback_requests_on_requestor_teammate_id"
     t.index ["subject_of_feedback_teammate_id"], name: "index_feedback_requests_on_subject_of_feedback_teammate_id"
   end
@@ -1382,20 +1380,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_003837) do
     t.index ["subject_company_teammate_id"], name: "idx_on_subject_company_teammate_id_6d06dace93"
   end
 
-  create_table "possible_observation_transcripts", force: :cascade do |t|
-    t.bigint "organization_id", null: false
-    t.bigint "creator_company_teammate_id", null: false
-    t.string "display_name", null: false
-    t.jsonb "extractions", default: {}, null: false
-    t.string "extraction_status", default: "pending", null: false
-    t.text "extraction_error"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_de1e07b9a2"
-    t.index ["extraction_status"], name: "index_possible_observation_transcripts_on_extraction_status"
-    t.index ["organization_id"], name: "index_possible_observation_transcripts_on_organization_id"
-  end
-
   create_table "prompt_answers", force: :cascade do |t|
     t.bigint "prompt_id", null: false
     t.bigint "prompt_question_id", null: false
@@ -1883,7 +1867,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_003837) do
   add_foreign_key "feedback_request_responders", "feedback_requests"
   add_foreign_key "feedback_request_responders", "teammates"
   add_foreign_key "feedback_requests", "organizations", column: "company_id"
-  add_foreign_key "feedback_requests", "possible_observation_transcripts"
   add_foreign_key "feedback_requests", "teammates", column: "requestor_teammate_id"
   add_foreign_key "feedback_requests", "teammates", column: "subject_of_feedback_teammate_id"
   add_foreign_key "goal_associations", "goals"
@@ -1962,8 +1945,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_003837) do
   add_foreign_key "possible_observation_slack_searches", "organizations"
   add_foreign_key "possible_observation_slack_searches", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "possible_observation_slack_searches", "teammates", column: "subject_company_teammate_id"
-  add_foreign_key "possible_observation_transcripts", "organizations"
-  add_foreign_key "possible_observation_transcripts", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "prompt_answers", "prompt_questions"
   add_foreign_key "prompt_answers", "prompts"
   add_foreign_key "prompt_answers", "teammates", column: "updated_by_company_teammate_id"

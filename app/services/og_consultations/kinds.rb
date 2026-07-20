@@ -20,6 +20,8 @@ module OgConsultations
       end
 
       def job_class
+        return nil if job_class_name.blank?
+
         job_class_name.constantize
       end
 
@@ -65,11 +67,13 @@ module OgConsultations
         llm_purpose: 'teammate_growth',
         billable: true
       ),
+      # Historical kind only — Meeting transcripts → FR path was retired (Phase 1).
+      # Keep for Value Billing / Insights labels on existing og_consultations rows.
       OgConsultation::KIND_OGO_SEARCH_TRANSCRIPT => Entry.new(
         kind: OgConsultation::KIND_OGO_SEARCH_TRANSCRIPT,
         label: 'OGO search (transcript)',
         result_class_name: 'OgoSearchResult',
-        job_class_name: 'PossibleObservationTranscriptExtractionJob',
+        job_class_name: nil,
         runner_class_name: nil,
         llm_purpose: 'transcript_chunk',
         billable: true

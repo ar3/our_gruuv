@@ -17,11 +17,11 @@ RSpec.describe OgConsultations::Kinds do
     expect(entry.billable).to be(true)
   end
 
-  it 'allows OGO search kinds without a runner' do
+  it 'keeps historical OGO search transcript kind without a job' do
     entry = described_class.fetch(OgConsultation::KIND_OGO_SEARCH_TRANSCRIPT)
 
     expect(entry.result_class).to eq(OgoSearchResult)
-    expect(entry.job_class).to eq(PossibleObservationTranscriptExtractionJob)
+    expect(entry.job_class).to be_nil
     expect(entry.runner_class).to be_nil
   end
 

@@ -39,7 +39,6 @@ class Organization < ApplicationRecord
   has_many :bulk_downloads, foreign_key: 'company_id', dependent: :destroy
   has_many :assignment_flows, foreign_key: 'company_id', dependent: :destroy
   has_many :observations, foreign_key: :company_id, dependent: :destroy
-  has_many :possible_observation_transcripts, dependent: :destroy
   has_many :possible_observation_slack_searches, dependent: :destroy
   has_many :possible_observation_consults, dependent: :destroy
   has_many :assignment_survey_submissions, dependent: :destroy

@@ -538,13 +538,6 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Meeting transcripts',
-            icon: 'bi-file-earmark-text',
-            path: organization_possible_observation_transcripts_path(current_organization),
-            policy_check: -> { policy(::PossibleObservationTranscript).index? },
-            coming_soon: false
-          },
-          {
             label: 'Eligibility Requirements',
             icon: 'bi-check2-circle',
             path: organization_eligibility_requirements_path(current_organization),

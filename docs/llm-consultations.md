@@ -11,7 +11,7 @@ Three layers separate **cost**, **billing**, and **typed product output**. New B
 | Typed result | Kind-specific tables | Display/parsed output for that kind (e.g. `AbilityClarityResult`, `OgoSearchResult`) |
 
 ```text
-Subject (Ability / Assignment / Transcript / Slack search batch / …)
+Subject (Ability / Assignment / Slack search / PossibleObservationConsult / …)
   └── has_many OgConsultation (append-only; show UI uses latest for subject+kind)
         ├── belongs_to result (polymorphic → kind table)
         └── has_many LlmInvocation (parent)
@@ -19,7 +19,11 @@ Subject (Ability / Assignment / Transcript / Slack search batch / …)
 
 ## Hub: Consult OG to Find OGOs (`PossibleObservationConsult`)
 
-Org-nav under Observations (OGO). Paste/upload for now; Zoom and Google Meet connect are **Coming soon** (backend OAuth code retained). Confirm teammates → one multi-teammate `ogo_search_consult` → review → draft OGOs. Old Meeting transcripts retirement is a later phase.
+Org-nav under Observations (OGO). Paste/upload → confirm teammates → one multi-teammate `ogo_search_consult` → review → draft OGOs.
+
+Zoom and Google Meet **Connect** buttons are **Coming soon** (paste/upload remains). See [Incomplete pursuits](./incomplete-pursuits.md#meeting-transcript-auto-ingest-google-meet--zoom).
+
+The old Beta **Meeting transcripts** upload → feedback-request path (`PossibleObservationTranscript`) was **removed** (Phase 1); use this hub instead.
 
 **Check-in entry:** Assignment / Aspiration / Ability 1-by-1 pages can start a 90-day Slack search with `auto_extract_after_search`, then poll progressive ≥80% object-matched candidates via `CheckIns::SlackOgoConsult`.
 **Not billable consultations:** HR enrich/match and teammate resolve still go through `Llm::Client` (invocations only).

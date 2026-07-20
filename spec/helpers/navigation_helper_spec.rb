@@ -438,14 +438,14 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('Check-ins Health')
       end
 
-      it 'includes Beta section with Insights, Meeting transcripts, Position Comparison, and Eligibility Requirements' do
+      it 'includes Beta section with Insights, Position Comparison, and Eligibility Requirements' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Beta' }
         expect(section).to be_present
         expect(section[:section]).to eq('beta')
         labels = section[:items].map { |item| item[:label] }
         expect(labels).to include('Insights')
-        expect(labels).to include('Meeting transcripts')
+        expect(labels).not_to include('Meeting transcripts')
         expect(labels).to include('Position Comparison')
         expect(labels).to include('Eligibility Requirements')
         expect(labels).not_to include('Start Here')
@@ -535,17 +535,18 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(ogo_section[:icon]).to eq('bi-eye')
       end
 
-      it 'has the expected four sub-items in order' do
+      it 'has the expected five sub-items in order' do
         structure = helper.navigation_structure
         ogo_section = structure.find { |item| item[:label] == 'Observations (OGO)' }
         items = ogo_section[:items]
         labels = items.map { |item| item[:label] }
 
-        expect(labels.length).to eq(4)
+        expect(labels.length).to eq(5)
         expect(labels[0]).to eq('Add New OGO')
+        expect(labels[1]).to match(/\A.+ Kudos\z/)
         expect(labels[2]).to eq("OGO's involving me")
         expect(labels[3]).to eq('All observations')
-        expect(labels[1]).to match(/\A.+ Kudos\z/)
+        expect(labels[4]).to eq('Consult OG to Find OGOs')
       end
 
       it 'uses organization name in Kudos sub-item label' do

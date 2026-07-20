@@ -85,7 +85,7 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
       teammate = create(:company_teammate, :assigned_employee, organization: organization)
       ability = create(:ability, company: organization)
       assignment = create(:assignment, company: organization)
-      transcript = create(:possible_observation_transcript, organization: organization)
+      consult = create(:possible_observation_consult, organization: organization)
       slack_search = create(:possible_observation_slack_search, organization: organization)
       completed_at = Time.current
 
@@ -102,8 +102,8 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
         completed_at: completed_at
       )
       create_ogo_search_consultation!(
-        subject: transcript,
-        kind: OgConsultation::KIND_OGO_SEARCH_TRANSCRIPT,
+        subject: consult,
+        kind: OgConsultation::KIND_OGO_SEARCH_CONSULT,
         organization: organization,
         status: 'completed',
         triggered_by_teammate: teammate,

@@ -84,9 +84,9 @@ Do **not** batch multiple pages unless you ask for it.
 | F1 | Select Focus — feedback request (`GET/PATCH …/feedback_requests/:id/select_focus`) | `feedback_requests/select_focus` | Three sections; toolbar design TBD |
 | F2 | Acknowledge check-ins — audit (`GET/PATCH …/employees/:id/audit`) | `employees/audit` | Snapshot multi-select |
 | F3 | Associate Titles — department (`GET/PATCH …/departments/:id/associate_titles`) | `departments/associate_titles` | Lower priority |
-| F4 | Review feedback extractions (`GET …/possible_observation_transcripts/:id/review_feedback_requests`) | `possible_observation_transcripts/review_feedback_requests` | |
+| F4 | ~~Review feedback extractions (`possible_observation_transcripts/…/review_feedback_requests`)~~ | Removed with Meeting transcripts Phase 1 | N/A |
 
-**Gate:** Your approval after F4; plan complete unless new pages are added.
+**Gate:** Plan complete unless new pages are added. Meeting transcripts → FR path retired; use Consult OG hub instead.
 
 ---
 

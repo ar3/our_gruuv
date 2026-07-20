@@ -21,7 +21,7 @@ class OgConsultation < ApplicationRecord
   KIND_OGO_SEARCH_SLACK = 'ogo_search_slack'
   KIND_OGO_SEARCH_CONSULT = 'ogo_search_consult'
 
-  belongs_to :subject, polymorphic: true
+  belongs_to :subject, polymorphic: true, optional: true
   belongs_to :organization, class_name: 'Organization'
   belongs_to :triggered_by_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :result, polymorphic: true, optional: true
