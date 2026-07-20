@@ -160,6 +160,12 @@ module ApplicationHelper
     TimezoneService.iana_identifier(user&.timezone_or_default)
   end
 
+  # Candidate review: when observer == observee, default observer to the logged-in viewer.
+  def candidate_items_for_review(items)
+    viewer = current_company_teammate if respond_to?(:current_company_teammate)
+    OgCandidateReview::DefaultObserverToViewer.apply(items, viewer: viewer)
+  end
+
   # Human-readable timeframe for the observations card empty state (anchored to last check-in or milestone when present).
   # since_date: start of range (anchor date or long ago), has_finalized: true when an anchor event exists (check-in or milestone).
   def observations_timeframe_description(since_date, has_finalized)

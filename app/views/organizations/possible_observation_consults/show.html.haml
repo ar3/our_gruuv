@@ -2,7 +2,7 @@
 - form_id = "ogo-consult-candidates-form"
 - processing = %w[pending processing].include?(@consult.extraction_status)
 - completed = @consult.extraction_status == "completed"
-- groups = @consult.extraction_groups_by_processed_teammate(teammates: @confirmed_teammates)
+- groups = @consult.extraction_groups_by_processed_teammate(teammates: @confirmed_teammates).map { |tm, items| [tm, candidate_items_for_review(items)] }
 
 .mb-3
   = link_to "← All consults", organization_possible_observation_consults_path(organization), class: "text-decoration-none"

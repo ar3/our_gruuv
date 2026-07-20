@@ -72,6 +72,21 @@ RSpec.describe PossibleObservationSlackSearches::BatchCreateDraftObservationsSer
     expect(batch.extraction_items.first[:observation_id]).to eq(observation.id)
   end
 
+  it "defaults observer to creator when candidate has observer == observee" do
+    items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
+    items[0]["responder_company_teammate_id"] = subject.id
+    items[0]["subject_company_teammate_id"] = subject.id
+    batch.replace_extraction_items!(items)
+
+    result = described_class.call(batch: batch.reload, creator: creator)
+    expect(result).to be_ok
+    expect(result.value[:created]).to eq(1)
+
+    observation = Observation.last
+    expect(observation.observer).to eq(creator_person)
+    expect(observation.observed_teammates).to contain_exactly(subject)
+  end
+
   it "is idempotent when observation_id is already present" do
     described_class.call(batch: batch, creator: creator)
     expect do

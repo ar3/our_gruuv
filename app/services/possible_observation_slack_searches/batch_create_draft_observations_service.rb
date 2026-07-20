@@ -72,6 +72,7 @@ module PossibleObservationSlackSearches
     end
 
     def create_draft_for(item)
+      item = OgCandidateReview::DefaultObserverToViewer.apply_one(item, viewer: @creator)
       sid = item["subject_company_teammate_id"].presence&.to_i
       rid = item["responder_company_teammate_id"].presence&.to_i
       return Result.err("choose both observer and subject.") if sid.blank? || rid.blank?
