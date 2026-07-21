@@ -8,7 +8,7 @@ module CheckIns
         new(...).call
       end
 
-      def initialize(search:, rateable_type:, rateable_id:, organization:, subject_teammate:, object_name:, helpers:)
+      def initialize(search:, rateable_type:, rateable_id:, organization:, subject_teammate:, object_name:, helpers:, since: nil, until_time: nil)
         @search = search
         @rateable_type = rateable_type
         @rateable_id = rateable_id
@@ -16,6 +16,8 @@ module CheckIns
         @subject_teammate = subject_teammate
         @object_name = object_name
         @helpers = helpers
+        @since = since
+        @until = until_time
       end
 
       def call
@@ -23,7 +25,9 @@ module CheckIns
         filtered = CandidateFilter.call(
           search: @search,
           rateable_type: @rateable_type,
-          rateable_id: @rateable_id
+          rateable_id: @rateable_id,
+          since: @since,
+          until_time: @until
         )
         phase = derive_phase(batches)
         stronger_id = Llm::SlackMomentsExtractor.stronger_model_id

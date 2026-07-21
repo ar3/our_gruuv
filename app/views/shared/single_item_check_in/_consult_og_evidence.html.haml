@@ -1,14 +1,16 @@
--# locals: prompt:, casual_name:, object_name:, rateable_type:, rateable_id:
+-# locals: prompt:, casual_name:, object_name:, rateable_type:, rateable_id:, since_date: nil
 - viewer = current_company_teammate
 - status_url = organization_teammate_slack_ogo_check_in_consult_path(organization, @teammate)
 - create_url = organization_teammate_slack_ogo_check_in_consult_path(organization, @teammate)
 - csrf = form_authenticity_token
+- since_iso = (defined?(since_date) && since_date.present?) ? since_date.to_time.iso8601 : ""
 
 .card.border-0.shadow-sm.mb-4{"data-controller" => "check-in-slack-ogo-consult",
   "data-check-in-slack-ogo-consult-status-url-value" => status_url,
   "data-check-in-slack-ogo-consult-create-url-value" => create_url,
   "data-check-in-slack-ogo-consult-rateable-type-value" => rateable_type,
   "data-check-in-slack-ogo-consult-rateable-id-value" => rateable_id.to_s,
+  "data-check-in-slack-ogo-consult-since-value" => since_iso,
   "data-check-in-slack-ogo-consult-csrf-token-value" => csrf}
   .card-body
     %h6.mb-2

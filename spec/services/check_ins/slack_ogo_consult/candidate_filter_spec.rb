@@ -65,6 +65,43 @@ RSpec.describe CheckIns::SlackOgoConsult::CandidateFilter do
     expect(result[:other_matches].map { |m| m.item[:id] }).to eq(["b"])
   end
 
+  it "excludes candidates whose Slack moment falls outside the check-in window" do
+    items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
+    items.find { |i| i["id"] == "a" }["ts"] = 2.days.ago.to_f.to_s
+    items << {
+      "id" => "d",
+      "confidence" => 0.95,
+      "suggested_rateable_type" => "Assignment",
+      "suggested_rateable_id" => assignment.id,
+      "quote" => "old",
+      "short_quote" => "old",
+      "ts" => 40.days.ago.to_f.to_s
+    }
+    batch.replace_extraction_items!(items)
+
+    result = described_class.call(
+      search: search,
+      rateable_type: "Assignment",
+      rateable_id: assignment.id,
+      since: 10.days.ago,
+      until_time: Time.current
+    )
+
+    expect(result[:object_matches].map { |m| m.item[:id] }).to eq(["a"])
+  end
+
+  it "keeps candidates without a timestamp when a window is given" do
+    result = described_class.call(
+      search: search,
+      rateable_type: "Assignment",
+      rateable_id: assignment.id,
+      since: 10.days.ago,
+      until_time: Time.current
+    )
+
+    expect(result[:object_matches].map { |m| m.item[:id] }).to eq(["a"])
+  end
+
   it "excludes candidates already promoted to an observation" do
     items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
     items.find { |i| i["id"] == "a" }["observation_id"] = 999

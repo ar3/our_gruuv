@@ -49,7 +49,7 @@ RSpec.describe "Slack OGO check-in consults", type: :request do
     get organization_teammate_assignment_path(organization, subject, assignment)
     expect(response).to have_http_status(:success)
     expect(response.body).to include("Consult OG for evidence")
-    expect(response.body).to include("Get evidence manually")
+    expect(response.body).to include("check-in-get-evidence-manually")
     expect(response.body).to include("check-in-slack-ogo-consult")
   end
 end

@@ -229,7 +229,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         get assignment_show_path
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Consult OG for evidence")
-        expect(response.body).to include("Get evidence manually")
+        expect(response.body).to include("check-in-get-evidence-manually")
         expect(response.body).to include("Paste into Claude or another AI assistant")
         expect(response.body).to include("data-controller=\"clipboard\"")
         expect(response.body).to include("Copy prompt")
@@ -238,7 +238,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
 
         body = response.body
         expect(body.index("research-observations")).to be < body.index("Consult OG for evidence")
-        expect(body.index("Get evidence manually")).to be < body.index("Associated Goals")
+        expect(body.index("check-in-get-evidence-manually")).to be < body.index("Associated Goals")
       end
 
       it "renders expected outcomes as markdown in assignment details" do

@@ -7,6 +7,7 @@ export default class extends Controller {
     createUrl: String,
     rateableType: String,
     rateableId: String,
+    since: String,
     csrfToken: String
   }
 
@@ -53,6 +54,7 @@ export default class extends Controller {
       body.set("mode", mode)
       body.set("rateable_type", this.rateableTypeValue)
       body.set("rateable_id", this.rateableIdValue)
+      if (this.sinceValue) body.set("since", this.sinceValue)
       if (this.searchId) body.set("search_id", this.searchId)
 
       const response = await fetch(this.createUrlValue, {
@@ -104,6 +106,7 @@ export default class extends Controller {
       const url = new URL(this.statusUrlValue, window.location.origin)
       url.searchParams.set("rateable_type", this.rateableTypeValue)
       url.searchParams.set("rateable_id", this.rateableIdValue)
+      if (this.sinceValue) url.searchParams.set("since", this.sinceValue)
       if (this.searchId) url.searchParams.set("search_id", this.searchId)
 
       const response = await fetch(url.toString(), { headers: { Accept: "application/json" } })

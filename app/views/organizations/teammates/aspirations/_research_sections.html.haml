@@ -110,7 +110,8 @@
            casual_name: @teammate.person.casual_name,
            object_name: @aspiration.name,
            rateable_type: "Aspiration",
-           rateable_id: @aspiration.id
+           rateable_id: @aspiration.id,
+           since_date: @observations_since_date
 
   %section#research-goals.mb-4
     = render 'organizations/shared/goals/associable_associated_goals_card',

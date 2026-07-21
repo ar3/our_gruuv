@@ -79,7 +79,8 @@
              casual_name: casual,
              object_name: @ability.name,
              rateable_type: "Ability",
-             rateable_id: @ability.id
+             rateable_id: @ability.id,
+             since_date: @observations_since_date
 
     = render 'organizations/shared/goals/associable_associated_goals_card',
         organization: @organization,

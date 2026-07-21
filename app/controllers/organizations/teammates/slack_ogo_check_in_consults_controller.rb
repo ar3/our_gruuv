@@ -110,8 +110,20 @@ class Organizations::Teammates::SlackOgoCheckInConsultsController < Organization
       organization: organization,
       subject_teammate: @teammate,
       object_name: @object_name,
-      helpers: self
+      helpers: self,
+      since: check_in_since,
+      until_time: Time.current
     )
+  end
+
+  # Current check-in window start (from the 1-by-1 page). Bounds surfaced candidates.
+  def check_in_since
+    raw = params[:since]
+    return nil if raw.blank?
+
+    Time.zone.parse(raw.to_s)
+  rescue ArgumentError
+    nil
   end
 
   def idle_payload
