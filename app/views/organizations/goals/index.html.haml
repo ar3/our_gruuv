@@ -11,7 +11,7 @@
     = nav_hierarchy_with_previous(organization: @organization, crumbs: breadcrumbs)
 
 - content_for :header do
-  - selected_value = @current_filters[:owner_id] == 'everyone_in_company' ? 'everyone_in_company' : (@current_filters[:owner_id] == 'created_by_me' ? 'created_by_me' : primary_filter_select_value)
+  - selected_value = @current_filters[:owner_id].to_s.in?(['everyone_in_company', 'created_by_me', 'my_relevant_goals']) ? @current_filters[:owner_id] : primary_filter_select_value
   - grouped_owner_options = available_goal_owners_grouped
   - current_filter_label = grouped_owner_options.flat_map { |_group, options| options }.find { |_label, value| value == selected_value }&.first || 'Select owner'
   - selected_owner_option = grouped_owner_options.flat_map { |_group, options| options }.find { |_label, value| value == selected_value }
@@ -20,7 +20,7 @@
   - selected_filter_is_owner = selected_owner_value.to_s.match?(/\A(CompanyTeammate|Company|Department|Team)_\d+\z/)
   - filter_owner_param = primary_filter_select_value
   - filter_owner_is_entity = filter_owner_param.to_s.match?(/\A(CompanyTeammate|Company|Department|Team)_\d+\z/)
-  - goal_special_owner_filter = @current_filters[:owner_id].to_s.in?(['everyone_in_company', 'created_by_me'])
+  - goal_special_owner_filter = @current_filters[:owner_id].to_s.in?(['everyone_in_company', 'created_by_me', 'my_relevant_goals'])
   - fallback_owner_value = current_company_teammate.present? ? "CompanyTeammate_#{current_company_teammate.id}" : nil
   - add_goal_owner_value = goals_index_add_goal_owner_value(goal_special_owner_filter: goal_special_owner_filter, filter_owner_is_entity: filter_owner_is_entity, filter_owner_param: filter_owner_param, selected_filter_is_owner: selected_filter_is_owner, selected_owner_value: selected_owner_value, fallback_owner_value: fallback_owner_value)
   - add_goal_owner_label = goals_index_add_goal_owner_label(selected_owner_label: selected_owner_label, filter_owner_param: filter_owner_param, current_person: current_person)

@@ -530,17 +530,21 @@ RSpec.describe 'Vertical Navigation', type: :request do
     end
   end
 
-  describe 'top bar Add New OGO control' do
-    it 'links an icon-only plus to select type when the viewer can create observations' do
+  describe 'top bar create control' do
+    it 'shows a plus dropdown with Goal and Observation options' do
       get dashboard_organization_path(organization)
       follow_redirect! if response.redirect?
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('bi-plus')
+      # Goal (confidence check) branch -> goals index with the "my relevant goals" filter
+      goals_path = organization_goals_path(organization, owner_id: 'my_relevant_goals')
+      expect(response.body).to include("href=\"#{goals_path}\"")
+      expect(response.body).to include('Goal (confidence check)')
+      # Observation branch -> unchanged select type overlay
       select_type_path = select_type_organization_observations_path(organization)
       expect(response.body).to include("href=\"#{select_type_path}\"")
-      expect(response.body).to include('title="Add New OGO"')
-      expect(response.body).to include('aria-label="Add New OGO"')
-      expect(response.body).to include('bi-plus')
+      expect(response.body).to include('Observation')
     end
   end
 end

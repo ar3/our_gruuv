@@ -11,9 +11,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Check for special filters
     @everyone_in_company_filter = params[:owner_id] == 'everyone_in_company'
     @created_by_me_filter = params[:owner_id] == 'created_by_me'
+    @my_relevant_goals_filter = params[:owner_id] == 'my_relevant_goals'
 
     # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
-    if !@everyone_in_company_filter && !@created_by_me_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
+    if !@everyone_in_company_filter && !@created_by_me_filter && !@my_relevant_goals_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
       params[:owner_type] = owner_type
       params[:owner_id] = owner_id
@@ -25,7 +26,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     current_teammate = current_company_teammate
 
     # Default to logged in user if no owner is selected (unless using special filters)
-    unless @everyone_in_company_filter || @created_by_me_filter || (params[:owner_type].present? && params[:owner_id].present?)
+    unless @everyone_in_company_filter || @created_by_me_filter || @my_relevant_goals_filter || (params[:owner_type].present? && params[:owner_id].present?)
       if current_teammate
         params[:owner_type] = 'CompanyTeammate'
         params[:owner_id] = current_teammate.id.to_s
@@ -74,6 +75,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     elsif @created_by_me_filter
       # Filter for goals created by the current teammate
       @goals = @goals.where(creator: current_teammate)
+    elsif @my_relevant_goals_filter
+      # "My relevant goals": active goals that are either company-wide (everyone_in_company)
+      # or owned by the current teammate.
+      @goals = @goals.active.merge(my_relevant_goals_condition(current_teammate))
     else
       # Filter by owner
       @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
@@ -109,6 +114,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         all_goals_for_filter = policy_scope(Goal).where(privacy_level: 'everyone_in_company')
       elsif @created_by_me_filter
         all_goals_for_filter = policy_scope(Goal).where(creator: current_teammate)
+      elsif @my_relevant_goals_filter
+        all_goals_for_filter = policy_scope(Goal).active.merge(my_relevant_goals_condition(current_teammate))
       else
         all_goals_for_filter = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
       end
@@ -892,6 +899,15 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     all_ids.uniq
   end
   
+  # Condition for the "My relevant goals" filter: company-wide (everyone_in_company)
+  # goals OR goals owned by the current teammate. Active-only is applied by the caller.
+  def my_relevant_goals_condition(teammate)
+    company_wide = Goal.where(privacy_level: 'everyone_in_company')
+    return company_wide unless teammate
+
+    company_wide.or(Goal.where(owner_type: 'CompanyTeammate', owner_id: teammate.id))
+  end
+
   def apply_timeframe_filter(goals, timeframe)
     return goals unless timeframe.present?
     return goals if timeframe == 'all'
@@ -1050,6 +1066,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     company = @organization.root_company || @organization
 
     # Filter-only options (index page: view all / view mine)
+    options << ["My relevant goals", "my_relevant_goals"]
     if company.display_name.present?
       options << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"]
     end
@@ -1138,6 +1155,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     groups = []
 
     filter_opts = []
+    filter_opts << ["My relevant goals", "my_relevant_goals"]
     filter_opts << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"] if company.display_name.present?
     filter_opts << ["All goals created by me", "created_by_me"]
     groups << ["Filter", filter_opts] if filter_opts.any?
@@ -1177,7 +1195,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   # Returns goal owners for bulk create form (excludes filter options that aren't actual owners)
   def available_goal_owners_for_bulk
-    available_goal_owners.reject { |_label, value| value.in?(['everyone_in_company', 'created_by_me']) }
+    available_goal_owners.reject { |_label, value| value.in?(['everyone_in_company', 'created_by_me', 'my_relevant_goals']) }
   end
   helper_method :available_goal_owners_for_bulk
 
