@@ -1,9 +1,12 @@
 -# Locals: item, idx, editable
 - included = ActiveModel::Type::Boolean.new.cast(item[:include])
 - locked = item[:observation_id].present?
+- dismissed = item[:dismissed_at].present?
+- current_state = locked ? "included" : (dismissed ? "dismissed" : (included ? "included" : "needs_processed"))
+- field_disabled = locked || current_state != "included"
 - confidence = item[:confidence].to_f
 - badge_class = confidence >= 0.75 ? "text-bg-success" : (confidence >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
-%tr
+%tr{ data: { consult_candidate_row: true } }
   %td
     = hidden_field_tag "items[#{idx}][id]", item[:id]
     = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
@@ -20,6 +23,8 @@
     = hidden_field_tag "items[#{idx}][association_reason]", item[:association_reason]
     = hidden_field_tag "items[#{idx}][rating_reason]", item[:rating_reason]
     = hidden_field_tag "items[#{idx}][suggested_goal_id]", item[:suggested_goal_id]
+    = hidden_field_tag "items[#{idx}][dismissed_at]", item[:dismissed_at]
+    = hidden_field_tag "items[#{idx}][dismissed_by_company_teammate_id]", item[:dismissed_by_company_teammate_id]
     .mb-2.fs-6
       %span.badge.me-2{ class: badge_class }= "#{format('%.0f%%', confidence * 100)} confident in this suggestion"
       - if item[:suggested_rating].present?
@@ -27,21 +32,47 @@
         Suggested:
         %strong= rating_label
         for #{item[:suggested_rateable_name].presence || item[:suggested_rateable_type]}
-    = text_area_tag "items[#{idx}][quote]", item[:quote], class: "form-control form-control-sm", rows: 8, disabled: !included || locked
-  %td{ style: "min-width: 220px;" }
-    - if locked
-      = hidden_field_tag "items[#{idx}][include]", "1"
-    .form-check.mb-2
-      = check_box_tag "items[#{idx}][include]", "1", included, class: "form-check-input", disabled: locked
-      = label_tag nil, locked ? "Included (draft created)" : "Include", class: "form-check-label"
+    = text_area_tag "items[#{idx}][quote]", item[:quote], class: "form-control form-control-sm", rows: 8, disabled: field_disabled, data: { consult_row_field: true }
+  %td{ style: "min-width: 240px;" }
+    .mb-2
+      = label_tag nil, "Status", class: "form-label small mb-1 d-block"
+      - if locked
+        = hidden_field_tag "items[#{idx}][state]", "included"
+        %span.badge.text-bg-success Included (draft created)
+      - else
+        .btn-group.btn-group-sm.d-flex{ role: "group", "aria-label" => "Candidate status" }
+          = radio_button_tag "items[#{idx}][state]", "needs_processed", current_state == "needs_processed", class: "btn-check", id: "consult_#{idx}_state_needs", data: { consult_state: true }
+          = label_tag "consult_#{idx}_state_needs", "Reviewing", class: "btn btn-outline-secondary"
+          = radio_button_tag "items[#{idx}][state]", "included", current_state == "included", class: "btn-check", id: "consult_#{idx}_state_incl", data: { consult_state: true }
+          = label_tag "consult_#{idx}_state_incl", "Include", class: "btn btn-outline-success"
+          = radio_button_tag "items[#{idx}][state]", "dismissed", current_state == "dismissed", class: "btn-check", id: "consult_#{idx}_state_dismiss", data: { consult_state: true }
+          = label_tag "consult_#{idx}_state_dismiss", "Dismiss", class: "btn btn-outline-danger"
+        .mt-2.d-flex.flex-column.align-items-start.gap-1
+          %span.text-muted.small ...or act on just this one now:
+          = button_tag "Create draft OGO now",
+                       type: "submit",
+                       name: "promote_item_id",
+                       value: item[:id],
+                       class: "btn btn-sm btn-link text-decoration-none p-0"
+          = button_tag "Create published OGO now (private)",
+                       type: "submit",
+                       name: "publish_item_id",
+                       value: item[:id],
+                       class: "btn btn-sm btn-link text-decoration-none p-0"
+          = button_tag "Dismiss now",
+                       type: "submit",
+                       name: "dismiss_item_id",
+                       value: item[:id],
+                       class: "btn btn-sm btn-link text-decoration-none p-0"
+    %hr.my-2
     - @observation_type_options.each do |label, value|
       .form-check
-        = radio_button_tag "items[#{idx}][kind]", value, item[:kind].to_s == value, class: "form-check-input", disabled: !included || locked
+        = radio_button_tag "items[#{idx}][kind]", value, item[:kind].to_s == value, class: "form-check-input", disabled: field_disabled, data: { consult_row_field: true }
         = label_tag nil, label, class: "form-check-label"
     = label_tag nil, "Observer", class: "form-label small mb-0 mt-2"
-    = select_tag "items[#{idx}][responder_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:responder_company_teammate_id]), class: "form-select form-select-sm", disabled: !included || locked
+    = select_tag "items[#{idx}][responder_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:responder_company_teammate_id]), class: "form-select form-select-sm", disabled: field_disabled, data: { consult_row_field: true }
     = label_tag nil, "Subject", class: "form-label small mb-0 mt-2"
-    = select_tag "items[#{idx}][subject_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:subject_company_teammate_id]), class: "form-select form-select-sm", disabled: !included || locked
+    = select_tag "items[#{idx}][subject_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:subject_company_teammate_id]), class: "form-select form-select-sm", disabled: field_disabled, data: { consult_row_field: true }
   %td
     - if locked
       = link_to "Open draft OGO", organization_observation_path(organization, item[:observation_id]), class: "btn btn-sm btn-outline-primary"

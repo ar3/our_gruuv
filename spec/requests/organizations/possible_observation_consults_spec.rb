@@ -60,6 +60,16 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(consult.confirmed_teammate_ids).to eq([other.id])
       expect(consult.extraction_status).to eq("pending")
     end
+
+    it "confirms people and runs the stronger model when model=stronger" do
+      expect do
+        patch confirm_teammates_organization_possible_observation_consult_path(organization, consult),
+              params: { confirmed_teammate_ids: [other.id], model: "stronger" }
+      end.to have_enqueued_job(PossibleObservationConsultExtractionJob)
+        .with(consult.id, model_id: Llm::MultiTeammateMomentsExtractor.stronger_model_id)
+
+      expect(consult.reload.extraction_status).to eq("pending")
+    end
   end
 
   describe "draft promote" do
@@ -74,16 +84,16 @@ RSpec.describe "Possible observation consults", type: :request do
       )
     end
 
-    it "creates draft OGOs from included candidates" do
+    it "creates draft OGOs from included candidates via Save all" do
       item = consult.extraction_items.first
       expect do
         patch organization_possible_observation_consult_path(organization, consult),
               params: {
-                commit: "Create draft OGOs from included",
+                commit: "Save all",
                 items: {
                   "0" => {
                     id: item[:id],
-                    include: "1",
+                    state: "included",
                     kind: item[:kind],
                     quote: item[:quote],
                     responder_company_teammate_id: teammate.id,
@@ -100,6 +110,161 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(observation.creator_company_teammate).to eq(teammate)
       expect(observation.observer).to eq(person)
       expect(consult.reload.extraction_items.first[:observation_id]).to eq(observation.id)
+    end
+
+    it "creates a single draft OGO immediately via Create draft OGO now" do
+      item = consult.extraction_items.first
+      expect do
+        patch organization_possible_observation_consult_path(organization, consult),
+              params: {
+                promote_item_id: item[:id],
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    state: "needs_processed",
+                    kind: item[:kind],
+                    quote: item[:quote],
+                    responder_company_teammate_id: teammate.id,
+                    subject_company_teammate_id: other.id,
+                    confidence: item[:confidence]
+                  }
+                }
+              }
+      end.to change(Observation, :count).by(1)
+
+      expect(consult.reload.extraction_items.first[:observation_id]).to eq(Observation.last.id)
+    end
+
+    it "creates and publishes an OGO when the viewer is the observer" do
+      item = consult.extraction_items.first
+      patch organization_possible_observation_consult_path(organization, consult),
+            params: {
+              publish_item_id: item[:id],
+              items: {
+                "0" => {
+                  id: item[:id],
+                  state: "needs_processed",
+                  kind: item[:kind],
+                  quote: item[:quote],
+                  responder_company_teammate_id: teammate.id,
+                  subject_company_teammate_id: other.id,
+                  confidence: item[:confidence]
+                }
+              }
+            }
+
+      observation = Observation.last
+      expect(observation).to be_published
+      expect(observation.observer_id).to eq(person.id)
+      expect(observation.notifications).to be_empty
+      expect(flash[:notice]).to include("Published OGO created")
+    end
+
+    it "creates a draft but warns when the viewer is not the observer on publish" do
+      third = create(:company_teammate, organization: organization)
+      item = consult.extraction_items.first
+      patch organization_possible_observation_consult_path(organization, consult),
+            params: {
+              publish_item_id: item[:id],
+              items: {
+                "0" => {
+                  id: item[:id],
+                  state: "needs_processed",
+                  kind: item[:kind],
+                  quote: item[:quote],
+                  responder_company_teammate_id: third.id,
+                  subject_company_teammate_id: other.id,
+                  confidence: item[:confidence]
+                }
+              }
+            }
+
+      observation = Observation.last
+      expect(observation).to be_draft
+      expect(flash[:alert]).to include("you can only publish OGOs where you are the observer")
+    end
+
+    it "preserves an already-promoted row when acting on another (disabled fields not wiped)" do
+      id1 = SecureRandom.uuid
+      id2 = SecureRandom.uuid
+      consult.update!(
+        extractions: {
+          "version" => 1,
+          "processed_teammate_ids" => [other.id],
+          "items" => [
+            { "id" => id1, "kind" => "kudos", "confidence" => 0.9, "quote" => "One",
+              "responder_company_teammate_id" => teammate.id, "subject_company_teammate_id" => other.id,
+              "observation_id" => nil, "include" => false },
+            { "id" => id2, "kind" => "feedback", "confidence" => 0.9, "quote" => "Two",
+              "responder_company_teammate_id" => teammate.id, "subject_company_teammate_id" => other.id,
+              "observation_id" => nil, "include" => false }
+          ]
+        }
+      )
+
+      # Promote row 1.
+      patch organization_possible_observation_consult_path(organization, consult),
+            params: {
+              promote_item_id: id1,
+              items: {
+                "0" => { id: id1, state: "included", kind: "kudos", quote: "One",
+                         responder_company_teammate_id: teammate.id, subject_company_teammate_id: other.id },
+                "1" => { id: id2, state: "needs_processed", quote: "Two" }
+              }
+            }
+      obs1_id = consult.reload.extraction_items.find { |i| i[:id] == id1 }[:observation_id]
+      expect(obs1_id).to be_present
+
+      # Now act on row 2. Row 1 is locked, so the form would NOT submit its disabled
+      # observer/subject/quote fields — only its hidden id/state/observation_id.
+      patch organization_possible_observation_consult_path(organization, consult),
+            params: {
+              promote_item_id: id2,
+              items: {
+                "0" => { id: id1, state: "included", observation_id: obs1_id },
+                "1" => { id: id2, state: "included", kind: "feedback", quote: "Two",
+                         responder_company_teammate_id: teammate.id, subject_company_teammate_id: other.id }
+              }
+            }
+
+      row1 = consult.reload.extraction_items.find { |i| i[:id] == id1 }
+      expect(row1).to be_present
+      expect(row1[:observation_id].to_i).to eq(obs1_id)
+      expect(row1[:subject_company_teammate_id].to_i).to eq(other.id)
+      expect(consult.extraction_groups_by_processed_teammate).to be_present
+    end
+
+    it "dismisses a single candidate immediately via Dismiss now" do
+      item = consult.extraction_items.first
+      patch organization_possible_observation_consult_path(organization, consult),
+            params: {
+              dismiss_item_id: item[:id],
+              items: {
+                "0" => {
+                  id: item[:id],
+                  state: "needs_processed",
+                  quote: item[:quote]
+                }
+              }
+            }
+
+      dismissed = consult.reload.extraction_items.first
+      expect(dismissed[:dismissed_at]).to be_present
+      expect(dismissed[:dismissed_by_company_teammate_id]).to eq(teammate.id)
+    end
+
+    it "renders the tri-state controls and Save all on the review page" do
+      get organization_possible_observation_consult_path(organization, consult)
+      expect(response.body).to include("Save all")
+      expect(response.body).to include(">Reviewing<")
+      expect(response.body).to include(">Include<")
+      expect(response.body).to include(">Dismiss<")
+      expect(response.body).to include("Create draft OGO now")
+      expect(response.body).to include("Create published OGO now (private)")
+      expect(response.body).to include("Dismiss now")
+      expect(response.body).to include("Consult OG again")
+      expect(response.body).to include("Faster, but less powerful model")
+      expect(response.body).to include("Slower, but more powerful model")
     end
   end
 

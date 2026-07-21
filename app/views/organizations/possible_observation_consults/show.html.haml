@@ -26,7 +26,15 @@
               .form-check
                 = check_box_tag "confirmed_teammate_ids[]", tm.id, preselected.include?(tm.id), class: "form-check-input", id: "tm_#{tm.id}"
                 = label_tag "tm_#{tm.id}", tm.person.display_name, class: "form-check-label"
-        = submit_tag "Confirm teammates and run OG Consult", class: "btn btn-primary mt-3"
+        .btn-group.mt-3{ role: "group" }
+          = button_tag "Confirm teammates and run OG Consult", type: "submit", class: "btn btn-primary"
+          %button.btn.btn-primary.dropdown-toggle.dropdown-toggle-split{ type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false" }
+            %span.visually-hidden Choose model
+          %ul.dropdown-menu
+            %li
+              = button_tag "Faster, but less powerful model", type: "submit", class: "dropdown-item"
+            %li
+              = button_tag "Slower, but more powerful model", type: "submit", name: "model", value: "stronger", class: "dropdown-item"
 
 - if @consult.people_confirmed? && processing
   = render "shared/og_consultations/status_banner",
@@ -43,16 +51,21 @@
     - if policy(@consult).re_extract?
       = button_to "Try again", re_extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "btn btn-sm btn-outline-primary ms-2"
 
-- if completed
+- if completed && policy(@consult).extract?
+  - latest_model = @latest_consultation&.model_id
+  - stronger_ran = latest_model.present? && latest_model == Llm::MultiTeammateMomentsExtractor.stronger_model_id
+  - faster_label = stronger_ran ? "Try: Faster, but less powerful model" : "Re-run: Faster, but less powerful model"
+  - stronger_label = stronger_ran ? "Re-run: Slower, but more powerful model" : "Try: Slower, but more powerful model"
   .d-flex.flex-wrap.gap-2.mb-3
-    - if policy(@consult).re_extract?
-      = button_to "Consult OG again", re_extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "btn btn-sm btn-outline-primary"
-    - if policy(@consult).re_extract_with_stronger_model?
-      = button_to re_extract_with_stronger_model_organization_possible_observation_consult_path(organization, @consult),
-                  method: :post,
-                  class: "btn btn-sm btn-outline-primary" do
-        %i.bi.bi-lightning-charge.me-1
-        Re-run with stronger model
+    .btn-group{ role: "group" }
+      %button.btn.btn-sm.btn-outline-primary.dropdown-toggle{ type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false" }
+        %i.bi.bi-stars.me-1
+        Consult OG again
+      %ul.dropdown-menu
+        %li
+          = button_to faster_label, extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "dropdown-item"
+        %li
+          = button_to stronger_label, extract_organization_possible_observation_consult_path(organization, @consult, model: "stronger"), method: :post, class: "dropdown-item"
 
 - if processing && groups.any?
   - confirmed_n = Array(@consult.confirmed_teammate_ids).size
@@ -92,6 +105,33 @@
                     = render "candidate_row", item: item, idx: idx, editable: true
                     - idx += 1
       .d-flex.flex-wrap.gap-2.mt-3
-        = submit_tag "Save candidates", name: "commit", value: "Save candidates", class: "btn btn-outline-primary"
-        - if policy(@consult).create_draft_observations?
-          = submit_tag "Create draft OGOs from included", name: "commit", value: "Create draft OGOs from included", class: "btn btn-primary", data: { confirm: "Create draft OGOs for included candidates?" }
+        = submit_tag "Save all", name: "commit", value: "Save all", class: "btn btn-primary"
+      %p.mt-3.mb-0.text-muted.small
+        Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Include")}, or #{content_tag(:strong, "Dismiss")}.
+        Save all actualizes every row: included candidates become draft OGOs (you are the creator),
+        dismissed candidates are hidden, and the rest stay as potential OGOs.
+        Use the per-row buttons to act on one candidate immediately: Create draft OGO now, Create published OGO now (private)
+        (publishes only when you are the observer; otherwise it stays a draft), or Dismiss now.
+
+    :javascript
+      (function() {
+        var form = document.getElementById("#{form_id}");
+        if (!form) return;
+        function syncRow(row) {
+          var states = row.querySelectorAll("[data-consult-state]");
+          if (!states.length) return;
+          var included = false;
+          states.forEach(function(el) {
+            if (el.checked && el.value === "included") included = true;
+          });
+          row.querySelectorAll("[data-consult-row-field]").forEach(function(field) {
+            field.disabled = !included;
+          });
+        }
+        form.querySelectorAll("[data-consult-candidate-row]").forEach(function(row) {
+          syncRow(row);
+          row.querySelectorAll("[data-consult-state]").forEach(function(el) {
+            el.addEventListener("change", function() { syncRow(row); });
+          });
+        });
+      })();
