@@ -231,7 +231,6 @@ Rails.application.routes.draw do
         get :extraction_status
         post :extract
         post :re_extract
-        post :re_extract_with_stronger_model
         post :create_draft_observations
       end
     end
@@ -400,7 +399,6 @@ Rails.application.routes.draw do
             get :extraction_status
             post :extract
             post :re_extract
-            post :re_extract_with_stronger_model
             match :create_draft_observations, via: %i[post patch]
           end
         end

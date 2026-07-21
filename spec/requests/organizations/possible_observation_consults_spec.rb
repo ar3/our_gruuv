@@ -268,48 +268,6 @@ RSpec.describe "Possible observation consults", type: :request do
     end
   end
 
-  describe "POST re_extract_with_stronger_model" do
-    let!(:consult) do
-      create(
-        :possible_observation_consult,
-        :extracted,
-        organization: organization,
-        creator_company_teammate: teammate,
-        confirmed_teammate_ids: [other.id],
-        people_status: "confirmed"
-      )
-    end
-
-    before do
-      consultation = OgConsultation.create!(
-        subject: consult,
-        organization: organization,
-        kind: OgConsultation::KIND_OGO_SEARCH_CONSULT,
-        status: "completed",
-        billable: true,
-        model_id: Llm::MultiTeammateMomentsExtractor.model_id,
-        prompt_version: Llm::MultiTeammateMomentsExtractor.prompt_version,
-        triggered_by_teammate: teammate,
-        units_total: 1,
-        units_completed: 1,
-        completed_at: Time.current
-      )
-      result = OgoSearchResult.create!(og_consultation: consultation, items_count: 1)
-      consultation.update!(result: result)
-    end
-
-    it "enqueues extraction with the stronger model" do
-      expect do
-        post re_extract_with_stronger_model_organization_possible_observation_consult_path(organization, consult)
-      end.to have_enqueued_job(PossibleObservationConsultExtractionJob).with(
-        consult.id,
-        model_id: Llm::MultiTeammateMomentsExtractor.stronger_model_id
-      )
-
-      expect(consult.reload.extraction_status).to eq("pending")
-    end
-  end
-
   describe "GET index" do
     it "shows pOGO total, dismissed, and promoted counts instead of status" do
       create(

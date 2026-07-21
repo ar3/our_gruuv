@@ -22,7 +22,11 @@ class TerminateEmploymentService
 
       # Update employment tenure's ended_at
       @current_tenure.update!(ended_at: ended_at_time)
-      
+
+      # End any assignment tenures the teammate is still actively holding, so a
+      # terminated person no longer shows as actively assigned to work.
+      close_active_assignment_tenures(ended_at_time) if @teammate.is_a?(CompanyTeammate)
+
       # Keep teammate-level employment summary fields in sync with tenure state.
       sync_result = EmploymentStateConsistencyService.call(teammate: @teammate)
       raise StandardError, sync_result.error unless sync_result.ok?
@@ -60,6 +64,17 @@ class TerminateEmploymentService
     else
       # Try to convert to string and parse
       Date.parse(date_param.to_s)
+    end
+  end
+
+  def close_active_assignment_tenures(ended_at_time)
+    # AssignmentTenure#ended_at is a date column, so normalize the timestamp.
+    end_date = ended_at_time.to_date
+    teammate.assignment_tenures.active.find_each do |tenure|
+      # ended_at must be >= started_at; a not-yet-started tenure is clamped to
+      # its start so termination stays atomic without tripping validation.
+      tenure_end = [end_date, tenure.started_at].max
+      tenure.update!(ended_at: tenure_end)
     end
   end
 

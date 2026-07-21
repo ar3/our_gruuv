@@ -133,6 +133,70 @@ RSpec.describe TerminateEmploymentService, type: :service do
       end
     end
 
+    context 'with active assignment tenures' do
+      let(:termination_date) { Date.current + 1.week }
+      let(:assignment) { create(:assignment, company: company) }
+      let(:other_assignment) { create(:assignment, company: company) }
+
+      it 'ends all active assignment tenures at the termination time' do
+        active_tenure = create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 3.months.ago, anticipated_energy_percentage: 40)
+        zero_energy_tenure = create(:assignment_tenure, teammate: teammate, assignment: other_assignment, started_at: 2.months.ago, anticipated_energy_percentage: 0)
+
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: current_tenure,
+          termination_date: termination_date,
+          created_by: created_by
+        )
+
+        expect(result.ok?).to be true
+        expect(active_tenure.reload.ended_at.to_date).to eq(termination_date)
+        expect(zero_energy_tenure.reload.ended_at.to_date).to eq(termination_date)
+      end
+
+      it 'preserves the anticipated energy percentage on closed tenures' do
+        active_tenure = create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 3.months.ago, anticipated_energy_percentage: 40)
+
+        described_class.call(
+          teammate: teammate,
+          current_tenure: current_tenure,
+          termination_date: termination_date,
+          created_by: created_by
+        )
+
+        expect(active_tenure.reload.anticipated_energy_percentage).to eq(40)
+      end
+
+      it 'leaves already-ended assignment tenures untouched' do
+        ended_on = 1.month.ago.to_date
+        inactive_tenure = create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 3.months.ago, ended_at: ended_on)
+
+        described_class.call(
+          teammate: teammate,
+          current_tenure: current_tenure,
+          termination_date: termination_date,
+          created_by: created_by
+        )
+
+        expect(inactive_tenure.reload.ended_at).to eq(ended_on)
+      end
+
+      it 'clamps ended_at to started_at for a not-yet-started assignment tenure' do
+        future_start = (Date.current + 2.weeks).to_time
+        future_tenure = create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: future_start, anticipated_energy_percentage: 20)
+
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: current_tenure,
+          termination_date: termination_date,
+          created_by: created_by
+        )
+
+        expect(result.ok?).to be true
+        expect(future_tenure.reload.ended_at).to eq(future_start.to_date)
+      end
+    end
+
     context 'with invalid termination date' do
       it 'returns error for invalid date string' do
         result = described_class.call(

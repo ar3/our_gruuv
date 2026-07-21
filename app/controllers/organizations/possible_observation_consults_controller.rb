@@ -4,7 +4,7 @@ module Organizations
   class PossibleObservationConsultsController < OrganizationNamespaceBaseController
     before_action :authenticate_person!
     before_action :set_consult, only: %i[
-      show update confirm_teammates extract re_extract re_extract_with_stronger_model
+      show update confirm_teammates extract re_extract
       extraction_status create_draft_observations
     ]
     after_action :verify_authorized
@@ -108,17 +108,6 @@ module Organizations
 
     def re_extract
       extract
-    end
-
-    def re_extract_with_stronger_model
-      authorize @consult, :re_extract_with_stronger_model?
-      @consult.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
-      PossibleObservationConsultExtractionJob.perform_later(
-        @consult.id,
-        model_id: Llm::MultiTeammateMomentsExtractor.stronger_model_id
-      )
-      redirect_to organization_possible_observation_consult_path(organization, @consult),
-                  notice: "OG Consult started with a stronger model — finding potential OGOs."
     end
 
     # Save all: actualize every row's status — dismiss dismissed rows, promote included

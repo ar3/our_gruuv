@@ -47,11 +47,6 @@ class PossibleObservationConsultPolicy < ApplicationPolicy
     extract?
   end
 
-  def re_extract_with_stronger_model?
-    show? && record.extraction_status == "completed" &&
-      latest_model_id != Llm::MultiTeammateMomentsExtractor.stronger_model_id
-  end
-
   def extraction_status?
     show?
   end
@@ -64,12 +59,5 @@ class PossibleObservationConsultPolicy < ApplicationPolicy
 
   def terminated?
     viewing_teammate.respond_to?(:terminated?) && viewing_teammate.terminated?
-  end
-
-  def latest_model_id
-    OgConsultation.latest_for(
-      subject: record,
-      kind: OgConsultation::KIND_OGO_SEARCH_CONSULT
-    )&.model_id
   end
 end

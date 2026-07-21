@@ -9,7 +9,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
   before_action :assign_viewable_teammates_context
   before_action :set_search
   before_action :set_batch, only: %i[
-    show update extract re_extract re_extract_with_stronger_model extraction_status
+    show update extract re_extract extraction_status
     create_draft_observations
   ]
   after_action :verify_authorized
@@ -68,17 +68,6 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     @batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
     PossibleObservationSlackSearchExtractionJob.perform_later(@batch.id)
     redirect_to batch_path, notice: "Consult OG started again — finding potential OGOs in the background."
-  end
-
-  def re_extract_with_stronger_model
-    authorize @batch, :re_extract_with_stronger_model?
-    @batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
-    PossibleObservationSlackSearchExtractionJob.perform_later(
-      @batch.id,
-      model_id: Llm::SlackMomentsExtractor.stronger_model_id
-    )
-    redirect_to batch_path,
-                notice: "Consult OG started with a stronger model — finding potential OGOs in the background."
   end
 
   def extraction_status
