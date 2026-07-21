@@ -162,6 +162,24 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       )
     end
 
+    it "enqueues extraction with the stronger model when model=stronger" do
+      expect {
+        post extract_organization_company_teammate_possible_observation_slack_search_batch_path(
+          organization, subject, search, batch, model: "stronger"
+        )
+      }.to have_enqueued_job(PossibleObservationSlackSearchExtractionJob)
+        .with(batch.id, model_id: Llm::SlackMomentsExtractor.stronger_model_id)
+
+      expect(batch.reload.extraction_status).to eq("pending")
+    end
+
+    it "renders the model-choice dropdown on the consultation section" do
+      get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+      expect(response.body).to include("Consult OG to find potential OGOs")
+      expect(response.body).to include("Faster, but less powerful model")
+      expect(response.body).to include("Slower, but more powerful model")
+    end
+
     context "when extracted" do
       let!(:search) do
         create(
@@ -196,6 +214,24 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(response.body).to include("Kudos")
         expect(response.body).to include("Feedback")
         expect(response.body).not_to include("Quick note")
+      end
+
+      it "prefixes the already-run (default) model with Re-run and the other with Try" do
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+        expect(response.body).to include("Consult OG again")
+        expect(response.body).to include("Re-run: Faster, but less powerful model")
+        expect(response.body).to include("Try: Slower, but more powerful model")
+      end
+
+      it "prefixes the stronger model with Re-run when it was the last model run" do
+        batch.mark_extraction_completed!(
+          items: batch.extraction_items,
+          model_id: Llm::SlackMomentsExtractor.stronger_model_id
+        )
+
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+        expect(response.body).to include("Re-run: Slower, but more powerful model")
+        expect(response.body).to include("Try: Faster, but less powerful model")
       end
 
       it "shows the rating and linked object name as text above the generated rationale" do
@@ -321,11 +357,90 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(dismissed[:dismissed_by_company_teammate_id]).to eq(teammate.id)
       end
 
-      it "renders the tri-state status controls and Dismiss now on the review form" do
+      it "renders the tri-state status controls and per-row actions on the review form" do
         get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
         expect(response.body).to include("Reviewing")
         expect(response.body).to include("Dismiss now")
+        expect(response.body).to include("Create draft OGO now")
+        expect(response.body).to include("Create published OGO now (private)")
         expect(response.body).to include("data-slack-state")
+      end
+
+      it "creates a single draft OGO immediately via Create draft OGO now" do
+        item = batch.extraction_items.first
+        expect do
+          patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+                params: {
+                  promote_item_id: item[:id],
+                  items: {
+                    "0" => {
+                      id: item[:id],
+                      state: "needs_processed",
+                      kind: item[:kind],
+                      quote: item[:quote],
+                      responder_company_teammate_id: subject.id,
+                      subject_company_teammate_id: subject.id,
+                      channel_id: item[:channel_id],
+                      ts: item[:ts]
+                    }
+                  }
+                }
+        end.to change(Observation, :count).by(1)
+
+        observation = Observation.last
+        expect(observation).to be_draft
+        expect(batch.reload.extraction_items.first[:observation_id]).to eq(observation.id)
+      end
+
+      it "creates and publishes an OGO when the viewer is the observer" do
+        item = batch.extraction_items.first
+        patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+              params: {
+                publish_item_id: item[:id],
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    state: "needs_processed",
+                    kind: item[:kind],
+                    quote: item[:quote],
+                    responder_company_teammate_id: teammate.id,
+                    subject_company_teammate_id: subject.id,
+                    channel_id: item[:channel_id],
+                    ts: item[:ts]
+                  }
+                }
+              }
+
+        observation = Observation.last
+        expect(observation).to be_published
+        expect(observation.observer_id).to eq(person.id)
+        expect(observation.notifications).to be_empty
+        expect(flash[:notice]).to include("Published OGO created")
+      end
+
+      it "creates a draft but warns when the viewer is not the observer on publish" do
+        other = create(:company_teammate, organization: organization)
+        item = batch.extraction_items.first
+        patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+              params: {
+                publish_item_id: item[:id],
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    state: "needs_processed",
+                    kind: item[:kind],
+                    quote: item[:quote],
+                    responder_company_teammate_id: other.id,
+                    subject_company_teammate_id: subject.id,
+                    channel_id: item[:channel_id],
+                    ts: item[:ts]
+                  }
+                }
+              }
+
+        observation = Observation.last
+        expect(observation).to be_draft
+        expect(flash[:alert]).to include("you can only publish OGOs where you are the observer")
       end
 
       it "creates draft OGOs from included candidates" do

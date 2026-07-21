@@ -25,19 +25,31 @@
           · Model: #{latest_consultation.model_id}
     .d-flex.flex-wrap.gap-2
       - if policy(batch).extract?
-        = button_to extract_organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), search, batch),
-                    method: :post,
-                    class: "btn btn-primary btn-sm",
-                    data: { turbo: false } do
-          %i.bi.bi-stars.me-1
-          = batch.extraction_status == "completed" ? "Consult OG again" : "Consult OG to find potential OGOs"
-      - if policy(batch).re_extract_with_stronger_model?
-        = button_to re_extract_with_stronger_model_organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), search, batch),
-                    method: :post,
-                    class: "btn btn-outline-primary btn-sm",
-                    data: { turbo: false } do
-          %i.bi.bi-lightning-charge.me-1
-          Re-run with stronger model
+        - completed = batch.extraction_status == "completed"
+        - primary_label = completed ? "Consult OG again" : "Consult OG to find potential OGOs"
+        - stronger_ran = completed && batch.last_extraction_used_stronger_model?
+        - faster_ran = completed && !stronger_ran
+        - faster_label = faster_ran ? "Re-run: Faster, but less powerful model" : (completed ? "Try: Faster, but less powerful model" : "Faster, but less powerful model")
+        - stronger_label = stronger_ran ? "Re-run: Slower, but more powerful model" : (completed ? "Try: Slower, but more powerful model" : "Slower, but more powerful model")
+        .btn-group{role: "group"}
+          %button.btn.btn-primary.btn-sm.dropdown-toggle{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false"}
+            %i.bi.bi-stars.me-1
+            = primary_label
+          %ul.dropdown-menu
+            %li
+              = button_to extract_organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), search, batch),
+                          method: :post,
+                          class: "dropdown-item",
+                          data: { turbo: false } do
+                %i.bi.bi-lightning-charge.me-1
+                = faster_label
+            %li
+              = button_to extract_organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), search, batch, model: "stronger"),
+                          method: :post,
+                          class: "dropdown-item",
+                          data: { turbo: false } do
+                %i.bi.bi-stars.me-1
+                = stronger_label
 
   - if batch.extraction_error.present? && batch.extraction_status != "failed"
     .alert.alert-info.mb-3
@@ -156,7 +168,18 @@
                           = label_tag "#{form_id}_#{idx}_state_incl", "Include", class: "btn btn-outline-success"
                           = radio_button_tag "items[#{idx}][state]", "dismissed", current_state == "dismissed", class: "btn-check", id: "#{form_id}_#{idx}_state_dismiss", data: { slack_state: true }
                           = label_tag "#{form_id}_#{idx}_state_dismiss", "Dismiss", class: "btn btn-outline-danger"
-                        .mt-2
+                        .mt-2.d-flex.flex-column.align-items-start.gap-1
+                          %span.text-muted.small ...or act on just this one now:
+                          = button_tag "Create draft OGO now",
+                                       type: "submit",
+                                       name: "promote_item_id",
+                                       value: item[:id],
+                                       class: "btn btn-sm btn-link text-decoration-none p-0"
+                          = button_tag "Create published OGO now (private)",
+                                       type: "submit",
+                                       name: "publish_item_id",
+                                       value: item[:id],
+                                       class: "btn btn-sm btn-link text-decoration-none p-0"
                           = button_tag "Dismiss now",
                                        type: "submit",
                                        name: "dismiss_item_id",
@@ -219,7 +242,9 @@
         Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Include")}, or #{content_tag(:strong, "Dismiss")}.
         Save all actualizes every row: included candidates become draft OGOs (Slack speaker is the observer; you are the creator),
         dismissed candidates are hidden from 1-by-1 check-ins, and the rest stay as potential OGOs.
-        Include is pre-selected only for high-confidence candidates (≥75%). Use Dismiss now to dismiss a single row immediately.
+        Include is pre-selected only for high-confidence candidates (≥75%).
+        Use the per-row buttons to act on one candidate immediately: Create draft OGO now, Create published OGO now (private)
+        (publishes only when you are the observer; otherwise it stays a draft), or Dismiss now.
 
   - else
     %p.mb-3.text-muted

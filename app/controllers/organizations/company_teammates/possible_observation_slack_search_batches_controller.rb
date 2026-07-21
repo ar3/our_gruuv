@@ -27,6 +27,10 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     items = normalize_items_param(items_param)
     if params[:dismiss_item_id].present?
       dismiss_single!(items, params[:dismiss_item_id].to_s)
+    elsif params[:promote_item_id].present?
+      promote_single!(items, params[:promote_item_id].to_s, publish: false)
+    elsif params[:publish_item_id].present?
+      promote_single!(items, params[:publish_item_id].to_s, publish: true)
     else
       save_all!(items)
     end
@@ -46,8 +50,17 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
   def extract
     authorize @batch, :extract?
     @batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
-    PossibleObservationSlackSearchExtractionJob.perform_later(@batch.id)
-    redirect_to batch_path, notice: "Consult OG started — finding potential OGOs in the background."
+    if stronger_model_requested?
+      PossibleObservationSlackSearchExtractionJob.perform_later(
+        @batch.id,
+        model_id: Llm::SlackMomentsExtractor.stronger_model_id
+      )
+      redirect_to batch_path,
+                  notice: "Consult OG started with a slower, more powerful model — finding potential OGOs in the background."
+    else
+      PossibleObservationSlackSearchExtractionJob.perform_later(@batch.id)
+      redirect_to batch_path, notice: "Consult OG started — finding potential OGOs in the background."
+    end
   end
 
   def re_extract
@@ -138,8 +151,86 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     params[:items] || params.dig(:possible_observation_slack_search_batch, :items)
   end
 
+  def stronger_model_requested?
+    params[:model].to_s == "stronger"
+  end
+
   def included_item?(item)
     ActiveModel::Type::Boolean.new.cast(item["include"])
+  end
+
+  # One-at-a-time promote (Create OGO draft now / Create published OGO now). Saves the
+  # current on-screen state, promotes just the targeted row to a draft OGO, then (when
+  # publishing) publishes it only if the viewer is the resolved observer.
+  def promote_single!(items, target_id, publish:)
+    target = items.find { |item| item["id"].to_s == target_id }
+    if target.nil?
+      redirect_to batch_path, alert: "Candidate not found."
+      return
+    end
+    if target["observation_id"].present?
+      redirect_to batch_path, notice: "This candidate already has an OGO."
+      return
+    end
+    if target["responder_company_teammate_id"].blank? || target["subject_company_teammate_id"].blank?
+      redirect_to batch_path, alert: "Choose both observer and subject before creating an OGO."
+      return
+    end
+
+    items = items.map do |item|
+      next item unless item["id"].to_s == target_id
+
+      item = item.dup
+      item["include"] = true
+      item["dismissed_at"] = nil
+      item["dismissed_by_company_teammate_id"] = nil
+      item
+    end
+    @batch.replace_extraction_items!(items)
+
+    authorize @batch, :create_draft_observations?
+    result = PossibleObservationSlackSearches::BatchCreateDraftObservationsService.call(
+      batch: @batch.reload,
+      creator: current_company_teammate,
+      extraction_ids: [target_id]
+    )
+
+    unless result.ok?
+      redirect_to batch_path, alert: Array(result.error).join(", ")
+      return
+    end
+
+    payload = result.value
+    if payload[:errors].any?
+      redirect_to batch_path, alert: payload[:errors].join(" ")
+      return
+    end
+    if payload[:created].to_i.zero?
+      redirect_to batch_path, alert: "Could not create an OGO from this candidate."
+      return
+    end
+
+    observation = created_observation_for(target_id)
+
+    unless publish
+      redirect_to batch_path, notice: "Draft OGO created."
+      return
+    end
+
+    if observation.nil?
+      redirect_to batch_path, notice: "Draft OGO created."
+    elsif observation.observer_id == current_company_teammate&.person_id
+      observation.publish!
+      redirect_to batch_path, notice: "Published OGO created (stakeholder-only; no notifications sent)."
+    else
+      redirect_to batch_path, alert: "OGO created, but you can only publish OGOs where you are the observer."
+    end
+  end
+
+  def created_observation_for(target_id)
+    item = @batch.reload.extraction_items.find { |i| i[:id].to_s == target_id }
+    observation_id = item&.dig(:observation_id)
+    observation_id.present? ? Observation.find_by(id: observation_id) : nil
   end
 
   # One-at-a-time quick dismiss (Dismiss now). Saves the current on-screen state of

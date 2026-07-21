@@ -29,7 +29,8 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
       )
       batch.mark_extraction_completed!(
         items: [],
-        extraction_note: "No Slack messages were available in this consultation to extract from."
+        extraction_note: "No Slack messages were available in this consultation to extract from.",
+        model_id: model_id
       )
       complete_consultation!(consultation, items_count: 0)
       return
@@ -116,7 +117,7 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
           "No noteworthy OGO moments were found in these Slack messages."
       end
 
-    batch.mark_extraction_completed!(items: items, extraction_note: explanation)
+    batch.mark_extraction_completed!(items: items, extraction_note: explanation, model_id: model_id)
     complete_consultation!(consultation, items_count: items.size)
   rescue StandardError => e
     fail_consultation!(consultation, e.message)
