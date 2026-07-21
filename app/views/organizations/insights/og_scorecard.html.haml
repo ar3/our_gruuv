@@ -132,28 +132,29 @@
     %table.table.table-sm.table-bordered.align-middle.mb-0.og-scorecard-table
       %thead.table-light
         %tr
-          %th.sticky-col{scope: "col"}
-            %span.og-scorecard-metric-cell Metric
-          %th.text-end{scope: "col"} Last 6-week average
-          %th.text-end.og-scorecard-th-col{scope: "col"} Yellow threshold
-          %th.text-end.og-scorecard-th-col{scope: "col"} Green threshold
-          %th.og-scorecard-th-col{scope: "col"} More or less is better
-          - @week_labels.each do |label|
-            %th.text-end{scope: "col"}= label
+          = render 'og_scorecard_header_cells'
       %tbody
         - @scorecard[:groups].each do |group|
+          - unless group[:title] == 'Teammates'
+            %tr.table-light.og-scorecard-repeat-header
+              = render 'og_scorecard_header_cells'
           %tr.table-secondary
-            %td.sticky-col.fw-semibold{colspan: 5 + @week_labels.size}= group[:title]
+            %td.sticky-col.fw-semibold= group[:title]
+            %td{colspan: 4 + @week_labels.size}
           - group[:rows].each do |row|
             - if row[:separator]
               %tr.og-scorecard-separator
-                %td.sticky-col{colspan: 5 + @week_labels.size}
+                %td.sticky-col
                   - if row[:label].present?
                     %span.og-scorecard-subsection-label= row[:label]
+                %td{colspan: 4 + @week_labels.size}
             - else
               %tr
                 %td.sticky-col
-                  %span.og-scorecard-metric-cell= og_scorecard_metric_label(row)
+                  %span.og-scorecard-metric-cell
+                    - if row[:gruuv_status].present?
+                      = og_scorecard_gruuv_status_icon(row[:gruuv_status], row[:gruuv_category])
+                    = row[:label]
                 %td.text-end= row[:six_week_avg].nil? ? "—" : row[:six_week_avg]
                 %td.text-end.og-scorecard-th-col= row[:yellow_display].presence || "—"
                 %td.text-end.og-scorecard-th-col= row[:green_display].presence || "—"

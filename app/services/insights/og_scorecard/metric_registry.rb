@@ -4,7 +4,7 @@ module Insights
   module OgScorecard
     # Central registry of OG Scorecard metrics (metadata + defaults). Threshold values live in DB.
     class MetricRegistry
-      Entry = Data.define(:key, :label, :direction, :supports_percent, :group, :threshold_hint, :separator)
+      Entry = Data.define(:key, :label, :direction, :supports_percent, :group, :threshold_hint, :separator, :gruuv_status, :gruuv_category)
 
       def self.metric(key:, label:, direction:, supports_percent:, group:, threshold_hint: nil)
         Entry.new(
@@ -14,7 +14,9 @@ module Insights
           supports_percent: supports_percent,
           group: group,
           threshold_hint: threshold_hint,
-          separator: false
+          separator: false,
+          gruuv_status: nil,
+          gruuv_category: nil
         )
       end
 
@@ -26,7 +28,9 @@ module Insights
           supports_percent: false,
           group: group,
           threshold_hint: nil,
-          separator: true
+          separator: true,
+          gruuv_status: nil,
+          gruuv_category: nil
         )
       end
 
@@ -75,20 +79,85 @@ module Insights
           end
         end
 
-        def gruuv_health_entries(category:, metric_name:, group:)
+        # Human-readable row label per category + status. Prose bakes in the live
+        # day thresholds so the Healthy/Warning/Needs Attention jargon isn't needed
+        # to understand the row. Kept MECE with EngagementHealth::Thresholds.
+        def gruuv_health_label(category, status)
+          t = EngagementHealth::Thresholds
+          case category
+          when EngagementHealth::CATEGORY_OGO_GIVEN
+            ogo_label(status, "published an OGO")
+          when EngagementHealth::CATEGORY_OGO_RECEIVED
+            ogo_label(status, "been named in an OGO")
+          when EngagementHealth::CATEGORY_REQUIRED_CLARITY
+            h = t::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
+            na = t::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+            case status
+            when EngagementHealth::HEALTHY
+              "Teammates that have finalized all their required check-in items in the last #{h} days"
+            when EngagementHealth::WARNING
+              "Teammates whose oldest required check-in item was finalized between #{h + 1} and #{na - 1} days ago"
+            when EngagementHealth::NEEDS_ATTENTION
+              "Teammates that have a required check-in item finalized #{na} or more days ago or never"
+            end
+          when EngagementHealth::CATEGORY_GOAL_CONFIDENCE
+            h = t::GOAL_CONFIDENCE_HEALTHY_WITHIN_DAYS
+            na = t::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS
+            case status
+            when EngagementHealth::HEALTHY
+              "Teammates that have checked confidence on all their active goals in the last #{h} days"
+            when EngagementHealth::WARNING
+              "Teammates whose oldest active-goal confidence check was between #{h + 1} and #{na - 1} days ago"
+            when EngagementHealth::NEEDS_ATTENTION
+              "Teammates that have an active goal not checked in #{na} or more days, or no started/completed goal"
+            end
+          when EngagementHealth::CATEGORY_MILESTONES
+            case status
+            when EngagementHealth::HEALTHY
+              "Teammates that have earned the required level or an active goal on every required ability"
+            when EngagementHealth::WARNING
+              "Teammates that show signs of working towards their required ability milestones"
+            when EngagementHealth::NEEDS_ATTENTION
+              "Teammates that have no milestone and no goal on at least one required ability"
+            end
+          end
+        end
+
+        def gruuv_health_entries(category:, group:)
           EngagementHealth::STATUSES.map do |status|
-            status_label = EngagementHealth::STATUS_LABELS.fetch(status)
             Entry.new(
               key: GruuvHealthWeekCounts.metric_key(category, status),
-              label: "Teammates that have #{status_label} #{metric_name}",
+              label: gruuv_health_label(category, status),
               direction: (status == EngagementHealth::HEALTHY ? :more : :less),
               supports_percent: true,
               group: group,
               threshold_hint: gruuv_threshold_hint(category, status),
-              separator: false
+              separator: false,
+              gruuv_status: status,
+              gruuv_category: category
             )
           end
         end
+
+        private
+
+        # Shared prose for the two event-based OGO categories (given / received),
+        # which use the same 30/90-day model.
+        def ogo_label(status, verb)
+          t = EngagementHealth::Thresholds
+          h = t::OGO_HEALTHY_WITHIN_DAYS
+          na = t::OGO_NEEDS_ATTENTION_AT_DAYS
+          case status
+          when EngagementHealth::HEALTHY
+            "Teammates that have #{verb} in the last #{h} days"
+          when EngagementHealth::WARNING
+            "Teammates that have #{verb} between #{h + 1} and #{na - 1} days ago"
+          when EngagementHealth::NEEDS_ATTENTION
+            "Teammates that have either never #{verb} or last did so #{na} or more days ago"
+          end
+        end
+
+        public
 
         def all
           ENTRIES
@@ -157,10 +226,11 @@ module Insights
             supports_percent: true,
             group: 'Observations'
           ),
-          separator(group: 'Observations', label: 'Gruuv Health')
+          separator(group: 'Observations', label: 'Gruuv Health · OGOs Given')
         ] +
-        gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_GIVEN, metric_name: 'OGOs Given', group: 'Observations') +
-        gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_RECEIVED, metric_name: 'OGOs Received', group: 'Observations') +
+        gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_GIVEN, group: 'Observations') +
+        [separator(group: 'Observations', label: 'Gruuv Health · OGOs Received')] +
+        gruuv_health_entries(category: EngagementHealth::CATEGORY_OGO_RECEIVED, group: 'Observations') +
         [
           separator(group: 'Check-ins', label: 'Activity'),
           metric(
@@ -177,11 +247,10 @@ module Insights
             supports_percent: true,
             group: 'Check-ins'
           ),
-          separator(group: 'Check-ins', label: 'Gruuv Health')
+          separator(group: 'Check-ins', label: 'Gruuv Health · Required Clarity Check-Ins')
         ] +
         gruuv_health_entries(
           category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
-          metric_name: 'Required Clarity',
           group: 'Check-ins'
         ) +
         [
@@ -228,11 +297,10 @@ module Insights
             supports_percent: true,
             group: 'Ability Milestones'
           ),
-          separator(group: 'Ability Milestones', label: 'Gruuv Health')
+          separator(group: 'Ability Milestones', label: 'Gruuv Health · Milestones')
         ] +
         gruuv_health_entries(
           category: EngagementHealth::CATEGORY_MILESTONES,
-          metric_name: 'Milestones',
           group: 'Ability Milestones'
         ) +
         [
@@ -279,11 +347,10 @@ module Insights
             supports_percent: true,
             group: 'Goals'
           ),
-          separator(group: 'Goals', label: 'Gruuv Health')
+          separator(group: 'Goals', label: 'Gruuv Health · Goal Confidence')
         ] +
         gruuv_health_entries(
           category: EngagementHealth::CATEGORY_GOAL_CONFIDENCE,
-          metric_name: 'Goal Confidence',
           group: 'Goals'
         )
       ).freeze

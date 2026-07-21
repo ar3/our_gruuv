@@ -162,18 +162,20 @@ RSpec.describe Insights::OgScorecardBuilder do
       result = described_class.new(company: company, week_starts: week_starts, chart_range: chart_range).call
       obs_group = result[:groups].find { |g| g[:title] == 'Observations' }
 
-      expect(obs_group[:rows].count { |row| row[:separator] }).to eq(2)
+      expect(obs_group[:rows].count { |row| row[:separator] }).to eq(3)
       expect(obs_group[:rows][0]).to include(separator: true, label: 'Activity')
       publishers_this_week_index = obs_group[:rows].index { |row| row[:key] == 'unique_ogo_publishers_this_week' }
       observees_this_week_index = obs_group[:rows].index { |row| row[:key] == 'unique_ogo_observees_this_week' }
-      gruuv_sep_index = obs_group[:rows].index { |row| row[:separator] && row[:label] == 'Gruuv Health' }
+      given_sep_index = obs_group[:rows].index { |row| row[:separator] && row[:label] == 'Gruuv Health · OGOs Given' }
+      received_sep_index = obs_group[:rows].index { |row| row[:separator] && row[:label] == 'Gruuv Health · OGOs Received' }
       first_gruuv_index = obs_group[:rows].index do |row|
         row[:key]&.start_with?(Insights::OgScorecard::GruuvHealthWeekCounts::METRIC_KEY_PREFIX)
       end
       expect(publishers_this_week_index).to eq(1)
       expect(observees_this_week_index).to eq(3)
-      expect(gruuv_sep_index).to eq(5)
+      expect(given_sep_index).to eq(5)
       expect(first_gruuv_index).to eq(6)
+      expect(received_sep_index).to eq(9)
     end
 
     it 'excludes journal (observer-only) observations from activity publisher and observee counts' do
@@ -254,7 +256,7 @@ RSpec.describe Insights::OgScorecardBuilder do
 
       separator_indices = milestones_group[:rows].each_index.select { |i| milestones_group[:rows][i][:separator] }
       expect(separator_indices).to eq([0, 7])
-      expect(milestones_group[:rows][7][:label]).to eq('Gruuv Health')
+      expect(milestones_group[:rows][7][:label]).to eq('Gruuv Health · Milestones')
     end
 
     it 'includes activity rows, a Gruuv Health separator, and Required Clarity rows in the Check-ins section' do
@@ -279,7 +281,7 @@ RSpec.describe Insights::OgScorecardBuilder do
         Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_REQUIRED_CLARITY, EngagementHealth::NEEDS_ATTENTION)
       )
 
-      expect(check_ins_group[:rows][3]).to include(separator: true, label: 'Gruuv Health')
+      expect(check_ins_group[:rows][3]).to include(separator: true, label: 'Gruuv Health · Required Clarity Check-Ins')
     end
 
     it 'lists goal activity before Gruuv Health Goal Confidence rows' do
@@ -293,7 +295,7 @@ RSpec.describe Insights::OgScorecardBuilder do
       expect(goals_group[:rows].count { |row| row[:separator] }).to eq(2)
       expect(goals_group[:rows][0]).to include(separator: true, label: 'Activity')
       first_activity_index = goals_group[:rows].index { |row| row[:key] == 'unique_teammates_active_goal' }
-      separator_index = goals_group[:rows].index { |row| row[:separator] && row[:label] == 'Gruuv Health' }
+      separator_index = goals_group[:rows].index { |row| row[:separator] && row[:label] == 'Gruuv Health · Goal Confidence' }
       data_rows = goals_group[:rows].reject { |row| row[:separator] }
       gruuv_keys = data_rows.last(3).map { |row| row[:key] }
 
@@ -339,7 +341,9 @@ RSpec.describe Insights::OgScorecardBuilder do
         )
       end
       expect(ogo_given_needs_attention[:weekly_values]).to eq([1])
-      expect(ogo_given_needs_attention[:label]).to eq('Teammates that have Needs Attention OGOs Given')
+      expect(ogo_given_needs_attention[:label]).to eq('Teammates that have either never published an OGO or last did so 90 or more days ago')
+      expect(ogo_given_needs_attention[:gruuv_status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+      expect(ogo_given_needs_attention[:gruuv_category]).to eq(EngagementHealth::CATEGORY_OGO_GIVEN)
       expect(ogo_given_needs_attention[:threshold_hint]).to include('90 days ago or never')
     end
   end

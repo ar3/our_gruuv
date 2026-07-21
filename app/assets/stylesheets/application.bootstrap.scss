@@ -1777,8 +1777,20 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 
   thead .sticky-col,
-  tbody tr.table-secondary .sticky-col {
+  tbody tr.table-secondary .sticky-col,
+  tbody tr.og-scorecard-repeat-header .sticky-col {
     background-color: var(--bs-secondary-bg);
+  }
+
+  // Fix 2: header row repeated above each group so week/date columns stay
+  // labeled when scrolling down a long table.
+  tbody tr.og-scorecard-repeat-header th {
+    border-top: 2px solid var(--bs-border-color);
+    font-weight: 600;
+  }
+
+  .og-scorecard-gruuv-icon {
+    cursor: help;
   }
 
   tr.og-scorecard-separator td {

@@ -139,6 +139,8 @@ module Insights
         key: entry.key,
         label: entry.label,
         threshold_hint: entry.threshold_hint,
+        gruuv_status: entry.gruuv_status,
+        gruuv_category: entry.gruuv_category,
         direction: entry.direction,
         supports_percent: entry.supports_percent,
         yellow: threshold[:yellow],
