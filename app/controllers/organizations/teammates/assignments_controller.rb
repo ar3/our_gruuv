@@ -86,7 +86,8 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       rateable_id: @assignment.id,
       timeframe: "between",
       timeframe_start_date: since_date.to_date.to_s,
-      timeframe_end_date: Time.current.to_date.to_s
+      timeframe_end_date: Time.current.to_date.to_s,
+      include_viewer_drafts: true
     }
     observations_query = ObservationsQuery.new(organization, observations_params, current_person: current_person)
     @observations_since_finalized = observations_query.call

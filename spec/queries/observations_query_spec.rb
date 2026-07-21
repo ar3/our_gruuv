@@ -94,6 +94,40 @@ RSpec.describe ObservationsQuery, type: :query do
       end
     end
 
+    context 'with observee_ids and include_viewer_drafts' do
+      it "includes the viewing observer's own draft alongside published" do
+        q = described_class.new(company, { observee_ids: [observee_teammate.id], include_viewer_drafts: true }, current_person: observer)
+        results = q.call.to_a
+        expect(results).to include(observation3)      # published
+        expect(results).to include(draft_observation) # viewer's own draft
+      end
+
+      it 'excludes drafts by default (published only)' do
+        q = described_class.new(company, { observee_ids: [observee_teammate.id] }, current_person: observer)
+        results = q.call.to_a
+        expect(results).to include(observation3)
+        expect(results).not_to include(draft_observation)
+      end
+
+      it "does not expose another teammate's draft to the viewer" do
+        others_draft = build(:observation, observer: observee_person, company: company, privacy_level: :public_to_world, published_at: nil).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+        q = described_class.new(company, { observee_ids: [observee_teammate.id], include_viewer_drafts: true }, current_person: observer)
+        expect(q.call.to_a).not_to include(others_draft)
+      end
+
+      it 'includes a draft the viewer created even when someone else is the observer' do
+        created_draft = build(:observation, observer: observee_person, company: company, creator_company_teammate: observer_teammate, privacy_level: :public_to_world, published_at: nil).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+        q = described_class.new(company, { observee_ids: [observee_teammate.id], include_viewer_drafts: true }, current_person: observer)
+        expect(q.call.to_a).to include(created_draft)
+      end
+    end
+
     context 'by timeframe' do
       let(:params) { { timeframe: 'this_week' } }
 

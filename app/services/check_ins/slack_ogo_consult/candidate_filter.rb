@@ -25,6 +25,9 @@ module CheckIns
 
           batch.extraction_items.each do |item|
             next if item[:confidence].to_f < CONFIDENCE_THRESHOLD
+            # Once a candidate is promoted to an OGO it is represented by that observation
+            # (draft shows on the 1-by-1 for its creator/observer; published shows for all).
+            next if item[:observation_id].present?
 
             match = Match.new(item: item, batch: batch)
             if object_match?(item)

@@ -173,8 +173,36 @@ class ObservationsQuery
     return observations if observee_ids.empty?
 
     observations = observations.joins(:observees).where(observees: { teammate_id: observee_ids }).distinct
-    observations = observations.merge(Observation.published).merge(Observation.not_journal)
+    observations = observations.merge(Observation.not_journal)
+
+    if include_viewer_drafts?
+      # base_scope (ObservationVisibilityQuery) already restricts drafts to the viewer's own
+      # (they are the observer or creator). Allow those alongside published so 1-by-1 pages
+      # surface the viewing teammate's draft OGOs without exposing anyone else's drafts.
+      observations = observations.where(
+        "observations.published_at IS NOT NULL OR observations.observer_id = ? OR observations.creator_company_teammate_id = ?",
+        current_person&.id,
+        viewer_company_teammate_id
+      )
+    else
+      observations = observations.merge(Observation.published)
+    end
+
     observations
+  end
+
+  def include_viewer_drafts?
+    value = params[:include_viewer_drafts]
+    value.present? && (value == true || value.to_s == 'true')
+  end
+
+  def viewer_company_teammate_id
+    return @viewer_company_teammate_id if defined?(@viewer_company_teammate_id)
+
+    @viewer_company_teammate_id =
+      if current_person.respond_to?(:active_teammates) && organization
+        current_person.active_teammates.find_by(organization_id: organization.id)&.id
+      end
   end
 
   def filter_by_goal(observations)
