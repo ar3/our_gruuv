@@ -30,6 +30,8 @@ module CheckIns
             # Once a candidate is promoted to an OGO it is represented by that observation
             # (draft shows on the 1-by-1 for its creator/observer; published shows for all).
             next if item[:observation_id].present?
+            # Dismissed candidates are intentionally hidden from check-ins (state 2).
+            next if item[:dismissed_at].present?
             # Scope to the current check-in window so surfaced candidates match the
             # observations list (published/draft OGOs are already timeframe-bounded).
             next unless within_check_in_range?(item)

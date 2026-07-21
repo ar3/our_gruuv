@@ -187,11 +187,12 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Review candidate OGOs")
-        expect(response.body).to include("Save candidates")
+        expect(response.body).to include("Save all")
         expect(response.body).to include("Observer (speaker)")
         expect(response.body).to include(">Actions<")
-        expect(response.body).to include("Include this candidate")
-        expect(response.body).to include("data-slack-include")
+        expect(response.body).to include("Reviewing")
+        expect(response.body).to include(">Include<")
+        expect(response.body).to include("data-slack-state")
         expect(response.body).to include("Kudos")
         expect(response.body).to include("Feedback")
         expect(response.body).not_to include("Quick note")
@@ -232,7 +233,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
                 items: {
                   "0" => {
                     id: item[:id],
-                    include: "0",
+                    state: "needs_processed",
                     kind: "feedback",
                     quote: item[:quote],
                     summary: item[:summary],
@@ -260,17 +261,84 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(updated[:kind]).to eq("feedback")
       end
 
+      it "dismisses a candidate via Save all and can restore it" do
+        item = batch.extraction_items.first
+        patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+              params: {
+                commit: "Save all",
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    state: "dismissed",
+                    quote: item[:quote],
+                    channel_id: item[:channel_id],
+                    ts: item[:ts]
+                  }
+                }
+              }
+
+        dismissed = batch.reload.extraction_items.first
+        expect(dismissed[:dismissed_at]).to be_present
+        expect(dismissed[:dismissed_by_company_teammate_id]).to eq(teammate.id)
+        expect(dismissed[:include]).to eq(false)
+
+        patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+              params: {
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    state: "needs_processed",
+                    quote: item[:quote],
+                    channel_id: item[:channel_id],
+                    ts: item[:ts]
+                  }
+                }
+              }
+
+        restored = batch.reload.extraction_items.first
+        expect(restored[:dismissed_at]).to be_nil
+        expect(restored[:dismissed_by_company_teammate_id]).to be_nil
+      end
+
+      it "dismisses a single candidate immediately via Dismiss now" do
+        item = batch.extraction_items.first
+        patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+              params: {
+                dismiss_item_id: item[:id],
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    state: "needs_processed",
+                    quote: item[:quote],
+                    channel_id: item[:channel_id],
+                    ts: item[:ts]
+                  }
+                }
+              }
+
+        dismissed = batch.reload.extraction_items.first
+        expect(dismissed[:dismissed_at]).to be_present
+        expect(dismissed[:dismissed_by_company_teammate_id]).to eq(teammate.id)
+      end
+
+      it "renders the tri-state status controls and Dismiss now on the review form" do
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+        expect(response.body).to include("Reviewing")
+        expect(response.body).to include("Dismiss now")
+        expect(response.body).to include("data-slack-state")
+      end
+
       it "creates draft OGOs from included candidates" do
         item = batch.extraction_items.first
         expect do
           patch organization_company_teammate_possible_observation_slack_search_batch_path(
             organization, subject, search, batch
           ), params: {
-            commit: "Create draft OGOs from included",
+            commit: "Save all",
             items: {
               "0" => {
                 id: item[:id],
-                include: "1",
+                state: "included",
                 kind: item[:kind],
                 quote: item[:quote],
                 summary: item[:summary],
@@ -296,7 +364,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         )
         follow_redirect!
         expect(response.body).to include("Open draft OGO")
-        expect(response.body).to include("Create draft OGOs from included")
+        expect(response.body).to include("Save all")
 
         observation = Observation.last
         expect(observation).to be_draft
@@ -323,8 +391,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
           get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
           expect(response).to have_http_status(:success)
           expect(response.body).to include("Already linked")
-          expect(response.body).to include("Save candidates")
-          expect(response.body).to include("Create draft OGOs from included")
+          expect(response.body).to include("Save all")
         end
       end
     end

@@ -102,6 +102,21 @@ RSpec.describe CheckIns::SlackOgoConsult::CandidateFilter do
     expect(result[:object_matches].map { |m| m.item[:id] }).to eq(["a"])
   end
 
+  it "excludes dismissed candidates" do
+    items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
+    items.find { |i| i["id"] == "a" }["dismissed_at"] = Time.current.iso8601
+    batch.replace_extraction_items!(items)
+
+    result = described_class.call(
+      search: search,
+      rateable_type: "Assignment",
+      rateable_id: assignment.id
+    )
+
+    expect(result[:object_matches]).to be_empty
+    expect(result[:other_matches].map { |m| m.item[:id] }).to eq(["b"])
+  end
+
   it "excludes candidates already promoted to an observation" do
     items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
     items.find { |i| i["id"] == "a" }["observation_id"] = 999

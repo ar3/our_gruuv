@@ -87,6 +87,8 @@
                 - subject_selected = item[:subject_company_teammate_id].present?
                 - ready = responder_selected && subject_selected
                 - locked = item[:observation_id].present?
+                - dismissed = item[:dismissed_at].present?
+                - current_state = dismissed ? "dismissed" : (included ? "included" : "needs_processed")
                 - dup_key = "#{item[:channel_id]}|#{item[:ts]}"
                 - duplicates = duplicate_observations_by_key[dup_key] || []
                 - confidence = item[:confidence].to_f
@@ -142,12 +144,24 @@
                           = link_to "##{obs.id}", organization_observation_path(organization, obs), class: "ms-1"
                   %td{ style: "min-width: 240px;" }
                     .mb-2
-                      = label_tag "#{form_id}_#{idx}_include", "Include", class: "form-label small mb-1"
-                      .form-check
-                        - if locked
-                          = hidden_field_tag "items[#{idx}][include]", "1"
-                        = check_box_tag "items[#{idx}][include]", "1", included, class: "form-check-input", id: "#{form_id}_#{idx}_include", data: { slack_include: true }, disabled: locked
-                        = label_tag "#{form_id}_#{idx}_include", locked ? "Included (draft created)" : "Include this candidate", class: "form-check-label"
+                      = label_tag nil, "Status", class: "form-label small mb-1 d-block"
+                      - if locked
+                        = hidden_field_tag "items[#{idx}][state]", "included"
+                        %span.badge.text-bg-success Included (draft created)
+                      - else
+                        .btn-group.btn-group-sm.d-flex{role: "group", "aria-label" => "Candidate status"}
+                          = radio_button_tag "items[#{idx}][state]", "needs_processed", current_state == "needs_processed", class: "btn-check", id: "#{form_id}_#{idx}_state_needs", data: { slack_state: true }
+                          = label_tag "#{form_id}_#{idx}_state_needs", "Reviewing", class: "btn btn-outline-secondary"
+                          = radio_button_tag "items[#{idx}][state]", "included", current_state == "included", class: "btn-check", id: "#{form_id}_#{idx}_state_incl", data: { slack_state: true }
+                          = label_tag "#{form_id}_#{idx}_state_incl", "Include", class: "btn btn-outline-success"
+                          = radio_button_tag "items[#{idx}][state]", "dismissed", current_state == "dismissed", class: "btn-check", id: "#{form_id}_#{idx}_state_dismiss", data: { slack_state: true }
+                          = label_tag "#{form_id}_#{idx}_state_dismiss", "Dismiss", class: "btn btn-outline-danger"
+                        .mt-2
+                          = button_tag "Dismiss now",
+                                       type: "submit",
+                                       name: "dismiss_item_id",
+                                       value: item[:id],
+                                       class: "btn btn-sm btn-link text-decoration-none p-0"
                     %hr.my-2
                     .mb-2
                       = label_tag "#{form_id}_#{idx}_kind_kudos", "Kind", class: "form-label small mb-1"
@@ -186,8 +200,12 @@
                     = hidden_field_tag "items[#{idx}][association_reason]", item[:association_reason]
                     = hidden_field_tag "items[#{idx}][rating_reason]", item[:rating_reason]
                     = hidden_field_tag "items[#{idx}][suggested_goal_id]", item[:suggested_goal_id]
+                    = hidden_field_tag "items[#{idx}][dismissed_at]", item[:dismissed_at]
+                    = hidden_field_tag "items[#{idx}][dismissed_by_company_teammate_id]", item[:dismissed_by_company_teammate_id]
                   %td
-                    - if locked
+                    - if dismissed
+                      %span.badge.text-bg-secondary Dismissed
+                    - elsif locked
                       = link_to "Open draft OGO", organization_observation_path(organization, item[:observation_id]), class: "btn btn-sm btn-outline-primary"
                     - elsif !ready
                       %span.text-warning Needs IDs
@@ -196,16 +214,12 @@
                     - else
                       %span.text-muted Reviewing
         .d-flex.flex-wrap.gap-2.mt-2
-          = submit_tag "Save candidates", name: "commit", value: "Save candidates", class: "btn btn-outline-primary"
-          - if policy(batch).create_draft_observations?
-            = submit_tag "Create draft OGOs from included",
-                         name: "commit",
-                         value: "Create draft OGOs from included",
-                         class: "btn btn-primary",
-                         data: { confirm: "Create draft OGOs for all included candidates that do not already have one?" }
+          = submit_tag "Save all", name: "commit", value: "Save all", class: "btn btn-primary"
       %p.mt-3.mb-0.text-muted.small
-        Included candidates become draft OGOs you can review and publish. The Slack speaker is the observer; you are the creator.
-        Include is pre-checked only for high-confidence candidates (≥75%).
+        Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Include")}, or #{content_tag(:strong, "Dismiss")}.
+        Save all actualizes every row: included candidates become draft OGOs (Slack speaker is the observer; you are the creator),
+        dismissed candidates are hidden from 1-by-1 check-ins, and the rest stay as potential OGOs.
+        Include is pre-selected only for high-confidence candidates (≥75%). Use Dismiss now to dismiss a single row immediately.
 
   - else
     %p.mb-3.text-muted

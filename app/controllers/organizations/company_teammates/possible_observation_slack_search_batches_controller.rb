@@ -19,39 +19,26 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     redirect_to search_anchor_path, status: :see_other
   end
 
+  # Save all: actualize every row's status — dismiss dismissed rows, promote included
+  # rows to draft OGOs, and leave "reviewing" rows as unprocessed candidates.
+  # When dismiss_item_id is present (Dismiss now), quick-dismiss that single row instead.
   def update
     authorize @batch
     items = normalize_items_param(items_param)
-    if items.empty?
-      redirect_to batch_path, alert: "No candidate rows to save."
-      return
+    if params[:dismiss_item_id].present?
+      dismiss_single!(items, params[:dismiss_item_id].to_s)
+    else
+      save_all!(items)
     end
-
-    if create_drafts_commit?
-      authorize @batch, :create_draft_observations?
-      promote_draft_observations!(items)
-      return
-    end
-
-    invalid_rows = items.select do |item|
-      ActiveModel::Type::Boolean.new.cast(item["include"]) &&
-        (item["responder_company_teammate_id"].blank? || item["subject_company_teammate_id"].blank?)
-    end
-    if invalid_rows.any?
-      redirect_to batch_path, alert: "Rows marked include must have both observer and subject selected."
-      return
-    end
-
-    @batch.replace_extraction_items!(items)
-    redirect_to batch_path, notice: "Candidates saved."
   rescue ActionController::ParameterMissing
     redirect_to batch_path, alert: "Invalid candidate data."
   end
 
+  # Backward-compatible route; behaves like Save all.
   def create_draft_observations
-    authorize @batch, :create_draft_observations?
+    authorize @batch
     items = normalize_items_param(items_param)
-    promote_draft_observations!(items)
+    save_all!(items)
   rescue ActionController::ParameterMissing
     redirect_to batch_path, alert: "Invalid candidate data."
   end
@@ -151,28 +138,53 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     params[:items] || params.dig(:possible_observation_slack_search_batch, :items)
   end
 
-  def create_drafts_commit?
-    params[:commit].to_s.include?("Create draft OGOs")
+  def included_item?(item)
+    ActiveModel::Type::Boolean.new.cast(item["include"])
   end
 
-  def promote_draft_observations!(items)
+  # One-at-a-time quick dismiss (Dismiss now). Saves the current on-screen state of
+  # every row (no promotion) and force-dismisses the targeted row.
+  def dismiss_single!(items, target_id)
+    matched = false
+    items = items.map do |item|
+      next item unless item["id"].to_s == target_id
+
+      matched = true
+      item["include"] = false
+      item["dismissed_at"] = item["dismissed_at"].presence || Time.current.iso8601
+      item["dismissed_by_company_teammate_id"] =
+        item["dismissed_by_company_teammate_id"].presence || current_company_teammate&.id
+      item
+    end
+    @batch.replace_extraction_items!(items) if items.any?
+    redirect_to batch_path, notice: matched ? "Candidate dismissed." : "Candidates saved."
+  end
+
+  def save_all!(items)
     if items.empty?
-      redirect_to batch_path, alert: "No candidate rows to promote."
+      redirect_to batch_path, alert: "No candidate rows to save."
       return
     end
 
     invalid_rows = items.select do |item|
-      ActiveModel::Type::Boolean.new.cast(item["include"]) &&
-        item["observation_id"].blank? &&
+      included_item?(item) && item["observation_id"].blank? &&
         (item["responder_company_teammate_id"].blank? || item["subject_company_teammate_id"].blank?)
     end
     if invalid_rows.any?
-      redirect_to batch_path, alert: "Rows marked include must have both observer and subject selected."
+      redirect_to batch_path, alert: "Rows set to Include must have both observer and subject selected."
       return
     end
 
     @batch.replace_extraction_items!(items)
+    dismissed_count = items.count { |item| item["dismissed_at"].present? }
 
+    promotable = items.any? { |item| included_item?(item) && item["observation_id"].blank? }
+    unless promotable
+      redirect_to batch_path, notice: saved_notice(dismissed_count)
+      return
+    end
+
+    authorize @batch, :create_draft_observations?
     result = PossibleObservationSlackSearches::BatchCreateDraftObservationsService.call(
       batch: @batch.reload,
       creator: current_company_teammate
@@ -186,17 +198,28 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
       if payload[:soft_duplicate_count].to_i.positive?
         notice_parts << "#{payload[:soft_duplicate_count]} may already link to the same Slack message (soft warning)."
       end
+      notice_parts << dismissed_summary(dismissed_count) if dismissed_count.positive?
       if payload[:errors].any?
         redirect_to batch_path,
                     alert: [notice_parts.presence&.join(" "), payload[:errors].join(" ")].compact.join(" ")
       elsif notice_parts.empty?
-        redirect_to batch_path, alert: "No included candidates were ready to create as draft OGOs."
+        redirect_to batch_path, notice: "Candidates saved."
       else
         redirect_to batch_path, notice: notice_parts.join(" ")
       end
     else
       redirect_to batch_path, alert: Array(result.error).join(", ")
     end
+  end
+
+  def saved_notice(dismissed_count)
+    return "Candidates saved." unless dismissed_count.positive?
+
+    "Candidates saved. #{dismissed_summary(dismissed_count)}"
+  end
+
+  def dismissed_summary(count)
+    "#{count} candidate#{"s" unless count == 1} currently dismissed."
   end
 
   def normalize_items_param(raw)
@@ -215,23 +238,45 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     list.map do |h|
       h = if h.respond_to?(:permit)
         h.permit(
-          :id, :include, :quote, :summary, :short_quote, :full_quote, :kind,
+          :id, :state, :quote, :summary, :short_quote, :full_quote, :kind,
           :speaker_label, :recipient_label,
           :responder_company_teammate_id, :subject_company_teammate_id,
           :observer_unknown, :observee_unknown,
           :channel_id, :ts, :permalink, :slack_user_id,
           :suggested_rateable_type, :suggested_rateable_id, :suggested_rating, :suggested_goal_id,
           :suggested_rateable_name, :association_reason, :rating_reason, :target_is_subject,
-          :confidence, :observation_id
+          :confidence, :observation_id,
+          :dismissed_at, :dismissed_by_company_teammate_id
         ).to_h
       else
         h.stringify_keys
       end
       out = h.stringify_keys
-      out["include"] = (out["include"].to_s == "1")
       out["observer_unknown"] = out["responder_company_teammate_id"].blank?
       out["observee_unknown"] = out["subject_company_teammate_id"].blank?
+      apply_state!(out)
       out
     end
+  end
+
+  STATES = %w[needs_processed included dismissed].freeze
+
+  # Reconcile the row's single tri-state (needs_processed | included | dismissed) into
+  # the stored flags. Preserves the original dismissal timestamp/actor on re-save.
+  def apply_state!(out)
+    state = out.delete("state").to_s
+    state = "needs_processed" unless STATES.include?(state)
+
+    out["include"] = (state == "included")
+
+    if state == "dismissed"
+      out["dismissed_at"] = out["dismissed_at"].presence || Time.current.iso8601
+      out["dismissed_by_company_teammate_id"] =
+        out["dismissed_by_company_teammate_id"].presence || current_company_teammate&.id
+    else
+      out["dismissed_at"] = nil
+      out["dismissed_by_company_teammate_id"] = nil
+    end
+    out
   end
 end

@@ -105,20 +105,22 @@
       (function() {
         document.querySelectorAll("[id^='slack-ogo-candidates-form-']").forEach(function(form) {
           function syncRow(row) {
-            var include = row.querySelector("[data-slack-include]");
-            if (!include) return;
-            var enabled = include.checked;
+            var states = row.querySelectorAll("[data-slack-state]");
+            if (!states.length) return;
+            var included = false;
+            states.forEach(function(el) {
+              if (el.checked && el.value === "included") included = true;
+            });
             row.querySelectorAll("[data-slack-row-field]").forEach(function(field) {
-              field.disabled = !enabled;
+              field.disabled = !included;
             });
           }
 
           form.querySelectorAll("[data-slack-candidate-row]").forEach(function(row) {
             syncRow(row);
-            var include = row.querySelector("[data-slack-include]");
-            if (include) {
-              include.addEventListener("change", function() { syncRow(row); });
-            }
+            row.querySelectorAll("[data-slack-state]").forEach(function(el) {
+              el.addEventListener("change", function() { syncRow(row); });
+            });
           });
 
           form.addEventListener("submit", function() {
