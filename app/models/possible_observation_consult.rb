@@ -35,6 +35,19 @@ class PossibleObservationConsult < ApplicationRecord
     Array(hash[:items]).map(&:with_indifferent_access)
   end
 
+  # Potential-OGO (candidate) counts for the index summary.
+  def pogo_count
+    extraction_items.size
+  end
+
+  def dismissed_pogo_count
+    extraction_items.count { |item| item[:dismissed_at].present? }
+  end
+
+  def promoted_pogo_count
+    extraction_items.count { |item| item[:observation_id].present? }
+  end
+
   def processed_teammate_ids
     hash = extractions.is_a?(Hash) ? extractions.with_indifferent_access : {}
     Array(hash[:processed_teammate_ids]).map(&:to_i).reject(&:zero?)

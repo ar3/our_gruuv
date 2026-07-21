@@ -392,6 +392,36 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(batch.reload.extraction_items.first[:observation_id]).to eq(observation.id)
       end
 
+      it "preserves other rows' observer/subject/quote when acting on one row (disabled fields not wiped)" do
+        id1 = SecureRandom.uuid
+        id2 = SecureRandom.uuid
+        batch.replace_extraction_items!([
+          { "id" => id1, "kind" => "kudos", "confidence" => 0.9, "quote" => "Quote one",
+            "responder_company_teammate_id" => subject.id, "subject_company_teammate_id" => subject.id,
+            "channel_id" => "C1", "ts" => "1710000000.000100", "include" => false },
+          { "id" => id2, "kind" => "feedback", "confidence" => 0.9, "quote" => "Quote two",
+            "responder_company_teammate_id" => subject.id, "subject_company_teammate_id" => subject.id,
+            "channel_id" => "C1", "ts" => "1710000000.000200", "include" => false }
+        ])
+
+        # Dismiss row 2. Row 1 stays "Reviewing", so the browser would NOT submit its
+        # disabled observer/subject/quote/kind fields — only its hidden fields.
+        patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+              params: {
+                dismiss_item_id: id2,
+                items: {
+                  "0" => { id: id1, state: "needs_processed", channel_id: "C1", ts: "1710000000.000100" },
+                  "1" => { id: id2, state: "needs_processed", channel_id: "C1", ts: "1710000000.000200" }
+                }
+              }
+
+        row1 = batch.reload.extraction_items.find { |i| i[:id] == id1 }
+        expect(row1[:subject_company_teammate_id].to_i).to eq(subject.id)
+        expect(row1[:responder_company_teammate_id].to_i).to eq(subject.id)
+        expect(row1[:quote]).to eq("Quote one")
+        expect(row1[:kind]).to eq("kudos")
+      end
+
       it "creates and publishes an OGO when the viewer is the observer" do
         item = batch.extraction_items.first
         patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),

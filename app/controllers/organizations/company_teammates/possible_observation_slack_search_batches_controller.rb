@@ -316,6 +316,8 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
   def normalize_items_param(raw)
     return [] if raw.blank?
 
+    stored_by_id = @batch.extraction_items.index_by { |item| item[:id].to_s }
+
     list =
       case raw
       when ActionController::Parameters
@@ -327,7 +329,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
       end
 
     list.map do |h|
-      h = if h.respond_to?(:permit)
+      submitted = if h.respond_to?(:permit)
         h.permit(
           :id, :state, :quote, :summary, :short_quote, :full_quote, :kind,
           :speaker_label, :recipient_label,
@@ -338,11 +340,17 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
           :suggested_rateable_name, :association_reason, :rating_reason, :target_is_subject,
           :confidence, :observation_id,
           :dismissed_at, :dismissed_by_company_teammate_id
-        ).to_h
+        ).to_h.stringify_keys
       else
         h.stringify_keys
       end
-      out = h.stringify_keys
+
+      # Merge submitted values onto the stored item so fields that are hidden or disabled
+      # in the form (e.g. quote/kind/observer/subject on non-included or locked rows) are
+      # preserved instead of being wiped out when saving another row.
+      stored = stored_by_id[submitted["id"].to_s]
+      out = stored ? stored.to_h.stringify_keys.merge(submitted) : submitted
+
       out["observer_unknown"] = out["responder_company_teammate_id"].blank?
       out["observee_unknown"] = out["subject_company_teammate_id"].blank?
       apply_state!(out)

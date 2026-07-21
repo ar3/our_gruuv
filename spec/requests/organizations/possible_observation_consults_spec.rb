@@ -310,6 +310,37 @@ RSpec.describe "Possible observation consults", type: :request do
     end
   end
 
+  describe "GET index" do
+    it "shows pOGO total, dismissed, and promoted counts instead of status" do
+      create(
+        :possible_observation_consult,
+        organization: organization,
+        creator_company_teammate: teammate,
+        display_name: "Counted consult",
+        source_text: "Pat crushed it.",
+        confirmed_teammate_ids: [other.id],
+        people_status: "confirmed",
+        extraction_status: "completed",
+        extractions: {
+          "version" => 1,
+          "processed_teammate_ids" => [other.id],
+          "items" => [
+            { "id" => SecureRandom.uuid, "quote" => "a", "subject_company_teammate_id" => other.id, "observation_id" => 123 },
+            { "id" => SecureRandom.uuid, "quote" => "b", "subject_company_teammate_id" => other.id, "dismissed_at" => Time.current.iso8601 },
+            { "id" => SecureRandom.uuid, "quote" => "c", "subject_company_teammate_id" => other.id }
+          ]
+        }
+      )
+
+      get organization_possible_observation_consults_path(organization)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("pOGOs")
+      expect(response.body).to include("Dismissed")
+      expect(response.body).to include("Promoted")
+    end
+  end
+
   describe "GET show while processing" do
     let!(:consult) do
       create(
