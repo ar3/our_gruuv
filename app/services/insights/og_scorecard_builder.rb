@@ -110,6 +110,7 @@ module Insights
       when 'unique_teammates_milestone_all_time' then milestone_counts[:unique_teammates_milestone_all_time]
       when 'active_goal_ability' then goal_ability_by_week
       when 'unique_teammates_active_goal' then goals_counts[:unique_teammates_active_goal]
+      when 'unique_teammates_active_goal_90_days' then goals_counts[:unique_teammates_active_goal_90_days]
       when 'unique_teammates_goal_check_in_this_week' then goals_counts[:unique_teammates_goal_check_in_this_week]
       when 'unique_teammates_completed_goal_90_days' then goals_counts[:unique_teammates_completed_goal_90_days]
       else

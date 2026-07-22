@@ -300,7 +300,8 @@ RSpec.describe Insights::OgScorecardBuilder do
       gruuv_keys = data_rows.last(3).map { |row| row[:key] }
 
       expect(first_activity_index).to eq(1)
-      expect(separator_index).to eq(7)
+      expect(goals_group[:rows][2][:key]).to eq('unique_teammates_active_goal_90_days')
+      expect(separator_index).to eq(8)
       expect(gruuv_keys).to contain_exactly(
         Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_GOAL_CONFIDENCE, EngagementHealth::HEALTHY),
         Insights::OgScorecard::GruuvHealthWeekCounts.metric_key(EngagementHealth::CATEGORY_GOAL_CONFIDENCE, EngagementHealth::WARNING),

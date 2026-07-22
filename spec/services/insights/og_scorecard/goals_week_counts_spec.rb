@@ -119,6 +119,65 @@ RSpec.describe Insights::OgScorecard::GoalsWeekCounts do
       expect(result[:unique_teammates_completed_goal_90_days][monday]).to eq(1)
     end
 
+    it 'counts unique owners whose goal was live for any day in the trailing 90 days' do
+      sunday = monday + 6.days
+      still_active = create(:teammate, organization: company, first_employed_at: monday - 1.year)
+      completed_in_window = create(:teammate, organization: company, first_employed_at: monday - 1.year)
+      started_in_window = create(:teammate, organization: company, first_employed_at: monday - 1.year)
+      completed_before_window = create(:teammate, organization: company, first_employed_at: monday - 1.year)
+      deleted_owner = create(:teammate, organization: company, first_employed_at: monday - 1.year)
+
+      create(
+        :goal,
+        company: company,
+        owner: still_active,
+        creator: still_active,
+        started_at: sunday - 30.days,
+        completed_at: nil,
+        deleted_at: nil
+      )
+      create(
+        :goal,
+        company: company,
+        owner: completed_in_window,
+        creator: completed_in_window,
+        started_at: sunday - 120.days,
+        completed_at: sunday - 45.days,
+        deleted_at: nil
+      )
+      create(
+        :goal,
+        company: company,
+        owner: started_in_window,
+        creator: started_in_window,
+        started_at: sunday - 10.days,
+        completed_at: nil,
+        deleted_at: nil
+      )
+      create(
+        :goal,
+        company: company,
+        owner: completed_before_window,
+        creator: completed_before_window,
+        started_at: sunday - 200.days,
+        completed_at: sunday - 100.days,
+        deleted_at: nil
+      )
+      create(
+        :goal,
+        company: company,
+        owner: deleted_owner,
+        creator: deleted_owner,
+        started_at: sunday - 30.days,
+        completed_at: nil,
+        deleted_at: sunday - 5.days
+      )
+
+      result = described_class.call(company: company, week_starts: week_starts)
+
+      expect(result[:unique_teammates_active_goal_90_days][monday]).to eq(3)
+    end
+
     it 'excludes goals owned by other companies' do
       teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year)
       other_company = create(:company)

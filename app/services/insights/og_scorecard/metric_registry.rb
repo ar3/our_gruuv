@@ -313,6 +313,13 @@ module Insights
             group: 'Goals'
           ),
           metric(
+            key: 'unique_teammates_active_goal_90_days',
+            label: 'Teammates that have had an active goal at some point in the last 90 days',
+            direction: :more,
+            supports_percent: true,
+            group: 'Goals'
+          ),
+          metric(
             key: 'active_goal_aspiration',
             label: 'Teammates with an active goal attached to an Aspirational Value',
             direction: :more,

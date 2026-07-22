@@ -17,6 +17,7 @@ module Insights
       def call
         {
           unique_teammates_active_goal: counts_by_week(:active_goal),
+          unique_teammates_active_goal_90_days: counts_by_week(:active_goal_90_days),
           unique_teammates_goal_check_in_this_week: counts_by_week(:goal_check_in),
           unique_teammates_completed_goal_90_days: counts_by_week(:completed_90_days)
         }
@@ -37,6 +38,8 @@ module Insights
           case mode
           when :active_goal
             active_owner_ids(reference_time).size
+          when :active_goal_90_days
+            owners_with_active_goal_in_90_days(week_end_date).size
           when :goal_check_in
             owners_with_check_in_during_week(week_start, week_end_date, reference_time).size
           when :completed_90_days
@@ -80,11 +83,35 @@ module Insights
         end.uniq
       end
 
+      # Unique owners whose goal was live for at least one day in the trailing
+      # 90-day window ending Sunday (same window convention as completed_90_days).
+      # Excludes deleted goals. Still-active, completed-within-window, and
+      # started-within-window all qualify.
+      def owners_with_active_goal_in_90_days(week_end_date)
+        window_start = week_end_date - 89.days
+        window_end_time = week_end_date.in_time_zone.end_of_day
+        goal_rows.filter_map do |owner_id, started_at, completed_at, deleted_at|
+          next unless teammate_in_scope?(owner_id)
+          next unless goal_overlapped_window?(started_at, completed_at, deleted_at, window_start, window_end_time)
+
+          owner_id
+        end.uniq
+      end
+
       def goal_active_at?(started_at, completed_at, deleted_at, reference_time)
         return false if deleted_at.present?
         return false if started_at.blank?
 
         started_at <= reference_time && (completed_at.nil? || completed_at > reference_time)
+      end
+
+      def goal_overlapped_window?(started_at, completed_at, deleted_at, window_start, window_end_time)
+        return false if deleted_at.present?
+        return false if started_at.blank?
+        return false if started_at > window_end_time
+        return false if completed_at.present? && completed_at.to_date < window_start
+
+        true
       end
 
       def goal_rows
