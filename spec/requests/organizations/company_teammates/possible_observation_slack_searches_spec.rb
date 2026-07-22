@@ -216,6 +216,27 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(response.body).not_to include("Quick note")
       end
 
+      it "renders confidence-band analytics under the consultation status" do
+        items = [
+          { "id" => SecureRandom.uuid, "confidence" => 0.91, "quote" => "high", "kind" => "kudos",
+            "include" => true, "responder_company_teammate_id" => subject.id, "subject_company_teammate_id" => subject.id },
+          { "id" => SecureRandom.uuid, "confidence" => 0.78, "quote" => "mid-high", "kind" => "kudos",
+            "include" => true, "responder_company_teammate_id" => subject.id, "subject_company_teammate_id" => subject.id },
+          { "id" => SecureRandom.uuid, "confidence" => 0.76, "quote" => "mid-high-2", "kind" => "feedback",
+            "include" => true, "responder_company_teammate_id" => subject.id, "subject_company_teammate_id" => subject.id },
+          { "id" => SecureRandom.uuid, "confidence" => 0.62, "quote" => "mid", "kind" => "feedback",
+            "include" => false, "responder_company_teammate_id" => subject.id, "subject_company_teammate_id" => subject.id }
+        ]
+        batch.replace_extraction_items!(items)
+
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+
+        expect(response.body).to include("3 potential OGOs that OG is 75%+ confident on")
+        expect(response.body).to include("visible on 1-by-1 check-in pages")
+        expect(response.body).to include("1 potential OGO that OG is between 50–75% confident on")
+        expect(response.body).to include("these are defaulted to Reviewing below")
+      end
+
       it "prefixes the already-run (default) model with Re-run and the other with Try" do
         get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
         expect(response.body).to include("Consult OG again")

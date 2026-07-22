@@ -17,6 +17,24 @@ class PossibleObservationSlackSearchBatch < ApplicationRecord
   delegate :organization, :creator_company_teammate, :subject_company_teammate,
            to: :possible_observation_slack_search
 
+  # Potential-OGO confidence bands used on the review page analytics.
+  # ≥75%: Include default + visible on 1-by-1 check-ins; 50–75%: mid band (Reviewing by default).
+  HIGH_CONFIDENCE = Llm::SlackMomentsExtractor::INCLUDE_CONFIDENCE_THRESHOLD
+  MID_BAND_FLOOR = Llm::SlackMomentsExtractor::MIN_RETURN_CONFIDENCE
+
+  def confidence_band_counts
+    counts = { high: 0, mid: 0 }
+    extraction_items.each do |item|
+      confidence = item[:confidence].to_f
+      if confidence >= HIGH_CONFIDENCE
+        counts[:high] += 1
+      elsif confidence >= MID_BAND_FLOOR
+        counts[:mid] += 1
+      end
+    end
+    counts
+  end
+
   def messages
     keys = Array(message_keys).map(&:to_s)
     return [] if keys.empty?

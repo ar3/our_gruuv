@@ -2,7 +2,8 @@
 
 module CheckIns
   module SlackOgoConsult
-    CONFIDENCE_THRESHOLD = 0.80
+    # Same bar as Include default on the Slack review page (and LLM include threshold).
+    CONFIDENCE_THRESHOLD = Llm::SlackMomentsExtractor::INCLUDE_CONFIDENCE_THRESHOLD
     # Show prior results even when older; warn when past this age.
     STALE_AFTER = 7.days
     REFRESH_SEARCH_AFTER = 3.days

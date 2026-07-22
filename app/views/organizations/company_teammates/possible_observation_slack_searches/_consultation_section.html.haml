@@ -23,6 +23,15 @@
         · #{batch.messages_count} messages
         - if latest_consultation&.model_id.present?
           · Model: #{latest_consultation.model_id}
+      - if batch.extraction_status == "completed" && batch.extraction_items.any?
+        - bands = batch.confidence_band_counts
+        %ul.mb-0.mt-2.small.text-muted
+          %li
+            #{pluralize(bands[:high], "potential OGO")} that OG is 75%+ confident on
+            %span.text-muted (defaulted to Include below; visible on 1-by-1 check-in pages)
+          %li
+            #{pluralize(bands[:mid], "potential OGO")} that OG is between 50–75% confident on
+            %span.text-muted (these are defaulted to Reviewing below)
     .d-flex.flex-wrap.gap-2
       - if policy(batch).extract?
         - completed = batch.extraction_status == "completed"
@@ -242,7 +251,7 @@
         Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Include")}, or #{content_tag(:strong, "Dismiss")}.
         Save all actualizes every row: included candidates become draft OGOs (Slack speaker is the observer; you are the creator),
         dismissed candidates are hidden from 1-by-1 check-ins, and the rest stay as potential OGOs.
-        Include is pre-selected only for high-confidence candidates (≥75%).
+        Include is pre-selected only for high-confidence candidates (≥75%), which are also the ones surfaced on 1-by-1 check-in pages.
         Use the per-row buttons to act on one candidate immediately: Create draft OGO now, Create published OGO now (private)
         (publishes only when you are the observer; otherwise it stays a draft), or Dismiss now.
 

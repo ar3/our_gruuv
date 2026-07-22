@@ -54,7 +54,7 @@ RSpec.describe CheckIns::SlackOgoConsult::CandidateFilter do
     )
   end
 
-  it "keeps object matches at or above 80% and counts other high-confidence hits" do
+  it "keeps object matches at or above 75% and counts other high-confidence hits" do
     result = described_class.call(
       search: search,
       rateable_type: "Assignment",
@@ -63,6 +63,20 @@ RSpec.describe CheckIns::SlackOgoConsult::CandidateFilter do
 
     expect(result[:object_matches].map { |m| m.item[:id] }).to eq(["a"])
     expect(result[:other_matches].map { |m| m.item[:id] }).to eq(["b"])
+  end
+
+  it "includes object matches in the former 75–80% band" do
+    items = batch.extraction_items.map(&:to_h).map(&:stringify_keys)
+    items.find { |i| i["id"] == "c" }["confidence"] = 0.76
+    batch.replace_extraction_items!(items)
+
+    result = described_class.call(
+      search: search,
+      rateable_type: "Assignment",
+      rateable_id: assignment.id
+    )
+
+    expect(result[:object_matches].map { |m| m.item[:id] }).to eq(%w[a c])
   end
 
   it "excludes candidates whose Slack moment falls outside the check-in window" do

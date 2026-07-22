@@ -2,7 +2,7 @@
 
 module CheckIns
   module SlackOgoConsult
-    # Splits batch extraction items into object matches (≥80%) vs other high-confidence hits.
+    # Splits batch extraction items into object matches (≥75%) vs other high-confidence hits.
     class CandidateFilter
       Match = Data.define(:item, :batch)
 
