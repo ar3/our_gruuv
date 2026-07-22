@@ -241,6 +241,13 @@ module Insights
             group: 'Check-ins'
           ),
           metric(
+            key: 'unique_teammates_check_in_finalized_90_days',
+            label: 'Teammates with a check-in finalized within the past 90 days',
+            direction: :more,
+            supports_percent: true,
+            group: 'Check-ins'
+          ),
+          metric(
             key: 'unique_teammates_check_in_finalized_all_time',
             label: 'Teammates that have had a check-in finalized all-time',
             direction: :more,

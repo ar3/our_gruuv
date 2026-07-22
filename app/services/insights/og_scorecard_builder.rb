@@ -99,6 +99,7 @@ module Insights
       when 'unique_ogo_observees_this_week' then observees_this_week_by_week
       when 'unique_ogo_observees' then observees_by_week
       when 'unique_teammates_check_in_finalized_this_week' then clarity_check_in_counts[:unique_teammates_check_in_finalized_this_week]
+      when 'unique_teammates_check_in_finalized_90_days' then clarity_check_in_counts[:unique_teammates_check_in_finalized_90_days]
       when 'unique_teammates_check_in_finalized_all_time' then clarity_check_in_counts[:unique_teammates_check_in_finalized_all_time]
       when 'active_goal_aspiration' then goal_aspiration_by_week
       when 'active_goal_assignment' then goal_assignment_by_week

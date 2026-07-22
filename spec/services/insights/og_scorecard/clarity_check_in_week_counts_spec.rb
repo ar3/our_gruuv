@@ -26,6 +26,7 @@ RSpec.describe Insights::OgScorecard::ClarityCheckInWeekCounts do
       result = described_class.call(company: company, week_starts: [monday])
 
       expect(result[:unique_teammates_check_in_finalized_this_week][monday]).to eq(1)
+      expect(result[:unique_teammates_check_in_finalized_90_days][monday]).to eq(1)
       expect(result[:unique_teammates_check_in_finalized_all_time][monday]).to eq(1)
     end
 
@@ -43,7 +44,57 @@ RSpec.describe Insights::OgScorecard::ClarityCheckInWeekCounts do
       result = described_class.call(company: company, week_starts: week_starts)
 
       expect(result[:unique_teammates_check_in_finalized_this_week][monday + 7]).to eq(0)
+      expect(result[:unique_teammates_check_in_finalized_90_days][monday + 7]).to eq(1)
       expect(result[:unique_teammates_check_in_finalized_all_time][monday + 7]).to eq(1)
+    end
+
+    it 'counts teammates with a finalize in the rolling 90 days ending Sunday' do
+      teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
+      tenure = create(:employment_tenure, company_teammate: teammate, company: company, started_at: monday - 1.year)
+      sunday = monday + 6.days
+      create(
+        :position_check_in,
+        :closed,
+        teammate: teammate,
+        employment_tenure: tenure,
+        official_check_in_completed_at: (sunday - 45.days).to_time + 12.hours
+      )
+      stale_teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
+      stale_tenure = create(:employment_tenure, company_teammate: stale_teammate, company: company, started_at: monday - 1.year)
+      create(
+        :position_check_in,
+        :closed,
+        teammate: stale_teammate,
+        employment_tenure: stale_tenure,
+        official_check_in_completed_at: (sunday - 100.days).to_time + 12.hours
+      )
+
+      result = described_class.call(company: company, week_starts: [monday])
+
+      expect(result[:unique_teammates_check_in_finalized_90_days][monday]).to eq(1)
+      expect(result[:unique_teammates_check_in_finalized_all_time][monday]).to eq(2)
+    end
+
+    it 'drops 90-day counts when a teammate is no longer employed during a later week' do
+      teammate = create(
+        :teammate,
+        organization: company,
+        first_employed_at: monday - 1.year,
+        last_terminated_at: monday + 3.days
+      )
+      tenure = create(:employment_tenure, company_teammate: teammate, company: company, started_at: monday - 1.year)
+      create(
+        :position_check_in,
+        :closed,
+        teammate: teammate,
+        employment_tenure: tenure,
+        official_check_in_completed_at: monday.to_time + 12.hours
+      )
+
+      result = described_class.call(company: company, week_starts: week_starts)
+
+      expect(result[:unique_teammates_check_in_finalized_90_days][monday]).to eq(1)
+      expect(result[:unique_teammates_check_in_finalized_90_days][monday + 7]).to eq(0)
     end
 
     it 'drops all-time counts when a teammate is no longer employed during a later week' do
@@ -90,6 +141,7 @@ RSpec.describe Insights::OgScorecard::ClarityCheckInWeekCounts do
       result = described_class.call(company: company, week_starts: [monday])
 
       expect(result[:unique_teammates_check_in_finalized_this_week][monday]).to eq(1)
+      expect(result[:unique_teammates_check_in_finalized_90_days][monday]).to eq(1)
     end
   end
 end

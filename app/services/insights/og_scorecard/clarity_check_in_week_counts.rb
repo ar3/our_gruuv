@@ -3,7 +3,7 @@
 module Insights
   module OgScorecard
     # Weekly counts of teammates who finalized a clarity check-in (position,
-    # assignment, or aspiration) during the week or ever through that Sunday.
+    # assignment, or aspiration) during the week, rolling 90 days, or ever through that Sunday.
     class ClarityCheckInWeekCounts
       def self.call(company:, week_starts:, teammate_ids: nil)
         new(company: company, week_starts: week_starts, teammate_ids: teammate_ids).call
@@ -18,6 +18,7 @@ module Insights
       def call
         {
           unique_teammates_check_in_finalized_this_week: counts_by_week(:this_week),
+          unique_teammates_check_in_finalized_90_days: counts_by_week(:ninety_days),
           unique_teammates_check_in_finalized_all_time: counts_by_week(:all_time)
         }
       end
@@ -36,6 +37,10 @@ module Insights
           case mode
           when :this_week
             teammates_with_finalization_during_week(week_start, week_end_date).size
+          when :ninety_days
+            active_ids = active_teammate_ids_for_week(week_end_date)
+            window_start = week_end_date - 89.days
+            teammates_with_finalization_in_range(window_start, week_end_date, active_ids).size
           when :all_time
             active_ids = active_teammate_ids_for_week(week_end_date)
             teammates_with_finalization_on_or_before(week_end_date, active_ids).size
@@ -50,6 +55,18 @@ module Insights
         finalized_rows.filter_map do |teammate_id, finalized_at|
           next unless teammate_in_scope?(teammate_id)
           next unless finalized_at && week_range.cover?(finalized_at)
+
+          teammate_id
+        end.uniq
+      end
+
+      def teammates_with_finalization_in_range(start_date, week_end_date, active_ids)
+        range = start_date.beginning_of_day..week_end_date.end_of_day
+        active_set = active_ids.to_set
+        finalized_rows.filter_map do |teammate_id, finalized_at|
+          next unless teammate_in_scope?(teammate_id)
+          next unless active_set.include?(teammate_id)
+          next unless finalized_at && range.cover?(finalized_at)
 
           teammate_id
         end.uniq
