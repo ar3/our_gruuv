@@ -79,6 +79,36 @@ RSpec.describe 'Organizations::GoalLinks', type: :request do
       get associate_existing_incoming_organization_goal_goal_links_path(organization, goal1)
       expect(response).to have_http_status(:ok)
     end
+
+    it 'includes page help about the teammate-parent hierarchy rule' do
+      get associate_existing_incoming_organization_goal_goal_links_path(organization, goal1)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('Hierarchy rule')
+      expect(response.body).to include('cannot')
+      expect(response.body).to include('teammate-owned')
+    end
+
+    it 'lists company-visible department and team parents for a department child' do
+      department = create(:department, company: organization)
+      team = create(:team, company: organization, department: department)
+      child = create(:goal, creator: teammate, company: organization, owner: department,
+                     title: 'Dept child', privacy_level: 'everyone_in_company')
+      create(:goal, creator: teammate, company: organization, owner: organization,
+             title: 'Company parent visible', privacy_level: 'everyone_in_company')
+      create(:goal, creator: teammate, company: organization, owner: department,
+             title: 'Dept parent visible', privacy_level: 'everyone_in_company')
+      create(:goal, creator: teammate, company: organization, owner: team,
+             title: 'Team parent visible', privacy_level: 'everyone_in_company')
+      create(:goal, creator: teammate, owner: teammate, title: 'Teammate should hide')
+
+      get associate_existing_incoming_organization_goal_goal_links_path(organization, child)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('Company parent visible')
+      expect(response.body).to include('Dept parent visible')
+      expect(response.body).to include('Team parent visible')
+      expect(response.body).not_to include('Teammate should hide')
+    end
   end
 
   describe 'POST associate_existing_incoming' do

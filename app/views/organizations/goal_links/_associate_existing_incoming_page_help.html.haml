@@ -1,0 +1,55 @@
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Choose existing goals to become
+    %strong parents
+    of
+    %strong= @goal.title
+    so this goal sits in the right place in the goal hierarchy.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-3
+    Parent links mean “pursuing this goal is in service of those parents.” Company, department, and team goals form the shared org graph; teammate goals stay personal unless they are visible company-wide or you created them for that owner.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 Which goals appear
+  %ul.mb-3
+    %li Incomplete goals only (draft or started)—not completed or archived.
+    %li
+      If this goal is
+      %strong company-owned,
+      parents can only be other
+      %strong company-owned
+      goals visible to everyone in the company.
+    %li
+      If this goal is
+      %strong department-
+      or
+      %strong team-owned,
+      parents can be company, department, or team goals visible to everyone in the company.
+    %li
+      If this goal is
+      %strong teammate-owned,
+      parents are that owner’s goals you created or that are visible to everyone in the company, plus company/department/team goals visible to everyone in the company.
+
+  %h5.fw-semibold.mb-2 Hierarchy rule (easy to forget)
+  %p.mb-3
+    Company, department, and team goals
+    %strong cannot
+    have a teammate-owned goal as a parent. Teammate goals can link
+    %em up
+    into the org graph; the org graph does not hang under a personal goal.
+
+  %h5.fw-semibold.mb-2 Example
+  .border.rounded.p-3.bg-white.mb-0
+    %p.small.mb-1
+      Department goal
+      %strong Ship Q3 launch
+      → selectable parents include company-visible company/dept/team goals such as
+      %em Grow revenue
+      or
+      %em Product roadmap.
+    %p.small.text-muted.mb-0
+      A private teammate goal like
+      %em Finish my certification
+      will not appear for that department child.

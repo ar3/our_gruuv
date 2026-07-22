@@ -133,6 +133,26 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
       expect(available_goals).to include(teammate_parent_candidate)
       expect(available_goals).to include(org_parent_candidate)
     end
+
+    it 'includes company, department, and team company-visible goals when child is department-owned' do
+      department = create(:department, company: company)
+      team = create(:team, company: company, department: department)
+      child_dept_goal = create(:goal, creator: creator_teammate, company: company, owner: department,
+                               title: 'Child dept goal', privacy_level: 'everyone_in_company')
+      dept_parent = create(:goal, creator: creator_teammate, company: company, owner: department,
+                           title: 'Dept parent', privacy_level: 'everyone_in_company')
+      team_parent = create(:goal, creator: creator_teammate, company: company, owner: team,
+                           title: 'Team parent', privacy_level: 'everyone_in_company')
+      org_parent_candidate
+      teammate_parent_candidate
+
+      get :associate_existing_incoming, params: { organization_id: company.id, goal_id: child_dept_goal.id }
+
+      expect(response).to have_http_status(:ok)
+      available_goals = assigns(:available_goals_with_status).map { |g| g[:goal] }
+      expect(available_goals).to include(org_parent_candidate, dept_parent, team_parent)
+      expect(available_goals).not_to include(teammate_parent_candidate)
+    end
   end
 
   describe 'POST #associate_existing_incoming' do

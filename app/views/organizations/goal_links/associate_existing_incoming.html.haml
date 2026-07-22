@@ -1,13 +1,21 @@
+- page_help_id = "associateExistingIncomingPageHelp"
+
 - content_for :title, "Associate Existing Parent Goals"
 
 - content_for :header do
   Associate "#{@goal.title}" as child to existing goals
+  = render "shared/page_help/header_info_button",
+           collapse_id: page_help_id,
+           tooltip: "Which goals can be parents, and the org-vs-teammate hierarchy rule. Click for details."
 
 - content_for :return_url do
   = @return_url || organization_goal_path(@organization, @goal)
 
 - content_for :return_text do
   = @return_text || "Back to the #{@goal.title} goal"
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/goal_links/associate_existing_incoming_page_help"
 
 .card.mb-3
   .card-header
