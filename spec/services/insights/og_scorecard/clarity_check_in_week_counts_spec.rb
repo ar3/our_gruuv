@@ -142,6 +142,26 @@ RSpec.describe Insights::OgScorecard::ClarityCheckInWeekCounts do
 
       expect(result[:unique_teammates_check_in_finalized_this_week][monday]).to eq(1)
       expect(result[:unique_teammates_check_in_finalized_90_days][monday]).to eq(1)
+      expect(result[:unique_teammates_position_check_in_finalized_90_days][monday]).to eq(1)
+    end
+
+    it 'counts position-only finalizes separately from any-clarity 90-day pulse' do
+      teammate = create(:teammate, organization: company, first_employed_at: monday - 1.year, last_terminated_at: nil)
+      create(:employment_tenure, company_teammate: teammate, company: company, started_at: monday - 1.year)
+      assignment = create(:assignment, company: company)
+      sunday = monday + 6.days
+      create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: teammate,
+        assignment: assignment,
+        official_check_in_completed_at: (sunday - 20.days).to_time + 12.hours
+      )
+
+      result = described_class.call(company: company, week_starts: [monday])
+
+      expect(result[:unique_teammates_check_in_finalized_90_days][monday]).to eq(1)
+      expect(result[:unique_teammates_position_check_in_finalized_90_days][monday]).to eq(0)
     end
   end
 end

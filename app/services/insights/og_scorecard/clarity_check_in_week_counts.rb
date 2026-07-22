@@ -19,6 +19,7 @@ module Insights
         {
           unique_teammates_check_in_finalized_this_week: counts_by_week(:this_week),
           unique_teammates_check_in_finalized_90_days: counts_by_week(:ninety_days),
+          unique_teammates_position_check_in_finalized_90_days: counts_by_week(:ninety_days_position),
           unique_teammates_check_in_finalized_all_time: counts_by_week(:all_time)
         }
       end
@@ -41,6 +42,15 @@ module Insights
             active_ids = active_teammate_ids_for_week(week_end_date)
             window_start = week_end_date - 89.days
             teammates_with_finalization_in_range(window_start, week_end_date, active_ids).size
+          when :ninety_days_position
+            active_ids = active_teammate_ids_for_week(week_end_date)
+            window_start = week_end_date - 89.days
+            teammates_with_finalization_in_range(
+              window_start,
+              week_end_date,
+              active_ids,
+              rows: position_finalized_rows
+            ).size
           when :all_time
             active_ids = active_teammate_ids_for_week(week_end_date)
             teammates_with_finalization_on_or_before(week_end_date, active_ids).size
@@ -60,10 +70,10 @@ module Insights
         end.uniq
       end
 
-      def teammates_with_finalization_in_range(start_date, week_end_date, active_ids)
+      def teammates_with_finalization_in_range(start_date, week_end_date, active_ids, rows: finalized_rows)
         range = start_date.beginning_of_day..week_end_date.end_of_day
         active_set = active_ids.to_set
-        finalized_rows.filter_map do |teammate_id, finalized_at|
+        rows.filter_map do |teammate_id, finalized_at|
           next unless teammate_in_scope?(teammate_id)
           next unless active_set.include?(teammate_id)
           next unless finalized_at && range.cover?(finalized_at)
@@ -92,20 +102,25 @@ module Insights
         )
       end
 
+      def position_finalized_rows
+        @position_finalized_rows ||= begin
+          ids = scoped_teammate_ids
+          return [] if ids.empty?
+
+          PositionCheckIn
+            .closed
+            .where(teammate_id: ids)
+            .pluck(:teammate_id, :official_check_in_completed_at)
+        end
+      end
+
       def finalized_rows
         @finalized_rows ||= begin
           ids = scoped_teammate_ids
           return [] if ids.empty?
 
           company_ids = company.self_and_descendants.pluck(:id)
-          rows = []
-
-          rows.concat(
-            PositionCheckIn
-              .closed
-              .where(teammate_id: ids)
-              .pluck(:teammate_id, :official_check_in_completed_at)
-          )
+          rows = position_finalized_rows.dup
 
           rows.concat(
             AssignmentCheckIn
