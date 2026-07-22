@@ -368,6 +368,34 @@ RSpec.describe OrganizationPolicy, type: :policy do
     end
   end
 
+  describe '#protect_flow?' do
+    context 'when organization matches viewing_teammate.organization' do
+      it 'allows managers with direct reports' do
+        allow(employed_teammate).to receive(:has_direct_reports?).and_return(true)
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.protect_flow?).to be true
+      end
+
+      it 'denies employed teammates without direct reports' do
+        allow(employed_teammate).to receive(:has_direct_reports?).and_return(false)
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.protect_flow?).to be false
+      end
+
+      it 'allows admin bypass even without direct reports' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.protect_flow?).to be true
+      end
+    end
+
+    context 'when organization does not match viewing_teammate.organization' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.protect_flow?).to be false
+      end
+    end
+  end
+
   describe '#check_ins_health?' do
     context 'when organization matches viewing_teammate.organization' do
       it 'allows access for any employed teammate (nav link visibility)' do

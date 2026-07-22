@@ -300,6 +300,17 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Protect Flow',
+            icon: 'bi-shield-check',
+            path: organization_protect_flow_path(current_organization),
+            policy_check: -> {
+              current_company_teammate&.has_direct_reports? &&
+                policy(current_organization).protect_flow?
+            },
+            active_check: -> { controller_path == 'organizations/protect_flow' },
+            coming_soon: false
+          },
+          {
             label: 'Observations',
             icon: 'bi-eye',
             path: organization_insights_observations_path(current_organization),

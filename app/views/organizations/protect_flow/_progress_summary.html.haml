@@ -1,0 +1,24 @@
+- progress = local_assigns.fetch(:progress)
+- week_start = local_assigns.fetch(:week_start)
+- historical = local_assigns.fetch(:historical, false)
+
+.card.border.mb-4
+  .card-body.py-3
+    .row.g-3.align-items-center
+      .col-md-7
+        %h2.h5.mb-1= historical ? "That week’s progress" : "This week’s progress"
+        %p.small.text-muted.mb-0
+          Week of #{protect_flow_week_label(week_start)} · we'll keep track of improvements made throughout the week.
+      .col-md-5
+        .d-flex.flex-wrap.gap-3.justify-content-md-end
+          %div
+            %div.fs-4.fw-semibold.lh-1
+              #{progress[:start_unhealthy_count]}→#{progress[:current_unhealthy_count]}
+            %div.small.text-muted Unhealthy vectors
+          %div
+            %div.fs-4.fw-semibold.lh-1= progress[:improved_vector_count]
+            %div.small.text-muted Vectors improved
+          %div
+            %div.fs-4.fw-semibold.lh-1
+              #{progress[:healthy_people_count]}/#{progress[:people_count]}
+            %div.small.text-muted People healthy

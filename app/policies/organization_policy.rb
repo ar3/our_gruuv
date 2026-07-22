@@ -68,6 +68,15 @@ class OrganizationPolicy < ApplicationPolicy
     false
   end
 
+  def protect_flow?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return false unless viewing_teammate.employed?
+    return true if admin_bypass?
+
+    viewing_teammate.has_direct_reports?
+  end
+
   def check_ins_health?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization

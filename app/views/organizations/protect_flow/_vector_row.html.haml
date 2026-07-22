@@ -1,0 +1,21 @@
+- action = local_assigns.fetch(:action)
+- clear_section = local_assigns.fetch(:clear_section, false)
+- short_title = action[:short_title].presence || action[:title]
+- status_label = action[:status_label]
+- border_class = clear_section ? "border-success bg-success-subtle" : ""
+- btn_class = clear_section ? "btn btn-outline-success btn-sm" : "btn btn-outline-primary btn-sm"
+
+.border.rounded.p-3{class: border_class}
+  .d-flex.align-items-center.justify-content-between.gap-2.mb-2
+    %p.fw-semibold.mb-0= short_title
+    %span.badge{class: protect_flow_status_badge_class(action[:status])}
+      - if action[:cleared]
+        %i.bi.bi-check-lg.me-1{"aria-hidden" => "true"}
+      = status_label
+
+  .d-flex.align-items-center.justify-content-between.gap-2.flex-wrap
+    %span.small.text-muted{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => action[:why], tabindex: 0, role: "button", style: "cursor: help;"}
+      Why is this important?
+      %i.bi.bi-info-circle.ms-1{"aria-hidden" => "true"}
+    .ms-auto
+      = link_to action[:cta_label], action[:path], class: btn_class

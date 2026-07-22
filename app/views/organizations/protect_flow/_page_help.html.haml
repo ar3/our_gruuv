@@ -1,0 +1,45 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Spend about 30 focused minutes per direct report this week so each person stays clear on where they stand — protecting flow, not completing an HR ritual.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-2
+    Thriving productivity comes from
+    %strong flow state.
+    Flow comes from clarity of purpose (Assignments / check-ins), proper challenge (Goals & Milestones), and continuous feedback (OGOs). When those signals go stale, flow dies.
+  %p.mb-3
+    Engagement Health tracks those vectors as Healthy / Warning / Needs Attention. This page turns that scoreboard into a per-person action plan.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 How progress works
+  %ul.mb-3
+    %li
+      At the start of each week, OurGruuv snapshots each person's health vectors. Progress is the
+      %strong difference between that snapshot and now
+      — no manual checkboxes.
+    %li When a new week opens, the prior week is closed with an end-state snapshot so you can compare week over week.
+    %li Use the week picker to revisit closed weeks (read-only progress).
+    %li
+      Each person has three sections: the highest-leverage vector, also blocking clarity, and clear (healthy) vectors. Short titles with status pills; “Why is this important?” explains on hover; CTAs sit on the right.
+
+  %h5.fw-semibold.mb-2 Example
+  .border.rounded.p-3.bg-white.mb-3
+    %p.mb-1.fw-semibold Amy C. · 3→1 unhealthy vectors
+    %p.small.mb-1
+      %strong Clarity Check-ins
+      %span.badge.text-bg-danger Needs Attention
+    %p.small.text-muted.mb-1 Also blocking: OGOs Received · Warning
+    %p.small.mb-0 Clear: Goals, Milestones, OGOs Given · Healthy
+
+  %h5.fw-semibold.mb-2 Status legend
+  %ul.list-unstyled.mb-0
+    %li.mb-1
+      %span.d-inline-block.rounded-circle.me-2{class: "bg-success", style: "width:0.65rem;height:0.65rem;"}
+      Healthy — signal is fresh enough to protect flow
+    %li.mb-1
+      %span.d-inline-block.rounded-circle.me-2{class: "bg-warning", style: "width:0.65rem;height:0.65rem;"}
+      Warning — getting stale; schedule time this week
+    %li.mb-0
+      %span.d-inline-block.rounded-circle.me-2{class: "bg-danger", style: "width:0.65rem;height:0.65rem;"}
+      Needs Attention — clarity / flow is at risk; act first

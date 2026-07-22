@@ -12,6 +12,7 @@ module StartHere
           # Manager default preset and blank Start Here dashboard (ensure_manager_default_if_blank!).
           %w[
             my_employees
+            protect_flow
             get_shit_done
             one_on_one_hub
             insights_check_ins_health

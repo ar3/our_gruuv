@@ -165,7 +165,7 @@ RSpec.describe NavigationHelper, type: :helper do
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
-          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, observations_health?: true, view_slack_settings?: true, view_company_preferences?: true)
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, observations_health?: true, view_slack_settings?: true, view_company_preferences?: true, protect_flow?: true)
         elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
           double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, view_company_preferences?: true)
         elsif record.is_a?(CompanyTeammate)
@@ -315,6 +315,26 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(my_employees_item[:path]).to include("manager_teammate_id=#{manager_teammate.id}")
       end
 
+      it 'includes "Protect Flow" under Insights after Observations Health' do
+        structure = helper.visible_navigation_structure
+        insights_section = structure.find { |item| item[:label] == 'Insights' }
+        expect(insights_section).to be_present
+        item_labels = insights_section[:items].map { |item| item[:label] }
+        expect(item_labels).to include('Protect Flow')
+        observations_health_index = insights_section[:items].find_index { |item| item[:label] == 'Observations Health' }
+        protect_flow_index = insights_section[:items].find_index { |item| item[:label] == 'Protect Flow' }
+        expect(protect_flow_index).to be > observations_health_index
+        protect_flow_item = insights_section[:items].find { |item| item[:label] == 'Protect Flow' }
+        expect(protect_flow_item[:path]).to include('protect_flow')
+      end
+
+      it 'does not include Protect Flow under Teammate Directory' do
+        structure = helper.visible_navigation_structure
+        directory_section = structure.find { |item| item[:label] == 'Teammate Directory' }
+        item_labels = directory_section[:items].map { |item| item[:label] }
+        expect(item_labels).not_to include('Protect Flow')
+      end
+
       it 'places "My Employees" after "View Teammates" under Teammate Directory' do
         structure = helper.visible_navigation_structure
         directory_section = structure.find { |item| item[:label] == 'Teammate Directory' }
@@ -370,7 +390,8 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels.index('Check-ins Health')).to eq(2)
         expect(labels.index('Goals Health')).to eq(3)
         expect(labels.index('Observations Health')).to eq(4)
-        expect(labels.index('Observations')).to eq(5)
+        expect(labels.index('Protect Flow')).to eq(5)
+        expect(labels.index('Observations')).to eq(6)
         expect(labels).to include('Seats, Titles, Positions')
         expect(labels).to include('Assignments')
         expect(labels).to include('Abilities')

@@ -389,6 +389,12 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.organization).observations_health? },
             goal: "Monitor observation cadence and gaps across employees.",
             synonyms: %w[observations health ogo health observation cadence]),
+          insights_page(:protect_flow, "Protect Flow", "bi-shield-check", :organization_protect_flow_path,
+            policy: ->(ctx) {
+              ctx.teammate&.has_direct_reports? && ctx.policy(ctx.organization).protect_flow?
+            },
+            goal: "Weekly per-person actions across health vectors so managers protect flow — clarity, challenge, and feedback.",
+            synonyms: %w[protect flow weekly focus team health one thing manager ritual thirty minutes]),
           insights_page(:insights_observations, "Observations", "bi-eye", :organization_insights_observations_path,
             goal: "Explore observation trends and analytics.",
             synonyms: %w[insights observations observation analytics ogo insights]),

@@ -1,0 +1,73 @@
+- content_for :title, "Protect Flow - #{@manager_teammate.person.casual_name}"
+- page_help_id = "protectFlowPageHelp"
+- progress = @plan[:progress]
+- people = @plan[:people]
+- historical = @plan[:historical]
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0 Protect Flow
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Protect flow — stale clarity kills it. Click for details."
+  %p.text-muted.mb-0
+    Protect flow — stale clarity kills it. About 30 focused minutes per person this week.
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/protect_flow/page_help"
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    = form_with url: organization_protect_flow_path(@organization), method: :get, local: true, id: "protect-flow-filter-form" do |f|
+      .row.align-items-end
+        .col-md-10
+          %label.form-label.fw-bold.fs-5.mb-2 Who to show
+          = select_tag :manager_id,
+                       options_for_select(@available_manager_filter_options, @current_manager_filter),
+                       class: "form-select form-select-lg",
+                       id: "protect-flow-manager-select",
+                       required: true
+          %small.form-text.text-muted Your reports, full hierarchy, or a specific manager's directs — not everyone (keeps this page unscrolled).
+        .col-md-2
+          = f.submit "Go", class: "btn btn-primary btn-lg w-100"
+      - if params[:week_start].present?
+        = hidden_field_tag :week_start, params[:week_start]
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    = render "organizations/health/dashboard_switcher",
+             organization: @organization,
+             current: :protect_flow,
+             manager_id: @current_manager_filter
+
+= render "organizations/protect_flow/week_picker",
+         available_weeks: @plan[:available_weeks],
+         week_start: @plan[:week_start],
+         current_week_start: @plan[:current_week_start],
+         organization: @organization,
+         manager_id: @current_manager_filter
+
+- if historical
+  .alert.alert-secondary.mb-4
+    Viewing week of #{protect_flow_week_label(@plan[:week_start])} (closed). Progress is start-of-week vs end-of-week — read only.
+    = link_to "Back to this week",
+              organization_protect_flow_path(@organization, manager_id: @current_manager_filter),
+              class: "alert-link ms-1"
+
+= render "organizations/protect_flow/progress_summary",
+         progress: progress,
+         week_start: @plan[:week_start],
+         historical: historical
+
+- if people.empty?
+  .alert.alert-light.border
+    %p.mb-0
+      No people in this scope. Try another “Who to show” option, or make sure you have reports assigned.
+- else
+  .row.g-3.protect-flow-people
+    - people.each do |person|
+      .col-12.col-md-6
+        = render "organizations/protect_flow/person_card",
+                 person: person,
+                 organization: @organization,
+                 historical: historical

@@ -3,6 +3,13 @@
 module HealthDashboardsHelper
   HEALTH_DASHBOARD_PAGES = [
     {
+      key: :protect_flow,
+      label: "Overview/All",
+      icon: "bi-shield-check",
+      path_name: :organization_protect_flow_path,
+      policy_method: :protect_flow?
+    },
+    {
       key: :check_ins_health,
       label: "Check-ins",
       icon: "bi-clipboard-check",

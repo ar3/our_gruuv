@@ -1,0 +1,24 @@
+- action = local_assigns.fetch(:action)
+- hero_item_links = Array(local_assigns[:hero_item_links])
+- short_title = action[:short_title].presence || action[:title]
+- status_label = action[:status_label]
+- border_class = action[:category] == "maintain" ? "border-success bg-success-subtle" : "bg-light"
+
+.border.rounded.p-3{class: border_class}
+  .d-flex.align-items-center.justify-content-between.gap-2.mb-2
+    %p.fw-semibold.mb-0= short_title
+    %span.badge{class: protect_flow_status_badge_class(action[:status])}
+      = status_label
+
+  %p.small.text-muted.mb-3= action[:why]
+
+  .d-flex.align-items-start.justify-content-between.gap-3.flex-wrap
+    .flex-shrink-0
+      = link_to action[:cta_label], action[:path], class: "btn btn-primary btn-sm"
+    - if hero_item_links.any?
+      %ul.mb-0.ms-auto.small.ps-3{style: "min-width: 11rem; max-width: 100%;"}
+        - hero_item_links.each do |link|
+          %li
+            = link_to link[:label],
+                      link[:path],
+                      title: link[:tooltip].presence || link[:label]

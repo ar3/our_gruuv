@@ -621,7 +621,7 @@ module ApplicationHelper
   end
 
   # --- Start page preference (where to land when logging in or clicking org's Gruuv in header) ---
-  START_PAGE_VALUES = %w[start_here about_me one_on_one_hub clarity_check_in_hub get_shit_done goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
+  START_PAGE_VALUES = %w[start_here about_me one_on_one_hub clarity_check_in_hub get_shit_done protect_flow goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
 
   def start_page_preference_key(organization)
     "start_page_#{organization.id}"
@@ -651,6 +651,8 @@ module ApplicationHelper
       hub_organization_company_teammate_check_ins_path(organization, company_teammate)
     when 'get_shit_done'
       organization_get_shit_done_path(organization)
+    when 'protect_flow'
+      organization_protect_flow_path(organization)
     when 'goals'
       organization_goals_path(organization, owner_id: "CompanyTeammate_#{company_teammate.id}")
     when 'observations_involving_me'
@@ -679,13 +681,14 @@ module ApplicationHelper
       ["#{casual}'s 1:1 Hub", 'one_on_one_hub'],
       ["#{casual}'s Clarity Check-In Hub", 'clarity_check_in_hub'],
       ["#{casual}'s #{gsd_label} list", 'get_shit_done'],
+      (company_teammate.has_direct_reports? ? ['Protect Flow', 'protect_flow'] : nil),
       ["#{casual}'s Goals", 'goals'],
       ["Observations involving #{casual}", 'observations_involving_me'],
       ["#{casual}'s teams", 'my_teams'],
       ["#{org_name} Kudos", 'kudos'],
       ['Celebrate Milestones', 'celebrate_milestones'],
       ['Insights', 'insights']
-    ]
+    ].compact
   end
 
   def start_page_label_for_value(organization, company_teammate, value)

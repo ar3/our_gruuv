@@ -1,0 +1,25 @@
+- plan = ProtectFlow::PlanBuilder.call(
+    organization: context.organization,
+    week_store: ProtectFlow::WeekSnapshotStore.for(person: context.person, organization: context.organization),
+    teammates: begin
+      company = context.organization.root_company || context.organization
+      ids = EmploymentTenure
+        .where(company: company, manager_teammate: context.company_teammate, ended_at: nil)
+        .pluck(:teammate_id)
+      CompanyTeammate.where(id: ids).includes(:person).to_a
+    end
+  )
+- progress = plan[:progress]
+- people_count = progress[:people_count]
+
+.mb-0.start-here-protect-flow-dashboard
+  - if people_count.zero?
+    %p.text-muted.small.mb-0 You don't have direct reports yet.
+  - else
+    %p.small.text-muted.mb-0
+      Protect flow for #{people_count} #{people_count == 1 ? "person" : "people"} this week.
+      %span.badge.rounded-pill.text-bg-light.border
+        #{progress[:start_unhealthy_count]}→#{progress[:current_unhealthy_count]} unhealthy
+      ·
+      %span.badge.rounded-pill{class: progress[:healthy_people_count] == people_count ? "text-bg-success" : "text-bg-warning"}
+        #{progress[:healthy_people_count]} healthy

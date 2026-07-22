@@ -1,0 +1,43 @@
+- person = local_assigns.fetch(:person)
+- organization = local_assigns.fetch(:organization)
+- historical = local_assigns.fetch(:historical, false)
+- hero = person[:hero]
+- teammate = person[:teammate]
+
+.card.border.h-100.protect-flow-person-card
+  .card-body
+    .d-flex.align-items-start.gap-3.mb-3
+      .flex-shrink-0
+        = teammate_profile_image(teammate, size: 56)
+      .flex-grow-1.min-w-0
+        %h2.h5.mb-1
+          = link_to person[:name], person[:hub_path], class: "text-decoration-none"
+        %p.small.text-muted.mb-0
+          #{person[:start_unhealthy_count]}→#{person[:unhealthy_count]} unhealthy vectors · ~30 min this week
+
+    -# Highest-leverage vector — always-visible why + One Thing links
+    .mb-3
+      = render "organizations/protect_flow/hero_vector",
+               action: hero,
+               hero_item_links: person[:hero_item_links]
+
+    - if person[:secondary].any?
+      %h3.h6.fw-semibold.text-muted.mb-2 Also blocking clarity
+      .d-flex.flex-column.gap-2.mb-3
+        - person[:secondary].each do |action|
+          = render "organizations/protect_flow/vector_row",
+                   action: action,
+                   organization: organization,
+                   historical: historical,
+                   primary: false
+
+    - if person[:clear_items].any?
+      %h3.h6.fw-semibold.text-muted.mb-2 Clear
+      .d-flex.flex-column.gap-2.mb-0
+        - person[:clear_items].each do |action|
+          = render "organizations/protect_flow/vector_row",
+                   action: action,
+                   organization: organization,
+                   historical: historical,
+                   primary: false,
+                   clear_section: true

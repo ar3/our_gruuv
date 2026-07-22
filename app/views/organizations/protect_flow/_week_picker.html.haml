@@ -1,0 +1,17 @@
+- available_weeks = local_assigns.fetch(:available_weeks)
+- week_start = local_assigns.fetch(:week_start)
+- current_week_start = local_assigns.fetch(:current_week_start)
+- organization = local_assigns.fetch(:organization)
+- manager_id = local_assigns[:manager_id]
+
+- if available_weeks.size > 1
+  .d-flex.flex-wrap.align-items-center.gap-2.mb-3
+    %span.small.text-muted.fw-semibold Week
+    .btn-group.flex-wrap{role: "group", "aria-label" => "Protect Flow week"}
+      - available_weeks.first(8).each do |week|
+        - active = week[:week_start] == week_start
+        - label = protect_flow_week_label(week[:week_start])
+        - label = "#{label} (this week)" if week[:week_start] == current_week_start
+        = link_to label,
+                  organization_protect_flow_path(organization, week_start: week[:week_start], manager_id: manager_id),
+                  class: "btn btn-sm #{active ? 'btn-primary' : 'btn-outline-secondary'}"
