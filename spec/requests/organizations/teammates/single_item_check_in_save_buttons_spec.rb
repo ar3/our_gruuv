@@ -150,4 +150,65 @@ RSpec.describe "Single-item check-in save buttons", type: :request do
         { position_check_in: attrs }
       }
   end
+
+  describe "Gruuv Health refresh after save" do
+    let!(:assignment) { create(:assignment, company: organization, title: "Refresh Assignment") }
+    let!(:assignment_tenure) do
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 35)
+    end
+    let!(:open_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
+    let(:show_path) { organization_teammate_assignment_path(organization, employee_teammate, assignment) }
+
+    before { sign_in_as_teammate_for_request(employee_person, organization) }
+
+    def patch_assignment_check_in(submit_button:)
+      patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+        params: {
+          check_ins: {
+            current_url: show_path,
+            current_type: "assignment",
+            current_id: assignment.id.to_s,
+            assignment_check_ins: {
+              open_check_in.id.to_s => {
+                assignment_id: assignment.id.to_s,
+                employee_private_notes: "notes"
+              }
+            }
+          },
+          submit_button => "Save"
+        }
+    end
+
+    it "refreshes synchronously on save and go to next" do
+      expect(EngagementHealth::Refresher).to receive(:call).with(
+        an_object_having_attributes(id: employee_teammate.id)
+      ).and_call_original
+
+      expect {
+        patch_assignment_check_in(submit_button: "save_and_complete_go_to_next")
+      }.not_to have_enqueued_job(EngagementHealthRefreshJob)
+
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it "queues async refresh on save and stay" do
+      expect(EngagementHealth::Refresher).not_to receive(:call)
+
+      expect {
+        patch_assignment_check_in(submit_button: "save_and_draft_stay")
+      }.to have_enqueued_job(EngagementHealthRefreshJob).with(employee_teammate.id)
+
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it "still redirects and queues async when sync refresh fails on go to next" do
+      allow(EngagementHealth::Refresher).to receive(:call).and_raise(StandardError, "boom")
+
+      expect {
+        patch_assignment_check_in(submit_button: "save_and_complete_go_to_next")
+      }.to have_enqueued_job(EngagementHealthRefreshJob).with(employee_teammate.id)
+
+      expect(response).to have_http_status(:redirect)
+    end
+  end
 end

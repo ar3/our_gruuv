@@ -212,7 +212,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         if @check_in_errors.any?
           redirect_to redirect_url, alert: check_in_errors_flash_message
         else
-          EngagementHealth.schedule_refresh_for(@teammate.id)
+          refresh_engagement_health_after_successful_save!
           redirect_to redirect_url, notice: 'Check-ins saved successfully.'
         end
       end
@@ -225,6 +225,21 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         end
       end
     end
+  end
+
+  # 1-by-1 "save and go to next" needs fresh EH before the next page loads the object queue.
+  # Other saves keep the async path; sync failure falls back to async inside EngagementHealth.
+  def refresh_engagement_health_after_successful_save!
+    if single_item_save_and_go_to_next?
+      EngagementHealth.refresh_now_or_schedule_for(@teammate.id)
+    else
+      EngagementHealth.schedule_refresh_for(@teammate.id)
+    end
+  end
+
+  def single_item_save_and_go_to_next?
+    button = find_button_name_in_params
+    button == "save_and_complete_go_to_next" || button == "save_and_go_to_next"
   end
   
   def set_teammate

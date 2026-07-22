@@ -68,6 +68,23 @@ module EngagementHealth
     EngagementHealthRefreshJob.perform_later(teammate_id)
   end
 
+  # Prefer for request paths that immediately re-read EH (e.g. 1-by-1 save → next).
+  # On failure, fall back to the async job so the user-facing write still succeeds.
+  def refresh_now_or_schedule_for(teammate_id)
+    return if teammate_id.blank?
+
+    teammate = CompanyTeammate.find_by(id: teammate_id)
+    return schedule_refresh_for(teammate_id) if teammate.blank?
+
+    Refresher.call(teammate)
+  rescue StandardError => e
+    Rails.logger.warn(
+      "[EngagementHealth] sync refresh failed for teammate_id=#{teammate_id}: " \
+      "#{e.class}: #{e.message}; scheduling async"
+    )
+    schedule_refresh_for(teammate_id)
+  end
+
   def schedule_refresh_for_goal(goal)
     return unless goal&.owner_type == "CompanyTeammate"
 
