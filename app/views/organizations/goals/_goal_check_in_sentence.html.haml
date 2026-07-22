@@ -5,12 +5,13 @@
 - calculated_date = goal&.calculated_target_date
 
 - if check_in.present? && goal.present?
-  - date_str = check_in.created_at.to_date.strftime('%B %d, %Y')
+  - date_str = check_in.created_at.to_date.strftime('%m/%d/%y')
   - person_name = use_casual_name ? check_in.confidence_reporter.casual_name : check_in.confidence_reporter.display_name
   - confidence = check_in.confidence_percentage
   - goal_title = goal.title
-  - full_sentence = "As of #{date_str}, #{person_name} reports a #{confidence}% confidence we will achieve #{goal_title}"
-  - full_sentence += " by #{calculated_date.strftime('%B %d, %Y')}" if calculated_date.present?
+  - due_str = calculated_date.present? ? calculated_date.strftime('%m/%d/%y') : nil
+  - full_sentence = "As of #{date_str}, #{person_name} is #{confidence}% confident we'll hit #{goal_title}"
+  - full_sentence += " by #{due_str}" if due_str.present?
   - full_sentence += "."
 
   - if short
@@ -19,19 +20,22 @@
       %strong= date_str
       = ", "
       %strong= person_name
-      = " reports a "
+      = " is "
       %strong= "#{confidence}%"
-      = " confidence"
+      = " confident"
+      - if due_str.present?
+        = " we'll hit by "
+        %strong= due_str
   - else
     %span
       = "As of "
       %strong= date_str
       = ", "
       %strong= person_name
-      = " reports a "
+      = " is "
       %strong= "#{confidence}%"
-      = " confidence we will achieve "
+      = " confident we'll hit "
       %strong= goal_title
-      - if calculated_date.present?
+      - if due_str.present?
         = " by "
-        %strong= calculated_date.strftime('%B %d, %Y')
+        %strong= due_str

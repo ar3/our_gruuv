@@ -15,31 +15,33 @@
 - show_note_win_cta_for_viewer = teammate_owned_goal && !viewer_is_goal_owner
 - compact = hide_check_in
 
+- card_style = compact ? "width: 100%; position: relative; overflow: hidden;" : "width: 100%; max-width: 820px; position: relative;"
+
 .tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: #{compact ? 6 : 10}px;"}
-  .d-flex.align-items-start
+  .d-flex.align-items-start{class: ('w-100' if compact)}
     - if depth > 0
-      %i.bi.bi-arrow-return-right.me-2{style: "color: #999; margin-top: #{compact ? 8 : 12}px;"}
-    .card{style: "width: 100%; max-width: 820px; position: relative;", class: goal_warning_class(goal)}
-      .card-body{class: (compact ? 'py-1 px-2' : 'p-2')}
-        .d-flex.align-items-center
+      %i.bi.bi-arrow-return-right.me-2.flex-shrink-0{style: "color: #999; margin-top: #{compact ? 8 : 12}px;"}
+    .card.flex-grow-1.min-w-0{style: card_style, class: goal_warning_class(goal)}
+      .card-body{class: (compact ? 'py-1 px-2 overflow-hidden' : 'p-2')}
+        .d-flex.align-items-center.min-w-0
           .flex-shrink-0.me-2
             = goal_owner_image(goal, size: (compact ? 40 : 48))
-          .flex-grow-1.min-w-0
+          .flex-grow-1.min-w-0.overflow-hidden
             - if compact
-              / Compact: ~avatar-height — title row, then summary + confidence toggle on one line
-              .d-flex.align-items-center.flex-wrap.gap-2
+              / Compact: full-width card, title truncates with ellipsis
+              .d-flex.align-items-center.gap-2.min-w-0
                 - if has_children
-                  %button.btn.btn-sm.btn-link.p-0.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 16px; line-height: 1;"}
+                  %button.btn.btn-sm.btn-link.p-0.toggle-children.flex-shrink-0{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 16px; line-height: 1;"}
                     %i.bi.bi-chevron-up.toggle-icon
-                  %span.badge.bg-light.text-dark{style: "font-size: 0.7rem;"}
+                  %span.badge.bg-light.text-dark.flex-shrink-0{style: "font-size: 0.7rem;"}
                     - if direct_children_count == total_descendants_count
                       #{pluralize(direct_children_count, 'sub-goal')}
                     - else
                       #{direct_children_count}/#{total_descendants_count}
-                = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold text-truncate", style: "max-width: 100%;"
+                = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold text-truncate min-w-0 flex-grow-1", title: goal.title
                 - if goal.should_show_warning?
-                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
-              .d-flex.align-items-center.justify-content-between.gap-2{style: "line-height: 1.2;"}
+                  %i.bi.bi-exclamation-triangle.text-warning.flex-shrink-0{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+              .d-flex.align-items-center.justify-content-between.gap-2.min-w-0{style: "line-height: 1.2;"}
                 .small.text-muted.text-truncate.min-w-0
                   - if most_recent_check_in.present?
                     = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true

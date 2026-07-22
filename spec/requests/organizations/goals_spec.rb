@@ -513,10 +513,9 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, started_goal)
         
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('reports a')
         expect(response.body).to include(person.display_name)
         expect(response.body).to include('75%')
-        expect(response.body).to include('confidence we will achieve')
+        expect(response.body).to include('confident we&#39;ll hit')
       end
       
       it 'displays alert when no check-ins exist' do
