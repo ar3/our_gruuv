@@ -21,6 +21,7 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     if request.get?
       current_teammate = current_person.teammates.find_by(organization: @organization)
       candidate_goals = Goals::ParentCandidatesQuery.new(goal: @goal, current_teammate: current_teammate).call
+                        .includes(:linking_goals, :owner)
       hierarchy_ids = Goals::GoalHierarchyIdsQuery.new(@goal).call
       @available_goals_with_status = candidate_goals.map do |g|
         { goal: g, in_hierarchy: hierarchy_ids.include?(g.id) }
@@ -93,6 +94,7 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     if request.get?
       current_teammate = current_person.teammates.find_by(organization: @organization)
       candidate_goals = Goals::ChildCandidatesQuery.new(goal: @goal, current_teammate: current_teammate).call
+                        .includes(:linking_goals, :owner)
       hierarchy_ids = Goals::GoalHierarchyIdsQuery.new(@goal).call
       @available_goals_with_status = candidate_goals.map do |g|
         { goal: g, in_hierarchy: hierarchy_ids.include?(g.id) }

@@ -10,7 +10,7 @@
   - goals_owner_type = @goal.owner_type == 'Organization' ? 'Company' : @goal.owner_type
   - goals_owner_filter = goals_owner_type.present? && @goal.owner_id.present? ? "#{goals_owner_type}_#{@goal.owner_id}" : nil
   - goals_owner_label = "#{goal_owner_display_name(@goal)} Goals"
-  - goals_owner_url = goals_owner_filter.present? ? organization_goals_path(@organization, owner_id: goals_owner_filter) : organization_goals_path(@organization)
+  - goals_owner_url = goals_owner_filter.present? ? organization_goals_path(@organization, owner_id: goals_owner_filter, view: 'hierarchical-collapsible-hidden-checks') : organization_goals_path(@organization, view: 'hierarchical-collapsible-hidden-checks')
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: goals_owner_label, url: goals_owner_url }, { label: @goal.title, url: nil }])
 
 - if goal_is_completed?(@goal)

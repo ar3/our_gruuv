@@ -801,8 +801,8 @@ module GoalsHelper
       teammate_profile_image(teammate, size: size)
     elsif goal.owner_type.in?(['Company', 'Department', 'Team', 'Organization'])
       org = goal.owner
-      # Get initials from organization name (first letter of each word, max 2)
-      name = org.display_name || org.name || 'Org'
+      # Initials from the object's own title only (not hierarchical display_name like "Parent > Child")
+      name = org.try(:name).presence || org.try(:short_display_name).presence || org.try(:display_name).presence || 'Org'
       initials = name.split(/\s+/).map(&:first).take(2).join.upcase
       initials = 'O' if initials.blank?
       organization_initials_circle(initials, size: size)

@@ -46,6 +46,21 @@ RSpec.describe 'Organizations::GoalLinks', type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include('Company-wide initiative')
     end
+
+    it 'includes selection toolbar and parent captions for candidate children' do
+      create(:goal_link, parent: goal1, child: goal3)
+      # goal2 is a candidate child of goal1; give it a different parent for caption context
+      other_parent = create(:goal, creator: teammate, owner: teammate, title: 'Other parent context')
+      create(:goal_link, parent: other_parent, child: goal2)
+
+      get associate_existing_outgoing_organization_goal_goal_links_path(organization, goal1)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('selection-toolbar')
+      expect(response.body).to include('Search goals by title or parent')
+      expect(response.body).to include('Other parent context')
+      expect(response.body).to include(goal2.title)
+    end
   end
 
   describe 'POST associate_existing_outgoing' do
@@ -86,6 +101,18 @@ RSpec.describe 'Organizations::GoalLinks', type: :request do
       expect(response.body).to include('Hierarchy rule')
       expect(response.body).to include('cannot')
       expect(response.body).to include('teammate-owned')
+    end
+
+    it 'includes selection toolbar search and shows existing parent titles above candidates' do
+      create(:goal_link, parent: goal3, child: goal2)
+
+      get associate_existing_incoming_organization_goal_goal_links_path(organization, goal1)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('selection-toolbar')
+      expect(response.body).to include('Search goals by title or parent')
+      expect(response.body).to include(goal3.title)
+      expect(response.body).to include(goal2.title)
     end
 
     it 'lists company-visible department and team parents for a department child' do

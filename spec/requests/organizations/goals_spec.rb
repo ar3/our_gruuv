@@ -287,6 +287,15 @@ RSpec.describe 'Organizations::Goals', type: :request do
   end
   
   describe 'GET /organizations/:organization_id/goals/:id' do
+    it 'links the goals index breadcrumb to hierarchical-collapsible-hidden-checks view' do
+      get organization_goal_path(organization, goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("owner_id=CompanyTeammate_#{teammate.id}")
+      expect(response.body).to include('view=hierarchical-collapsible-hidden-checks')
+      expect(response.body).to include('page-context-nav__breadcrumb')
+    end
+
     it 'displays prompt attachments when goal is attached to prompts' do
       company_teammate = teammate
       

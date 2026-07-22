@@ -291,6 +291,35 @@ RSpec.describe GoalsHelper, type: :helper do
       end
     end
 
+    context 'with Department owner' do
+      it 'uses the department name only for initials, not parent hierarchy' do
+        parent = create(:department, company: company, name: 'Engineering')
+        department = create(:department, company: company, name: 'Platform Squad', parent_department: parent)
+        goal = create(:goal, creator: creator_teammate, owner: department, company: company,
+                      privacy_level: 'everyone_in_company')
+
+        result = helper.goal_owner_image_content(goal, size: 48)
+
+        expect(department.display_name).to include('>')
+        expect(result).to include('PS')
+        expect(result).not_to include('E>')
+        expect(result).not_to include('EP')
+      end
+    end
+
+    context 'with Team owner' do
+      it 'uses the team name for initials' do
+        department = create(:department, company: company, name: 'Engineering')
+        team = create(:team, company: company, department: department, name: 'Alpha Team')
+        goal = create(:goal, creator: creator_teammate, owner: team, company: company,
+                      privacy_level: 'everyone_in_company')
+
+        result = helper.goal_owner_image_content(goal, size: 48)
+
+        expect(result).to include('AT')
+      end
+    end
+
     context 'with nil owner' do
       it 'returns div with question mark' do
         goal = build(:goal, creator: creator_teammate, owner: nil)

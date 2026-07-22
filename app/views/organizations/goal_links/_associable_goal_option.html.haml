@@ -1,0 +1,31 @@
+-# locals: goal (required), disabled (required)
+- parent_titles = goal.linking_goals.map(&:title).compact_blank
+.filterable-option
+  .form-check
+    = check_box_tag "goal_ids[]",
+      goal.id,
+      false,
+      class: "form-check-input",
+      id: "goal_ids_#{goal.id}",
+      disabled: disabled,
+      data: (disabled ? {} : { selection_toolbar_label: goal.title })
+    = label_tag "goal_ids_#{goal.id}", class: "form-check-label #{'text-muted' if disabled}" do
+      - if parent_titles.any?
+        %small.text-muted.d-block{style: "font-size: 0.75em; line-height: 1.2;"}= parent_titles.join(" · ")
+      %strong= goal.title
+      %br
+      %small.text-muted
+        %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
+          = goal_category_label(goal)
+        |
+        %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
+          = goal_privacy_rings_with_label(goal)
+        |
+        Owner:
+        - if goal.owner_type == 'CompanyTeammate'
+          = goal.owner.person.display_name
+        - else
+          = goal.owner.display_name
+        - if disabled
+          %span.badge.bg-secondary.ms-2{style: "font-size: 0.75em;"}
+            In hierarchy
