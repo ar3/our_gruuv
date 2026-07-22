@@ -879,10 +879,11 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       values = options.map(&:second)
 
       # Filter options first (index only)
-      expect(values.first).to eq('everyone_in_company')
-      expect(values.second).to eq('created_by_me')
+      expect(values.first).to eq('my_relevant_goals')
+      expect(values.second).to eq('everyone_in_company')
+      expect(values.third).to eq('created_by_me')
       # Viewing teammate next
-      expect(values.third).to eq("CompanyTeammate_#{creator_teammate.id}")
+      expect(values.fourth).to eq("CompanyTeammate_#{creator_teammate.id}")
       # Company before departments
       company_idx = values.index("Company_#{company.id}")
       dept_indices = values.each_index.select { |i| values[i].to_s.start_with?('Department_') }

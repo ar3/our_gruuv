@@ -538,8 +538,10 @@ RSpec.describe 'Vertical Navigation', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('bi-plus')
       # Goal (confidence check) branch -> goals index with the "my relevant goals" filter
-      goals_path = organization_goals_path(organization, owner_id: 'my_relevant_goals')
-      expect(response.body).to include("href=\"#{goals_path}\"")
+      # and the compact hierarchical view (confidence checks hidden).
+      # Path helpers emit "&"; the rendered HTML encodes them as "&amp;".
+      goals_path = organization_goals_path(organization, owner_id: 'my_relevant_goals', view: 'hierarchical-collapsible-hidden-checks')
+      expect(response.body).to include("href=\"#{ERB::Util.html_escape(goals_path)}\"")
       expect(response.body).to include('Goal (confidence check)')
       # Observation branch -> unchanged select type overlay
       select_type_path = select_type_organization_observations_path(organization)

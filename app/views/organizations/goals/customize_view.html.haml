@@ -142,6 +142,11 @@
             = label_tag 'view_hierarchical_collapsible', class: 'form-check-label' do
               %i.bi.bi-chevron-bar-expand.me-2
               = hierarchical_collapsible_with_confidence_checks_label
+          .form-check
+            = radio_button_tag 'view', 'hierarchical-collapsible-hidden-checks', @current_view == 'hierarchical-collapsible-hidden-checks', class: 'form-check-input', id: 'view_hierarchical_collapsible_hidden_checks'
+            = label_tag 'view_hierarchical_collapsible_hidden_checks', class: 'form-check-label' do
+              %i.bi.bi-chevron-bar-contract.me-2
+              = hierarchical_collapsible_hidden_checks_label
   
   .row
     .col-md-4

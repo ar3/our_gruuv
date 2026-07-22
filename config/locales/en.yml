@@ -139,6 +139,7 @@ en:
     no_confidence_checks_recorded: "No confidence checks recorded yet."
     final_confidence_check_reason_hint: "This will be saved as the reason for your final confidence check."
     hierarchical_collapsible_with_confidence_checks: "Hierarchical Collapsible (with confidence checks)"
+    hierarchical_collapsible_hidden_checks: "Hierarchical Collapsible (confidence checks hidden)"
     progress_chart_confidence_checks_help: "Blue points are your actual confidence checks."
     observations_confidence_checks_tooltip: "Use observations for informal commentary on how you or others are doing toward this goal—alongside confidence checks. Managers and teammates can leave quick notes here."
     confidence_check_saved_successfully: "Confidence check saved successfully."

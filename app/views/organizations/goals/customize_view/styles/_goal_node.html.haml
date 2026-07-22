@@ -8,126 +8,109 @@
 - most_recent_check_in = node[:most_recent_check_in]
 - current_week_check_in = node[:current_week_check_in]
 - can_check_in = node[:can_check_in]
+- hide_check_in = local_assigns.fetch(:hide_check_in, false)
 - current_week_start = Date.current.beginning_of_week(:monday)
 - teammate_owned_goal = goal.owner_type == 'CompanyTeammate' && goal.owner_id.present?
 - viewer_is_goal_owner = current_company_teammate.present? && goal.owner_id == current_company_teammate.id
 - show_note_win_cta_for_viewer = teammate_owned_goal && !viewer_is_goal_owner
+- compact = hide_check_in
 
-.tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
+.tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: #{compact ? 6 : 10}px;"}
   .d-flex.align-items-start
     - if depth > 0
-      %i.bi.bi-arrow-return-right.me-2{style: "color: #999; margin-top: 12px;"}
+      %i.bi.bi-arrow-return-right.me-2{style: "color: #999; margin-top: #{compact ? 8 : 12}px;"}
     .card{style: "width: 100%; max-width: 820px; position: relative;", class: goal_warning_class(goal)}
-      .card-body.p-2
-        .d-flex.align-items-start
-          .flex-shrink-0.me-3
-            = goal_owner_image(goal, size: 48)
-          .flex-grow-1
-            / Header row with collapse button and counts
-            - if has_children
-              .d-flex.align-items-center.mb-2
-                %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
-                  %i.bi.bi-chevron-up.toggle-icon
-                %span.badge.bg-light.text-dark.small
-                  - if direct_children_count == total_descendants_count
-                    #{pluralize(direct_children_count, 'sub-goal')}
+      .card-body{class: (compact ? 'py-1 px-2' : 'p-2')}
+        .d-flex.align-items-center
+          .flex-shrink-0.me-2
+            = goal_owner_image(goal, size: (compact ? 40 : 48))
+          .flex-grow-1.min-w-0
+            - if compact
+              / Compact: ~avatar-height — title row, then summary + confidence toggle on one line
+              .d-flex.align-items-center.flex-wrap.gap-2
+                - if has_children
+                  %button.btn.btn-sm.btn-link.p-0.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 16px; line-height: 1;"}
+                    %i.bi.bi-chevron-up.toggle-icon
+                  %span.badge.bg-light.text-dark{style: "font-size: 0.7rem;"}
+                    - if direct_children_count == total_descendants_count
+                      #{pluralize(direct_children_count, 'sub-goal')}
+                    - else
+                      #{direct_children_count}/#{total_descendants_count}
+                = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold text-truncate", style: "max-width: 100%;"
+                - if goal.should_show_warning?
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+              .d-flex.align-items-center.justify-content-between.gap-2{style: "line-height: 1.2;"}
+                .small.text-muted.text-truncate.min-w-0
+                  - if most_recent_check_in.present?
+                    = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
+                    = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
                   - else
-                    #{pluralize(direct_children_count, 'sub-goal')} directly & #{total_descendants_count} total
-            
-            / Goal title (category/timeframe/status moved to info sentence below)
-            .d-flex.align-items-center.flex-wrap.mb-1
-              = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold me-2"
-              - if goal.should_show_warning?
-                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
-            
-            / Info sentence (status, goal type, due) then visibility and owner
-            .d-flex.align-items-center.flex-wrap.mb-1
-              %span.small.me-2
-                = goal_index_info_sentence(goal)
-              %span.small.me-2
-                |
-              %span.text-muted.small.me-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_privacy_tooltip_text(goal)}
-                = goal_visibility_display(goal)
-              %span.text-muted.small
-                | Owned by: #{goal_owner_display_name(goal)}
-              = goal_external_association_links(@organization, goal)
-            
-            / Most recent check-in display
-            - if most_recent_check_in.present?
-              .small.text-muted.mb-2
-                = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
-                = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
-            
-            / Inline check-in form OR note/win CTA (teammate-owned goals for non-owner viewers)
-            - if goal.most_likely_target_date.present? && goal.completed_at.nil?
-              - if show_note_win_cta_for_viewer && policy(Observation).create?
-                .mt-1
-                  - quick_note_params = { privacy_level: 'observed_and_managers', return_url: request.fullpath, return_text: 'Goals', goal_id: goal.id, observee_ids: goal.observee_teammate_ids_for_observation }
-                  = link_to new_quick_note_organization_observations_path(@organization, quick_note_params), class: 'btn btn-outline-primary w-100', target: '_blank', rel: 'noopener noreferrer' do
-                    %i.bi.bi-sticky.me-2
-                    Add a note/win/challenge about this goal
-              - elsif show_note_win_cta_for_viewer
-                .d-flex.align-items-center.gap-2.mt-1
-                  .flex-grow-1
-                    %button.btn.btn-outline-secondary.w-100{type: "button", disabled: true}
-                      %i.bi.bi-sticky.me-2
-                      Add a note/win/challenge about this goal
-                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You don't have permission to add a note/win/challenge about this goal.", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
-              - elsif can_check_in
-                - can_update_goal = policy(goal).update?
-                .check-in-inline.mt-1.p-1.bg-light.rounded
-                  .goal-check-in-inline-layout{class: ('goal-check-in-inline-layout--with-rail' if can_update_goal)}
-                    .goal-check-in-inline-layout__main
-                      = form_with url: check_in_organization_goal_path(@organization, goal), method: :post, local: true, html: { class: 'd-flex flex-column gap-1 goal-check-in-form' } do |f|
-                        = hidden_field_tag :return_url, request.fullpath
-                        .d-flex.flex-wrap.align-items-center.gap-2
-                          %span.small I'm
-                          = select_tag :confidence_percentage, options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm', style: 'width: auto; min-width: 80px; display: inline-block;' }
-                          %span.small confident this'll be hit by
-                          - if can_update_goal
-                            = date_field_tag :most_likely_target_date, goal.most_likely_target_date, class: 'form-control form-control-sm', style: 'width: auto; min-width: 130px; display: inline-block;'
-                          - else
-                            %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
-                          %span.small .
-                          %button.btn.btn-primary.btn-sm{type: "submit"}
-                            %i.bi.bi-check-lg
-                            Check In
-                        = text_field_tag :confidence_reason, current_week_check_in&.confidence_reason, class: 'form-control form-control-sm goal-check-in-inline-layout__reason', placeholder: 'Brief update (optional)...'
-                    - if can_update_goal
-                      .goal-check-in-inline-layout__rail
-                        .goal-check-in-inline-layout__rail-or
-                          %span.small.text-muted or
-                        = link_to done_organization_goal_path(@organization, goal), class: 'btn btn-success btn-lg goal-check-in-inline-layout__done-btn text-nowrap', "data-bs-toggle" => "tooltip", "data-bs-title" => "mark this goal as done and log if it was hit or not" do
-                          %i.bi.bi-check-circle.me-1
-                          Complete
-              - else
-                .check-in-inline.mt-1.p-1.bg-light.rounded.opacity-75
-                  .goal-check-in-inline-layout
-                    .goal-check-in-inline-layout__main.d-flex.flex-column.gap-1
-                      .d-flex.flex-wrap.align-items-center.gap-2
-                        %span.small I'm
-                        = select_tag "goal_check_in_disabled_#{goal.id}", options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm', style: 'width: auto; min-width: 80px;', disabled: true }
-                        %span.small confident this'll be hit by
-                        %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
-                        %span.small .
-                        %span.btn.btn-primary.btn-sm.disabled
-                          %i.bi.bi-check-lg.me-1
-                          Check In
-                        %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(goal)}
-                      = text_field_tag "goal_check_in_reason_disabled_#{goal.id}", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm goal-check-in-inline-layout__reason', placeholder: 'Brief update (optional)...', disabled: true
-            - elsif goal.completed_at.nil?
-              / Action buttons for non-check-in-eligible goals: only show View when Start is also shown (never show View alone)
-              - show_start = goal.started_at.nil? && policy(goal).update?
-              - if show_start
-                .d-flex.gap-2.mt-2
-                  = button_to start_organization_goal_path(@organization, goal), method: :patch, class: "btn btn-primary btn-sm", form: { style: "display: inline-block;" } do
-                    %i.bi.bi-play-circle.me-1
-                    Start
-                  = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
-                    %i.bi.bi-eye.me-1
-                    View
+                    %span= goal_index_info_sentence(goal)
+                - if goal.most_likely_target_date.present? && goal.completed_at.nil?
+                  - checkin_collapse_id = "goal-checkin-#{goal.id}"
+                  %button.btn.btn-sm.btn-link.p-0.toggle-checkin.flex-shrink-0.text-nowrap{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{checkin_collapse_id}", "aria-expanded": "false", "aria-controls": checkin_collapse_id, style: "text-decoration: none; color: #666; line-height: 1;"}
+                    %span.small.me-1 Confidence check
+                    %i.bi.bi-chevron-down.toggle-icon
+              - if goal.most_likely_target_date.present? && goal.completed_at.nil?
+                .collapse.mt-1{id: "goal-checkin-#{goal.id}"}
+                  = render 'organizations/goals/customize_view/styles/goal_check_in_body', goal: goal, show_note_win_cta_for_viewer: show_note_win_cta_for_viewer, can_check_in: can_check_in, current_week_check_in: current_week_check_in
+              - elsif goal.completed_at.nil?
+                - show_start = goal.started_at.nil? && policy(goal).update?
+                - if show_start
+                  .d-flex.gap-2.mt-1
+                    = button_to start_organization_goal_path(@organization, goal), method: :patch, class: "btn btn-primary btn-sm", form: { style: "display: inline-block;" } do
+                      %i.bi.bi-play-circle.me-1
+                      Start
+                    = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
+                      %i.bi.bi-eye.me-1
+                      View
+            - else
+              / Full hierarchical-collapsible layout
+              - if has_children
+                .d-flex.align-items-center.mb-2
+                  %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
+                    %i.bi.bi-chevron-up.toggle-icon
+                  %span.badge.bg-light.text-dark.small
+                    - if direct_children_count == total_descendants_count
+                      #{pluralize(direct_children_count, 'sub-goal')}
+                    - else
+                      #{pluralize(direct_children_count, 'sub-goal')} directly & #{total_descendants_count} total
+
+              .d-flex.align-items-center.flex-wrap.mb-1
+                = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold me-2"
+                - if goal.should_show_warning?
+                  %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+
+              .d-flex.align-items-center.flex-wrap.mb-1
+                %span.small.me-2
+                  = goal_index_info_sentence(goal)
+                %span.small.me-2
+                  |
+                %span.text-muted.small.me-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_privacy_tooltip_text(goal)}
+                  = goal_visibility_display(goal)
+                %span.text-muted.small
+                  | Owned by: #{goal_owner_display_name(goal)}
+                = goal_external_association_links(@organization, goal)
+
+              - if most_recent_check_in.present?
+                .small.text-muted.mb-2
+                  = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
+                  = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
+
+              - if goal.most_likely_target_date.present? && goal.completed_at.nil?
+                = render 'organizations/goals/customize_view/styles/goal_check_in_body', goal: goal, show_note_win_cta_for_viewer: show_note_win_cta_for_viewer, can_check_in: can_check_in, current_week_check_in: current_week_check_in
+              - elsif goal.completed_at.nil?
+                - show_start = goal.started_at.nil? && policy(goal).update?
+                - if show_start
+                  .d-flex.gap-2.mt-2
+                    = button_to start_organization_goal_path(@organization, goal), method: :patch, class: "btn btn-primary btn-sm", form: { style: "display: inline-block;" } do
+                      %i.bi.bi-play-circle.me-1
+                      Start
+                    = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
+                      %i.bi.bi-eye.me-1
+                      View
 
 - if has_children
   .collapse.show{id: children_id}
     - children.each do |child_node|
-      = render 'organizations/goals/customize_view/styles/goal_node', node: child_node, depth: depth + 1
+      = render 'organizations/goals/customize_view/styles/goal_node', node: child_node, depth: depth + 1, hide_check_in: hide_check_in

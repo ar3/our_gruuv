@@ -33,7 +33,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       else
         @goals = policy_scope(Goal.none)
         @view_style = params[:view] || 'hierarchical-collapsible'
-        @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible].include?(@view_style)
+        @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks].include?(@view_style)
         @goal_count = 0
         @show_performance_warning = false
         selected_statuses = normalized_status_filters(params)
@@ -137,7 +137,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Set view style
     @view_style = params[:view] || 'hierarchical-collapsible'
-    @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible].include?(@view_style)
+    @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks].include?(@view_style)
     
     # Eager load links for table/cards/list to avoid N+1.
     # Note: owner is polymorphic so we cannot use includes(owner: :person).
@@ -147,7 +147,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
     # Eager load prompt associations for hierarchical views (goal node shows "In reflection: ...").
     # Note: owner is polymorphic so we cannot use includes(owner: :person).
-    if @view_style.in?(%w[hierarchical-collapsible hierarchical-indented])
+    if @view_style.in?(%w[hierarchical-collapsible hierarchical-collapsible-hidden-checks hierarchical-indented])
       @goals = @goals.includes(
         prompt_goals: { prompt: :prompt_template },
         goal_associations: :associable
@@ -168,8 +168,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @goal_child_sort = params[:sort].presence || 'most_likely_target_date'
     @goal_child_sort_direction = params[:direction]
 
-    # For hierarchical-collapsible view, build hierarchy with check-ins and permissions
-    if @view_style == 'hierarchical-collapsible'
+    # For hierarchical-collapsible views, build hierarchy with check-ins and permissions
+    if @view_style.in?(%w[hierarchical-collapsible hierarchical-collapsible-hidden-checks])
       @goal_hierarchy = Goals::HierarchyWithCheckInsQuery.new(
         goals: @goals,
         current_person: current_person,
@@ -683,7 +683,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     }
     
     # Validate view style
-    valid_views = %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible]
+    valid_views = %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks]
     @current_filters[:view] = 'hierarchical-collapsible' unless valid_views.include?(@current_filters[:view])
     
     @current_sort = @current_filters[:sort]

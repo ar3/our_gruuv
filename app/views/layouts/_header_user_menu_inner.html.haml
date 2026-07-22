@@ -75,7 +75,7 @@
         %i.bi.bi-trophy.me-2
         Celebrate Milestones
     %li
-      = link_to organization_goals_path(current_organization, owner_id: 'everyone_in_company'), class: "dropdown-item" do
+      = link_to organization_goals_path(current_organization, owner_id: 'everyone_in_company', view: 'hierarchical-collapsible-hidden-checks'), class: "dropdown-item" do
         %i.bi.bi-bullseye.me-2
         = "#{current_organization.display_name} Goals"
   %li

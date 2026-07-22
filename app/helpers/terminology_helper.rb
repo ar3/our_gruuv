@@ -415,6 +415,10 @@ module TerminologyHelper
     terminology(:hierarchical_collapsible_with_confidence_checks)
   end
 
+  def hierarchical_collapsible_hidden_checks_label
+    terminology(:hierarchical_collapsible_hidden_checks)
+  end
+
   def progress_chart_confidence_checks_help_label
     terminology(:progress_chart_confidence_checks_help)
   end

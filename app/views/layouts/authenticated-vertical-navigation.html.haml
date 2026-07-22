@@ -32,7 +32,7 @@
                   %ul.dropdown-menu.dropdown-menu-end
                     - if can_create_goal
                       %li
-                        = link_to organization_goals_path(current_organization, owner_id: 'my_relevant_goals'), class: "dropdown-item" do
+                        = link_to organization_goals_path(current_organization, owner_id: 'my_relevant_goals', view: 'hierarchical-collapsible-hidden-checks'), class: "dropdown-item" do
                           %i.bi.bi-bullseye.me-2
                           Goal (confidence check)
                     - if can_create_observation
