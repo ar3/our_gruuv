@@ -31,8 +31,8 @@ module Organizations::CompanyTeammatesHelper
         )
       else
         internal_teammate_views_entry(
-          title: "#{casual_name}'s next most important thing",
-          description: "The highest-priority focus for your next 1:1 with this teammate.",
+          title: one_thing_label_for(teammate),
+          description: "The highest-priority focus for clarity with this teammate.",
           path: organization_company_teammate_one_on_one_link_path(organization, teammate),
           enabled: context[:can_one_on_one],
           tooltip: context[:one_on_one_tooltip]
@@ -277,7 +277,7 @@ module Organizations::CompanyTeammatesHelper
       hierarchy_check_ins: "You need employment management permissions or to be in the managerial hierarchy to access check-in features",
       hierarchy_seat: "You need employment management permissions or to be in the managerial hierarchy to access seat management",
       hierarchy_manage: "You need employment management permissions or to be in the managerial hierarchy to access management features",
-      one_on_one_tooltip: "You can open the 1:1 workspace for yourself, people in your managerial hierarchy, or if you have manage employment permission.",
+      one_on_one_tooltip: "You can open My One Thing for yourself, people in your managerial hierarchy, or if you have manage employment permission.",
       internal_teammate_tooltip: "You must be an active employee in the same organization to view the teammate version"
     }
   end

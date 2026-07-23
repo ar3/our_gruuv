@@ -1,4 +1,4 @@
-- content_for :title, teammate_context_page_title(@selected_teammate, "1:1 Hub — Overview")
+- content_for :title, teammate_context_page_title(@selected_teammate, "#{one_on_one_hub_label} — Overview")
 - overview_page_help_id = 'engagementHealthOverviewPageHelp'
 
 - content_for :header do
@@ -10,7 +10,7 @@
                viewable_teammate_groups: @viewable_teammate_groups,
                path_for_teammate: ->(tm) { overview_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
                switch_aria_label: "Switch teammate for Overview"
-      %span= " - 1:1 Hub"
+      %span= " - #{one_on_one_hub_label}"
       = render 'shared/page_help/header_info_button',
                collapse_id: overview_page_help_id,
                tooltip: 'Engagement health: every cached Healthy / Warning / Needs Attention status with the inputs behind it. Click for details.'
@@ -19,7 +19,7 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)) }, { label: "Overview", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: one_on_one_hub_label, url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)) }, { label: "Overview", url: nil }])
 
 .collapse.mb-4{id: overview_page_help_id}
   = render 'overview_page_help', casual_name: @teammate.person.casual_name

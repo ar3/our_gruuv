@@ -91,15 +91,15 @@ module OrganizationSitemap
           ),
           page(
             key: :one_on_one_hub,
-            label: "1:1 Hub",
+            label: "My One Thing",
             icon: "bi-link-45deg",
             path: ->(ctx) { ctx.organization_company_teammate_one_on_one_link_path(ctx.organization, ctx.teammate) },
             policy: ->(ctx) {
               ctx.teammate.present? &&
                 ctx.policy(OneOnOneLink.new(teammate: ctx.teammate)).show?
             },
-            goal: "Track priorities and work-to-meet items for your one-on-one meetings.",
-            synonyms: %w[1:1 one on one one-on-one weekly 1:1 1:1 hub one on ones]
+            goal: "See the one clarity action that makes everything else easier or unnecessary.",
+            synonyms: %w[1:1 one on one one-on-one weekly 1:1 1:1 hub one on ones my one thing one thing]
           ),
           page(
             key: :my_check_in,

@@ -161,7 +161,7 @@
           Send Weekly Digests
       .card-body
         %p.text-muted.small
-          Pick the day of the week to receive a #{link_to 'weekly recap', organization_company_teammate_one_on_one_link_path(organization, @teammate)}, sent to a Slack group DM with #{@teammate.person.casual_name} and their manager.
+          Pick the day of the week to receive #{link_to one_thing_label_for(@teammate), organization_company_teammate_one_on_one_link_path(organization, @teammate)}, sent to a Slack group DM with #{@teammate.person.casual_name} and their manager.
         = form_with url: notifications_url, method: :patch, local: true, id: 'weekly-digest-form' do
           %div.d-none{aria: { hidden: true }}
         = render 'shared/digest/weekly_reminder_day_button_group', teammate_id: @teammate.id, weekly_day: weekly_day, form_id: 'weekly-digest-form'

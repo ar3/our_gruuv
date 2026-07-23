@@ -1,4 +1,7 @@
-- content_for :title, teammate_context_page_title(@selected_teammate, "1:1 Hub")
+- content_for :title, teammate_context_page_title(@selected_teammate, one_on_one_hub_label)
+
+- one_thing_page_help_id = 'oneThingPageHelp'
+- casual_name = @teammate.person.casual_name
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -8,14 +11,20 @@
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups,
                path_for_teammate: ->(tm) { organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
-               switch_aria_label: "Switch teammate for 1:1 Hub"
-      %span= " - 1:1 Hub"
+               switch_aria_label: "Switch teammate for #{one_on_one_hub_label}"
+      %span= " - #{one_on_one_hub_label}"
+      = render 'shared/page_help/header_info_button',
+               collapse_id: one_thing_page_help_id,
+               tooltip: "What My One Thing is for and how to use it. Click for details."
 
 - content_for :header_action do
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: one_on_one_hub_label, url: nil }])
+
+.collapse.mb-4{id: one_thing_page_help_id}
+  = render 'one_thing_page_help', casual_name: casual_name
 
 = render "hub_tabs", one_thing_active: true, detailed_active: false, work_to_meet_summary: @work_to_meet_summary
 
@@ -43,7 +52,7 @@
               How do we break ties?
 
   .mt-3
-    = link_to "More detailed 1:1 hub", detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate))
+    = link_to "More detailed view", detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate))
 
 :javascript
   (function() {

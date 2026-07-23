@@ -38,7 +38,7 @@
         .col-12.col-md-3
           = link_to organization_company_teammate_one_on_one_link_path(@organization, teammate), class: "btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center" do
             %i.bi.bi-compass.text-white
-            %span= "#{casual_name}'s Top Action"
+            %span= one_thing_label_for(teammate)
         .col-6.col-md-3
           = link_to about_me_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm hover-lift text-center" do
             %i.bi.bi-person-badge.text-primary

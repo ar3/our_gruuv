@@ -138,17 +138,17 @@
       - if one_on_one_active
         .dropdown-item.text-muted
           %i.bi.bi-link-45deg.me-2
-          One on One Hub (Active)
+          = "#{one_on_one_hub_label} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(one_on_one_link).show?
         = link_to organization_company_teammate_one_on_one_link_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-link-45deg.me-2
-          One on One Hub
+          = one_on_one_hub_label
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-link-45deg.me-2
-          One on One Hub
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can open the 1:1 workspace for yourself, people in your managerial hierarchy, or if you have manage employment permission."}
+          = one_on_one_hub_label
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can open My One Thing for yourself, people in your managerial hierarchy, or if you have manage employment permission."}
 
     %li
       - my_goals_active = controller_name == 'company_teammates' && action_name == 'my_growth_goals'

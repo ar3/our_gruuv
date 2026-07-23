@@ -1,0 +1,39 @@
+-# Locals: casual_name
+- casual_name = local_assigns.fetch(:casual_name)
+- one_thing_book_url = "https://www.amazon.com/ONE-Thing-Surprisingly-Extraordinary-Results/dp/1885167776"
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Answer, for #{casual_name}'s clarity:
+    %em what is the one thing that I can do such that by doing it, makes everything else either easier or unnecessary
+    — then do that thing. Clarity leads to flow, which leads to thriving.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+  %h5.fw-semibold.mb-2 The One Thing
+  %p.mb-3
+    This page is named after the focusing question from
+    = link_to "The One Thing", one_thing_book_url, target: "_blank", rel: "noopener noreferrer"
+    by Gary Keller and Jay Papasan. The book asks:
+    %em="\"What's the ONE Thing I can do such that by doing it everything else will be easier or unnecessary?\""
+    My One Thing is meant to be that answer for #{casual_name}'s clarity — which leads to flow — which leads to thriving.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 What you see first
+  %ul.mb-3
+    %li
+      %strong The question
+      — the top clarity need for #{casual_name} this week.
+    %li
+      %strong The next action
+      — the concrete step to take so that need gets clearer.
+    %li
+      %strong Supporting items
+      — linked details under the top priority when they help you act.
+
+  %h5.fw-semibold.mb-2 How we choose the one thing
+  %p.mb-0
+    Expand
+    %strong How we choose the one thing
+    below the carousel for the priority order and tie-break rules. Overview and Detailed tabs add health and history when you need more context — start here when you only need what to do next.

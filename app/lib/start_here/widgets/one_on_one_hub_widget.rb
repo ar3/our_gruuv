@@ -7,12 +7,12 @@ class StartHere::Widgets::OneOnOneHubWidget < StartHere::Widget::Base
     id: "one_on_one_hub",
     group: "About Me",
     icon: "bi-link-45deg",
-    selection_title: "1:1 Hub",
-    selection_description: "Top priority from your 1:1 Hub and how many items are healthy vs need attention.",
-    label: "1:1 Hub",
+    selection_title: "My One Thing",
+    selection_description: "Top priority from My One Thing and how many items are healthy vs need attention.",
+    label: "My One Thing",
     path: ->(c) { c.view.organization_company_teammate_one_on_one_link_path(c.organization, c.company_teammate) },
     description: nil,
-    button_label: "Open 1:1 Hub"
+    button_label: "Open My One Thing"
   }.freeze
 
   def active?

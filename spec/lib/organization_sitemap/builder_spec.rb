@@ -39,7 +39,7 @@ RSpec.describe OrganizationSitemap::Builder, type: :model do
     it "finds the 1:1 hub for the current teammate only" do
       results = builder.search("one on one")
       labels = results.map(&:label)
-      expect(labels).to include("1:1 Hub")
+      expect(labels).to include("My One Thing")
     end
   end
 end

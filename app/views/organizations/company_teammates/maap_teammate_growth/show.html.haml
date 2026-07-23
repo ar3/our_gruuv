@@ -19,7 +19,7 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@organization) }, { label: "1:1 Hub", url: organization_company_teammate_one_on_one_link_path(@organization, @teammate) }, { label: "Consult OG", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@organization) }, { label: one_on_one_hub_label, url: organization_company_teammate_one_on_one_link_path(@organization, @teammate) }, { label: "Consult OG", url: nil }])
 
 .row.justify-content-center
   .col-lg-10

@@ -1,4 +1,4 @@
-- content_for :title, teammate_context_page_title(@selected_teammate, "1:1 Hub — Work to Meet")
+- content_for :title, teammate_context_page_title(@selected_teammate, "#{one_on_one_hub_label} — Work to Meet")
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -9,13 +9,13 @@
                viewable_teammate_groups: @viewable_teammate_groups,
                path_for_teammate: ->(tm) { work_to_meet_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
                switch_aria_label: "Switch teammate for Work to Meet"
-      %span= " - 1:1 Hub"
+      %span= " - #{one_on_one_hub_label}"
 
 - content_for :header_action do
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)) }, { label: "Work to Meet", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: one_on_one_hub_label, url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)) }, { label: "Work to Meet", url: nil }])
 
 - casual_name = @teammate.person.casual_name
 - summary = @work_to_meet_summary

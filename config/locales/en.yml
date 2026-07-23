@@ -160,7 +160,7 @@ en:
 
     weekly_1_1: "Weekly areas of focus"
     weekly_1_1_intro: "It is time for your weekly 1:1."
-    one_on_one_hub: "1:1 Hub"
+    one_on_one_hub: "My One Thing"
     priority_active_goals_confidence_check_title: "Do all active goals have a confidence check for this week?"
     priority_active_goals_confidence_check_attention: "Goals can drift to the background if we don't add confidence checks on them. Let's take the time to state how confident we are in hitting these goals:"
     priority_active_goals_confidence_check_success: "All active goals already have a confidence check this week."
@@ -187,11 +187,11 @@ en:
     start_here_clarity_check_in_status_description: "How clear your clarity check-ins are across values, assignments, and position."
     start_here_open_clarity_check_ins: "Open Clarity Check-Ins"
     og_scorecard_clarity_check_ins_label: "Check-ins"
-    og_scorecard_clarity_check_ins_help: "Activity rows count unique teammates who finalized a position, assignment, or aspirational value clarity check-in during that Mon–Sun week (this week), or who had ever finalized one on or before that Sunday while employed that week (all-time). Gruuv Health Required Clarity rows count teammates whose category rollup is Healthy, Warning, or Needs Attention as of that Sunday—the same rules as 1:1 Hub Overview (Healthy ≤ 60 days, Warning 61–89 days, Needs Attention ≥ 90 days or never)."
+    og_scorecard_clarity_check_ins_help: "Activity rows count unique teammates who finalized a position, assignment, or aspirational value clarity check-in during that Mon–Sun week (this week), or who had ever finalized one on or before that Sunday while employed that week (all-time). Gruuv Health Required Clarity rows count teammates whose category rollup is Healthy, Warning, or Needs Attention as of that Sunday—the same rules as My One Thing Overview (Healthy ≤ 60 days, Warning 61–89 days, Needs Attention ≥ 90 days or never)."
     og_scorecard_ability_milestones_label: "Ability Milestones"
-    og_scorecard_ability_milestones_help: "Milestone totals count ability milestone records for this company. “This week” and 90-day rows use attained_at in that Mon–Sun week or the rolling 90 calendar days ending that Sunday; all-time totals count every record on or before that Sunday. Teammate rows count unique people employed during that week who earned at least one such milestone in the same window. Gruuv Health Milestones rows below use the same rules as the 1:1 Hub Overview."
+    og_scorecard_ability_milestones_help: "Milestone totals count ability milestone records for this company. “This week” and 90-day rows use attained_at in that Mon–Sun week or the rolling 90 calendar days ending that Sunday; all-time totals count every record on or before that Sunday. Teammate rows count unique people employed during that week who earned at least one such milestone in the same window. Gruuv Health Milestones rows below use the same rules as My One Thing Overview."
     og_scorecard_goals_label: "Goals"
-    og_scorecard_goals_help: "Activity rows: active owned goals as of each Sunday, including rows for goals linked to an Aspirational Value, Assignment, or Ability; goal check-ins bucketed by GoalCheckIn created_at in that Mon–Sun week; completed goals use completed_at in the rolling 90 calendar days ending that Sunday (owner only). Gruuv Health Goal Confidence rows below use the same rules as the 1:1 Hub Overview (Healthy / Warning / Needs Attention)."
+    og_scorecard_goals_help: "Activity rows: active owned goals as of each Sunday, including rows for goals linked to an Aspirational Value, Assignment, or Ability; goal check-ins bucketed by GoalCheckIn created_at in that Mon–Sun week; completed goals use completed_at in the rolling 90 calendar days ending that Sunday (owner only). Gruuv Health Goal Confidence rows below use the same rules as My One Thing Overview (Healthy / Warning / Needs Attention)."
     priority_clarity_ready_for_review_title: "Are there clarity check-ins ready for review together?"
     priority_review_clarity_check_ins_together:
       one: "Review 1 clarity check-in together"

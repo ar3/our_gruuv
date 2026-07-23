@@ -605,14 +605,14 @@ module OneOnOne
           choose_manage_goals_organization_assignment_path(
             organization, associable,
             return_url: one_on_one_hub_return_path,
-            return_text: "Back to 1:1 Hub",
+            return_text: "Back to My One Thing",
             for_company_teammate_id: teammate.id
           )
         when Aspiration
           choose_manage_goals_organization_aspiration_path(
             organization, associable,
             return_url: one_on_one_hub_return_path,
-            return_text: "Back to 1:1 Hub",
+            return_text: "Back to My One Thing",
             for_company_teammate_id: teammate.id
           )
         end
@@ -637,7 +637,7 @@ module OneOnOne
         add_goal_url: choose_manage_goals_organization_ability_path(
           organization, ability,
           return_url: one_on_one_hub_return_path,
-          return_text: "Back to 1:1 Hub",
+          return_text: "Back to My One Thing",
           for_company_teammate_id: teammate.id
         )
       }
@@ -798,7 +798,7 @@ module OneOnOne
         new_organization_observation_path(
           organization,
           return_url: one_on_one_hub_return_path,
-          return_text: "Back to 1:1 Hub"
+          return_text: "Back to My One Thing"
         )
       when :new_feedback_request
         new_organization_feedback_request_path(organization)
@@ -814,7 +814,7 @@ module OneOnOne
           organization,
           associable,
           return_url: one_on_one_hub_return_path,
-          return_text: "Back to 1:1 Hub",
+          return_text: "Back to My One Thing",
           for_company_teammate_id: teammate.id
         )
       end
@@ -846,7 +846,7 @@ module OneOnOne
         new_organization_observation_url(
           organization,
           return_url: one_on_one_hub_return_slack_url,
-          return_text: "Back to 1:1 Hub"
+          return_text: "Back to My One Thing"
         )
       when :new_feedback_request
         new_organization_feedback_request_url(organization)
@@ -868,7 +868,7 @@ module OneOnOne
 
       opts = {
         return_url: one_on_one_hub_return_slack_url,
-        return_text: "Back to 1:1 Hub",
+        return_text: "Back to My One Thing",
         for_company_teammate_id: teammate.id
       }
       case associable

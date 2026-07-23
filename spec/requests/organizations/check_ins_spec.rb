@@ -715,7 +715,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate))
       expect(response.body).to include(organization_company_teammate_finalization_path(organization, employee_teammate))
       expect(response.body).to include(audit_organization_employee_path(organization, employee_teammate))
-      expect(response.body).to include("One on One Hub")
+      expect(response.body).to include("My One Thing")
     end
   end
 

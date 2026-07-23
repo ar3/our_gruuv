@@ -211,8 +211,8 @@ module ProtectFlow
         status_label: "Pending",
         short_title: "Health pending",
         title: "Health pending",
-        why: "Engagement Health has not been calculated yet for this person. The 1:1 Hub loads live signals so you can protect flow.",
-        cta_label: "Open 1:1 Hub",
+        why: "Engagement Health has not been calculated yet for this person. #{one_thing_label_for_teammate(teammate)} loads live signals so you can protect flow.",
+        cta_label: "Open #{one_thing_label_for_teammate(teammate)}",
         path: organization_company_teammate_one_on_one_link_path(@organization, teammate),
         cleared: false
       }
@@ -243,7 +243,7 @@ module ProtectFlow
         short_title: short,
         title: short,
         why: action_why(category, role),
-        cta_label: action_cta_label(category),
+        cta_label: action_cta_label(teammate, category),
         path: action_path(teammate, category),
         cleared: false,
         improved: status_row[:improved]
@@ -261,7 +261,7 @@ module ProtectFlow
         short_title: short,
         title: short,
         why: action_why(category, :clear),
-        cta_label: action_cta_label(category),
+        cta_label: action_cta_label(teammate, category),
         path: action_path(teammate, category),
         cleared: status_row[:cleared],
         start_status: status_row[:start_status],
@@ -278,7 +278,7 @@ module ProtectFlow
         short_title: "Stay clear",
         title: "Stay clear",
         why: "They're healthy across vectors. A short 1:1 still protects flow before signals go stale.",
-        cta_label: "Open 1:1 Hub",
+        cta_label: "Open #{one_thing_label_for_teammate(teammate)}",
         path: organization_company_teammate_one_on_one_link_path(@organization, teammate),
         cleared: false
       }
@@ -297,14 +297,14 @@ module ProtectFlow
       end
     end
 
-    def action_cta_label(category)
+    def action_cta_label(teammate, category)
       case category
       when EngagementHealth::CATEGORY_REQUIRED_CLARITY then "Open Clarity Check-ins"
       when EngagementHealth::CATEGORY_MILESTONES then "Review ability milestones"
       when EngagementHealth::CATEGORY_GOAL_CONFIDENCE then "Open goals"
       when EngagementHealth::CATEGORY_OGO_GIVEN then "Coach OGOs given"
       when EngagementHealth::CATEGORY_OGO_RECEIVED then "Give or review OGOs"
-      else "Open 1:1 Hub"
+      else "Open #{one_thing_label_for_teammate(teammate)}"
       end
     end
 

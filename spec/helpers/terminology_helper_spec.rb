@@ -40,6 +40,12 @@ RSpec.describe TerminologyHelper, type: :helper do
       expect(helper.weekly_1_1_label).to eq('Weekly areas of focus')
       expect(helper.weekly_1_1_label).not_to include('check-in')
     end
+
+    it 'returns My One Thing for the hub label' do
+      expect(helper.one_on_one_hub_label).to eq('My One Thing')
+      expect(helper.open_one_on_one_hub_label).to eq('Open My One Thing')
+      expect(helper.back_to_one_on_one_hub_label).to eq('Back to My One Thing')
+    end
   end
 
   describe '#terminology' do

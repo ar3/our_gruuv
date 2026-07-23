@@ -94,7 +94,7 @@
                 %p.mb-0.mt-2
                   This #{source_display_name(source)} project is ready to be synced. 
                   %br
-                  Visit the 1:1 Area page to sync and view project data.
+                  Visit #{one_thing_label_for(@teammate)} to sync and view project data.
             - elsif !source
               .alert.alert-info.mt-3
                 %strong No Deep Integration
@@ -108,6 +108,6 @@
           Add a link to your 1:1 document, project, or system to get started.
       
       .d-grid
-        = link_to "Manage / View Full Details about 1:1", 
+        = link_to "Manage #{one_thing_label_for(@teammate)}", 
                   detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
                   class: "btn btn-outline-primary"

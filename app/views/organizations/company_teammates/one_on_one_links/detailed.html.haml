@@ -1,4 +1,4 @@
-- content_for :title, teammate_context_page_title(@selected_teammate, "1:1 Hub")
+- content_for :title, teammate_context_page_title(@selected_teammate, one_on_one_hub_label)
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -8,14 +8,14 @@
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups,
                path_for_teammate: ->(tm) { detailed_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
-               switch_aria_label: "Switch teammate for 1:1 Hub"
-      %span= " - 1:1 Hub"
+               switch_aria_label: "Switch teammate for #{one_on_one_hub_label}"
+      %span= " - #{one_on_one_hub_label}"
 
 - content_for :header_action do
   = render "people/view_switcher"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "1:1 Hub", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: one_on_one_hub_label, url: nil }])
 
 - casual_name = @teammate.person.casual_name
 :css
@@ -60,7 +60,7 @@
           .card-header
             %h5.mb-0
               %i.bi.bi-compass.me-2
-              1:1 Hub
+              My One Thing
           .card-body.p-0
             %nav.nav.flex-column#oneOnOneHubNav.one-on-one-hub-nav
               %a.nav-link{href: "#one-thing", data: { section: "one-thing" }}
@@ -212,7 +212,7 @@
                                                         status: "draft",
                                                         view: "hierarchical-collapsible",
                                                         return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
-                                                        return_text: "Back to 1:1 Hub"),
+                                                        return_text: "Back to My One Thing"),
                                 class: "ms-1 text-decoration-none",
                                 title: "View draft goals",
                                 aria: { label: "View draft goals" } do
@@ -232,7 +232,7 @@
                                                         status: "active",
                                                         view: "hierarchical-collapsible",
                                                         return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
-                                                        return_text: "Back to 1:1 Hub"),
+                                                        return_text: "Back to My One Thing"),
                                 class: "ms-1 text-decoration-none",
                                 title: "View active goals",
                                 aria: { label: "View active goals" } do
@@ -257,7 +257,7 @@
                                                         status: "completed",
                                                         view: "hierarchical-collapsible",
                                                         return_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate), anchor: "execute"),
-                                                        return_text: "Back to 1:1 Hub"),
+                                                        return_text: "Back to My One Thing"),
                                 class: "ms-1 text-decoration-none",
                                 title: "View completed goals",
                                 aria: { label: "View completed goals" } do

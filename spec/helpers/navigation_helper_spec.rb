@@ -238,8 +238,8 @@ RSpec.describe NavigationHelper, type: :helper do
 
         expect(items.length).to eq(11)
         expect(labels[0]).to match(/\AAbout .+\z/)
-        expect(labels[1]).to eq('1:1 Hub')
-        one_on_one_item = items.find { |i| i[:label] == '1:1 Hub' }
+        expect(labels[1]).to eq('My One Thing')
+        one_on_one_item = items.find { |i| i[:label] == 'My One Thing' }
         expect(one_on_one_item[:icon]).to eq('bi-link-45deg')
         my_check_in = items.find { |i| i[:label] == 'My Check-In' }
         expect(my_check_in[:active_check]).to be_present

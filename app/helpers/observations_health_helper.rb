@@ -117,7 +117,7 @@ module ObservationsHealthHelper
     content_tag(:div, class: "small") do
       safe_join([
         content_tag(:p, class: "mb-2") do
-          "#{column_label} uses Gruuv Health (same rules as 1:1 Hub Overview) for published OGOs only."
+          "#{column_label} uses Gruuv Health (same rules as My One Thing Overview) for published OGOs only."
         end,
         content_tag(:ul, class: "mb-0 ps-3") do
           safe_join([

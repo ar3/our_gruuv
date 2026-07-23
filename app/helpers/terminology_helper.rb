@@ -493,6 +493,35 @@ module TerminologyHelper
     terminology(:one_on_one_hub)
   end
 
+  # Link/nav label for the hub: "My One Thing" when viewing yourself, otherwise "{casual}'s One Thing".
+  def one_thing_label_for(teammate, viewer: nil)
+    return one_on_one_hub_label if teammate.blank?
+
+    viewer ||= (respond_to?(:current_company_teammate, true) ? current_company_teammate : nil)
+    casual = teammate.person&.casual_name.to_s.presence || "Their"
+    if viewer.present? && viewer.id == teammate.id
+      one_on_one_hub_label
+    else
+      "#{casual}'s One Thing"
+    end
+  end
+
+  def open_one_on_one_hub_label
+    "Open #{one_on_one_hub_label}"
+  end
+
+  def open_one_thing_label_for(teammate, viewer: nil)
+    "Open #{one_thing_label_for(teammate, viewer: viewer)}"
+  end
+
+  def back_to_one_on_one_hub_label
+    "Back to #{one_on_one_hub_label}"
+  end
+
+  def back_to_one_thing_label_for(teammate, viewer: nil)
+    "Back to #{one_thing_label_for(teammate, viewer: viewer)}"
+  end
+
   def clarity_check_in_history_label
     terminology(:clarity_check_in_history)
   end

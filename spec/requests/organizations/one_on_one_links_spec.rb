@@ -37,15 +37,18 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("1:1 Hub")
+      expect(response.body).to include("My One Thing")
       expect(response.body).to include("The One Thing")
-      expect(response.body).to include("Detailed 1:1 Hub")
+      expect(response.body).to include("Detailed")
+      expect(response.body).to include("What My One Thing is for")
+      expect(response.body).to include("amazon.com/ONE-Thing")
+      expect(response.body).to include("Clarity leads to flow")
+      expect(response.body).to include("easier or unnecessary")
       expect(response.body).to include("Work to Meet")
       expect(response.body).to include("How we choose the one thing")
-      expect(response.body).to include("More detailed 1:1 hub")
+      expect(response.body).to include("My One Thing (Active)")
       expect(response.body).to include(detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       expect(response.body).not_to include("Current Sync Link")
-      expect(response.body).to include("One on One Hub (Active)")
     end
 
     it "resolves company_teammate_id 'me' (and legacy 'my') to the signed-in teammate" do
@@ -54,7 +57,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
 
       get organization_company_teammate_one_on_one_link_path(organization, "me")
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("1:1 Hub")
+      expect(response.body).to include("My One Thing")
 
       get organization_company_teammate_one_on_one_link_path(organization, "my")
       expect(response).to have_http_status(:success)
@@ -225,7 +228,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       get detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("One on One Hub (Active)")
+      expect(response.body).to include("My One Thing (Active)")
       expect(response.body).to include("Sync")
       expect(response.body).to include("Execute")
       expect(response.body).to include("Evolve")

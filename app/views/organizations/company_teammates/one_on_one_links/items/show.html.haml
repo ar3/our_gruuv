@@ -1,7 +1,7 @@
 - content_for :title, "#{@item_details['name']} - #{@teammate.person.display_name}"
 - content_for :header, @item_details['name'] || 'Item Details'
 - content_for :return_url, organization_company_teammate_one_on_one_link_path(organization, @teammate)
-- content_for :return_text, "Back to 1:1 Area"
+- content_for :return_text, back_to_one_thing_label_for(@teammate)
 
 .card
   .card-header.d-flex.justify-content-between.align-items-center

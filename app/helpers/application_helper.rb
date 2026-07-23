@@ -678,7 +678,7 @@ module ApplicationHelper
     [
       ['Start Here page', 'start_here'],
       ["About #{casual}", 'about_me'],
-      ["#{casual}'s 1:1 Hub", 'one_on_one_hub'],
+      ["#{casual}'s One Thing", 'one_on_one_hub'],
       ["#{casual}'s Clarity Check-In Hub", 'clarity_check_in_hub'],
       ["#{casual}'s #{gsd_label} list", 'get_shit_done'],
       (company_teammate.has_direct_reports? ? ['Protect Flow', 'protect_flow'] : nil),

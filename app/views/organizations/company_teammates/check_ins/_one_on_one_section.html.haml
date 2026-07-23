@@ -91,7 +91,7 @@
           Add a link to your 1:1 document, project, or system to get started.
       
       .d-grid
-        = button_to "Manage 1:1 Area", 
+        = button_to "Manage #{one_thing_label_for(@teammate)}", 
                     save_and_redirect_organization_company_teammate_check_ins_path(organization, @teammate), 
                     method: :post,
                     params: { redirect_url: @one_on_one_url },

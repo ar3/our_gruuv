@@ -37,7 +37,7 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: '1:1 Hub',
+            label: one_on_one_hub_label,
             icon: 'bi-link-45deg',
             path: organization_company_teammate_one_on_one_link_path(current_organization, current_company_teammate),
             policy_check: -> {

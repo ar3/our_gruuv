@@ -69,10 +69,10 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.clarity_check_ins_view_active?).to eq(true)
     end
 
-    it 'returns One on One Hub for one_on_one_links show action' do
+    it 'returns My One Thing for one_on_one_links show action' do
       allow(helper).to receive(:action_name).and_return('show')
       allow(helper).to receive(:controller_name).and_return('one_on_one_links')
-      expect(helper.people_current_view_name).to eq('One on One Hub')
+      expect(helper.people_current_view_name).to eq('My One Thing')
     end
 
     it 'returns Consult OG for maap_teammate_growth show action' do
